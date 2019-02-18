@@ -1,0 +1,7 @@
+1) fix energy binning "bug" in inelasticity sampler, i.e. assume original y-samples are sampled on energy grid, rather than energy bins
+
+2) implement energy resolution as function of energy deposited
+
+3) implement directional resolution as function of energy deposited
+
+4) implement light reduction of hadronic component
