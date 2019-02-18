@@ -269,10 +269,10 @@ transformed data {
   vector[Ns+1] w_exposure;
   real Nex;
   int N;
-  real Mpc_to_km = 3.086e19;
+  real Mpc_to_m = 3.086e22;
 
   for (k in 1:Ns) {
-    Fs += L / (4 * pi() * pow(D[k] * Mpc_to_km, 2));
+    Fs += L / (4 * pi() * pow(D[k] * Mpc_to_m, 2));
   }
 
   FT = F0 + Fs;

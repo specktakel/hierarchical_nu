@@ -147,7 +147,7 @@ transformed data {
 
 parameters {
 
-  real<lower=0, upper=1.0e47> L;
+  real<lower=0, upper=1.0e53> L;
   real<lower=0, upper=10> F0;
   
   real<lower=1, upper=1000> kappa;
@@ -166,25 +166,17 @@ transformed parameters {
   real<lower=0, upper=1> f; 
 
   real<lower=0> FT;
-  real Mpc_to_km = 3.086e19;
+  real Mpc_to_m = 3.086e22;
   
   Fs = 0;
   for (k in 1:Ns) {
-    F[k] = L / (4 * pi() * pow(D[k] * Mpc_to_km, 2));
+    F[k] = L / (4 * pi() * pow(D[k] * Mpc_to_m, 2));
     Fs += F[k];
   }
   
   F[Ns + 1] = F0;
   FT = F0 + Fs;
   f = Fs / FT;
-
-  //print("FT: ", FT);
-
-  if (is_nan(f)) {
-    print("Fs: ", Fs);
-    print("F0: ", F0);
-  }
-  
 
 }
 
@@ -214,8 +206,6 @@ model {
 	lps[k] += log(1 / ( 4 * pi() ));
       }
 
-      // pdet[i] = interpolate(zenith_grid, m_grid, zenith[i]);
-
       lps[k] += log(A_IC * zenith[i]);
     }
     
@@ -227,7 +217,7 @@ model {
   target += -Nex; 
 
   /* priors */
-  L ~ normal(0.0, 1.0e47);
+  L ~ normal(0.0, 1.0e51);
   F0 ~ normal(0.0, 10.0);
 
 }
