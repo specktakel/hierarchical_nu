@@ -19,14 +19,13 @@ functions {
 
     int N = num_elements(D);
     vector[N] weights;
-    real Mpc_to_km = 3.086e19;
     real normalisation = 0;
 
     for (k in 1:N) {
-      normalisation += (Q / pow(D[k] * Mpc_to_km, 2));
+      normalisation += (Q / pow(D[k], 2));
     }
     for (k in 1:N) {
-      weights[k] = (Q / pow(D[k] * Mpc_to_km, 2)) / normalisation;
+      weights[k] = (Q / pow(D[k], 2)) / normalisation;
     }
     
     return weights;
@@ -93,6 +92,7 @@ data {
   int<lower=0> Ns;
   unit_vector[3] varpi[Ns]; 
   vector[Ns] D;
+  vector[Ns] z;
 
   /* energies */
   real<lower=1> alpha;
@@ -153,6 +153,10 @@ generated quantities {
 
   int lambda[N];
   unit_vector[3] omega;
+  vector[N] Esrc;
+  vector[N] E;
+  vector[N] Edet;
+  
   real zenith[N];
   real pdet[N];
   real accept;
@@ -166,6 +170,9 @@ generated quantities {
 
     /* source */
     if (lambda[i] < Ns + 1) {
+
+      Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
+      E[i] = Esrc[i] / (1 + z[lambda[i]]);
       
       accept = 0;
       while (accept != 1) {
@@ -177,9 +184,13 @@ generated quantities {
 	accept = categorical_rng(p);
       }
     }
+    
     /* background */
     else {
 
+      Esrc[i] = spectrum_rng(alpha, Emin);
+      E[i] = Esrc[i];
+      
       accept = 0;
       while (accept != 1) {
 	omega = sphere_rng(1);
@@ -191,6 +202,8 @@ generated quantities {
       }
     }
 
+    Edet[i] = normal_rng(E[i], sigmaE);
+      
     event[i] = vMF_rng(omega, kappa);  	  
  
   }  
