@@ -217,7 +217,10 @@ generated quantities {
     /* Simple normal for now  */
     /* To be replaced with something more realistic... */
     Edet[i] = normal_rng(E[i], sigmaE);
-      
+    while (Edet[i] < Emin) {
+      Edet[i] = normal_rng(E[i], sigmaE);
+    }
+    
     event[i] = vMF_rng(omega, kappa);  	  
  
   }  
