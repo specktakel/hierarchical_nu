@@ -17,14 +17,14 @@ functions {
    */
   vector get_source_weights(real Q, vector D) {
 
-    int N = num_elements(D);
-    vector[N] weights;
+    int K = num_elements(D);
+    vector[K] weights;
     real normalisation = 0;
 
-    for (k in 1:N) {
+    for (k in 1:K) {
       normalisation += (Q / pow(D[k], 2));
     }
-    for (k in 1:N) {
+    for (k in 1:K) {
       weights[k] = (Q / pow(D[k], 2)) / normalisation;
     }
     
@@ -34,24 +34,30 @@ functions {
   /**
    * Calculate weights from exposure integral.
    */
-  vector get_exposure_weights(vector F, vector eps) {
+  vector get_exposure_weights(vector F, vector eps, vector z, real alpha) {
 
-    int N = num_elements(F);
-    vector[N] weights;
+    int K = num_elements(F) - 1;
+    vector[K+1] weights;
     
     real normalisation = 0;
 
-    for (i in 1:N) {
-      normalisation += F[i] * eps[i];
+    /* Sources */
+    for (k in 1:K) {
+      normalisation += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
     }
-    
-    for (i in 1:N) {
-      weights[i] = (F[i] * eps[i]) / normalisation;
+    /* Background */
+    normalisation += F[K+1] * eps[K+1];
+   
+    /* Sources */
+    for (k in 1:K) {
+      weights[k] = (F[k] * eps[k] * pow(1 + z[k], 1 - alpha)) / normalisation;
     }
-    
+    /* Background */
+    weights[k] = (F[K+1] * eps[K+1]) / normalisation; 
+
     return weights;
   }
-
+  
 
   /**
    * Convert from unit vector omega to theta of spherical coordinate system.
@@ -72,14 +78,18 @@ functions {
     return zenith;
   }
 
+  /**
+   * Calculate the expected number of detected events.
+   */
   real get_Nex_sim(vector F, vector eps, vector z, real alpha) {
 
-    int K = num_elements(F);
+    int K = num_elements(F) - 1;
     real Nex = 0;
 
     for (k in 1:K) {
       Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
     }
+    Nex += F[K+1] * eps[K+1]; 
 
     return Nex;
   }
@@ -141,7 +151,7 @@ transformed data {
   F[Ns+1] = F0;
   
   /* N */
-  w_exposure = get_exposure_weights(F, eps);
+  w_exposure = get_exposure_weights(F, eps, z, alpha);
 
   Nex = get_Nex_sim(F, eps, z, alpha);
   
@@ -168,7 +178,7 @@ generated quantities {
     
     lambda[i] = categorical_rng(w_exposure);
 
-    /* source */
+    /* Source */
     if (lambda[i] < Ns + 1) {
 
       Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
@@ -185,9 +195,11 @@ generated quantities {
       }
     }
     
-    /* background */
+    /* Background */
     else {
 
+      /* Background case simply fits the neutirno spectrum at Earth */
+      /* Room for improvement here... */
       Esrc[i] = spectrum_rng(alpha, Emin);
       E[i] = Esrc[i];
       
@@ -202,6 +214,8 @@ generated quantities {
       }
     }
 
+    /* Simple normal for now  */
+    /* To be replaced with something more realistic... */
     Edet[i] = normal_rng(E[i], sigmaE);
       
     event[i] = vMF_rng(omega, kappa);  	  
