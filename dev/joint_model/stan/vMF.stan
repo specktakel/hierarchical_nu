@@ -107,3 +107,21 @@ vector sphere_rng(real radius) {
     
 }
   
+/**
+ * Define the vMF PDF.
+ * NB: Cannot be vectorised.
+ * Uses sinh(kappa) ~ exp(kappa)/2 
+ * approximation for kappa > 100.
+ */
+real vMF_lpdf(vector v, vector mu, real kappa) {
+  
+  real lprob;
+  if (kappa > 100) {
+    lprob = kappa * dot_product(v, mu) + log(kappa) - log(4 * pi()) - kappa + log(2);
+  }
+  else {
+    lprob = kappa * dot_product(v, mu) + log(kappa) - log(4 * pi() * sinh(kappa));
+  }
+  return lprob;
+    
+}
