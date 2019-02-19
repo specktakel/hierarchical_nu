@@ -1,6 +1,6 @@
 /**
  * Forward model for neutrino energies and arrival directions.
- * Focusing on cascade events for now.
+ * Focusing on cascade events for now, and ignoring different flavours and interaction types.
  * 
  * @author Francesca Capel
  * @date February 2019
@@ -72,13 +72,13 @@ functions {
     return zenith;
   }
 
-  real get_Nex_sim(vector F, vector eps) {
+  real get_Nex_sim(vector F, vector eps, vector z, real alpha) {
 
-    int N = num_elements(F);
+    int K = num_elements(F);
     real Nex = 0;
 
-    for (i in 1:N) {
-      Nex += F[i] * eps[i];
+    for (k in 1:K) {
+      Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
     }
 
     return Nex;
@@ -143,7 +143,7 @@ transformed data {
   /* N */
   w_exposure = get_exposure_weights(F, eps);
 
-  Nex = get_Nex_sim(F, eps);
+  Nex = get_Nex_sim(F, eps, z, alpha);
   
   N = poisson_rng(Nex);
 
