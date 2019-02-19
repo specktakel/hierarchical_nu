@@ -14,13 +14,10 @@ functions {
 
 
   /**
-   * Calculate the N_ex for a given kappa by
-   * interpolating over a vector of eps values
-   * for each source.
+   * Calculate the expected number of detected events.
    */
   real get_Nex(vector F, vector eps, vector z, real alpha) {
 
-    real eps_from_kappa;
     int K = num_elements(F) - 1;
     real Nex = 0;
 
@@ -72,12 +69,14 @@ data {
   /* Observatory */
   vector[Ns + 1] eps;
   real A_IC;
+  real kappa;
   
 }
 
 transformed data {
 
   vector[N] zenith;
+  real Mpc_to_m = 3.086e22;
 
   for (i in 1:N) {
 
@@ -89,13 +88,12 @@ transformed data {
 
 parameters {
 
-  real<lower=0, upper=1.0e53> Q;
+  real<lower=0, upper=1e55> Q;
   real<lower=0, upper=10> F0;
 
   real<lower=1, upper=10> alpha;
-  real<lower=1, upper=1000> kappa;
 
-  vector<lower=Emin, upper=1e3*Emin>[N] Esrc;
+  vector<lower=Emin, upper=1e2*Emin>[N] Esrc;
 
 }
 
@@ -111,7 +109,6 @@ transformed parameters {
   real<lower=0, upper=1> f; 
 
   real<lower=0> FT;
-  real Mpc_to_m = 3.086e22;
   
   Fs = 0;
   for (k in 1:Ns) {
@@ -128,9 +125,7 @@ transformed parameters {
 model {
 
   vector[Ns + 1] log_F;
-  real Nex;
-  vector[N] pdet;
-  
+  real Nex;  
   vector[N] E;
 
   log_F = log(F);
@@ -143,11 +138,11 @@ model {
 
     vector[Ns + 1] lps = log_F;
 
-    /* Sources */
     for (k in 1:Ns + 1) {
+      
+      lps[k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
 
-      lps[k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);
-
+      /* Sources */
       if (k < Ns + 1) {
 
 	lps[k] += vMF_lpdf(omega_det[i] | varpi[k], kappa);
@@ -167,7 +162,7 @@ model {
       /* Truncated gaussian */
       lps[k] += normal_lpdf(Edet[i] | E[i], sigmaE);
       if (Edet[i] < Emin) {
-	lps[k] += negative_infinity();
+      	lps[k] += negative_infinity();
       }
       else {
 	lps[k] += -normal_lccdf(Emin | E[i], sigmaE);
@@ -183,10 +178,9 @@ model {
   }
   
   /* Normalise */
-  target += -Nex; 
+  target += -Nex;
 
   /* Priors */
-  Q ~ normal(0.0, 1.0e51);
-  F0 ~ normal(0.0, 10.0);
-
+  kappa ~ normal(100, 10);
+  
 }
