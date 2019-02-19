@@ -53,7 +53,7 @@ functions {
       weights[k] = (F[k] * eps[k] * pow(1 + z[k], 1 - alpha)) / normalisation;
     }
     /* Background */
-    weights[k] = (F[K+1] * eps[K+1]) / normalisation; 
+    weights[K+1] = (F[K+1] * eps[K+1]) / normalisation; 
 
     return weights;
   }

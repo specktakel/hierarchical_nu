@@ -152,5 +152,5 @@ class IceCubeAeff():
 
         self.M, err = integrate.quad(m_integrand, 0, np.pi)
               
-            
+
     
