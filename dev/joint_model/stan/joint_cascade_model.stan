@@ -62,8 +62,8 @@ data {
   /* Sources */
   int<lower=0> Ns;
   unit_vector[3] varpi[Ns]; 
-  ordered[Ns] D;
-  ordered[Ns+1] z;
+  vector[Ns] D;
+  vector[Ns+1] z;
    
   /* Observatory */
   vector[Ns + 1] eps;
