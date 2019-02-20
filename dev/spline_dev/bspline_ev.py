@@ -59,8 +59,26 @@ class bspline_basis(object):
 	        c2 = 1.-self._w(i+1, k, x)
 	        return c1 * self._bspline(i, k-1, x) + c2 * self._bspline(i+1, k-1, x)
 
+    def find_closest_knot(self, x):
+        found = False
+        for j in range(len(self.t)-1):
+            if self.t[j+1]>x:
+                found = True
+                break
+
+        if not found:
+            j=len(self.t)-1     
+
+        # go back to spline index
+        return j+1
+        
     def eval_element(self, i, x):
-        return self._bspline(i, self.k, x)
+        closest_j = self.find_closest_knot(x)
+        #return self._bspline(i, self.k, x)
+        if i<=closest_j-self.k:
+            return 0.0
+        else:
+            return self._bspline(i, self.k, x)
 
 
 
@@ -132,7 +150,6 @@ class bspline_func_2d(object):
 
         self.basisx = bspline_basis(self.tx, self.p)
         self.basisy = bspline_basis(self.ty, self.p)
-
 
     def eval(self, x, y):
         # beware of indexing. c[i-1] is coefficient for B_{i,k} since
