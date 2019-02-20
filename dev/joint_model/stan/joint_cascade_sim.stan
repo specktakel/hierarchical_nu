@@ -36,24 +36,24 @@ functions {
    */
   vector get_exposure_weights(vector F, vector eps, vector z, real alpha) {
 
-    int K = num_elements(F) - 1;
+    int K = num_elements(F);
     vector[K+1] weights;
     
     real normalisation = 0;
-
+    
+    /* Background */
+    normalisation += F[1] * eps[1];
     /* Sources */
-    for (k in 1:K) {
+    for (k in 2:K) {
       normalisation += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
     }
+
     /* Background */
-    normalisation += F[K+1] * eps[K+1];
-   
+    weights[1] = (F[1] * eps[1]) / normalisation; 
     /* Sources */
-    for (k in 1:K) {
+    for (k in 2:K) {
       weights[k] = (F[k] * eps[k] * pow(1 + z[k], 1 - alpha)) / normalisation;
     }
-    /* Background */
-    weights[K+1] = (F[K+1] * eps[K+1]) / normalisation; 
 
     return weights;
   }
@@ -83,13 +83,13 @@ functions {
    */
   real get_Nex_sim(vector F, vector eps, vector z, real alpha) {
 
-    int K = num_elements(F) - 1;
+    int K = num_elements(F);
     real Nex = 0;
 
-    for (k in 1:K) {
+    Nex += F[1] * eps[1]; 
+    for (k in 2:K) {
       Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
     }
-    Nex += F[K+1] * eps[K+1]; 
 
     return Nex;
   }
