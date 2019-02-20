@@ -37,21 +37,15 @@ functions {
   vector get_exposure_weights(vector F, vector eps, vector z, real alpha) {
 
     int K = num_elements(F);
-    vector[K+1] weights;
+    vector[K] weights;
     
     real normalisation = 0;
     
-    /* Background */
-    normalisation += F[1] * eps[1];
-    /* Sources */
-    for (k in 2:K) {
+    for (k in 1:K) {
       normalisation += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
     }
 
-    /* Background */
-    weights[1] = (F[1] * eps[1]) / normalisation; 
-    /* Sources */
-    for (k in 2:K) {
+    for (k in 1:K) {
       weights[k] = (F[k] * eps[k] * pow(1 + z[k], 1 - alpha)) / normalisation;
     }
 
@@ -86,8 +80,7 @@ functions {
     int K = num_elements(F);
     real Nex = 0;
 
-    Nex += F[1] * eps[1]; 
-    for (k in 2:K) {
+    for (k in 1:K) {
       Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
     }
 
@@ -102,7 +95,7 @@ data {
   int<lower=0> Ns;
   unit_vector[3] varpi[Ns]; 
   vector[Ns] D;
-  vector[Ns] z;
+  vector[Ns+1] z;
 
   /* energies */
   real<lower=1> alpha;
@@ -157,6 +150,13 @@ transformed data {
   
   N = poisson_rng(Nex);
 
+  /* Debug */
+  print("F: ", F);
+  print("w: ", w);
+  print("Fs: ", Fs);
+  print("f: ", f);
+  print("w_exposure: ", w_exposure);
+  
 }
 
 generated quantities {
@@ -179,7 +179,7 @@ generated quantities {
     lambda[i] = categorical_rng(w_exposure);
 
     /* Source */
-    if (lambda[i] < Ns + 1) {
+    if (lambda[i] < Ns+1) {
 
       Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
       E[i] = Esrc[i] / (1 + z[lambda[i]]);
@@ -194,9 +194,9 @@ generated quantities {
 	accept = categorical_rng(p);
       }
     }
-    
+
     /* Background */
-    else {
+    else if (lambda[i] == Ns+1) {
 
       /* Background case simply fits the neutirno spectrum at Earth */
       /* Room for improvement here... */
@@ -212,7 +212,9 @@ generated quantities {
 	p[2] = 1 - pdet[i];
 	accept = categorical_rng(p);
       }
+
     }
+    
 
     /* Simple normal for now  */
     /* To be replaced with something more realistic... */

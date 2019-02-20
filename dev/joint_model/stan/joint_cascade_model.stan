@@ -18,13 +18,12 @@ functions {
    */
   real get_Nex(vector F, vector eps, vector z, real alpha) {
 
-    int K = num_elements(F) - 1;
+    int K = num_elements(F);
     real Nex = 0;
 
     for (k in 1:K) {
       Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
     }
-    Nex += F[K+1] * eps[K+1];
 
     return Nex;
   }
@@ -63,8 +62,8 @@ data {
   /* Sources */
   int<lower=0> Ns;
   unit_vector[3] varpi[Ns]; 
-  vector[Ns] D;
-  vector[Ns] z;
+  ordered[Ns] D;
+  ordered[Ns+1] z;
    
   /* Observatory */
   vector[Ns + 1] eps;
@@ -77,7 +76,8 @@ transformed data {
 
   vector[N] zenith;
   real Mpc_to_m = 3.086e22;
-
+  //real alpha = 2;
+  
   for (i in 1:N) {
 
     zenith[i] = omega_to_zenith(omega_det[i]);
@@ -88,7 +88,7 @@ transformed data {
 
 parameters {
 
-  real<lower=0, upper=1e55> Q;
+  real<lower=0, upper=1e60> Q;
   real<lower=0, upper=10> F0;
 
   real<lower=1, upper=10> alpha;
@@ -103,20 +103,23 @@ transformed parameters {
   real<lower=0> Fs;   
   
   /* Source flux */
-  vector[Ns + 1] F;
-
+  ordered[Ns] F;
+  vector[Ns+1] allF;
+  
   /* Associated fraction */
   real<lower=0, upper=1> f; 
 
   real<lower=0> FT;
   
   Fs = 0;
+
   for (k in 1:Ns) {
     F[k] = Q / (4 * pi() * pow(D[k] * Mpc_to_m, 2));
+    allF[k] = F[k];
     Fs += F[k];
   }
+  allF[Ns+1] = F0;
   
-  F[Ns + 1] = F0;
   FT = F0 + Fs;
   f = Fs / FT;
 
@@ -128,33 +131,32 @@ model {
   real Nex;  
   vector[N] E;
 
-  log_F = log(F);
+  log_F = log(allF);
 
   /* Nex */
-  Nex = get_Nex(F, eps, z, alpha);
+  Nex = get_Nex(allF, eps, z, alpha);
   
   /* Rate factor */
   for (i in 1:N) {
 
     vector[Ns + 1] lps = log_F;
 
-    for (k in 1:Ns + 1) {
+    for (k in 1:Ns+1) {
       
       lps[k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
-
+      E[i] = Esrc[i] / (1 + z[k]);
+	
       /* Sources */
-      if (k < Ns + 1) {
+      if (k < Ns+1) {
 
 	lps[k] += vMF_lpdf(omega_det[i] | varpi[k], kappa);
-	E[i] = Esrc[i] / (1 + z[k]);
 	
       }
       
       /* Background */
-      else {
+      else if (k == Ns+1) {
 
 	lps[k] += log(1 / ( 4 * pi() ));
-	E[i] = Esrc[i];
 
       }
 
@@ -179,8 +181,10 @@ model {
   
   /* Normalise */
   target += -Nex;
-
-  /* Priors */
-  kappa ~ normal(100, 10);
   
+  /* Priors */
+  Q ~ normal(0, 1e55);
+  F0 ~ normal(0, 1);
+  alpha ~ normal(2, 2);
+
 }
