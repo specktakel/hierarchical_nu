@@ -37,7 +37,7 @@ generated quantities {
   
   for (idx in 1:Nevals) {
 
-    yvals[idx] = eval_func_1d(knots, p, c, xvals[idx], N);
+    yvals[idx] = bspline_func_1d(knots, p, c, xvals[idx], N);
 
   } 
   //

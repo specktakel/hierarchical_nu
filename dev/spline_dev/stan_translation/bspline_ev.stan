@@ -182,7 +182,7 @@ real bspline_basis_eval(vector t_orig, int p, int idx_spline, real x) {
 }
 
 /**
- * Constructs a 1D B-spline function from knots and coefficients,
+ * Constructs a 1D B-spline function from knots and coefficients
  * 
  * @param t knot sequence without any padding (can be non-uniform)
  * @param p degree of B-spline (not order!)
@@ -191,7 +191,7 @@ real bspline_basis_eval(vector t_orig, int p, int idx_spline, real x) {
  * @param N total number of basis elements
  * @param k order of spline 
  */
-real eval_func_1d(vector t_orig, int p, vector c, real x, int N) {
+real bspline_func_1d(vector t_orig, int p, vector c, real x, int N) {
 
   int Q = num_elements(t_orig);
   vector[p+Q+p] t;
@@ -209,3 +209,7 @@ real eval_func_1d(vector t_orig, int p, vector c, real x, int N) {
   return sum(evals);
 
 }
+
+/**
+ *
+ */
