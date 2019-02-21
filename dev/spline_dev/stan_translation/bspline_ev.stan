@@ -100,14 +100,112 @@ real eval_element(int i, real x, int k, vector t) {
 }
 
 /**
+ * Initialise the B-spline basis.
+ */
+vector bspline_basis_init(vector t_orig, int p, int Q) {
+
+  vector[p] t0;
+  vector[p] t1;
+  vector[p+Q] tmp;
+  vector[p+Q+p] t;
+
+  /* padding to guarantee proper boundary behavior */
+  for (idx in 1:p) {
+    
+    t0[idx] = t_orig[1];
+    t1[idx] = t_orig[Q];
+    
+  }
+
+  tmp = append_row(t0, t_orig);
+  t = append_row(tmp, t1);  
+
+  return t;
+
+}
+
+/**
+ * Explicit evaluation of spline basis functions.
+ * Evaluates a vector of xvals for each basis.
+ * 
+ * @param t knot sequence without any padding (can be non-uniform)
+ * @param p degree of B-spline (not order!)
+ * @param idx_spline index of spline to be evaluated
+ * @param xvals values to be evaluated
+ */
+vector bspline_basis_eval_vec(vector t_orig, int p, int idx_spline, vector xvals) {
+
+  int Q = num_elements(t_orig);
+  vector[p+Q+p] t;
+  int k = p + 1; // order of spline
+  
+  int Nevals = num_elements(xvals);
+  vector[Nevals] yvals;
+  
+  /* initialisation */   
+  t = bspline_basis_init(t_orig, p, Q);
+
+  /* evaluation */
+  for (idx in 1:Nevals) {
+
+    yvals[idx] = eval_element(idx_spline, xvals[idx], k, t);
+
+  } 
+
+  return yvals;
+}
+
+/**
+ * Explicit evaluation of spline basis functions.
+ * Evaluates a vector of xvals for each basis.
+ * 
+ * @param t knot sequence without any padding (can be non-uniform)
+ * @param p degree of B-spline (not order!)
+ * @param idx_spline index of spline to be evaluated
+ * @param xvals values to be evaluated
+ */
+real bspline_basis_eval(vector t_orig, int p, int idx_spline, real x) {
+
+  int Q = num_elements(t_orig);
+  vector[p+Q+p] t;
+  int k = p + 1; // order of spline
+  
+  real y;
+  
+  /* initialisation */   
+  t = bspline_basis_init(t_orig, p, Q);
+
+  /* evaluation */
+  y = eval_element(idx_spline, x, k, t);
+
+  return y;
+}
+
+/**
  * Constructs a 1D B-spline function from knots and coefficients,
  * 
  * @param t knot sequence without any padding (can be non-uniform)
  * @param p degree of B-spline (not order!)
  * @param c spline coefficients
  * @param x point to evaluate
+ * @param N total number of basis elements
+ * @param k order of spline 
  */
-real eval_func_1d(vector t, int p, vector c, real x) {
+real eval_func_1d(vector t_orig, int p, vector c, real x, int N) {
 
+  int Q = num_elements(t_orig);
+  vector[p+Q+p] t;
+  int k = p + 1; // order of spline
+  vector[N] evals;
+  
+  /* initialisation */   
+  t = bspline_basis_init(t_orig, p, Q);
+
+  /* evaluation */
+  for (idx_spline in 1:N) {
+    evals[idx_spline] = c[idx_spline] * eval_element(idx_spline, x, k, t);
+  }
+  
+  return sum(evals);
 
 }
