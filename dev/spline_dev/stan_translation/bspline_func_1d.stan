@@ -24,21 +24,14 @@ data {
   
 }
 
-transformed data {
-
-  int N = Lknots + p - 1; // total number of basis elements for given choice of degree and knots
-  int k = p + 1; // order of spline
-  
-}
-
 generated quantities {
 
   vector[Nevals] yvals;
   
   for (idx in 1:Nevals) {
 
-    yvals[idx] = bspline_func_1d(knots, p, c, xvals[idx], N);
+    yvals[idx] = bspline_func_1d(knots, p, c, xvals[idx]);
 
   } 
-  //
+  
 }

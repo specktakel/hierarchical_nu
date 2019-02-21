@@ -189,13 +189,14 @@ real bspline_basis_eval(vector t_orig, int p, int idx_spline, real x) {
  * @param c spline coefficients
  * @param x point to evaluate
  * @param N total number of basis elements
- * @param k order of spline 
  */
-real bspline_func_1d(vector t_orig, int p, vector c, real x, int N) {
+real bspline_func_1d(vector t_orig, int p, vector c, real x) {
 
   int Q = num_elements(t_orig);
   vector[p+Q+p] t;
   int k = p + 1; // order of spline
+  int N = Q + p - 1; // total number of basis elements for given choice of degree and knots
+ 
   vector[N] evals;
   
   /* initialisation */   
@@ -211,5 +212,51 @@ real bspline_func_1d(vector t_orig, int p, vector c, real x, int N) {
 }
 
 /**
+ * Constructs a 2D Tensor-Product B-spline function from knots and coefficients.
  *
+ * @param tx knot sequence without any padding (can be non-uniform)
+ * @param ty knot sequence without any padding (can be non-uniform)
+ * @param p degree of B-spline (not order!)
+ * @param c matrix of spline coefficients of shape((Nx, Ny))
+ * @param x point to evaluate
+ * @param y point to evaluate
  */
+real bspline_func_2d(vector tx_orig, vector ty_orig, int p, matrix c, real x, real y) {
+
+  int Qx = num_elements(tx_orig);
+  int Qy = num_elements(ty_orig);
+
+  int Nx = Qx + p - 1; 
+  int Ny = Qy + p - 1; 
+  
+  vector[p+Qx+p] tx;
+  vector[p+Qy+p] ty;
+  int k = p + 1; // order of spline
+
+  vector[Nx] bspline_along_x;
+  vector[Ny] bspline_along_y;
+
+  vector[Nx] tmp;
+  
+  /* initialisation */   
+  tx = bspline_basis_init(tx_orig, p, Qx);
+  ty = bspline_basis_init(ty_orig, p, Qy);
+
+  /* evaluation */
+  for (idx_spline in 1:Nx) {
+    bspline_along_x[idx_spline] = eval_element(idx_spline, x, k, tx);
+  }
+  
+  for (idx_spline in 1:Ny) {
+    bspline_along_y[idx_spline] = eval_element(idx_spline, y, k, tx);
+  }
+
+  /* sum product over c and bspline_along_y' */
+  for (idx_spline in 1:Nx) {
+    tmp[idx_spline] = dot_product(c[idx_spline], bspline_along_y');
+  }
+  
+  return dot_product(bspline_along_x, tmp);
+  
+}
+
