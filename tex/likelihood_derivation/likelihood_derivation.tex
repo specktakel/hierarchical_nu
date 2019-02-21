@@ -1,0 +1,102 @@
+\documentclass[fontsize=12pt]{article}
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{cite}
+
+\title{\textbf{A hierarchical model for neutrinos: derivation of the likelihood function}}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+The idea is to build on the ideas of \cite{Capel:2019hn, Soiaporn:tj}, but applied to the publicly available neutrino data of IceCube. We begin by focusing on a hierarchical model for the neutrino data, with a view to extend this to gamma-ray and cosmic ray data in the future. The structure of the model is quite similar to that for the cosmic rays, but with some exceptions. Here we describe the physical model for neutrino production, propagation and detection and derive the corresponding likelihood as a reference.
+
+The IceCube observatory has observed a flux of astrophysical neutrinos up to above 1~PeV \cite{Collaboration:2013hx, Aartsen:2014cl}. These neutrinos are observed to have a power law spectrum of index 2.5$\pm$0.9 \cite{Aartsen:2015fr} and what appears to be an isotropic distribution on the sky \cite{Aartsen:2016oji}.
+
+\section{Model}
+\label{sec:model}
+
+The goal of this work is to quantify the probability of association between the observed astrophysical neutrinos and a candidate source population. This can be achieved by breaking the problem down into a hierarchical structure based on the underlying physics. We assume that the neutrinos are produced in extragalactic sources, as motivated by the lack of obvious clustering around the galactic centre in previous analyses e.g. \cite{Aartsen:2016oji}. However, an additional galactic contribution is also not ruled out. We consider a population of $K$ sources, indexed by $k$, and $I$ neutrinos, indexed by $i$. We break the model down into 4 parts: the source population and neutrino production, propagation and detection.
+
+\subsection{Source population}
+
+We assume that we have a population of extragalactic sources which are distributed throughout the universe according to the cosmology and the source density evolution. We assume $\Lambda$CDM cosmology with $H_0 = 70 \mathrm{km} \ \mathrm{s}^{-1} \ \mathrm{Mpc}^{-1}$, $\Omega_m = 0.3$ and $\Omega_\Lambda = 0.7$. The source density evolution, $\mathrm{d}N/\mathrm{d}V(z)$, is model-dependent and will be chosen in accordance with the candidate source population of interest. The sources are distributed according to 
+
+\begin{equation}
+\frac{\mathrm{d}N}{\mathrm{d}z} = \frac{\mathrm{d}V}{\mathrm{d}z}\frac{\mathrm{d}N}{\mathrm{d}V}\frac{1}{(1+z)},
+\end{equation}
+where $\frac{\mathrm{d}V}{\mathrm{d}z}$ is the differential comoving volume, such that
+
+\begin{equation}
+\frac{\mathrm{d}V}{\mathrm{d}z} = 
+\frac{D_H^3}{E(z)} \Bigg( \int_0^z \mathrm{d}z \  \frac{1}{E(z)} \Bigg)^2, 
+\end{equation}
+with $D_H = c / H_0$ and $E(z) = \sqrt{\Omega_m(1 + z)^3 + \Omega_\Lambda}$. The sources are assumed to be steady-state, such that the total flux from this population at Earth is independent of time. In this way, the production rate of each point source is characterised by it's integral emission, $Q$, above a certain minimum energy, $E_\mathrm{min}$. We define $Q$ such that
+
+\begin{equation}
+Q = \int_{E_\mathrm{min}}^{\infty} \mathrm{d}E \ \frac{\mathrm{d}N}{\mathrm{d}E \mathrm{d}t},
+\end{equation}
+with units of $\mathrm{time}^{-1}$. In addition to Q, which we assume uniform for all sources,The $k$th source is defined by a direction on the celestial sphere $\varpi_k$, and a redshift $z_k$. The corresponding point source flux at Earth is defined by $F_k = Q/4 \pi d_L(z_k)^2$, where $d_L(z)$ is the luminosity distance to a source at redshift $z$.
+
+We also include an isotropic background component to represent distant, unresolved sources which are not present in our candidate catalogue. This component is labelled by $k=0$ and is characterised by $F_0$, the integrated flux due to this background population in units of $\mathrm{area}^{-1}\mathrm{time}^{-1}$. For a typical $\frac{\mathrm{d}N}{\mathrm{d}{z}}$, we expect only a very small fraction ($\sim$1\%) of the total neutrino flux to come from within $z = 0.5$. Sources that are resolved in, for example, gamma-ray catalogues, will be typically be far from complete at higher redshifts. In addition to the simple model presented here, it may be necessary to extend the formalism to include a model for catalogue selection effects, or a reparametrisation of the association fraction (see later).
+
+\subsection{Neutrino production}
+
+The physics of neutrino production is tied to particle acceleration in astrophysical sources and as such is complex and model dependent. Broadly speaking, we expect $\sim$~PeV neutrinos to be produced by the interaction of cosmic rays with energies of at least 20~PeV/nucleon. This energy lies between the ``knee'' and ``ankle'' of the cosmic ray spectrum, where it is still undecided as to whether the bulk of the cosmic rays are produced in Galactic or extra-Galactic sources \cite{Aloisio:2012ff}. These same neutrinos correspond to the production of $\sim$~PeV gamma-rays, for which we currently only have upper limits \cite{Ahlers:2014ks, Aartsen:2013dg}. Such gamma-rays lose energy through pair production interactions with the CMB over a loss length of 10~kpc, producing calorimetric electromagnetic cascades and a diffuse contribution to the gamma-ray background in the GeV-TeV range. The interplay of cosmic rays, gamma-rays and neutrinos in astrophysical sources is dependent on the source environment and whether $pp$ or $p\gamma$ processes are dominant (see \cite{Meszaros:2017hm} for a review).
+
+For now we consider only the production of neutrinos, independent from other messengers. However, the advantage of framing this problem as a hierarchical model is that we may add in a physical model for these processes at a later stage. Assuming a power law form for the neutrino spectrum at the source, $\mathrm{d}N/\mathrm{d}E \propto E^{-\alpha}$, we have
+
+\begin{equation}
+\frac{\mathrm{d}N}{\mathrm{d}E\mathrm{d}t} = Q \frac{(\alpha - 1)}{E_\mathrm{min}} \Bigg( \frac{E}{E_\mathrm{min}} \Bigg)^{-\alpha}.
+\end{equation}
+
+\subsection{Neutrino propagation}
+
+Due to the weakly interacting nature of neutrinos, the propagation of these particles throughout intergalactic space is (mercifully) simple. The neutrinos travel in straight trajectories and undergo flavour oscillations, which we do not consider here, other than to assume that these oscillations result in a neutrino flavour composition that is roughly 1:1:1 for $e$, $\mu$ and $\tau$
+ neutrinos, regardless of the source physics. Neutrinos also lose energy in accordance with the adiabatic expansion of the universe, which is simply captured by the following
+ 
+\begin{equation}
+\tilde{E} = (1+z)E,
+\end{equation}
+where $E$ is the neutrino energy at Earth, and $\tilde{E}$ is the corresponding energy at a source at redshift $z$.  
+
+\subsection{Neutrino detection}
+
+Once the neutrinos arrive at Earth, things start to get pretty complicated. For the purpose of our model, we consider the detection physics to be summarised by an effective area which is a function of both the arrival energy of the neutrino and its direction on the sky. The effective area is also very much dependent on the neutrino flavour and the type of interaction that is observed in the IceCube detector. In order to keep things (relatively) simple for now, we consider a single flavour of neutrinos and only cascade events in the detector, which can be from either charged-current (CC) or neutral current (IC) interaction channels. We will develop an expression for $A_\mathrm{eff}(E, \omega)$ based on publicly available information from the IceCube collaboration which we evaluate numerically in the model. 
+
+Another important part of the detector physics is connecting the arrival neutrino energy, $E$, to the measured energy deposited in the detector, $\hat{E}$, and indeed quantifying the uncertainty on this value. Whilst this information is not public, it is possible (at least for the cascade events) to build an approximation based on simulating the detection physics, allowing us to evaluate $P(\hat{E} | E)$ numerically in a model-independent way. The corresponding expression for the neutrino arrival directions, $P(\hat{\omega} | \omega, E)$ should be relatively straightforward to approximate using the publicly available data.
+
+\textbf{Feel free to elaborate here! I just covered the basic ideas to plug into the likelihood expressions.}
+ 
+\section{Derivation}
+
+The likelihood for the model described in Section~\ref{sec:model} has the form of an inhomogeneous poisson point process
+
+\begin{equation}
+P(\hat{E}, \hat{\omega} | Q, F_0, \alpha) \propto e^{-\bar{N}} \prod_{i=1}^{I} r(\omega_i, t_i),
+\end{equation}
+where $\bar{N} = \int \int \mathrm{d}\omega \ \mathrm{d}t \ r(\omega, t)$ is the expected number of detected neutrinos and $r(\omega_i, t_i)$ is the inhomogeneous poisson rate at the location and time of the $i$th observation. The effective area of the IceCube detector changes in time due to the number of active detectors deployed in the ice (and other considerations). In this way, the time dependence is absorbed into the expression for the effective area, which changes slowly in time and thus can be taken into account by labelling the detected neutrinos as belonging to a certain observation period. The likelihood derived herein has the same structure but a slightly more complex form as we consider the neutrinos to be produced with certain properties or ``marks''. This results in a marked poisson point process whereby the neutrinos have associated labels $\lambda_i$ which designate their sources and are produced with energies $\tilde{E}_i$. In this way, when considering an expression for the inhomogeneous poisson rate, we must also incorporate the corresponding mark distributions. This gives us
+
+\begin{equation}
+P(\hat{\omega}, \hat{E} | Q, F_0, \alpha) = e^{-\bar{N}}\prod_{i=1}^I \sum_{k=1}^K F_k P(\hat{\omega_i} | \varpi_k, E_i) P(\hat{E}_i | \tilde{E}_i, z_k) P(\tilde{E}_i | \alpha),
+\end{equation}
+where we have performed a trivial marginalisation over the latent arrival directions $\omega_i = \varpi_k$, and marginalised over the $\lambda_i$ by considering the sum of all possible source-neutrino associations. The result is effectively a mixture model over $k$ sources with weights $F_k$.
+
+To calculate the expected number of events, $\bar{N}$, we must integrate over the contribution of all sources in our population. For each source, we have 
+
+\begin{equation}
+\begin{split}
+\bar{N}_k & = \int \mathrm{d}t \ \int \mathrm{d}E \int \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega)\frac{\mathrm{d}N}{\mathrm{d}E\mathrm{d}t} \\
+& = TQ \frac{(\alpha -1)}{E_\mathrm{min}} \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \ A_\mathrm{eff}(E, \varpi_k) \Bigg( \frac{E}{E_\mathrm{min}} \Bigg)^{-\alpha}.
+\end{split}
+\end{equation}
+This will be evaluated numerically as we are unable to express $A_\mathrm{eff}(E, \omega)$ analytically, except for in simple test cases. A complete description would also integrate over the energy reconstruction uncertainties, $P(\hat{E} | E)$, in order to account for the fact that we expect some $E$ below $E_\mathrm{min}$ in the final detected sample as a consequence of this. However, we expect the approximate formulation to be sufficient in our case and we can quantify the effect of this on our inferences through simulations. The total $\bar{N}$ is simply the sum over all sources: $\bar{N} = \sum_{k=1}^K \bar{N}_k$.
+
+\bibliography{likelihood_derivation}
+\bibliographystyle{ieeetr}
+
+
+\end{document}
