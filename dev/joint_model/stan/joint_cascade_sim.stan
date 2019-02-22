@@ -100,7 +100,7 @@ data {
   /* energies */
   real<lower=1> alpha;
   real Emin;
-  real sigmaE;
+  real f_E;
 
   /* deflection */
   real<lower=0> kappa;
@@ -213,9 +213,9 @@ generated quantities {
 
     /* Simple normal for now  */
     /* To be replaced with something more realistic... */
-    Edet[i] = normal_rng(E[i], sigmaE);
+    Edet[i] = normal_rng(E[i], f_E * E[i]);
     while (Edet[i] < Emin) {
-      Edet[i] = normal_rng(E[i], sigmaE);
+      Edet[i] = normal_rng(E[i], f_E * E[i]);
     }
     
     event[i] = vMF_rng(omega, kappa);  	  

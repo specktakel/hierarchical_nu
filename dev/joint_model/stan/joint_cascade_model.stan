@@ -56,7 +56,7 @@ data {
   int N;
   unit_vector[3] omega_det[N]; 
   real Emin;
-  real sigmaE;
+  real f_E;
   vector<lower=Emin>[N] Edet;
   
   /* Sources */
@@ -161,12 +161,12 @@ model {
 
 
       /* Truncated gaussian */
-      lps[k] += normal_lpdf(Edet[i] | E[i], sigmaE);
+      lps[k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
       if (Edet[i] < Emin) {
       	lps[k] += negative_infinity();
       }
       else {
-	lps[k] += -normal_lccdf(Emin | E[i], sigmaE);
+	lps[k] += -normal_lccdf(Emin | E[i], f_E * E[i]);
       }
 
       /* Exposure factor */
