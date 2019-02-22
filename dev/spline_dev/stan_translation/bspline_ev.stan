@@ -237,6 +237,7 @@ real bspline_func_2d(vector tx_orig, vector ty_orig, int p, matrix c, real x, re
   vector[Ny] bspline_along_y;
 
   vector[Nx] tmp;
+  real return_val;
   
   /* initialisation */   
   tx = bspline_basis_init(tx_orig, p, Qx);
@@ -248,15 +249,27 @@ real bspline_func_2d(vector tx_orig, vector ty_orig, int p, matrix c, real x, re
   }
   
   for (idx_spline in 1:Ny) {
-    bspline_along_y[idx_spline] = eval_element(idx_spline, y, k, tx);
+    bspline_along_y[idx_spline] = eval_element(idx_spline, y, k, ty);
   }
 
+  /* debug  */
+  //print("c: ", c);
+  //print("bspline_along_x: ", bspline_along_x);
+  print("bspline_along_y: ", bspline_along_y);
+  
+    
   /* sum product over c and bspline_along_y' */
   for (idx_spline in 1:Nx) {
     tmp[idx_spline] = dot_product(c[idx_spline], bspline_along_y');
   }
+
+  return_val = dot_product(bspline_along_x, tmp);
+  if (return_val == 0) {
+    
+  }
+  print("returns: ", return_val);
   
-  return dot_product(bspline_along_x, tmp);
+  return return_val;
   
 }
 
