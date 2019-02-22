@@ -66,7 +66,7 @@ data {
   vector[Ns+1] z;
    
   /* Observatory */
-  vector[Ns + 1] eps;
+  vector[Ns+1] eps;
   real A_IC;
   real kappa;
   
@@ -76,7 +76,6 @@ transformed data {
 
   vector[N] zenith;
   real Mpc_to_m = 3.086e22;
-  //real alpha = 2;
   
   for (i in 1:N) {
 

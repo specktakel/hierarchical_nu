@@ -178,12 +178,12 @@ generated quantities {
     
     lambda[i] = categorical_rng(w_exposure);
 
+    Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
+    E[i] = Esrc[i] / (1 + z[lambda[i]]);
+      
     /* Source */
     if (lambda[i] < Ns+1) {
 
-      Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
-      E[i] = Esrc[i] / (1 + z[lambda[i]]);
-      
       accept = 0;
       while (accept != 1) {
 	omega = varpi[lambda[i]];
@@ -197,11 +197,6 @@ generated quantities {
 
     /* Background */
     else if (lambda[i] == Ns+1) {
-
-      /* Background case simply fits the neutirno spectrum at Earth */
-      /* Room for improvement here... */
-      Esrc[i] = spectrum_rng(alpha, Emin);
-      E[i] = Esrc[i];
       
       accept = 0;
       while (accept != 1) {
