@@ -39,5 +39,5 @@ generated quantities {
     yvals[idx_spline] = bspline_basis_eval_vec(knots, p, idx_spline, xvals);
     
   } 
-  //
+  
 }

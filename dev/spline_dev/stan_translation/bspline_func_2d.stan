@@ -32,15 +32,13 @@ data {
 generated quantities {
 
   matrix[Nevals, Nevals] zvals;
-  ///
-  //
-  //
+
   for (idx_x in 1:Nevals) {
     for (idx_y in 1:Nevals) {
 
       zvals[idx_x, idx_y] = bspline_func_2d(xknots, yknots, p, c, xvals[idx_x], yvals[idx_y]);
       
     } 
-  } ///
+  } 
   
 }

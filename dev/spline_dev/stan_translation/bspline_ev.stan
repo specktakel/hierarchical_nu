@@ -1,6 +1,9 @@
 /**
  * Stan translation of bspline_ev.py.
- * 1D and 2D spline evaluation using the Cos-de-Boor algorithm.
+ * 1D and 2D spline evaluation using the Cox-de-Boor algorithm. 
+ *
+ * notation follows
+ *       "A Practical Guide to Splines" by C. De Boor
  *
  * @author Francesca Capel
  * @date February 2019
@@ -25,10 +28,11 @@ real bspline(int i, int k, real x, vector t);
 
 /**
  * B_{i, k} (x) on extended knot sequence t (t1, ..., tq)
- * where k is the order of the spline
- * i is the index of the basis (1...q + p - 1)
- * where q is the length of the original knot sequence
- * p = k-1 (degree of spline)
+ * 
+ * @param i index of the spline basis (1...q + p - 1)
+ * @param k the order of the spline
+ * @param x point to be evauated
+ * @param t extended knot sequence
  */
 real bspline(int i, int k, real x, vector t) {
 
@@ -101,6 +105,11 @@ real eval_element(int i, real x, int k, vector t) {
 
 /**
  * Initialise the B-spline basis.
+ * 
+ * @param t_orig the original knot sequence
+ * @param p degree of spline
+ * @param Q length of the original knot sequence
+ * @return t extended knot sequence
  */
 vector bspline_basis_init(vector t_orig, int p, int Q) {
 
@@ -157,12 +166,12 @@ vector bspline_basis_eval_vec(vector t_orig, int p, int idx_spline, vector xvals
 
 /**
  * Explicit evaluation of spline basis functions.
- * Evaluates a vector of xvals for each basis.
+ * Evaluates a single value x for each basis.
  * 
  * @param t knot sequence without any padding (can be non-uniform)
  * @param p degree of B-spline (not order!)
  * @param idx_spline index of spline to be evaluated
- * @param xvals values to be evaluated
+ * @param x value to be evaluated
  */
 real bspline_basis_eval(vector t_orig, int p, int idx_spline, real x) {
 
@@ -182,13 +191,12 @@ real bspline_basis_eval(vector t_orig, int p, int idx_spline, real x) {
 }
 
 /**
- * Constructs a 1D B-spline function from knots and coefficients
+ * Constructs a 1D B-spline function from knots and coefficients.
  * 
- * @param t knot sequence without any padding (can be non-uniform)
+ * @param t_orig knot sequence without any padding (can be non-uniform)
  * @param p degree of B-spline (not order!)
  * @param c spline coefficients
  * @param x point to evaluate
- * @param N total number of basis elements
  */
 real bspline_func_1d(vector t_orig, int p, vector c, real x) {
 
@@ -214,8 +222,8 @@ real bspline_func_1d(vector t_orig, int p, vector c, real x) {
 /**
  * Constructs a 2D Tensor-Product B-spline function from knots and coefficients.
  *
- * @param tx knot sequence without any padding (can be non-uniform)
- * @param ty knot sequence without any padding (can be non-uniform)
+ * @param tx_orig knot sequence without any padding (can be non-uniform)
+ * @param ty_orig knot sequence without any padding (can be non-uniform)
  * @param p degree of B-spline (not order!)
  * @param c matrix of spline coefficients of shape((Nx, Ny))
  * @param x point to evaluate
@@ -237,7 +245,6 @@ real bspline_func_2d(vector tx_orig, vector ty_orig, int p, matrix c, real x, re
   vector[Ny] bspline_along_y;
 
   vector[Nx] tmp;
-  real return_val;
   
   /* initialisation */   
   tx = bspline_basis_init(tx_orig, p, Qx);
@@ -251,25 +258,13 @@ real bspline_func_2d(vector tx_orig, vector ty_orig, int p, matrix c, real x, re
   for (idx_spline in 1:Ny) {
     bspline_along_y[idx_spline] = eval_element(idx_spline, y, k, ty);
   }
-
-  /* debug  */
-  //print("c: ", c);
-  //print("bspline_along_x: ", bspline_along_x);
-  print("bspline_along_y: ", bspline_along_y);
   
-    
   /* sum product over c and bspline_along_y' */
   for (idx_spline in 1:Nx) {
     tmp[idx_spline] = dot_product(c[idx_spline], bspline_along_y');
   }
 
-  return_val = dot_product(bspline_along_x, tmp);
-  if (return_val == 0) {
-    
-  }
-  print("returns: ", return_val);
-  
-  return return_val;
+  return dot_product(bspline_along_x, tmp);
   
 }
 
