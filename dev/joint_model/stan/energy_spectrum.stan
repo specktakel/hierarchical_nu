@@ -32,7 +32,7 @@ real spectrum_rng(real alpha, real Emin) {
   
   while(accept != 1) {
     
-    E = uniform_rng(Emin, 1e4);
+    E = uniform_rng(Emin, Emin*1e4);
     d = uniform_rng(0, d_upp_lim);
     
     if (d < dNdE_pl(E, alpha)) {

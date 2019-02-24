@@ -21,8 +21,10 @@ functions {
     int K = num_elements(F);
     real Nex = 0;
 
-    for (k in 1:K) {
-      Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
+    for (k in 1:K) {  
+      //Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
+      /* debug */
+      Nex += F[k] * eps[k];
     }
 
     return Nex;
@@ -92,7 +94,7 @@ parameters {
 
   real<lower=1, upper=10> alpha;
 
-  vector<lower=Emin, upper=1e2*Emin>[N] Esrc;
+  vector<lower=Emin, upper=1e5*Emin>[N] Esrc;
 
 }
 
@@ -143,7 +145,9 @@ model {
     for (k in 1:Ns+1) {
       
       lps[k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
-      E[i] = Esrc[i] / (1 + z[k]);
+      //E[i] = Esrc[i] / (1 + z[k]);
+      /* debug */
+      E[i] = Esrc[i];
 	
       /* Sources */
       if (k < Ns+1) {
@@ -183,7 +187,7 @@ model {
   
   /* Priors */
   Q ~ normal(0, 1e55);
-  F0 ~ normal(0, 1);
+  F0 ~ normal(0, 10);
   alpha ~ normal(2, 2);
 
 }

@@ -42,11 +42,15 @@ functions {
     real normalisation = 0;
     
     for (k in 1:K) {
-      normalisation += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
+      //normalisation += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
+      /* debug */
+      normalisation += F[k] * eps[k];
     }
 
     for (k in 1:K) {
-      weights[k] = (F[k] * eps[k] * pow(1 + z[k], 1 - alpha)) / normalisation;
+      //weights[k] = (F[k] * eps[k] * pow(1 + z[k], 1 - alpha)) / normalisation;
+      /* debug */
+      weights[k] = F[k] * eps[k] / normalisation;
     }
 
     return weights;
@@ -81,7 +85,10 @@ functions {
     real Nex = 0;
 
     for (k in 1:K) {
-      Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
+      //Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
+
+      /* debug */
+      Nex += F[k] * eps[k];
     }
 
     return Nex;
@@ -142,10 +149,9 @@ transformed data {
     F[k] = w[k] * Fs;
   }
   F[Ns+1] = F0;
-  
+
   /* N */
   w_exposure = get_exposure_weights(F, eps, z, alpha);
-
   Nex = get_Nex_sim(F, eps, z, alpha);
   
   N = poisson_rng(Nex);
@@ -178,9 +184,13 @@ generated quantities {
     
     lambda[i] = categorical_rng(w_exposure);
 
-    Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
-    E[i] = Esrc[i] / (1 + z[lambda[i]]);
-      
+    //Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
+    //E[i] = Esrc[i] / (1 + z[lambda[i]]);
+
+    /* debug */
+    Esrc[i] = spectrum_rng(alpha, Emin);
+    E[i] = Esrc[i];
+    
     /* Source */
     if (lambda[i] < Ns+1) {
 
@@ -223,3 +233,5 @@ generated quantities {
   }  
 
 }
+
+
