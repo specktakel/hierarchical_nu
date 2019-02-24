@@ -22,9 +22,9 @@ functions {
     real Nex = 0;
 
     for (k in 1:K) {  
-      //Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
+      Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
       /* debug */
-      Nex += F[k] * eps[k];
+      //Nex += F[k] * eps[k];
     }
 
     return Nex;
@@ -109,11 +109,16 @@ transformed parameters {
   
   /* Associated fraction */
   real<lower=0, upper=1> f; 
-
   real<lower=0> FT;
-  
-  Fs = 0;
 
+  /* Association probability */
+  vector[Ns+1] lp[N];
+  vector[Ns+1] log_F;
+  real Nex;  
+  vector[N] E;
+
+  /* Define transformed parameters */
+  Fs = 0;
   for (k in 1:Ns) {
     F[k] = Q / (4 * pi() * pow(D[k] * Mpc_to_m, 2));
     allF[k] = F[k];
@@ -124,62 +129,60 @@ transformed parameters {
   FT = F0 + Fs;
   f = Fs / FT;
 
-}
-
-model {
-
-  vector[Ns + 1] log_F;
-  real Nex;  
-  vector[N] E;
-
+  /* Likelihood calculation  */
   log_F = log(allF);
-
-  /* Nex */
-  Nex = get_Nex(allF, eps, z, alpha);
-  
   /* Rate factor */
   for (i in 1:N) {
 
-    vector[Ns + 1] lps = log_F;
+    lp[i] = log_F;
 
     for (k in 1:Ns+1) {
       
-      lps[k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
-      //E[i] = Esrc[i] / (1 + z[k]);
+      lp[i, k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
+      E[i] = Esrc[i] / (1 + z[k]);
       /* debug */
-      E[i] = Esrc[i];
+      //E[i] = Esrc[i];
 	
       /* Sources */
       if (k < Ns+1) {
 
-	lps[k] += vMF_lpdf(omega_det[i] | varpi[k], kappa);
+	lp[i, k] += vMF_lpdf(omega_det[i] | varpi[k], kappa);
 	
       }
       
       /* Background */
       else if (k == Ns+1) {
 
-	lps[k] += log(1 / ( 4 * pi() ));
+	lp[i, k] += log(1 / ( 4 * pi() ));
 
       }
 
 
       /* Truncated gaussian */
-      lps[k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
+      lp[i, k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
       if (Edet[i] < Emin) {
-      	lps[k] += negative_infinity();
+      	lp[i, k] += negative_infinity();
       }
       else {
-	lps[k] += -normal_lccdf(Emin | E[i], f_E * E[i]);
+	lp[i, k] += -normal_lccdf(Emin | E[i], f_E * E[i]);
       }
 
       /* Exposure factor */
-      lps[k] += log(A_IC * zenith[i]);
+      lp[i, k] += log(A_IC * zenith[i]);
 
-    }
-    
-    target += log_sum_exp(lps);
+    } 
+  }
 
+  /* Nex */
+  Nex = get_Nex(allF, eps, z, alpha);
+  
+}
+
+model {
+
+  /* Rate factor */
+  for (i in 1:N) {
+    target += log_sum_exp(lp[i]);
   }
   
   /* Normalise */
