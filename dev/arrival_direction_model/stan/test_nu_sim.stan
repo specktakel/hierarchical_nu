@@ -116,14 +116,13 @@ functions {
 
     int N = num_elements(D);
     vector[N] weights;
-    real Mpc_to_km = 3.086e19;
     real normalisation = 0;
 
     for (k in 1:N) {
-      normalisation += (L / pow(D[k] * Mpc_to_km, 2));
+      normalisation += (L / pow(D[k], 2));
     }
     for (k in 1:N) {
-      weights[k] = (L / pow(D[k] * Mpc_to_km, 2)) / normalisation;
+      weights[k] = (L / pow(D[k], 2)) / normalisation;
     }
     
     return weights;
