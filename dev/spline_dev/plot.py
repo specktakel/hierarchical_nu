@@ -20,8 +20,8 @@ c = np.asarray([-3.58077707, -3.41361407, -3.67857551, -4.18870088, -4.33580191,
 c = c.reshape(Nx, Ny)
 func = bspline_func_2d(tx_orig, ty_orig, p, c)
 
-xaxis = np.linspace(tx_orig[0], tx_orig[-1], 100)
-yaxis = np.linspace(ty_orig[0], ty_orig[-1], 100)
+xaxis = np.linspace(tx_orig[0], tx_orig[-1], 500)
+yaxis = np.linspace(ty_orig[0], ty_orig[-1], 500)
 
 z = np.asarray([func.eval(tx, ty) for tx in xaxis for ty in yaxis])
 z = z.reshape(len(xaxis), len(yaxis))
