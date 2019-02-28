@@ -168,7 +168,7 @@ transformed parameters {
       }
 
       /* Exposure factor */
-      lp[i, k] += log(A_IC * zenith[i]);
+      //lp[i, k] += log(A_IC * zenith[i]);
 
     } 
   }
