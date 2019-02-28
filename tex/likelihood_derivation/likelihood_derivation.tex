@@ -89,8 +89,8 @@ To calculate the expected number of events, $\bar{N}$, we must integrate over th
 
 \begin{equation}
 \begin{split}
-\bar{N}_k & = \int \mathrm{d}t \ \int \mathrm{d}E \int \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega)\frac{\mathrm{d}N}{\mathrm{d}E\mathrm{d}t} \\
-& = TQ \frac{(\alpha -1)}{E_\mathrm{min}} \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \ A_\mathrm{eff}(E, \varpi_k) \Bigg( \frac{E}{E_\mathrm{min}} \Bigg)^{-\alpha}.
+\bar{N}_k & = \int \mathrm{d}t \ \int \mathrm{d}E \int \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega)\frac{\mathrm{d}N}{\mathrm{d}E\mathrm{d}A\mathrm{d}t} \\
+& = T\frac{Q}{4 \pi d_L(z_k)^2} \frac{(\alpha -1)}{E_\mathrm{min}} \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \ A_\mathrm{eff}(E, \varpi_k) \Bigg( \frac{E}{E_\mathrm{min}} \Bigg)^{-\alpha}.
 \end{split}
 \end{equation}
 This will be evaluated numerically as we are unable to express $A_\mathrm{eff}(E, \omega)$ analytically, except for in simple test cases. A complete description would also integrate over the energy reconstruction uncertainties, $P(\hat{E} | E)$, in order to account for the fact that we expect some $E$ below $E_\mathrm{min}$ in the final detected sample as a consequence of this. However, we expect the approximate formulation to be sufficient in our case and we can quantify the effect of this on our inferences through simulations. The total $\bar{N}$ is simply the sum over all sources: $\bar{N} = \sum_{k=1}^K \bar{N}_k$.
