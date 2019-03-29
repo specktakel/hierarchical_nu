@@ -35,24 +35,20 @@ functions {
 
   /**
    * Get exposure factor from spline information and source positions.
+   * Units of [m^2 yr]
    */
-  vector get_exposure_factor(vector[] varpi, int p, vector xknots, vector yknots, real T) {
+  vector get_exposure_factor(vector[] varpi, real T, real Emin, real alpha, vector alpha_grid, vector[] eps_grid) {
 
     int K = num_elements(varpi);
-    real zenith;
-    real cosz;
-    real Aeff;
+    vector[K] eps;
     
     for (k in 1:K) {
 
-      /* unit_vector -> cos(zenith angle) */
-      zenith = omega_to_zenith(varpi[k]);
-      cosz = cos(zenith);
-
+      eps[k] = interpolate(alpha_grid, eps_grid[k], alpha) * ((alpha-1) / Emin) * T;
       
-
     }
 
+    return eps
   }
   
   /**
@@ -109,7 +105,7 @@ functions {
     real Nex = 0;
 
     for (k in 1:K) {
-      Nex += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
+      Nex += F[k] * eps[k];
 
       /* debug */
       //Nex += F[k] * eps[k];
@@ -141,12 +137,18 @@ data {
   real<lower=0> F0;
 
   /* effective area */
-  int p;
-  int Lknots_x;
-  int Lknots_y;
-  vector xknots[Lknots_x];
-  vector yknots[Lknots_y];
-  matrix[Lknots_x+p-1, Lknots_y+p-1] c;
+  int Ngrid;
+  vector[Ngrid] alpha_grid;
+  vector[Ngrid] eps_grid[Ns];
+
+  int p; // spline degree
+  int Lknots_x; // length of knot vector
+  int Lknots_y; // length of knot vector
+
+  vector[Lknots_x] xknots; // knot sequence - needs to be a monotonic sequence
+  vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
+ 
+  matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
   
 }
 
@@ -177,7 +179,7 @@ transformed data {
   F[Ns+1] = F0;
 
   /* N */
-  eps = get_exposure_factor(varpi, p, xknots, yknots, c, T)
+  eps = get_exposure_factor(varpi, Emin, alpha, alpha_grid, eps_grid);
   w_exposure = get_exposure_weights(F, eps, z, alpha);
   Nex = get_Nex_sim(F, eps, z, alpha);
   
