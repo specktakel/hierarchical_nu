@@ -37,10 +37,11 @@ functions {
    * Get exposure factor from spline information and source positions.
    * Units of [m^2 yr]
    */
-  vector get_exposure_factor(vector[] varpi, real T, real Emin, real alpha, vector alpha_grid, vector[] eps_grid) {
+  vector get_exposure_factor(vector[] varpi, real T, real Emin, real alpha, vector alpha_grid, vector[] eps_grid, int Ns) {
 
-    int K = num_elements(varpi);
+    int K = Ns+1;
     vector[K] eps;
+    print("K: ", K);
     
     for (k in 1:K) {
 
@@ -48,7 +49,7 @@ functions {
       
     }
 
-    return eps
+    return eps;
   }
   
   /**
@@ -99,7 +100,7 @@ functions {
   /**
    * Calculate the expected number of detected events from each source.
    */
-  vector get_Nex_sim(vector F, vector eps, vector z, real alpha) {
+  real get_Nex_sim(vector F, vector eps, vector z, real alpha) {
 
     int K = num_elements(F);
     real Nex = 0;
@@ -126,7 +127,7 @@ data {
 
   /* energies */
   real<lower=1> alpha;
-  real Emin;
+  real Emin; // GeV
   real f_E;
 
   /* deflection */
@@ -139,8 +140,9 @@ data {
   /* effective area */
   int Ngrid;
   vector[Ngrid] alpha_grid;
-  vector[Ngrid] eps_grid[Ns];
-
+  vector[Ngrid] eps_grid[Ns+1];
+  real T;
+  
   int p; // spline degree
   int Lknots_x; // length of knot vector
   int Lknots_y; // length of knot vector
@@ -157,13 +159,14 @@ transformed data {
   real<lower=0> Fs = 0;
   real<lower=0> FT;
   real<lower=0, upper=1> f;
-  simplex[Ns] w;
+  simplex[Ns] w_source;
   vector[Ns+1] F;
   vector[Ns+1] w_exposure;
   real Nex;
   int N;
   real Mpc_to_m = 3.086e22;
-
+  vector[Ns+1] eps;
+  
   for (k in 1:Ns) {
     Fs += Q / (4 * pi() * pow(D[k] * Mpc_to_m, 2));
   }
@@ -171,15 +174,15 @@ transformed data {
   FT = F0 + Fs;
   f = Fs / FT;
 
-  w = get_source_weights(Q, D);
+  w_source = get_source_weights(Q, D);
 
   for (k in 1:Ns) {
-    F[k] = w[k] * Fs;
+    F[k] = w_source[k] * Fs;
   }
   F[Ns+1] = F0;
 
   /* N */
-  eps = get_exposure_factor(varpi, Emin, alpha, alpha_grid, eps_grid);
+  eps = get_exposure_factor(varpi, T, Emin, alpha, alpha_grid, eps_grid, Ns);
   w_exposure = get_exposure_weights(F, eps, z, alpha);
   Nex = get_Nex_sim(F, eps, z, alpha);
   
@@ -187,11 +190,11 @@ transformed data {
 
   /* Debug */
   print("F: ", F);
-  print("w: ", w);
+  print("w_source: ", w_source);
   print("Fs: ", Fs);
   print("f: ", f);
   print("w_exposure: ", w_exposure);
-  
+  print("N: ", N);
 }
 
 generated quantities {
@@ -205,7 +208,7 @@ generated quantities {
   real zenith[N];
   real pdet[N];
   real accept;
-  simplex[2] p;
+  simplex[2] prob;
   unit_vector[3] event[N];
   real Nex_sim = Nex;
   
@@ -227,10 +230,10 @@ generated quantities {
       while (accept != 1) {
 	omega = varpi[lambda[i]];
 	zenith[i] = omega_to_zenith(omega);
-	pdet[i] = interpolate(zenith_grid, m_grid, zenith[i]);
-	p[1] = pdet[i];
-	p[2] = 1 - pdet[i];
-	accept = categorical_rng(p);
+	pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / 31.0;
+	prob[1] = pdet[i];
+	prob[2] = 1 - pdet[i];
+	accept = categorical_rng(prob);
       }
     }
 
@@ -241,10 +244,10 @@ generated quantities {
       while (accept != 1) {
 	omega = sphere_rng(1);
 	zenith[i] = omega_to_zenith(omega);
-	pdet[i] = interpolate(zenith_grid, m_grid, zenith[i]);
-	p[1] = pdet[i];
-	p[2] = 1 - pdet[i];
-	accept = categorical_rng(p);
+	pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / 31.0;
+	prob[1] = pdet[i];
+	prob[2] = 1 - pdet[i];
+	accept = categorical_rng(prob);
       }
 
     }
