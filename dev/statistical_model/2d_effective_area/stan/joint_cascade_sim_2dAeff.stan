@@ -37,7 +37,7 @@ functions {
    * Get exposure factor from spline information and source positions.
    * Units of [m^2 yr]
    */
-  vector get_exposure_factor(vector[] varpi, real T, real Emin, real alpha, vector alpha_grid, vector[] eps_grid, int Ns) {
+  vector get_exposure_factor(real T, real Emin, real alpha, vector alpha_grid, vector[] eps_grid, int Ns) {
 
     int K = Ns+1;
     vector[K] eps;
@@ -55,7 +55,7 @@ functions {
   /**
    * Calculate weights from exposure integral.
    */
-  vector get_exposure_weights(vector F, vector eps, vector z, real alpha) {
+  vector get_exposure_weights(vector F, vector eps) {
 
     int K = num_elements(F);
     vector[K] weights;
@@ -63,15 +63,11 @@ functions {
     real normalisation = 0;
     
     for (k in 1:K) {
-      normalisation += F[k] * eps[k] * pow(1 + z[k], 1 - alpha);
-      /* debug */
-      //normalisation += F[k] * eps[k];
+      normalisation += F[k] * eps[k];
     }
 
     for (k in 1:K) {
-      weights[k] = (F[k] * eps[k] * pow(1 + z[k], 1 - alpha)) / normalisation;
-      /* debug */
-      //weights[k] = F[k] * eps[k] / normalisation;
+      weights[k] = F[k] * eps[k] / normalisation;
     }
 
     return weights;
@@ -100,16 +96,13 @@ functions {
   /**
    * Calculate the expected number of detected events from each source.
    */
-  real get_Nex_sim(vector F, vector eps, vector z, real alpha) {
+  real get_Nex_sim(vector F, vector eps) {
 
     int K = num_elements(F);
     real Nex = 0;
 
     for (k in 1:K) {
       Nex += F[k] * eps[k];
-
-      /* debug */
-      //Nex += F[k] * eps[k];
     }
 
     return Nex;
@@ -137,7 +130,7 @@ data {
   real<lower=0> Q;
   real<lower=0> F0;
 
-  /* effective area */
+  /* Effective area */
   int Ngrid;
   vector[Ngrid] alpha_grid;
   vector[Ngrid] eps_grid[Ns+1];
@@ -182,9 +175,9 @@ transformed data {
   F[Ns+1] = F0;
 
   /* N */
-  eps = get_exposure_factor(varpi, T, Emin, alpha, alpha_grid, eps_grid, Ns);
-  w_exposure = get_exposure_weights(F, eps, z, alpha);
-  Nex = get_Nex_sim(F, eps, z, alpha);
+  eps = get_exposure_factor(T, Emin, alpha, alpha_grid, eps_grid, Ns);
+  w_exposure = get_exposure_weights(F, eps);
+  Nex = get_Nex_sim(F, eps);
   
   N = poisson_rng(Nex);
 
