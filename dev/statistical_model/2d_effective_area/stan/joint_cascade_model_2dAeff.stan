@@ -12,7 +12,7 @@ functions {
 #include vMF.stan
 #include interpolation.stan
 #include energy_spectrum.stan
-
+#include bspline_ev.stan
 
   /**
    * Get exposure factor from spline information and source positions.
@@ -22,7 +22,6 @@ functions {
 
     int K = Ns+1;
     vector[K] eps;
-    print("K: ", K);
     
     for (k in 1:K) {
 
@@ -92,6 +91,16 @@ data {
   vector[Ngrid] eps_grid[Ns+1];
   real T;
 
+  int p; // spline degree
+  int Lknots_x; // length of knot vector
+  int Lknots_y; // length of knot vector
+
+  vector[Lknots_x] xknots; // knot sequence - needs to be a monotonic sequence
+  vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
+ 
+  matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
+
+
   /* Detection */
   real kappa;
   
@@ -101,6 +110,9 @@ transformed data {
 
   vector[N] zenith;
   real Mpc_to_m = 3.086e22;
+
+  /* debug */
+  //real alpha = 2;
   
   for (i in 1:N) {
 
@@ -114,11 +126,11 @@ transformed data {
 parameters {
 
   real<lower=0, upper=1e60> Q;
-  real<lower=0, upper=10> F0;
+  real<lower=0, upper=100> F0;
 
   real<lower=1.5, upper=4> alpha;
 
-  vector<lower=Emin, upper=1e5*Emin>[N] Esrc;
+  vector<lower=Emin, upper=1e2*Emin>[N] Esrc;
 
 }
 
@@ -141,7 +153,7 @@ transformed parameters {
   vector[Ns+1] log_F;
   real Nex;  
   vector[N] E;
-
+  
   /* Define transformed parameters */
   Fs = 0;
   for (k in 1:Ns) {
@@ -193,7 +205,8 @@ transformed parameters {
       }
 
       /* Exposure factor */
-      //lp[i, k] += log(A_IC * zenith[i]);
+      /* Did not make any difference, increases run time to ~35min for 1000 iterations on 4 chains */
+      //lp[i, k] += log(pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i])))/31.0);
 
     } 
   }
@@ -215,8 +228,8 @@ model {
   target += -Nex;
   
   /* Priors */
-  Q ~ normal(0, 1e55);
-  F0 ~ normal(0, 10);
-  alpha ~ normal(2, 2);
+  Q ~ normal(0, 1e53);
+  F0 ~ normal(0, 50);
+  //alpha ~ normal(2, 2);
 
 }
