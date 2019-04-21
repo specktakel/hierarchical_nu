@@ -103,6 +103,9 @@ data {
 
   /* Detection */
   real kappa;
+
+  /* Debugging */
+  real alpha_true;
   
 }
 
@@ -111,9 +114,6 @@ transformed data {
   vector[N] zenith;
   real Mpc_to_m = 3.086e22;
 
-  /* debug */
-  //real alpha = 2;
-  
   for (i in 1:N) {
 
     zenith[i] = omega_to_zenith(omega_det[i]);
@@ -230,6 +230,6 @@ model {
   /* Priors */
   Q ~ normal(0, 1e53);
   F0 ~ normal(0, 50);
-  //alpha ~ normal(2, 2);
+  alpha ~ normal(alpha_true, 1);
 
 }
