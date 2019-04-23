@@ -106,7 +106,8 @@ data {
 
   /* Debugging */
   real alpha_true;
-  
+  real Q_scale;
+  real F0_scale;
 }
 
 transformed data {
@@ -126,11 +127,11 @@ transformed data {
 parameters {
 
   real<lower=0, upper=1e60> Q;
-  real<lower=0, upper=100> F0;
+  real<lower=0, upper=500> F0;
 
   real<lower=1.5, upper=4> alpha;
 
-  vector<lower=Emin, upper=1e2*Emin>[N] Esrc;
+  vector<lower=Emin, upper=1e3*Emin>[N] Esrc;
 
 }
 
@@ -228,8 +229,8 @@ model {
   target += -Nex;
   
   /* Priors */
-  Q ~ normal(0, 1e53);
-  F0 ~ normal(0, 50);
-  alpha ~ normal(alpha_true, 1);
+  Q ~ normal(0, Q_scale);
+  F0 ~ normal(0, F0_scale);
+  alpha ~ normal(alpha_true, 0.5);
 
 }
