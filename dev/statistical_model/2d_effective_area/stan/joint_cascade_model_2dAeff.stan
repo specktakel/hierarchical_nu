@@ -131,7 +131,7 @@ parameters {
 
   real<lower=1.5, upper=4> alpha;
 
-  vector<lower=Emin, upper=1e3*Emin>[N] Esrc;
+  vector<lower=Emin, upper=1e4*Emin>[N] Esrc;
 
 }
 
@@ -178,8 +178,6 @@ transformed parameters {
       
       lp[i, k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
       E[i] = Esrc[i] / (1 + z[k]);
-      /* debug */
-      //E[i] = Esrc[i];
 	
       /* Sources */
       if (k < Ns+1) {
@@ -229,8 +227,10 @@ model {
   target += -Nex;
   
   /* Priors */
-  Q ~ lognormal(log(Q_scale), 1.0);
-  F0 ~ normal(log(F0_scale), 1.0);
-  alpha ~ normal(alpha_true, 2);
+  Q ~ normal(Q_scale, 0.1*Q_scale);
+  F0 ~ normal(F0_scale, 0.1*F0_scale);
+  alpha ~ normal(alpha_true, 1);
 
 }
+
+
