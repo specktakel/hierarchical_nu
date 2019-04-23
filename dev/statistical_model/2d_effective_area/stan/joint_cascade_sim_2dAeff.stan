@@ -206,46 +206,36 @@ generated quantities {
   real Nex_sim = Nex;
   
   for (i in 1:N) {
-    
-    lambda[i] = categorical_rng(w_exposure);
 
-    Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
-    E[i] = Esrc[i] / (1 + z[lambda[i]]);
+    accept = 0;
 
-    /* debug */
-    //Esrc[i] = spectrum_rng(alpha, Emin);
-    //E[i] = Esrc[i];
-    
-    /* Source */
-    if (lambda[i] < Ns+1) {
+    while (accept != 1) {
 
-      accept = 0;
-      while (accept != 1) {
+      /* Sample position */
+      lambda[i] = categorical_rng(w_exposure);
+      if (lambda[i] < Ns+1) {
 	omega = varpi[lambda[i]];
-	zenith[i] = omega_to_zenith(omega);
-	pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / 31.0;
-	prob[1] = pdet[i];
-	prob[2] = 1 - pdet[i];
-	accept = categorical_rng(prob);
       }
-    }
-
-    /* Background */
-    else if (lambda[i] == Ns+1) {
-      
-      accept = 0;
-      while (accept != 1) {
+      else if (lambda[i] == Ns+1) {
 	omega = sphere_rng(1);
-	zenith[i] = omega_to_zenith(omega);
-	pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / 31.0;
-	prob[1] = pdet[i];
-	prob[2] = 1 - pdet[i];
-	accept = categorical_rng(prob);
       }
+      zenith[i] = omega_to_zenith(omega);
+      
+      /* Sample energy */
+      Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
+      E[i] = Esrc[i] / (1 + z[lambda[i]]);
 
+      /* Test against Aeff */
+      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / 31.0;
+      prob[1] = pdet[i];
+      prob[2] = 1 - pdet[i];
+      accept = categorical_rng(prob);
+      
     }
-    
 
+    /* Detection effects */
+    event[i] = vMF_rng(omega, kappa);  	  
+ 
     /* Simple normal for now  */
     /* To be replaced with something more realistic... */
     Edet[i] = normal_rng(E[i], f_E * E[i]);
@@ -253,7 +243,6 @@ generated quantities {
       Edet[i] = normal_rng(E[i], f_E * E[i]);
     }
     
-    event[i] = vMF_rng(omega, kappa);  	  
  
   }  
 
