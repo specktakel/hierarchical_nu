@@ -227,9 +227,13 @@ model {
   target += -Nex;
   
   /* Priors */
-  Q ~ normal(Q_scale, 0.1*Q_scale);
-  F0 ~ normal(F0_scale, 0.1*F0_scale);
-  alpha ~ normal(alpha_true, 1);
+  //Q ~ normal(Q_scale, 0.1*Q_scale);
+  //F0 ~ normal(F0_scale, 0.1*F0_scale);
+
+  Q ~ normal(0, Q_scale);
+  F0 ~ normal(0, F0_scale);
+  
+  alpha ~ normal(alpha_true, 2);
 
 }
 
