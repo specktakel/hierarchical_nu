@@ -114,7 +114,7 @@ transformed data {
 
   vector[N] zenith;
   real Mpc_to_m = 3.086e22;
-
+  
   for (i in 1:N) {
 
     zenith[i] = omega_to_zenith(omega_det[i]);
@@ -131,7 +131,7 @@ parameters {
 
   real<lower=1.5, upper=4> alpha;
 
-  vector<lower=Emin, upper=1e4*Emin>[N] Esrc;
+  vector<lower=Emin, upper=1e3*Emin>[N] Esrc;
 
 }
 

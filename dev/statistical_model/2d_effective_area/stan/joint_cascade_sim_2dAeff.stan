@@ -152,7 +152,6 @@ transformed data {
   real<lower=0> Fs = 0;
   real<lower=0> FT;
   real<lower=0, upper=1> f;
-  simplex[Ns] w_source;
   vector[Ns+1] F;
   vector[Ns+1] w_exposure;
   real Nex;
@@ -161,18 +160,13 @@ transformed data {
   vector[Ns+1] eps;
   
   for (k in 1:Ns) {
-    Fs += Q / (4 * pi() * pow(D[k] * Mpc_to_m, 2));
+    F[k] = Q / (4 * pi() * pow(D[k] * Mpc_to_m, 2));
+    Fs += F[k];
   }
+  F[Ns+1] = F0;
 
   FT = F0 + Fs;
   f = Fs / FT;
-
-  w_source = get_source_weights(Q, D);
-
-  for (k in 1:Ns) {
-    F[k] = w_source[k] * Fs;
-  }
-  F[Ns+1] = F0;
 
   /* N */
   eps = get_exposure_factor(T, Emin, alpha, alpha_grid, eps_grid, Ns);
@@ -183,7 +177,6 @@ transformed data {
 
   /* Debug */
   print("F: ", F);
-  print("w_source: ", w_source);
   print("Fs: ", Fs);
   print("f: ", f);
   print("w_exposure: ", w_exposure);
@@ -226,7 +219,7 @@ generated quantities {
       E[i] = Esrc[i] / (1 + z[lambda[i]]);
 
       /* Test against Aeff */
-      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / 31.0;
+      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / 30.31;
       prob[1] = pdet[i];
       prob[2] = 1 - pdet[i];
       accept = categorical_rng(prob);
