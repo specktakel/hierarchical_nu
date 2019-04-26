@@ -141,7 +141,7 @@ transformed parameters {
   real<lower=0> Fs;   
   
   /* Source flux */
-  ordered[Ns] F;
+  vector[Ns] F;
   vector[Ns+1] allF;
   vector[Ns+1] eps;
 
