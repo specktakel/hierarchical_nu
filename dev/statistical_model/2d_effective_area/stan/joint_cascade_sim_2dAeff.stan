@@ -37,7 +37,7 @@ functions {
    * Get exposure factor from spline information and source positions.
    * Units of [m^2 yr]
    */
-  vector get_exposure_factor(real T, real Emin, real alpha, vector alpha_grid, vector[] eps_grid, int Ns) {
+  vector get_exposure_factor(real T, real Emin, real alpha, vector alpha_grid, vector[] integral_grid, int Ns) {
 
     int K = Ns+1;
     vector[K] eps;
@@ -45,7 +45,7 @@ functions {
     
     for (k in 1:K) {
 
-      eps[k] = interpolate(alpha_grid, eps_grid[k], alpha) * ((alpha-1) / Emin) * T;
+      eps[k] = interpolate(alpha_grid, integral_grid[k], alpha) * ((alpha-1) / Emin) * T;
       
     }
 
@@ -133,7 +133,7 @@ data {
   /* Effective area */
   int Ngrid;
   vector[Ngrid] alpha_grid;
-  vector[Ngrid] eps_grid[Ns+1];
+  vector[Ngrid] integral_grid[Ns+1];
   real T;
   
   int p; // spline degree
@@ -169,7 +169,7 @@ transformed data {
   f = Fs / FT;
 
   /* N */
-  eps = get_exposure_factor(T, Emin, alpha, alpha_grid, eps_grid, Ns);
+  eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
   w_exposure = get_exposure_weights(F, eps);
   Nex = get_Nex_sim(F, eps);
   
