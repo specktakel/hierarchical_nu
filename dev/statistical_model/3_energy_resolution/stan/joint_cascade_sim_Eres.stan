@@ -2,6 +2,7 @@
  * Forward model for neutrino energies and arrival directions.
  * Focusing on cascade events for now, and ignoring different flavours and interaction types.
  * Adding in the 2D Aeff and spline implementation. 
+ * Adding in energy resolution.
  *
  * @author Francesca Capel
  * @date April 2019
@@ -13,7 +14,7 @@ functions {
 #include interpolation.stan
 #include energy_spectrum.stan
 #include bspline_ev.stan
-
+  
   /**
    * Calculate weights from source distances.
    */
@@ -108,6 +109,14 @@ functions {
     return Nex;
   }
 
+  real Edet_rng(real E, vector xknots, vector yknots, int p, matrix c) {
+
+    vector[50] log10_Edet_grid = linspace(1.0, 7.0, 50);
+
+    /* Find normalisation and maximum */
+
+  }
+  
 }
 
 data {
