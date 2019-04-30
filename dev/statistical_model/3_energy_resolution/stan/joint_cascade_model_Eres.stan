@@ -196,16 +196,9 @@ transformed parameters {
 
       /* Truncated gaussian */
       lp[i, k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
-      if (Edet[i] < Emin) {
-      	lp[i, k] += negative_infinity();
-      }
-      else {
-	lp[i, k] += -normal_lccdf(Emin | E[i], f_E * E[i]);
-      }
 
-      /* Exposure factor */
-      /* Did not make any difference, increases run time to ~35min for 1000 iterations on 4 chains */
-      //lp[i, k] += log(pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i])))/31.0);
+      /* Actual P(Edet|E) */
+      //lp[i, k] += Edet_pdf(Edet[i] | E[i], ...)
 
     } 
   }

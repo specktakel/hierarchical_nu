@@ -27,7 +27,6 @@ functions {
     }
     norm = trapz(log10_Edet_grid, prob_grid);
     prob_max = max(prob_grid) / norm;
-    print(prob_max);
     
     /* Sampling */
     accept = 0;
@@ -42,6 +41,31 @@ functions {
 
     return pow(10, log10_Edet);
   }
+
+  real Edet_lpdf(real Edet, real E, vector xknots, vector yknots, int p, matrix c) {
+
+    real prob;
+
+    /* normalisation */
+    int N = 100;
+    vector[N] log10_E_grid = linspace(3.0, 7.0, N);
+    vector[N] prob_grid;
+
+    real norm;
+    
+    /* Find normalisation and maximum */
+    for (i in 1:N) {
+      prob_grid[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10_E_grid[i], log10(Edet)));
+    }
+    norm = trapz(log10_E_grid, prob_grid);
+
+    /* return normalised log probability */
+    prob = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E), log10(Edet)) / norm);
+
+    return log(prob);
+  }
+
+  
   
 }
 
@@ -62,12 +86,13 @@ data {
 generated quantities {
 
   vector[N] Edet;
-  
+  vector[N] lprob;
   
   for (i in 1:N) {
 
     Edet[i] = Edet_rng(E, E_xknots, E_yknots, E_p, E_c);
-
+    lprob[i] = Edet_lpdf(Edet[i] | E, E_xknots, E_yknots, E_p, E_c);
+    
   }
  
 
