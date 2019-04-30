@@ -43,7 +43,6 @@ functions {
 
     int K = Ns+1;
     vector[K] eps;
-    print("K: ", K);
     
     for (k in 1:K) {
 
@@ -110,9 +109,9 @@ functions {
     return Nex;
   }
 
-  real Edet_rng(real E, vector xknots, vector yknots, int p, matrix c) {
+real Edet_rng(real E, vector xknots, vector yknots, int p, matrix c) {
 
-    int N = 50;
+    int N = 100;
     vector[N] log10_Edet_grid = linspace(1.0, 7.0, N);
     vector[N] prob_grid;
 
@@ -129,21 +128,21 @@ functions {
     }
     norm = trapz(log10_Edet_grid, prob_grid);
     prob_max = max(prob_grid) / norm;
-
+    
     /* Sampling */
     accept = 0;
     while (accept != 1) {
       log10_Edet = uniform_rng(1.0, 7.0);
       prob = uniform_rng(0, prob_max);
 
-      if (prob <= pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E), log10_Edet))) {
+      if (prob <= pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E), log10_Edet)) / norm) {
 	accept = 1;
       }
     }
 
     return pow(10, log10_Edet);
   }
-  
+    
 }
 
 data {
@@ -270,13 +269,10 @@ generated quantities {
     /* Detection effects */
     event[i] = vMF_rng(omega, kappa);  	  
  
-    Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
-
-    /*
+    Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
     while (Edet[i] < Emin) {
-      Edet[i] = normal_rng(E[i], f_E * E[i]);
+      Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
     }
-    */
  
   }  
 

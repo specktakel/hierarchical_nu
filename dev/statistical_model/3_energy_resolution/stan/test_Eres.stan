@@ -10,7 +10,7 @@ functions {
   
   real Edet_rng(real E, vector xknots, vector yknots, int p, matrix c) {
 
-    int N = 50;
+    int N = 100;
     vector[N] log10_Edet_grid = linspace(1.0, 7.0, N);
     vector[N] prob_grid;
 
@@ -35,7 +35,7 @@ functions {
       log10_Edet = uniform_rng(1.0, 7.0);
       prob = uniform_rng(0, prob_max);
 
-      if (prob <= pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E), log10_Edet))) {
+      if (prob <= pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E), log10_Edet)) / norm) {
 	accept = 1;
       }
     }
