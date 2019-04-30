@@ -29,7 +29,7 @@ real trapz(vector x_values, vector y_values) {
 vector linspace(real A, real B, int N) {
 
   vector[N] output;
-  real dx = (A - B) / (N - 1);
+  real dx = (B - A) / (N - 1);
 
   for (i in 1:N) {
     output[i] = A + (i-1) * dx;
