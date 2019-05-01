@@ -36,3 +36,32 @@ class EnergyConditional(object):
         self.spline = RectBivariateSpline(self.log_enu_axis, self.log_edep_axis, self.cond_pdf, 
                                          s=0, kx=1, ky=1) # spline degree = 1!
     
+    def get_norm_spline_Edet(self):
+        """
+        Return a spline which is normalised along the Edet axis.
+        Also no longer logged.
+        """
+
+        self.log_enu_axis = np.linspace(3.0, 7.0, 500)
+        self.log_edep_axis = np.linspace(1.0, 7.0, 500)
+
+        # Calculated normalised distribution
+        self.dist_val = np.zeros((len(self.log_enu_axis), len(self.log_edep_axis)))
+        for j, edep in enumerate(self.log_edep_axis):
+
+            # Normalise for this Edep
+            prob = []
+            for _ in self.log_enu_axis:
+                prob.append(10**self.spline(_, edep)[0][0])
+            norm = np.trapz(prob, self.log_enu_axis)
+
+            # Get dist value
+            for i, enu in enumerate(self.log_enu_axis):
+                self.dist_val[i][j] = 10**self.spline(enu, edep)[0][0] / norm
+
+            # Fit a spline
+            self.norm_spline = RectBivariateSpline(self.log_enu_axis, self.log_edep_axis, self.dist_val,
+                                                   s=0, kx=1, ky=1) # spline degree = 1!
+            
+                
+            

@@ -215,12 +215,6 @@ transformed data {
   
   N = poisson_rng(Nex);
 
-  /* Debug */
-  print("F: ", F);
-  print("Fs: ", Fs);
-  print("f: ", f);
-  print("w_exposure: ", w_exposure);
-  print("N: ", N);
 }
 
 generated quantities {

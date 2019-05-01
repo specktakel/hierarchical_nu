@@ -13,7 +13,8 @@ functions {
 #include interpolation.stan
 #include energy_spectrum.stan
 #include bspline_ev.stan
-
+#include utils.stan
+  
   /**
    * Get exposure factor from spline information and source positions.
    * Units of [m^2 yr]
@@ -67,6 +68,14 @@ functions {
     
     return zenith;
   }
+
+  real Edet_lpdf(real Edet, real E, vector xknots, vector yknots, int p, matrix c) {
+
+    real prob = bspline_func_2d(xknots, yknots, p, c, log10(E), log10(Edet));
+
+    return log(prob);
+  }
+
   
 }
 
@@ -101,6 +110,15 @@ data {
   matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
 
 
+  /* Energy resolution */
+  int E_p; // spline degree
+  int E_Lknots_x; // length of knot vector
+  int E_Lknots_y; // length of knot vector
+  vector[E_Lknots_x] E_xknots; // knot sequence - needs to be a monotonic sequence
+  vector[E_Lknots_y] E_yknots; // knot sequence - needs to be a monotonic sequence
+  matrix[E_Lknots_x+E_p-1, E_Lknots_y+E_p-1] E_c; // spline coefficients 
+
+  
   /* Detection */
   real kappa;
 
@@ -195,10 +213,10 @@ transformed parameters {
 
 
       /* Truncated gaussian */
-      lp[i, k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
+      //lp[i, k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
 
       /* Actual P(Edet|E) */
-      //lp[i, k] += Edet_pdf(Edet[i] | E[i], ...)
+      lp[i, k] += log(bspline_func_2d(E_xknots, E_yknots, E_p, E_c, log10(E[i]), log10(Edet[i])));
 
     } 
   }
