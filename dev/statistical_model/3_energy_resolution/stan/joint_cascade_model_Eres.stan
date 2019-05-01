@@ -42,9 +42,15 @@ functions {
     int K = num_elements(F);
     real Nex = 0;
 
-    for (k in 1:K) {
+    /* debug */
+    for (k in 1:K-1) {
       Nex += F[k] * eps[k];
     }
+    Nex += F[K] * eps[K] * 0.8;
+    
+    //for (k in 1:K) {
+    //  Nex += F[k] * eps[k];
+    //}
 
     return Nex;
   }
@@ -111,9 +117,9 @@ data {
 
 
   /* Energy resolution */
-  //int E_Ngrid;
-  //vector[E_Ngrid] log10_E_grid[N];
-  //vector[E_Ngrid] prob_grid[N];
+  int E_Ngrid;
+  vector[E_Ngrid] log10_E_grid[N];
+  vector[E_Ngrid] prob_grid[N];
   
   /* Detection */
   real kappa;
@@ -143,7 +149,7 @@ parameters {
   real<lower=0, upper=1e60> Q;
   real<lower=0, upper=500> F0;
 
-  real<lower=1, upper=4> alpha;
+  real<lower=1.5, upper=3.0> alpha;
 
   vector<lower=Emin, upper=1e3*Emin>[N] Esrc;
 
@@ -202,7 +208,7 @@ transformed parameters {
       
       /* Background */
       else if (k == Ns+1) {
-
+ 
 	lp[i, k] += log(1 / ( 4 * pi() ));
 
       }
@@ -237,10 +243,10 @@ model {
   //Q ~ normal(Q_scale, 0.1*Q_scale);
   //F0 ~ normal(F0_scale, 0.1*F0_scale);
 
-  //Q ~ normal(0, Q_scale);
-  //F0 ~ normal(0, F0_scale);
+  Q ~ normal(0, Q_scale);
+  F0 ~ normal(0, F0_scale);
   
-  alpha ~ normal(alpha_true, 2);
+  alpha ~ normal(2.25, 2);
 
 }
 

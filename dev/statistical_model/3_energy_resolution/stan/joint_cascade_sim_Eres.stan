@@ -215,6 +215,9 @@ transformed data {
   
   N = poisson_rng(Nex);
 
+  /* Debug */
+  print("w_bg: ", w_exposure[Ns+1]);
+  
 }
 
 generated quantities {
@@ -233,13 +236,13 @@ generated quantities {
   real Nex_sim = Nex;
   
   for (i in 1:N) {
-
+    
+    /* Sample position */
+    lambda[i] = categorical_rng(w_exposure);
+    
     accept = 0;
-
     while (accept != 1) {
 
-      /* Sample position */
-      lambda[i] = categorical_rng(w_exposure);
       if (lambda[i] < Ns+1) {
 	omega = varpi[lambda[i]];
       }
