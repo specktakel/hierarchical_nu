@@ -24,11 +24,13 @@ real interpolate(vector x_values, vector y_values, real x) {
 
   if (x > xmax || x < xmin) {
 
+    /*
     print("Warning, x is outside of interpolation range!");
     print("Returning edge values.");
     print("x:", x);
     print("xmax", xmax);
-      
+    */
+    
     if(x > xmax) {
       return y_values[Nx];
     }

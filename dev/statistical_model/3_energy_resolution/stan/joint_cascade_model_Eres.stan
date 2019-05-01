@@ -111,13 +111,9 @@ data {
 
 
   /* Energy resolution */
-  int E_p; // spline degree
-  int E_Lknots_x; // length of knot vector
-  int E_Lknots_y; // length of knot vector
-  vector[E_Lknots_x] E_xknots; // knot sequence - needs to be a monotonic sequence
-  vector[E_Lknots_y] E_yknots; // knot sequence - needs to be a monotonic sequence
-  matrix[E_Lknots_x+E_p-1, E_Lknots_y+E_p-1] E_c; // spline coefficients 
-
+  //int E_Ngrid;
+  //vector[E_Ngrid] log10_E_grid[N];
+  //vector[E_Ngrid] prob_grid[N];
   
   /* Detection */
   real kappa;
@@ -213,11 +209,11 @@ transformed parameters {
 
 
       /* Truncated gaussian */
-      //lp[i, k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
+      lp[i, k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
 
-      /* Actual P(Edet|E) */
-      lp[i, k] += log(bspline_func_2d(E_xknots, E_yknots, E_p, E_c, log10(E[i]), log10(Edet[i])));
-
+      /* Actual P(Edet|E) from linear interpolation */
+      //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
+      
     } 
   }
 
@@ -241,8 +237,8 @@ model {
   //Q ~ normal(Q_scale, 0.1*Q_scale);
   //F0 ~ normal(F0_scale, 0.1*F0_scale);
 
-  Q ~ normal(0, Q_scale);
-  F0 ~ normal(0, F0_scale);
+  //Q ~ normal(0, Q_scale);
+  //F0 ~ normal(0, F0_scale);
   
   alpha ~ normal(alpha_true, 2);
 
