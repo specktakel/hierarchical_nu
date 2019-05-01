@@ -202,10 +202,11 @@ generated quantities {
 
     accept = 0;
 
+    /* Sample position */
+    lambda[i] = categorical_rng(w_exposure);
+
     while (accept != 1) {
 
-      /* Sample position */
-      lambda[i] = categorical_rng(w_exposure);
       if (lambda[i] < Ns+1) {
 	omega = varpi[lambda[i]];
       }
