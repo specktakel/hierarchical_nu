@@ -51,9 +51,6 @@ generated quantities {
       log10E[i] = uniform_rng(4.0, 7.0);
 
       l10E = log10E[i];
-      if (l10E > 6.95) {
-	l10E = 6.95;
-      }
       
       /* Test against Aeff */
       pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, l10E, cosz) ) / aeff_max;
