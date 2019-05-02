@@ -15,25 +15,6 @@ functions {
 #include bspline_ev.stan
 
   /**
-   * Calculate weights from source distances.
-   */
-  vector get_source_weights(real Q, vector D, real f) {
-
-    int K = num_elements(D);
-    vector[K] weights;
-    real normalisation = 0;
-
-    for (k in 1:K) {
-      normalisation += (Q / pow(D[k], 2));
-    }
-    for (k in 1:K) {
-      weights[k] = (Q / pow(D[k], 2)) / normalisation * f;
-    }
-    
-    return weights;
-  }
-
-  /**
    * Get exposure factor from spline information and source positions.
    * Units of [m^2 yr]
    */
@@ -155,8 +136,6 @@ transformed data {
   real<lower=0, upper=1> f;
   vector[Ns+1] F;
   simplex[Ns+1] w_exposure;
-  vector[Ns] w_src;
-  simplex[Ns+1] w_sample;
   real Nex;
   int N;
   real Mpc_to_m = 3.086e22;
@@ -174,14 +153,8 @@ transformed data {
   /* N */
   eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
   w_exposure = get_exposure_weights(F, eps);
-  w_src = get_source_weights(Q, D, f);
   Nex = get_Nex_sim(F, eps);
 
-  for (k in 1:Ns) {
-    w_sample[k] = w_src[k];
-  }
-  w_sample[Ns+1] = 1 - f;
-  
   N = poisson_rng(Nex);
 
   /* Debug */
@@ -211,22 +184,19 @@ generated quantities {
   
   for (i in 1:N) {
 
+    /* Sample position */
     lambda[i] = categorical_rng(w_exposure);
-    
-    
-    /* Rejection sample energy and position */
+    if (lambda[i] < Ns+1) {
+      omega = varpi[lambda[i]];
+    }
+    else if (lambda[i] == Ns+1) {
+      omega = sphere_rng(1);
+    }
+    zenith[i] = omega_to_zenith(omega);
+  
+    /* Rejection sample energy */
     accept = 0;
     while (accept != 1) {
-
-      /* Sample position */
-      //lambda[i] = categorical_rng(w_sample);
-      if (lambda[i] < Ns+1) {
-	omega = varpi[lambda[i]];
-      }
-      else if (lambda[i] == Ns+1) {
-	omega = sphere_rng(1);
-      }
-      zenith[i] = omega_to_zenith(omega);
       
       /* Sample energy */
       Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
