@@ -41,9 +41,17 @@ functions {
     int K = num_elements(F);
     real Nex = 0;
 
+    /*
     for (k in 1:K) {
       Nex += F[k] * eps[k];
     }
+    */
+
+    /* Debugging */
+    for (k in 1:K-1) {
+      Nex += F[k] * eps[k];
+    }
+    Nex += F[K] * eps[K] * 0.7;
 
     return Nex;
   }
