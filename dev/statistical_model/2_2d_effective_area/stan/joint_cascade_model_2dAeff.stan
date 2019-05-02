@@ -129,7 +129,7 @@ parameters {
   real<lower=0, upper=1e60> Q;
   real<lower=0, upper=500> F0;
 
-  real<lower=1.2, upper=4.0> alpha;
+  real<lower=1.5, upper=3.5> alpha;
 
   vector<lower=Emin, upper=1e7>[N] Esrc;
 
