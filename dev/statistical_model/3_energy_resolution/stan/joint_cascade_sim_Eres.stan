@@ -137,7 +137,6 @@ data {
   /* energies */
   real<lower=1> alpha;
   real Emin; // GeV
-  real f_E;
 
   /* deflection */
   real<lower=0> kappa;
@@ -199,6 +198,7 @@ transformed data {
 
   /* Debug */
   print("w_bg: ", w_exposure[Ns+1]);
+  print("N: ", N);
   
 }
 
@@ -247,17 +247,12 @@ generated quantities {
     /* Detection effects */
     event[i] = vMF_rng(omega, kappa);  	  
 
-    /* Old Gaussian approx. */
-    //Edet[i] = normal_rng(E[i], f_E * E[i]);
-    //while (Edet[i] < Emin) {
-    //  Edet[i] = normal_rng(E[i], f_E * E[i]);
-    //}
-    
     /* The real deal */
     Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
     while (Edet[i] < Emin) {
       Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
     }
+    
  
   }  
 

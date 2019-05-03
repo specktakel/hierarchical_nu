@@ -85,7 +85,6 @@ data {
   int N;
   unit_vector[3] omega_det[N]; 
   real Emin;
-  real f_E;
   vector<lower=Emin>[N] Edet;
   
   /* Sources */
@@ -208,8 +207,8 @@ transformed parameters {
       }
 
       /* Lognormal approx. */
-      lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13);
-
+      lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13); // Nue_CC
+	
       /* Actual P(Edet|E) from linear interpolation */
       //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
       
