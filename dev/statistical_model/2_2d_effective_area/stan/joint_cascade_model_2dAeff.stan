@@ -40,11 +40,11 @@ functions {
 
     int K = num_elements(F);
     real Nex = 0;
-
+    
     for (k in 1:K) {
       Nex += F[k] * eps[k];
     }
-
+    
     return Nex;
   }
 
@@ -129,9 +129,9 @@ parameters {
   real<lower=0, upper=1e60> Q;
   real<lower=0, upper=500> F0;
 
-  real<lower=1, upper=4> alpha;
+  real<lower=1.5, upper=3.5> alpha;
 
-  vector<lower=Emin, upper=1e3*Emin>[N] Esrc;
+  vector<lower=Emin, upper=1e7>[N] Esrc;
 
 }
 
@@ -196,13 +196,15 @@ transformed parameters {
 
       /* Truncated gaussian */
       lp[i, k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
+      /*
       if (Edet[i] < Emin) {
       	lp[i, k] += negative_infinity();
       }
       else {
 	lp[i, k] += -normal_lccdf(Emin | E[i], f_E * E[i]);
       }
-
+      */
+      
       /* Exposure factor */
       /* Did not make any difference, increases run time to ~35min for 1000 iterations on 4 chains */
       //lp[i, k] += log(pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i])))/31.0);
@@ -233,7 +235,7 @@ model {
   Q ~ normal(0, Q_scale);
   F0 ~ normal(0, F0_scale);
   
-  alpha ~ normal(alpha_true, 2);
+  alpha ~ normal(2, 2);
 
 }
 

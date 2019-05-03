@@ -15,25 +15,6 @@ functions {
 #include bspline_ev.stan
 
   /**
-   * Calculate weights from source distances.
-   */
-  vector get_source_weights(real Q, vector D) {
-
-    int K = num_elements(D);
-    vector[K] weights;
-    real normalisation = 0;
-
-    for (k in 1:K) {
-      normalisation += (Q / pow(D[k], 2));
-    }
-    for (k in 1:K) {
-      weights[k] = (Q / pow(D[k], 2)) / normalisation;
-    }
-    
-    return weights;
-  }
-
-  /**
    * Get exposure factor from spline information and source positions.
    * Units of [m^2 yr]
    */
@@ -144,6 +125,7 @@ data {
   vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
  
   matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
+  real aeff_max;
   
 }
 
@@ -153,7 +135,7 @@ transformed data {
   real<lower=0> FT;
   real<lower=0, upper=1> f;
   vector[Ns+1] F;
-  vector[Ns+1] w_exposure;
+  simplex[Ns+1] w_exposure;
   real Nex;
   int N;
   real Mpc_to_m = 3.086e22;
@@ -172,7 +154,7 @@ transformed data {
   eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
   w_exposure = get_exposure_weights(F, eps);
   Nex = get_Nex_sim(F, eps);
-  
+
   N = poisson_rng(Nex);
 
   /* Debug */
@@ -197,29 +179,34 @@ generated quantities {
   simplex[2] prob;
   unit_vector[3] event[N];
   real Nex_sim = Nex;
+
+  
   
   for (i in 1:N) {
 
+    /* Sample position */
+    lambda[i] = categorical_rng(w_exposure);
+    if (lambda[i] < Ns+1) {
+      omega = varpi[lambda[i]];
+    }
+    else if (lambda[i] == Ns+1) {
+      omega = sphere_rng(1);
+    }
+    zenith[i] = omega_to_zenith(omega);
+  
+    /* Rejection sample energy */
     accept = 0;
-
     while (accept != 1) {
-
-      /* Sample position */
-      lambda[i] = categorical_rng(w_exposure);
-      if (lambda[i] < Ns+1) {
-	omega = varpi[lambda[i]];
-      }
-      else if (lambda[i] == Ns+1) {
-	omega = sphere_rng(1);
-      }
-      zenith[i] = omega_to_zenith(omega);
       
       /* Sample energy */
       Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
       E[i] = Esrc[i] / (1 + z[lambda[i]]);
 
       /* Test against Aeff */
-      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / 30.31;
+      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / aeff_max;
+      if (log10(E[i]) > 7.0) {
+	pdet[i] = 0;
+      }
       prob[1] = pdet[i];
       prob[2] = 1 - pdet[i];
       accept = categorical_rng(prob);
@@ -235,7 +222,6 @@ generated quantities {
     while (Edet[i] < Emin) {
       Edet[i] = normal_rng(E[i], f_E * E[i]);
     }
-    
  
   }  
 

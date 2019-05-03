@@ -12,7 +12,7 @@ def unit_vector_to_cosz(unit_vector):
 
 class ExposureIntegral(object):
     """
-    Everything you need from precomputing expousre integrals.
+    Everything you need for precomputing exposure integrals.
     
     @author Francesca Capel
     @date April 2019
@@ -20,7 +20,7 @@ class ExposureIntegral(object):
 
     def __init__(self, source_redshift, source_position, bg_redshift, effective_area, Emin, filename=None, n_points=50):
         """
-        Everything you need from precomputing expousre integrals.
+        Everything you need for precomputing exposure integrals.
         
         :param source_redshift: list of source redshifts.
         :param source_position: list of unit vectors representing source positions.
@@ -79,7 +79,7 @@ class ExposureIntegral(object):
         integ, err = integrate.dblquad(self._bg_integrand, -1, 1,
                                        lambda E: self.Emin, lambda E: Emax,
                                        args=(z, alpha))
-        return integ
+        return integ * 0.5 # factor of 2pi/4pi
     
     
     def _calculate_exposure_integral(self):
