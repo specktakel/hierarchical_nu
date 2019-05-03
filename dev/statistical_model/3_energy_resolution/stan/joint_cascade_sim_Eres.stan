@@ -175,7 +175,7 @@ transformed data {
   real<lower=0> FT;
   real<lower=0, upper=1> f;
   vector[Ns+1] F;
-  vector[Ns+1] w_exposure;
+  simplex[Ns+1] w_exposure;
   real Nex;
   int N;
   real Mpc_to_m = 3.086e22;
