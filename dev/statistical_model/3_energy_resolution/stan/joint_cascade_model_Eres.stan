@@ -41,16 +41,10 @@ functions {
 
     int K = num_elements(F);
     real Nex = 0;
-
-    /* debug */
-    for (k in 1:K-1) {
+ 
+    for (k in 1:K) {
       Nex += F[k] * eps[k];
     }
-    Nex += F[K] * eps[K] * 0.8;
-    
-    //for (k in 1:K) {
-    //  Nex += F[k] * eps[k];
-    //}
 
     return Nex;
   }
@@ -125,9 +119,9 @@ data {
   real kappa;
 
   /* Debugging */
-  real alpha_true;
   real Q_scale;
   real F0_scale;
+
 }
 
 transformed data {
@@ -213,12 +207,11 @@ transformed parameters {
 
       }
 
-
       /* Truncated gaussian */
-      lp[i, k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
+      //lp[i, k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
 
       /* Actual P(Edet|E) from linear interpolation */
-      //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
+      lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
       
     } 
   }
@@ -239,14 +232,10 @@ model {
   /* Normalise */
   target += -Nex;
   
-  /* Priors */
-  //Q ~ normal(Q_scale, 0.1*Q_scale);
-  //F0 ~ normal(F0_scale, 0.1*F0_scale);
-
   Q ~ normal(0, Q_scale);
   F0 ~ normal(0, F0_scale);
   
-  alpha ~ normal(2.25, 2);
+  alpha ~ normal(2.0, 2);
 
 }
 

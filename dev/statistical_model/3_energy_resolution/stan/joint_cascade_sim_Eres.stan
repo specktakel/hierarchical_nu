@@ -17,25 +17,6 @@ functions {
 #include utils.stan
   
   /**
-   * Calculate weights from source distances.
-   */
-  vector get_source_weights(real Q, vector D) {
-
-    int K = num_elements(D);
-    vector[K] weights;
-    real normalisation = 0;
-
-    for (k in 1:K) {
-      normalisation += (Q / pow(D[k], 2));
-    }
-    for (k in 1:K) {
-      weights[k] = (Q / pow(D[k], 2)) / normalisation;
-    }
-    
-    return weights;
-  }
-
-  /**
    * Get exposure factor from spline information and source positions.
    * Units of [m^2 yr]
    */
@@ -175,7 +156,8 @@ data {
   int Lknots_y; // length of knot vector
   vector[Lknots_x] xknots; // knot sequence - needs to be a monotonic sequence
   vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
-  matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
+  matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients
+  real aeff_max;
 
   /* Energy resolution */
   int E_p; // spline degree
@@ -239,24 +221,23 @@ generated quantities {
     
     /* Sample position */
     lambda[i] = categorical_rng(w_exposure);
-    
+    if (lambda[i] < Ns+1) {
+      omega = varpi[lambda[i]];
+    }
+    else if (lambda[i] == Ns+1) {
+      omega = sphere_rng(1);
+    }
+    zenith[i] = omega_to_zenith(omega);
+       
     accept = 0;
     while (accept != 1) {
-
-      if (lambda[i] < Ns+1) {
-	omega = varpi[lambda[i]];
-      }
-      else if (lambda[i] == Ns+1) {
-	omega = sphere_rng(1);
-      }
-      zenith[i] = omega_to_zenith(omega);
-      
+    
       /* Sample energy */
       Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
       E[i] = Esrc[i] / (1 + z[lambda[i]]);
 
       /* Test against Aeff */
-      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / 30.31;
+      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / aeff_max;
       prob[1] = pdet[i];
       prob[2] = 1 - pdet[i];
       accept = categorical_rng(prob);
@@ -265,7 +246,7 @@ generated quantities {
 
     /* Detection effects */
     event[i] = vMF_rng(omega, kappa);  	  
- 
+
     Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
     while (Edet[i] < Emin) {
       Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
