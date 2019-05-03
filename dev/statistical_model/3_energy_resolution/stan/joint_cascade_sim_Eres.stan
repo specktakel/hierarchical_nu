@@ -247,6 +247,13 @@ generated quantities {
     /* Detection effects */
     event[i] = vMF_rng(omega, kappa);  	  
 
+    /* Old Gaussian approx. */
+    //Edet[i] = normal_rng(E[i], f_E * E[i]);
+    //while (Edet[i] < Emin) {
+    //  Edet[i] = normal_rng(E[i], f_E * E[i]);
+    //}
+    
+    /* The real deal */
     Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
     while (Edet[i] < Emin) {
       Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);

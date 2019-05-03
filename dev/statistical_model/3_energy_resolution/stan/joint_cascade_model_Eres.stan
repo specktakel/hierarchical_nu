@@ -143,9 +143,9 @@ parameters {
   real<lower=0, upper=1e60> Q;
   real<lower=0, upper=500> F0;
 
-  real<lower=1.5, upper=3.0> alpha;
+  real<lower=1.5, upper=3.5> alpha;
 
-  vector<lower=Emin, upper=1e3*Emin>[N] Esrc;
+  vector<lower=Emin, upper=1.0e7>[N] Esrc;
 
 }
 
@@ -207,11 +207,11 @@ transformed parameters {
 
       }
 
-      /* Truncated gaussian */
-      //lp[i, k] += normal_lpdf(Edet[i] | E[i], f_E * E[i]);
+      /* Lognormal approx. */
+      lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13);
 
       /* Actual P(Edet|E) from linear interpolation */
-      lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
+      //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
       
     } 
   }
