@@ -2,10 +2,10 @@
  * Forward model for neutrino energies and arrival directions.
  * Focusing on cascade events for now, and ignoring different flavours and interaction types.
  * Adding in the 2D Aeff and spline implementation. 
- * Adding in energy resolution.
+ * Adding in energy resolution and threshold.
  *
  * @author Francesca Capel
- * @date April 2019
+ * @date May 2019
  */
 
 functions {
@@ -248,11 +248,8 @@ generated quantities {
     /* Detection effects */
     event[i] = vMF_rng(omega, kappa);  	  
 
-    /* Trying out large uncertainties */
+    /* Trying out large uncertainties and proper threshold simulation */
     Edet[i] = lognormal_rng(log(E[i]), f_E);
-    while (Edet[i] < Emin) {
-      Edet[i] = lognormal_rng(log(E[i]), f_E);
-    }
     
     /* The real deal */
     /*
