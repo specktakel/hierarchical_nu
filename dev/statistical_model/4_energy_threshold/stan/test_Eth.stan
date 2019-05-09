@@ -31,9 +31,14 @@ functions {
    */
   real get_expected_Nevents(real alpha, real Emin, real F_N, real T) {
 
+    real Aeff_Emin = 2e3;
+    real Aeff_Emax = 1e5;
     real A = F_N * T * (alpha-1) / Emin;
-    real B = 10 * pow(1/1e3, 0.5) * pow(1e5, -alpha) / ((2*alpha) - 3);
-    real C = (pow(Emin, 1.5) * pow(1e5, alpha)) - (pow(1e5, 1.5) * pow(Emin, alpha));
+    real B = 5 * (  2 * Aeff_Emin * pow(Aeff_Emax, alpha) - 2*pow(Aeff_Emax, 1.5)*pow(Aeff_Emin, alpha-0.5)  );
+    real C = pow(Aeff_Emin * Aeff_Emax / Emin, -alpha) / ((2*alpha)-3);
+      
+    //real B = 10 * pow(1/1e3, 0.5) * pow(1e5, -alpha) / ((2*alpha) - 3);
+    //real C = (pow(Emin, 1.5) * pow(1e5, alpha)) - (pow(1e5, 1.5) * pow(Emin, alpha));
 
     return A * B * C;
     
@@ -61,7 +66,8 @@ data {
 
   real Emin;
   real T;
-
+  real f_E;
+  
   vector[Nevents] Edet;
 
 
@@ -87,7 +93,7 @@ model {
 
     lp[i] += power_law_lpdf(E[i] | alpha, Emin, F_N);
 
-    lp[i] += normal_lpdf(Edet[i] | E[i], 0.2*E[i]);
+    lp[i] += normal_lpdf(Edet[i] | E[i], f_E*Emin);
 
     /* makes no difference! */
     //lp[i] += log(get_effective_area(E[i], Emin)); // m^2
