@@ -38,7 +38,8 @@ generated quantities {
   vector[N] pdet;
 
   real l10E;
-
+  real cz;
+  
   int accept;
   simplex[2] prob;
   
@@ -51,9 +52,22 @@ generated quantities {
       log10E[i] = uniform_rng(4.0, 7.0);
 
       l10E = log10E[i];
+      cz = cosz;
+      
+      /* check bounds of spline */
+      if (l10E >= 6.96) {
+	l10E = 6.96;
+      }
+      if (cz <= -0.8999) {
+	cz = -0.8999;
+      }
+      if (cz >= 0.8999) {
+	cz = 0.8999;
+      }
+       
       
       /* Test against Aeff */
-      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, l10E, cosz) ) / aeff_max;
+      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, l10E, cz) ) / aeff_max;
       prob[1] = pdet[i];
       prob[2] = 1 - pdet[i];
       accept = categorical_rng(prob);

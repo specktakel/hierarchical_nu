@@ -52,16 +52,13 @@ generated quantities {
       zenith[i] = pi() - acos(direction[i][3]);
       cosz = cos(zenith[i]);
       
-      /*
-      cosz = cos(zenith[i]);
-      if (cosz <= -0.85 ) {
-	cosz = -0.85;
+      if (cosz <= -0.8999) {
+	cosz = -0.8999;
       }
-      if (cosz > 0.85) {
-	cosz = 0.85;
+      if (cosz >= 0.8999) {
+	cosz = 0.8999;
       }
-      */
-      
+       
       /* Test against Aeff */
       pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz) ) / aeff_max;
       prob[1] = pdet[i];
