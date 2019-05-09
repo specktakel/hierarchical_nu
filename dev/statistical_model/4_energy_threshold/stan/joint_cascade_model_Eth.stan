@@ -127,15 +127,7 @@ data {
 
 transformed data {
 
-  vector[N] zenith;
   real Mpc_to_m = 3.086e22;
-  
-  for (i in 1:N) {
-
-    zenith[i] = omega_to_zenith(omega_det[i]);
-
-  }
-
   
 }
 
@@ -169,6 +161,8 @@ transformed parameters {
   vector[Ns+1] log_F;
   real Nex;  
   vector[N] E;
+  real log10E;
+  real cosz;
   
   /* Define transformed parameters */
   Fs = 0;
@@ -198,6 +192,7 @@ transformed parameters {
       if (k < Ns+1) {
 
 	lp[i, k] += vMF_lpdf(omega_det[i] | varpi[k], kappa);
+	cosz = cos(omega_to_zenith(varpi[k]));
 	
       }
       
@@ -205,7 +200,8 @@ transformed parameters {
       else if (k == Ns+1) {
  
 	lp[i, k] += log(1 / ( 4 * pi() ));
-
+	cosz = cos(omega_to_zenith(omega_det[i]));
+	
       }
 
       /* Lognormal approx. */
@@ -216,9 +212,25 @@ transformed parameters {
       /* Actual P(Edet|E) from linear interpolation */
       //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
 
+      /* check bounds for spline */
+      /*
+      log10E = log10(E[i]);
+      if (log10E >= 6.96) {
+	log10E = 6.96;
+      }
+      if (cosz <= -0.8999) {
+	cosz = -0.8999;
+      }
+      if (cosz >= 0.8999) {
+	cosz = 0.8999;
+      }
+      */
+      
       /* expousre factor */
-      lp[i, k] += log(pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / aeff_max);
-
+      /*
+      lp[i, k] += log(pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz)) / aeff_max);
+      */
+	
     } 
   }
 
