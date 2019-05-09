@@ -32,9 +32,10 @@ functions {
   real get_expected_Nevents(real alpha, real Emin, real F_N, real T) {
 
     real A = F_N * T * (alpha-1) / Emin;
-    real B = 10 * ((1e5 * pow(1e5/Emin, 0.5-alpha)) - Emin) / (3-(2*alpha));
+    real B = 10 * pow(1/1e3, 0.5) * pow(1e5, -alpha) / ((2*alpha) - 3);
+    real C = (pow(Emin, 1.5) * pow(1e5, alpha)) - (pow(1e5, 1.5) * pow(Emin, alpha));
 
-    return A * B;
+    return A * B * C;
     
   }
 
@@ -57,10 +58,12 @@ functions {
 data {
 
   int Nevents;
-  vector[Nevents] Edet;
 
   real Emin;
   real T;
+
+  vector[Nevents] Edet;
+
 
 }
 
@@ -86,6 +89,7 @@ model {
 
     lp[i] += normal_lpdf(Edet[i] | E[i], 0.2*E[i]);
 
+    /* makes no difference! */
     //lp[i] += log(get_effective_area(E[i], Emin)); // m^2
 
     target += lp[i];
