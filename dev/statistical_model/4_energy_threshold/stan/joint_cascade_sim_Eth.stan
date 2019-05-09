@@ -160,13 +160,14 @@ data {
   real aeff_max;
 
   /* Energy resolution */
+  /*
   int E_p; // spline degree
   int E_Lknots_x; // length of knot vector
   int E_Lknots_y; // length of knot vector
   vector[E_Lknots_x] E_xknots; // knot sequence - needs to be a monotonic sequence
   vector[E_Lknots_y] E_yknots; // knot sequence - needs to be a monotonic sequence
   matrix[E_Lknots_x+E_p-1, E_Lknots_y+E_p-1] E_c; // spline coefficients 
-  
+  */
 }
 
 transformed data {

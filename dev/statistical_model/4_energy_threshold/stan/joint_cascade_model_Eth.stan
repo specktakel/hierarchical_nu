@@ -109,7 +109,7 @@ data {
   vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
  
   matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
-
+  real aeff_max;
 
   /* Energy resolution */
   int E_Ngrid;
@@ -215,7 +215,10 @@ transformed parameters {
 	
       /* Actual P(Edet|E) from linear interpolation */
       //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
-      
+
+      /* expousre factor */
+      lp[i, k] += log(pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / aeff_max);
+
     } 
   }
 
