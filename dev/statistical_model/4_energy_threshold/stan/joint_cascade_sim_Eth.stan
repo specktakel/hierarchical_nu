@@ -159,15 +159,6 @@ data {
   matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients
   real aeff_max;
 
-  /* Energy resolution */
-  /*
-  int E_p; // spline degree
-  int E_Lknots_x; // length of knot vector
-  int E_Lknots_y; // length of knot vector
-  vector[E_Lknots_x] E_xknots; // knot sequence - needs to be a monotonic sequence
-  vector[E_Lknots_y] E_yknots; // knot sequence - needs to be a monotonic sequence
-  matrix[E_Lknots_x+E_p-1, E_Lknots_y+E_p-1] E_c; // spline coefficients 
-  */
 }
 
 transformed data {
@@ -266,17 +257,12 @@ generated quantities {
     event[i] = vMF_rng(omega, kappa);  	  
 
     /* Trying out large uncertainties and proper threshold simulation */
-    Edet[i] = lognormal_rng(log(E[i]), f_E);
-    
-    /* The real deal */
-    /*
-    Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
-    while (Edet[i] < Emin) {
-      Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
-    }
-    */
+    //Edet[i] = lognormal_rng(log(E[i]), f_E);
+    Edet[i] = E[i];
  
   }  
+
+
 
 }
 

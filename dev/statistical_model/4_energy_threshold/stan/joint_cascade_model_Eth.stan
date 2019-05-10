@@ -101,21 +101,6 @@ data {
   vector[Ngrid] integral_grid[Ns+1];
   real T;
 
-  int p; // spline degree
-  int Lknots_x; // length of knot vector
-  int Lknots_y; // length of knot vector
-
-  vector[Lknots_x] xknots; // knot sequence - needs to be a monotonic sequence
-  vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
- 
-  matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
-  real aeff_max;
-
-  /* Energy resolution */
-  int E_Ngrid;
-  vector[E_Ngrid] log10_E_grid[N];
-  vector[E_Ngrid] prob_grid[N];
-  
   /* Detection */
   real kappa;
 
@@ -138,7 +123,7 @@ parameters {
 
   real<lower=1.5, upper=3.5> alpha;
 
-  vector<lower=Emin, upper=1.0e7>[N] Esrc;
+  //vector<lower=Emin, upper=1.0e7>[N] Esrc;
 
 }
 
@@ -160,9 +145,8 @@ transformed parameters {
   vector[Ns+1] lp[N];
   vector[Ns+1] log_F;
   real Nex;  
-  vector[N] E;
-  real log10E;
-  real cosz;
+  //vector[N] E;
+  vector[N] Esrc;
   
   /* Define transformed parameters */
   Fs = 0;
@@ -184,15 +168,16 @@ transformed parameters {
     lp[i] = log_F;
 
     for (k in 1:Ns+1) {
-      
+
+      Esrc[i] = Edet[i] * (1+z[k]);
       lp[i, k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
-      E[i] = Esrc[i] / (1 + z[k]);
+      //E[i] = Esrc[i] / (1 + z[k]);
 	
       /* Sources */
       if (k < Ns+1) {
 
 	lp[i, k] += vMF_lpdf(omega_det[i] | varpi[k], kappa);
-	cosz = cos(omega_to_zenith(varpi[k]));
+	//cosz = cos(omega_to_zenith(varpi[k]));
 	
       }
       
@@ -200,36 +185,13 @@ transformed parameters {
       else if (k == Ns+1) {
  
 	lp[i, k] += log(1 / ( 4 * pi() ));
-	cosz = cos(omega_to_zenith(omega_det[i]));
 	
       }
 
       /* Lognormal approx. */
       //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13); // Nue_CC
       //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.3), 0.8); // Nue_NC
-      lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i]), f_E); // trying out large uncertainties
-	
-      /* Actual P(Edet|E) from linear interpolation */
-      //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
-
-      /* check bounds for spline */
-      /*
-      log10E = log10(E[i]);
-      if (log10E >= 6.96) {
-	log10E = 6.96;
-      }
-      if (cosz <= -0.8999) {
-	cosz = -0.8999;
-      }
-      if (cosz >= 0.8999) {
-	cosz = 0.8999;
-      }
-      */
-      
-      /* expousre factor */
-      /*
-      lp[i, k] += log(pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz)) / aeff_max);
-      */
+      //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i]), f_E); // trying out large uncertainties
 	
     } 
   }
