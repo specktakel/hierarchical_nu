@@ -10,6 +10,8 @@
 
 functions {
 
+#include interpolation.stan
+  
   /**
    * Lower bounded power law log pdf.
    */
@@ -51,6 +53,21 @@ functions {
   }
 
   /**
+   * The expected number of events (incl. threshold effects). 
+   * expected_Nevents = T * \int dE p_gt_Eth(E) Aeff(E) dN/dEdtdA(E)
+   *
+   * For this case, we precompute and interpolate.
+   */
+  real get_expected_Nevents_interp(real alpha, real Emin, real F_N, real T, vector alpha_grid, vector integral_grid) {
+
+    real I = interpolate(alpha_grid, integral_grid, alpha);
+    
+    return F_N * ((alpha-1)/Emin) * T * I; 
+    
+  }
+
+  
+  /**
    * Effective area as a function of energy [m^2]
    */
   real get_effective_area(real E, real Emin) {
@@ -76,7 +93,11 @@ data {
   
   vector[Nevents] Edet;
 
-
+  /* Exposure integral */
+  int Ngrid;
+  vector[Ngrid] alpha_grid;
+  vector[Ngrid] integral_grid;
+  
 }
 
 parameters {
@@ -107,8 +128,9 @@ model {
     target += lp[i];
     
   }
-
-  Nex = get_expected_Nevents(alpha, Emin, F_N, T);
+  
+  //Nex = get_expected_Nevents(alpha, Emin, F_N, T);
+  Nex = get_expected_Nevents_interp(alpha, Emin, F_N, T, alpha_grid, integral_grid);
   target += -Nex;
   
 }
