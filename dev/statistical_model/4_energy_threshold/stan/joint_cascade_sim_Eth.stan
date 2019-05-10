@@ -1,3 +1,4 @@
+
 /**
  * Forward model for neutrino energies and arrival directions.
  * Focusing on cascade events for now, and ignoring different flavours and interaction types.
@@ -247,6 +248,9 @@ generated quantities {
 
       /* Test against Aeff */
       pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz)) / aeff_max;
+      if (log10E < 3) {
+	pdet[i] = 0;
+      }
       prob[1] = pdet[i];
       prob[2] = 1 - pdet[i];
       accept = categorical_rng(prob);

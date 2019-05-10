@@ -145,7 +145,7 @@ transformed parameters {
   vector[Ns+1] lp[N];
   vector[Ns+1] log_F;
   real Nex;  
-  vector[N] E;
+  vector<lower=1.0e3>[N] E;
   
   /* Define transformed parameters */
   Fs = 0;

@@ -4,8 +4,10 @@ from scipy.stats import lognorm
 import h5py
 from tqdm.autonotebook import tqdm as progress_bar
 
-# Maximum energy in GeV
-Emax = 1.0E7
+# Minimum/maximum energy in GeV
+AEFF_EMIN = 1.0E3
+AEFF_EMAX = 1.0E7
+
 
 def unit_vector_to_cosz(unit_vector):
     """
@@ -123,10 +125,10 @@ class ExposureIntegral(object):
     def _get_source_integral(self, position, z, alpha):
 
         if self.f_E:
-            integ, err = integrate.quad(self._source_integrand_th, self.min_E_bound, Emax,
+            integ, err = integrate.quad(self._source_integrand_th, AEFF_EMIN, AEFF_EMAX,
                                         args=(position, z, alpha))
         else:
-            integ, err = integrate.quad(self._source_integrand, self.Emin, Emax,
+            integ, err = integrate.quad(self._source_integrand, self.Emin, AEFF_EMAX,
                                         args=(position, z, alpha))
         return integ
 
@@ -135,11 +137,11 @@ class ExposureIntegral(object):
 
         if self.f_E:
             integ, err = integrate.dblquad(self._bg_integrand_th, -1, 1,
-                                           lambda E: self.min_E_bound, lambda E: Emax,
+                                           lambda E: AEFF_EMIN, lambda E: AEFF_EMAX,
                                            args=(z, alpha))
         else:
             integ, err = integrate.dblquad(self._bg_integrand, -1, 1,
-                                           lambda E: self.Emin, lambda E: Emax,
+                                           lambda E: self.Emin, lambda E: AEFF_EMAX,
                                            args=(z, alpha))
         return integ * 0.5 # factor of 2pi/4pi
     
@@ -149,10 +151,6 @@ class ExposureIntegral(object):
         Run calculation.
         """
 
-        # min_E_bound, if required
-        if self.f_E:
-            self.min_E_bound = get_min_bound(self.f_E, self.Emin)
-        
         # Sources
         self.integral_grid = []
         for i in progress_bar(range(len(self.source_position)), desc='Source integrals'):
