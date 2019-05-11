@@ -66,7 +66,7 @@ class ExposureIntegral(object):
         self.filename = filename
         self.f_E = f_E
         
-        self.alpha_grid = np.logspace(np.log(1.0), np.log(4.0), n_points, base=np.e)
+        self.alpha_grid = np.logspace(np.log(1.5), np.log(3.5), n_points, base=np.e)
         
         self._calculate_exposure_integral()
         self._save_to_file()

@@ -123,7 +123,7 @@ parameters {
 
   real<lower=1.5, upper=3.5> alpha;
 
-  vector<lower=Emin, upper=1.0e7>[N] Esrc;
+  //vector<lower=Emin, upper=1.0e7>[N] Esrc;
 
 }
 
@@ -145,7 +145,8 @@ transformed parameters {
   vector[Ns+1] lp[N];
   vector[Ns+1] log_F;
   real Nex;  
-  vector<lower=1.0e3>[N] E;
+  //vector[N] E;
+  real Esrc;
   
   /* Define transformed parameters */
   Fs = 0;
@@ -168,8 +169,11 @@ transformed parameters {
 
     for (k in 1:Ns+1) {
 
-      lp[i, k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
-      E[i] = Esrc[i] / (1 + z[k]);
+      Esrc = Edet[i] * (1+z[k]);
+      lp[i, k] += pareto_lpdf(Esrc | Emin, alpha - 1);	
+
+      //lp[i, k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
+      //E[i] = Esrc[i] / (1 + z[k]);
 	
       /* Sources */
       if (k < Ns+1) {
@@ -188,7 +192,7 @@ transformed parameters {
       /* Lognormal approx. */
       //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13); // Nue_CC
       //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.3), 0.8); // Nue_NC
-      lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i]), f_E); // trying out large uncertainties
+      //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i]), f_E); // trying out large uncertainties
 	
     } 
   }

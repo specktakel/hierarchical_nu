@@ -248,7 +248,7 @@ generated quantities {
 
       /* Test against Aeff */
       pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz)) / aeff_max;
-      if (log10E < 3) {
+      if (log10(E[i]) > 7) {
 	pdet[i] = 0;
       }
       prob[1] = pdet[i];
@@ -261,8 +261,8 @@ generated quantities {
     event[i] = vMF_rng(omega, kappa);  	  
 
     /* Trying out large uncertainties and proper threshold simulation */
-    Edet[i] = lognormal_rng(log(E[i]), f_E);
-    // Edet[i] = E[i];
+    //Edet[i] = lognormal_rng(log(E[i]), f_E);
+    Edet[i] = E[i];
  
   }  
 
