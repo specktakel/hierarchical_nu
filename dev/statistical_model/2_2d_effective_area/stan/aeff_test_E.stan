@@ -49,7 +49,7 @@ generated quantities {
     while(accept != 1) {
 
       /* Sample energy */
-      log10E[i] = uniform_rng(4.0, 7.0);
+      log10E[i] = uniform_rng(3.0, 7.0);
 
       l10E = log10E[i];
       cz = cosz;
