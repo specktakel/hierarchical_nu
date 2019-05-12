@@ -210,6 +210,9 @@ generated quantities {
     
     /* Test against Aeff */
     pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz)) / aeff_max[lambda[i]];
+    if (pdet[i] > 1) {
+      pdet[i] = 1;
+    }
     if (log10(E[i]) > 7) {
       pdet[i] = 0;
     }

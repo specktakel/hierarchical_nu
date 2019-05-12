@@ -43,7 +43,7 @@ class ExposureIntegral(object):
     @date April 2019
     """
 
-    def __init__(self, source_redshift, source_position, bg_redshift, effective_area, Emin,
+    def __init__(self, source_redshift, source_position, bg_redshift, effective_area, Emin, Eth,
                  filename=None, n_points=50, f_E=None):
         """
         Everything you need for precomputing exposure integrals.
