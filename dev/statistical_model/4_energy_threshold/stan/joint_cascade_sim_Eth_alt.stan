@@ -39,7 +39,7 @@ functions {
   /**
    * Calculate weights based on source flux.
    */
-  vector get_source_weights(vector F, vector z, real Emin, real alpha) {
+  vector get_source_weights(vector F, vector z, real Emin, real alpha, vector aeff_max) {
 
     int K = num_elements(F);
     vector[K] weights;
@@ -47,14 +47,14 @@ functions {
     real normalisation = 0;
     
     for (k in 1:K-1) {
-      normalisation += F[k] * pow( (Emin*(1+z[k])/Emin ), 1-alpha);
+      normalisation += F[k] * pow( (Emin*(1+z[k])/Emin ) , 1-alpha) * aeff_max[k];
     }
-    normalisation += F[K] * pow( (Emin*(1+z[K])/Emin ), 1-alpha) * 0.5;
+    normalisation += F[K] * pow( (Emin*(1+z[K])/Emin ), 1-alpha) * aeff_max[K] * 0.5;
    
     for (k in 1:K-1) {
-      weights[k] = F[k] * pow( (Emin*(1+z[k])/Emin ), 1-alpha) / normalisation;
+      weights[k] = F[k] * pow( (Emin*(1+z[k])/Emin ), 1-alpha) * aeff_max[k] / normalisation;
     }
-    weights[K] = F[K] * pow( (Emin*(1+z[K])/Emin ), 1-alpha) * 0.5 / normalisation;
+    weights[K] = F[K] * pow( (Emin*(1+z[K])/Emin ), 1-alpha) * aeff_max[K] * 0.5 / normalisation;
    
     return weights;
   }
@@ -82,15 +82,15 @@ functions {
   /**
    * Calculate the expected number of detected events from each source.
    */
-  real get_Nex_sim(vector F, vector z, real Emin, real alpha, real aeff_max, real T) {
+  real get_Nex_sim(vector F, vector z, real Emin, real alpha, vector aeff_max, real T) {
 
     int K = num_elements(F);
     real Nex = 0;
 
     for (k in 1:K-1) {
-      Nex += F[k] * pow( (Emin*(1+z[k])/Emin ), 1-alpha) * aeff_max * T;
+      Nex += F[k] * pow( (Emin*(1+z[k])/Emin ), 1-alpha) * aeff_max[k] * T;
     }
-    Nex += F[K] * pow( (Emin*(1+z[K])/Emin ), 1-alpha) * aeff_max * T * 0.5;
+    Nex += F[K] * pow( (Emin*(1+z[K])/Emin ), 1-alpha) * aeff_max[K] * 0.5 * T;
  
     return Nex;
   }
@@ -108,7 +108,7 @@ data {
   /* energies */
   real<lower=1> alpha;
   real Emin; // GeV
-
+  real f_E;
   /* deflection */
   real<lower=0> kappa;
   
@@ -124,7 +124,7 @@ data {
   vector[Lknots_x] xknots; // knot sequence - needs to be a monotonic sequence
   vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
   matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients
-  real aeff_max;
+  vector[Ns+1] aeff_max;
  
 }
 
@@ -149,7 +149,7 @@ transformed data {
   f = Fs / FT;
 
   /* N */
-  w_src = get_source_weights(F, z, Emin, alpha);
+  w_src = get_source_weights(F, z, Emin, alpha, aeff_max);
   Nex = get_Nex_sim(F, z, Emin, alpha, aeff_max, T);
   
   N = poisson_rng(Nex);
@@ -209,7 +209,7 @@ generated quantities {
     }
     
     /* Test against Aeff */
-    pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz)) / aeff_max;
+    pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz)) / aeff_max[lambda[i]];
     if (log10(E[i]) > 7) {
       pdet[i] = 0;
     }
@@ -221,8 +221,8 @@ generated quantities {
     event[i] = vMF_rng(omega, kappa);  	  
 
     /* Trying out large uncertainties and proper threshold simulation */
-    //Edet[i] = lognormal_rng(log(E[i]), f_E);
-    Edet[i] = E[i];
+    Edet[i] = lognormal_rng(log(E[i]), f_E);
+    //Edet[i] = E[i];
  
   }  
 
