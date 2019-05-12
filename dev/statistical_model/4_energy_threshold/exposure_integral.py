@@ -43,7 +43,7 @@ class ExposureIntegral(object):
     @date April 2019
     """
 
-    def __init__(self, source_redshift, source_position, bg_redshift, effective_area, Emin, Eth,
+    def __init__(self, source_redshift, source_position, bg_redshift, effective_area, Emin,
                  filename=None, n_points=50, f_E=None):
         """
         Everything you need for precomputing exposure integrals.
@@ -63,7 +63,6 @@ class ExposureIntegral(object):
         self.bg_redshift = bg_redshift
         self.Aeff = effective_area
         self.Emin = Emin
-        self.Eth = Eth
         self.filename = filename
         self.f_E = f_E
         
@@ -82,7 +81,7 @@ class ExposureIntegral(object):
         cosz = unit_vector_to_cosz(position)
         Aeff = np.power(10, self.Aeff.eval(log10E, cosz)[0][0]) # m^2
 
-        return  Aeff * ( ((1+z)*E) / self.Eth )**(-alpha)
+        return  Aeff * ( ((1+z)*E) / self.Emin )**(-alpha)
 
     
     def _bg_integrand(self, E, cosz, z, alpha):
@@ -93,7 +92,7 @@ class ExposureIntegral(object):
         log10E = np.log10(E) # GeV
         Aeff = np.power(10, self.Aeff.eval(log10E, cosz)[0][0])
 
-        return Aeff * ( ((1+z)*E) / self.Eth )**(-alpha)
+        return Aeff * ( ((1+z)*E) / self.Emin )**(-alpha)
 
     
     def _source_integrand_th(self, E, position, z, alpha):
@@ -105,9 +104,9 @@ class ExposureIntegral(object):
         log10E = np.log10(E)
         cosz = unit_vector_to_cosz(position)
         Aeff = np.power(10, self.Aeff.eval(log10E, cosz)[0][0]) # m^2
-        p_gt_th = 1-lognorm.cdf(self.Eth, self.f_E, 0, E)
+        p_gt_th = 1-lognorm.cdf(self.Emin, self.f_E, 0, E)
         
-        return  p_gt_th * Aeff * ( ((1+z)*E) / self.Eth )**(-alpha)
+        return  p_gt_th * Aeff * ( ((1+z)*E) / self.Emin )**(-alpha)
 
     
     def _bg_integrand_th(self, E, cosz, z, alpha):
@@ -118,9 +117,9 @@ class ExposureIntegral(object):
 
         log10E = np.log10(E) # GeV
         Aeff = np.power(10, self.Aeff.eval(log10E, cosz)[0][0])
-        p_gt_th = 1-lognorm.cdf(self.Eth, self.f_E, 0, E)
+        p_gt_th = 1-lognorm.cdf(self.Emin, self.f_E, 0, E)
         
-        return p_gt_th * Aeff * ( ((1+z)*E) / self.Eth )**(-alpha)
+        return p_gt_th * Aeff * ( ((1+z)*E) / self.Emin )**(-alpha)
 
     
     def _get_source_integral(self, position, z, alpha):
@@ -181,7 +180,6 @@ class ExposureIntegral(object):
                 f.create_dataset('integral_grid', data=self.integral_grid)
                 f.create_dataset('alpha_grid', data=self.alpha_grid)
                 f.create_dataset('Emin', data=self.Emin)
-                f.create_dataset('Eth', data=self.Eth)
                 
 
         
