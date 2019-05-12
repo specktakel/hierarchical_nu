@@ -261,8 +261,8 @@ generated quantities {
     event[i] = vMF_rng(omega, kappa);  	  
 
     /* Trying out large uncertainties and proper threshold simulation */
-    Edet[i] = lognormal_rng(log(E[i]), f_E);
-    //Edet[i] = E[i];
+    //Edet[i] = lognormal_rng(log(E[i]), f_E);
+    Edet[i] = E[i];
  
   }  
 
