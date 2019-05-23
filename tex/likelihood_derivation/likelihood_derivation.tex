@@ -86,10 +86,21 @@ P(\hat{\omega}, \hat{E} | Q, F_0, \alpha) = e^{-\bar{N}}\prod_{i=1}^I \sum_{k=1}
 where we have performed a trivial marginalisation over the latent arrival directions $\omega_i = \varpi_k$, and marginalised over the $\lambda_i$ by considering the sum of all possible source-neutrino associations. The result is effectively a mixture model over $k$ sources with weights $F_k$.
 
 To calculate the expected number of events, $\bar{N}$, we must integrate over the contribution of all sources in our population. For each source, we have 
-
 \begin{equation}
 \begin{split}
-\bar{N}_k & = \int \mathrm{d}t \ \int \mathrm{d}E \int \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega)\frac{\mathrm{d}N}{\mathrm{d}E\mathrm{d}A\mathrm{d}t} \\
+\bar{N}_k &= \int \mathrm{d}t \ \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega)\frac{\mathrm{d}N}{\mathrm{d}E\mathrm{d}A\mathrm{d}t} \\
+&= \frac{Q}{4 \pi d_L(z_k)^2} \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
+&= F_k \epsilon_k .
+\end{split}
+\end{equation}
+Here, $\epsilon_k$ is a factor describing the exposure of each source component (including background) with units of $\rm{area} \ x \ \rm{time}$  
+\begin{equation}
+\epsilon_k = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha}.
+\end{equation}
+For the case of point sources, $P(\omega | \varpi_k)$ is a delta function at the source position. This means that the above expression can be simplified as follows
+\begin{equation}
+\begin{split}
+\epsilon_{\rm{src}} & = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
 & = \frac{Q}{4 \pi d_L(z_k)^2} \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \ A_\mathrm{eff}(E, \varpi_k) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
 & = F_k \frac{(\alpha -1)}{E_\mathrm{min}} T I_k \\
 & = F_k \epsilon_k.
