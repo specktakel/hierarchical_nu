@@ -1,11 +1,13 @@
+
 /**
  * Forward model for neutrino energies and arrival directions.
  * Focusing on cascade events for now, and ignoring different flavours and interaction types.
  * Adding in the 2D Aeff and spline implementation. 
- * Adding in energy resolution.
- *
+ * Adding in energy resolution and threshold.
+ * Alternative sim that doesn't require integral grids.
+ * 
  * @author Francesca Capel
- * @date April 2019
+ * @date May 2019
  */
 
 functions {
@@ -35,23 +37,25 @@ functions {
   }
   
   /**
-   * Calculate weights from exposure integral.
+   * Calculate weights based on source flux.
    */
-  vector get_exposure_weights(vector F, vector eps) {
+  vector get_source_weights(vector F, vector z, real Emin, real alpha, vector aeff_max) {
 
     int K = num_elements(F);
     vector[K] weights;
     
     real normalisation = 0;
     
-    for (k in 1:K) {
-      normalisation += F[k] * eps[k];
+    for (k in 1:K-1) {
+      normalisation += F[k] * pow( (Emin*(1+z[k])/Emin ) , 1-alpha) * aeff_max[k];
     }
-
-    for (k in 1:K) {
-      weights[k] = F[k] * eps[k] / normalisation;
+    normalisation += F[K] * pow( (Emin*(1+z[K])/Emin ), 1-alpha) * aeff_max[K] * 0.5;
+   
+    for (k in 1:K-1) {
+      weights[k] = F[k] * pow( (Emin*(1+z[k])/Emin ), 1-alpha) * aeff_max[k] / normalisation;
     }
-
+    weights[K] = F[K] * pow( (Emin*(1+z[K])/Emin ), 1-alpha) * aeff_max[K] * 0.5 / normalisation;
+   
     return weights;
   }
   
@@ -78,50 +82,17 @@ functions {
   /**
    * Calculate the expected number of detected events from each source.
    */
-  real get_Nex_sim(vector F, vector eps) {
+  real get_Nex_sim(vector F, vector z, real Emin, real alpha, vector aeff_max, real T) {
 
     int K = num_elements(F);
     real Nex = 0;
 
-    for (k in 1:K) {
-      Nex += F[k] * eps[k];
+    for (k in 1:K-1) {
+      Nex += F[k] * pow( (Emin*(1+z[k])/Emin ), 1-alpha) * aeff_max[k] * T;
     }
-
+    Nex += F[K] * pow( (Emin*(1+z[K])/Emin ), 1-alpha) * aeff_max[K] * 0.5 * T;
+ 
     return Nex;
-  }
-
-real Edet_rng(real E, vector xknots, vector yknots, int p, matrix c) {
-
-    int N = 100;
-    vector[N] log10_Edet_grid = linspace(1.0, 7.0, N);
-    vector[N] prob_grid;
-
-    real norm;
-    real prob_max;
-    real prob;
-    real log10_Edet;
-    real Edet;
-    int accept;
-    
-    /* Find normalisation and maximum */
-    for (i in 1:N) {
-      prob_grid[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E), log10_Edet_grid[i]));
-    }
-    norm = trapz(log10_Edet_grid, prob_grid);
-    prob_max = max(prob_grid) / norm;
-    
-    /* Sampling */
-    accept = 0;
-    while (accept != 1) {
-      log10_Edet = uniform_rng(1.0, 7.0);
-      prob = uniform_rng(0, prob_max);
-
-      if (prob <= pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E), log10_Edet)) / norm) {
-	accept = 1;
-      }
-    }
-
-    return pow(10, log10_Edet);
   }
     
 }
@@ -138,7 +109,6 @@ data {
   real<lower=1> alpha;
   real Emin; // GeV
   real f_E;
-
   /* deflection */
   real<lower=0> kappa;
   
@@ -147,9 +117,6 @@ data {
   real<lower=0> F0;
 
   /* Effective area */
-  int Ngrid;
-  vector[Ngrid] alpha_grid;
-  vector[Ngrid] integral_grid[Ns+1];
   real T;
   int p; // spline degree
   int Lknots_x; // length of knot vector
@@ -157,16 +124,8 @@ data {
   vector[Lknots_x] xknots; // knot sequence - needs to be a monotonic sequence
   vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
   matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients
-  real aeff_max;
-
-  /* Energy resolution */
-  int E_p; // spline degree
-  int E_Lknots_x; // length of knot vector
-  int E_Lknots_y; // length of knot vector
-  vector[E_Lknots_x] E_xknots; // knot sequence - needs to be a monotonic sequence
-  vector[E_Lknots_y] E_yknots; // knot sequence - needs to be a monotonic sequence
-  matrix[E_Lknots_x+E_p-1, E_Lknots_y+E_p-1] E_c; // spline coefficients 
-  
+  vector[Ns+1] aeff_max;
+ 
 }
 
 transformed data {
@@ -175,11 +134,10 @@ transformed data {
   real<lower=0> FT;
   real<lower=0, upper=1> f;
   vector[Ns+1] F;
-  simplex[Ns+1] w_exposure;
-  real Nex;
+  simplex[Ns+1] w_src;
   int N;
   real Mpc_to_m = 3.086e22;
-  vector[Ns+1] eps;
+  real Nex;
   
   for (k in 1:Ns) {
     F[k] = Q / (4 * pi() * pow(D[k] * Mpc_to_m, 2));
@@ -191,14 +149,13 @@ transformed data {
   f = Fs / FT;
 
   /* N */
-  eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
-  w_exposure = get_exposure_weights(F, eps);
-  Nex = get_Nex_sim(F, eps);
+  w_src = get_source_weights(F, z, Emin, alpha, aeff_max);
+  Nex = get_Nex_sim(F, z, Emin, alpha, aeff_max, T);
   
   N = poisson_rng(Nex);
 
   /* Debug */
-  print("w_bg: ", w_exposure[Ns+1]);
+  print("w_bg: ", w_src[Ns+1]);
   print("N: ", N);
   
 }
@@ -213,15 +170,19 @@ generated quantities {
   
   real zenith[N];
   real pdet[N];
-  real accept;
   simplex[2] prob;
   unit_vector[3] event[N];
   real Nex_sim = Nex;
+  real N_sim = N; 
+  vector[N] detected;
+  
+  real log10E;
+  real cosz;
   
   for (i in 1:N) {
-    
+      
     /* Sample position */
-    lambda[i] = categorical_rng(w_exposure);
+    lambda[i] = categorical_rng(w_src);
     if (lambda[i] < Ns+1) {
       omega = varpi[lambda[i]];
     }
@@ -229,40 +190,46 @@ generated quantities {
       omega = sphere_rng(1);
     }
     zenith[i] = omega_to_zenith(omega);
-       
-    accept = 0;
-    while (accept != 1) {
     
-      /* Sample energy */
-      Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
-      E[i] = Esrc[i] / (1 + z[lambda[i]]);
-
-      /* Test against Aeff */
-      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / aeff_max;
-      prob[1] = pdet[i];
-      prob[2] = 1 - pdet[i];
-      accept = categorical_rng(prob);
-      
+    /* Sample energy */
+    Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
+    E[i] = Esrc[i] / (1 + z[lambda[i]]);
+    
+    /* check bounds of spline */
+    log10E = log10(E[i]);
+    cosz = cos(zenith[i]);
+    if (log10E >= 6.96) {
+      log10E = 6.96;
     }
+    if (cosz <= -0.8999) {
+      cosz = -0.8999;
+    }
+    if (cosz >= 0.8999) {
+      cosz = 0.8999;
+    }
+    
+    /* Test against Aeff */
+    pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz)) / aeff_max[lambda[i]];
+    if (pdet[i] > 1) {
+      pdet[i] = 1;
+    }
+    if (log10(E[i]) > 7) {
+      pdet[i] = 0;
+    }
+    prob[1] = pdet[i];
+    prob[2] = 1 - pdet[i];
+    detected[i] = categorical_rng(prob);
 
     /* Detection effects */
     event[i] = vMF_rng(omega, kappa);  	  
 
-    /* Trying out large uncertainties */
+    /* Trying out large uncertainties and proper threshold simulation */
     Edet[i] = lognormal_rng(log(E[i]), f_E);
-    while (Edet[i] < Emin) {
-      Edet[i] = lognormal_rng(log(E[i]), f_E);
-    }
-    
-    /* The real deal */
-    /*
-    Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
-    while (Edet[i] < Emin) {
-      Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
-    }
-    */
+    //Edet[i] = E[i];
  
   }  
+
+
 
 }
 

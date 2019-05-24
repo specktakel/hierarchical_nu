@@ -180,6 +180,8 @@ generated quantities {
   unit_vector[3] event[N];
   real Nex_sim = Nex;
 
+  real cosz;
+  real log10E;
   
   
   for (i in 1:N) {
@@ -202,8 +204,21 @@ generated quantities {
       Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
       E[i] = Esrc[i] / (1 + z[lambda[i]]);
 
+      /* check bounds of spline */
+      log10E = log10(E[i]);
+      cosz = cos(zenith[i]);
+      if (log10E >= 6.96) {
+	log10E = 6.96;
+      }
+      if (cosz <= -0.8999) {
+	cosz = -0.8999;
+      }
+      if (cosz >= 0.8999) {
+	cosz = 0.8999;
+      }
+      
       /* Test against Aeff */
-      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10(E[i]), cos(zenith[i]))) / aeff_max;
+      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz)) / aeff_max;
       if (log10(E[i]) > 7.0) {
 	pdet[i] = 0;
       }

@@ -2,9 +2,10 @@
  * Model for neutrino energies and arrival directions.
  * Focusing on cascade events for now, and ignoring different flavours and interaction types.  
  * Adding in the 2D Aeff and spline implementation. 
+ * Adding in energy resolution and threshold.
  *
  * @author Francesca Capel
- * @date April 2019
+ * @date May 2019
  */
 
 functions {
@@ -100,21 +101,6 @@ data {
   vector[Ngrid] integral_grid[Ns+1];
   real T;
 
-  int p; // spline degree
-  int Lknots_x; // length of knot vector
-  int Lknots_y; // length of knot vector
-
-  vector[Lknots_x] xknots; // knot sequence - needs to be a monotonic sequence
-  vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
- 
-  matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
-
-
-  /* Energy resolution */
-  int E_Ngrid;
-  vector[E_Ngrid] log10_E_grid[N];
-  vector[E_Ngrid] prob_grid[N];
-  
   /* Detection */
   real kappa;
 
@@ -126,15 +112,7 @@ data {
 
 transformed data {
 
-  vector[N] zenith;
   real Mpc_to_m = 3.086e22;
-  
-  for (i in 1:N) {
-
-    zenith[i] = omega_to_zenith(omega_det[i]);
-
-  }
-
   
 }
 
@@ -168,6 +146,7 @@ transformed parameters {
   vector[Ns+1] log_F;
   real Nex;  
   vector[N] E;
+  //real Esrc;
   
   /* Define transformed parameters */
   Fs = 0;
@@ -189,7 +168,10 @@ transformed parameters {
     lp[i] = log_F;
 
     for (k in 1:Ns+1) {
-      
+
+      //Esrc = Edet[i] * (1+z[k]);
+      //lp[i, k] += pareto_lpdf(Esrc | Emin, alpha - 1);	
+
       lp[i, k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
       E[i] = Esrc[i] / (1 + z[k]);
 	
@@ -197,14 +179,14 @@ transformed parameters {
       if (k < Ns+1) {
 
 	lp[i, k] += vMF_lpdf(omega_det[i] | varpi[k], kappa);
-	
+        
       }
       
       /* Background */
       else if (k == Ns+1) {
  
 	lp[i, k] += log(1 / ( 4 * pi() ));
-
+	
       }
 
       /* Lognormal approx. */
@@ -212,9 +194,6 @@ transformed parameters {
       //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.3), 0.8); // Nue_NC
       lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i]), f_E); // trying out large uncertainties
 	
-      /* Actual P(Edet|E) from linear interpolation */
-      //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
-      
     } 
   }
 

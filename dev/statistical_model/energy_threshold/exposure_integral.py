@@ -1,14 +1,39 @@
 import numpy as np
-from scipy import integrate
+from scipy import integrate, optimize
+from scipy.stats import lognorm
 import h5py
 from tqdm.autonotebook import tqdm as progress_bar
 
-# Maximum energy in GeV
-Emax = 1.0E7
+# Minimum/maximum energy in GeV
+AEFF_EMIN = 1.0E3
+AEFF_EMAX = 1.0E7
 
-# Convert 3D unit vector to cos(zenith) value
+
 def unit_vector_to_cosz(unit_vector):
+    """
+    Convert 3D unit vector to cos(zenith) value.
+    """
     return np.cos(np.pi - np.arccos(unit_vector[2]))
+
+def p_gt_Eth(E, f_E, Eth):
+    """
+    Get probability that Edet > Eth | E
+    assuming a lognormal distribution 
+    characterised by f_E.
+    """
+    return 1 - lognorm.cdf(Eth, f_E, 0, E)
+
+def get_min_bound(f_E, Eth):
+    """
+    Find at what E P(Edet > Eth | E) -> 0.
+    """    
+    fac=10*f_E
+    E = optimize.fsolve(p_gt_Eth, Eth/fac, args=(f_E, Eth))
+    out = round(E[0])
+    # Assume Aeff = 0 below 1e3 GeV
+    if (out < 1e3):
+        out = 1e3
+    return out
 
 class ExposureIntegral(object):
     """
@@ -18,7 +43,8 @@ class ExposureIntegral(object):
     @date April 2019
     """
 
-    def __init__(self, source_redshift, source_position, bg_redshift, effective_area, Emin, filename=None, n_points=50):
+    def __init__(self, source_redshift, source_position, bg_redshift, effective_area, Emin, Eth,
+                 filename=None, n_points=50, f_E=None):
         """
         Everything you need for precomputing exposure integrals.
         
@@ -29,6 +55,7 @@ class ExposureIntegral(object):
         :param Emin: minimum energy of sample in GeV.
         :param filename: file to save to.
         :param n_points: nummber of points to evaluate integral on.
+        :param f_E: energy detection uncertainty.
         """
 
         self.source_redshift = source_redshift
@@ -37,8 +64,9 @@ class ExposureIntegral(object):
         self.Aeff = effective_area
         self.Emin = Emin
         self.filename = filename
-
-        self.alpha_grid = np.logspace(np.log(1.0), np.log(4.0), n_points, base=np.e)
+        self.f_E = f_E
+        
+        self.alpha_grid = np.logspace(np.log(1.5), np.log(3.5), n_points, base=np.e)
         
         self._calculate_exposure_integral()
         self._save_to_file()
@@ -67,18 +95,54 @@ class ExposureIntegral(object):
         return Aeff * ( ((1+z)*E) / self.Emin )**(-alpha)
 
     
+    def _source_integrand_th(self, E, position, z, alpha):
+        """
+        Integrand for point sources, including energy threshold
+        effects.
+        """
+
+        log10E = np.log10(E)
+        cosz = unit_vector_to_cosz(position)
+        Aeff = np.power(10, self.Aeff.eval(log10E, cosz)[0][0]) # m^2
+        p_gt_th = 1-lognorm.cdf(self.Emin, self.f_E, 0, E)
+        
+        return  p_gt_th * Aeff * ( ((1+z)*E) / self.Emin )**(-alpha)
+
+    
+    def _bg_integrand_th(self, E, cosz, z, alpha):
+        """
+        Integrand for isotropic background at a certain redshift,
+        including energy threshold effects.
+        """
+
+        log10E = np.log10(E) # GeV
+        Aeff = np.power(10, self.Aeff.eval(log10E, cosz)[0][0])
+        p_gt_th = 1-lognorm.cdf(self.Emin, self.f_E, 0, E)
+        
+        return p_gt_th * Aeff * ( ((1+z)*E) / self.Emin )**(-alpha)
+
+    
     def _get_source_integral(self, position, z, alpha):
 
-        integ, err = integrate.quad(self._source_integrand, self.Emin, Emax,
-                                    args=(position, z, alpha))
+        if self.f_E:
+            integ, err = integrate.quad(self._source_integrand_th, AEFF_EMIN, AEFF_EMAX,
+                                        args=(position, z, alpha))
+        else:
+            integ, err = integrate.quad(self._source_integrand, self.Emin, AEFF_EMAX,
+                                        args=(position, z, alpha))
         return integ
 
     
     def _get_bg_integral(self, z, alpha):
 
-        integ, err = integrate.dblquad(self._bg_integrand, -1, 1,
-                                       lambda E: self.Emin, lambda E: Emax,
-                                       args=(z, alpha))
+        if self.f_E:
+            integ, err = integrate.dblquad(self._bg_integrand_th, -1, 1,
+                                           lambda E: AEFF_EMIN, lambda E: AEFF_EMAX,
+                                           args=(z, alpha))
+        else:
+            integ, err = integrate.dblquad(self._bg_integrand, -1, 1,
+                                           lambda E: self.Emin, lambda E: AEFF_EMAX,
+                                           args=(z, alpha))
         return integ * 0.5 # factor of 2pi/4pi
     
     
