@@ -51,6 +51,7 @@ For now we consider only the production of neutrinos, independent from other mes
 
 \begin{equation}
 \frac{\mathrm{d}N}{\mathrm{d}E\mathrm{d}t} = Q \frac{(\alpha - 1)}{E_\mathrm{min}} \Bigg( \frac{E}{E_\mathrm{min}} \Bigg)^{-\alpha}.
+\label{eqn:flux}
 \end{equation}
 
 \subsection{Neutrino propagation}
@@ -78,35 +79,38 @@ The likelihood for the model described in Section~\ref{sec:model} has the form o
 \begin{equation}
 P(\hat{E}, \hat{\omega} | Q, F_0, \alpha) \propto e^{-\bar{N}} \prod_{i=1}^{I} r(E_i, \omega_i, t_i),
 \end{equation}
-where $\bar{N} = \int \int \int \mathrm{d}E \  \mathrm{d}\omega \ \mathrm{d}t \ r(\omega, t)$ is the expected number of detected neutrinos and $r(E_i, \omega_i, t_i)$ is the inhomogeneous poisson rate at the energy, location and time of the $i^\mathrm{th}$ observation. The effective area of the IceCube detector changes in time due to the number of active detectors deployed in the ice (and other considerations). In this way, the time dependence is absorbed into the expression for the effective area, which changes slowly in time and thus can be taken into account by labelling the detected neutrinos as belonging to a certain observation period. The likelihood derived herein has the same structure but a slightly more complex form as we consider the neutrinos to be produced with certain properties or ``marks''. This results in a marked poisson point process whereby the neutrinos have associated labels $\lambda_i$ which designate their sources and are produced with energies $\tilde{E}_i$. In this way, when considering an expression for the inhomogeneous poisson rate, we must also incorporate the corresponding mark distributions. This gives us
+where $\bar{N} = \int \mathrm{d}E \int \mathrm{d}\omega \int \mathrm{d}t \ r(\omega, t)$ is the expected number of detected neutrinos and $r(E_i, \omega_i, t_i)$ is the inhomogeneous poisson rate at the energy, location and time of the $i^\mathrm{th}$ observation. The effective area of the IceCube detector changes in time due to the number of active detectors deployed in the ice (and other considerations). In this way, the time dependence is absorbed into the expression for the effective area, which changes slowly in time and thus can be taken into account by labelling the detected neutrinos as belonging to a certain observation period. The likelihood derived herein has the same structure but a slightly more complex form as we consider the neutrinos to be produced with certain properties or ``marks''. This results in a marked poisson point process whereby the neutrinos have associated labels $\lambda_i$ which designate their sources and are produced with energies $\tilde{E}_i$. In this way, when considering an expression for the inhomogeneous poisson rate, we must also incorporate the corresponding mark distributions. This gives us
 
 \begin{equation}
 P(\hat{\omega}, \hat{E} | Q, F_0, \alpha) = e^{-\bar{N}}\prod_{i=1}^I \sum_{k=1}^K F_k P(\hat{\omega_i} | \varpi_k, E_i) P(\hat{E}_i | \tilde{E}_i, z_k) P(\tilde{E}_i | \alpha),
 \end{equation}
-where we have performed a trivial marginalisation over the latent arrival directions $\omega_i = \varpi_k$, and marginalised over the $\lambda_i$ by considering the sum of all possible source-neutrino associations. The result is effectively a mixture model over $k$ sources with weights $F_k$.
+where we have performed a marginalisation over the latent arrival directions $\omega_i = \varpi_k$, and marginalised over the $\lambda_i$ by considering the sum of all possible source-neutrino associations. The result is effectively a mixture model over $k$ sources with weights $F_k$.
 
 To calculate the expected number of events, $\bar{N}$, we must integrate over the contribution of all sources in our population. For each source, we have 
 \begin{equation}
 \begin{split}
 \bar{N}_k &= \int \mathrm{d}t \ \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega)\frac{\mathrm{d}N}{\mathrm{d}E\mathrm{d}A\mathrm{d}t} \\
 &= \frac{Q}{4 \pi d_L(z_k)^2} \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
-&= F_k \epsilon_k .
+&= F_k \epsilon_k,
 \end{split}
 \end{equation}
-Here, $\epsilon_k$ is a factor describing the exposure of each source component (including background) with units of $\rm{area} \ x \ \rm{time}$  
+Where we have used the expression for $\frac{\mathrm{d}N}{\mathrm{d}E\mathrm{d}t}$ from Equation~\ref{eqn:flux} divided by $4 \pi d_L(z_k)^2$ to give the number of neutrinos per unit energy, area and time. We simplify the notation using $F_k = \frac{Q}{4 \pi d_L(z_k)^2}$ and gather the other terms into $\epsilon_k$. Here, $\epsilon_k$ is a factor describing the exposure of each source component (including background) with units of $\rm{area} \ x \ \rm{time}$  
 \begin{equation}
 \epsilon_k = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha}.
 \end{equation}
-For the case of point sources, $P(\omega | \varpi_k)$ is a delta function at the source position. This means that the above expression can be simplified as follows
+For the case of point sources, $P(\omega | \varpi_k)$ is a delta function at the source position, $\delta(\omega - \varpi_k)$. By integrating over the surface of the unit sphere in spherical coordinates ($\theta, \phi$), and using the fact that the effective area is only a function of the $\theta$ coordinate, the above expression can be simplified as follows
 \begin{equation}
 \begin{split}
-\epsilon_{\rm{src}} & = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
-& = \frac{Q}{4 \pi d_L(z_k)^2} \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \ A_\mathrm{eff}(E, \varpi_k) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
-& = F_k \frac{(\alpha -1)}{E_\mathrm{min}} T I_k \\
-& = F_k \epsilon_k.
+\epsilon_{k} & = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ \delta(\omega - \varpi_k) A_\mathrm{eff}(E, \omega) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
+& = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \int_0^{2\pi} \mathrm{d}\phi \int_0^{\pi} \mathrm{d}\theta \ \sin{\theta}  \frac{\delta(\theta - \bar{\theta}_k)}{2\pi \sin{\theta}} A_\mathrm{eff}(E, \theta) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
+& = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \ A_\mathrm{eff}(E, \bar{\theta}_k) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
+& = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \ A_\mathrm{eff}(E, \varpi_k) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha},
 \end{split}
 \end{equation}
-This will be evaluated numerically as we are unable to express $A_\mathrm{eff}(E, \omega)$ analytically, except for in simple test cases. A complete description would also integrate over the energy reconstruction uncertainties, $P(\hat{E} | E)$, in order to account for the fact that we expect some $E$ below $E_\mathrm{min}$ in the final detected sample as a consequence of this. However, we expect the approximate formulation to be sufficient in our case and we can quantify the effect of this on our inferences through simulations. The total $\bar{N}$ is simply the sum over all sources: $\bar{N} = \sum_{k=1}^K \bar{N}_k$.
+where $\bar{\theta}_k$ is the $\theta$ coordinate of the source position ($\bar{\theta}_k = \cos^{-1}{(z})$, with $z$ as the third cartesian coordinate of the unit vector $\omega$, not to be confused with the redshift or the zenith angle). This will be evaluated numerically as we are unable to express $A_\mathrm{eff}(E, \omega)$ analytically, except for in simple test cases. 
+
+% Update, thresholding included in Aeff
+A complete description would also integrate over the energy reconstruction uncertainties, $P(\hat{E} | E)$, in order to account for the fact that we expect some $E$ below $E_\mathrm{min}$ in the final detected sample as a consequence of this. However, we expect the approximate formulation to be sufficient in our case and we can quantify the effect of this on our inferences through simulations. The total $\bar{N}$ is simply the sum over all sources: $\bar{N} = \sum_{k=1}^K \bar{N}_k$.
 
 \bibliography{likelihood_derivation}
 \bibliographystyle{ieeetr}
