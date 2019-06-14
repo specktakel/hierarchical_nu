@@ -86,6 +86,7 @@ P(\hat{\omega}, \hat{E} | Q, F_0, \alpha) = e^{-\bar{N}}\prod_{i=1}^I \sum_{k=1}
 \end{equation}
 where we have performed a marginalisation over the latent arrival directions $\omega_i = \varpi_k$, and marginalised over the $\lambda_i$ by considering the sum of all possible source-neutrino associations. The result is effectively a mixture model over $k$ sources with weights $F_k$.
 
+\subsection{Expected number of events}
 To calculate the expected number of events, $\bar{N}$, we must integrate over the contribution of all sources in our population. For each source, we have 
 \begin{equation}
 \begin{split}
@@ -98,19 +99,43 @@ Where we have used the expression for $\frac{\mathrm{d}N}{\mathrm{d}E\mathrm{d}t
 \begin{equation}
 \epsilon_k = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ P(\omega | \varpi_k) A_\mathrm{eff}(E, \omega) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha}.
 \end{equation}
+The total $\bar{N}$ is simply the sum over all sources: $\bar{N} = \sum_{k=0}^K \bar{N}_k$. We consider the background component to be denoted by $k=0$ with the sources denoted by $k=1, ..., K$.
+
+\subsubsection{Point sources}
 For the case of point sources, $P(\omega | \varpi_k)$ is a delta function at the source position, $\delta(\omega - \varpi_k)$. By integrating over the surface of the unit sphere in spherical coordinates ($\theta, \phi$), and using the fact that the effective area is only a function of the $\theta$ coordinate, the above expression can be simplified as follows
 \begin{equation}
 \begin{split}
 \epsilon_{k} & = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ \delta(\omega - \varpi_k) A_\mathrm{eff}(E, \omega) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
-& = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \int_0^{2\pi} \mathrm{d}\phi \int_0^{\pi} \mathrm{d}\theta \ \sin{\theta}  \frac{\delta(\theta - \bar{\theta}_k)}{2\pi \sin{\theta}} A_\mathrm{eff}(E, \theta) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
+& = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \int_0^{2\pi} \mathrm{d}\phi \int_0^{\pi} \mathrm{d}\theta \sin{\theta} \ \frac{\delta(\theta - \bar{\theta}_k)}{2\pi \sin{\theta}} A_\mathrm{eff}(E, \theta) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
 & = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \ A_\mathrm{eff}(E, \bar{\theta}_k) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
 & = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \ A_\mathrm{eff}(E, \varpi_k) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha},
 \end{split}
 \end{equation}
-where $\bar{\theta}_k$ is the $\theta$ coordinate of the source position ($\bar{\theta}_k = \cos^{-1}{(z})$, with $z$ as the third cartesian coordinate of the unit vector $\omega$, not to be confused with the redshift or the zenith angle). This will be evaluated numerically as we are unable to express $A_\mathrm{eff}(E, \omega)$ analytically, except for in simple test cases. 
+where $\bar{\theta}_k$ is the $\theta$ coordinate of the source position ($\bar{\theta}_k = \cos^{-1}{(z})$, with $z$ as the third cartesian coordinate of the unit vector $\omega$, not to be confused with the redshift or the zenith angle). This will be evaluated numerically as we are unable to express $A_\mathrm{eff}(E, \omega)$ analytically, except for in simple test cases. As $\alpha$ is the only parameter that we want to fit for inside the integral, we can tabulate the integral as a function of $\alpha$ and perform a 1D interpolation over the result in the fit. 
 
+\subsubsection{Isotropic background}
+For now, we treat the isotropic background component as emission from an isotropic shell at a fixed redshift of $z_0$. In future, we plan to extend this to some integral over the source evolution out to high redshift. For the isotropic background component, $P(\omega | k=0) = 1/4\pi$. In this case, we follow the above procedure to integrate over the whole unit sphere
+\begin{equation}
+\begin{split}
+\epsilon_{0} & = \frac{(\alpha -1)}{E_\mathrm{min}} T \int_{E_{\rm{min}}}^{\infty} \mathrm{d}E \int_\Omega \mathrm{d}\omega \ \frac{1}{4\pi} A_\mathrm{eff}(E, \omega) \Bigg( \frac{(1+z_0)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
+& = \frac{(\alpha -1)}{E_\mathrm{min}} T \frac{1}{4\pi} \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \int_0^{2\pi} \mathrm{d}\phi \int_0^{\pi} \mathrm{d}\theta \sin{\theta} \ A_\mathrm{eff}(E, \theta) \Bigg( \frac{(1+z_0)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
+& = \frac{(\alpha -1)}{E_\mathrm{min}} \frac{T}{2} \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \int_0^{\pi} \mathrm{d}\theta \sin{\theta} \ A_\mathrm{eff}(E, \theta) \Bigg( \frac{(1+z_0)E}{E_\mathrm{min}} \Bigg)^{-\alpha}.
+\end{split}
+\end{equation}
+The effective area is typically expressed as a function of $\cos{z}$, where $z$ is the zenith angle from the South Pole (NB: not to be confused with the redshift, $z_k$, which is separated by an index denoting the source component). We can rewrite the above integral to ease computation as follows
+\begin{equation}
+\begin{split}
+\epsilon_{0} & = \frac{(\alpha -1)}{E_\mathrm{min}} \frac{T}{2} \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \int_0^{\pi} \mathrm{d}\theta \sin{\theta} \ A_\mathrm{eff}(E, \theta) \Bigg( \frac{(1+z_k)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
+&  = \frac{(\alpha -1)}{E_\mathrm{min}} \frac{T}{2} \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \int_0^{\pi} \mathrm{d}z \sin{z} \ A_\mathrm{eff}(E, z) \Bigg( \frac{(1+z_0)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
+&  = \frac{(\alpha -1)}{E_\mathrm{min}} \frac{T}{2} \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \int_{-1}^1 \frac{\mathrm{d}(\cos{z}) }{\sin{z}} \sin{z} \ A_\mathrm{eff}(E, \cos{z}) \Bigg( \frac{(1+z_0)E}{E_\mathrm{min}} \Bigg)^{-\alpha} \\
+&  = \frac{(\alpha -1)}{E_\mathrm{min}} \frac{T}{2} \int_{E _\mathrm{min}}^{\infty} \mathrm{d}E \int_{-1}^1 \mathrm{d}(\cos{z}) \ A_\mathrm{eff}(E, \cos{z}) \Bigg( \frac{(1+z_0)E}{E_\mathrm{min}} \Bigg)^{-\alpha}.
+\end{split}
+\end{equation}
+As above, the 2D integral can be calculated numerically as a function of $\alpha$, and thus reduced to a fast 1D interpolation in the fit. 
+
+\subsection{Other considerations}
 % Update, thresholding included in Aeff
-A complete description would also integrate over the energy reconstruction uncertainties, $P(\hat{E} | E)$, in order to account for the fact that we expect some $E$ below $E_\mathrm{min}$ in the final detected sample as a consequence of this. However, we expect the approximate formulation to be sufficient in our case and we can quantify the effect of this on our inferences through simulations. The total $\bar{N}$ is simply the sum over all sources: $\bar{N} = \sum_{k=1}^K \bar{N}_k$.
+A complete description would also integrate over the energy reconstruction uncertainties, $P(\hat{E} | E)$, in order to account for the fact that we expect some $E$ below $E_\mathrm{min}$ in the final detected sample as a consequence of this. However, we expect the approximate formulation to be sufficient in our case and we can quantify the effect of this on our inferences through simulations. 
 
 \bibliography{likelihood_derivation}
 \bibliographystyle{ieeetr}
