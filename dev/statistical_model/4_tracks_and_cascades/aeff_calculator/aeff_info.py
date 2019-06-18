@@ -3,69 +3,69 @@
 class aeff_info(object):
     def __init__(self):
 
-        self.nue_cc = './aeff_input/effective_area.per_bin.nu_e.cc.cascade.txt'
+        self.nue_cc = './aeff_input_cascades/effective_area.per_bin.nu_e.cc.cascade.txt'
         self.nue_cc_smoothing = 1
 
-        self.nue_nc = './aeff_input/effective_area.per_bin.nu_e.nc.cascade.txt'
+        self.nue_nc = './aeff_input_cascades/effective_area.per_bin.nu_e.nc.cascade.txt'
         self.nue_nc_smoothing = 5
 
-        self.nue_gr = './aeff_input/effective_area.per_bin.nu_e_bar.gr.cascade.txt'
+        self.nue_gr = './aeff_input_cascades/effective_area.per_bin.nu_e_bar.gr.cascade.txt'
         self.nue_gr_smoothing = 15
 
-        self.numu_cc = './aeff_input/effective_area.per_bin.nu_mu.cc.cascade.txt'
+        self.numu_cc = './aeff_input_cascades/effective_area.per_bin.nu_mu.cc.cascade.txt'
         self.numu_cc_smoothing = 150
 
-        self.numu_nc = './aeff_input/effective_area.per_bin.nu_mu.nc.cascade.txt'
+        self.numu_nc = './aeff_input_cascades/effective_area.per_bin.nu_mu.nc.cascade.txt'
         self.numu_nc_smoothing = 300
 
-        self.nutau_cc = './aeff_input/effective_area.per_bin.nu_tau.cc.cascade.txt'
+        self.nutau_cc = './aeff_input_cascades/effective_area.per_bin.nu_tau.cc.cascade.txt'
         self.nutau_cc_smoothing = 5
 
-        self.nutau_nc = './aeff_input/effective_area.per_bin.nu_tau.nc.cascade.txt'
+        self.nutau_nc = './aeff_input_cascades/effective_area.per_bin.nu_tau.nc.cascade.txt'
         self.nutau_nc_smoothing = 30
 
 
-        self.nuebar_cc = './aeff_input/effective_area.per_bin.nu_e_bar.cc.cascade.txt'
+        self.nuebar_cc = './aeff_input_cascades/effective_area.per_bin.nu_e_bar.cc.cascade.txt'
         self.nuebar_cc_smoothing = 1
 
-        self.nuebar_nc = './aeff_input/effective_area.per_bin.nu_e_bar.nc.cascade.txt'
+        self.nuebar_nc = './aeff_input_cascades/effective_area.per_bin.nu_e_bar.nc.cascade.txt'
         self.nuebar_nc_smoothing = 5
 
-        self.nuebar_gr = './aeff_input/effective_area.per_bin.nu_e_bar_bar.gr.cascade.txt'
+        self.nuebar_gr = './aeff_input_cascades/effective_area.per_bin.nu_e_bar_bar.gr.cascade.txt'
         self.nuebar_gr_smoothing = 15
 
-        self.numubar_cc = './aeff_input/effective_area.per_bin.nu_mu_bar.cc.cascade.txt'
+        self.numubar_cc = './aeff_input_cascades/effective_area.per_bin.nu_mu_bar.cc.cascade.txt'
         self.numubar_cc_smoothing = 150
 
-        self.numubar_nc = './aeff_input/effective_area.per_bin.nu_mu_bar.nc.cascade.txt'
+        self.numubar_nc = './aeff_input_cascades/effective_area.per_bin.nu_mu_bar.nc.cascade.txt'
         self.numubar_nc_smoothing = 300
 
-        self.nutaubar_cc = './aeff_input/effective_area.per_bin.nu_tau_bar.cc.cascade.txt'
+        self.nutaubar_cc = './aeff_input_cascades/effective_area.per_bin.nu_tau_bar.cc.cascade.txt'
         self.nutaubar_cc_smoothing = 5
 
-        self.nutaubar_nc = './aeff_input/effective_area.per_bin.nu_tau_bar.nc.cascade.txt'
+        self.nutaubar_nc = './aeff_input_cascades/effective_area.per_bin.nu_tau_bar.nc.cascade.txt'
         self.nutaubar_nc_smoothing = 30
 
         '''
-        self.nue_cc = '../aeff_input/effective_area.per_bin.nu_e.cc.cascade.txt'
+        self.nue_cc = '../aeff_input_cascades/effective_area.per_bin.nu_e.cc.cascade.txt'
         self.nue_cc_smoothing = 1
 
-        self.nue_nc = '../aeff_input/effective_area.per_bin.nu_e.nc.cascade.txt'
+        self.nue_nc = '../aeff_input_cascades/effective_area.per_bin.nu_e.nc.cascade.txt'
         self.nue_nc_smoothing = 5
 
-        self.nue_gr = '../aeff_input/effective_area.per_bin.nu_e_bar.gr.cascade.txt'
+        self.nue_gr = '../aeff_input_cascades/effective_area.per_bin.nu_e_bar.gr.cascade.txt'
         self.nue_gr_smoothing = 15
 
-        self.numu_cc = '../aeff_input/effective_area.per_bin.nu_mu.cc.cascade.txt'
+        self.numu_cc = '../aeff_input_cascades/effective_area.per_bin.nu_mu.cc.cascade.txt'
         self.numu_cc_smoothing = 150
 
-        self.numu_nc = '../aeff_input/effective_area.per_bin.nu_mu.nc.cascade.txt'
+        self.numu_nc = '../aeff_input_cascades/effective_area.per_bin.nu_mu.nc.cascade.txt'
         self.numu_nc_smoothing = 300
 
-        self.nutau_cc = '../aeff_input/effective_area.per_bin.nu_tau.cc.cascade.txt'
+        self.nutau_cc = '../aeff_input_cascades/effective_area.per_bin.nu_tau.cc.cascade.txt'
         self.nutau_cc_smoothing = 5
 
-        self.nutau_nc = '../aeff_input/effective_area.per_bin.nu_tau.nc.cascade.txt'
+        self.nutau_nc = '../aeff_input_cascades/effective_area.per_bin.nu_tau.nc.cascade.txt'
         self.nutau_nc_smoothing = 30
         '''
 

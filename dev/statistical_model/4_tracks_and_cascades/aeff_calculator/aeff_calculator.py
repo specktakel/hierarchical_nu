@@ -4,7 +4,7 @@ from .aeff_info import aeff_info
 from scipy.interpolate import RectBivariateSpline 
 import numpy as np
 
-class effective_area(object):
+class effective_area_cascades(object):
     def __init__(self, interaction):
         '''
         interaction: "flavor_channel", e.g. "nue_nc" or "numu_cc"
