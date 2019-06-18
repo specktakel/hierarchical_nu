@@ -3,6 +3,7 @@
 from .aeff_info import aeff_info
 from scipy.interpolate import RectBivariateSpline 
 import numpy as np
+import h5py
 
 class effective_area_cascades(object):
     def __init__(self, interaction):
@@ -132,10 +133,50 @@ class effective_area_cascades(object):
         self.spline = RectBivariateSpline(xvals_avg, yvals, aeff_smooth, s=self.smoothing) 
         print( "... creating effective area spline for interaction", self.interaction, ", done!")
 
+
+class effective_area_tracks(object):
+
+    def __init__(self):
+
+        with h5py.File("aeff_input_tracks/effective_area.h5", 'r') as f:
+            area10 = f['2010/nu_mu/area'][()]
+            lE_bin_edges = np.log10(f['2010/nu_mu/bin_edges_0'][()]) # Energy [GeV]
+            cosz_bin_edges = f['2010/nu_mu/bin_edges_1'][()] # cos(zenith)
+
+        self.aeff_vals = np.sum(area10, axis=2)
+        self.lE_bin_cen = (lE_bin_edges[:-1] + lE_bin_edges[1:])/2
+        self.cosz_bin_cen = (cosz_bin_edges[:-1] + cosz_bin_edges[1:])/2
+
+        self.lE_limit_low = lE_bin_edges[0]
+        self.lE_limit_high = lE_bin_edges[-1]
+
+        self.cosz_limit_low = cosz_bin_edges[0]
+        self.cosz_limit_high = cosz_bin_edges[-1]
+        
+        self.__create_spline__()
+        
+    def eval(self, lE, cos_zenith):
+        '''
+        return log10(Aeff) in m
+        '''
+        if not isinstance(lE, np.ndarray):
+            if lE < self.lE_limit_low or lE > self.lE_limit_high:
+                #print( "energy", lE, "outside bounds. returning neg. infty.")
+                return [[np.NINF]]
+
+            elif cos_zenith < self.cosz_limit_low or cos_zenith > self.cosz_limit_high:
+                #print ("cos zenith", cos_zenith, "outside bounds. returning neg. infty.")
+                return [[np.NINF]]
+
+            else:
+                return np.log10(self.spline(lE, cos_zenith))    
 		
 		
-		
-		
+    def __create_spline__(self):
+            
+        self.spline = RectBivariateSpline(self.lE_bin_cen, self.cosz_bin_cen,
+                                          self.aeff_vals, s=(1, 0.5))
+            
 		
  
         

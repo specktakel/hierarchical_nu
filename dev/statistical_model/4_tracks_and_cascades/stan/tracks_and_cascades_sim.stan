@@ -136,28 +136,39 @@ data {
 
   /* energies */
   real<lower=1> alpha;
-  real Emin; // GeV
+  real Emin_tracks; // GeV
+  real Emin_cascades; // GeV
 
   /* deflection */
-  real<lower=0> kappa;
+  real<lower=0> kappa_tracks;
+  real<lower=0> kappa_cascades;
   
   /* flux */
   real<lower=0> Q;
   real<lower=0> F0;
 
   /* Effective area */
-  int Ngrid
+  int Ngrid;
   real T;
+  int p; // spline degree
  
   vector[Ngrid] alpha_grid_cascades;
   vector[Ngrid] integral_grid_cascades[Ns+1];
-  int p_cascades; // spline degree
   int Lknots_x_cascades; // length of knot vector
   int Lknots_y_cascades; // length of knot vector
   vector[Lknots_x_cascades] xknots_cascades; // knot sequence - needs to be a monotonic sequence
   vector[Lknots_y_cascades] yknots_cascades; // knot sequence - needs to be a monotonic sequence
-  matrix[Lknots_x_cascades+p_cascades-1, Lknots_y_cascades+p_cascades-1] c_cascades; // spline coefficients
+  matrix[Lknots_x_cascades+p-1, Lknots_y_cascades+p-1] c_cascades; // spline coefficients
   real aeff_max_cascades;
+
+  vector[Ngrid] alpha_grid_tracks;
+  vector[Ngrid] integral_grid_tracks[Ns+1];
+  int Lknots_x_tracks; // length of knot vector
+  int Lknots_y_tracks; // length of knot vector
+  vector[Lknots_x_tracks] xknots_tracks; // knot sequence - needs to be a monotonic sequence
+  vector[Lknots_y_tracks] yknots_tracks; // knot sequence - needs to be a monotonic sequence
+  matrix[Lknots_x_tracks+p-1, Lknots_y_tracks+p-1] c_tracks; // spline coefficients
+  real aeff_max_tracks;
 
   /* Energy resolution */
   int E_p; // spline degree
@@ -176,10 +187,14 @@ transformed data {
   real<lower=0, upper=1> f;
   vector[Ns+1] F;
   simplex[Ns+1] w_exposure;
+  simplex[2] w_event_type;
   real Nex;
+  real Nex_tracks;
+  real Nex_cascades;
   int N;
   real Mpc_to_m = 3.086e22;
-  vector[Ns+1] eps;
+  vector[Ns+1] eps_tracks;
+  vector[Ns+1] eps_cascades;
   
   for (k in 1:Ns) {
     F[k] = Q / (4 * pi() * pow(D[k] * Mpc_to_m, 2));
@@ -191,9 +206,15 @@ transformed data {
   f = Fs / FT;
 
   /* N */
-  eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
-  w_exposure = get_exposure_weights(F, eps);
-  Nex = get_Nex_sim(F, eps);
+  eps_tracks = get_exposure_factor(T, Emin_tracks, alpha, alpha_grid_tracks, integral_grid_tracks, Ns);
+  eps_cascades = get_exposure_factor(T, Emin_cascades, alpha, alpha_grid_cascades, integral_grid_cascades, Ns);
+  Nex_tracks = get_Nex_sim(F, eps_tracks);
+  Nex_cascades = get_Nex_sim(F, eps_cascades);
+  w_exposure = get_exposure_weights(F, eps_tracks + eps_cascades);
+  Nex = Nex_tracks + Nex_cascades;
+
+  w_event_type[0] = Nex_tracks / Nex; // Tracks
+  w_event_type[1] = 1 - (Nex_tracks / Nex); // Cascades
   
   N = poisson_rng(Nex);
 
@@ -206,6 +227,7 @@ transformed data {
 generated quantities {
 
   int lambda[N];
+  int event_type[N];
   unit_vector[3] omega;
   vector[N] Esrc;
   vector[N] E;
@@ -225,6 +247,7 @@ generated quantities {
     
     /* Sample position */
     lambda[i] = categorical_rng(w_exposure);
+    
     if (lambda[i] < Ns+1) {
       omega = varpi[lambda[i]];
     }
@@ -232,44 +255,86 @@ generated quantities {
       omega = sphere_rng(1);
     }
     zenith[i] = omega_to_zenith(omega);
-       
+
+    /* sample interaction type */
+    event_type[i] = categorical_rng(w_event_type);
+
     accept = 0;
     while (accept != 1) {
-    
-      /* Sample energy */
-      Esrc[i] = spectrum_rng( alpha, Emin * (1 + z[lambda[i]]) );
-      E[i] = Esrc[i] / (1 + z[lambda[i]]);
 
-      /* check bounds of spline */
-      log10E = log10(E[i]);
-      cosz = cos(zenith[i]);
-      if (log10E >= 6.96) {
-	log10E = 6.96;
+      /* tracks */
+      if (event_type[i] == 0) {
+
+	/* Sample energy */
+	Esrc[i] = spectrum_rng( alpha, Emin_cascades * (1 + z[lambda[i]]) );
+	E[i] = Esrc[i] / (1 + z[lambda[i]]);
+
+	/* check bounds of spline */
+	log10E = log10(E[i]);
+	cosz = cos(zenith[i]);
+
+	/* Test against Aeff */
+	if (cosz > 0.1) {
+	  pdet[i] = 0;
+	}
+	else {
+	  pdet[i] = bspline_func_2d(xknots_tracks, yknots_tracks, p, c_tracks, log10E, cosz) / aeff_max_cascades;
+	}
+	prob[1] = pdet[i];
+
       }
-      if (cosz <= -0.8999) {
-	cosz = -0.8999;
-      }
-      if (cosz >= 0.8999) {
-	cosz = 0.8999;
+      /* cascades */
+      else if (event_type[i] == 1) {
+    
+	/* Sample energy */
+	Esrc[i] = spectrum_rng( alpha, Emin_cascades * (1 + z[lambda[i]]) );
+	E[i] = Esrc[i] / (1 + z[lambda[i]]);
+
+	/* check bounds of spline */
+	log10E = log10(E[i]);
+	cosz = cos(zenith[i]);
+	if (log10E >= 6.96) {
+	  log10E = 6.96;
+	}
+	if (cosz <= -0.8999) {
+	  cosz = -0.8999;
+	}
+	if (cosz >= 0.8999) {
+	  cosz = 0.8999;
+	}
+      
+	/* Test against Aeff */
+	pdet[i] = pow(10, bspline_func_2d(xknots_cascades, yknots_cascades, p, c_cascades, log10E, cosz)) / aeff_max_cascades;
+	prob[1] = pdet[i];
       }
       
-      /* Test against Aeff */
-      pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, log10E, cosz)) / aeff_max;
-      prob[1] = pdet[i];
       prob[2] = 1 - pdet[i];
       accept = categorical_rng(prob);
       
     }
 
     /* Detection effects */
-    event[i] = vMF_rng(omega, kappa);  	  
-
-    /* The real deal */
-    Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
-    while (Edet[i] < Emin) {
-      Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
+    if (event_type[i] == 0) { 
+      event[i] = vMF_rng(omega, kappa_tracks);  	  
+    }
+    else if (event_type[i] == 1) {
+      event[i] = vMF_rng(omega, kappa_cascades);
     }
     
+    /* Energy losses */
+    Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
+
+    if (event_type[i] == 0) {
+      while (Edet[i] < Emin_tracks) {
+	Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
+      }
+    }
+    else if (event_type[i] == 1) {
+      while (Edet[i] < Emin_cascades) {
+	Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
+      }
+    }
+   
  
   }  
 
