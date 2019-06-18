@@ -1,11 +1,11 @@
 /**
  * Forward model for neutrino energies and arrival directions.
- * Focusing on cascade events for now, and ignoring different flavours and interaction types.
- * Adding in the 2D Aeff and spline implementation. 
- * Adding in energy resolution.
+ * Simple detector model for muon tracks and cascade events at high energies.
+ * Use one representative Aeff and Eres for each event type (track/cascade) in 
+ * order to show the structure without making a big mess of code.
  *
  * @author Francesca Capel
- * @date April 2019
+ * @date June 2019
  */
 
 functions {
@@ -146,17 +146,18 @@ data {
   real<lower=0> F0;
 
   /* Effective area */
-  int Ngrid;
-  vector[Ngrid] alpha_grid;
-  vector[Ngrid] integral_grid[Ns+1];
+  int Ngrid
   real T;
-  int p; // spline degree
-  int Lknots_x; // length of knot vector
-  int Lknots_y; // length of knot vector
-  vector[Lknots_x] xknots; // knot sequence - needs to be a monotonic sequence
-  vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
-  matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients
-  real aeff_max;
+ 
+  vector[Ngrid] alpha_grid_cascades;
+  vector[Ngrid] integral_grid_cascades[Ns+1];
+  int p_cascades; // spline degree
+  int Lknots_x_cascades; // length of knot vector
+  int Lknots_y_cascades; // length of knot vector
+  vector[Lknots_x_cascades] xknots_cascades; // knot sequence - needs to be a monotonic sequence
+  vector[Lknots_y_cascades] yknots_cascades; // knot sequence - needs to be a monotonic sequence
+  matrix[Lknots_x_cascades+p_cascades-1, Lknots_y_cascades+p_cascades-1] c_cascades; // spline coefficients
+  real aeff_max_cascades;
 
   /* Energy resolution */
   int E_p; // spline degree
