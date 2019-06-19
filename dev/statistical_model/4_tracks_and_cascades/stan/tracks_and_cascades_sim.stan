@@ -186,7 +186,8 @@ transformed data {
   real<lower=0> FT;
   real<lower=0, upper=1> f;
   vector[Ns+1] F;
-  simplex[Ns+1] w_exposure;
+  simplex[Ns+1] w_exposure_tracks;
+  simplex[Ns+1] w_exposure_cascades;
   simplex[2] w_event_type;
   real Nex;
   real Nex_tracks;
@@ -208,9 +209,10 @@ transformed data {
   /* N */
   eps_tracks = get_exposure_factor(T, Emin_tracks, alpha, alpha_grid_tracks, integral_grid_tracks, Ns);
   eps_cascades = get_exposure_factor(T, Emin_cascades, alpha, alpha_grid_cascades, integral_grid_cascades, Ns);
-  Nex_tracks = get_Nex_sim(F, eps_tracks);
+  Nex_tracks = get_Nex_sim(F, eps_tracks) * pow(Emin_tracks/Emin_cascades, 1-alpha);
   Nex_cascades = get_Nex_sim(F, eps_cascades);
-  w_exposure = get_exposure_weights(F, eps_tracks + eps_cascades);
+  w_exposure_tracks = get_exposure_weights(F, eps_tracks);
+  w_exposure_cascades = get_exposure_weights(F, eps_cascades);
   Nex = Nex_tracks + Nex_cascades;
 
   w_event_type[1] = Nex_tracks / Nex; // Tracks
@@ -219,8 +221,8 @@ transformed data {
   N = poisson_rng(Nex);
 
   /* Debug */
-  print("w_bg: ", w_exposure[Ns+1]);
-  print("w_exposure: ", w_exposure);
+  print("w_exposure_tracks: ", w_exposure_tracks);
+  print("w_exposure_cascades: ", w_exposure_cascades);
   print("w_event_type: ", w_event_type);
   print("N: ", N);
   
@@ -246,24 +248,29 @@ generated quantities {
   real cosz;
   
   for (i in 1:N) {
-    
-    /* Sample position */
-    lambda[i] = categorical_rng(w_exposure);
-    
-    if (lambda[i] < Ns+1) {
-      omega = varpi[lambda[i]];
-    }
-    else if (lambda[i] == Ns+1) {
-      omega = sphere_rng(1);
-    }
-    zenith[i] = omega_to_zenith(omega);
 
     /* sample interaction type */
     event_type[i] = categorical_rng(w_event_type);
 
+    /* sample position */
+    if (event_type[i] == 1) {
+      lambda[i] = categorical_rng(w_exposure_tracks);
+    }
+    else if (event_type[i] == 2) {
+      lambda[i] = categorical_rng(w_exposure_cascades);   
+    }
+    if (lambda[i] < Ns+1) {
+      omega = varpi[lambda[i]];
+    }
+
     accept = 0;
     while (accept != 1) {
 
+      if (lambda[i] == Ns+1) {
+	omega = sphere_rng(1);
+      }
+      zenith[i] = omega_to_zenith(omega);
+      
       /* tracks */
       if (event_type[i] == 1) {
 
@@ -274,13 +281,17 @@ generated quantities {
 	/* check bounds of spline */
 	log10E = log10(E[i]);
 	cosz = cos(zenith[i]);
-
+	//cosz = -0.5;
+	
 	/* Test against Aeff */
 	if (cosz > 0.1) {
 	  pdet[i] = 0;
 	}
+	else if (log10E > 6.99) {
+	  pdet[i] = 0;
+	}
 	else {
-	  pdet[i] = bspline_func_2d(xknots_tracks, yknots_tracks, p, c_tracks, log10E, cosz) / aeff_max_tracks;
+	  pdet[i] = pow(10, bspline_func_2d(xknots_tracks, yknots_tracks, p, c_tracks, log10E, cosz)) / aeff_max_tracks;
 	  if (pdet[i] < 0) {
 	    pdet[i] = 0;
 	  }
@@ -314,7 +325,7 @@ generated quantities {
       }
       
       prob[2] = 1 - pdet[i];
-      print("prob: ", prob);
+      //print("prob: ", prob);
       accept = categorical_rng(prob);
       
     }
@@ -328,9 +339,8 @@ generated quantities {
     }
     
     /* Energy losses */
-    //Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
-
-    /*
+    Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
+    
     if (event_type[i] == 1) {
       while (Edet[i] < Emin_tracks) {
 	Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
@@ -341,7 +351,7 @@ generated quantities {
 	Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
       }
     }
-    */
+    
  
   }  
 

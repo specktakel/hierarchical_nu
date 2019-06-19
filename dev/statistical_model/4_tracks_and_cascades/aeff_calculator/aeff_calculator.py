@@ -221,9 +221,16 @@ class effective_area_tracks(object):
         # Make spline
         self.spline = RectBivariateSpline(self.lE_bin_cen, self.cosz_bin_cen,
                                           self.log10_aeff_smooth, s=0.0)
-            
-		
- 
+        # find maximum
+        x = np.linspace(self.lE_limit_low, self.lE_limit_high, 500)
+        y = np.linspace(self.cosz_limit_low, self.cosz_limit_high, 500)
+        xx, yy = np.meshgrid(x, y)
+        xx = xx.T
+        yy = yy.T
+        z = self.eval(x, y)
+
+        self.log10_aeff_max = np.max(z)
+        
         
 
 

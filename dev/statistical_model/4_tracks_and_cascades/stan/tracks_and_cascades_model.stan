@@ -1,10 +1,11 @@
 /**
  * Model for neutrino energies and arrival directions.
- * Focusing on cascade events for now, and ignoring different flavours and interaction types.  
- * Adding in the 2D Aeff and spline implementation. 
+ * Simple detector model for muon tracks and cascade events at high energies.
+ * Use one representative Aeff and Eres for each event type (track/cascade) in 
+ * order to show the structure without making a big mess of code.
  *
  * @author Francesca Capel
- * @date April 2019
+ * @date June 2019
  */
 
 functions {
@@ -84,8 +85,10 @@ data {
   /* Neutrinos */
   int N;
   unit_vector[3] omega_det[N]; 
-  real Emin;
-  vector<lower=Emin>[N] Edet;
+  real Emin_tracks; // GeV
+  real Emin_cascades; // GeV
+  vector[N] Edet;
+  vector[N] event_type; // 1 <=> track, 2 <=> cascade
   
   /* Sources */
   int<lower=0> Ns;
@@ -95,19 +98,11 @@ data {
    
   /* Effective area */
   int Ngrid;
-  vector[Ngrid] alpha_grid;
-  vector[Ngrid] integral_grid[Ns+1];
+  vector[Ngrid] alpha_grid_tracks;
+  vector[Ngrid] integral_grid_tracks[Ns+1];
+  vector[Ngrid] alpha_grid_cascades;
+  vector[Ngrid] integral_grid_cascades[Ns+1];
   real T;
-
-  int p; // spline degree
-  int Lknots_x; // length of knot vector
-  int Lknots_y; // length of knot vector
-
-  vector[Lknots_x] xknots; // knot sequence - needs to be a monotonic sequence
-  vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
- 
-  matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
-
 
   /* Energy resolution */
   int E_Ngrid;
@@ -115,7 +110,8 @@ data {
   vector[E_Ngrid] prob_grid[N];
   
   /* Detection */
-  real kappa;
+  real<lower=0> kappa_tracks;
+  real<lower=0> kappa_cascades;
 
   /* Debugging */
   real Q_scale;
@@ -144,7 +140,7 @@ parameters {
 
   real<lower=1.5, upper=3.5> alpha;
 
-  vector<lower=Emin, upper=1.0e7>[N] Esrc;
+  vector<lower=Emin_cascades, upper=1.0e7>[N] Esrc;
 
 }
 
@@ -165,7 +161,9 @@ transformed parameters {
   /* Association probability */
   vector[Ns+1] lp[N];
   vector[Ns+1] log_F;
-  real Nex;  
+  real Nex;
+  real Nex_tracks;
+  real Nex_cascades;
   vector[N] E;
   
   /* Define transformed parameters */
@@ -185,17 +183,32 @@ transformed parameters {
   /* Rate factor */
   for (i in 1:N) {
 
-    lp[i] = log_F;
-
+    if (event_type == 1) {
+      lp[i] = log_F + log(pow(Emin_tracks/Emin_cascades, 1-alpha));
+    }
+    else if (event_type == 2) {
+      lp[i] = log_F;
+    }
+    
     for (k in 1:Ns+1) {
-      
-      lp[i, k] += pareto_lpdf(Esrc[i] | Emin, alpha - 1);	
+
+      if (event_type[i] == 1) {
+	lp[i, k] += pareto_lpdf(Esrc[i] | Emin_tracks, alpha - 1);
+      }
+      else if (event_type[i] == 2) {
+	lp[i, k] += pareto_lpdf(Esrc[i] | Emin_tracks, alpha - 1);
+      }
       E[i] = Esrc[i] / (1 + z[k]);
 	
       /* Sources */
       if (k < Ns+1) {
 
-	lp[i, k] += vMF_lpdf(omega_det[i] | varpi[k], kappa);
+	if (event_type[i] == 1) {
+	  lp[i, k] += vMF_lpdf(omega_det[i] | varpi[k], kappa_tracks);
+	}
+	else if (event_type[i] == 2) {
+	  lp[i, k] += vMF_lpdf(omega_det[i] | varpi[k], kappa_cascades);		  
+	}
 	
       }
       
@@ -216,8 +229,12 @@ transformed parameters {
   }
 
   /* Nex */
-  eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
-  Nex = get_Nex(allF, eps);
+  eps_tracks = get_exposure_factor(T, Emin_tracks, alpha, alpha_grid_tracks, integral_grid_tracks, Ns);
+  eps_cascades = get_exposure_factor(T, Emin_cascades, alpha, alpha_grid_cascades, integral_grid_cascades, Ns);
+
+  Nex_tracks = get_Nex(allF, eps_tracks) * pow(Emin_tracks/Emin_cascades, 1-alpha);
+  Nex_cascades = get_Nex(allF, eps_cascades);
+  Nex = Nex_tracks + Nex_cascades;
   
 }
 
