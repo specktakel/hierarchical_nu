@@ -141,7 +141,7 @@ class effective_area_tracks(object):
     def __init__(self):
 
         # Data release suggested by Christian and Lisa
-        """
+        
         with h5py.File("aeff_input_tracks/effective_area.h5", 'r') as f:
             area10 = f['2010/nu_mu/area'][()]
             lE_bin_edges = np.log10(f['2010/nu_mu/bin_edges_0'][()]) # Energy [GeV]
@@ -156,9 +156,10 @@ class effective_area_tracks(object):
 
         self.cosz_limit_low = cosz_bin_edges[0]
         self.cosz_limit_high = cosz_bin_edges[-1]
-        """
 
         # More recent Aeff info
+
+        """
         filename = 'aeff_input_tracks/IC79-2010-TabulatedAeff.txt'
         filelayout = ['Emin', 'Emax', 'cos(z)min', 'cos(z)max', 'Aeff']
         output = pd.read_csv(filename, comment = '#',
@@ -187,6 +188,7 @@ class effective_area_tracks(object):
         self.lE_limit_high = np.log10(max(Emax))
         self.cosz_limit_low = min(coszmin)
         self.cosz_limit_high = max(coszmax)
+        """
         
         self.__create_spline__()
         
@@ -211,15 +213,14 @@ class effective_area_tracks(object):
     def __create_spline__(self):
 
         # Smooth
-        sigma = [0.001, 5]
-        self.aeff_smooth = ndimage.filters.gaussian_filter(self.aeff_vals, sigma, mode='constant')
-
-        # Remove zeros
-        self.aeff_smooth[self.aeff_smooth == 0] = 1e-10 
+        sigma = [0.8, 0.5]
+        self.aeff_vals_nonzero = self.aeff_vals
+        self.aeff_vals_nonzero[self.aeff_vals_nonzero == 0] = 1e-10
+        self.log10_aeff_smooth = ndimage.filters.gaussian_filter(np.log10(self.aeff_vals_nonzero), sigma, mode='constant')
         
         # Make spline
         self.spline = RectBivariateSpline(self.lE_bin_cen, self.cosz_bin_cen,
-                                          np.log10(self.aeff_smooth), s=0.0)
+                                          self.log10_aeff_smooth, s=0.0)
             
 		
  
