@@ -19,6 +19,6 @@ To use:
 
 To launch a notebook in the docker, with the current directory mounted:
 
-* `docker run -v `pwd`:`pwd` -w `pwd` -p 3000:8080 -i -t <docker-name>`
+* ``docker run -v `pwd`:`pwd` -w `pwd` -p 3000:8080 -i -t <docker-name>``
 
 Then simply open a browser to localhost:3000 and copy the access key over from the terminal. 
