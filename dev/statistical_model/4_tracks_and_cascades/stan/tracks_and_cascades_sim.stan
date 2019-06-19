@@ -213,13 +213,15 @@ transformed data {
   w_exposure = get_exposure_weights(F, eps_tracks + eps_cascades);
   Nex = Nex_tracks + Nex_cascades;
 
-  w_event_type[0] = Nex_tracks / Nex; // Tracks
-  w_event_type[1] = 1 - (Nex_tracks / Nex); // Cascades
+  w_event_type[1] = Nex_tracks / Nex; // Tracks
+  w_event_type[2] = 1 - (Nex_tracks / Nex); // Cascades
   
   N = poisson_rng(Nex);
 
   /* Debug */
   print("w_bg: ", w_exposure[Ns+1]);
+  print("w_exposure: ", w_exposure);
+  print("w_event_type: ", w_event_type);
   print("N: ", N);
   
 }
@@ -263,7 +265,7 @@ generated quantities {
     while (accept != 1) {
 
       /* tracks */
-      if (event_type[i] == 0) {
+      if (event_type[i] == 1) {
 
 	/* Sample energy */
 	Esrc[i] = spectrum_rng( alpha, Emin_cascades * (1 + z[lambda[i]]) );
@@ -278,13 +280,16 @@ generated quantities {
 	  pdet[i] = 0;
 	}
 	else {
-	  pdet[i] = bspline_func_2d(xknots_tracks, yknots_tracks, p, c_tracks, log10E, cosz) / aeff_max_cascades;
+	  pdet[i] = bspline_func_2d(xknots_tracks, yknots_tracks, p, c_tracks, log10E, cosz) / aeff_max_tracks;
+	  if (pdet[i] < 0) {
+	    pdet[i] = 0;
+	  }
 	}
 	prob[1] = pdet[i];
 
       }
       /* cascades */
-      else if (event_type[i] == 1) {
+      else if (event_type[i] == 2) {
     
 	/* Sample energy */
 	Esrc[i] = spectrum_rng( alpha, Emin_cascades * (1 + z[lambda[i]]) );
@@ -309,32 +314,34 @@ generated quantities {
       }
       
       prob[2] = 1 - pdet[i];
+      print("prob: ", prob);
       accept = categorical_rng(prob);
       
     }
 
     /* Detection effects */
-    if (event_type[i] == 0) { 
+    if (event_type[i] == 1) { 
       event[i] = vMF_rng(omega, kappa_tracks);  	  
     }
-    else if (event_type[i] == 1) {
+    else if (event_type[i] == 2) {
       event[i] = vMF_rng(omega, kappa_cascades);
     }
     
     /* Energy losses */
-    Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
+    //Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
 
-    if (event_type[i] == 0) {
+    /*
+    if (event_type[i] == 1) {
       while (Edet[i] < Emin_tracks) {
 	Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
       }
     }
-    else if (event_type[i] == 1) {
+    else if (event_type[i] == 2) {
       while (Edet[i] < Emin_cascades) {
 	Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
       }
     }
-   
+    */
  
   }  
 
