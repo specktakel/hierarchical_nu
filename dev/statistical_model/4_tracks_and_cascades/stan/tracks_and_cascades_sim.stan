@@ -225,7 +225,7 @@ transformed data {
   print("w_exposure_cascades: ", w_exposure_cascades);
   print("w_event_type: ", w_event_type);
   print("N: ", N);
-  
+  print("cosz 15: ", cos( omega_to_zenith( varpi[15] ) ) );
 }
 
 generated quantities {
@@ -246,6 +246,7 @@ generated quantities {
 
   real log10E;
   real cosz;
+  int n_trials;
   
   for (i in 1:N) {
 
@@ -264,6 +265,7 @@ generated quantities {
     }
 
     accept = 0;
+    n_trials = 0;
     while (accept != 1) {
 
       if (lambda[i] == Ns+1) {
@@ -275,25 +277,30 @@ generated quantities {
       if (event_type[i] == 1) {
 
 	/* Sample energy */
-	Esrc[i] = spectrum_rng( alpha, Emin_cascades * (1 + z[lambda[i]]) );
+	Esrc[i] = spectrum_rng( alpha, Emin_tracks * (1 + z[lambda[i]]) );
 	E[i] = Esrc[i] / (1 + z[lambda[i]]);
 
 	/* check bounds of spline */
 	log10E = log10(E[i]);
 	cosz = cos(zenith[i]);
-	//cosz = -0.5;
-	
+	if (cosz <= -0.9499) {
+	  cosz = -0.9499;
+	}
+	if (cosz >= 0.0499) {
+	  cosz = 0.0499;
+	}
+      	
 	/* Test against Aeff */
 	if (cosz > 0.1) {
-	  pdet[i] = 0;
-	}
-	else if (log10E > 6.99) {
-	  pdet[i] = 0;
+	  pdet[i] = 0.0;
 	}
 	else {
 	  pdet[i] = pow(10, bspline_func_2d(xknots_tracks, yknots_tracks, p, c_tracks, log10E, cosz)) / aeff_max_tracks;
 	  if (pdet[i] < 0) {
 	    pdet[i] = 0;
+	  }
+	  if (pdet[i] > 1) {
+	    pdet[i] = 1;
 	  }
 	}
 	prob[1] = pdet[i];
@@ -327,7 +334,11 @@ generated quantities {
       prob[2] = 1 - pdet[i];
       //print("prob: ", prob);
       accept = categorical_rng(prob);
-      
+      n_trials += 1;
+      if (n_trials > 1e5) {
+	accept = 1;
+	print("problem component: ", lambda[i])
+      }
     }
 
     /* Detection effects */

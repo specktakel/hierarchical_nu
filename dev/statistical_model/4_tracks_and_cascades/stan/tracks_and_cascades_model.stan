@@ -152,7 +152,8 @@ transformed parameters {
   /* Source flux */
   vector[Ns] F;
   vector[Ns+1] allF;
-  vector[Ns+1] eps;
+  vector[Ns+1] eps_tracks;
+  vector[Ns+1] eps_cascades;
 
   /* Associated fraction */
   real<lower=0, upper=1> f; 
@@ -183,10 +184,10 @@ transformed parameters {
   /* Rate factor */
   for (i in 1:N) {
 
-    if (event_type == 1) {
+    if (event_type[i] == 1) {
       lp[i] = log_F + log(pow(Emin_tracks/Emin_cascades, 1-alpha));
     }
-    else if (event_type == 2) {
+    else if (event_type[i] == 2) {
       lp[i] = log_F;
     }
     

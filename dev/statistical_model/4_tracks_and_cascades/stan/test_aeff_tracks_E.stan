@@ -49,6 +49,7 @@ generated quantities {
       cz = cosz;
       
       /* check bounds of spline */
+      /*
       if (l10E >= 6.96) {
 	l10E = 6.96;
       }
@@ -58,7 +59,7 @@ generated quantities {
       if (cz >= 0.8999) {
 	cz = 0.8999;
       }
-       
+      */
       
       /* Test against Aeff */
       pdet[i] = pow(10, bspline_func_2d(xknots, yknots, p, c, l10E, cz) ) / aeff_max;
