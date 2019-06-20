@@ -83,12 +83,14 @@ functions {
 data {
   
   /* Neutrinos */
-  int N;
-  unit_vector[3] omega_det[N]; 
+  int N_tracks;
+  int N_cascades;
+  unit_vector[3] omega_det_tracks[N_tracks]; 
+  unit_vector[3] omega_det_cascades[N_cascades]; 
   real Emin_tracks; // GeV
   real Emin_cascades; // GeV
-  vector[N] Edet;
-  vector[N] event_type; // 1 <=> track, 2 <=> cascade
+  vector[N_tracks] Edet_tracks;
+  vector[N_cascades] Edet_cascades;
   
   /* Sources */
   int<lower=0> Ns;
@@ -104,10 +106,6 @@ data {
   vector[Ngrid] integral_grid_cascades[Ns+1];
   real T;
 
-  /* Energy resolution */
-  int E_Ngrid;
-  vector[E_Ngrid] log10_E_grid[N];
-  vector[E_Ngrid] prob_grid[N];
   
   /* Detection */
   real<lower=0> kappa_tracks;
@@ -121,13 +119,16 @@ data {
 
 transformed data {
 
-  vector[N] zenith;
+  vector[N_tracks] zenith_tracks;
+  vector[N_cascades] zenith_cascades;
+
   real Mpc_to_m = 3.086e22;
   
-  for (i in 1:N) {
-
-    zenith[i] = omega_to_zenith(omega_det[i]);
-
+  for (i in 1:N_tracks) {
+    zenith_tracks[i] = omega_to_zenith(omega_det_tracks[i]);
+  }
+  for (j in 1:N_cascades) {
+    zenith_cascades[j] = omega_to_zenith(omega_det_cascades[j]);
   }
 
   
@@ -140,8 +141,8 @@ parameters {
 
   real<lower=1.5, upper=3.5> alpha;
 
-  vector<lower=Emin_tracks, upper=1.0e8>[N] Esrc_tracks;
-  vector<lower=Emin_cascades, upper=1.0e8>[N] Esrc_cascades;
+  vector<lower=Emin_tracks, upper=1.0e8>[N_tracks] Esrc_tracks;
+  vector<lower=Emin_cascades, upper=1.0e8>[N_cascades] Esrc_cascades;
 
 }
 
@@ -161,12 +162,14 @@ transformed parameters {
   real<lower=0> FT;
 
   /* Association probability */
-  vector[Ns+1] lp[N];
+  vector[Ns+1] lp_tracks[N_tracks];
+  vector[Ns+1] lp_cascades[N_cascades];
   vector[Ns+1] log_F;
   real Nex;
   real Nex_tracks;
   real Nex_cascades;
-  vector[N] E;
+  vector[N_tracks] E_tracks;
+  vector[N_cascades] E_cascades;
   
   /* Define transformed parameters */
   Fs = 0;
@@ -182,49 +185,29 @@ transformed parameters {
 
   /* Likelihood calculation  */
   log_F = log(allF);
-  /* Rate factor */
+
+  /* Tracks */
   for (i in 1:N_tracks) {
 
-    if (event_type[i] == 1) {
-      lp[i] = log_F + log(pow(Emin_tracks/Emin_cascades, 1-alpha));
-    }
-    else if (event_type[i] == 2) {
-      lp[i] = log_F;
-    }
-    
+    lp_tracks[i] = log_F + log(pow(Emin_tracks/Emin_cascades, 1-alpha));
+
     for (k in 1:Ns+1) {
 
-      if (event_type[i] == 1) {
-	lp[i, k] += pareto_lpdf(Esrc_tracks[i] | Emin_tracks, alpha - 1);
-	E[i] = Esrc_tracks[i] / (1 + z[k]);
-      }
-      else if (event_type[i] == 2) {
-	lp[i, k] += pareto_lpdf(Esrc_cascades[i] | Emin_cascades, alpha - 1);
-	E[i] = Esrc_cascades[i] / (1 + z[k]);
-      }
-	
+      lp_tracks[i, k] += pareto_lpdf(Esrc_tracks[i] | Emin_tracks, alpha - 1);
+      E_tracks[i] = Esrc_tracks[i] / (1 + z[k]);
+   	
       /* Sources */
       if (k < Ns+1) {
-
-	if (event_type[i] == 1) {
-	  lp[i, k] += vMF_lpdf(omega_det[i] | varpi[k], kappa_tracks);
-	}
-	else if (event_type[i] == 2) {
-	  lp[i, k] += vMF_lpdf(omega_det[i] | varpi[k], kappa_cascades);		  
-	}
-	
+	  lp_tracks[i, k] += vMF_lpdf(omega_det_tracks[i] | varpi[k], kappa_tracks);	
       }
-      
       /* Background */
       else if (k == Ns+1) {
- 
-	lp[i, k] += log(1 / ( 4 * pi() ));
-
+ 	lp_tracks[i, k] += log(1 / ( 4 * pi() ));
       }
 
       /* Lognormal approx. */
       //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13); // Nue_CC
-      lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i]), 0.15);
+      lp_tracks[i, k] += lognormal_lpdf(Edet_tracks[i] | log(E_tracks[i]), 0.15);
       
       /* Actual P(Edet|E) from linear interpolation */
       //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
@@ -232,6 +215,31 @@ transformed parameters {
     } 
   }
 
+  /* Cascades */
+  for (j in 1: N_cascades) {
+
+    lp_cascades[j] = log_F;
+
+    for (k in 1:Ns+1) {
+
+      lp_cascades[j, k] += pareto_lpdf(Esrc_cascades[j] | Emin_cascades, alpha - 1);
+      E_cascades[j] = Esrc_cascades[j] / (1 + z[k]);
+
+      /* Sources */
+      if (k < Ns+1 ) { 
+	lp_cascades[j, k] += vMF_lpdf(omega_det_cascades[j] | varpi[k], kappa_cascades);		  
+      }
+      /* Background */
+      else if (k == Ns+1) {
+	lp_cascades[j, k] += log(1 / ( 4 * pi() ));
+      }
+
+      lp_cascades[j, k] += lognormal_lpdf(Edet_cascades[j] | log(E_cascades[j]), 0.15);
+      
+    }
+ 
+  }
+  
   /* Nex */
   eps_tracks = get_exposure_factor(T, Emin_tracks, alpha, alpha_grid_tracks, integral_grid_tracks, Ns);
   eps_cascades = get_exposure_factor(T, Emin_cascades, alpha, alpha_grid_cascades, integral_grid_cascades, Ns);
@@ -245,8 +253,11 @@ transformed parameters {
 model {
   
   /* Rate factor */
-  for (i in 1:N) {
-    target += log_sum_exp(lp[i]);
+  for (i in 1:N_tracks) {
+    target += log_sum_exp(lp_tracks[i]);
+  }
+  for (j in 1:N_cascades) {
+    target += log_sum_exp(lp_cascades[j]);
   }
   
   /* Normalise */
