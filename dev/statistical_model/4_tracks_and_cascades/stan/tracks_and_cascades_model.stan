@@ -183,7 +183,7 @@ transformed parameters {
   /* Likelihood calculation  */
   log_F = log(allF);
   /* Rate factor */
-  for (i in 1:N) {
+  for (i in 1:N_tracks) {
 
     if (event_type[i] == 1) {
       lp[i] = log_F + log(pow(Emin_tracks/Emin_cascades, 1-alpha));

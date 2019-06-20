@@ -225,6 +225,8 @@ transformed data {
   print("w_exposure_cascades: ", w_exposure_cascades);
   print("w_event_type: ", w_event_type);
   print("N: ", N);
+  print("Nex: ", Nex);
+
 }
 
 generated quantities {
@@ -290,10 +292,10 @@ generated quantities {
 	}
       	
 	/* Test against Aeff */
-	if (cosz > 0.1) {
+	if (cos(zenith[i]) > 0.1) {
 	  pdet[i] = 0.0;
 	}
-	else if (log10E > 7.0) {
+	else if (log10(E[i]) > 7.0) {
 	  pdet[i] = 0.0;
 	}
 	else {
@@ -329,7 +331,7 @@ generated quantities {
 	}
       
 	/* Test against Aeff */
-	if (log10E > 7.0) {
+	if (log10(E[i]) > 7.0) {
 	  pdet[i] = 0.0;
 	}
 	else {
