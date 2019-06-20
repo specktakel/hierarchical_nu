@@ -225,7 +225,6 @@ transformed data {
   print("w_exposure_cascades: ", w_exposure_cascades);
   print("w_event_type: ", w_event_type);
   print("N: ", N);
-  print("cosz 15: ", cos( omega_to_zenith( varpi[15] ) ) );
 }
 
 generated quantities {
@@ -294,6 +293,9 @@ generated quantities {
 	if (cosz > 0.1) {
 	  pdet[i] = 0.0;
 	}
+	else if (log10E > 7.0) {
+	  pdet[i] = 0.0;
+	}
 	else {
 	  pdet[i] = pow(10, bspline_func_2d(xknots_tracks, yknots_tracks, p, c_tracks, log10E, cosz)) / aeff_max_tracks;
 	  if (pdet[i] < 0) {
@@ -327,7 +329,12 @@ generated quantities {
 	}
       
 	/* Test against Aeff */
-	pdet[i] = pow(10, bspline_func_2d(xknots_cascades, yknots_cascades, p, c_cascades, log10E, cosz)) / aeff_max_cascades;
+	if (log10E > 7.0) {
+	  pdet[i] = 0.0;
+	}
+	else {
+	  pdet[i] = pow(10, bspline_func_2d(xknots_cascades, yknots_cascades, p, c_cascades, log10E, cosz)) / aeff_max_cascades;
+	}
 	prob[1] = pdet[i];
       }
       
@@ -350,6 +357,8 @@ generated quantities {
     }
     
     /* Energy losses */
+    /* Nue_CC */
+    /*
     Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);  
     
     if (event_type[i] == 1) {
@@ -362,7 +371,21 @@ generated quantities {
 	Edet[i] = Edet_rng(E[i], E_xknots, E_yknots, E_p, E_c);
       }
     }
-    
+    */
+
+    /* Simple test case */
+    Edet[i] = lognormal_rng(log(E[i]), 0.15);
+    if (event_type[i] == 1) {
+      while (Edet[i] < Emin_tracks) {
+	Edet[i] = lognormal_rng(log(E[i]), 0.15);
+      }
+    }
+    else if (event_type[i] == 2) {
+      while (Edet[i] < Emin_cascades) {
+	Edet[i] = lognormal_rng(log(E[i]), 0.15);
+      }
+    }
+       
  
   }  
 

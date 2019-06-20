@@ -140,7 +140,8 @@ parameters {
 
   real<lower=1.5, upper=3.5> alpha;
 
-  vector<lower=Emin_cascades, upper=1.0e7>[N] Esrc;
+  vector<lower=Emin_tracks, upper=1.0e8>[N] Esrc_tracks;
+  vector<lower=Emin_cascades, upper=1.0e8>[N] Esrc_cascades;
 
 }
 
@@ -194,12 +195,13 @@ transformed parameters {
     for (k in 1:Ns+1) {
 
       if (event_type[i] == 1) {
-	lp[i, k] += pareto_lpdf(Esrc[i] | Emin_tracks, alpha - 1);
+	lp[i, k] += pareto_lpdf(Esrc_tracks[i] | Emin_tracks, alpha - 1);
+	E[i] = Esrc_tracks[i] / (1 + z[k]);
       }
       else if (event_type[i] == 2) {
-	lp[i, k] += pareto_lpdf(Esrc[i] | Emin_tracks, alpha - 1);
+	lp[i, k] += pareto_lpdf(Esrc_cascades[i] | Emin_cascades, alpha - 1);
+	E[i] = Esrc_cascades[i] / (1 + z[k]);
       }
-      E[i] = Esrc[i] / (1 + z[k]);
 	
       /* Sources */
       if (k < Ns+1) {
@@ -221,8 +223,9 @@ transformed parameters {
       }
 
       /* Lognormal approx. */
-      lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13); // Nue_CC
-	
+      //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13); // Nue_CC
+      lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i]), 0.15);
+      
       /* Actual P(Edet|E) from linear interpolation */
       //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
       
@@ -233,7 +236,7 @@ transformed parameters {
   eps_tracks = get_exposure_factor(T, Emin_tracks, alpha, alpha_grid_tracks, integral_grid_tracks, Ns);
   eps_cascades = get_exposure_factor(T, Emin_cascades, alpha, alpha_grid_cascades, integral_grid_cascades, Ns);
 
-  Nex_tracks = get_Nex(allF, eps_tracks) * pow(Emin_tracks/Emin_cascades, 1-alpha);
+  Nex_tracks = get_Nex(allF * pow(Emin_tracks/Emin_cascades, 1-alpha), eps_tracks);
   Nex_cascades = get_Nex(allF, eps_cascades);
   Nex = Nex_tracks + Nex_cascades;
   
