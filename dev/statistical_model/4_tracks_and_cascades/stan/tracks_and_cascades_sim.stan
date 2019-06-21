@@ -209,9 +209,9 @@ transformed data {
   /* N */
   eps_tracks = get_exposure_factor(T, Emin_tracks, alpha, alpha_grid_tracks, integral_grid_tracks, Ns);
   eps_cascades = get_exposure_factor(T, Emin_cascades, alpha, alpha_grid_cascades, integral_grid_cascades, Ns);
-  Nex_tracks = get_Nex_sim(F, eps_tracks) * pow(Emin_tracks/Emin_cascades, 1-alpha);
+  Nex_tracks = get_Nex_sim(F * pow(Emin_tracks/Emin_cascades, 1-alpha), eps_tracks);
   Nex_cascades = get_Nex_sim(F, eps_cascades);
-  w_exposure_tracks = get_exposure_weights(F, eps_tracks);
+  w_exposure_tracks = get_exposure_weights(F * pow(Emin_tracks/Emin_cascades, 1-alpha), eps_tracks);
   w_exposure_cascades = get_exposure_weights(F, eps_cascades);
   Nex = Nex_tracks + Nex_cascades;
 
@@ -261,15 +261,15 @@ generated quantities {
     else if (event_type[i] == 2) {
       lambda[i] = categorical_rng(w_exposure_cascades);   
     }
-    if (lambda[i] < Ns+1) {
-      omega = varpi[lambda[i]];
-    }
 
     accept = 0;
     n_trials = 0;
     while (accept != 1) {
 
-      if (lambda[i] == Ns+1) {
+      if (lambda[i] < Ns+1) {
+	omega = varpi[lambda[i]];
+      }
+      else if (lambda[i] == Ns+1) {
 	omega = sphere_rng(1);
       }
       zenith[i] = omega_to_zenith(omega);
@@ -300,12 +300,6 @@ generated quantities {
 	}
 	else {
 	  pdet[i] = pow(10, bspline_func_2d(xknots_tracks, yknots_tracks, p, c_tracks, log10E, cosz)) / aeff_max_tracks;
-	  if (pdet[i] < 0) {
-	    pdet[i] = 0;
-	  }
-	  if (pdet[i] > 1) {
-	    pdet[i] = 1;
-	  }
 	}
 	prob[1] = pdet[i];
 
@@ -376,7 +370,15 @@ generated quantities {
     */
 
     /* Simple test case */
-    Edet[i] = lognormal_rng(log(E[i]), 0.15);
+    
+    if (event_type[i] == 1) {
+      Edet[i] = lognormal_rng(log(E[i]), 0.3);
+    }
+    else if (event_type[i] == 2) {
+      Edet[i] = lognormal_rng(log(E[i]), 0.15);
+    }
+    
+      /*
     if (event_type[i] == 1) {
       while (Edet[i] < Emin_tracks) {
 	Edet[i] = lognormal_rng(log(E[i]), 0.15);
@@ -387,8 +389,8 @@ generated quantities {
 	Edet[i] = lognormal_rng(log(E[i]), 0.15);
       }
     }
-       
- 
+    */
+    
   }  
 
 }

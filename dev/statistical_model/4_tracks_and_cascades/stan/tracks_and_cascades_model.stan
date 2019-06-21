@@ -50,6 +50,22 @@ functions {
     return Nex;
   }
 
+  /**
+   * Calculate the expected number of detected events from each source.
+   */
+  real get_Nex_test(vector F, vector eps) {
+
+    int K = num_elements(F);
+    real Nex = 0;
+ 
+    for (k in 1:K-1) {
+      Nex += F[k] * eps[k] * 0.75;
+    }
+    Nex += F[K] * eps[K];
+
+    return Nex;
+  }
+
   
   /**
    * Convert from unit vector omega to theta of spherical coordinate system.
@@ -207,7 +223,7 @@ transformed parameters {
 
       /* Lognormal approx. */
       //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13); // Nue_CC
-      lp_tracks[i, k] += lognormal_lpdf(Edet_tracks[i] | log(E_tracks[i]), 0.15);
+      lp_tracks[i, k] += lognormal_lpdf(Edet_tracks[i] | log(E_tracks[i]), 0.3);
       
       /* Actual P(Edet|E) from linear interpolation */
       //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
@@ -252,16 +268,18 @@ transformed parameters {
 
 model {
   
-  /* Rate factor */
+  
   for (i in 1:N_tracks) {
     target += log_sum_exp(lp_tracks[i]);
   }
+  target += -Nex_tracks;
+  
+  
   for (j in 1:N_cascades) {
     target += log_sum_exp(lp_cascades[j]);
   }
+  target += -Nex_cascades;
   
-  /* Normalise */
-  target += -Nex;
   
   Q ~ normal(0, Q_scale);
   F0 ~ normal(0, F0_scale);

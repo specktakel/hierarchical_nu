@@ -71,6 +71,8 @@ class ExposureIntegral(object):
 
         integ, err = integrate.quad(self._source_integrand, self.Emin, Emax,
                                     args=(position, z, alpha))
+        # debug
+        #print(integ, err)
         return integ
 
     
@@ -79,6 +81,8 @@ class ExposureIntegral(object):
         integ, err = integrate.dblquad(self._bg_integrand, -1, 1,
                                        lambda E: self.Emin, lambda E: Emax,
                                        args=(z, alpha))
+        # debug
+        #print(integ, err)    
         return integ * 0.5 # factor of 2pi/4pi
     
     
