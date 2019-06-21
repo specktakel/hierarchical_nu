@@ -13,6 +13,9 @@ hierarchical-nu
 
 Has python 3.7 with pystan and basemap set up for sky plots. Useful for running the statistical_model code.
 
+Usage
+-----
+
 To use:
 
 * `docker pull <docker-name>`
