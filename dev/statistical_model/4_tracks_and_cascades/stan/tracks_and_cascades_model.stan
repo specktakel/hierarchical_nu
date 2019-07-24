@@ -17,6 +17,19 @@ functions {
 #include utils.stan
   
   /**
+   * Evaluate a polynomial with given coefficients.
+   * Highest power of x first.
+   */
+  real eval_poly1d(real x, vector coeffs){
+    int N = num_elements(coeffs);
+    real res=0;
+    for(i in 1:N){
+      res += coeffs[i]*pow(x, N-i);
+    }
+    return res;
+  }
+  
+  /**
    * Get exposure factor from spline information and source positions.
    * Units of [m^2 yr]
    */
@@ -33,7 +46,6 @@ functions {
 
     return eps;
   }
-
   
   /**
    * Calculate the expected number of detected events from each source.
@@ -121,6 +133,13 @@ data {
   vector[Ngrid] alpha_grid_cascades;
   vector[Ngrid] integral_grid_cascades[Ns+1];
   real T;
+  
+  /* Energy Resolution */
+  int<lower=0> track_poly_deg; // Degree of polynomial
+  real track_poly_emin; 
+  real track_poly_emax; 
+  vector[track_poly_deg] track_poly_mu_coeffs; // Polynomial coefficiencies for mean
+  vector[track_poly_deg] track_poly_sigma_coeffs; // Polynomial coefficiencies for sd
 
   
   /* Detection */
@@ -187,6 +206,11 @@ transformed parameters {
   vector[N_tracks] E_tracks;
   vector[N_cascades] E_cascades;
   
+  /* Energy resolution parameters */
+  real e_reso_mu;
+  real e_reso_sigma;
+  real e_reso_eval_energy;
+  
   /* Define transformed parameters */
   Fs = 0;
   for (k in 1:Ns) {
@@ -218,12 +242,30 @@ transformed parameters {
       }
       /* Background */
       else if (k == Ns+1) {
- 	lp_tracks[i, k] += log(1 / ( 4 * pi() ));
+        lp_tracks[i, k] += log(1 / ( 4 * pi() ));
       }
-
+  
+      if (E_tracks[i] < track_poly_emin){
+          e_reso_eval_energy = track_poly_emin;
+      }
+      else if (E_tracks[i] > track_poly_emax ){
+          e_reso_eval_energy = track_poly_emax;
+      
+      }else{
+          e_reso_eval_energy = E_tracks[i];
+      }
+      
+      e_reso_mu = eval_poly1d(log10(e_reso_eval_energy), track_poly_mu_coeffs);
+      e_reso_sigma = eval_poly1d(log10(e_reso_eval_energy), track_poly_sigma_coeffs);
+      
+      lp_tracks[i, k] += lognormal_lpdf(log10(Edet_tracks[i]) | log(e_reso_mu), e_reso_sigma);
+      
       /* Lognormal approx. */
       //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13); // Nue_CC
-      lp_tracks[i, k] += lognormal_lpdf(Edet_tracks[i] | log(E_tracks[i]), 0.3);
+      
+      //lp_tracks[i, k] += lognormal_lpdg(Edet_tracks[i] | )
+      
+      //lp_tracks[i, k] += lognormal_lpdf(Edet_tracks[i] | log(E_tracks[i]), 0.3);
       
       /* Actual P(Edet|E) from linear interpolation */
       //lp[i, k] += log(interpolate(log10_E_grid[i], prob_grid[i], log10(E[i])));
