@@ -82,7 +82,7 @@ P(\hat{E}, \hat{\omega} | Q, F_0, \alpha) \propto e^{-\bar{N}} \prod_{i=1}^{I} r
 where $\bar{N} = \int \mathrm{d}E \int \mathrm{d}\omega \int \mathrm{d}t \ r(\omega, t)$ is the expected number of detected neutrinos and $r(E_i, \omega_i, t_i)$ is the inhomogeneous poisson rate at the energy, location and time of the $i^\mathrm{th}$ observation. The effective area of the IceCube detector changes in time due to the number of active detectors deployed in the ice (and other considerations). In this way, the time dependence is absorbed into the expression for the effective area, which changes slowly in time and thus can be taken into account by labelling the detected neutrinos as belonging to a certain observation period. The likelihood derived herein has the same structure but a slightly more complex form as we consider the neutrinos to be produced with certain properties or ``marks''. This results in a marked poisson point process whereby the neutrinos have associated labels $\lambda_i$ which designate their sources and are produced with energies $\tilde{E}_i$. In this way, when considering an expression for the inhomogeneous poisson rate, we must also incorporate the corresponding mark distributions. This gives us
 
 \begin{equation}
-P(\hat{\omega}, \hat{E} | Q, F_0, \alpha) = e^{-\bar{N}}\prod_{i=1}^I \sum_{k=1}^K F_k P(\hat{\omega_i} | \varpi_k, E_i) P(\hat{E}_i | \tilde{E}_i, z_k) P(\tilde{E}_i | \alpha),
+P(\hat{\omega}, \hat{E} | Q, F_0, \alpha) = e^{-\bar{N}}\prod_{i=1}^I \sum_{k=1}^K F_k P(\mathrm{det} | E_i, \varpi_k) P(\hat{\omega_i} | \varpi_k, E_i) P(\hat{E}_i | \tilde{E}_i, z_k) P(\tilde{E}_i | \alpha),
 \end{equation}
 where we have performed a marginalisation over the latent arrival directions $\omega_i = \varpi_k$, and marginalised over the $\lambda_i$ by considering the sum of all possible source-neutrino associations. The result is effectively a mixture model over $k$ sources with weights $F_k$.
 
@@ -133,8 +133,9 @@ The effective area is typically expressed as a function of $\cos{z}$, where $z$ 
 \end{equation}
 As above, the 2D integral can be calculated numerically as a function of $\alpha$, and thus reduced to a fast 1D interpolation in the fit. 
 
-\subsection{Other considerations}
-A complete description would also integrate over the energy reconstruction uncertainties, $P(\hat{E} | E)$, in order to account for the fact that we expect some $E$ below $E_\mathrm{min}$ in the final detected sample as a consequence of this. However, here this effect is already accounted for in the effective area provided by the IceCube collaboration's public data. \textbf{Should add some more information on how this is done}.
+\subsection{Inclusion of energy selection effects in the rate factor}
+For each fixed point source location, the effective area changes as a function of energy. The effect this has on the weights of the different components is accounted for by the integral for the expected number of neutrinos, as described above. However, in order to include this effect on the individual source-neutrino associations, it is necessary to have a term in the likelihood which includes this information. $P(\mathrm{det} | E_i, \varpi_k)$ is the effective area at each source position as a function on energy, scaled to the maximum to give a thinning function bounded by 0 and 1. For the background it is the same, but the effective area is summed over the whole sky.    
+
 \bibliography{likelihood_derivation}
 \bibliographystyle{ieeetr}
 
