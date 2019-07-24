@@ -228,7 +228,7 @@ transformed parameters {
       }
 
       /* Aeff factor */
-      //lp_tracks[i, k] += log(interpolate(E_grid_tracks, Pdet_grid_tracks[k], E_tracks[i]));
+      lp_tracks[i, k] += log(interpolate(E_grid_cascades, Pdet_grid_cascades[k], E_tracks[i]));
 
       /* Lognormal approx. */
       //lp[i, k] += lognormal_lpdf(Edet[i] | log(E[i] * 0.95), 0.13); // Nue_CC
