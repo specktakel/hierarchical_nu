@@ -233,7 +233,7 @@ generated quantities {
 
   int lambda[N];
   int event_type[N];
-  unit_vector[3] omega;
+  unit_vector[3] omega[N];
   vector[N] Esrc;
   vector[N] E;
   vector[N] Edet;
@@ -267,12 +267,12 @@ generated quantities {
     while (accept != 1) {
 
       if (lambda[i] < Ns+1) {
-	omega = varpi[lambda[i]];
+	omega[i] = varpi[lambda[i]];
       }
       else if (lambda[i] == Ns+1) {
-	omega = sphere_rng(1);
+	omega[i] = sphere_rng(1);
       }
-      zenith[i] = omega_to_zenith(omega);
+      zenith[i] = omega_to_zenith(omega[i]);
       
       /* tracks */
       if (event_type[i] == 1) {
@@ -346,10 +346,10 @@ generated quantities {
 
     /* Detection effects */
     if (event_type[i] == 1) { 
-      event[i] = vMF_rng(omega, kappa_tracks);  	  
+      event[i] = vMF_rng(omega[i], kappa_tracks);  	  
     }
     else if (event_type[i] == 2) {
-      event[i] = vMF_rng(omega, kappa_cascades);
+      event[i] = vMF_rng(omega[i], kappa_cascades);
     }
     
     /* Energy losses */
