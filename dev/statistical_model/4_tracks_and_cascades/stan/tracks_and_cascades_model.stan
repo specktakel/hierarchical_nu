@@ -16,19 +16,7 @@ functions {
 #include bspline_ev.stan
 #include utils.stan
   
-  /**
-   * Evaluate a polynomial with given coefficients.
-   * Highest power of x first.
-   */
-  real eval_poly1d(real x, vector coeffs){
-    int N = num_elements(coeffs);
-    real res=0;
-    for(i in 1:N){
-      res += coeffs[i]*pow(x, N-i);
-    }
-    return res;
-  }
-  
+
   /**
    * Get exposure factor from spline information and source positions.
    * Units of [m^2 yr]
@@ -141,9 +129,14 @@ data {
   vector[track_poly_deg] track_poly_mu_coeffs; // Polynomial coefficiencies for mean
   vector[track_poly_deg] track_poly_sigma_coeffs; // Polynomial coefficiencies for sd
 
+  /* Angular Resolution */
+  int<lower=0> track_ang_res_poly_deg; // Degree of polynomial
+  real track_ang_res_poly_emin; 
+  real track_ang_res_poly_emax; 
+  vector[track_ang_res_poly_deg] track_ang_res_poly_kappa_coeffs; // Polynomial coefficiencies for kappa
   
   /* Detection */
-  real<lower=0> kappa_tracks;
+  //real<lower=0> kappa_tracks;
   real<lower=0> kappa_cascades;
 
   /* Debugging */
@@ -210,6 +203,9 @@ transformed parameters {
   real e_reso_mu;
   real e_reso_sigma;
   real e_reso_eval_energy;
+  real ang_reso_eval_energy;
+  /* Angular reso parameters */
+  real ang_reso_kappa;
   
   /* Define transformed parameters */
   Fs = 0;
@@ -238,22 +234,18 @@ transformed parameters {
    	
       /* Sources */
       if (k < Ns+1) {
-	  lp_tracks[i, k] += vMF_lpdf(omega_det_tracks[i] | varpi[k], kappa_tracks);	
+          ang_reso_eval_energy = truncate_value(E_tracks[i], track_ang_res_poly_emin, track_ang_res_poly_emax);
+          
+          ang_reso_kappa = eval_poly1d(log10(ang_reso_eval_energy), track_ang_res_poly_kappa_coeffs);
+          
+        lp_tracks[i, k] += vMF_lpdf(omega_det_tracks[i] | varpi[k], ang_reso_kappa);	
       }
       /* Background */
       else if (k == Ns+1) {
         lp_tracks[i, k] += log(1 / ( 4 * pi() ));
       }
   
-      if (E_tracks[i] < track_poly_emin){
-          e_reso_eval_energy = track_poly_emin;
-      }
-      else if (E_tracks[i] > track_poly_emax ){
-          e_reso_eval_energy = track_poly_emax;
-      
-      }else{
-          e_reso_eval_energy = E_tracks[i];
-      }
+      e_reso_eval_energy = truncate_value(E_tracks[i], track_poly_emin, track_poly_emax);
       
       e_reso_mu = eval_poly1d(log10(e_reso_eval_energy), track_poly_mu_coeffs);
       e_reso_sigma = eval_poly1d(log10(e_reso_eval_energy), track_poly_sigma_coeffs);
