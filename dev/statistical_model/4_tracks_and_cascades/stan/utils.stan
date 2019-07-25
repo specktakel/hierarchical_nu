@@ -37,3 +37,27 @@ vector linspace(real A, real B, int N) {
 
   return output; 
 }
+
+/**
+ * Evaluate a polynomial with given coefficients.
+ * Highest power of x first.
+ */
+real eval_poly1d(real x, vector coeffs){
+  int N = num_elements(coeffs);
+  real res=0;
+  for(i in 1:N){
+    res += coeffs[i]*pow(x, N-i);
+  }
+  return res;
+}
+  
+real truncate_value(real x, real min_val, real max_val){
+     if(x < min_val){
+         return min_val;
+     }
+     else if(x > max_val){
+         return max_val;
+     }
+     return x;
+
+}
