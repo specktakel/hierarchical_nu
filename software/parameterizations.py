@@ -13,7 +13,7 @@ class StanExpression(metaclass=ABCMeta):
     """
 
     def __init__(self, inputs: List["TStanable"]):
-        self.inputs = inputs
+        self._inputs = inputs
 
     @abstractmethod
     def to_stan(self) -> StanCodeBit:
@@ -25,7 +25,7 @@ class StanExpression(metaclass=ABCMeta):
 
 class PyMCExpression(metaclass=ABCMeta):
     def __init__(self, inputs):
-        self.inputs = inputs
+        self._inputs = inputs
 
     @abstractmethod
     def to_pymc(self):
@@ -48,7 +48,8 @@ class Parameterization(StanExpression,
     """
 
     def __init__(self, inputs: List[TStanable]):
-        self._inputs = inputs
+        StanExpression.__init__(self, inputs)
+        PyMCExpression.__init__(self, inputs)
 
     @abstractmethod
     def to_stan(self) -> StanCodeBit:
@@ -158,6 +159,72 @@ class LognormalParameterization(Parameterization):
         stan_code: TListStrStanCodeBit = []
         stan_code += ["lognormal_lpdf(", x_obs_stan, " | ", mu_stan, ", ",
                       sigma_stan, ")"]
+
+        stan_code_bit = StanCodeBit()
+        stan_code_bit.add_code(stan_code)
+
+        return stan_code_bit
+
+    def to_pymc(self):
+        pass
+
+
+class VMFParameterization(Parameterization):
+    """
+    Von-Mises-Fisher Distribution
+    """
+
+    def __init__(self, inputs: List[TStanable], kappa: TStanable):
+        Parameterization.__init__(self, inputs)
+        self._kappa = kappa
+
+    def __call__(self, x):
+        pass
+
+    def to_stan(self) -> StanCodeBit:
+        kappa_stan = stanify(self._kappa)
+
+        x_obs_stan = stanify(self._inputs[0])
+        x_true_stan = stanify(self._inputs[1])
+
+        stan_code: TListStrStanCodeBit = []
+
+        stan_code += ["vMF_lpdf(", x_obs_stan, " | ", x_true_stan, ", ",
+                      kappa_stan, ")"]
+
+        stan_code_bit = StanCodeBit()
+        stan_code_bit.add_code(stan_code)
+
+        return stan_code_bit
+
+    def to_pymc(self):
+        pass
+
+
+class TruncatedParameterization(Parameterization):
+    """
+    Von-Mises-Fisher Distribution
+    """
+
+    def __init__(self, inputs: TStanable, min_val: TStanable,
+                 max_val: TStanable):
+        Parameterization.__init__(self, [inputs])
+        self._min_val = min_val
+        self._max_val = max_val
+
+    def __call__(self, x):
+        pass
+
+    def to_stan(self) -> StanCodeBit:
+        min_val_stan = stanify(self._min_val)
+        max_val_stan = stanify(self._max_val)
+
+        x_obs_stan = stanify(self._inputs[0])
+
+        stan_code: TListStrStanCodeBit = []
+
+        stan_code += ["truncate_value(", x_obs_stan, ", ", min_val_stan, ", ",
+                      max_val_stan, ")"]
 
         stan_code_bit = StanCodeBit()
         stan_code_bit.add_code(stan_code)

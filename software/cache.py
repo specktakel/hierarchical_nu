@@ -42,7 +42,6 @@ class Cache(metaclass=_MCache):
             os.makedirs(cache_dir)
         cls._cache_dir = cache_dir
 
-    
     @classmethod
     @contextmanager
     def open(cls, filename: str, modifier: str = "r"):
@@ -59,9 +58,9 @@ class Cache(metaclass=_MCache):
 
         for f in os.listdir(cls._cache_dir):
             if dry_run:
-                print("deleting ", f)
+                print("deleting", f)
             else:
-                os.unlink(f)
+                os.unlink(os.path.join(cls._cache_dir, f))
 
 
 if __name__ == "__main__":
@@ -74,5 +73,4 @@ if __name__ == "__main__":
 
     print("test" in Cache)
 
-    Cache.clear_cache()
-
+    Cache.clear_cache(dry_run=False)
