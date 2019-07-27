@@ -11,7 +11,7 @@ import numpy as np
 from cache import Cache
 from parameterizations import (
     Parameterization,
-    TStanable,
+    TExpression,
     VMFParameterization,
     PolynomialParameterization,
     TruncatedParameterization)
@@ -63,11 +63,13 @@ class EffectiveArea(metaclass=ABCMeta):
 
 
 class Resolution(Parameterization, metaclass=ABCMeta):
-    """Base class for parametrizing resolutions"""
+    """
+    Base class for parameterizing resolutions
+    """
 
     PARAMETERS: Union[None, List] = None
 
-    def __init__(self, inputs: List[TStanable]):
+    def __init__(self, inputs: List[TExpression]):
         Parameterization.__init__(self, inputs)
 
     def __call__(self, **kwargs):
@@ -132,15 +134,15 @@ class NorthernTracksAngularResolution(VMFParameterization, Resolution):  # type:
         e_max: Upper energy bound of the polynomial
 
     """
-    PARAMETERS = ["true"]
+
+    # TODO: Add setup code
     DATA_PATH = "NorthernTracksAngularRes.csv"
     CACHE_FNAME = "angular_reso_tracks.npz"
 
-    def __init__(self, inputs: List[TStanable]) -> None:
+    def __init__(self, inputs: List[TExpression]) -> None:
         """
-
         Args:
-            inputs: List[TStanable]
+            inputs: List[TExpression]
                 First item is true energy, second item is true
                 position
         """
@@ -157,6 +159,9 @@ class NorthernTracksAngularResolution(VMFParameterization, Resolution):  # type:
         pass
 
     def setup(self) -> None:
+        """See base class"""
+
+        # Check cache
         if self.CACHE_FNAME in Cache:
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
                 data = np.load(fr)
@@ -164,6 +169,7 @@ class NorthernTracksAngularResolution(VMFParameterization, Resolution):  # type:
                 self.e_min = float(data["e_min"])
                 self.e_max = float(data["e_max"])
         else:
+            # Load input data and fit polynomial
             if not os.path.exists(self.DATA_PATH):
                 raise RuntimeError(self.DATA_PATH, "is not a valid path")
 
@@ -182,6 +188,7 @@ class NorthernTracksAngularResolution(VMFParameterization, Resolution):  # type:
             self.e_min = float(data.energy.min())
             self.e_max = float(data.energy.max())
 
+            # Save polynomial
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
                 np.savez(
                     fr,

@@ -4,15 +4,16 @@ import numpy as np
 from stan_generator import StanCodeBit, TListStrStanCodeBit
 
 
-class StanExpression(metaclass=ABCMeta):
+class Expression(metaclass=ABCMeta):
     """
-    Generic Stan expression
+    Generic expression
 
     The expression can depend on inputs, such that it's possible to
-    chain StanExpressions in a graph like manner
+    chain Expressions in a graph like manner.
+    Comes with converters to PyMC3 and Stan Code.
     """
 
-    def __init__(self, inputs: List["TStanable"]):
+    def __init__(self, inputs: List["TExpression"]):
         self._inputs = inputs
 
     @abstractmethod
@@ -22,34 +23,25 @@ class StanExpression(metaclass=ABCMeta):
         """
         pass
 
-
-class PyMCExpression(metaclass=ABCMeta):
-    def __init__(self, inputs):
-        self._inputs = inputs
-
     @abstractmethod
     def to_pymc(self):
         pass
 
 
 # Define type union for stanable types
-TStanable = Union[StanExpression, str, float]
+TExpression = Union[Expression, str, float]
 
 
-class Parameterization(StanExpression,
-                       PyMCExpression,
+class Parameterization(Expression,
                        metaclass=ABCMeta):
     """
     Base class for parameterizations.
 
-    Parameterizations are functions of a given input variable.
-    These can be splines, distributions, ...
-    Comes with a converter to stan code / pymc3 variables.
+    Parameterizations are functions of input variables
     """
 
-    def __init__(self, inputs: List[TStanable]):
-        StanExpression.__init__(self, inputs)
-        PyMCExpression.__init__(self, inputs)
+    def __init__(self, inputs: List[TExpression]):
+        Expression.__init__(self, inputs)
 
     @abstractmethod
     def to_stan(self) -> StanCodeBit:
@@ -66,18 +58,29 @@ class Parameterization(StanExpression,
         pass
 
 
-def stanify(var: TStanable) -> StanCodeBit:
-    """Return call to to_stan function if possible"""
-    if isinstance(var, StanExpression):
+def stanify(var: TExpression) -> StanCodeBit:
+    """Call to_stan function if possible"""
+    if isinstance(var, Expression):
         return var.to_stan()
+
+    # Not an Expression, so cast to string
     code_bit = StanCodeBit()
     code_bit.add_code([str(var)])
     return code_bit
 
 
+def pymcify(var: TExpression):
+    """Call to_pymc function if possible"""
+    if isinstance(var, Expression):
+        return var.to_pymc()
+
+    # Not an Expression, just return
+    return var
+
+
 class LogParameterization(Parameterization):
     """log with customizable base"""
-    def __init__(self, inputs: TStanable, base: float = 10):
+    def __init__(self, inputs: TExpression, base: float = 10):
         Parameterization.__init__(self, [inputs])
         self._base = base
 
@@ -98,7 +101,13 @@ class LogParameterization(Parameterization):
         return stan_code_bit
 
     def to_pymc(self):
-        pass
+        import theano.tensor as tt
+        x_eval_pymc = pymcify(self._inputs[0])
+
+        if self._base != 10:
+            return tt.log10(x_eval_pymc)/tt.log10(self._base)
+        else:
+            return tt.log10(x_eval_pymc)
 
 
 TArrayOrNumericIterable = Union[np.ndarray, Iterable[float]]
@@ -109,7 +118,7 @@ class PolynomialParameterization(Parameterization):
 
     def __init__(
             self,
-            inputs: TStanable,
+            inputs: TExpression,
             coefficients: TArrayOrNumericIterable) -> None:
 
         Parameterization.__init__(self, [inputs])
@@ -143,7 +152,8 @@ class PolynomialParameterization(Parameterization):
 class LognormalParameterization(Parameterization):
     """Lognormal distribution"""
 
-    def __init__(self, inputs: TStanable, mu: TStanable, sigma: TStanable):
+    def __init__(self, inputs: TExpression, mu: TExpression,
+                 sigma: TExpression):
         Parameterization.__init__(self, [inputs])
         self._mu = mu
         self._sigma = sigma
@@ -174,7 +184,7 @@ class VMFParameterization(Parameterization):
     Von-Mises-Fisher Distribution
     """
 
-    def __init__(self, inputs: List[TStanable], kappa: TStanable):
+    def __init__(self, inputs: List[TExpression], kappa: TExpression):
         Parameterization.__init__(self, inputs)
         self._kappa = kappa
 
@@ -203,11 +213,21 @@ class VMFParameterization(Parameterization):
 
 class TruncatedParameterization(Parameterization):
     """
-    Von-Mises-Fisher Distribution
+    Truncate parameter to range
     """
 
-    def __init__(self, inputs: TStanable, min_val: TStanable,
-                 max_val: TStanable):
+    def __init__(self, inputs: TExpression, min_val: TExpression,
+                 max_val: TExpression):
+        """
+        Args:
+            inputs: TExpression
+                Input parameter to truncate
+            min_val: TExpression
+                Lower bound
+            max_val: TExpression
+                Upper bound
+
+        """
         Parameterization.__init__(self, [inputs])
         self._min_val = min_val
         self._max_val = max_val
@@ -216,6 +236,7 @@ class TruncatedParameterization(Parameterization):
         pass
 
     def to_stan(self) -> StanCodeBit:
+        """See base class"""
         min_val_stan = stanify(self._min_val)
         max_val_stan = stanify(self._max_val)
 
