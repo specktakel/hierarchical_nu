@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, List, Iterable
+from typing import Union, List, Iterable, Collection
 import numpy as np
-from stan_generator import StanCodeBit, TListStrStanCodeBit
+from stan_generator import StanCodeBit, TListStrStanCodeBit, StanGenerator
 
 
 class Expression(metaclass=ABCMeta):
@@ -256,6 +256,74 @@ class TruncatedParameterization(Parameterization):
         pass
 
 
+class MixtureParameterization(Parameterization):
+    """
+    Mixture model parameterization
+    """
+
+    def __init__(
+            self,
+            inputs: TExpression,
+            components: Collection[Parameterization],
+            weighting: Union[None, Collection[TExpression]] = None):
+        """
+        Args:
+            inputs: TExpression
+                Input parameter to truncate
+            components: Collection[TExpression]
+                Mixture components. Input[0] of every component gets
+                overwritten by inputs[0]
+            weighting: Collection[TExpression]
+                optional, weights for every component
+
+
+        """
+        Parameterization.__init__(self, [inputs])
+
+        if weighting is not None and len(weighting) != len(components):
+            raise ValueError("weights and components have different lengths")
+        if weighting is None:
+            weighting = [1]*len(components)
+
+        """
+        # Check inputs of components
+        inp = None
+        for comp in components:
+            if inp is None:
+                inp = comp._inputs[0]
+            else:
+                if comp._inputs[0] != inp:
+                    raise ValueError("Not all components have the same input")
+        """
+        self._components = components
+        self._weighting = weighting
+
+    def __call__(self, x):
+        pass
+
+    def to_stan(self) -> StanCodeBit:
+        """See base class"""
+
+        stan_code: TListStrStanCodeBit = []
+        for i, (comp, weight) in enumerate(
+                zip(self._components, self._weighting)):
+            comp._inputs[0] = self._inputs[0]
+            comp_stan = stanify(comp)
+            weight_stan = stanify(weight)
+
+            stan_code += [weight_stan, " * ", comp_stan]
+            if i < len(self._components)-1:
+                stan_code += " + "
+
+        stan_code_bit = StanCodeBit()
+        stan_code_bit.add_code(stan_code)
+
+        return stan_code_bit
+
+    def to_pymc(self):
+        pass
+
+
 if __name__ == "__main__":
 
     invar = "E_true"
@@ -266,3 +334,12 @@ if __name__ == "__main__":
     invar = "E_reco"
     lognorm = LognormalParameterization(invar, param, param)
     print(lognorm.to_stan())
+
+    # mixture test
+
+    lognorm_mix = MixtureParameterization(invar, [lognorm, lognorm])
+    print(lognorm_mix.to_stan())
+
+    gen = StanGenerator()
+    gen.add_code_bit(lognorm_mix.to_stan())
+    print(gen.to_stan())
