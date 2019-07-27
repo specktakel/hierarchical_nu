@@ -391,6 +391,9 @@ TSWLatexianTemp*
 #Sublime
 *.sublime*
 
+#numpy
+*.npz
+*.npy
 
 
 
