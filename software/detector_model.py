@@ -3,6 +3,14 @@ This module contains classes for modelling detectors
 """
 
 from abc import ABCMeta, abstractmethod
+from typing import Union, List
+from io import StringIO
+import pandas as pd
+import numpy as np
+
+from cache import Cache
+
+Cache.set_cache_dir(".")
 
 
 class EffectiveArea(metaclass=ABCMeta):
@@ -21,7 +29,7 @@ class EffectiveArea(metaclass=ABCMeta):
     Parameters on which the effective area depends.
     Overwrite when subclassing
     """
-    PARAMETERS = None
+    PARAMETERS: Union[None, List] = None
 
     def __call__(self, **kwargs):
         """
@@ -50,7 +58,7 @@ class EffectiveArea(metaclass=ABCMeta):
 class Resolution(metaclass=ABCMeta):
     """Base class for parametrizing resolutions"""
 
-    PARAMETERS = None
+    PARAMETERS: Union[None, List] = None
 
     def __call__(self, **kwargs):
         """
@@ -102,6 +110,38 @@ class NorthernTracksEnergyResolution(Resolution):
 
 class NorthernTracksAngularResolution(Resolution):
     PARAMETERS = ["true"]
+    DATA_PATH = "NorthernTracksAngularResolution.csv"
+
+    def __init__(self):
+        self.poly_params = None
+        pass
+
+    def _calc_resolution(self):
+        pass
+
+    def setup(self):
+        data = pd.read_csv(
+            StringIO(self.DATA_PATH),
+            sep=";",
+            decimal=",",
+            header=None,
+            names=["energy", "resolution"],
+            comment="#")
+
+        # Kappa parameter of VMF distribution
+        data["kappa"] = 1.38 / np.radians(data.resolution)**2
+
+        self.poly_params = np.polyfit(data.energy, data.kappa, 5)
+
+        cache_fname = "angular_reso_tracks.npz"
+        with Cache.open(, "w") as fr:
+            np.savez(
+                fr,
+                kappa=self.poly_params,
+                e_min=10**data.energy.min(),
+                e_max=10**data.energy.max())
+
+
 
 
 class DetectorModel(metaclass=ABCMeta):

@@ -104,6 +104,7 @@ TArrayOrNumericIterable = Union[np.ndarray, Iterable[float]]
 
 
 class PolynomialParameterization(Parameterization):
+    """Polynomial parametrization"""
 
     def __init__(
             self,
@@ -139,6 +140,7 @@ class PolynomialParameterization(Parameterization):
 
 
 class LognormalParameterization(Parameterization):
+    """Lognormal distribution"""
 
     def __init__(self, inputs: TStanable, mu: TStanable, sigma: TStanable):
         Parameterization.__init__(self, [inputs])
@@ -176,4 +178,3 @@ if __name__ == "__main__":
     invar = "E_reco"
     lognorm = LognormalParameterization(invar, param, param)
     print(lognorm.to_stan())
-    
