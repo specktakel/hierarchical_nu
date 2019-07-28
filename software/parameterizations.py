@@ -285,16 +285,6 @@ class MixtureParameterization(Parameterization):
         if weighting is None:
             weighting = [1]*len(components)
 
-        """
-        # Check inputs of components
-        inp = None
-        for comp in components:
-            if inp is None:
-                inp = comp._inputs[0]
-            else:
-                if comp._inputs[0] != inp:
-                    raise ValueError("Not all components have the same input")
-        """
         self._components = components
         self._weighting = weighting
 
