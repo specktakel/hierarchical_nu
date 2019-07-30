@@ -1,35 +1,20 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, List, Iterable, Collection
-import numpy as np
-from stan_generator import StanCodeBit, TListStrStanCodeBit, StanGenerator
+from typing import Union, Iterable, Collection, Sequence
+import numpy as np  # type: ignore
+from .stan_generator import (
+    StanCodeBit,
+    TListStrStanCodeBit,
+    StanGenerator,
+    stanify)
+from .expression import Expression, TExpression
+from .pymc_generator import pymcify
 
+__all__ = ["Parameterization", "LogParameterization",
+           "PolynomialParameterization", "LognormalParameterization",
+           "VMFParameterization", "TruncatedParameterization",
+           "MixtureParameterization"]
 
-class Expression(metaclass=ABCMeta):
-    """
-    Generic expression
-
-    The expression can depend on inputs, such that it's possible to
-    chain Expressions in a graph like manner.
-    Comes with converters to PyMC3 and Stan Code.
-    """
-
-    def __init__(self, inputs: List["TExpression"]):
-        self._inputs = inputs
-
-    @abstractmethod
-    def to_stan(self) -> StanCodeBit:
-        """
-        Converts the expression into a StanCodeBit
-        """
-        pass
-
-    @abstractmethod
-    def to_pymc(self):
-        pass
-
-
-# Define type union for stanable types
-TExpression = Union[Expression, str, float]
+TArrayOrNumericIterable = Union[np.ndarray, Iterable[float]]
 
 
 class Parameterization(Expression,
@@ -40,7 +25,7 @@ class Parameterization(Expression,
     Parameterizations are functions of input variables
     """
 
-    def __init__(self, inputs: List[TExpression]):
+    def __init__(self, inputs: Sequence[TExpression]):
         Expression.__init__(self, inputs)
 
     @abstractmethod
@@ -56,26 +41,6 @@ class Parameterization(Expression,
         Convert the parametrizaton to PyMC3
         """
         pass
-
-
-def stanify(var: TExpression) -> StanCodeBit:
-    """Call to_stan function if possible"""
-    if isinstance(var, Expression):
-        return var.to_stan()
-
-    # Not an Expression, so cast to string
-    code_bit = StanCodeBit()
-    code_bit.add_code([str(var)])
-    return code_bit
-
-
-def pymcify(var: TExpression):
-    """Call to_pymc function if possible"""
-    if isinstance(var, Expression):
-        return var.to_pymc()
-
-    # Not an Expression, just return
-    return var
 
 
 class LogParameterization(Parameterization):
@@ -108,9 +73,6 @@ class LogParameterization(Parameterization):
             return tt.log10(x_eval_pymc)/tt.log10(self._base)
         else:
             return tt.log10(x_eval_pymc)
-
-
-TArrayOrNumericIterable = Union[np.ndarray, Iterable[float]]
 
 
 class PolynomialParameterization(Parameterization):
@@ -184,7 +146,7 @@ class VMFParameterization(Parameterization):
     Von-Mises-Fisher Distribution
     """
 
-    def __init__(self, inputs: List[TExpression], kappa: TExpression):
+    def __init__(self, inputs: Sequence[TExpression], kappa: TExpression):
         Parameterization.__init__(self, inputs)
         self._kappa = kappa
 
@@ -283,7 +245,7 @@ class MixtureParameterization(Parameterization):
         if weighting is not None and len(weighting) != len(components):
             raise ValueError("weights and components have different lengths")
         if weighting is None:
-            weighting = [1]*len(components)
+            weighting = ["1./{}".format(len(components))]*len(components)
 
         self._components = components
         self._weighting = weighting
@@ -324,6 +286,12 @@ if __name__ == "__main__":
     invar = "E_reco"
     lognorm = LognormalParameterization(invar, param, param)
     print(lognorm.to_stan())
+
+    sum_test = 1 + lognorm
+    print(sum_test.to_stan())
+
+    sum_test2 = sum_test + sum_test
+    print(sum_test2.to_stan())
 
     # mixture test
 

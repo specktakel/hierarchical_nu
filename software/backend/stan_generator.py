@@ -1,5 +1,9 @@
 """Module for autogenerating Stan code"""
 from typing import List, Union, Dict
+from .expression import TExpression, Expression
+
+__all__ = ["StanFunction", "StanGenerator", "stanify",
+           "StanCodeBit", "TStrStanCodeBit", "TListStrStanCodeBit"]
 
 
 class StanFunction:
@@ -106,3 +110,14 @@ class StanCodeBit:
         code_gen.add_code_bit(self)
 
         return code_gen.to_stan()
+
+
+def stanify(var: TExpression) -> StanCodeBit:
+    """Call to_stan function if possible"""
+    if isinstance(var, Expression):
+        return var.to_stan()
+
+    # Not an Expression, so cast to string
+    code_bit = StanCodeBit()
+    code_bit.add_code([str(var)])
+    return code_bit
