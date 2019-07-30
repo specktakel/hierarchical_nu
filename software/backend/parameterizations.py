@@ -1,13 +1,19 @@
 from abc import ABCMeta, abstractmethod
 from typing import Union, List, Iterable, Collection
-import numpy as np
-from stan_generator import (
+import numpy as np  # type: ignore
+from .stan_generator import (
     StanCodeBit,
     TListStrStanCodeBit,
     StanGenerator,
     stanify)
-from expression import Expression, TExpression
-from operator_expression import _OperatorExpression  # type: ignore
+from .expression import Expression, TExpression
+
+__all__ = ["Parameterization", "LogParameterization",
+           "PolynomialParameterization", "LognormalParameterization",
+           "VMFParameterization", "TruncatedParameterization",
+           "MixtureParameterization"]
+
+TArrayOrNumericIterable = Union[np.ndarray, Iterable[float]]
 
 
 class Parameterization(Expression,
@@ -34,6 +40,7 @@ class Parameterization(Expression,
         Convert the parametrizaton to PyMC3
         """
         pass
+
 
 class LogParameterization(Parameterization):
     """log with customizable base"""
@@ -65,9 +72,6 @@ class LogParameterization(Parameterization):
             return tt.log10(x_eval_pymc)/tt.log10(self._base)
         else:
             return tt.log10(x_eval_pymc)
-
-
-TArrayOrNumericIterable = Union[np.ndarray, Iterable[float]]
 
 
 class PolynomialParameterization(Parameterization):

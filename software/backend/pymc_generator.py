@@ -1,4 +1,6 @@
-from expression import TExpression, Expression
+from .expression import TExpression, Expression
+
+__all__ = ["pymcify"]
 
 
 def pymcify(var: TExpression):

@@ -1,9 +1,9 @@
 from typing import Callable, Tuple, List
 import operator
 
-from expression import Expression, TExpression
-from stan_generator import StanCodeBit, TListStrStanCodeBit, stanify
-from pymc_generator import pymcify
+from .expression import Expression, TExpression
+from .stan_generator import StanCodeBit, TListStrStanCodeBit, stanify
+from .pymc_generator import pymcify
 
 
 class _OperatorExpression(Expression):

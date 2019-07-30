@@ -10,7 +10,7 @@ import numpy as np  # type: ignore
 import scipy.stats as stats  # type: ignore
 
 from cache import Cache
-from parameterizations import (
+from backend import (
     Parameterization,
     TExpression,
     VMFParameterization,
