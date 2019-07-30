@@ -73,7 +73,7 @@ class Resolution(Parameterization, metaclass=ABCMeta):
 
     PARAMETERS: Union[None, List] = None
 
-    def __init__(self, inputs: List[TExpression]):
+    def __init__(self, inputs: Sequence[TExpression]):
         Parameterization.__init__(self, inputs)
 
     def __call__(self, **kwargs):
@@ -442,7 +442,7 @@ class NorthernTracksAngularResolution(  # type: ignore
     DATA_PATH = "NorthernTracksAngularRes.csv"
     CACHE_FNAME = "angular_reso_tracks.npz"
 
-    def __init__(self, inputs: List[TExpression]) -> None:
+    def __init__(self, inputs: Tuple[TExpression, TExpression]) -> None:
         """
         Args:
             inputs: List[TExpression]
@@ -536,6 +536,23 @@ class DetectorModel(metaclass=ABCMeta):
     def _get_angular_resolution(self):
         self._angular_resolution
 
+class NorthernTracksDetectorModel(DetectorModel):
+
+    def __init__(self, true_energy: TExpression, true_direction: TExpression):
+
+        self._angular_resolution = NorthernTracksAngularResolution(
+            (true_energy, true_direction))
+        self._energy_resolution = NorthernTracksEnergyResolution(true_energy)
+
+    def _get_effective_area(self):
+        pass
+
+    def _get_energy_resolution(self):
+        return self._energy_resolution
+
+    def _get_angular_resolution(self):
+        return self._angular_resolution
+
 
 if __name__ == "__main__":
 
@@ -545,6 +562,7 @@ if __name__ == "__main__":
 
     # print(ntp.to_stan())
 
-    nte = NorthernTracksEnergyResolution(e_true)
-    print(nte)
-    print(nte.to_stan())
+    ntd = NorthernTracksDetectorModel(e_true, pos_true)
+    print(ntd)
+    print(ntd.angular_resolution.to_stan())
+    print(ntd.energy_resolution.to_stan())

@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, List, Iterable, Collection
+from typing import Union, Iterable, Collection, Sequence
 import numpy as np  # type: ignore
 from .stan_generator import (
     StanCodeBit,
@@ -7,6 +7,7 @@ from .stan_generator import (
     StanGenerator,
     stanify)
 from .expression import Expression, TExpression
+from .pymc_generator import pymcify
 
 __all__ = ["Parameterization", "LogParameterization",
            "PolynomialParameterization", "LognormalParameterization",
@@ -24,7 +25,7 @@ class Parameterization(Expression,
     Parameterizations are functions of input variables
     """
 
-    def __init__(self, inputs: List[TExpression]):
+    def __init__(self, inputs: Sequence[TExpression]):
         Expression.__init__(self, inputs)
 
     @abstractmethod
@@ -145,7 +146,7 @@ class VMFParameterization(Parameterization):
     Von-Mises-Fisher Distribution
     """
 
-    def __init__(self, inputs: List[TExpression], kappa: TExpression):
+    def __init__(self, inputs: Sequence[TExpression], kappa: TExpression):
         Parameterization.__init__(self, inputs)
         self._kappa = kappa
 

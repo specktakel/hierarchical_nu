@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import List, Union
+from typing import Union, Sequence
 
 __all__ = ["Expression", "TExpression"]
 """
@@ -19,7 +19,7 @@ class Expression(metaclass=ABCMeta):
     Comes with converters to PyMC3 and Stan Code.
     """
 
-    def __init__(self, inputs: List["TExpression"]):
+    def __init__(self, inputs: Sequence["TExpression"]):
         self._inputs = inputs
 
     @abstractmethod
