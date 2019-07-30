@@ -5,9 +5,9 @@ from stan_generator import (
     StanCodeBit,
     TListStrStanCodeBit,
     StanGenerator,
-    Expression,
-    TExpression,
     stanify)
+from expression import Expression, TExpression
+from operator_expression import _OperatorExpression  # type: ignore
 
 
 class Parameterization(Expression,
@@ -34,16 +34,6 @@ class Parameterization(Expression,
         Convert the parametrizaton to PyMC3
         """
         pass
-
-
-def pymcify(var: TExpression):
-    """Call to_pymc function if possible"""
-    if isinstance(var, Expression):
-        return var.to_pymc()
-
-    # Not an Expression, just return
-    return var
-
 
 class LogParameterization(Parameterization):
     """log with customizable base"""

@@ -1,7 +1,6 @@
 """Module for autogenerating Stan code"""
-from typing import List, Union, Dict, Callable
-from abc import ABCMeta, abstractmethod
-
+from typing import List, Union, Dict
+from expression import TExpression, Expression
 
 class StanFunction:
     """
@@ -109,34 +108,6 @@ class StanCodeBit:
         return code_gen.to_stan()
 
 
-class Expression(metaclass=ABCMeta):
-    """
-    Generic expression
-
-    The expression can depend on inputs, such that it's possible to
-    chain Expressions in a graph like manner.
-    Comes with converters to PyMC3 and Stan Code.
-    """
-
-    def __init__(self, inputs: List["TExpression"]):
-        self._inputs = inputs
-
-    @abstractmethod
-    def to_stan(self) -> StanCodeBit:
-        """
-        Converts the expression into a StanCodeBit
-        """
-        pass
-
-    @abstractmethod
-    def to_pymc(self):
-        pass
-
-
-# Define type union for stanable types
-TExpression = Union[Expression, str, float]
-
-
 def stanify(var: TExpression) -> StanCodeBit:
     """Call to_stan function if possible"""
     if isinstance(var, Expression):
@@ -146,73 +117,3 @@ def stanify(var: TExpression) -> StanCodeBit:
     code_bit = StanCodeBit()
     code_bit.add_code([str(var)])
     return code_bit
-
-
-class _OperatorExpression(Expression):
-    def __init__(self, inputs: List[TExpression], op_code: str) -> None:
-        Expression.__init__(self, inputs)
-        self._op_code = op_code
-
-    def to_stan(self) -> StanCodeBit:
-        in0_stan = stanify(self._inputs[0])
-        in1_stan = stanify(self._inputs[1])
-
-        stan_code:  TListStrStanCodeBit = ["(", in0_stan, self._op_code, in1_stan, ")"]
-
-        code_bit = StanCodeBit()
-        code_bit.add_code(stan_code)
-
-        return code_bit
-
-    def to_pymc(self):
-        pass
-
-
-def make_op_func(op_code: str, invert: bool = False) -> Callable:
-    """
-    Return a factory function that creates a operator expression
-
-    Args:
-        op_code: str
-        invert: bool
-            Set to true for right-hand operators
-    """
-    def op_func(self: TExpression, other: TExpression) -> _OperatorExpression:
-        if invert:
-            inputs = [other, self]
-        else:
-            inputs = [self, other]
-        return _OperatorExpression(inputs, op_code)
-    return op_func
-
-
-def register_operators(cls, ops):
-    """Register a operator overload for a class"""
-    for op_type, (op_code, invert) in ops.items():
-        func = make_op_func(op_code, invert)
-
-        setattr(cls, op_type, func)
-
-
-"""
-Register standard arithmetic operators for both the Expression
-baseclass and the _OperatorExpression class.This allows operator
-manipulations of Expressions (and subclasses), as well as operator
-manipulations of _OperatorExpressions
-"""
-
-ops = {
-    "__add__": ("+", False),
-    "__radd__": ("+", True),
-    "__mul__": ("*", False),
-    "__rmul__": ("*", True),
-    "__div__": ("/", False),
-    "__rdiv__": ("/", True),
-    "__sub__": ("-", False),
-    "__rsub__": ("-", True),
-    "__pow__": ("**", False),
-    "__rpow__": ("**", True),
-    }
-
-register_operators(_OperatorExpression, ops)
-register_operators(Expression, ops)

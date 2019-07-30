@@ -247,7 +247,6 @@ class NorthernTracksEnergyResolution(  # type: ignore
         fig, axs = plt.subplots(1, 2, figsize=(10, 5))
         xs = np.linspace(*np.log10(self.poly_limits), num=100)
 
-
         if self.poly_params_mu is None:
             raise RuntimeError("Run setup() first")
         for comp in range(self.n_components):
@@ -299,7 +298,6 @@ class NorthernTracksEnergyResolution(  # type: ignore
 
         if self.poly_params_mu is None:
             raise RuntimeError("Run setup() first")
-
 
         # Find true energy bins for the chosen plotting energies
         plot_indices = np.digitize(plot_energies, tE_binc)
@@ -413,12 +411,10 @@ class NorthernTracksEnergyResolution(  # type: ignore
             self.plot_parameterizations(tE_binc, rebinned_binc, rE_binc,
                                         fit_params, eff_area)
 
-
         # poly params are now set
         self.poly_params_mu = poly_params_mu
         self.poly_params_sd = poly_params_sd
         self.poly_limits = poly_limits
-
 
     def _calc_resolution(
             self,
@@ -545,9 +541,9 @@ if __name__ == "__main__":
 
     e_true = "E_true"
     pos_true = "pos_true"
-    #ntp = NorthernTracksAngularResolution([e_true, pos_true])
+    # ntp = NorthernTracksAngularResolution([e_true, pos_true])
 
-    #print(ntp.to_stan())
+    # print(ntp.to_stan())
 
     nte = NorthernTracksEnergyResolution(e_true)
     print(nte)
