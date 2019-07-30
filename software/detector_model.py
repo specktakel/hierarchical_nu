@@ -409,6 +409,9 @@ class NorthernTracksEnergyResolution(  # type: ignore
                     poly_params_sd=poly_params_sd,
                     e_min=e_min,
                     e_max=e_max)
+            self.plot_fit_params(fit_params, rebinned_binc)
+            self.plot_parameterizations(tE_binc, rebinned_binc, rE_binc,
+                                        fit_params, eff_area)
 
 
         # poly params are now set
@@ -416,10 +419,6 @@ class NorthernTracksEnergyResolution(  # type: ignore
         self.poly_params_sd = poly_params_sd
         self.poly_limits = poly_limits
 
-
-        self.plot_fit_params(fit_params, rebinned_binc)
-        self.plot_parameterizations(tE_binc, rebinned_binc, rE_binc,
-                                    fit_params, eff_area)
 
     def _calc_resolution(
             self,
@@ -523,7 +522,7 @@ class DetectorModel(metaclass=ABCMeta):
 
     @abstractmethod
     def _get_effective_area(self):
-        return self.__get_effective_area
+        return self.__get_effective_area()
 
     @property
     def energy_resolution(self):
