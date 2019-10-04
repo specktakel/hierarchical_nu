@@ -1,5 +1,5 @@
 """
-EventList
+EventList class.
 
 @author Francesca Capel
 @date July 2019
@@ -7,7 +7,7 @@ EventList
 
 class EventList(object):
     """
-    Coming soon!
+    EventList class for the storage of event observable
     """
 
     def __init__():
