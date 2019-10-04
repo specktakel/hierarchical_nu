@@ -1,64 +1,143 @@
 import numpy as np
 from abc import ABC
 
+from astropy.coordinates import SkyCoord
 
-DIFFUSE = 0
-POINT = 1
+from astromodels import PointSource as PS
+from astromodels import PointSource as ES
+from astromodels.sources.source import Source, EXTENDED_SOURCE
+from astromodels.core.spectral_component import SpectralComponent
+from astromodels.core.tree import Node
+from astromodels.core.units import get_units
 
 
-class Source(ABC):
-    """
-    Abstract base class for sources.
-    """
+class PointSource(PS):
 
+    def __init__(self, source_name, redshift, **kwargs):
+        """
+        Override astromodels PointSource to add redshift.
+        """
+
+        super().__init__(source_name, **kwargs)
+
+        self.redshift = redshift
 
     @property
-    def src_type(self):
+    def redshift(self):
 
-        return self._src_type
+        return self._redshift
 
-    
-    @src_type.setter
-    def src_type(self, value):
 
-        if value is not DIFFUSE and value is not POINT:
+    @redshift.setter
+    def redshift(self, value):
 
-            raise ValueError(str(value) + ' is not a recognised source type')
-        
-        self._src_type = value
+        if value < 0 or value > 10:
 
-        
-    @property
-    def tag(self):
-
-        return self._tag
-
-    
-    @tag.setter
-    def tag(self, value):
-
-        self._tag = value
-
-"""    
-    @property
-    def flux_model(self):
-
-        return self._flux_model
-
-    
-    @flux_model.setter
-    def flux_model(self, value):
-
-        if not isinstance(value, FluxModel):
-
-            raise ValueError(str(value) + ' is not a recognised flux model')
+            raise ValueError(str(value) + ' is not a valid redshift.')
 
         else:
 
-            self._flux_model = value
-"""
+            self._redshift = value
 
 
+class ExtendedSource(ES):
+
+    def __init__(self, source_name, redshift, **kwargs):
+        """
+        Override astromodels ExtendedSource to add redshift.
+        """
+
+        super().__init__(source_name, **kwargs)
+
+        
+        self.redshift = redshift
+
+        
+    @property
+    def redshift(self):
+
+        return self._redshift
+
+
+    @redshift.setter
+    def redshift(self, value):
+
+        if value < 0 or value > 10:
+
+            raise ValueError(str(value) + ' is not a valid redshift.')
+
+        else:
+
+            self._redshift = value
+
+
+            
+class DiffuseSource(Source, Node):
+
+    def __init__(self, source_name, redshift, spectral_shape=None, components=None):
+        """
+        Diffuse source for isotropic emission.
+        """
+        
+        self.redshift = redshift
+        
+        assert (spectral_shape is not None) ^ (components is not None)
+
+        # If the user specified only one component, make a list of one element with a default name ("main")
+
+        if spectral_shape is not None:
+
+            components = [SpectralComponent("main", spectral_shape)]
+
+        Source.__init__(self, components, EXTENDED_SOURCE)
+
+        # A source is also a Node in the tree
+
+        Node.__init__(self, source_name)
+
+
+        # Add a node called 'spectrum'
+        
+        spectrum_node = Node('spectrum')
+        spectrum_node._add_children(self._components.values())
+
+        self._add_child(spectrum_node)
+
+        # Now set the units
+        # Now sets the units of the parameters for the energy domain
+
+        current_units = get_units()
+
+        # Components in this case have energy as x and differential flux as y
+
+        x_unit = current_units.energy
+        y_unit = (current_units.energy * current_units.area * current_units.time) ** (-1)
+
+        # Now set the units of the components
+        for component in self._components.values():
+
+            component.shape.set_units(x_unit, y_unit)
+
+        
+    @property
+    def redshift(self):
+
+        return self._redshift
+
+
+    @redshift.setter
+    def redshift(self, value):
+
+        if value < 0 or value > 10:
+
+            raise ValueError(str(value) + ' is not a valid redshift.')
+
+        else:
+
+            self._redshift = value
+
+
+            
 class SourceList(ABC):
     """
     Abstract base class for container of a list of sources.
@@ -115,76 +194,11 @@ class SourceList(ABC):
             self._sources.pop(index)
 
             self.N -= 1
-            
 
-class PointSource(Source):
-
-    
-    def __init__(self, coord, redshift, tag=None):
-
-        super().__init__()
-
-        self.src_type = POINT
-        
-        self._coord = coord
-
-        self._redshift = redshift
-
-        self.tag = tag
-
-        
-    @property
-    def coord(self):
-
-        return self._coord
-
-    
-    @coord.setter
-    def coord(self, value):
-
-        self._coord = value
-
-        
-    @property
-    def redshift(self):
-
-        return self._redshift
-
-    
-    @redshift.setter
-    def redshift(self, value):
-
-        self._redshift = value
-
-
-class DiffuseSource(Source):
-
-    
-    def __init__(self, redshift=None, tag=None):
-
-        super().__init__()
-
-        self.src_type = DIFFUSE
-        
-        self._redshift = redshift
-
-        
-    @property
-    def redshift(self):
-
-        return self._redshift
-
-    
-    @redshift.setter
-    def redshift(self, value):
-
-        self._redshift = value
-
-        
         
 class TestSourceList(SourceList):
 
-    def __init__(self, filename, flux_model=None):
+    def __init__(self, filename, spectral_shape=None):
         """
         Simple source list from test file used in 
         development. Can be adapted to different 
@@ -198,9 +212,21 @@ class TestSourceList(SourceList):
         
         self._filename = filename
 
-        self._flux_model = flux_model
+        self._spectral_shape = spectral_shape
 
         self._read_from_file()
+
+
+    @property
+    def spectral_shape(self):
+
+        return self._spectral_shape
+
+    
+    @spectral_shape.setter
+    def spectral_shape(self, function):
+
+        self._spectral_shape = function
         
 
     def _read_from_file(self):
@@ -217,9 +243,10 @@ class TestSourceList(SourceList):
 
         ra, dec = uv_to_icrs(unit_vector)
 
-        for r, d, z in zip(ra, dec, redshift):
+        for r, d, z in zip(np.rad2deg(ra), np.rad2deg(dec), redshift):
 
-            source = PointSource((r, d), z)
+            source = PointSource('test_'+str(self.N), ra=r, dec=d, redshift=z,
+                                 spectral_shape=self.spectral_shape)
 
             self.add(source)
         
@@ -238,37 +265,22 @@ def uv_to_icrs(unit_vector):
 
     if len(np.shape(unit_vector)) > 1:
 
-      theta = np.arccos(unit_vector.T[2])
-
-      phi = np.arctan(unit_vector.T[1] / unit_vector.T[0])
+        x = unit_vector.T[0]
+        y = unit_vector.T[1]
+        z = unit_vector.T[2]
 
     else:
 
-        theta = np.arccos(unit_vector[2])
+        x = unit_vector[0]
+        y = unit_vector[1]
+        z = unit_vector[2]
 
-        phi = np.arccos(unit_vector[1] / unit_vector[0])
+    coord = SkyCoord(x, y, z, unit="mpc", representation_type="cartesian",
+                     frame="icrs")
+    coord.representation_type = "spherical"
 
-    ra, dec = spherical_to_icrs(theta, phi)
+    return coord.ra.rad, coord.dec.rad
 
-    return ra, dec
-
-        
-def spherical_to_icrs(theta, phi):
-    """
-    convert spherical coordinates to ICRS
-    ra, dec.
-    """
-
-    ra = phi
-
-    dec = np.pi/2 - theta
-
-    return ra, dec
-
-
-def lists_to_tuple(list1, list2):
-
-    return  [(list1[i], list2[i]) for i in range(0, len(list1))] 
 
 
     
