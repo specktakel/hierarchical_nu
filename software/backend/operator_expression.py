@@ -61,7 +61,7 @@ def register_operators(cls, ops):
 
 """
 Register standard arithmetic operators for both the Expression
-baseclass and the _OperatorExpression class.This allows operator
+baseclass and the _OperatorExpression class. This allows operator
 manipulations of Expressions (and subclasses), as well as operator
 manipulations of _OperatorExpressions
 """

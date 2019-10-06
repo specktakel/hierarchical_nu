@@ -1,7 +1,9 @@
 from abc import ABCMeta, abstractmethod
 from typing import Union, Sequence
 
-__all__ = ["Expression", "TExpression"]
+
+__all__ = ["Expression", "TExpression",
+           ]
 """
 try:
     from typing import ForwardRef  # type: ignore
@@ -9,6 +11,7 @@ except ImportError:
     # python 3.6
     from typing import _ForwardRef as ForwardRef # type: ignore
 """
+
 
 class Expression(metaclass=ABCMeta):
     """
@@ -33,6 +36,7 @@ class Expression(metaclass=ABCMeta):
     def to_pymc(self):
         pass
 
-
 # Define type union for stanable types
 TExpression = Union[Expression, str, float]
+
+

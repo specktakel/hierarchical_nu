@@ -1,6 +1,9 @@
 """Module for autogenerating Stan code"""
-from typing import List, Union, Dict
+from typing import List, Union, Dict, TYPE_CHECKING
 from .expression import TExpression, Expression
+
+if TYPE_CHECKING:
+    from .variable_definitions import VariableDef
 
 __all__ = ["StanFunction", "StanGenerator", "stanify",
            "StanCodeBit", "TStrStanCodeBit", "TListStrStanCodeBit"]
@@ -40,12 +43,14 @@ class StanGenerator:
 
     def to_stan(self) -> str:
         functions: Dict[str, StanFunction] = {}
+        # def_codes: Dict[str, "VariableDef"] = {}
+        def_codes: List[str] = []
 
         main_code = ""
         # Loop through all collected code bits
         for code_bit in self._code_bits:
             sfunc = code_bit.functions
-
+            sdefs = code_bit.def_codes
             # Check if we have to add any stan functions
             if sfunc:
                 # This bit contains functions, add them
@@ -53,6 +58,20 @@ class StanGenerator:
                     # Only add if not already added
                     if func.name not in functions:
                         functions[func.name] = func.code
+
+            # Check if we have to add any stan variable definitions
+            if sdefs:
+                # This bit contains variable defs, add them
+                for sdef in sdefs:
+                    """
+                    # Only add if not already added
+                    if sdef.name not in def_codes:
+                        def_codes[sdef.name] = sdef.code
+                    else:
+                        raise RuntimeError("Variable with name %s already" /
+                                           " defined")
+                    """
+                    def_codes.append(sdef)
 
             main_code += code_bit.code + "\n"
 
@@ -62,7 +81,10 @@ class StanGenerator:
             func_code += fcode + "\n"
         func_code += "}\n"
 
-        return func_code + main_code
+        # Generate variable def code
+        def_code = "\n".join(def_codes)
+
+        return func_code + def_code + main_code
 
 
 # Declare a type for a List containing either str or StanCodeBits
@@ -77,32 +99,60 @@ class StanCodeBit:
 
     def __init__(self):
         self._functions = []
-        self._code: TListStrStanCodeBit = []
+        self._def_codes = []
+        self._code: List[str] = []
 
     @property
     def functions(self) -> List[StanFunction]:
         return self._functions
 
     @property
-    def code(self) -> str:
-        # We have to resolve recursions of CodeBits
-        code_str = ""
+    def def_codes(self) -> List["VariableDef"]:
+        return self._def_codes
+
+    """
+    def unravel(self) -> None:
+        # Resolve recursions of CodeBits
+        new_code: TListStrStanCodeBit = []
         for code_bit in self._code:
             if isinstance(code_bit, StanCodeBit):
                 # If a part of the code is still a CodeBit,
                 # call its code method
-                code_str += code_bit.code
+                new_code.append(code_bit.code)
+                if code_bit.functions:
+                    self._functions += code_bit.functions
+                if code_bit.def_codes:
+                    self._def_codes += code_bit.def_codes
             else:
-                code_str += code_bit
+                new_code.append(code_bit)
+        self._code = new_code
+    """
 
-        return code_str
+    @property
+    def code(self) -> str:
+        return "".join(self._code)
 
     def add_function(self, function: StanFunction) -> None:
         """Add a StanFunction"""
         self._functions.append(function)
 
+    def add_def_code(self, def_code: "VariableDef") -> None:
+        """Add a variable definition"""
+        self._def_codes.append(def_code)
+
     def add_code(self, code: TListStrStanCodeBit) -> None:
-        self._code += code
+
+        for code_bit in code:
+            if isinstance(code_bit, StanCodeBit):
+                # If a part of the code is still a CodeBit,
+                # call its code method
+                self._code.append(code_bit.code)
+                if code_bit.functions:
+                    self._functions += code_bit.functions
+                if code_bit.def_codes:
+                    self._def_codes += code_bit.def_codes
+            else:
+                self._code.append(code_bit)
 
     def __repr__(self) -> str:
 

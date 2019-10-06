@@ -17,7 +17,10 @@ from backend import (
     PolynomialParameterization,
     TruncatedParameterization,
     MixtureParameterization,
-    LognormalParameterization)
+    LognormalParameterization,
+    SimpleHistogram,
+    StanArray,
+    MathFuncParameterization)
 from fitting_tools import Residuals
 
 
@@ -97,20 +100,69 @@ class Resolution(Parameterization, metaclass=ABCMeta):
         pass
 
 
-class NorthernTracksEffectiveArea(EffectiveArea):
+class NorthernTracksEffectiveArea(EffectiveArea, SimpleHistogram):
     """
     Effective area for the two-year Northern Tracks release:
     https://icecube.wisc.edu/science/data/HE_NuMu_diffuse
 
     """
 
+    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"
+    CACHE_FNAME = "aeff_tracks.npz"
+
+    def __init__(
+            self,
+            inputs: Sequence[TExpression]):
+
+        EffectiveArea.__init__(self)
+
+        self.setup()
+
+        SimpleHistogram.__init__(
+            self,
+            inputs,
+            self._eff_area,
+            [self._tE_bin_edges, self._cosz_bin_edges],
+            "NorthernTracksEffAreaHist")
+
     def _calc_effective_area(
             self,
-            param_dict: dict):
+            param_dict: dict) -> float:
         pass
 
-    def setup(self):
-        """See base class"""
+    def setup(self) -> None:
+
+        if self.CACHE_FNAME in Cache:
+            with Cache.open(self.CACHE_FNAME, "rb") as fr:
+                data = np.load(fr)
+                eff_area = data["eff_area"]
+                tE_bin_edges = data["tE_bin_edges"]
+                cosz_bin_edges = data["cosz_bin_edges"]
+        else:
+
+            import h5py  # type: ignore
+            with h5py.File(self.DATA_PATH, 'r') as f:
+                eff_area = f['2010/nu_mu/area'][()]
+                # sum over reco energy
+                eff_area = eff_area.sum(axis=2)
+                # True Energy [GeV]
+                tE_bin_edges = f['2010/nu_mu/bin_edges_0'][:]
+                # cos(zenith)
+                cosz_bin_edges = f['2010/nu_mu/bin_edges_1'][:]
+                # Reco Energy [GeV]
+                # rE_bin_edges = f['2010/nu_mu/bin_edges_2'][:]
+
+                with Cache.open(self.CACHE_FNAME, "wb") as fr:
+                    np.savez(
+                        fr,
+                        eff_area=eff_area,
+                        tE_bin_edges=tE_bin_edges,
+                        cosz_bin_edges=cosz_bin_edges,
+                        )
+
+        self._eff_area = eff_area
+        self._tE_bin_edges = tE_bin_edges
+        self._cosz_bin_edges = cosz_bin_edges
 
 
 class NorthernTracksEnergyResolution(  # type: ignore
@@ -146,10 +198,12 @@ class NorthernTracksEnergyResolution(  # type: ignore
         for i in range(self.n_components):
             mu = PolynomialParameterization(
                 truncated_e,
-                self.poly_params_mu[i])
+                self.poly_params_mu[i],
+                "NorthernTracksEnergyResolutionMuPolyCoeffs")
             sd = PolynomialParameterization(
                 truncated_e,
-                self.poly_params_sd[i])
+                self.poly_params_sd[i],
+                "NorthernTracksEnergyResolutionSdPolyCoeffs")
 
             components.append(LognormalParameterization(inputs, mu, sd))
 
@@ -505,7 +559,8 @@ class NorthernTracksAngularResolution(  # type: ignore
 
         self._kappa = PolynomialParameterization(
             clipped_e,
-            self.poly_params)
+            self.poly_params,
+            "NorthernTracksAngularResolutionPolyCoeffs")
 
 
 class DetectorModel(metaclass=ABCMeta):
@@ -542,8 +597,13 @@ class NorthernTracksDetectorModel(DetectorModel):
             (true_energy, true_direction))
         self._energy_resolution = NorthernTracksEnergyResolution(true_energy)
 
+        cos_direction = MathFuncParameterization(true_direction, "cos")
+
+        self._eff_area = NorthernTracksEffectiveArea(
+            [true_energy, cos_direction])
+
     def _get_effective_area(self):
-        pass
+        return self._eff_area
 
     def _get_energy_resolution(self):
         return self._energy_resolution
@@ -564,3 +624,4 @@ if __name__ == "__main__":
     print(ntd)
     print(ntd.angular_resolution.to_stan())
     print(ntd.energy_resolution.to_stan())
+    print(ntd.effective_area.to_stan())

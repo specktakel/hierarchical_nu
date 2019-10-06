@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, Iterable, Collection, Sequence
+from typing import Union, Collection, Sequence
 import numpy as np  # type: ignore
 from .stan_generator import (
     StanCodeBit,
@@ -8,13 +8,14 @@ from .stan_generator import (
     stanify)
 from .expression import Expression, TExpression
 from .pymc_generator import pymcify
+from .variable_definitions import StanArray
+from .typedefs import TArrayOrNumericIterable
 
 __all__ = ["Parameterization", "LogParameterization",
            "PolynomialParameterization", "LognormalParameterization",
            "VMFParameterization", "TruncatedParameterization",
-           "MixtureParameterization"]
-
-TArrayOrNumericIterable = Union[np.ndarray, Iterable[float]]
+           "MixtureParameterization", "SimpleHistogram",
+           "MathFuncParameterization"]
 
 
 class Parameterization(Expression,
@@ -40,6 +41,29 @@ class Parameterization(Expression,
         """
         Convert the parametrizaton to PyMC3
         """
+        pass
+
+
+class MathFuncParameterization(Parameterization):
+    """simple stan math function"""
+
+    def __init__(self, inputs: TExpression, func_name: str):
+        Parameterization.__init__(self, [inputs])
+        self._func_name = func_name
+
+    def to_stan(self) -> StanCodeBit:
+        """See base class"""
+
+        x_eval_stan = stanify(self._inputs[0])
+        stan_code: TListStrStanCodeBit = [
+            self._func_name, "(", x_eval_stan, ")"]
+
+        stan_code_bit = StanCodeBit()
+        stan_code_bit.add_code(stan_code)
+
+        return stan_code_bit
+
+    def to_pymc(self) -> "PyMCCodeBit":
         pass
 
 
@@ -81,10 +105,14 @@ class PolynomialParameterization(Parameterization):
     def __init__(
             self,
             inputs: TExpression,
-            coefficients: TArrayOrNumericIterable) -> None:
+            coefficients: TArrayOrNumericIterable,
+            coeffs_var_name: str) -> None:
 
         Parameterization.__init__(self, [inputs])
-        self._coeffs = coefficients
+        self._coeffs = StanArray(
+            coeffs_var_name,
+            "real",
+            coefficients)
 
     def to_stan(self) -> StanCodeBit:
         """See base class"""
@@ -94,9 +122,11 @@ class PolynomialParameterization(Parameterization):
         # TODO: Make sure that eval_poly1d is part of some util lib.
         # Or maybe add a hook for loading ?
 
+        """
         coeffs_stan = "[" + ",".join([str(coeff)
                                       for coeff in self._coeffs]) + "]"
-
+        """
+        coeffs_stan = stanify(self._coeffs)
         stan_code: TListStrStanCodeBit = [
             "eval_poly1d(",
             x_eval_stan,
@@ -256,16 +286,49 @@ class MixtureParameterization(Parameterization):
     def to_stan(self) -> StanCodeBit:
         """See base class"""
 
-        stan_code: TListStrStanCodeBit = []
+        expression: TExpression = 0
         for i, (comp, weight) in enumerate(
                 zip(self._components, self._weighting)):
             comp._inputs[0] = self._inputs[0]
-            comp_stan = stanify(comp)
-            weight_stan = stanify(weight)
+            # Here we implictely use the OperatorExpression, since
+            # components are Parameterizations
+            expression += comp*weight
 
-            stan_code += [weight_stan, " * ", comp_stan]
-            if i < len(self._components)-1:
-                stan_code += " + "
+        stan_code_bit = StanCodeBit()
+        stan_code_bit.add_code([expression.to_stan()])
+
+        return stan_code_bit
+
+    def to_pymc(self):
+        pass
+
+
+class SimpleHistogram(Parameterization):
+    """
+    A step function implemented as lookup table
+    """
+    def __init__(
+            self,
+            inputs: Sequence[TExpression],
+            histogram: np.ndarray,
+            binedges: Sequence[np.ndarray],
+            hist_var_name: str
+            ):
+        Parameterization.__init__(self, inputs)
+        self._dim = len(binedges)
+        self._histogram = StanArray(hist_var_name, "real", histogram)
+        self._binedges = [
+            StanArray(hist_var_name + "edge_{}".format(i), "real", be)
+            for i, be in enumerate(binedges)]
+
+    def to_stan(self) -> StanCodeBit:
+        """See base class"""
+        stan_code = [stanify(self._histogram)]
+        for i in range(self._dim):
+            value_stan = stanify(self._inputs[i])
+            binedge_stan = stanify(self._binedges[i])
+            stan_code += ["[binary_search(", value_stan, ", ",
+                          binedge_stan, ")]"]
 
         stan_code_bit = StanCodeBit()
         stan_code_bit.add_code(stan_code)
@@ -273,6 +336,9 @@ class MixtureParameterization(Parameterization):
         return stan_code_bit
 
     def to_pymc(self):
+        """
+        Convert the parametrizaton to PyMC3
+        """
         pass
 
 
@@ -301,3 +367,16 @@ if __name__ == "__main__":
     gen = StanGenerator()
     gen.add_code_bit(lognorm_mix.to_stan())
     print(gen.to_stan())
+
+    print("Hist test")
+    # histogram test
+
+    hist_var = np.zeros((4,5))
+    binedges_x = np.arange(5)
+    binedges_y = np.arange(6)
+
+    values = ["x", "y"]
+
+    hist = SimpleHistogram(values, hist_var, [binedges_x, binedges_y],
+                           "hist")
+    print(hist.to_stan())
