@@ -38,7 +38,6 @@ class StanCodeBit:
         self._def_codes.append(def_code)
 
     def add_code(self, code: TListStrStanCodeBit) -> None:
-
         for code_bit in code:
             if isinstance(code_bit, StanCodeBit):
                 # If a part of the code is still a CodeBit,
@@ -56,4 +55,4 @@ class StanCodeBit:
         code_gen = StanGenerator()
         code_gen.add_code_bit(self)
 
-        return code_gen.to_stan()
+        return "\n".join(code_gen.to_stan())

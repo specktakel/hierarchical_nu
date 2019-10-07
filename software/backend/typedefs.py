@@ -3,7 +3,8 @@ import numpy as np  # type: ignore
 
 if TYPE_CHECKING:
     from .stan_code import TListStrStanCodeBit
+    from .expression import StanFunction, StanDefCode
 __all__ = ["TArrayOrNumericIterable", "TStanHookDict"]
 
 TArrayOrNumericIterable = Union[np.ndarray, Iterable[float]]
-TStanHookDict = Dict[str, Tuple[str, "TListStrStanCodeBit"]]
+TStanHookDict = Dict[str, Tuple[str, Union["StanFunction", "StanDefCode"]]]

@@ -13,7 +13,7 @@ __all__ = ["Parameterization", "LogParameterization",
            "PolynomialParameterization", "LognormalParameterization",
            "VMFParameterization", "TruncatedParameterization",
            "MixtureParameterization", "SimpleHistogram",
-           "FunctionCall"]
+           "FunctionCall", "StanExpressionFunction"]
 
 
 class Parameterization(Expression,
@@ -66,17 +66,15 @@ class StanExpressionFunction(StanFunction, VariableDef):
             arg_types: Iterable[str],
             return_type: str,
             expression: "TExpression") -> None:
-        StanFunction.__init__(self, name)
+        header_code = return_type + " " + name + "("
+        header_code += ",".join([arg_type+" "+arg_name for arg_type, arg_name
+                                 in zip(arg_types, arg_names)])
+        header_code += ")"
+        StanFunction.__init__(self, name, header_code)
         VariableDef.__init__(self, name)
 
-        code: TListStrStanCodeBit = [return_type, " ", name, "("]
-        code += [arg_type+" "+arg_name for arg_type, arg_name
-                 in zip(arg_types, arg_names)]
-        code.append(");\n{\n")
-        code.append(stanify(expression))
-        code.append("}")
-        self.add_func_code(code)
-        self.add_stan_hook(name, "function", [self.func_code])
+        self.add_func_code(["return ", stanify(expression), ";"])
+        self.add_stan_hook(name, "function", self)
 
     @property
     def def_code(self):
@@ -123,7 +121,7 @@ class PolynomialParameterization(Parameterization):
         Parameterization.__init__(self, [inputs])
         self._coeffs = StanArray(
             coeffs_var_name,
-            "real",
+            "vector",
             coefficients)
 
     @property
@@ -143,8 +141,10 @@ class PolynomialParameterization(Parameterization):
         stan_code: TListStrStanCodeBit = [
             "eval_poly1d(",
             x_eval_stan,
-            "), ",
-            coeffs_stan]
+            ",",
+            coeffs_stan,
+            ")",
+           ]
         return stan_code
 
     def to_pymc(self):
@@ -372,9 +372,9 @@ if __name__ == "__main__":
     print("Hist test")
     # histogram test
 
-    hist_var = np.zeros((4, 5))
-    binedges_x = np.arange(5)
-    binedges_y = np.arange(6)
+    hist_var = np.zeros((4, 5), dtype=float)
+    binedges_x = np.arange(5, dtype=float)
+    binedges_y = np.arange(6, dtype=float)
 
     values = ["x", "y"]
 

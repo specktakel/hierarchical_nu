@@ -1,5 +1,5 @@
 """Module for autogenerating Stan code"""
-from typing import (List, TYPE_CHECKING)
+from typing import (List, Dict, TYPE_CHECKING, Tuple)
 import logging
 logger = logging.getLogger(__name__)
 
@@ -20,19 +20,19 @@ class StanGenerator:
         """Add a StanCodeBit"""
         self._code_bits.append(code_bit)
 
-    def to_stan(self) -> str:
+    def to_stan(self) -> Tuple[str, str]:
         """Convert added StanCodeBits to Stan code"""
 
-        functions: List[str] = []
-
-        def loop_code_bits(code_bits: List["StanCodeBit"], iteration=0):
+        def loop_code_bits(
+                code_bits: List["StanCodeBit"],
+                functions: Dict[str, str],
+                iteration=0):
             """
             Recursively loop through StanCodeBits
             """
             main_code = ""
-            functions = ""
-            definitions = ""
             for code_bit in code_bits:
+                definitions: Dict[str, List["StanCodeBit"]] = {}
                 sfunc = code_bit.functions
                 sdefs = code_bit.def_codes
 
@@ -40,10 +40,19 @@ class StanGenerator:
                 if sdefs:
                     # This bit contains variable defs, add them
                     for sdef in sdefs:
-                        fc, defs, mc += loop_code_bits([sdef.def_code], iteration+1)
-                        if fc or defs:
-                            logger.warn("Variable definition contains definition or function code")
-                        # TODO: what about duplicates?
+                        if sdef.name not in definitions:
+                            # Only add if not already added
+                            mc = loop_code_bits(
+                                [sdef.def_code],
+                                functions,
+                                iteration+1)
+                            definitions[sdef.name] = mc
+                            main_code += mc
+                            # if fc or defs:
+                            #     logger.warn("Variable definition contains definition or function code")  # noqa: E501
+                            # functions += fc
+                            # definitions += defs
+                            # main_code += mc
 
                 # Check if we have to add any stan functions
                 if sfunc:
@@ -51,25 +60,29 @@ class StanGenerator:
                     for func in sfunc:
                         # Only add if not already added
                         if func.name not in functions:
-                            main_code += loop_code_bits([func.func_code])
-                            functions.append(func.name)
+                            function_code = func.func_header + "\n"
+                            function_code += "{\n"
+                            for func_code in func.func_code:
+                                mc = loop_code_bits(
+                                    [func_code],
+                                    functions,
+                                    iteration+1)
+                                function_code += mc + "\n"
+                            function_code += "}\n"
 
-                            """
-                            if fcode_bit.functions:
-                                # This function defines functions, not supported
-                                raise RuntimeError("Defining functions within functions currently not supported")  # noqa: E501
-                            fsdefs = fcode_bit.def_codes
-                            functions[func.name] = fsdefs + "\n" + fcode_bit.code + "\n"
-                            """
+                            functions[func.name] = function_code
                         else:
                             logger.warn("Function %s already added", func.name)
 
-                main_code += "functions {\n"
                 main_code += code_bit.code + "\n"
-                main_code += "} \n"
             return main_code
 
         # Loop through all collected code bits
-        stan_code = loop_code_bits(self._code_bits)
+        functions: Dict[str, str] = {}
+        stan_code = loop_code_bits(self._code_bits, functions)
 
-        return stan_code
+        # Add function codes
+        func_code = ""
+        for fname, fcode in functions.items():
+            func_code += fcode + "\n"
+        return func_code, stan_code

@@ -19,8 +19,8 @@ from backend import (
     MixtureParameterization,
     LognormalParameterization,
     SimpleHistogram,
-    StanArray,
-    MathFuncParameterization)
+    FunctionCall,
+    StanExpressionFunction)
 from fitting_tools import Residuals
 
 
@@ -494,12 +494,12 @@ class NorthernTracksAngularResolution(  # type: ignore
     DATA_PATH = "NorthernTracksAngularRes.csv"
     CACHE_FNAME = "angular_reso_tracks.npz"
 
-    def __init__(self, inputs: Tuple[TExpression, TExpression]) -> None:
+    def __init__(self, inputs: Sequence[TExpression]) -> None:
         """
         Args:
             inputs: List[TExpression]
                 First item is true energy, second item is true
-                position
+                direction, third item is reco direction
         """
         Resolution.__init__(self, inputs)
         self.poly_params: Union[None, np.ndarray] = None
@@ -508,7 +508,10 @@ class NorthernTracksAngularResolution(  # type: ignore
 
         self.setup()
 
-        VMFParameterization.__init__(self, inputs, self._kappa)
+        inputs_vmf = [inputs[2], inputs[1]]
+
+        # VMF expects x_obs, x_true
+        VMFParameterization.__init__(self, inputs_vmf, self._kappa)
 
     def _calc_resolution(self):
         pass
@@ -589,18 +592,61 @@ class DetectorModel(metaclass=ABCMeta):
     def _get_angular_resolution(self):
         self._angular_resolution
 
+
 class NorthernTracksDetectorModel(DetectorModel):
 
-    def __init__(self, true_energy: TExpression, true_direction: TExpression):
+    def __init__(self):
 
-        self._angular_resolution = NorthernTracksAngularResolution(
-            (true_energy, true_direction))
-        self._energy_resolution = NorthernTracksEnergyResolution(true_energy)
+        ang_res = NorthernTracksAngularResolution(
+            ("true_energy", "true_direction", "reco_direction"))
 
-        cos_direction = MathFuncParameterization(true_direction, "cos")
+        ang_res_func = StanExpressionFunction(
+            "GetNorthernTracksAngularRes",
+            ["true_energy", "true_direction", "reco_direction"],
+            ["real", "vector", "vector"],
+            "real",
+            ang_res)
+        self._angular_resolution = ang_res_func
 
-        self._eff_area = NorthernTracksEffectiveArea(
-            [true_energy, cos_direction])
+        """
+        self._angular_resolution = FunctionCall(
+            [true_energy, true_direction],
+            ang_res_func,
+            2)
+
+        """
+        energy_res = NorthernTracksEnergyResolution("true_energy")
+        energy_res_func = StanExpressionFunction(
+            "GetNorthernTracksEnergyRes",
+            ["true_energy"],
+            ["real"],
+            "real",
+            energy_res)
+        self._energy_resolution = energy_res_func
+        """
+        self._energy_resolution = FunctionCall(
+            [true_energy],
+            energy_res_func,
+            1
+            )
+
+        cos_direction = FunctionCall([true_direction], "cos")
+
+        eff_area = NorthernTracksEffectiveArea(
+            ["energy", "cos_direction"])
+        eff_area_func = StanExpressionFunction(
+            "GetNorthernTracksEffArea",
+            ["energy", "cos_direction"],
+            ["real", "real"],
+            "real",
+            eff_area,
+            )
+
+        self._eff_area = FunctionCall(
+            [true_energy, cos_direction],
+            eff_area_func,
+            2)
+        """
 
     def _get_effective_area(self):
         return self._eff_area

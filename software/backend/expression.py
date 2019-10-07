@@ -19,22 +19,30 @@ class StanFunction:
         code: TListStrStanCodeBit
     """
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, func_header: str) -> None:
         self._name: str = name
-        self._func_code: TListStrStanCodeBit = []
+        self._func_code: List[TListStrStanCodeBit] = []
+        self._func_header: str = func_header
 
     def add_func_code(self, code: TListStrStanCodeBit):
-        self._func_code += code
+        self._func_code.append(code)
 
     @property
     def name(self) -> str:
         return self._name
 
     @property
-    def func_code(self) -> StanCodeBit:
-        new_code_bit = StanCodeBit()
-        new_code_bit.add_code(self._func_code)
-        return new_code_bit
+    def func_header(self):
+        return self._func_header
+
+    @property
+    def func_code(self) -> List[StanCodeBit]:
+        code_bits: List[StanCodeBit] = []
+        for fc in self._func_code:
+            new_code_bit = StanCodeBit()
+            new_code_bit.add_code(fc)
+            code_bits.append(new_code_bit)
+        return code_bits
 
 
 class StanDefCode:
@@ -79,7 +87,11 @@ class Expression(metaclass=ABCMeta):
     def stan_hooks(self) -> TStanHookDict:
         return self._stan_hooks
 
-    def add_stan_hook(self, name: str, hook_type: str, code: TListStrStanCodeBit):
+    def add_stan_hook(
+            self,
+            name: str,
+            hook_type: str,
+            hook_obj: Union[StanFunction, StanDefCode]):
         """
         Add a stan hook
 
@@ -94,7 +106,7 @@ class Expression(metaclass=ABCMeta):
         if name in self._stan_hooks:
             logger.warning("Hook with name %s already exists. Skipping..", name)  # noqa: E501
         else:
-            self._stan_hooks[name] = (hook_type, code)
+            self._stan_hooks[name] = (hook_type, hook_obj)
 
     def to_stan(self) -> "StanCodeBit":
         """
@@ -105,13 +117,11 @@ class Expression(metaclass=ABCMeta):
         code_bit.add_code(self.stan_code)
         for hook_name, (hook_type, hook_code) in self._stan_hooks.items():
             if hook_type == "function":
-                func = StanFunction(hook_name)
-                func.add_func_code(hook_code)
-                code_bit.add_function(func)
+                assert isinstance(hook_code, StanFunction)
+                code_bit.add_function(hook_code)
             elif hook_type == "var_def":
-                def_code = StanDefCode(hook_name)
-                def_code.add_def_code(hook_code)
-                code_bit.add_definition(def_code)
+                assert isinstance(hook_code, StanDefCode)
+                code_bit.add_definition(hook_code)
         return code_bit
 
     @abstractmethod
@@ -132,3 +142,20 @@ def stanify(var: TExpression) -> StanCodeBit:
     code_bit = StanCodeBit()
     code_bit.add_code([str(var)])
     return code_bit
+
+
+class AssignValue(Expression):
+
+    def __init__(self, inputs: Sequence[TExpression], output: TExpression):
+        Expression.__init__(self, inputs)
+        self._output = output
+
+    @property
+    def stan_code(self) -> TListStrStanCodeBit:
+        stan_code: TListStrStanCodeBit = [
+            stanify(self._output), " = ", stanify(self._inputs[0])]
+        return stan_code
+
+    def to_pymc(self):
+        pass
+    
