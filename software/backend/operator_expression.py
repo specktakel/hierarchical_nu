@@ -1,30 +1,44 @@
 from typing import Callable, Tuple, List
 import operator
 
-from .expression import Expression, TExpression
-from .stan_generator import StanCodeBit, TListStrStanCodeBit, stanify
+from .expression import Expression, TExpression, stanify
+from .stan_code import TListStrStanCodeBit
 from .pymc_generator import pymcify
 
 
 class _OperatorExpression(Expression):
+    """
+    Implements basic arithmetic operations for Expressions
+
+    Parameters:
+        inputs: List[TExpression]
+            Exactly two inputs for an operator (LHS, RHS)
+        op_code: Tuple[str, str]
+            Tuple of op code (e.g. `+`) and python operator name
+            (e.g. `__add__`)
+
+
+    """
     def __init__(self, inputs: List[TExpression],
                  op_code: Tuple[str, str]) -> None:
         Expression.__init__(self, inputs)
         self._op_code = op_code
 
-    def to_stan(self) -> StanCodeBit:
+    @property
+    def stan_code(self) -> TListStrStanCodeBit:
+        """See base class"""
         in0_stan = stanify(self._inputs[0])
         in1_stan = stanify(self._inputs[1])
 
         stan_code:  TListStrStanCodeBit = ["(", in0_stan, self._op_code[0],
                                            in1_stan, ")"]
 
-        code_bit = StanCodeBit()
-        code_bit.add_code(stan_code)
-
-        return code_bit
+        return stan_code
 
     def to_pymc(self):
+        """
+        See parent class
+        """
         in0_pymc = pymcify(self._inputs[0])
         in1_pymc = pymcify(self._inputs[1])
         return getattr(operator, self._op_code[1])(in0_pymc, in1_pymc)
@@ -52,7 +66,7 @@ def make_op_func(op_code: Tuple[str, str], invert: bool = False) -> Callable:
 
 
 def register_operators(cls, ops):
-    """Register a operator overload for a class"""
+    """Register an operator overload for a class"""
     for op_type, (op_code, invert) in ops.items():
         func = make_op_func((op_code, op_type), invert)
 

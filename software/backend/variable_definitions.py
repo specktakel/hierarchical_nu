@@ -1,6 +1,7 @@
 from abc import abstractmethod
-from .expression import Expression
-from .stan_generator import StanCodeBit
+from typing import Iterable
+from .expression import Expression, StanDefCode
+from .stan_code import TListStrStanCodeBit
 import numpy as np  # type:ignore
 
 __all__ = ["VariableDef", "StanArray"]
@@ -16,22 +17,20 @@ class VariableDef(Expression):
             self,
             name: str):
         Expression.__init__(self, [])
-        self._name = name
+        self._name: str = name
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
     @abstractmethod
-    def def_code(self) -> str:
+    def def_code(self) -> StanDefCode:
         pass
 
-    def to_stan(self) -> StanCodeBit:
-        code_bit = StanCodeBit()
-        code_bit.add_code([self._name])
-        code_bit.add_def_code(self.def_code)
-        return code_bit
+    @property
+    def stan_code(self) -> TListStrStanCodeBit:
+        return [self._name]
 
     def to_pymc(self):
         pass
@@ -40,19 +39,23 @@ class VariableDef(Expression):
 class StanArray(VariableDef):
     """
     Stan real array definition
+
+    Parameters:
+        name: Variable name to use in stan code
     """
 
     def __init__(
             self,
             name: str,
             type_name: str,
-            array_data: np.ndarray):
+            array_data: Iterable):
         VariableDef.__init__(self, name)
-        self._array_data = array_data
+        self._array_data = np.asarray(array_data)
         self._type = type_name
+        self.add_stan_hook(name, "var_def", [self.def_code.def_code])
 
     @property
-    def def_code(self) -> str:
+    def def_code(self) -> StanDefCode:
         """
         See parent class
         """
@@ -61,7 +64,6 @@ class StanArray(VariableDef):
         stan_code = self._type + " " + self._name
         for shape_d in self._array_data.shape:
             stan_code += "[" + str(shape_d) + "]"
-        #stan_code += "; \n"
 
         # Fill array
         arraystr = np.array2string(
@@ -71,4 +73,6 @@ class StanArray(VariableDef):
         arraystr = arraystr.replace("[", "{")
         arraystr = arraystr.replace("]", "}")
         stan_code += " = " + arraystr + "; \n"
-        return stan_code
+        def_code = StanDefCode(self.name)
+        def_code.add_def_code([stan_code])
+        return def_code
