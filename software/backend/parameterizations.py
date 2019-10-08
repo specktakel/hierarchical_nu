@@ -1,9 +1,9 @@
 from abc import ABCMeta
 from typing import Union, List, Sequence, Iterable
 import numpy as np  # type: ignore
-from .stan_generator import StanGenerator
+from .stan_generator import stanify
 from .stan_code import TListStrStanCodeBit
-from .expression import (Expression, TExpression, stanify,
+from .expression import (Expression, TExpression,
                          StanFunction)
 from .pymc_generator import pymcify
 from .variable_definitions import StanArray, VariableDef
@@ -36,7 +36,7 @@ class FunctionCall(Parameterization):
             func_name: TExpression,
             nargs: int = 1):
         Parameterization.__init__(self, inputs)
-        self._func_name = stanify(func_name)
+        self._func_name = func_name
         self._nargs = nargs
 
     @property
@@ -344,21 +344,24 @@ class SimpleHistogram(Parameterization):
 
 if __name__ == "__main__":
 
-    invar = "E_true"
-    log_e_eval = LogParameterization(invar)
-    test_poly_coeffs = [1, 1, 1, 1]
-    param = PolynomialParameterization(log_e_eval, test_poly_coeffs,
-                                       "test_poly_coeffs")
+    from .stan_generator import StanGenerator
+    with StanGenerator() as cg:
+        invar = "E_true"
+        log_e_eval = LogParameterization(invar)
+        test_poly_coeffs = [1, 1, 1, 1]
+        param = PolynomialParameterization(log_e_eval, test_poly_coeffs,
+                                           "test_poly_coeffs")
 
-    invar = "E_reco"
-    lognorm = LognormalParameterization(invar, param, param)
-    print(lognorm.to_stan())
+        invar = "E_reco"
+        lognorm = LognormalParameterization(invar, param, param)
 
-    sum_test = 1 + lognorm
-    print(sum_test.to_stan())
+        print(cg.generate())
 
-    sum_test2 = sum_test + sum_test
-    print(sum_test2.to_stan())
+    with StanGenerator() as cg:
+        sum_test = 1 + lognorm
+        sum_test2 = sum_test + sum_test
+
+    print(cg.to_stan()[1])
 
     # mixture test
 

@@ -1,8 +1,9 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, Sequence, List
+from typing import Union, Sequence, List, Optional
 import logging
 from .typedefs import TStanHookDict
 from .stan_code import StanCodeBit, TListStrStanCodeBit
+from .code_generator import Contextable
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,7 @@ __all__ = ["Expression", "TExpression", "StanFunction",
            ]
 
 
-class StanFunction:
+class StanFunction(Contextable):
     """
     Class representing a Stan function
 
@@ -45,26 +46,7 @@ class StanFunction:
         return code_bits
 
 
-class StanDefCode:
-    def __init__(self, name: str) -> None:
-        self._name = name
-        self._def_code: TListStrStanCodeBit = []
-
-    def add_def_code(self, code: TListStrStanCodeBit):
-        self._def_code += code
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def def_code(self) -> StanCodeBit:
-        new_code_bit = StanCodeBit()
-        new_code_bit.add_code(self._def_code)
-        return new_code_bit
-
-
-class Expression(metaclass=ABCMeta):
+class Expression(Contextable, metaclass=ABCMeta):
     """
     Generic expression
 
@@ -74,12 +56,24 @@ class Expression(metaclass=ABCMeta):
     """
 
     def __init__(self, inputs: Sequence["TExpression"]):
+        Contextable.__init__(self)
         self._inputs: List["TExpression"] = list(inputs)
+        for input in self._inputs:
+            if isinstance(input, Expression):
+                input.set_output(self)
+        self._output: Optional[TExpression] = None
         self._stan_hooks: TStanHookDict = {}
 
     @property
+    def output(self):
+        return self._output
+
+    def set_output(self, output: "TExpression"):
+        self._output = output
+
+    @property
     @abstractmethod
-    def stan_code(self) -> TListStrStanCodeBit:
+    def stan_code(self) -> "TListTExpression":
         """Main code of the expression"""
         pass
 
@@ -91,7 +85,7 @@ class Expression(metaclass=ABCMeta):
             self,
             name: str,
             hook_type: str,
-            hook_obj: Union[StanFunction, StanDefCode]):
+            hook_obj: Union[StanFunction, "StanDefCode"]):
         """
         Add a stan hook
 
@@ -108,20 +102,32 @@ class Expression(metaclass=ABCMeta):
         else:
             self._stan_hooks[name] = (hook_type, hook_obj)
 
-    def to_stan(self) -> "StanCodeBit":
+    def to_stan(self) -> StanCodeBit:
         """
         Converts the expression into a StanCodeBit
         """
 
         code_bit = StanCodeBit()
-        code_bit.add_code(self.stan_code)
-        for hook_name, (hook_type, hook_code) in self._stan_hooks.items():
+
+        converted_code: TListStrStanCodeBit = []
+
+        for code in self.stan_code:
+            if isinstance(code, Expression):
+                converted_code.append(code.to_stan())
+            else:
+                assert isinstance(code, (StanCodeBit, str))
+                converted_code.append(code)
+
+        code_bit.add_code(converted_code)
+        """
+        or hook_name, (hook_type, hook_code) in self._stan_hooks.items():
             if hook_type == "function":
                 assert isinstance(hook_code, StanFunction)
                 code_bit.add_function(hook_code)
             elif hook_type == "var_def":
                 assert isinstance(hook_code, StanDefCode)
                 code_bit.add_definition(hook_code)
+        """
         return code_bit
 
     @abstractmethod
@@ -131,31 +137,23 @@ class Expression(metaclass=ABCMeta):
 
 # Define type union for stanable types
 TExpression = Union[Expression, str, float]
+TListTExpression = List[TExpression]
 
 
-def stanify(var: TExpression) -> StanCodeBit:
-    """Call to_stan function if possible"""
-    if isinstance(var, Expression):
-        return var.to_stan()
+class StanDefCode(Expression):
 
-    # Not an Expression, so cast to string
-    code_bit = StanCodeBit()
-    code_bit.add_code([str(var)])
-    return code_bit
+    def __init__(self) -> None:
+        Expression.__init__(self, [])
+        self._def_code: TListTExpression = []
+        # Variable definitions are roots of the graph
+        self._output = "NULL"
 
-
-class AssignValue(Expression):
-
-    def __init__(self, inputs: Sequence[TExpression], output: TExpression):
-        Expression.__init__(self, inputs)
-        self._output = output
+    def add_def_code(self, code: TListTExpression):
+        self._def_code += code
 
     @property
-    def stan_code(self) -> TListStrStanCodeBit:
-        stan_code: TListStrStanCodeBit = [
-            stanify(self._output), " = ", stanify(self._inputs[0])]
-        return stan_code
+    def stan_code(self) -> TListTExpression:
+        return self._def_code
 
     def to_pymc(self):
         pass
-    

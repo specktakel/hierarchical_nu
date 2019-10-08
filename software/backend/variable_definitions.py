@@ -1,8 +1,12 @@
 from abc import abstractmethod
 from typing import Iterable
-from .expression import Expression, StanDefCode
-from .stan_code import TListStrStanCodeBit
+from .expression import Expression, StanDefCode, TListTExpression
+from .stan_code import TStrStanCodeBit
+from .stan_generator import DefinitionContext
+import logging
+logger = logging.getLogger(__name__)
 import numpy as np  # type:ignore
+
 
 __all__ = ["VariableDef", "StanArray"]
 
@@ -18,22 +22,27 @@ class VariableDef(Expression):
         Expression.__init__(self, [])
         self._name: str = name
 
-
     @property
     def name(self) -> str:
         return self._name
 
-    @property
+    def def_code(self) -> None:
+        code = self._gen_def_code()
+        with DefinitionContext() as _:
+            def_code = StanDefCode()
+            def_code.add_def_code(code)
+
     @abstractmethod
-    def def_code(self) -> StanDefCode:
+    def _gen_def_code(self) -> TListTExpression:
         pass
 
     @property
-    def stan_code(self) -> TListStrStanCodeBit:
+    def stan_code(self) -> TListTExpression:
         return [self._name]
 
     def to_pymc(self):
         pass
+
 
 class ForwardVariableDef(VariableDef):
     """Define variable without assigning value"""
@@ -41,15 +50,14 @@ class ForwardVariableDef(VariableDef):
     def __init__(self, name: str, var_type: str) -> None:
         VariableDef.__init__(self, name)
         self._var_type = var_type
-        self.add_stan_hook(name, "var_def", self.def_code)
+        self.def_code()
+        #self.add_stan_hook(name, "var_def", self.def_code)
 
-    @property
-    def def_code(self) -> StanDefCode:
+    def _gen_def_code(self) -> TListTExpression:
         """See parent class"""
-        stan_code = self._var_type + " " + self.name +";\n"
-        def_code = StanDefCode(self.name)
-        def_code.add_def_code([stan_code])
-        return def_code
+        stan_code = self._var_type + " " + self.name + ";\n"
+
+        return [stan_code]
 
 
 class StanArray(VariableDef):
@@ -68,10 +76,9 @@ class StanArray(VariableDef):
         VariableDef.__init__(self, name)
         self._array_data = np.asarray(array_data)
         self._type = type_name
-        self.add_stan_hook(name, "var_def", self.def_code)
+        self.def_code()
 
-    @property
-    def def_code(self) -> StanDefCode:
+    def _gen_def_code(self) -> TListTExpression:
         """
         See parent class
         """
@@ -96,10 +103,23 @@ class StanArray(VariableDef):
         if self._type != "vector":
             arraystr = arraystr.replace("[", "{")
             arraystr = arraystr.replace("]", "}")
-        stan_code += " = " + arraystr 
+        stan_code += " = " + arraystr
         if self._type == "vector":
-            stan_code += "'" # FU Stan
+            stan_code += "'"  # FU Stan
         stan_code += "; \n"
-        def_code = StanDefCode(self.name)
-        def_code.add_def_code([stan_code])
-        return def_code
+
+        return [stan_code]
+
+
+if __name__ == "__main__":
+    from .stan_generator import StanGenerator, GeneratedQuantitiesContext
+    from .operations import AssignValue
+
+    logging.basicConfig(level=logging.DEBUG)
+    with StanGenerator() as cg:
+        with GeneratedQuantitiesContext() as gq:
+            val = ForwardVariableDef("a", "real")
+            val = AssignValue([val], "b")
+
+
+        print(cg.generate())
