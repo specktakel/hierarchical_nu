@@ -1,6 +1,5 @@
 """Module for autogenerating Stan code"""
-from typing import List, Dict
-from collections import defaultdict
+from typing import Dict
 from .code_generator import (
     CodeGenerator, ToplevelContextSingleton, ContextSingleton,
     ContextStack)
@@ -71,7 +70,7 @@ class StanGenerator(CodeGenerator):
 
     @staticmethod
     def parse_recursive(objects):
-        logger.debug("Entered recursive parser. Got {} objects".format(len(objects)))
+        logger.debug("Entered recursive parser. Got {} objects".format(len(objects)))  # noqa: E501
         code_tree: Dict[str, str] = {}
         code_tree["main"] = ""
         for code_bit in objects:
@@ -84,15 +83,15 @@ class StanGenerator(CodeGenerator):
                 if not isinstance(code_bit, Expression):
                     logger.warn("Encountered a non-expression of type: {}".format(type(code_bit)))  # noqa: E501
                     continue
-                # Check that this Expression is connected to something
-                logger.debug("This bit is connected to: {}".format(code_bit.output))
+                # Check whether this Expression is connected
+                logger.debug("This bit is connected to: {}".format(code_bit.output))  # noqa: E501
                 if (code_bit.output is not None
                         and isinstance(code_bit.output, Expression)):
                     continue
 
                 code_bit = code_bit.to_stan()
                 logger.debug("Adding: {}".format(code_bit.code))
-                code_tree["main"] += code_bit.code
+                code_tree["main"] += code_bit.code +";\n"
         return code_tree
 
     @staticmethod

@@ -1,12 +1,10 @@
 from abc import abstractmethod
 from typing import Iterable
+import numpy as np  # type:ignore
 from .expression import Expression, StanDefCode, TListTExpression
-from .stan_code import TStrStanCodeBit
 from .stan_generator import DefinitionContext
 import logging
 logger = logging.getLogger(__name__)
-import numpy as np  # type:ignore
-
 
 __all__ = ["VariableDef", "StanArray"]
 
@@ -55,7 +53,7 @@ class ForwardVariableDef(VariableDef):
 
     def _gen_def_code(self) -> TListTExpression:
         """See parent class"""
-        stan_code = self._var_type + " " + self.name + ";\n"
+        stan_code = self._var_type + " " + self.name 
 
         return [stan_code]
 
@@ -106,7 +104,7 @@ class StanArray(VariableDef):
         stan_code += " = " + arraystr
         if self._type == "vector":
             stan_code += "'"  # FU Stan
-        stan_code += "; \n"
+        stan_code += ""
 
         return [stan_code]
 

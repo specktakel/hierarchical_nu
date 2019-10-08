@@ -1,13 +1,17 @@
 from abc import ABCMeta
 from typing import Union, List, Sequence, Iterable
 import numpy as np  # type: ignore
-from .stan_generator import stanify
+from .stan_generator import stanify, FunctionsContext
 from .stan_code import TListStrStanCodeBit
-from .expression import (Expression, TExpression,
+from .expression import (Expression, TExpression, TListTExpression,
                          StanFunction)
 from .pymc_generator import pymcify
 from .variable_definitions import StanArray, VariableDef
 from .typedefs import TArrayOrNumericIterable
+
+
+import logging
+logger = logging.getLogger(__name__)
 
 __all__ = ["Parameterization", "LogParameterization",
            "PolynomialParameterization", "LognormalParameterization",
@@ -40,17 +44,17 @@ class FunctionCall(Parameterization):
         self._nargs = nargs
 
     @property
-    def stan_code(self) -> TListStrStanCodeBit:
+    def stan_code(self) -> TListTExpression:
         """See base class"""
 
-        stan_code: TListStrStanCodeBit = [self._func_name, "("]
+        stan_code: TListTExpression = [self._func_name, "("]
 
         for i in range(self._nargs):
-            stan_code.append(stanify(self._inputs[i]))
+            stan_code.append(self._inputs[i])
             if i != self._nargs-1:
                 stan_code.append(", ")
 
-        stan_code.append(");")
+        stan_code.append(")")
         return stan_code
 
     def to_pymc(self):
@@ -73,8 +77,11 @@ class StanExpressionFunction(StanFunction, VariableDef):
         StanFunction.__init__(self, name, header_code)
         VariableDef.__init__(self, name)
 
-        self.add_func_code(["return ", stanify(expression), ";"])
-        self.add_stan_hook(name, "function", self)
+        # with FunctionsContext() as fc:
+
+
+        # self.add_func_code(["return ", stanify(expression), ";"])
+        # self.add_stan_hook(name, "function", self)
 
     @property
     def def_code(self):
@@ -123,12 +130,13 @@ class PolynomialParameterization(Parameterization):
             coeffs_var_name,
             "vector",
             coefficients)
+        self._coeffs.set_output(self)
 
     @property
-    def stan_code(self) -> TListStrStanCodeBit:
+    def stan_code(self) -> TListTExpression:
         """See base class"""
 
-        x_eval_stan = stanify(self._inputs[0])
+        x_eval_stan = self._inputs[0]
 
         # TODO: Make sure that eval_poly1d is part of some util lib.
         # Or maybe add a hook for loading ?
@@ -137,8 +145,8 @@ class PolynomialParameterization(Parameterization):
         coeffs_stan = "[" + ",".join([str(coeff)
                                       for coeff in self._coeffs]) + "]"
         """
-        coeffs_stan = stanify(self._coeffs)
-        stan_code: TListStrStanCodeBit = [
+        coeffs_stan = self._coeffs
+        stan_code: TListTExpression = [
             "eval_poly1d(",
             x_eval_stan,
             ",",
@@ -344,22 +352,31 @@ class SimpleHistogram(Parameterization):
 
 if __name__ == "__main__":
 
-    from .stan_generator import StanGenerator
-    with StanGenerator() as cg:
-        invar = "E_true"
-        log_e_eval = LogParameterization(invar)
-        test_poly_coeffs = [1, 1, 1, 1]
-        param = PolynomialParameterization(log_e_eval, test_poly_coeffs,
-                                           "test_poly_coeffs")
+    from .stan_generator import StanGenerator, GeneratedQuantitiesContext
+    from .operations import AssignValue
+    from .variable_definitions import ForwardVariableDef
+    logging.basicConfig(level=logging.DEBUG)
 
-        invar = "E_reco"
-        lognorm = LognormalParameterization(invar, param, param)
+    with StanGenerator() as cg:
+        with GeneratedQuantitiesContext() as gq:
+            invar = "E_true"
+            log_e_eval = LogParameterization(invar)
+            test_poly_coeffs = [1, 1, 1, 1]
+            param = PolynomialParameterization(log_e_eval, test_poly_coeffs,
+                                               "test_poly_coeffs")
+
+            invar = "E_reco"
+            lognorm = ForwardVariableDef("lognorm", "real")
+            lognorm_func = LognormalParameterization(invar, param, param)
+            lognorm = (AssignValue([lognorm_func], lognorm))
+
+            lognorm_sum = ForwardVariableDef("lognorm_sum", "real")
+            sum_test = 1 + lognorm_func
+            lognorm_sum = (AssignValue([sum_test], lognorm_sum))
+            #sum_test2 = sum_test + sum_test
+            #lognorm_sum = (AssignValue([sum_test2], lognorm_sum))
 
         print(cg.generate())
-
-    with StanGenerator() as cg:
-        sum_test = 1 + lognorm
-        sum_test2 = sum_test + sum_test
 
     print(cg.to_stan()[1])
 

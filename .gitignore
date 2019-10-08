@@ -386,7 +386,7 @@ TSWLatexianTemp*
 .cache/
 
 #CSV
-*.csv
+#*.csv
 
 #Sublime
 *.sublime*

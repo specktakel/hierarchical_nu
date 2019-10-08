@@ -38,6 +38,7 @@ class ContextStack:
 
     def add_object(self, obj):
         self._objects.append(obj)
+        logger.debug("Objects in context {}: {}".format(self, self._objects))
 
     @property
     def objects(self):
@@ -63,24 +64,37 @@ class Contextable:
     """
     Mixin class for everything that should be assigned to a certain context
     """
-
+    """
     def __new__(cls, *args, **kwargs):
         inst = object.__new__(cls)
         ctx = ContextStack.get_context()
+        logger.debug("Adding object of type {} to context: {}".format(cls, ctx))
         ctx.add_object(inst)
-        logger.debug("Added object of type {} to context: {}".format(cls, ctx))
+
         return inst
+    """
+
+    def __init__(self):
+        ctx = ContextStack.get_context()
+        logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))
+        ctx.add_object(self)
 
 
 class ToplevelContextable:
     """
     Mixin class for everything that should be assigned to the toplevel context
     """
-
+    """
     def __new__(cls, *args, **kwargs):
         inst = object.__new__(cls)
         ContextStack.get_context_stack()[0].add_object(inst)
         return inst
+    """
+
+    def __init__(self):
+        ctx = ContextStack.get_context_stack()[0]
+        logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))
+        ctx.add_object(self)
 
 
 class ContextSingleton(Contextable, ContextStack):
@@ -92,17 +106,20 @@ class ContextSingleton(Contextable, ContextStack):
 
     When using as mixin, make sure ContextSingleton is first
     """
-    __instance__ = None
 
-    def __new__(cls, *args, **kwargs):
+    def __init__(self):
+        #
+        ContextStack.__init__(self)
 
         context = ContextStack.get_context()
+        print("Stack: ", ContextStack.get_context_stack())
         for obj in context.objects:
-            if isinstance(obj, cls):
-                logger.info("Object of type {} already on stack".format(cls))
-
-                return obj
-        return super(ContextSingleton, cls).__new__(cls, *args, **kwargs)
+            print(type(obj))
+            if isinstance(obj, type(self)):
+                logger.info("Object of type {} already on stack".format(type(self)))
+                self.__dict__ = obj.__dict__
+                return
+        Contextable.__init__(self)
 
 
 class ToplevelContextSingleton(ToplevelContextable, ContextStack):
@@ -114,18 +131,17 @@ class ToplevelContextSingleton(ToplevelContextable, ContextStack):
 
     When using as mixin, make sure ContextSingleton is first
     """
-    __instance__ = None
 
-    def __new__(cls, *args, **kwargs):
+    def __init__(self):
+        ContextStack.__init__(self)
 
         context = ContextStack.get_context_stack()[0]
         for obj in context.objects:
-            if isinstance(obj, cls):
-                logger.info("Object of type {} already on stack".format(cls))
-
-                return obj
-        return super(ToplevelContextSingleton, cls).__new__(
-            cls, *args, **kwargs)
+            if isinstance(obj, type(self)):
+                logger.info("Object of type {} already on stack".format(type(self)))
+                self.__dict__ = obj.__dict__
+                return
+        Contextable.__init__(self)
 
 
 if __name__ == "__main__":
@@ -160,7 +176,7 @@ if __name__ == "__main__":
     class MyGen(CodeGenerator):
 
         def __init__(self):
-            ContextSingleton.__init__(self)
+            CodeGenerator.__init__(self)
             self._name = "TOPLEVEL"
 
         @property
@@ -176,7 +192,10 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     with MyGen() as cg:
+        print("Entering TestClass context")
+        print(cg.objects)
         with TestClass() as test:
+            print("In context")
             print("1", id(test))
             with TestClass2() as test2:
                 print("2", id(test2))
