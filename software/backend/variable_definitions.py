@@ -49,7 +49,7 @@ class ForwardVariableDef(VariableDef):
         VariableDef.__init__(self, name)
         self._var_type = var_type
         self.def_code()
-        #self.add_stan_hook(name, "var_def", self.def_code)
+        # self.add_stan_hook(name, "var_def", self.def_code)
 
     def _gen_def_code(self) -> TListTExpression:
         """See parent class"""

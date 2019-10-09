@@ -17,15 +17,20 @@ class AssignValue(Expression):
 
         """
         if isinstance(output, Expression):
-            if output.output is not None:
-                raise RuntimeError("LHS of assignment is connected")
-            output.set_output(self)
+            if output.output:
+                # Output node is already connected to something
+                logger.debug("Output expression of AssignValue is connected to: {}".format(output.output))  # noqa: E501
+            output.add_output(self)
 
         self._output_val = output
-        self._output = None
+        self._output = []
 
-    def set_output(self, output):
-        raise RuntimeError("Cannot set output for this Expression") 
+    def add_output(self, output):
+        """
+        Ignore output setting.  This allows
+        """
+        pass
+        # raise RuntimeError("Cannot set output for this Expression")
 
     @property
     def stan_code(self) -> TListTExpression:

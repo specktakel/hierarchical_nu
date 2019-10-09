@@ -1,8 +1,8 @@
 """Module for autogenerating Stan code"""
-from typing import Dict
+from typing import Dict, Iterable
 from .code_generator import (
     CodeGenerator, ToplevelContextSingleton, ContextSingleton,
-    ContextStack)
+    ContextStack, Contextable)
 from .stan_code import StanCodeBit
 from .expression import TExpression, Expression
 import logging
@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 # if TYPE_CHECKING:
 
 
-__all__ = ["StanGenerator"]
+__all__ = ["StanGenerator", "UserDefinedFunction",
+           "GeneratedQuantitiesContext",
+           "FunctionsContext", "DataContext", "DefinitionContext"]
 
 
 def stanify(var: TExpression) -> StanCodeBit:
@@ -28,11 +30,39 @@ def stanify(var: TExpression) -> StanCodeBit:
 class FunctionsContext(ToplevelContextSingleton):
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
-        self._name = "Functions"
+        self._name = "functions"
 
-    @property
-    def name(self):
-        return self._name
+
+class UserDefinedFunction(Contextable, ContextStack):
+    def __init__(
+            self,
+            name: str,
+            arg_names: Iterable[str],
+            arg_types: Iterable[str],
+            return_type: str,
+            ) -> None:
+
+        ContextStack.__init__(self)
+        self._fc = FunctionsContext()
+        with self._fc:
+            Contextable.__init__(self)
+
+        """
+        if ContextStack.get_context().name != "functions":
+            raise RuntimeError("Not in a functions context")
+        """
+        self._header_code = return_type + " " + name + "("
+        self._header_code += ",".join([arg_type+" "+arg_name
+                                       for arg_type, arg_name
+                                       in zip(arg_types, arg_names)])
+        self._header_code += ")"
+        self._name = self._header_code
+
+
+class DataContext(ToplevelContextSingleton):
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "data"
 
 
 class GeneratedQuantitiesContext(ToplevelContextSingleton):
@@ -40,19 +70,11 @@ class GeneratedQuantitiesContext(ToplevelContextSingleton):
         ToplevelContextSingleton.__init__(self)
         self._name = "generated quantities"
 
-    @property
-    def name(self):
-        return self._name
-
 
 class DefinitionContext(ContextSingleton):
     def __init__(self):
         ContextSingleton.__init__(self)
         self._name = "__DEFS"
-
-    @property
-    def name(self):
-        return self._name
 
 
 class StanGenerator(CodeGenerator):
@@ -85,35 +107,47 @@ class StanGenerator(CodeGenerator):
                     continue
                 # Check whether this Expression is connected
                 logger.debug("This bit is connected to: {}".format(code_bit.output))  # noqa: E501
-                if (code_bit.output is not None
-                        and isinstance(code_bit.output, Expression)):
+
+                filtered_outs = [out for out in code_bit.output if
+                                 isinstance(out, Expression)]
+
+                # If at least one output is an expression supress code gen
+                if filtered_outs:
                     continue
 
                 code_bit = code_bit.to_stan()
                 logger.debug("Adding: {}".format(code_bit.code))
-                code_tree["main"] += code_bit.code +";\n"
+                code_tree["main"] += code_bit.code + ";\n"
         return code_tree
 
     @staticmethod
     def walk_code_tree(code_tree) -> str:
         code = ""
         defs = ""
-        for node, leaf in code_tree.items():
+
+        node_order = list(code_tree.keys())
+        for node in list(node_order):
+            if isinstance(node, FunctionsContext):
+                node_order.remove(node)
+                node_order.insert(0, node)
+
+        for node in node_order:
+            leaf = code_tree[node]
             if isinstance(leaf, dict):
                 # encountered a sub-tree
                 if isinstance(node, DefinitionContext):
                     if len(leaf) != 1:
-                        raise RuntimeError("Malformed tree. Definition subtree should have exactly one node.")
-                    defs += leaf["main"] + "\n"
+                        raise RuntimeError("Malformed tree. Definition subtree should have exactly one node.")  # noqa: E501
+                    defs += leaf["main"] + ""
 
                 else:
                     code += node.name + "\n{\n"
                     code += StanGenerator.walk_code_tree(leaf)
-                    code += "}"
+                    code += "}\n"
             else:
-                code += leaf + "\n"
+                code += leaf  # + "\n"
 
-        return defs + code
+        return defs + "\n" + code
 
     def generate(self) -> str:
         logger.debug("Start parsing")

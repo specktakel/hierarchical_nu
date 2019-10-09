@@ -14,6 +14,7 @@ class ContextStack:
 
     def __init__(self):
         self._objects: List[Any] = []  # TODO: Stricter type checking
+        self._name: str = ""
 
     def __enter__(self):
         ContextStack.STACK.append(self)
@@ -45,8 +46,7 @@ class ContextStack:
         return self._objects
 
     @property
-    @abstractmethod
-    def name(self):
+    def name(self) -> str:
         return self._name
 
 
@@ -108,13 +108,9 @@ class ContextSingleton(Contextable, ContextStack):
     """
 
     def __init__(self):
-        #
         ContextStack.__init__(self)
-
         context = ContextStack.get_context()
-        print("Stack: ", ContextStack.get_context_stack())
         for obj in context.objects:
-            print(type(obj))
             if isinstance(obj, type(self)):
                 logger.info("Object of type {} already on stack".format(type(self)))
                 self.__dict__ = obj.__dict__
@@ -134,14 +130,13 @@ class ToplevelContextSingleton(ToplevelContextable, ContextStack):
 
     def __init__(self):
         ContextStack.__init__(self)
-
         context = ContextStack.get_context_stack()[0]
         for obj in context.objects:
             if isinstance(obj, type(self)):
                 logger.info("Object of type {} already on stack".format(type(self)))
                 self.__dict__ = obj.__dict__
                 return
-        Contextable.__init__(self)
+        ToplevelContextable.__init__(self)
 
 
 if __name__ == "__main__":
@@ -193,23 +188,22 @@ if __name__ == "__main__":
 
     with MyGen() as cg:
         print("Entering TestClass context")
-        print(cg.objects)
         with TestClass() as test:
-            print("In context")
-            print("1", id(test))
+            test.data = "test"
             with TestClass2() as test2:
-                print("2", id(test2))
-
+                test2.data = "test2"
+        print("Second context")
         with TestClass() as test:
-            print("1", id(test))
+            print(test.data)
             with TestClass2() as test2:
-                print("2", id(test2))
-
+                print(test2.data)
+        print("Third context")
         with TestClass() as test:
-            print("1", id(test))
+            print(test.data)
             with TestClass3() as test3:
-                print("3", id(test3))
+                test3.data = "test"
 
         with TestClass2() as test:
             with TestClass3() as test2:
-                print("3", id(test3))
+                print(hasattr(test, "data"))
+                print(hasattr(test2, "data"))

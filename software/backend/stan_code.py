@@ -38,4 +38,3 @@ class StanCodeBit:
 
     def __repr__(self) -> str:
         raise NotImplementedError
-

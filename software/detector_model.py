@@ -19,8 +19,8 @@ from backend import (
     MixtureParameterization,
     LognormalParameterization,
     SimpleHistogram,
-    FunctionCall,
-    StanExpressionFunction)
+    ReturnStatement,
+    UserDefinedFunction)
 from fitting_tools import Residuals
 
 
@@ -597,16 +597,18 @@ class NorthernTracksDetectorModel(DetectorModel):
 
     def __init__(self):
 
-        ang_res = NorthernTracksAngularResolution(
-            ("true_energy", "true_direction", "reco_direction"))
-
-        ang_res_func = StanExpressionFunction(
+        self._ud = UserDefinedFunction(
             "GetNorthernTracksAngularRes",
             ["true_energy", "true_direction", "reco_direction"],
             ["real", "vector", "vector"],
-            "real",
-            ang_res)
-        self._angular_resolution = ang_res_func
+            "real")
+
+        with self._ud:
+            ang_res = NorthernTracksAngularResolution(
+                ("true_energy", "true_direction", "reco_direction"))
+            _ = ReturnStatement([ang_res])
+
+        self._angular_resolution = ang_res
 
         """
         self._angular_resolution = FunctionCall(
@@ -614,7 +616,7 @@ class NorthernTracksDetectorModel(DetectorModel):
             ang_res_func,
             2)
 
-        """
+
         energy_res = NorthernTracksEnergyResolution("true_energy")
         energy_res_func = StanExpressionFunction(
             "GetNorthernTracksEnergyRes",
@@ -623,7 +625,7 @@ class NorthernTracksDetectorModel(DetectorModel):
             "real",
             energy_res)
         self._energy_resolution = energy_res_func
-        """
+
         self._energy_resolution = FunctionCall(
             [true_energy],
             energy_res_func,
@@ -665,9 +667,19 @@ if __name__ == "__main__":
     # ntp = NorthernTracksAngularResolution([e_true, pos_true])
 
     # print(ntp.to_stan())
+    from backend.stan_generator import StanGenerator, GeneratedQuantitiesContext
+    from backend.operations import AssignValue
+    from backend.variable_definitions import ForwardVariableDef
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
 
-    ntd = NorthernTracksDetectorModel(e_true, pos_true)
-    print(ntd)
-    print(ntd.angular_resolution.to_stan())
-    print(ntd.energy_resolution.to_stan())
-    print(ntd.effective_area.to_stan())
+    with StanGenerator() as cg:
+        with GeneratedQuantitiesContext() as gq:
+            ntd = NorthernTracksDetectorModel()
+            res = ForwardVariableDef("res", "real")
+            res = AssignValue([ntd.angular_resolution], res)
+
+        print(cg.generate())
+    #print(ntd.angular_resolution.to_stan())
+    #print(ntd.energy_resolution.to_stan())
+    #print(ntd.effective_area.to_stan())
