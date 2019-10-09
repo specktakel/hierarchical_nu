@@ -165,9 +165,7 @@ class NorthernTracksEffectiveArea(EffectiveArea, SimpleHistogram):
         self._cosz_bin_edges = cosz_bin_edges
 
 
-class NorthernTracksEnergyResolution(  # type: ignore
-        MixtureParameterization,
-        Resolution):
+class NorthernTracksEnergyResolution(UserDefinedFunction):
 
     """
     Energy resolution for Northern Tracks Sample
@@ -178,14 +176,18 @@ class NorthernTracksEnergyResolution(  # type: ignore
     DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"
     CACHE_FNAME = "energy_reso_tracks.npz"
 
-    def __init__(self, inputs: TExpression) -> None:
+    def __init__(self) -> None:
         """
         Args:
             inputs: List[TExpression]
-                First item is true energy, second item is true
-                position
+                First item is true energy, second item is reco energy
         """
-        Resolution.__init__(self, [inputs])
+        UserDefinedFunction.__init__(
+            self,
+            "NorthernTracksEnergyResolution",
+            ["true_energy", "reco_energy"],
+            ["real", "real"],
+            "real")
         self.poly_params_mu: Sequence = []
         self.poly_params_sd: Sequence = []
         self.poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
@@ -193,21 +195,29 @@ class NorthernTracksEnergyResolution(  # type: ignore
         self.n_components = 3
         self.setup()
 
-        truncated_e = TruncatedParameterization(inputs, *self.poly_limits)
-        components = []
-        for i in range(self.n_components):
-            mu = PolynomialParameterization(
-                truncated_e,
-                self.poly_params_mu[i],
-                "NorthernTracksEnergyResolutionMuPolyCoeffs")
-            sd = PolynomialParameterization(
-                truncated_e,
-                self.poly_params_sd[i],
-                "NorthernTracksEnergyResolutionSdPolyCoeffs")
+        with self:
+            truncated_e = TruncatedParameterization(
+                "true_energy", *self.poly_limits)
+            components = []
+            for i in range(self.n_components):
+                mu = PolynomialParameterization(
+                    truncated_e,
+                    self.poly_params_mu[i],
+                    "NorthernTracksEnergyResolutionMuPolyCoeffs_{}".format(i))
 
-            components.append(LognormalParameterization(inputs, mu, sd))
+                sd = PolynomialParameterization(
+                    truncated_e,
+                    self.poly_params_sd[i],
+                    "NorthernTracksEnergyResolutionSdPolyCoeffs_{}".format(i))
 
-        MixtureParameterization.__init__(self, inputs, components)
+                lognorm = LognormalParameterization("reco_energy", mu, sd)
+
+                components.append(lognorm)
+
+            mixture = MixtureParameterization(
+                "reco_energy", components)
+            mixture.add_output("test")
+            _ = ReturnStatement([mixture])
 
     @staticmethod
     def make_fit_model(n_components):
@@ -597,41 +607,33 @@ class NorthernTracksDetectorModel(DetectorModel):
 
     def __init__(self):
 
-        self._ud = UserDefinedFunction(
+        """
+        ud = UserDefinedFunction(
             "GetNorthernTracksAngularRes",
             ["true_energy", "true_direction", "reco_direction"],
             ["real", "vector", "vector"],
             "real")
 
-        with self._ud:
-            ang_res = NorthernTracksAngularResolution(
-                ("true_energy", "true_direction", "reco_direction"))
-            _ = ReturnStatement([ang_res])
+        with ud:
+        
+        ang_res = NorthernTracksAngularResolution()
+        # _ = ReturnStatement([ang_res])
 
         self._angular_resolution = ang_res
 
-        """
-        self._angular_resolution = FunctionCall(
-            [true_energy, true_direction],
-            ang_res_func,
-            2)
-
-
-        energy_res = NorthernTracksEnergyResolution("true_energy")
-        energy_res_func = StanExpressionFunction(
+        ud = UserDefinedFunction(
             "GetNorthernTracksEnergyRes",
             ["true_energy"],
             ["real"],
-            "real",
-            energy_res)
-        self._energy_resolution = energy_res_func
+            "real")
+        """
+        # with ud:
+        energy_res = NorthernTracksEnergyResolution()
+        # _ = ReturnStatement([energy_res])
 
-        self._energy_resolution = FunctionCall(
-            [true_energy],
-            energy_res_func,
-            1
-            )
+        self._energy_resolution = energy_res
 
+        """
         cos_direction = FunctionCall([true_direction], "cos")
 
         eff_area = NorthernTracksEffectiveArea(
@@ -663,21 +665,36 @@ class NorthernTracksDetectorModel(DetectorModel):
 if __name__ == "__main__":
 
     e_true = "E_true"
+    e_reco = "e_reco"
     pos_true = "pos_true"
+    pos_reco = "pos_reco"
     # ntp = NorthernTracksAngularResolution([e_true, pos_true])
 
     # print(ntp.to_stan())
     from backend.stan_generator import StanGenerator, GeneratedQuantitiesContext
     from backend.operations import AssignValue
     from backend.variable_definitions import ForwardVariableDef
+    from backend.parameterizations import FunctionCall
     import logging
     logging.basicConfig(level=logging.DEBUG)
 
     with StanGenerator() as cg:
         with GeneratedQuantitiesContext() as gq:
             ntd = NorthernTracksDetectorModel()
-            res = ForwardVariableDef("res", "real")
-            res = AssignValue([ntd.angular_resolution], res)
+
+            """
+            ang_res_result = ForwardVariableDef("ang_res", "real")
+            ang_res = FunctionCall(
+                [e_reco], ntd.angular_resolution, 1)
+            ang_res_result = AssignValue(
+                [ang_res], ang_res_result)
+
+            """
+            e_res_result = ForwardVariableDef("e_res", "real")
+            e_res_call = FunctionCall(
+                 [ntd.energy_resolution.name], e_res_result, 1)
+            e_res_result = AssignValue([e_res_call], e_res_result)
+            
 
         print(cg.generate())
     #print(ntd.angular_resolution.to_stan())
