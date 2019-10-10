@@ -6,7 +6,7 @@ from .code_generator import Contextable
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Expression", "StanFunction", "StanDefCode", "ReturnStatement",
+__all__ = ["Expression", "StanDefCode", "ReturnStatement",
            "NamedExpression", "TExpression"]
 
 
@@ -53,10 +53,10 @@ class Expression(Contextable, metaclass=ABCMeta):
             if isinstance(code, Expression):
                 converted_code.append(code.to_stan())
             else:
-                if isinstance(code, float):
+                if isinstance(code, (float, int)):
                     code = str(code)
                 if not isinstance(code, (StanCodeBit, str)):
-                    raise RuntimeError("Code is not StanCodeBit or str")
+                    raise RuntimeError("Code has incompatible type: {}".format(type(code)))  # noqa: E501
                 converted_code.append(code)
 
         code_bit.add_code(converted_code)
@@ -87,8 +87,8 @@ class ReturnStatement(Expression):
 
     @property
     def stan_code(self) -> TListTExpression:
-        stan_code: TListTExpression = []
-        stan_code += ["return "] + self._inputs
+        stan_code: TListTExpression = ["return "]
+        stan_code += self._inputs
         return stan_code
 
 
@@ -107,44 +107,6 @@ class StanDefCode(Expression):
     @property
     def stan_code(self) -> TListTExpression:
         return self._def_code
-
-    def to_pymc(self):
-        pass
-
-
-class StanFunction(Expression):
-    """
-    Class representing a Stan function
-
-    Parameters:
-        name: str
-        code: TListStrStanCodeBit
-    """
-
-    def __init__(self, name: str, func_header: str) -> None:
-        Expression.__init__(self, [])
-        self._name: str = name
-        self._func_code: TListTExpression = []
-        self._func_header: str = func_header
-
-    def add_func_code(self, code: TListTExpression):
-        self._func_code += code
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def func_header(self) -> str:
-        return self._func_header
-
-    @property
-    def stan_code(self) -> TListTExpression:
-        code: TListTExpression = [self._func_header, "\n}\n"]
-        code += self._func_code
-        code += ["\n}\n"]
-
-        return code
 
     def to_pymc(self):
         pass

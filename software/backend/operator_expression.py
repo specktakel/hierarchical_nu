@@ -1,10 +1,8 @@
 from typing import Callable, Tuple, List
 import operator
 
-from .expression import Expression, TExpression
-from .stan_code import TListStrStanCodeBit
+from .expression import Expression, TExpression, TListTExpression
 from .pymc_generator import pymcify
-from .stan_generator import stanify
 
 
 class _OperatorExpression(Expression):
@@ -26,13 +24,13 @@ class _OperatorExpression(Expression):
         self._op_code = op_code
 
     @property
-    def stan_code(self) -> TListStrStanCodeBit:
+    def stan_code(self) -> TListTExpression:
         """See base class"""
-        in0_stan = stanify(self._inputs[0])
-        in1_stan = stanify(self._inputs[1])
+        in0_stan = self._inputs[0]
+        in1_stan = self._inputs[1]
 
-        stan_code:  TListStrStanCodeBit = ["(", in0_stan, self._op_code[0],
-                                           in1_stan, ")"]
+        stan_code:  TListTExpression = ["(", in0_stan, self._op_code[0],
+                                        in1_stan, ")"]
 
         return stan_code
 

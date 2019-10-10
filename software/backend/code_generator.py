@@ -64,19 +64,10 @@ class Contextable:
     """
     Mixin class for everything that should be assigned to a certain context
     """
-    """
-    def __new__(cls, *args, **kwargs):
-        inst = object.__new__(cls)
-        ctx = ContextStack.get_context()
-        logger.debug("Adding object of type {} to context: {}".format(cls, ctx))
-        ctx.add_object(inst)
-
-        return inst
-    """
 
     def __init__(self):
         ctx = ContextStack.get_context()
-        logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))
+        logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))  # noqa: E501
         ctx.add_object(self)
 
 
@@ -93,7 +84,7 @@ class ToplevelContextable:
 
     def __init__(self):
         ctx = ContextStack.get_context_stack()[0]
-        logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))
+        logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))  # noqa: E501
         ctx.add_object(self)
 
 
@@ -112,7 +103,7 @@ class ContextSingleton(Contextable, ContextStack):
         context = ContextStack.get_context()
         for obj in context.objects:
             if isinstance(obj, type(self)):
-                logger.info("Object of type {} already on stack".format(type(self)))
+                logger.info("Object of type {} already on stack".format(type(self)))  # noqa: E501
                 self.__dict__ = obj.__dict__
                 return
         Contextable.__init__(self)
@@ -133,7 +124,7 @@ class ToplevelContextSingleton(ToplevelContextable, ContextStack):
         context = ContextStack.get_context_stack()[0]
         for obj in context.objects:
             if isinstance(obj, type(self)):
-                logger.info("Object of type {} already on stack".format(type(self)))
+                logger.info("Object of type {} already on stack".format(type(self)))  # noqa: E501
                 self.__dict__ = obj.__dict__
                 return
         ToplevelContextable.__init__(self)
@@ -148,7 +139,6 @@ if __name__ == "__main__":
         @property
         def name(self):
             return self._name
-
 
     class TestClass2(ContextSingleton):
         def __init__(self):

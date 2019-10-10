@@ -3,6 +3,8 @@ from .expression import Expression, TExpression, TListTExpression
 import logging
 logger = logging.getLogger(__name__)
 
+__all__ = ["AssignValue", "FunctionCall"]
+
 
 class AssignValue(Expression):
 
@@ -36,6 +38,42 @@ class AssignValue(Expression):
     def stan_code(self) -> TListTExpression:
         stan_code: TListTExpression = [
             self._output_val, " = ", self._inputs[0]]
+        return stan_code
+
+    def to_pymc(self):
+        pass
+
+
+class FunctionCall(Expression):
+    """Simple stan function call"""
+
+    def __init__(
+            self,
+            inputs: Sequence[TExpression],
+            func_name: TExpression,
+            nargs: int = 1):
+        Expression.__init__(self, inputs)
+        if isinstance(func_name, Expression):
+            func_name.add_output(self)
+        """
+        if isinstance(func_name, UserDefinedFunction):
+            func_name = func_name.func_name
+        """
+        self._func_name = func_name
+        self._nargs = nargs
+
+    @property
+    def stan_code(self) -> TListTExpression:
+        """See base class"""
+
+        stan_code: TListTExpression = [self._func_name, "("]
+
+        for i in range(self._nargs):
+            stan_code.append(self._inputs[i])
+            if i != self._nargs-1:
+                stan_code.append(", ")
+
+        stan_code.append(")")
         return stan_code
 
     def to_pymc(self):

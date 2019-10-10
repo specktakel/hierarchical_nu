@@ -1,10 +1,9 @@
 from abc import ABCMeta
-from typing import Union, List, Sequence, Iterable
+from typing import Union, List, Sequence
 import numpy as np  # type: ignore
-from .stan_generator import FunctionsContext, UserDefinedFunction
-from .code_generator import ContextStack
+from .stan_generator import UserDefinedFunction
 from .expression import (Expression, TExpression, TListTExpression,
-                         NamedExpression, ReturnStatement)
+                         ReturnStatement)
 from .pymc_generator import pymcify
 from .variable_definitions import StanArray
 from .typedefs import TArrayOrNumericIterable
@@ -17,7 +16,7 @@ __all__ = ["Parameterization", "LogParameterization",
            "PolynomialParameterization", "LognormalParameterization",
            "VMFParameterization", "TruncatedParameterization",
            "MixtureParameterization", "SimpleHistogram",
-           "FunctionCall"]
+           ]
 
 
 class Parameterization(Expression,
@@ -29,38 +28,6 @@ class Parameterization(Expression,
     """
 
     pass
-
-
-class FunctionCall(Parameterization):
-    """Simple stan function call"""
-
-    def __init__(
-            self,
-            inputs: Sequence[TExpression],
-            func_name: TExpression,
-            nargs: int = 1):
-        Parameterization.__init__(self, inputs)
-        if isinstance(func_name, Expression):
-            func_name.add_output(self)
-        self._func_name = func_name
-        self._nargs = nargs
-
-    @property
-    def stan_code(self) -> TListTExpression:
-        """See base class"""
-
-        stan_code: TListTExpression = [self._func_name, "("]
-
-        for i in range(self._nargs):
-            stan_code.append(self._inputs[i])
-            if i != self._nargs-1:
-                stan_code.append(", ")
-
-        stan_code.append(")")
-        return stan_code
-
-    def to_pymc(self):
-        pass
 
 
 class LogParameterization(Parameterization):
@@ -82,7 +49,7 @@ class LogParameterization(Parameterization):
         return stan_code
 
     def to_pymc(self):
-        import theano.tensor as tt  #type: ignore
+        import theano.tensor as tt  # type: ignore
         x_eval_pymc = pymcify(self._inputs[0])
 
         if self._base != 10:
@@ -291,51 +258,49 @@ class MixtureParameterization(Parameterization):
             # components are Parameterizations
 
             expression += comp*weight  # type: ignore
-
+        expression.add_output(self)  # type: ignore
         return [expression]  # type: ignore
 
     def to_pymc(self):
         pass
 
 
-class SimpleHistogram(NamedExpression):
+class SimpleHistogram(UserDefinedFunction):
     """
     A step function implemented as lookup table
     """
     def __init__(
             self,
-            inputs: Sequence[TExpression],
             histogram: np.ndarray,
             binedges: Sequence[np.ndarray],
             name: str
             ):
-        NamedExpression.__init__(self, inputs, name)
+
         self._dim = len(binedges)
 
         val_names = ["value_{}".format(i) for i in range(self._dim)]
         val_types = ["real"]*self._dim
 
-        self._ud = UserDefinedFunction(name, val_names, val_types, "real")
-        with self._ud:
-            self._histogram = StanArray("hist", "real", histogram)
+        UserDefinedFunction.__init__(
+            self, name, val_names, val_types, "real")
+
+        with self:
+            self._histogram = StanArray("hist_array", "real", histogram)
             self._binedges = [
                 StanArray("hist_edge_{}".format(i), "real", be)
                 for i, be in enumerate(binedges)]
 
             stan_code: TListTExpression = [self._histogram]
             for i in range(self._dim):
-                stan_code += ["[binary_search(", self._inputs[i], ", ",
+                stan_code += ["[binary_search(", val_names[i], ", ",
                               self._binedges[i], ")]"]
             _ = ReturnStatement(stan_code)
 
+        """
         self._histogram.add_output(self)
         for be in self._binedges:
             be.add_output(self)
-
-    @property
-    def stan_code(self) -> TListTExpression:
-        """See base class"""
-        return [self._name]
+        """
 
 
 if __name__ == "__main__":
@@ -354,23 +319,21 @@ if __name__ == "__main__":
             param = PolynomialParameterization(log_e_eval, test_poly_coeffs,
                                                "test_poly_coeffs")
 
-
             invar = "E_reco"
             lognorm = ForwardVariableDef("lognorm", "real")
             lognorm_func = LognormalParameterization(invar, param, param)
-            lognorm = AssignValue([lognorm_func], lognorm)
+            _ = AssignValue([lognorm_func], lognorm)
 
             lognorm_sum_def = ForwardVariableDef("lognorm_sum", "real")
             sum_test = 1 + lognorm_func
             lognorm_sum = AssignValue([sum_test], lognorm_sum_def)
 
-            #lognorm_sum = ForwardVariableDef("lognorm_sum", "real")
             sum_test2 = sum_test + sum_test
             lognorm_sum = AssignValue([sum_test2], lognorm_sum_def)
 
             lognorm_mix_def = ForwardVariableDef("lognorm_mix", "real")
             lognorm_mix = MixtureParameterization(invar, [lognorm_func, lognorm_func])
-            lognorm_mix = AssignValue([lognorm_mix], lognorm_mix_def)
+            _ = AssignValue([lognorm_mix], lognorm_mix_def)
 
 
             # histogram test
@@ -381,11 +344,11 @@ if __name__ == "__main__":
 
             values = ["x", "y"]
 
-            hist = SimpleHistogram(values, hist_var, [binedges_x, binedges_y],
+            hist = SimpleHistogram(hist_var, [binedges_x, binedges_y],
                                    "hist")
 
             called_hist = ForwardVariableDef("called_hist", "real")
-            hist_call = FunctionCall(values, hist, 2)
+            hist_call = hist(*values)
             called_hist = AssignValue([hist_call], called_hist)
 
         print(cg.generate())

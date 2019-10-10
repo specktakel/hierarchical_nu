@@ -53,7 +53,7 @@ class ForwardVariableDef(VariableDef):
 
     def _gen_def_code(self) -> TListTExpression:
         """See parent class"""
-        stan_code = self._var_type + " " + self.name 
+        stan_code = self._var_type + " " + self.name
 
         return [stan_code]
 
@@ -117,7 +117,6 @@ if __name__ == "__main__":
     with StanGenerator() as cg:
         with GeneratedQuantitiesContext() as gq:
             val = ForwardVariableDef("a", "real")
-            val = AssignValue([val], "b")
-
+            _ = AssignValue([val], "b")
 
         print(cg.generate())

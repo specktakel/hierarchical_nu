@@ -5,6 +5,7 @@ from .code_generator import (
     ContextStack, Contextable)
 from .stan_code import StanCodeBit
 from .expression import TExpression, Expression
+from .operations import FunctionCall
 import logging
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,9 @@ class UserDefinedFunction(Contextable, ContextStack):
             ) -> None:
 
         ContextStack.__init__(self)
+        self._func_name = name
         self._fc = FunctionsContext()
+
         with self._fc:
             Contextable.__init__(self)
 
@@ -57,6 +60,14 @@ class UserDefinedFunction(Contextable, ContextStack):
                                        in zip(arg_types, arg_names)])
         self._header_code += ")"
         self._name = self._header_code
+
+    @property
+    def func_name(self):
+        return self._func_name
+
+    def __call__(self, *args) -> FunctionCall:
+        call = FunctionCall(args, self.func_name, len(args))
+        return call
 
 
 class DataContext(ToplevelContextSingleton):

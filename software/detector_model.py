@@ -3,7 +3,7 @@ This module contains classes for modelling detectors
 """
 
 from abc import ABCMeta, abstractmethod
-from typing import Union, List, Sequence, Tuple
+from typing import List, Sequence, Tuple
 import os
 import pandas as pd  # type: ignore
 import numpy as np  # type: ignore
@@ -20,6 +20,7 @@ from backend import (
     LognormalParameterization,
     SimpleHistogram,
     ReturnStatement,
+    FunctionCall,
     UserDefinedFunction)
 from fitting_tools import Residuals
 
@@ -27,7 +28,7 @@ from fitting_tools import Residuals
 Cache.set_cache_dir(".cache")
 
 
-class EffectiveArea(metaclass=ABCMeta):
+class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
     """
     Implements baseclass for effective areas.
 
@@ -38,21 +39,6 @@ class EffectiveArea(metaclass=ABCMeta):
     The effective areas can depend on multiple quantities (ie. energy,
     direction, time, ..)
     """
-
-    """
-    Parameters on which the effective area depends.
-    Overwrite when subclassing
-    """
-    PARAMETERS: Union[None, List] = None
-
-    def __call__(self, **kwargs):
-        """
-        Return the effective area for variables given in kwargs
-        """
-        if (set(self.PARAMETERS) - kwargs.keys()):
-            raise ValueError("Not all required parameters passed to call")
-        else:
-            self._calc_effective_area(kwargs)
 
     @abstractmethod
     def _calc_effective_area(
@@ -73,8 +59,6 @@ class Resolution(Parameterization, metaclass=ABCMeta):
     """
     Base class for parameterizing resolutions
     """
-
-    PARAMETERS: Union[None, List] = None
 
     def __init__(self, inputs: Sequence[TExpression]):
         Parameterization.__init__(self, inputs)
@@ -100,35 +84,33 @@ class Resolution(Parameterization, metaclass=ABCMeta):
         pass
 
 
-class NorthernTracksEffectiveArea(EffectiveArea, SimpleHistogram):
+class NorthernTracksEffectiveArea(UserDefinedFunction):
     """
     Effective area for the two-year Northern Tracks release:
     https://icecube.wisc.edu/science/data/HE_NuMu_diffuse
 
     """
 
-    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"
+    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"  # noqa: E501
     CACHE_FNAME = "aeff_tracks.npz"
 
-    def __init__(
+    def __init__(self) -> None:
+        UserDefinedFunction.__init__(
             self,
-            inputs: Sequence[TExpression]):
-
-        EffectiveArea.__init__(self)
+            "NorthernTracksEffectiveArea",
+            ["true_energy", "true_dir"],
+            ["real", "real"],
+            "real")
 
         self.setup()
 
-        SimpleHistogram.__init__(
-            self,
-            inputs,
-            self._eff_area,
-            [self._tE_bin_edges, self._cosz_bin_edges],
-            "NorthernTracksEffAreaHist")
-
-    def _calc_effective_area(
-            self,
-            param_dict: dict) -> float:
-        pass
+        with self:
+            hist = SimpleHistogram(
+                self._eff_area,
+                [self._tE_bin_edges, self._cosz_bin_edges],
+                "NorthernTracksEffAreaHist")
+            cos_dir = FunctionCall(["true_dir"], "cos")
+            _ = ReturnStatement([hist("true_energy", cos_dir)])
 
     def setup(self) -> None:
 
@@ -173,7 +155,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
     Data from https://arxiv.org/pdf/1811.07979.pdf
     """
 
-    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"
+    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"  # noqa: E501
     CACHE_FNAME = "energy_reso_tracks.npz"
 
     def __init__(self) -> None:
@@ -216,7 +198,6 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
 
             mixture = MixtureParameterization(
                 "reco_energy", components)
-            mixture.add_output("test")
             _ = ReturnStatement([mixture])
 
     @staticmethod
@@ -384,7 +365,8 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 model_params += [mu, sigma]
             e_reso = eff_area.sum(axis=1)
             e_reso = e_reso[int(p_i/rebin)*rebin:(int(p_i/rebin)+1)*rebin]
-            e_reso = e_reso.sum(axis=0)/e_reso.sum() / (logrEbins[1]-logrEbins[0])
+            e_reso = e_reso.sum(axis=0)/e_reso.sum()
+            e_reso /= (logrEbins[1]-logrEbins[0])
             fl_ax[i].plot(logrEbins, e_reso)
 
             res = fit_params[param_indices[i]]
@@ -484,9 +466,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         pass
 
 
-class NorthernTracksAngularResolution(  # type: ignore
-        VMFParameterization,
-        Resolution):
+class NorthernTracksAngularResolution(UserDefinedFunction):
     """
     Angular resolution for Northern Tracks Sample
 
@@ -504,24 +484,33 @@ class NorthernTracksAngularResolution(  # type: ignore
     DATA_PATH = "NorthernTracksAngularRes.csv"
     CACHE_FNAME = "angular_reso_tracks.npz"
 
-    def __init__(self, inputs: Sequence[TExpression]) -> None:
-        """
-        Args:
-            inputs: List[TExpression]
-                First item is true energy, second item is true
-                direction, third item is reco direction
-        """
-        Resolution.__init__(self, inputs)
-        self.poly_params: Union[None, np.ndarray] = None
-        self.e_min: Union[None, float] = None
-        self.e_max: Union[None, float] = None
+    def __init__(self) -> None:
+        UserDefinedFunction.__init__(
+            self,
+            "NorthernTracksAngularResolution",
+            ["true_energy", "true_dir", "reco_dir"],
+            ["real", "real", "real"],
+            "real")
+        self.poly_params: Sequence = []
+        self.e_min: float = float("nan")
+        self.e_max: float = float("nan")
 
         self.setup()
 
-        inputs_vmf = [inputs[2], inputs[1]]
+        with self:
+            # Clip true energy
+            clipped_e = TruncatedParameterization(
+                "true_energy",
+                self.e_min,
+                self.e_max)
 
-        # VMF expects x_obs, x_true
-        VMFParameterization.__init__(self, inputs_vmf, self._kappa)
+            kappa = PolynomialParameterization(
+                clipped_e,
+                self.poly_params,
+                "NorthernTracksAngularResolutionPolyCoeffs")
+            # VMF expects x_obs, x_true
+            vmf = VMFParameterization(["reco_dir", "true_dir"], kappa)
+            _ = ReturnStatement([vmf])
 
     def _calc_resolution(self):
         pass
@@ -564,17 +553,6 @@ class NorthernTracksAngularResolution(  # type: ignore
                     e_min=10**data.energy.min(),
                     e_max=10**data.energy.max())
 
-        # Clip true energy
-        clipped_e = TruncatedParameterization(
-            self._inputs[0],
-            self.e_min,
-            self.e_max)
-
-        self._kappa = PolynomialParameterization(
-            clipped_e,
-            self.poly_params,
-            "NorthernTracksAngularResolutionPolyCoeffs")
-
 
 class DetectorModel(metaclass=ABCMeta):
 
@@ -606,51 +584,11 @@ class DetectorModel(metaclass=ABCMeta):
 class NorthernTracksDetectorModel(DetectorModel):
 
     def __init__(self):
-
-        """
-        ud = UserDefinedFunction(
-            "GetNorthernTracksAngularRes",
-            ["true_energy", "true_direction", "reco_direction"],
-            ["real", "vector", "vector"],
-            "real")
-
-        with ud:
-        
         ang_res = NorthernTracksAngularResolution()
-        # _ = ReturnStatement([ang_res])
-
         self._angular_resolution = ang_res
-
-        ud = UserDefinedFunction(
-            "GetNorthernTracksEnergyRes",
-            ["true_energy"],
-            ["real"],
-            "real")
-        """
-        # with ud:
         energy_res = NorthernTracksEnergyResolution()
-        # _ = ReturnStatement([energy_res])
-
         self._energy_resolution = energy_res
-
-        """
-        cos_direction = FunctionCall([true_direction], "cos")
-
-        eff_area = NorthernTracksEffectiveArea(
-            ["energy", "cos_direction"])
-        eff_area_func = StanExpressionFunction(
-            "GetNorthernTracksEffArea",
-            ["energy", "cos_direction"],
-            ["real", "real"],
-            "real",
-            eff_area,
-            )
-
-        self._eff_area = FunctionCall(
-            [true_energy, cos_direction],
-            eff_area_func,
-            2)
-        """
+        self._eff_area = NorthernTracksEffectiveArea()
 
     def _get_effective_area(self):
         return self._eff_area
@@ -666,15 +604,15 @@ if __name__ == "__main__":
 
     e_true = "E_true"
     e_reco = "e_reco"
-    pos_true = "pos_true"
-    pos_reco = "pos_reco"
+    true_dir = "pos_true"
+    reco_dir = "pos_reco"
     # ntp = NorthernTracksAngularResolution([e_true, pos_true])
 
     # print(ntp.to_stan())
     from backend.stan_generator import StanGenerator, GeneratedQuantitiesContext
     from backend.operations import AssignValue
     from backend.variable_definitions import ForwardVariableDef
-    from backend.parameterizations import FunctionCall
+
     import logging
     logging.basicConfig(level=logging.DEBUG)
 
@@ -691,10 +629,20 @@ if __name__ == "__main__":
 
             """
             e_res_result = ForwardVariableDef("e_res", "real")
-            e_res_call = FunctionCall(
-                 [ntd.energy_resolution.name], e_res_result, 1)
-            e_res_result = AssignValue([e_res_call], e_res_result)
-            
+            func_call = ntd.energy_resolution(e_true, e_reco)
+
+            e_res_result = AssignValue([func_call], e_res_result)
+
+            ang_res_result = ForwardVariableDef("ang_res", "real")
+            ang_res_call = ntd.angular_resolution(
+                e_true, true_dir, reco_dir)
+
+            ang_res_result = AssignValue(
+                [ang_res_call], ang_res_result)
+
+            eff_area_result = ForwardVariableDef("eff_area", "real")
+            eff_area_call = ntd.effective_area(e_true, true_dir)
+            eff_area_result = AssignValue([eff_area_call], eff_area_result)
 
         print(cg.generate())
     #print(ntd.angular_resolution.to_stan())
