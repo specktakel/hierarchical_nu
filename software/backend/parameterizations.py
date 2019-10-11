@@ -43,9 +43,9 @@ class LogParameterization(Parameterization):
         stan_code: TListTExpression = []
         if self._base != 10:
             base = str(self._base)
-            stan_code += ["log10(", x_eval_stan, "}) / log10(", base, ")"]
+            stan_code += ["log10(", x_eval_stan, ") / log10(", base, ")"]
         else:
-            stan_code += ["log10(", x_eval_stan, "})"]
+            stan_code += ["log10(", x_eval_stan, ")"]
         return stan_code
 
     def to_pymc(self):

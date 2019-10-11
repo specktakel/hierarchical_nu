@@ -18,9 +18,9 @@ from backend import (
     TruncatedParameterization,
     MixtureParameterization,
     LognormalParameterization,
+    LogParameterization,
     SimpleHistogram,
     ReturnStatement,
-    FunctionCall,
     UserDefinedFunction)
 from fitting_tools import Residuals
 
@@ -184,19 +184,21 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         with self:
             truncated_e = TruncatedParameterization(
                 "true_energy", *self.poly_limits)
+            log_trunc_e = LogParameterization(truncated_e)
+            log_reco_e = LogParameterization("reco_energy")
             components = []
             for i in range(self.n_components):
                 mu = PolynomialParameterization(
-                    truncated_e,
+                    log_trunc_e,
                     self.poly_params_mu[i],
                     "NorthernTracksEnergyResolutionMuPolyCoeffs_{}".format(i))
 
                 sd = PolynomialParameterization(
-                    truncated_e,
+                    log_trunc_e,
                     self.poly_params_sd[i],
                     "NorthernTracksEnergyResolutionSdPolyCoeffs_{}".format(i))
 
-                lognorm = LognormalParameterization("reco_energy", mu, sd)
+                lognorm = LognormalParameterization(log_reco_e, mu, sd)
 
                 components.append(lognorm)
 
@@ -508,8 +510,10 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
                 self.e_min,
                 self.e_max)
 
+            clipped_log_e = LogParameterization(clipped_e)
+
             kappa = PolynomialParameterization(
-                clipped_e,
+                clipped_log_e,
                 self.poly_params,
                 "NorthernTracksAngularResolutionPolyCoeffs")
             # VMF expects x_obs, x_true
@@ -539,23 +543,23 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
                 sep=";",
                 decimal=",",
                 header=None,
-                names=["energy", "resolution"],
+                names=["log10energy", "resolution"],
                 )
 
             # Kappa parameter of VMF distribution
             data["kappa"] = 1.38 / np.radians(data.resolution)**2
 
-            self.poly_params = np.polyfit(data.energy, data.kappa, 5)
-            self.e_min = float(data.energy.min())
-            self.e_max = float(data.energy.max())
+            self.poly_params = np.polyfit(data.log10energy, data.kappa, 5)
+            self.e_min = float(data.log10energy.min())
+            self.e_max = float(data.log10energy.max())
 
             # Save polynomial
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
                 np.savez(
                     fr,
                     poly_params=self.poly_params,
-                    e_min=10**data.energy.min(),
-                    e_max=10**data.energy.max())
+                    e_min=10**data.log10energy.min(),
+                    e_max=10**data.log10energy.max())
 
 
 class DetectorModel(metaclass=ABCMeta):
@@ -623,7 +627,6 @@ if __name__ == "__main__":
     import pystan
     import numpy as np
 
-
     with StanGenerator() as cg:
 
         with FunctionsContext() as fc:
@@ -665,15 +668,15 @@ if __name__ == "__main__":
 
         model = cg.generate()
 
-    #print(model)
+    print(model)
     sm = pystan.StanModel(
         model_code=model,
         include_paths=["/home/home2/institut_3b/haack/repos/hierarchical_nu/dev/statistical_model/4_tracks_and_cascades/stan/"],
-        verbose=True)
+        verbose=False)
 
     dir1 = np.array([1, 0, 0])
     dir2 = np.array([1, 0.1, 0])
-    dir2 /=  np.linalg.magnitude(dir2)
+    dir2 /= np.linalg.norm(dir2)
 
     data = {
         "e_true": 1E5,
@@ -681,3 +684,4 @@ if __name__ == "__main__":
         "true_dir": dir1,
         "reco_dir": dir2}
     fit = sm.sampling(data=data, iter=1, chains=1, algorithm="Fixed_param")
+    print(fit)
