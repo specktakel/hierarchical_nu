@@ -73,6 +73,13 @@ TExpression = Union[Expression, str, float]
 TListTExpression = List[TExpression]
 
 
+class StringExpression(Expression):
+    @property
+    def stan_code(self) -> TListTExpression:
+        stan_code: TListTExpression = list(self._inputs)
+        return stan_code
+
+
 class NamedExpression(Expression):
     def __init__(self, inputs: Sequence[TExpression], name: str):
         Expression.__init__(self, inputs)
@@ -81,6 +88,9 @@ class NamedExpression(Expression):
     @property
     def name(self):
         return self._name
+
+
+TNamedExpression = Union[NamedExpression, str, float]
 
 
 class ReturnStatement(Expression):

@@ -4,7 +4,8 @@ from .code_generator import (
     CodeGenerator, ToplevelContextSingleton, ContextSingleton,
     ContextStack, Contextable)
 from .stan_code import StanCodeBit
-from .expression import TExpression, Expression
+from .expression import (
+    TExpression, TNamedExpression, Expression, NamedExpression)
 from .operations import FunctionCall
 import logging
 logger = logging.getLogger(__name__)
@@ -46,6 +47,22 @@ class FunctionsContext(ToplevelContextSingleton):
         self._name = "functions"
 
 
+class ForLoopContext(Contextable, ContextStack):
+    def __init__(
+            self,
+            min_val: TNamedExpression,
+            max_val: TNamedExpression,
+            loop_var_name: str,
+            ) -> None:
+
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+        header_code = "for ({} in {}:{})".format(
+            loop_var_name, min_val, max_val)
+
+        self._name = header_code
+
+
 class UserDefinedFunction(Contextable, ContextStack):
     def __init__(
             self,
@@ -70,7 +87,6 @@ class UserDefinedFunction(Contextable, ContextStack):
         with self._fc:
             # Add ourselves to the Functions context
             Contextable.__init__(self, at_top=at_top)
-
 
         """
         if ContextStack.get_context().name != "functions":
@@ -176,7 +192,7 @@ class StanGenerator(CodeGenerator):
                 if isinstance(node, DefinitionContext):
                     if len(leaf) != 1:
                         raise RuntimeError("Malformed tree. Definition subtree should have exactly one node.")  # noqa: E501
-                    defs += leaf["main"] + ""
+                    defs += leaf["main"]
 
                 else:
                     code += node.name + "\n{\n"
@@ -191,3 +207,29 @@ class StanGenerator(CodeGenerator):
         logger.debug("Start parsing")
         code_tree = self.parse_recursive(self.objects)
         return self.walk_code_tree(code_tree)
+
+
+class StanFileGenerator(StanGenerator):
+    def __init__(self, base_filename: str):
+        StanGenerator.__init__(self)
+        self._base_filename = base_filename
+
+    @staticmethod
+    def ensure_filename(obj):
+        if hasattr(obj, "name"):
+            name = obj.name
+        else:
+            name = str(obj)
+        return name.replace(" ", "")
+
+    def generate_files(self) -> None:
+        code_tree = self.parse_recursive(self.objects)
+
+        for node, leaf in code_tree.items():
+            if isinstance(leaf, dict):
+                code = self.walk_code_tree(leaf)
+            else:
+                code = leaf
+            name_ext = self.ensure_filename(node)
+            with open(self._base_filename+"_"+name_ext+".stan", "w") as f:
+                f.write(code)

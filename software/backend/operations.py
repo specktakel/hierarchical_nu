@@ -44,6 +44,14 @@ class AssignValue(Expression):
         pass
 
 
+def assignment_func(self: Expression, other: TExpression):
+    return AssignValue([other], self)
+
+
+setattr(AssignValue, "__lshift__", assignment_func)
+setattr(Expression, "__lshift__", assignment_func)
+
+
 class FunctionCall(Expression):
     """Simple stan function call"""
 
