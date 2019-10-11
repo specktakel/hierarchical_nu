@@ -37,8 +37,11 @@ class ContextStack:
         else:
             raise RuntimeError("No code generator on stack")
 
-    def add_object(self, obj):
-        self._objects.append(obj)
+    def add_object(self, obj, at_top=False):
+        if at_top:
+            self._objects.insert(0, obj)
+        else:
+            self._objects.append(obj)
         logger.debug("Objects in context {}: {}".format(self, self._objects))
 
     @property
@@ -63,12 +66,17 @@ class CodeGenerator(ContextStack, metaclass=ABCMeta):
 class Contextable:
     """
     Mixin class for everything that should be assigned to a certain context
+
+    Parameters:
+        at_top: bool
+        Add instances at the top of the context objects list
     """
 
-    def __init__(self):
+    def __init__(self, at_top=False):
         ctx = ContextStack.get_context()
         logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))  # noqa: E501
-        ctx.add_object(self)
+        ctx.add_object(self, at_top)
+
 
 
 class ToplevelContextable:

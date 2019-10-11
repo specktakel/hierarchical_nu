@@ -25,6 +25,8 @@ class Expression(Contextable, metaclass=ABCMeta):
         for input in self._inputs:
             if isinstance(input, Expression):
                 input.add_output(self)
+            else:
+                logger.debug("Found non Expression of type: {} in input.".format(input))
         self._output: List["TExpression"] = []
 
     @property

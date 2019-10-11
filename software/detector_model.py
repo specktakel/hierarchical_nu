@@ -24,7 +24,8 @@ from backend import (
     UserDefinedFunction)
 from fitting_tools import Residuals
 
-
+import logging
+logger = logging.getLogger(__name__)
 Cache.set_cache_dir(".cache")
 
 
@@ -99,7 +100,7 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
             self,
             "NorthernTracksEffectiveArea",
             ["true_energy", "true_dir"],
-            ["real", "real"],
+            ["real", "vector"],
             "real")
 
         self.setup()
@@ -109,7 +110,10 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
                 self._eff_area,
                 [self._tE_bin_edges, self._cosz_bin_edges],
                 "NorthernTracksEffAreaHist")
-            cos_dir = FunctionCall(["true_dir"], "cos")
+
+            # z = cos(theta)
+            cos_dir = "true_dir[3]"
+            #cos_dir = FunctionCall(["true_dir"], "cos")
             _ = ReturnStatement([hist("true_energy", cos_dir)])
 
     def setup(self) -> None:
@@ -489,7 +493,7 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
             self,
             "NorthernTracksAngularResolution",
             ["true_energy", "true_dir", "reco_dir"],
-            ["real", "real", "real"],
+            ["real", "vector", "vector"],
             "real")
         self.poly_params: Sequence = []
         self.e_min: float = float("nan")
@@ -602,21 +606,36 @@ class NorthernTracksDetectorModel(DetectorModel):
 
 if __name__ == "__main__":
 
-    e_true = "E_true"
-    e_reco = "e_reco"
-    true_dir = "pos_true"
-    reco_dir = "pos_reco"
+    e_true_name = "e_true"
+    e_reco_name = "e_reco"
+    true_dir_name = "true_dir"
+    reco_dir_name = "reco_dir"
     # ntp = NorthernTracksAngularResolution([e_true, pos_true])
 
     # print(ntp.to_stan())
-    from backend.stan_generator import StanGenerator, GeneratedQuantitiesContext
+    from backend.stan_generator import (
+        StanGenerator, GeneratedQuantitiesContext, DataContext,
+        FunctionsContext, Include)
     from backend.operations import AssignValue
     from backend.variable_definitions import ForwardVariableDef
 
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.WARN)
+    import pystan
+    import numpy as np
+
 
     with StanGenerator() as cg:
+
+        with FunctionsContext() as fc:
+            _ = Include("utils.stan")
+            _ = Include("vMF.stan")
+
+        with DataContext() as dc:
+            e_true = ForwardVariableDef(e_true_name, "real")
+            e_reco = ForwardVariableDef(e_reco_name, "real")
+            true_dir = ForwardVariableDef(true_dir_name, "vector[3]")
+            reco_dir = ForwardVariableDef(reco_dir_name, "vector[3]")
+
         with GeneratedQuantitiesContext() as gq:
             ntd = NorthernTracksDetectorModel()
 
@@ -644,7 +663,21 @@ if __name__ == "__main__":
             eff_area_call = ntd.effective_area(e_true, true_dir)
             eff_area_result = AssignValue([eff_area_call], eff_area_result)
 
-        print(cg.generate())
-    #print(ntd.angular_resolution.to_stan())
-    #print(ntd.energy_resolution.to_stan())
-    #print(ntd.effective_area.to_stan())
+        model = cg.generate()
+
+    #print(model)
+    sm = pystan.StanModel(
+        model_code=model,
+        include_paths=["/home/home2/institut_3b/haack/repos/hierarchical_nu/dev/statistical_model/4_tracks_and_cascades/stan/"],
+        verbose=True)
+
+    dir1 = np.array([1, 0, 0])
+    dir2 = np.array([1, 0.1, 0])
+    dir2 /=  np.linalg.magnitude(dir2)
+
+    data = {
+        "e_true": 1E5,
+        "e_reco": 1E5,
+        "true_dir": dir1,
+        "reco_dir": dir2}
+    fit = sm.sampling(data=data, iter=1, chains=1, algorithm="Fixed_param")

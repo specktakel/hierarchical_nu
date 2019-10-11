@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 __all__ = ["StanGenerator", "UserDefinedFunction",
-           "GeneratedQuantitiesContext",
+           "GeneratedQuantitiesContext", "Include",
            "FunctionsContext", "DataContext", "DefinitionContext"]
 
 
@@ -26,6 +26,18 @@ def stanify(var: TExpression) -> StanCodeBit:
     code_bit = StanCodeBit()
     code_bit.add_code([str(var)])
     return code_bit
+
+
+class Include(Contextable):
+    def __init__(
+            self,
+            file_name: str):
+        Contextable.__init__(self)
+        self._file_name = file_name
+
+    @property
+    def stan_code(self) -> str:
+        return "#include "+ self._file_name
 
 
 class FunctionsContext(ToplevelContextSingleton):
@@ -47,8 +59,18 @@ class UserDefinedFunction(Contextable, ContextStack):
         self._func_name = name
         self._fc = FunctionsContext()
 
+        # Check if there's another UserDefinedFunction on the stack
+        context = ContextStack.get_context()
+
+        at_top = False
+        if isinstance(context, UserDefinedFunction):
+            logger.debug("Found a function definition inside function")
+            # Move ourselves up in the  FunctionsContext object list
+            at_top = True
         with self._fc:
-            Contextable.__init__(self)
+            # Add ourselves to the Functions context
+            Contextable.__init__(self, at_top=at_top)
+
 
         """
         if ContextStack.get_context().name != "functions":
@@ -114,21 +136,26 @@ class StanGenerator(CodeGenerator):
                 code_tree[code_bit] = StanGenerator.parse_recursive(objects)
             else:
                 if not isinstance(code_bit, Expression):
-                    logger.warn("Encountered a non-expression of type: {}".format(type(code_bit)))  # noqa: E501
-                    continue
-                # Check whether this Expression is connected
-                logger.debug("This bit is connected to: {}".format(code_bit.output))  # noqa: E501
+                    if hasattr(code_bit, "stan_code"):
+                        code = code_bit.stan_code + "\n"
+                    else:
+                        logger.warn("Encountered a non-expression of type: {}".format(type(code_bit)))  # noqa: E501
+                        continue
+                else:
+                    # Check whether this Expression is connected
+                    logger.debug("This bit is connected to: {}".format(code_bit.output))  # noqa: E501
 
-                filtered_outs = [out for out in code_bit.output if
-                                 isinstance(out, Expression)]
+                    filtered_outs = [out for out in code_bit.output if
+                                     isinstance(out, Expression)]
 
-                # If at least one output is an expression supress code gen
-                if filtered_outs:
-                    continue
+                    # If at least one output is an expression supress code gen
+                    if filtered_outs:
+                        continue
 
-                code_bit = code_bit.to_stan()
-                logger.debug("Adding: {}".format(code_bit.code))
-                code_tree["main"] += code_bit.code + ";\n"
+                    code_bit = code_bit.to_stan()
+                    logger.debug("Adding: {}".format(type(code_bit)))
+                    code = code_bit.code + ";\n"
+                code_tree["main"] += code
         return code_tree
 
     @staticmethod
@@ -163,5 +190,4 @@ class StanGenerator(CodeGenerator):
     def generate(self) -> str:
         logger.debug("Start parsing")
         code_tree = self.parse_recursive(self.objects)
-        print(code_tree)
         return self.walk_code_tree(code_tree)

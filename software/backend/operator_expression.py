@@ -43,7 +43,6 @@ class _OperatorExpression(Expression):
         return getattr(operator, self._op_code[1])(in0_pymc, in1_pymc)
         pass
 
-
 def make_op_func(op_code: Tuple[str, str], invert: bool = False) -> Callable:
     """
     Return a factory function that creates a operator expression
@@ -68,9 +67,7 @@ def register_operators(cls, ops):
     """Register an operator overload for a class"""
     for op_type, (op_code, invert) in ops.items():
         func = make_op_func((op_code, op_type), invert)
-
         setattr(cls, op_type, func)
-
 
 """
 Register standard arithmetic operators for both the Expression
@@ -94,3 +91,22 @@ ops = {
 
 register_operators(_OperatorExpression, ops)
 register_operators(Expression, ops)
+
+
+class _GetItemExpression(Expression):
+
+    @property
+    def stan_code(self) -> TListTExpression:
+        """See base class"""
+        base_expression = self._inputs[0]
+        key_expression = self._inputs[1]
+
+        return [base_expression, "[", key_expression, "]"]
+
+
+def getitem_func(self: Expression, key: TExpression):
+    return _GetItemExpression([self, key])
+
+
+setattr(_GetItemExpression, "__getitem__", getitem_func)
+setattr(Expression, "__getitem__", getitem_func)
