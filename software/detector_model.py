@@ -629,19 +629,17 @@ if __name__ == "__main__":
     from backend.stan_generator import (
         StanGenerator, GeneratedQuantitiesContext, DataContext,
         FunctionsContext, Include)
-    from backend.operations import AssignValue
     from backend.variable_definitions import ForwardVariableDef
 
     logging.basicConfig(level=logging.DEBUG)
     import pystan
     import numpy as np
-    import os
 
     with StanGenerator() as cg:
 
         with FunctionsContext() as fc:
-            _ = Include("utils.stan")
-            _ = Include("vMF.stan")
+            Include("utils.stan")
+            Include("vMF.stan")
 
         with DataContext() as dc:
             e_true = ForwardVariableDef(e_true_name, "real")
@@ -661,20 +659,14 @@ if __name__ == "__main__":
 
             """
             e_res_result = ForwardVariableDef("e_res", "real")
-            func_call = ntd.energy_resolution(e_true, e_reco)
-
-            e_res_result = AssignValue([func_call], e_res_result)
+            e_res_result << ntd.energy_resolution(e_true, e_reco)
 
             ang_res_result = ForwardVariableDef("ang_res", "real")
-            ang_res_call = ntd.angular_resolution(
+            ang_res_result << ntd.angular_resolution(
                 e_true, true_dir, reco_dir)
 
-            ang_res_result = AssignValue(
-                [ang_res_call], ang_res_result)
-
             eff_area_result = ForwardVariableDef("eff_area", "real")
-            eff_area_call = ntd.effective_area(e_true, true_dir)
-            eff_area_result = AssignValue([eff_area_call], eff_area_result)
+            eff_area_result << ntd.effective_area(e_true, true_dir)
 
         model = cg.generate()
 

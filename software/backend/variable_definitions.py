@@ -1,7 +1,9 @@
 from abc import abstractmethod
 from typing import Iterable
 import numpy as np  # type:ignore
-from .expression import NamedExpression, StanDefCode, TListTExpression
+from .expression import (
+    NamedExpression, StanDefCode, TListTExpression, TExpression,
+    Expression)
 from .stan_generator import DefinitionContext
 import logging
 import re
@@ -45,10 +47,10 @@ class ForwardVariableDef(VariableDef):
         VariableDef.__init__(self, name)
         self._var_type = var_type
         self.def_code()
-        # self.add_stan_hook(name, "var_def", self.def_code)
 
     def _gen_def_code(self) -> TListTExpression:
         """See parent class"""
+        """
         match = re.match(r"(real|int)\[(\d+)\]", self._var_type)
         if match is not None:
             # Refactor so that array size comes after name
@@ -56,8 +58,29 @@ class ForwardVariableDef(VariableDef):
             stan_code += self.name + "["+ match.groups()[1] + "]"
         else:
             stan_code = self._var_type + " " + self.name
+        """
+        return [self._var_type + " " + self.name]
 
-        return [stan_code]
+
+class ForwardArrayDef(VariableDef):
+    """Define an array of variables"""
+
+    def __init__(
+            self,
+            name: str,
+            var_type: str,
+            array_dim: TListTExpression) -> None:
+        VariableDef.__init__(self, name)
+        self._var_type = var_type
+        self._array_dim = array_dim
+        for expr in self._array_dim:
+            if isinstance(expr, Expression):
+                expr.add_output(self)
+
+        self.def_code()
+
+    def _gen_def_code(self) -> TListTExpression:
+        return [self._var_type + " " + self.name] + self._array_dim
 
 
 class StanArray(VariableDef):

@@ -1,13 +1,15 @@
 """Module for autogenerating Stan code"""
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Union
 from .code_generator import (
     CodeGenerator, ToplevelContextSingleton, ContextSingleton,
     ContextStack, Contextable)
 from .stan_code import StanCodeBit
 from .expression import (
-    TExpression, TNamedExpression, Expression, NamedExpression)
+    TExpression, TNamedExpression, Expression,
+    NamedExpression, StringExpression)
 from .operations import FunctionCall
 import logging
+import os
 logger = logging.getLogger(__name__)
 
 # if TYPE_CHECKING:
@@ -38,7 +40,7 @@ class Include(Contextable):
 
     @property
     def stan_code(self) -> str:
-        return "#include "+ self._file_name
+        return "#include " + self._file_name
 
 
 class FunctionsContext(ToplevelContextSingleton):
@@ -48,6 +50,17 @@ class FunctionsContext(ToplevelContextSingleton):
 
 
 class ForLoopContext(Contextable, ContextStack):
+
+    @staticmethod
+    def ensure_str(str: TNamedExpression) -> Union[str, int]:
+        if isinstance(str, NamedExpression):
+            str.add_output("FOR_LOOP_HEADER")
+            return str.name
+        elif isinstance(str, float):
+            raise RuntimeError("For loop range cannot be float")
+        else:
+            return str
+
     def __init__(
             self,
             min_val: TNamedExpression,
@@ -57,10 +70,18 @@ class ForLoopContext(Contextable, ContextStack):
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
+
         header_code = "for ({} in {}:{})".format(
-            loop_var_name, min_val, max_val)
+            loop_var_name,
+            self.ensure_str(min_val),
+            self.ensure_str(max_val))
+        self._loop_var_name = loop_var_name
 
         self._name = header_code
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return StringExpression([self._loop_var_name])
 
 
 class UserDefinedFunction(Contextable, ContextStack):
@@ -212,6 +233,9 @@ class StanGenerator(CodeGenerator):
 class StanFileGenerator(StanGenerator):
     def __init__(self, base_filename: str):
         StanGenerator.__init__(self)
+        dirname = os.path.dirname(base_filename)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
         self._base_filename = base_filename
 
     @staticmethod
@@ -230,6 +254,7 @@ class StanFileGenerator(StanGenerator):
                 code = self.walk_code_tree(leaf)
             else:
                 code = leaf
-            name_ext = self.ensure_filename(node)
-            with open(self._base_filename+"_"+name_ext+".stan", "w") as f:
-                f.write(code)
+            if code:
+                name_ext = self.ensure_filename(node)
+                with open(self._base_filename+"_"+name_ext+".stan", "w") as f:
+                    f.write(code)
