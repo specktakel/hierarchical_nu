@@ -382,9 +382,18 @@ TSWLatexianTemp*
 # standalone packages
 *.sta
 
+# Cache
+.cache/
 
+#CSV
+#*.csv
 
+#Sublime
+*.sublime*
 
+#numpy
+*.npz
+*.npy
 
 
 
