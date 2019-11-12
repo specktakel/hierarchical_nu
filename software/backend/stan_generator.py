@@ -134,6 +134,10 @@ class DataContext(ToplevelContextSingleton):
         ToplevelContextSingleton.__init__(self)
         self._name = "data"
 
+class TransformedDataContext(ToplevelContextSingleton):
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "transformed data"
 
 class GeneratedQuantitiesContext(ToplevelContextSingleton):
     def __init__(self):
