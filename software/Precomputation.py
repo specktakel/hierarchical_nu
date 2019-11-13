@@ -80,9 +80,9 @@ class ExposureIntegral():
 
 
     @property
-    def eps_grid(self):
+    def integral_grid(self):
 
-        return self._eps_grid
+        return self._integral_grid
 
     
     def _power_law_integral(self, Elow, Ehigh, alpha):
@@ -102,13 +102,13 @@ class ExposureIntegral():
         Loop over sources and calculate the exposure integral.
         """
 
-        self._eps_grid = []
+        self._integral_grid = []
         
         for source in self.source_list.sources:
 
             z = source.redshift
 
-            eps_grid_tmp = np.zeros(len(self.alpha_grid))
+            integral_grid_tmp = np.zeros(len(self.alpha_grid))
 
             for i, alpha in enumerate(self.alpha_grid):
         
@@ -135,7 +135,7 @@ class ExposureIntegral():
                             aeff = self.effective_area._eff_area[j][np.digitize(cosz, self.effective_area._cosz_bin_edges)-1]
                             aeff = aeff * m_to_cm**2
  
-                        eps_grid_tmp[i] += integ * aeff
+                        integral_grid_tmp[i] += integ * aeff
 
                         j += 1
 
@@ -161,13 +161,13 @@ class ExposureIntegral():
                                 
                                 aeff = self.effective_area._eff_area[j][k] * m_to_cm**2
 
-                            eps_grid_tmp[i] += E_integ * ang_integ * aeff
+                            integral_grid_tmp[i] += E_integ * ang_integ * aeff
 
                             k += 1
 
                         j += 1
                     
-            self._eps_grid.append(eps_grid_tmp)
+            self._integral_grid.append(integral_grid_tmp)
 
         
     def __call__(self):
