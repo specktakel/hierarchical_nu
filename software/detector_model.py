@@ -22,7 +22,8 @@ from backend import (
     SimpleHistogram,
     ReturnStatement,
     UserDefinedFunction,
-    FunctionCall)
+    FunctionCall,
+    DistributionMode)
 from fitting_tools import Residuals
 
 import logging
@@ -103,7 +104,7 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real")
-
+     
         self.setup()
 
         with self:
@@ -163,7 +164,9 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
     DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"  # noqa: E501
     CACHE_FNAME = "energy_reso_tracks.npz"
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            mode: DistributionMode = DistributionMode.PDF) -> None:
         """
         Args:
             inputs: List[TExpression]
@@ -175,6 +178,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             ["true_energy", "reco_energy"],
             ["real", "real"],
             "real")
+        self._mode = mode
         self.poly_params_mu: Sequence = []
         self.poly_params_sd: Sequence = []
         self.poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
@@ -204,12 +208,13 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 lognorm = LognormalParameterization(
                     log_reco_e,
                     stan_mu,
-                    sd)
+                    sd,
+                    mode)
 
                 components.append(lognorm)
 
             mixture = MixtureParameterization(
-                log_reco_e, components)
+                log_reco_e, components, mode)
             _ = ReturnStatement([mixture])
 
     @staticmethod
@@ -573,6 +578,11 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
 
 class DetectorModel(metaclass=ABCMeta):
 
+    def __init__(
+            self,
+            mode: DistributionMode = DistributionMode.PDF):
+        self._mode = mode
+
     @property
     def effective_area(self):
         return self._get_effective_area()
@@ -600,12 +610,16 @@ class DetectorModel(metaclass=ABCMeta):
 
 class NorthernTracksDetectorModel(DetectorModel):
 
-    def __init__(self):
-        ang_res = NorthernTracksAngularResolution()
+    def __init__(
+            self,
+            mode: DistributionMode = DistributionMode.PDF):
+        DetectorModel.__init__(self, mode)
+
+        ang_res = NorthernTracksAngularResolution(mode)
         self._angular_resolution = ang_res
-        energy_res = NorthernTracksEnergyResolution()
+        energy_res = NorthernTracksEnergyResolution(mode)
         self._energy_resolution = energy_res
-        self._eff_area = NorthernTracksEffectiveArea()
+        self._eff_area = NorthernTracksEffectiveArea(mode)
 
     def _get_effective_area(self):
         return self._eff_area

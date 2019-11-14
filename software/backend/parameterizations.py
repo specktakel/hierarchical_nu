@@ -17,6 +17,7 @@ __all__ = ["Parameterization", "LogParameterization",
            "PolynomialParameterization", "LognormalParameterization",
            "VMFParameterization", "TruncatedParameterization",
            "MixtureParameterization", "SimpleHistogram",
+           "DistributionMode"
            ]
 
 
@@ -271,7 +272,7 @@ class TruncatedParameterization(Parameterization):
         pass
 
 
-class MixtureParameterization(Parameterization):
+class MixtureParameterization(Distribution, UserDefinedFunction):
     """
     Mixture model parameterization
     """
@@ -279,8 +280,9 @@ class MixtureParameterization(Parameterization):
     def __init__(
             self,
             inputs: TExpression,
-            components: Sequence[Parameterization],
-            weighting: Union[None, Sequence[TExpression]] = None):
+            distribution: Parameterization,
+            weighting: Union[None, Sequence[TExpression]] = None,
+            mode: DistributionMode = DistributionMode.PDF):
         """
         Args:
             inputs: TExpression
@@ -293,31 +295,70 @@ class MixtureParameterization(Parameterization):
 
 
         """
-        Parameterization.__init__(self, [inputs])
+        Distribution.__init__(self, [inputs], mode)
 
         if weighting is not None and len(weighting) != len(components):
             raise ValueError("weights and components have different lengths")
         if weighting is None:
             weighting = ["1./{}".format(len(components))]*len(components)
 
-        self._components: List[Parameterization] = list(components)
-        for comp in self._components:
-            comp.add_output(self)
+        self.distribution: Parameterization = distribution
+        distribution.add_output(self)
         self._weighting: List[TExpression] = list(weighting)
         for weight in self._weighting:
             if isinstance(weight, Expression):
                 weight.add_output(self)
 
+        val_names = ["x"]
+        val_types = ["real"]
+
+        UserDefinedFunction.__init__(
+            self, name, val_names, val_types, "real")
+
+        with self:
+            weights_stan = StanArray("weights", "real",  self._weighting)
+            result = ForwardVariableDef("result", "real")
+            with ForLoopContext(1, len(self.components), "i") as _:
+                result["i"] << weights_stan[i]
+
+
+            stan_code: TListTExpression = [self._histogram]
+            for i in range(self._dim):
+                stan_code += ["[binary_search(", val_names[i], ", ",
+                              self._binedges[i], ")]"]
+            _ = ReturnStatement(stan_code)
+
+
+
     def __call__(self, x):
         pass
 
     @property
-    def stan_code(self) -> TListTExpression:
+    def stan_code_pdf(self) -> TListTExpression:
 
         expression: TExpression = 0
         for i, (comp, weight) in enumerate(
                 zip(self._components, self._weighting)):
             comp._inputs[0] = self._inputs[0]
+            # Here we implictely use the OperatorExpression, since
+            # components are Parameterizations
+
+            expression += comp*weight  # type: ignore
+        expression.add_output(self)  # type: ignore
+        return [expression]  # type: ignore
+
+    @property
+    def stan_code_rng(self) -> TListTExpression:
+
+        expression: TExpression = 0
+
+        expression = "categorical_rng("+self._weighting);"
+        for i, (comp, weight) in enumerate(
+                zip(self._components, self._weighting)):
+            comp._inputs[0] = self._inputs[0]
+            
+            index = categorical_rng(self._weighting);
+
             # Here we implictely use the OperatorExpression, since
             # components are Parameterizations
 
