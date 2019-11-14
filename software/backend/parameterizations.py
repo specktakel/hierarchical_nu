@@ -1,5 +1,6 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from typing import Union, List, Sequence
+from enum import Enum
 import numpy as np  # type: ignore
 from .stan_generator import UserDefinedFunction
 from .expression import (Expression, TExpression, TListTExpression,
@@ -30,10 +31,50 @@ class Parameterization(Expression,
     pass
 
 
+DistributionMode = Enum("DistributionMode", "PDF RNG")
+
+
+class Distribution(Parameterization,
+                   metaclass=ABCMeta):
+    """
+    Class for probility distributions.
+
+    Derived classes should implement an option
+    for switching between RNG and PDF mode.
+    """
+
+    def __init__(self,
+                 inputs: Sequence["TExpression"],
+                 mode: DistributionMode):
+        Parameterization.__init__(self, inputs)
+        self._mode = mode
+
+    @property
+    def stan_code(self):
+        if self._mode == DistributionMode.PDF:
+            return self.stan_code_pdf
+        elif self._mode == DistributionMode.RNG:
+            return self.stan_code_rng
+        else:
+            RuntimeError("This should not happen")
+
+    @property
+    @abstractmethod
+    def stan_code_pdf(self):
+        pass
+
+    @property
+    @abstractmethod
+    def stan_code_rng(self):
+        pass
+
+
 class LogParameterization(Parameterization):
     """log with customizable base"""
-    def __init__(self, inputs: TExpression, base: float = 10):
-        Parameterization.__init__(self, [inputs])
+    def __init__(self,
+                 inputs: Sequence["TExpression"],
+                 base: float = 10):
+        Parameterization.__init__(self, inputs)
         self._base = base
 
     @property
@@ -101,12 +142,16 @@ class PolynomialParameterization(Parameterization):
         pass
 
 
-class LognormalParameterization(Parameterization):
+class LognormalParameterization(Distribution):
     """Lognormal distribution"""
 
-    def __init__(self, inputs: TExpression, mu: TExpression,
-                 sigma: TExpression):
-        Parameterization.__init__(self, [inputs])
+    def __init__(self,
+                 inputs: TExpression,
+                 mu: TExpression,
+                 sigma: TExpression,
+                 mode: DistributionMode = DistributionMode.PDF
+                 ):
+        Distribution.__init__(self, [inputs], mode)
         if isinstance(mu, Expression):
             mu.add_output(self)
         if isinstance(sigma, Expression):
@@ -118,27 +163,35 @@ class LognormalParameterization(Parameterization):
         pass
 
     @property
-    def stan_code(self) -> TListTExpression:
-        """See base class"""
+    def stan_code_rng(self):
+        stan_code: TListTExpression = []
+        stan_code += ["lognormal_rng(", self._mu, ", ",
+                      self._sigma, ")"]
+        return stan_code
 
+    @property
+    def stan_code_pdf(self):
         x_obs_stan = self._inputs[0]
         stan_code: TListTExpression = []
         stan_code += ["lognormal_lpdf(", x_obs_stan, " | ", self._mu, ", ",
                       self._sigma, ")"]
-
         return stan_code
 
     def to_pymc(self):
         pass
 
 
-class VMFParameterization(Parameterization):
+class VMFParameterization(Distribution):
     """
     Von-Mises-Fisher Distribution
     """
 
-    def __init__(self, inputs: Sequence[TExpression], kappa: TExpression):
-        Parameterization.__init__(self, inputs)
+    def __init__(
+            self,
+            inputs: Sequence[TExpression],
+            kappa: TExpression,
+            mode: DistributionMode = DistributionMode.PDF):
+        Distribution.__init__(self, inputs, mode)
         if isinstance(kappa, Expression):
             kappa.add_output(self)
         self._kappa = kappa
@@ -147,7 +200,7 @@ class VMFParameterization(Parameterization):
         pass
 
     @property
-    def stan_code(self) -> TListTExpression:
+    def stan_code_pdf(self) -> TListTExpression:
 
         x_obs_stan = self._inputs[0]
         x_true_stan = self._inputs[1]
@@ -155,6 +208,17 @@ class VMFParameterization(Parameterization):
         stan_code: TListTExpression = []
 
         stan_code += ["vMF_lpdf(", x_obs_stan, " | ", x_true_stan, ", ",
+                      self._kappa, ")"]
+
+        return stan_code
+
+    @property
+    def stan_code_rng(self) -> TListTExpression:
+
+        x_true_stan = self._inputs[0]
+        stan_code: TListTExpression = []
+
+        stan_code += ["vMF_rng(", x_true_stan, ", ",
                       self._kappa, ")"]
 
         return stan_code
@@ -332,7 +396,8 @@ if __name__ == "__main__":
             lognorm_sum = AssignValue([sum_test2], lognorm_sum_def)
 
             lognorm_mix_def = ForwardVariableDef("lognorm_mix", "real")
-            lognorm_mix = MixtureParameterization(invar, [lognorm_func, lognorm_func])
+            lognorm_mix = MixtureParameterization(invar,
+                                                  [lognorm_func, lognorm_func])
             _ = AssignValue([lognorm_mix], lognorm_mix_def)
 
 

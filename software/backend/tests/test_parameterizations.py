@@ -34,3 +34,7 @@ class TestPolynomialParameterization(unittest.TestCase):
         fit = fit.extract()
         self.assertEqual(fit["result"],
                          np.poly1d(test_poly_coeffs)(data["test_val"]))
+
+
+if __name__ == '__main__':
+    unittest.main()
