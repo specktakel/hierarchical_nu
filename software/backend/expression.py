@@ -21,6 +21,13 @@ class Expression(Contextable, metaclass=ABCMeta):
 
     def __init__(self, inputs: Sequence["TExpression"]):
         Contextable.__init__(self)
+        logger.debug("Input is of type: {}".format(type(inputs)))
+
+        # If inputs is an expression, rather than a list of expression,
+        # converting to a list will cause a loop of death. This is due
+        # to the [] overload of Expression        
+        assert not isinstance(inputs, Expression)
+        
         self._inputs: List["TExpression"] = list(inputs)
         for input in self._inputs:
             if isinstance(input, Expression):

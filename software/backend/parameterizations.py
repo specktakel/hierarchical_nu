@@ -72,9 +72,9 @@ class Distribution(Parameterization,
 class LogParameterization(Parameterization):
     """log with customizable base"""
     def __init__(self,
-                 inputs: Sequence["TExpression"],
+                 inputs: TExpression,
                  base: float = 10):
-        Parameterization.__init__(self, inputs)
+        Parameterization.__init__(self, [inputs])
         self._base = base
 
     @property
@@ -97,6 +97,7 @@ class LogParameterization(Parameterization):
             return tt.log10(x_eval_pymc)/tt.log10(self._base)
         else:
             return tt.log10(x_eval_pymc)
+
 
 class PolynomialParameterization(Parameterization):
     """Polynomial parametrization"""
