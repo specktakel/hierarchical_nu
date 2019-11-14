@@ -1,12 +1,15 @@
 """Module for autogenerating Stan code"""
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Union
 from .code_generator import (
     CodeGenerator, ToplevelContextSingleton, ContextSingleton,
     ContextStack, Contextable)
 from .stan_code import StanCodeBit
-from .expression import TExpression, Expression
+from .expression import (
+    TExpression, TNamedExpression, Expression,
+    NamedExpression, StringExpression)
 from .operations import FunctionCall
 import logging
+import os
 logger = logging.getLogger(__name__)
 
 # if TYPE_CHECKING:
@@ -37,13 +40,48 @@ class Include(Contextable):
 
     @property
     def stan_code(self) -> str:
-        return "#include "+ self._file_name
+        return "#include " + self._file_name
 
 
 class FunctionsContext(ToplevelContextSingleton):
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
         self._name = "functions"
+
+
+class ForLoopContext(Contextable, ContextStack):
+
+    @staticmethod
+    def ensure_str(str: TNamedExpression) -> Union[str, int]:
+        if isinstance(str, NamedExpression):
+            str.add_output("FOR_LOOP_HEADER")
+            return str.name
+        elif isinstance(str, float):
+            raise RuntimeError("For loop range cannot be float")
+        else:
+            return str
+
+    def __init__(
+            self,
+            min_val: TNamedExpression,
+            max_val: TNamedExpression,
+            loop_var_name: str,
+            ) -> None:
+
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        header_code = "for ({} in {}:{})".format(
+            loop_var_name,
+            self.ensure_str(min_val),
+            self.ensure_str(max_val))
+        self._loop_var_name = loop_var_name
+
+        self._name = header_code
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return StringExpression([self._loop_var_name])
 
 
 class UserDefinedFunction(Contextable, ContextStack):
@@ -70,7 +108,6 @@ class UserDefinedFunction(Contextable, ContextStack):
         with self._fc:
             # Add ourselves to the Functions context
             Contextable.__init__(self, at_top=at_top)
-
 
         """
         if ContextStack.get_context().name != "functions":
@@ -176,7 +213,7 @@ class StanGenerator(CodeGenerator):
                 if isinstance(node, DefinitionContext):
                     if len(leaf) != 1:
                         raise RuntimeError("Malformed tree. Definition subtree should have exactly one node.")  # noqa: E501
-                    defs += leaf["main"] + ""
+                    defs += leaf["main"]
 
                 else:
                     code += node.name + "\n{\n"
@@ -191,3 +228,33 @@ class StanGenerator(CodeGenerator):
         logger.debug("Start parsing")
         code_tree = self.parse_recursive(self.objects)
         return self.walk_code_tree(code_tree)
+
+
+class StanFileGenerator(StanGenerator):
+    def __init__(self, base_filename: str):
+        StanGenerator.__init__(self)
+        dirname = os.path.dirname(base_filename)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        self._base_filename = base_filename
+
+    @staticmethod
+    def ensure_filename(obj):
+        if hasattr(obj, "name"):
+            name = obj.name
+        else:
+            name = str(obj)
+        return name.replace(" ", "")
+
+    def generate_files(self) -> None:
+        code_tree = self.parse_recursive(self.objects)
+
+        for node, leaf in code_tree.items():
+            if isinstance(leaf, dict):
+                code = self.walk_code_tree(leaf)
+            else:
+                code = leaf
+            if code:
+                name_ext = self.ensure_filename(node)
+                with open(self._base_filename+"_"+name_ext+".stan", "w") as f:
+                    f.write(code)

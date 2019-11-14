@@ -21,7 +21,8 @@ from backend import (
     LogParameterization,
     SimpleHistogram,
     ReturnStatement,
-    UserDefinedFunction)
+    UserDefinedFunction,
+    FunctionCall)
 from fitting_tools import Residuals
 
 import logging
@@ -113,7 +114,7 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
 
             # z = cos(theta)
             cos_dir = "true_dir[3]"
-            #cos_dir = FunctionCall(["true_dir"], "cos")
+            # cos_dir = FunctionCall(["true_dir"], "cos")
             _ = ReturnStatement([hist("true_energy", cos_dir)])
 
     def setup(self) -> None:
@@ -188,6 +189,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             log_reco_e = LogParameterization("reco_energy")
             components = []
             for i in range(self.n_components):
+
                 mu = PolynomialParameterization(
                     log_trunc_e,
                     self.poly_params_mu[i],
@@ -198,12 +200,16 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                     self.poly_params_sd[i],
                     "NorthernTracksEnergyResolutionSdPolyCoeffs_{}".format(i))
 
-                lognorm = LognormalParameterization(log_reco_e, mu, sd)
+                stan_mu = FunctionCall([mu], "log")
+                lognorm = LognormalParameterization(
+                    log_reco_e,
+                    stan_mu,
+                    sd)
 
                 components.append(lognorm)
 
             mixture = MixtureParameterization(
-                "reco_energy", components)
+                log_reco_e, components)
             _ = ReturnStatement([mixture])
 
     @staticmethod
@@ -457,6 +463,9 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                     poly_params_sd=poly_params_sd,
                     e_min=e_min,
                     e_max=e_max)
+            self.poly_params_mu = poly_params_mu
+            self.poly_params_sd = poly_params_sd
+            self.poly_limits = poly_limits
             self.plot_fit_params(fit_params, rebinned_binc)
             self.plot_parameterizations(tE_binc, rebinned_binc, rE_binc,
                                         fit_params, eff_area)
@@ -620,18 +629,17 @@ if __name__ == "__main__":
     from backend.stan_generator import (
         StanGenerator, GeneratedQuantitiesContext, DataContext,
         FunctionsContext, Include)
-    from backend.operations import AssignValue
     from backend.variable_definitions import ForwardVariableDef
 
-    logging.basicConfig(level=logging.WARN)
+    logging.basicConfig(level=logging.DEBUG)
     import pystan
     import numpy as np
 
     with StanGenerator() as cg:
 
         with FunctionsContext() as fc:
-            _ = Include("utils.stan")
-            _ = Include("vMF.stan")
+            Include("utils.stan")
+            Include("vMF.stan")
 
         with DataContext() as dc:
             e_true = ForwardVariableDef(e_true_name, "real")
@@ -651,27 +659,21 @@ if __name__ == "__main__":
 
             """
             e_res_result = ForwardVariableDef("e_res", "real")
-            func_call = ntd.energy_resolution(e_true, e_reco)
-
-            e_res_result = AssignValue([func_call], e_res_result)
+            e_res_result << ntd.energy_resolution(e_true, e_reco)
 
             ang_res_result = ForwardVariableDef("ang_res", "real")
-            ang_res_call = ntd.angular_resolution(
+            ang_res_result << ntd.angular_resolution(
                 e_true, true_dir, reco_dir)
 
-            ang_res_result = AssignValue(
-                [ang_res_call], ang_res_result)
-
             eff_area_result = ForwardVariableDef("eff_area", "real")
-            eff_area_call = ntd.effective_area(e_true, true_dir)
-            eff_area_result = AssignValue([eff_area_call], eff_area_result)
+            eff_area_result << ntd.effective_area(e_true, true_dir)
 
         model = cg.generate()
 
-    print(model)
+    this_dir = os.path.abspath("")
     sm = pystan.StanModel(
         model_code=model,
-        include_paths=["/home/home2/institut_3b/haack/repos/hierarchical_nu/dev/statistical_model/4_tracks_and_cascades/stan/"],
+        include_paths=[os.path.join(this_dir, "../dev/statistical_model/4_tracks_and_cascades/stan/")],
         verbose=False)
 
     dir1 = np.array([1, 0, 0])

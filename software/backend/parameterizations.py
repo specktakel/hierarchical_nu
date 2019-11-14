@@ -98,7 +98,6 @@ class LogParameterization(Parameterization):
         else:
             return tt.log10(x_eval_pymc)
 
-
 class PolynomialParameterization(Parameterization):
     """Polynomial parametrization"""
 

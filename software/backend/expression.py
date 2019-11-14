@@ -69,8 +69,34 @@ class Expression(Contextable, metaclass=ABCMeta):
 
 
 # Define type union for stanable types
-TExpression = Union[Expression, str, float]
+TExpression = Union[Expression, str, float, int]
 TListTExpression = List[TExpression]
+
+
+class _GetItemExpression(Expression):
+
+    @property
+    def stan_code(self) -> TListTExpression:
+        """See base class"""
+        base_expression = self._inputs[0]
+        key_expression = self._inputs[1]
+
+        return [base_expression, "[", key_expression, "]"]
+
+
+def getitem_func(self: Expression, key: TExpression):
+    return _GetItemExpression([self, key])
+
+
+setattr(_GetItemExpression, "__getitem__", getitem_func)
+setattr(Expression, "__getitem__", getitem_func)
+
+
+class StringExpression(Expression):
+    @property
+    def stan_code(self) -> TListTExpression:
+        stan_code: TListTExpression = list(self._inputs)
+        return stan_code
 
 
 class NamedExpression(Expression):
@@ -81,6 +107,9 @@ class NamedExpression(Expression):
     @property
     def name(self):
         return self._name
+
+
+TNamedExpression = Union[NamedExpression, str, float, int]
 
 
 class ReturnStatement(Expression):
