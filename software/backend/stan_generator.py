@@ -1,5 +1,6 @@
 """Module for autogenerating Stan code"""
 from typing import Dict, Iterable, Union
+import pprint
 from .code_generator import (
     CodeGenerator, ToplevelContextSingleton, ContextSingleton,
     ContextStack, Contextable)
@@ -164,11 +165,11 @@ class StanGenerator(CodeGenerator):
     def parse_recursive(objects):
         logger.debug("Entered recursive parser. Got {} objects".format(len(objects)))  # noqa: E501
         code_tree: Dict[str, str] = {}
-        code_tree["main"] = ""
+        
         for code_bit in objects:
             logger.debug("Currently parsing: {}".format(code_bit))
             if isinstance(code_bit, ContextStack):
-                # Encountered a new context, parse before continueing
+                # Encountered a new context, parse before continuing
                 objects = code_bit.objects
                 code_tree[code_bit] = StanGenerator.parse_recursive(objects)
             else:
@@ -192,6 +193,8 @@ class StanGenerator(CodeGenerator):
                     code_bit = code_bit.to_stan()
                     logger.debug("Adding: {}".format(type(code_bit)))
                     code = code_bit.code + ";\n"
+                if "main" not in code_tree:
+                    code_tree["main"] = ""
                 code_tree["main"] += code
         return code_tree
 
@@ -199,7 +202,6 @@ class StanGenerator(CodeGenerator):
     def walk_code_tree(code_tree) -> str:
         code = ""
         defs = ""
-
         node_order = list(code_tree.keys())
         for node in list(node_order):
             if isinstance(node, FunctionsContext):
@@ -227,6 +229,7 @@ class StanGenerator(CodeGenerator):
     def generate(self) -> str:
         logger.debug("Start parsing")
         code_tree = self.parse_recursive(self.objects)
+        # pprint.pprint(code_tree)
         return self.walk_code_tree(code_tree)
 
 

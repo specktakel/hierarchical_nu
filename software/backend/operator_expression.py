@@ -91,22 +91,3 @@ ops = {
 
 register_operators(_OperatorExpression, ops)
 register_operators(Expression, ops)
-
-
-class _GetItemExpression(Expression):
-
-    @property
-    def stan_code(self) -> TListTExpression:
-        """See base class"""
-        base_expression = self._inputs[0]
-        key_expression = self._inputs[1]
-
-        return [base_expression, "[", key_expression, "]"]
-
-
-def getitem_func(self: Expression, key: TExpression):
-    return _GetItemExpression([self, key])
-
-
-setattr(_GetItemExpression, "__getitem__", getitem_func)
-setattr(Expression, "__getitem__", getitem_func)

@@ -2,9 +2,9 @@ from abc import ABCMeta, abstractmethod
 from typing import Union, List, Sequence
 from enum import Enum
 import numpy as np  # type: ignore
-from .stan_generator import UserDefinedFunction
+from .stan_generator import UserDefinedFunction, ForLoopContext
 from .expression import (Expression, TExpression, TListTExpression,
-                         ReturnStatement)
+                         ReturnStatement, StringExpression)
 from .pymc_generator import pymcify
 from .variable_definitions import StanArray
 from .typedefs import TArrayOrNumericIterable
@@ -272,16 +272,13 @@ class TruncatedParameterization(Parameterization):
         pass
 
 
-class MixtureParameterization(Distribution, UserDefinedFunction):
-    """
-    Mixture model parameterization
-    """
+class LognormalMixture(UserDefinedFunction):
+    """LognormalMixture Mixture Model"""
 
     def __init__(
             self,
-            inputs: TExpression,
-            distribution: Parameterization,
-            weighting: Union[None, Sequence[TExpression]] = None,
+            name: str,
+            n_components: int,
             mode: DistributionMode = DistributionMode.PDF):
         """
         Args:
@@ -295,79 +292,75 @@ class MixtureParameterization(Distribution, UserDefinedFunction):
 
 
         """
-        Distribution.__init__(self, [inputs], mode)
+        self.n_components = n_components
 
-        if weighting is not None and len(weighting) != len(components):
-            raise ValueError("weights and components have different lengths")
-        if weighting is None:
-            weighting = ["1./{}".format(len(components))]*len(components)
+        self.means = StringExpression(["means"])
+        self.sigmas = StringExpression(["sigmas"])
+        self.weights = StringExpression(["weights"])
 
-        self.distribution: Parameterization = distribution
-        distribution.add_output(self)
-        self._weighting: List[TExpression] = list(weighting)
-        for weight in self._weighting:
-            if isinstance(weight, Expression):
-                weight.add_output(self)
+        val_names = ["x", "means", "sigmas", "weights"]
 
-        val_names = ["x"]
-        val_types = ["real"]
+        val_types = ["real", "vector[]", "vector[]", "vector[]"]
 
         UserDefinedFunction.__init__(
             self, name, val_names, val_types, "real")
 
+        if mode == DistributionMode.PDF:
+            self._build_pdf()
+        elif mode == DistributionMode.RNG:
+            self._build_rng()
+        else:
+            raise RuntimeError("This should not happen")
+
+    def _build_rng(self):
         with self:
-            weights_stan = StanArray("weights", "real",  self._weighting)
-            result = ForwardVariableDef("result", "real")
-            with ForLoopContext(1, len(self.components), "i") as _:
-                result["i"] << weights_stan[i]
+            index = ForwardVariableDef("index", "int")
 
+            index << ["categorical_rng(", self.weights, ")"]
+            distribution = LognormalParameterization(
+                    "x",
+                    self.means[index],
+                    self.sigmas[index],
+                    mode=DistributionMode.RNG)
+            ReturnStatement([distribution])
 
-            stan_code: TListTExpression = [self._histogram]
-            for i in range(self._dim):
-                stan_code += ["[binary_search(", val_names[i], ", ",
-                              self._binedges[i], ")]"]
-            _ = ReturnStatement(stan_code)
+    def _build_pdf(self):
 
+        with self:
+            result = ForwardVariableDef(
+                "result",
+                "vector["+str(self.n_components)+"]")
+            with ForLoopContext(1, self.n_components, "i") as i:
+                distribution = LognormalParameterization(
+                    "x",
+                    self.means[i],
+                    self.sigmas[i],
+                    mode=DistributionMode.PDF)
 
+                result[i] << [self.weights[i]*distribution]
 
-    def __call__(self, x):
-        pass
+            result_sum = ["log_sum_exp(", result, ")"]
+
+            ReturnStatement(result_sum)
 
     @property
     def stan_code_pdf(self) -> TListTExpression:
-
-        expression: TExpression = 0
-        for i, (comp, weight) in enumerate(
-                zip(self._components, self._weighting)):
-            comp._inputs[0] = self._inputs[0]
-            # Here we implictely use the OperatorExpression, since
-            # components are Parameterizations
-
-            expression += comp*weight  # type: ignore
-        expression.add_output(self)  # type: ignore
-        return [expression]  # type: ignore
+        raise NotImplementedError("This should never be called")
 
     @property
     def stan_code_rng(self) -> TListTExpression:
-
-        expression: TExpression = 0
-
-        expression = "categorical_rng("+self._weighting);"
-        for i, (comp, weight) in enumerate(
-                zip(self._components, self._weighting)):
-            comp._inputs[0] = self._inputs[0]
-            
-            index = categorical_rng(self._weighting);
-
-            # Here we implictely use the OperatorExpression, since
-            # components are Parameterizations
-
-            expression += comp*weight  # type: ignore
-        expression.add_output(self)  # type: ignore
-        return [expression]  # type: ignore
+        raise NotImplementedError("This should never be called")
 
     def to_pymc(self):
         pass
+
+
+class MixtureParameterization(Distribution, UserDefinedFunction):
+    """
+    Mixture model parameterization
+    """
+
+    pass
 
 
 class SimpleHistogram(UserDefinedFunction):
@@ -417,7 +410,7 @@ if __name__ == "__main__":
 
     with StanGenerator() as cg:
         with GeneratedQuantitiesContext() as gq:
-
+            """
             invar = "E_true"
             log_e_eval = LogParameterization(invar)
             test_poly_coeffs = [1, 1, 1, 1]
@@ -435,13 +428,36 @@ if __name__ == "__main__":
 
             sum_test2 = sum_test + sum_test
             lognorm_sum = AssignValue([sum_test2], lognorm_sum_def)
-
+            """
+            lognorm_means = StanArray("means", "real", [1, 1])
+            lognorm_sigmas = StanArray("sigmas", "real", [1, 1])
+            lognorm_weights = StanArray("weights", "real", [0.5, 0.5])
+            lognorm_mix = LognormalMixture(
+                "lognorm",
+                2,
+                )
+            lognorm_mix_rng = LognormalMixture(
+                "lognorm",
+                2,
+                mode=DistributionMode.RNG)
             lognorm_mix_def = ForwardVariableDef("lognorm_mix", "real")
-            lognorm_mix = MixtureParameterization(invar,
-                                                  [lognorm_func, lognorm_func])
-            _ = AssignValue([lognorm_mix], lognorm_mix_def)
+            
 
+            lognorm_mix_def << lognorm_mix("x",
+                                           lognorm_means,
+                                           lognorm_sigmas,
+                                           lognorm_weights
+                                           )
 
+            lognorm_mix_rng_def = ForwardVariableDef("lognorm_mix_rng", "real")
+            
+            lognorm_mix_rng_def << lognorm_mix_rng("x",
+                                                   lognorm_means,
+                                                   lognorm_sigmas,
+                                                   lognorm_weights
+                                                   )
+
+            """
             # histogram test
 
             hist_var = np.zeros((4, 5), dtype=float)
@@ -456,5 +472,5 @@ if __name__ == "__main__":
             called_hist = ForwardVariableDef("called_hist", "real")
             hist_call = hist(*values)
             called_hist = AssignValue([hist_call], called_hist)
-
+            """
         print(cg.generate())

@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Union
 from .expression import Expression, TExpression, TListTExpression
 import logging
 logger = logging.getLogger(__name__)
@@ -37,15 +37,19 @@ class AssignValue(Expression):
     @property
     def stan_code(self) -> TListTExpression:
         stan_code: TListTExpression = [
-            self._output_val, " = ", self._inputs[0]]
+            self._output_val, " = ", ] + self._inputs
         return stan_code
 
     def to_pymc(self):
         pass
 
 
-def assignment_func(self: Expression, other: TExpression):
-    return AssignValue([other], self)
+def assignment_func(
+        self: Expression,
+        other: Union[TListTExpression, TExpression]):
+    if not isinstance(other, list):
+        other = [other]
+    return AssignValue(other, self)
 
 
 setattr(AssignValue, "__lshift__", assignment_func)
@@ -86,9 +90,6 @@ class FunctionCall(Expression):
 
     def to_pymc(self):
         pass
-
-
-
 
 
 if __name__ == "__main__":
