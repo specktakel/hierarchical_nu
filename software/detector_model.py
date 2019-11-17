@@ -212,7 +212,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             sd_poly_coeffs = StanArray(
                 "NorthernTracksEnergyResolutionSdPolyCoeffs",
                 "real",
-                self.poly_params_mu)
+                self.poly_params_sd)
 
             mu = ForwardArrayDef(
                 "mu_e_res",
@@ -228,7 +228,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 "vector",
                 [1./self.n_components]*self.n_components)
 
-            log_mu = LogParameterization(mu)
+            log_mu = FunctionCall([mu], "log")
 
             with ForLoopContext(1, self.n_components,  "i") as i:
                 mu[i] << ["eval_poly1d(", log_trunc_e, ", ",
