@@ -1,12 +1,13 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, List, Sequence
+from typing import Sequence
 from enum import Enum
 import numpy as np  # type: ignore
 from .stan_generator import UserDefinedFunction, ForLoopContext
 from .expression import (Expression, TExpression, TListTExpression,
                          ReturnStatement, StringExpression)
+from .operations import FunctionCall
 from .pymc_generator import pymcify
-from .variable_definitions import StanArray
+from .variable_definitions import StanArray, ForwardVariableDef
 from .typedefs import TArrayOrNumericIterable
 
 
@@ -17,7 +18,7 @@ __all__ = ["Parameterization", "LogParameterization",
            "PolynomialParameterization", "LognormalParameterization",
            "VMFParameterization", "TruncatedParameterization",
            "MixtureParameterization", "SimpleHistogram",
-           "DistributionMode"
+           "DistributionMode", "LognormalMixture"
            ]
 
 
@@ -300,7 +301,7 @@ class LognormalMixture(UserDefinedFunction):
 
         val_names = ["x", "means", "sigmas", "weights"]
 
-        val_types = ["real", "vector[]", "vector[]", "vector[]"]
+        val_types = ["real", "vector", "vector", "vector"]
 
         UserDefinedFunction.__init__(
             self, name, val_names, val_types, "real")
@@ -330,6 +331,8 @@ class LognormalMixture(UserDefinedFunction):
             result = ForwardVariableDef(
                 "result",
                 "vector["+str(self.n_components)+"]")
+
+            log_weights = FunctionCall([self.weights], "log")
             with ForLoopContext(1, self.n_components, "i") as i:
                 distribution = LognormalParameterization(
                     "x",
@@ -337,7 +340,7 @@ class LognormalMixture(UserDefinedFunction):
                     self.sigmas[i],
                     mode=DistributionMode.PDF)
 
-                result[i] << [self.weights[i]*distribution]
+                result[i] << [log_weights[i]+distribution]
 
             result_sum = ["log_sum_exp(", result, ")"]
 
@@ -404,8 +407,7 @@ class SimpleHistogram(UserDefinedFunction):
 if __name__ == "__main__":
 
     from .stan_generator import StanGenerator, GeneratedQuantitiesContext
-    from .operations import AssignValue
-    from .variable_definitions import ForwardVariableDef
+
     logging.basicConfig(level=logging.DEBUG)
 
     with StanGenerator() as cg:

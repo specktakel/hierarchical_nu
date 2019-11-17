@@ -25,15 +25,15 @@ class Expression(Contextable, metaclass=ABCMeta):
 
         # If inputs is an expression, rather than a list of expression,
         # converting to a list will cause a loop of death. This is due
-        # to the [] overload of Expression        
+        # to the [] overload of Expression
         assert not isinstance(inputs, Expression)
-        
+
         self._inputs: List["TExpression"] = list(inputs)
         for input in self._inputs:
             if isinstance(input, Expression):
                 input.add_output(self)
             else:
-                logger.debug("Found non Expression of type: {} in input.".format(input))
+                logger.debug("Found non Expression of type: {} in input.".format(input))  # noqa: E501
         self._output: List["TExpression"] = []
 
     @property

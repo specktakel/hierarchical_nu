@@ -9,7 +9,8 @@ import logging
 import re
 logger = logging.getLogger(__name__)
 
-__all__ = ["VariableDef", "StanArray"]
+__all__ = ["VariableDef", "StanArray", "ForwardArrayDef",
+           "ForwardVariableDef"]
 
 
 class VariableDef(NamedExpression):

@@ -23,7 +23,11 @@ from backend import (
     ReturnStatement,
     UserDefinedFunction,
     FunctionCall,
-    DistributionMode)
+    DistributionMode,
+    LognormalMixture,
+    ForLoopContext,
+    ForwardArrayDef,
+    StanArray)
 from fitting_tools import Residuals
 
 import logging
@@ -172,12 +176,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             inputs: List[TExpression]
                 First item is true energy, second item is reco energy
         """
-        UserDefinedFunction.__init__(
-            self,
-            "NorthernTracksEnergyResolution",
-            ["true_energy", "reco_energy"],
-            ["real", "real"],
-            "real")
+       
         self._mode = mode
         self.poly_params_mu: Sequence = []
         self.poly_params_sd: Sequence = []
@@ -186,36 +185,63 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         self.n_components = 3
         self.setup()
 
+        lognorm = LognormalMixture(
+                "nt_energy_res",
+                self.n_components,
+                self._mode)
+        UserDefinedFunction.__init__(
+            self,
+            "NorthernTracksEnergyResolution",
+            ["true_energy", "reco_energy"],
+            ["real", "real"],
+            "real")
+
         with self:
             truncated_e = TruncatedParameterization(
                 "true_energy", *self.poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
             log_reco_e = LogParameterization("reco_energy")
-            components = []
-            for i in range(self.n_components):
 
-                mu = PolynomialParameterization(
-                    log_trunc_e,
-                    self.poly_params_mu[i],
-                    "NorthernTracksEnergyResolutionMuPolyCoeffs_{}".format(i))
+            mu_poly_coeffs = StanArray(
+                "NorthernTracksEnergyResolutionMuPolyCoeffs",
+                "real",
+                self.poly_params_mu)
 
-                sd = PolynomialParameterization(
-                    log_trunc_e,
-                    self.poly_params_sd[i],
-                    "NorthernTracksEnergyResolutionSdPolyCoeffs_{}".format(i))
+            sd_poly_coeffs = StanArray(
+                "NorthernTracksEnergyResolutionSdPolyCoeffs",
+                "real",
+                self.poly_params_mu)
 
-                stan_mu = FunctionCall([mu], "log")
-                lognorm = LognormalParameterization(
-                    log_reco_e,
-                    stan_mu,
-                    sd,
-                    mode)
+            mu = ForwardArrayDef(
+                "mu_e_res",
+                "real",
+                ["[", self.n_components, "]"])
+            sigma = ForwardArrayDef(
+                "sigma_e_res",
+                "real",
+                ["[", self.n_components, "]"])
 
-                components.append(lognorm)
+            weights = StanArray(
+                "NorthernTracksEnergyResolutionMixWeights",
+                "vector",
+                [1./self.n_components]*self.n_components)
 
-            mixture = MixtureParameterization(
-                log_reco_e, components, mode)
-            _ = ReturnStatement([mixture])
+            log_mu = LogParameterization(mu)
+
+            with ForLoopContext(1, self.n_components,  "i") as i:
+                mu[i] << ["eval_poly1d(", log_trunc_e, ", ",
+                          "to_vector(", mu_poly_coeffs[i], "))"]
+
+                sigma[i] << ["eval_poly1d(", log_trunc_e, ", ",
+                             "to_vector(", sd_poly_coeffs[i], "))"]
+
+
+            log_mu = FunctionCall([log_mu], "to_vector")
+            sigma = FunctionCall([sigma], "to_vector")
+
+
+
+            ReturnStatement([lognorm(log_reco_e, log_mu, sigma, weights)])
 
     @staticmethod
     def make_fit_model(n_components):
@@ -504,7 +530,9 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
     DATA_PATH = "NorthernTracksAngularRes.csv"
     CACHE_FNAME = "angular_reso_tracks.npz"
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            mode: DistributionMode = DistributionMode.PDF) -> None:
         UserDefinedFunction.__init__(
             self,
             "NorthernTracksAngularResolution",
@@ -619,7 +647,7 @@ class NorthernTracksDetectorModel(DetectorModel):
         self._angular_resolution = ang_res
         energy_res = NorthernTracksEnergyResolution(mode)
         self._energy_resolution = energy_res
-        self._eff_area = NorthernTracksEffectiveArea(mode)
+        self._eff_area = NorthernTracksEffectiveArea()
 
     def _get_effective_area(self):
         return self._eff_area
@@ -684,6 +712,7 @@ if __name__ == "__main__":
 
         model = cg.generate()
 
+    print(model)
     this_dir = os.path.abspath("")
     sm = pystan.StanModel(
         model_code=model,

@@ -63,7 +63,31 @@ class CodeGenerator(ContextStack, metaclass=ABCMeta):
         pass
 
 
-class Contextable:
+class Comparable:
+    """Mixin class for making objects comparable"""
+
+    ORDER = 0
+
+    def __lt__(self, other):
+        """Allow sorting of Contextables"""
+        other_order = 0
+        if hasattr(other, "ORDER"):
+            other_order = other.ORDER
+        logger.debug("Comparing {} < {}".format(self, other))
+        logger.debug("My order: {}, other order: {}".format(self.ORDER, other_order))  # noqa: E501
+        return self.ORDER < other_order
+
+    def __gt__(self, other):
+        """Allow sorting of Contextables"""
+        other_order = 0
+        if hasattr(other, "ORDER"):
+            other_order = other.ORDER
+        logger.debug("Comparing {} > {}".format(self, other))
+        logger.debug("My order: {}, other order: {}".format(self.ORDER, other_order))  # noqa: E501
+        return self.ORDER > other_order
+
+
+class Contextable(Comparable):
     """
     Mixin class for everything that should be assigned to a certain context
 
@@ -73,13 +97,13 @@ class Contextable:
     """
 
     def __init__(self, at_top=False):
+        Comparable.__init__(self)
         ctx = ContextStack.get_context()
         logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))  # noqa: E501
         ctx.add_object(self, at_top)
 
 
-
-class ToplevelContextable:
+class ToplevelContextable(Comparable):
     """
     Mixin class for everything that should be assigned to the toplevel context
     """
@@ -91,6 +115,7 @@ class ToplevelContextable:
     """
 
     def __init__(self):
+        Comparable.__init__(self)
         ctx = ContextStack.get_context_stack()[0]
         logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))  # noqa: E501
         ctx.add_object(self)
