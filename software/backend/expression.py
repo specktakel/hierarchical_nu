@@ -6,11 +6,11 @@ from .code_generator import Contextable
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Expression", "StanDefCode", "ReturnStatement",
-           "NamedExpression", "TExpression"]
+__all__ = ["Expression", "ReturnStatement",
+           "NamedExpression", "TExpression", "TListTExpression"]
 
 
-class Expression(Contextable, metaclass=ABCMeta):
+class _BaseExpression(Contextable, metaclass=ABCMeta):
     """
     Generic expression
 
@@ -19,7 +19,7 @@ class Expression(Contextable, metaclass=ABCMeta):
     Comes with converters to PyMC3 and Stan Code.
     """
 
-    def __init__(self, inputs: Sequence["TExpression"]):
+    def __init__(self, inputs: Sequence["TExpression"], block_output: bool):
         Contextable.__init__(self)
         logger.debug("Input is of type: {}".format(type(inputs)))
 
@@ -35,13 +35,15 @@ class Expression(Contextable, metaclass=ABCMeta):
             else:
                 logger.debug("Found non Expression of type: {} in input.".format(input))  # noqa: E501
         self._output: List["TExpression"] = []
+        self._block_output = block_output
 
     @property
     def output(self) -> List["TExpression"]:
         return self._output
 
     def add_output(self, output: "TExpression"):
-        self._output.append(output)
+        if not self._block_output:
+            self._output.append(output)
 
     @property
     @abstractmethod
@@ -59,13 +61,15 @@ class Expression(Contextable, metaclass=ABCMeta):
         converted_code: TListStrStanCodeBit = []
 
         for code in self.stan_code:
-            if isinstance(code, Expression):
+            if isinstance(code, _BaseExpression):
                 converted_code.append(code.to_stan())
             else:
                 if isinstance(code, (float, int)):
                     code = str(code)
                 if not isinstance(code, (StanCodeBit, str)):
-                    raise RuntimeError("Code has incompatible type: {}".format(type(code)))  # noqa: E501
+                    msg = "Code has incompatible type: {}".format(type(code))
+                    msg += "\n My code was: {}".format(self.stan_code)
+                    raise RuntimeError(msg)  # noqa: E501
                 converted_code.append(code)
 
         code_bit.add_code(converted_code)
@@ -76,39 +80,109 @@ class Expression(Contextable, metaclass=ABCMeta):
 
 
 # Define type union for stanable types
-TExpression = Union[Expression, str, float, int]
+TExpression = Union[_BaseExpression, str, float, int]
 TListTExpression = List[TExpression]
 
 
-class _GetItemExpression(Expression):
+class Expression(_BaseExpression):
+    def __init__(
+            self,
+            inputs: Sequence["TExpression"],
+            stan_code: TListTExpression,
+            block_output=False):
+        _BaseExpression.__init__(self, inputs, block_output)
+        self._stan_code = stan_code
 
     @property
     def stan_code(self) -> TListTExpression:
-        """See base class"""
-        base_expression = self._inputs[0]
-        key_expression = self._inputs[1]
+        return self._stan_code
 
-        return [base_expression, "[", key_expression, "]"]
+    def __getitem__(self: _BaseExpression, key: TExpression):
 
+        stan_code: TListTExpression = [self, "[", key, "]"]
 
-def getitem_func(self: Expression, key: TExpression):
-    return _GetItemExpression([self, key])
+        return Expression([self, key], stan_code)
 
+    def __lshift__(
+            self: _BaseExpression,
+            other: Union[TExpression, TListTExpression]):
+        logger.debug("Assigning {} to {}".format(other, self))  # noqa: E501
+        logger.debug("My code: {}".format(self.stan_code))  # noqa: E501
+        if not isinstance(other, list):
+            other = [other]
+        stan_code: TListTExpression = [self, " = "]
+        stan_code += other
 
-setattr(_GetItemExpression, "__getitem__", getitem_func)
-setattr(Expression, "__getitem__", getitem_func)
+        if self.output:
+            # Output node is already connected to something
+            logger.debug("Output is connected to: {}".format(self.output))  # noqa: E501
+
+        inputs: TListTExpression = [self]
+        inputs += other
+        expr = Expression(inputs, stan_code)
+
+        #return expr
+
+    def _make_operator_expression(
+            self,
+            other: TExpression,
+            op_code,
+            invert=False):
+        stan_code: TListTExpression = []
+        if invert:
+            stan_code += [other, op_code, self]
+        else:
+            stan_code += [self, op_code, other]
+
+        return Expression([self, other], stan_code)
+
+    def __add__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "+")
+
+    def __radd__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "+", True)
+
+    def __mul__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "*")
+
+    def __rmul__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "*", True)
+
+    def __div__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "/")
+
+    def __rdiv__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "/", True)
+
+    def __sub__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "-")
+
+    def __rsub__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "-", True)
+
+    def __pow__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "**")
+
+    def __rpow__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "**", True)
 
 
 class StringExpression(Expression):
-    @property
-    def stan_code(self) -> TListTExpression:
-        stan_code: TListTExpression = list(self._inputs)
-        return stan_code
+    def __init__(
+            self,
+            inputs: Sequence["TExpression"]
+            ):
+        stan_code = list(inputs)
+        Expression.__init__(self, inputs, stan_code)
 
 
 class NamedExpression(Expression):
-    def __init__(self, inputs: Sequence[TExpression], name: str):
-        Expression.__init__(self, inputs)
+    def __init__(
+            self,
+            inputs: Sequence[TExpression],
+            stan_code: TListTExpression,
+            name: str):
+        Expression.__init__(self, inputs, stan_code)
         self._name = name
 
     @property
@@ -121,30 +195,8 @@ TNamedExpression = Union[NamedExpression, str, float, int]
 
 class ReturnStatement(Expression):
     def __init__(self, inputs: Sequence[TExpression]):
-        Expression.__init__(self, inputs)
-
-    @property
-    def stan_code(self) -> TListTExpression:
         stan_code: TListTExpression = ["return "]
-        stan_code += self._inputs
-        return stan_code
+        stan_code += inputs
+        Expression.__init__(self, inputs, stan_code)
 
 
-class StanDefCode(Expression):
-    """
-    Class representing a variable definition
-    """
-
-    def __init__(self) -> None:
-        Expression.__init__(self, [])
-        self._def_code: TListTExpression = []
-
-    def add_def_code(self, code: TListTExpression):
-        self._def_code += code
-
-    @property
-    def stan_code(self) -> TListTExpression:
-        return self._def_code
-
-    def to_pymc(self):
-        pass

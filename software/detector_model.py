@@ -11,13 +11,12 @@ import scipy.stats as stats  # type: ignore
 
 from cache import Cache
 from backend import (
-    Parameterization,
+    Expression,
     TExpression,
+    TListTExpression,
     VMFParameterization,
     PolynomialParameterization,
     TruncatedParameterization,
-    MixtureParameterization,
-    LognormalParameterization,
     LogParameterization,
     SimpleHistogram,
     ReturnStatement,
@@ -62,13 +61,16 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         pass
 
 
-class Resolution(Parameterization, metaclass=ABCMeta):
+class Resolution(Expression, metaclass=ABCMeta):
     """
     Base class for parameterizing resolutions
     """
 
-    def __init__(self, inputs: Sequence[TExpression]):
-        Parameterization.__init__(self, inputs)
+    def __init__(
+            self,
+            inputs: Sequence[TExpression],
+            stan_code: TListTExpression):
+        Expression.__init__(self, inputs, stan_code)
 
     def __call__(self, **kwargs):
         """
@@ -108,7 +110,7 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real")
-     
+
         self.setup()
 
         with self:
@@ -176,7 +178,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             inputs: List[TExpression]
                 First item is true energy, second item is reco energy
         """
-       
+
         self._mode = mode
         self.poly_params_mu: Sequence = []
         self.poly_params_sd: Sequence = []
@@ -235,13 +237,11 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 sigma[i] << ["eval_poly1d(", log_trunc_e, ", ",
                              "to_vector(", sd_poly_coeffs[i], "))"]
 
+            log_mu_vec = FunctionCall([log_mu], "to_vector")
+            sigma_vec = FunctionCall([sigma], "to_vector")
 
-            log_mu = FunctionCall([log_mu], "to_vector")
-            sigma = FunctionCall([sigma], "to_vector")
-
-
-
-            ReturnStatement([lognorm(log_reco_e, log_mu, sigma, weights)])
+            ReturnStatement(
+                [lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
 
     @staticmethod
     def make_fit_model(n_components):

@@ -19,16 +19,17 @@ class TestStanGenerator(unittest.TestCase):
             with gc:
                 func = UserDefinedFunction("func", ["var1"], ["real"], "real")
                 test2 = ForwardVariableDef("var1", "real")
-                test2 << func(test)
-                test2 << 1
+                test2["i"] << func(test)
+                test2 << ["1+", test]
 
             with fc:
                 Include("dummy")
 
         parsed = cg.parse_recursive(cg.objects)
-        print(parsed)
         sort = sorted(cg.objects, reverse=True)
         self.assertEqual(sort, [fc, dc, gc])
+        print(cg.generate())
+
 
 if __name__ == '__main__':
     unittest.main()

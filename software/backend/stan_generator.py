@@ -1,6 +1,5 @@
 """Module for autogenerating Stan code"""
 from typing import Dict, Iterable, Union
-import pprint
 from .code_generator import (
     CodeGenerator, ToplevelContextSingleton, ContextSingleton,
     ContextStack, Contextable)
@@ -47,7 +46,7 @@ class Include(Contextable):
     def stan_code(self) -> str:
         return "#include " + self._file_name
 
- 
+
 class FunctionsContext(ToplevelContextSingleton):
 
     ORDER = 9

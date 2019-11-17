@@ -1,7 +1,5 @@
-from typing import Union, List, TYPE_CHECKING
+from typing import Union, List
 
-if TYPE_CHECKING:
-    from .expression import StanFunction, StanDefCode
 # Declare a type for a List containing either str or StanCodeBits
 TStrStanCodeBit = Union[str, "StanCodeBit"]
 TListStrStanCodeBit = List[TStrStanCodeBit]
@@ -20,14 +18,6 @@ class StanCodeBit:
     @property
     def code(self) -> str:
         return "".join(self._code)
-
-    def add_function(self, function: "StanFunction") -> None:
-        """Add a StanFunction"""
-        self._functions.append(function)
-
-    def add_definition(self, def_code: "StanDefCode") -> None:
-        """Add a variable definition"""
-        self._def_codes.append(def_code)
 
     def add_code(self, code: TListStrStanCodeBit) -> None:
         for code_bit in code:
