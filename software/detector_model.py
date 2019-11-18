@@ -191,12 +191,23 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 "nt_energy_res",
                 self.n_components,
                 self._mode)
-        UserDefinedFunction.__init__(
-            self,
-            "NorthernTracksEnergyResolution",
-            ["true_energy", "reco_energy"],
-            ["real", "real"],
-            "real")
+        if mode == DistributionMode.PDF:
+            UserDefinedFunction.__init__(
+                self,
+                "NorthernTracksEnergyResolution",
+                ["true_energy", "reco_energy"],
+                ["real", "real"],
+                "real")
+
+        elif mode == DistributionMode.RNG:
+            UserDefinedFunction.__init__(
+                self,
+                "NorthernTracksEnergyResolutionRNG",
+                ["true_energy"],
+                ["real"],
+                "real")
+        else:
+            RuntimeError("This should never happen")
 
         with self:
             truncated_e = TruncatedParameterization(
@@ -240,8 +251,12 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             log_mu_vec = FunctionCall([log_mu], "to_vector")
             sigma_vec = FunctionCall([sigma], "to_vector")
 
-            ReturnStatement(
-                [lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
+            if mode == DistributionMode.PDF:
+                ReturnStatement(
+                    [lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
+            elif mode == DistributionMode.RNG:
+                ReturnStatement(
+                    [lognorm(log_mu_vec, sigma_vec, weights)])
 
     @staticmethod
     def make_fit_model(n_components):
@@ -716,7 +731,7 @@ if __name__ == "__main__":
     this_dir = os.path.abspath("")
     sm = pystan.StanModel(
         model_code=model,
-        include_paths=[os.path.join(this_dir, "../dev/statistical_model/4_tracks_and_cascades/stan/")],
+        include_paths=[os.path.join(this_dir, "../dev/statistical_model/4_tracks_and_cascades/stan/")],  # noqa: E501
         verbose=False)
 
     dir1 = np.array([1, 0, 0])

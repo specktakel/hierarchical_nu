@@ -119,9 +119,7 @@ class Expression(_BaseExpression):
 
         inputs: TListTExpression = [self]
         inputs += other
-        expr = Expression(inputs, stan_code)
-
-        #return expr
+        return Expression(inputs, stan_code)
 
     def _make_operator_expression(
             self,
@@ -198,5 +196,3 @@ class ReturnStatement(Expression):
         stan_code: TListTExpression = ["return "]
         stan_code += inputs
         Expression.__init__(self, inputs, stan_code)
-
-
