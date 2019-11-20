@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["StanGenerator", "UserDefinedFunction",
            "GeneratedQuantitiesContext", "Include",
-           "FunctionsContext", "DataContext", "DefinitionContext"]
+           "FunctionsContext", "DataContext", "DefinitionContext",
+           "ForLoopContext"]
 
 
 def stanify(var: TExpression) -> StanCodeBit:
@@ -32,6 +33,9 @@ def stanify(var: TExpression) -> StanCodeBit:
 
 
 class Include(Contextable):
+
+    ORDER = 10
+
     def __init__(
             self,
             file_name: str):
@@ -44,6 +48,9 @@ class Include(Contextable):
 
 
 class FunctionsContext(ToplevelContextSingleton):
+
+    ORDER = 9
+
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
         self._name = "functions"
@@ -130,6 +137,9 @@ class UserDefinedFunction(Contextable, ContextStack):
 
 
 class DataContext(ToplevelContextSingleton):
+
+    ORDER = 8
+
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
         self._name = "data"
@@ -140,12 +150,18 @@ class TransformedDataContext(ToplevelContextSingleton):
         self._name = "transformed data"
 
 class GeneratedQuantitiesContext(ToplevelContextSingleton):
+
+    ORDER = 7
+
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
         self._name = "generated quantities"
 
 
 class DefinitionContext(ContextSingleton):
+
+    ORDER = 9
+
     def __init__(self):
         ContextSingleton.__init__(self)
         self._name = "__DEFS"
@@ -168,11 +184,11 @@ class StanGenerator(CodeGenerator):
     def parse_recursive(objects):
         logger.debug("Entered recursive parser. Got {} objects".format(len(objects)))  # noqa: E501
         code_tree: Dict[str, str] = {}
-        code_tree["main"] = ""
-        for code_bit in objects:
+
+        for code_bit in sorted(objects, reverse=True):
             logger.debug("Currently parsing: {}".format(code_bit))
             if isinstance(code_bit, ContextStack):
-                # Encountered a new context, parse before continueing
+                # Encountered a new context, parse before continuing
                 objects = code_bit.objects
                 code_tree[code_bit] = StanGenerator.parse_recursive(objects)
             else:
@@ -196,20 +212,23 @@ class StanGenerator(CodeGenerator):
                     code_bit = code_bit.to_stan()
                     logger.debug("Adding: {}".format(type(code_bit)))
                     code = code_bit.code + ";\n"
+                if "main" not in code_tree:
+                    code_tree["main"] = ""
                 code_tree["main"] += code
         return code_tree
 
     @staticmethod
     def walk_code_tree(code_tree) -> str:
         code = ""
-        defs = ""
+        # defs = ""
+        node_order = sorted(code_tree.keys(), reverse=True)
 
-        node_order = list(code_tree.keys())
+        """
         for node in list(node_order):
             if isinstance(node, FunctionsContext):
                 node_order.remove(node)
                 node_order.insert(0, node)
-
+        """
         for node in node_order:
             leaf = code_tree[node]
             if isinstance(leaf, dict):
@@ -217,7 +236,7 @@ class StanGenerator(CodeGenerator):
                 if isinstance(node, DefinitionContext):
                     if len(leaf) != 1:
                         raise RuntimeError("Malformed tree. Definition subtree should have exactly one node.")  # noqa: E501
-                    defs += leaf["main"]
+                    code += leaf["main"] + "\n"
 
                 else:
                     code += node.name + "\n{\n"
@@ -226,11 +245,12 @@ class StanGenerator(CodeGenerator):
             else:
                 code += leaf  # + "\n"
 
-        return defs + "\n" + code
+        return code
 
     def generate(self) -> str:
         logger.debug("Start parsing")
         code_tree = self.parse_recursive(self.objects)
+        # pprint.pprint(code_tree)
         return self.walk_code_tree(code_tree)
 
 

@@ -22,15 +22,19 @@ class TestPolynomialParameterization(unittest.TestCase):
                 result = ForwardVariableDef("result", "real")
                 poly = PolynomialParameterization(
                     test_val, test_poly_coeffs, "test_poly_coeffs")
-                result = AssignValue([poly], result)
+                result << poly 
             code = cg.generate()
 
         sm = pystan.StanModel(
             model_code=code,
-            include_paths=["/home/home2/institut_3b/haack/repos/hierarchical_nu/dev/statistical_model/4_tracks_and_cascades/stan/"],
+            include_paths=["../dev/statistical_model/4_tracks_and_cascades/stan/"],
             verbose=False)
         data = {"test_val": 1}
         fit = sm.sampling(data=data, iter=1, chains=1, algorithm="Fixed_param")
         fit = fit.extract()
         self.assertEqual(fit["result"],
                          np.poly1d(test_poly_coeffs)(data["test_val"]))
+
+
+if __name__ == '__main__':
+    unittest.main()
