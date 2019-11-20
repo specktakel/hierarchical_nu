@@ -3,7 +3,7 @@ This module contains classes for modelling detectors
 """
 
 from abc import ABCMeta, abstractmethod
-from typing import Union, List, Sequence, Tuple
+from typing import List, Sequence, Tuple
 import os
 import pandas as pd  # type: ignore
 import numpy as np  # type: ignore
@@ -11,20 +11,30 @@ import scipy.stats as stats  # type: ignore
 
 from cache import Cache
 from backend import (
-    Parameterization,
+    Expression,
     TExpression,
+    TListTExpression,
     VMFParameterization,
     PolynomialParameterization,
     TruncatedParameterization,
-    MixtureParameterization,
-    LognormalParameterization)
+    LogParameterization,
+    SimpleHistogram,
+    ReturnStatement,
+    UserDefinedFunction,
+    FunctionCall,
+    DistributionMode,
+    LognormalMixture,
+    ForLoopContext,
+    ForwardArrayDef,
+    StanArray)
 from fitting_tools import Residuals
 
-
+import logging
+logger = logging.getLogger(__name__)
 Cache.set_cache_dir(".cache")
 
 
-class EffectiveArea(metaclass=ABCMeta):
+class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
     """
     Implements baseclass for effective areas.
 
@@ -35,21 +45,6 @@ class EffectiveArea(metaclass=ABCMeta):
     The effective areas can depend on multiple quantities (ie. energy,
     direction, time, ..)
     """
-
-    """
-    Parameters on which the effective area depends.
-    Overwrite when subclassing
-    """
-    PARAMETERS: Union[None, List] = None
-
-    def __call__(self, **kwargs):
-        """
-        Return the effective area for variables given in kwargs
-        """
-        if (set(self.PARAMETERS) - kwargs.keys()):
-            raise ValueError("Not all required parameters passed to call")
-        else:
-            self._calc_effective_area(kwargs)
 
     @abstractmethod
     def _calc_effective_area(
@@ -66,15 +61,16 @@ class EffectiveArea(metaclass=ABCMeta):
         pass
 
 
-class Resolution(Parameterization, metaclass=ABCMeta):
+class Resolution(Expression, metaclass=ABCMeta):
     """
     Base class for parameterizing resolutions
     """
 
-    PARAMETERS: Union[None, List] = None
-
-    def __init__(self, inputs: Sequence[TExpression]):
-        Parameterization.__init__(self, inputs)
+    def __init__(
+            self,
+            inputs: Sequence[TExpression],
+            stan_code: TListTExpression):
+        Expression.__init__(self, inputs, stan_code)
 
     def __call__(self, **kwargs):
         """
@@ -97,25 +93,73 @@ class Resolution(Parameterization, metaclass=ABCMeta):
         pass
 
 
-class NorthernTracksEffectiveArea(EffectiveArea):
+class NorthernTracksEffectiveArea(UserDefinedFunction):
     """
     Effective area for the two-year Northern Tracks release:
     https://icecube.wisc.edu/science/data/HE_NuMu_diffuse
 
     """
 
-    def _calc_effective_area(
+    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"  # noqa: E501
+    CACHE_FNAME = "aeff_tracks.npz"
+
+    def __init__(self) -> None:
+        UserDefinedFunction.__init__(
             self,
-            param_dict: dict):
-        pass
+            "NorthernTracksEffectiveArea",
+            ["true_energy", "true_dir"],
+            ["real", "vector"],
+            "real")
 
-    def setup(self):
-        """See base class"""
+        self.setup()
+
+        with self:
+            hist = SimpleHistogram(
+                self._eff_area,
+                [self._tE_bin_edges, self._cosz_bin_edges],
+                "NorthernTracksEffAreaHist")
+
+            # z = cos(theta)
+            cos_dir = "true_dir[3]"
+            # cos_dir = FunctionCall(["true_dir"], "cos")
+            _ = ReturnStatement([hist("true_energy", cos_dir)])
+
+    def setup(self) -> None:
+
+        if self.CACHE_FNAME in Cache:
+            with Cache.open(self.CACHE_FNAME, "rb") as fr:
+                data = np.load(fr)
+                eff_area = data["eff_area"]
+                tE_bin_edges = data["tE_bin_edges"]
+                cosz_bin_edges = data["cosz_bin_edges"]
+        else:
+
+            import h5py  # type: ignore
+            with h5py.File(self.DATA_PATH, 'r') as f:
+                eff_area = f['2010/nu_mu/area'][()]
+                # sum over reco energy
+                eff_area = eff_area.sum(axis=2)
+                # True Energy [GeV]
+                tE_bin_edges = f['2010/nu_mu/bin_edges_0'][:]
+                # cos(zenith)
+                cosz_bin_edges = f['2010/nu_mu/bin_edges_1'][:]
+                # Reco Energy [GeV]
+                # rE_bin_edges = f['2010/nu_mu/bin_edges_2'][:]
+
+                with Cache.open(self.CACHE_FNAME, "wb") as fr:
+                    np.savez(
+                        fr,
+                        eff_area=eff_area,
+                        tE_bin_edges=tE_bin_edges,
+                        cosz_bin_edges=cosz_bin_edges,
+                        )
+
+        self._eff_area = eff_area
+        self._tE_bin_edges = tE_bin_edges
+        self._cosz_bin_edges = cosz_bin_edges
 
 
-class NorthernTracksEnergyResolution(  # type: ignore
-        MixtureParameterization,
-        Resolution):
+class NorthernTracksEnergyResolution(UserDefinedFunction):
 
     """
     Energy resolution for Northern Tracks Sample
@@ -123,17 +167,19 @@ class NorthernTracksEnergyResolution(  # type: ignore
     Data from https://arxiv.org/pdf/1811.07979.pdf
     """
 
-    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"
+    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"  # noqa: E501
     CACHE_FNAME = "energy_reso_tracks.npz"
 
-    def __init__(self, inputs: TExpression) -> None:
+    def __init__(
+            self,
+            mode: DistributionMode = DistributionMode.PDF) -> None:
         """
         Args:
             inputs: List[TExpression]
-                First item is true energy, second item is true
-                position
+                First item is true energy, second item is reco energy
         """
-        Resolution.__init__(self, [inputs])
+
+        self._mode = mode
         self.poly_params_mu: Sequence = []
         self.poly_params_sd: Sequence = []
         self.poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
@@ -141,19 +187,76 @@ class NorthernTracksEnergyResolution(  # type: ignore
         self.n_components = 3
         self.setup()
 
-        truncated_e = TruncatedParameterization(inputs, *self.poly_limits)
-        components = []
-        for i in range(self.n_components):
-            mu = PolynomialParameterization(
-                truncated_e,
-                self.poly_params_mu[i])
-            sd = PolynomialParameterization(
-                truncated_e,
-                self.poly_params_sd[i])
+        lognorm = LognormalMixture(
+                "nt_energy_res",
+                self.n_components,
+                self._mode)
+        if mode == DistributionMode.PDF:
+            UserDefinedFunction.__init__(
+                self,
+                "NorthernTracksEnergyResolution",
+                ["true_energy", "reco_energy"],
+                ["real", "real"],
+                "real")
 
-            components.append(LognormalParameterization(inputs, mu, sd))
+        elif mode == DistributionMode.RNG:
+            UserDefinedFunction.__init__(
+                self,
+                "NorthernTracksEnergyResolutionRNG",
+                ["true_energy"],
+                ["real"],
+                "real")
+        else:
+            RuntimeError("This should never happen")
 
-        MixtureParameterization.__init__(self, inputs, components)
+        with self:
+            truncated_e = TruncatedParameterization(
+                "true_energy", *self.poly_limits)
+            log_trunc_e = LogParameterization(truncated_e)
+            log_reco_e = LogParameterization("reco_energy")
+
+            mu_poly_coeffs = StanArray(
+                "NorthernTracksEnergyResolutionMuPolyCoeffs",
+                "real",
+                self.poly_params_mu)
+
+            sd_poly_coeffs = StanArray(
+                "NorthernTracksEnergyResolutionSdPolyCoeffs",
+                "real",
+                self.poly_params_sd)
+
+            mu = ForwardArrayDef(
+                "mu_e_res",
+                "real",
+                ["[", self.n_components, "]"])
+            sigma = ForwardArrayDef(
+                "sigma_e_res",
+                "real",
+                ["[", self.n_components, "]"])
+
+            weights = StanArray(
+                "NorthernTracksEnergyResolutionMixWeights",
+                "vector",
+                [1./self.n_components]*self.n_components)
+
+            log_mu = FunctionCall([mu], "log")
+
+            with ForLoopContext(1, self.n_components,  "i") as i:
+                mu[i] << ["eval_poly1d(", log_trunc_e, ", ",
+                          "to_vector(", mu_poly_coeffs[i], "))"]
+
+                sigma[i] << ["eval_poly1d(", log_trunc_e, ", ",
+                             "to_vector(", sd_poly_coeffs[i], "))"]
+
+            log_mu_vec = FunctionCall([log_mu], "to_vector")
+            sigma_vec = FunctionCall([sigma], "to_vector")
+
+            if mode == DistributionMode.PDF:
+                ReturnStatement(
+                    [lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
+            elif mode == DistributionMode.RNG:
+                ReturnStatement(
+                    [lognorm(log_mu_vec, sigma_vec, weights)])
 
     @staticmethod
     def make_fit_model(n_components):
@@ -320,7 +423,8 @@ class NorthernTracksEnergyResolution(  # type: ignore
                 model_params += [mu, sigma]
             e_reso = eff_area.sum(axis=1)
             e_reso = e_reso[int(p_i/rebin)*rebin:(int(p_i/rebin)+1)*rebin]
-            e_reso = e_reso.sum(axis=0)/e_reso.sum() / (logrEbins[1]-logrEbins[0])
+            e_reso = e_reso.sum(axis=0)/e_reso.sum()
+            e_reso /= (logrEbins[1]-logrEbins[0])
             fl_ax[i].plot(logrEbins, e_reso)
 
             res = fit_params[param_indices[i]]
@@ -405,6 +509,9 @@ class NorthernTracksEnergyResolution(  # type: ignore
                     poly_params_sd=poly_params_sd,
                     e_min=e_min,
                     e_max=e_max)
+            self.poly_params_mu = poly_params_mu
+            self.poly_params_sd = poly_params_sd
+            self.poly_limits = poly_limits
             self.plot_fit_params(fit_params, rebinned_binc)
             self.plot_parameterizations(tE_binc, rebinned_binc, rE_binc,
                                         fit_params, eff_area)
@@ -420,9 +527,7 @@ class NorthernTracksEnergyResolution(  # type: ignore
         pass
 
 
-class NorthernTracksAngularResolution(  # type: ignore
-        VMFParameterization,
-        Resolution):
+class NorthernTracksAngularResolution(UserDefinedFunction):
     """
     Angular resolution for Northern Tracks Sample
 
@@ -440,21 +545,37 @@ class NorthernTracksAngularResolution(  # type: ignore
     DATA_PATH = "NorthernTracksAngularRes.csv"
     CACHE_FNAME = "angular_reso_tracks.npz"
 
-    def __init__(self, inputs: Tuple[TExpression, TExpression]) -> None:
-        """
-        Args:
-            inputs: List[TExpression]
-                First item is true energy, second item is true
-                position
-        """
-        Resolution.__init__(self, inputs)
-        self.poly_params: Union[None, np.ndarray] = None
-        self.e_min: Union[None, float] = None
-        self.e_max: Union[None, float] = None
+    def __init__(
+            self,
+            mode: DistributionMode = DistributionMode.PDF) -> None:
+        UserDefinedFunction.__init__(
+            self,
+            "NorthernTracksAngularResolution",
+            ["true_energy", "true_dir", "reco_dir"],
+            ["real", "vector", "vector"],
+            "real")
+        self.poly_params: Sequence = []
+        self.e_min: float = float("nan")
+        self.e_max: float = float("nan")
 
         self.setup()
 
-        VMFParameterization.__init__(self, inputs, self._kappa)
+        with self:
+            # Clip true energy
+            clipped_e = TruncatedParameterization(
+                "true_energy",
+                self.e_min,
+                self.e_max)
+
+            clipped_log_e = LogParameterization(clipped_e)
+
+            kappa = PolynomialParameterization(
+                clipped_log_e,
+                self.poly_params,
+                "NorthernTracksAngularResolutionPolyCoeffs")
+            # VMF expects x_obs, x_true
+            vmf = VMFParameterization(["reco_dir", "true_dir"], kappa)
+            _ = ReturnStatement([vmf])
 
     def _calc_resolution(self):
         pass
@@ -479,36 +600,31 @@ class NorthernTracksAngularResolution(  # type: ignore
                 sep=";",
                 decimal=",",
                 header=None,
-                names=["energy", "resolution"],
+                names=["log10energy", "resolution"],
                 )
 
             # Kappa parameter of VMF distribution
             data["kappa"] = 1.38 / np.radians(data.resolution)**2
 
-            self.poly_params = np.polyfit(data.energy, data.kappa, 5)
-            self.e_min = float(data.energy.min())
-            self.e_max = float(data.energy.max())
+            self.poly_params = np.polyfit(data.log10energy, data.kappa, 5)
+            self.e_min = float(data.log10energy.min())
+            self.e_max = float(data.log10energy.max())
 
             # Save polynomial
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
                 np.savez(
                     fr,
                     poly_params=self.poly_params,
-                    e_min=10**data.energy.min(),
-                    e_max=10**data.energy.max())
-
-        # Clip true energy
-        clipped_e = TruncatedParameterization(
-            self._inputs[0],
-            self.e_min,
-            self.e_max)
-
-        self._kappa = PolynomialParameterization(
-            clipped_e,
-            self.poly_params)
+                    e_min=10**data.log10energy.min(),
+                    e_max=10**data.log10energy.max())
 
 
 class DetectorModel(metaclass=ABCMeta):
+
+    def __init__(
+            self,
+            mode: DistributionMode = DistributionMode.PDF):
+        self._mode = mode
 
     @property
     def effective_area(self):
@@ -534,16 +650,22 @@ class DetectorModel(metaclass=ABCMeta):
     def _get_angular_resolution(self):
         self._angular_resolution
 
+
 class NorthernTracksDetectorModel(DetectorModel):
 
-    def __init__(self, true_energy: TExpression, true_direction: TExpression):
+    def __init__(
+            self,
+            mode: DistributionMode = DistributionMode.PDF):
+        DetectorModel.__init__(self, mode)
 
-        self._angular_resolution = NorthernTracksAngularResolution(
-            (true_energy, true_direction))
-        self._energy_resolution = NorthernTracksEnergyResolution(true_energy)
+        ang_res = NorthernTracksAngularResolution(mode)
+        self._angular_resolution = ang_res
+        energy_res = NorthernTracksEnergyResolution(mode)
+        self._energy_resolution = energy_res
+        self._eff_area = NorthernTracksEffectiveArea()
 
     def _get_effective_area(self):
-        pass
+        return self._eff_area
 
     def _get_energy_resolution(self):
         return self._energy_resolution
@@ -554,13 +676,72 @@ class NorthernTracksDetectorModel(DetectorModel):
 
 if __name__ == "__main__":
 
-    e_true = "E_true"
-    pos_true = "pos_true"
+    e_true_name = "e_true"
+    e_reco_name = "e_reco"
+    true_dir_name = "true_dir"
+    reco_dir_name = "reco_dir"
     # ntp = NorthernTracksAngularResolution([e_true, pos_true])
 
     # print(ntp.to_stan())
+    from backend.stan_generator import (
+        StanGenerator, GeneratedQuantitiesContext, DataContext,
+        FunctionsContext, Include)
+    from backend.variable_definitions import ForwardVariableDef
 
-    ntd = NorthernTracksDetectorModel(e_true, pos_true)
-    print(ntd)
-    print(ntd.angular_resolution.to_stan())
-    print(ntd.energy_resolution.to_stan())
+    logging.basicConfig(level=logging.DEBUG)
+    import pystan
+    import numpy as np
+
+    with StanGenerator() as cg:
+
+        with FunctionsContext() as fc:
+            Include("utils.stan")
+            Include("vMF.stan")
+
+        with DataContext() as dc:
+            e_true = ForwardVariableDef(e_true_name, "real")
+            e_reco = ForwardVariableDef(e_reco_name, "real")
+            true_dir = ForwardVariableDef(true_dir_name, "vector[3]")
+            reco_dir = ForwardVariableDef(reco_dir_name, "vector[3]")
+
+        with GeneratedQuantitiesContext() as gq:
+            ntd = NorthernTracksDetectorModel()
+
+            """
+            ang_res_result = ForwardVariableDef("ang_res", "real")
+            ang_res = FunctionCall(
+                [e_reco], ntd.angular_resolution, 1)
+            ang_res_result = AssignValue(
+                [ang_res], ang_res_result)
+
+            """
+            e_res_result = ForwardVariableDef("e_res", "real")
+            e_res_result << ntd.energy_resolution(e_true, e_reco)
+
+            ang_res_result = ForwardVariableDef("ang_res", "real")
+            ang_res_result << ntd.angular_resolution(
+                e_true, true_dir, reco_dir)
+
+            eff_area_result = ForwardVariableDef("eff_area", "real")
+            eff_area_result << ntd.effective_area(e_true, true_dir)
+
+        model = cg.generate()
+
+    print(model)
+    this_dir = os.path.abspath("")
+    sm = pystan.StanModel(
+        model_code=model,
+        include_paths=[os.path.join(this_dir, "../dev/statistical_model/4_tracks_and_cascades/stan/")],  # noqa: E501
+        verbose=False)
+
+    dir1 = np.array([1, 0, 0])
+    dir2 = np.array([1, 0.1, 0])
+    dir2 /= np.linalg.norm(dir2)
+
+    data = {
+        "e_true": 1E5,
+        "e_reco": 1E5,
+        "true_dir": dir1,
+        "reco_dir": dir2}
+    fit = sm.sampling(data=data, iter=1, chains=1, algorithm="Fixed_param")
+    print(fit)
