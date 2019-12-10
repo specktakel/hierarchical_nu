@@ -4,7 +4,6 @@ from ..parameterizations import PolynomialParameterization
 from ..stan_generator import (
     StanGenerator, GeneratedQuantitiesContext, DataContext,
     FunctionsContext, Include)
-from ..operations import AssignValue
 from ..variable_definitions import ForwardVariableDef
 import numpy as np
 
@@ -13,16 +12,16 @@ class TestPolynomialParameterization(unittest.TestCase):
 
     def test_polynomial_stan_code(self):
         with StanGenerator() as cg:
-            with FunctionsContext() as fc:
+            with FunctionsContext():
                 _ = Include("utils.stan")
-            with DataContext() as dc:
+            with DataContext():
                 test_val = ForwardVariableDef("test_val", "real")
-            with GeneratedQuantitiesContext() as gq:
+            with GeneratedQuantitiesContext():
                 test_poly_coeffs = [1, 2, 3, 4]
                 result = ForwardVariableDef("result", "real")
                 poly = PolynomialParameterization(
                     test_val, test_poly_coeffs, "test_poly_coeffs")
-                result << poly 
+                result << poly
             code = cg.generate()
 
         sm = pystan.StanModel(
