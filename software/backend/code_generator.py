@@ -15,6 +15,7 @@ class ContextStack:
     def __init__(self):
         self._objects: List[Any] = []  # TODO: Stricter type checking
         self._name: str = ""
+        self._stack_id = len(ContextStack.STACK)
 
     def __enter__(self):
         ContextStack.STACK.append(self)
@@ -22,6 +23,10 @@ class ContextStack:
 
     def __exit__(self, type, value, traceback):
         ContextStack.STACK.pop()
+
+    @property
+    def stack_id(self):
+        return self._stack_id
 
     @classmethod
     def get_context(cls):
@@ -98,27 +103,25 @@ class Contextable(Comparable):
 
     def __init__(self, at_top=False):
         Comparable.__init__(self)
-        ctx = ContextStack.get_context()
-        logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))  # noqa: E501
-        ctx.add_object(self, at_top)
+        self._ctx = ContextStack.get_context()
+        logger.debug("Adding object of type {} to context: {}".format(type(self), self._ctx))  # noqa: E501
+        self._ctx.add_object(self, at_top)
+
+    @property
+    def context_id(self):
+        return self._ctx.stack_id
 
 
-class ToplevelContextable(Comparable):
+class ToplevelContextable(Contextable):
     """
     Mixin class for everything that should be assigned to the toplevel context
-    """
-    """
-    def __new__(cls, *args, **kwargs):
-        inst = object.__new__(cls)
-        ContextStack.get_context_stack()[0].add_object(inst)
-        return inst
     """
 
     def __init__(self):
         Comparable.__init__(self)
-        ctx = ContextStack.get_context_stack()[0]
-        logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))  # noqa: E501
-        ctx.add_object(self)
+        self._ctx = ContextStack.get_context_stack()[0]
+        logger.debug("Adding object of type {} to context: {}".format(type(self), self._ctx))  # noqa: E501
+        self._ctx.add_object(self)
 
 
 class ContextSingleton(Contextable, ContextStack):
@@ -141,8 +144,21 @@ class ContextSingleton(Contextable, ContextStack):
                 return
         Contextable.__init__(self)
 
+    def __eq__(self, other):
+        if not isinstance(self, ContextSingleton):
+            raise NotImplementedError()
 
-class ToplevelContextSingleton(ToplevelContextable, ContextStack):
+        if type(self) != type(other):
+            return False
+
+        return self.context_id == other.context_id
+
+    def __hash__(self):
+        return self.context_id
+
+
+class ToplevelContextSingleton(
+        ToplevelContextable, ContextSingleton, ContextStack):
     """
     Toplevel context singleton class.
 
@@ -161,72 +177,3 @@ class ToplevelContextSingleton(ToplevelContextable, ContextStack):
                 self.__dict__ = obj.__dict__
                 return
         ToplevelContextable.__init__(self)
-
-
-if __name__ == "__main__":
-    class TestClass(ContextSingleton):
-        def __init__(self):
-            ContextSingleton.__init__(self)
-            self._name = "Test"
-
-        @property
-        def name(self):
-            return self._name
-
-    class TestClass2(ContextSingleton):
-        def __init__(self):
-            ContextSingleton.__init__(self)
-            self._name = "Test2"
-
-        @property
-        def name(self):
-            return self._name
-
-    class TestClass3(ToplevelContextSingleton):
-        def __init__(self):
-            ContextSingleton.__init__(self)
-            self._name = "Test3"
-
-        @property
-        def name(self):
-            return self._name
-
-    class MyGen(CodeGenerator):
-
-        def __init__(self):
-            CodeGenerator.__init__(self)
-            self._name = "TOPLEVEL"
-
-        @property
-        def name(self):
-            return self._name
-
-        def add_object(self, object):
-            self._objects.append(object)
-
-        def generate(self):
-            pass
-
-    logging.basicConfig(level=logging.INFO)
-
-    with MyGen() as cg:
-        print("Entering TestClass context")
-        with TestClass() as test:
-            test.data = "test"
-            with TestClass2() as test2:
-                test2.data = "test2"
-        print("Second context")
-        with TestClass() as test:
-            print(test.data)
-            with TestClass2() as test2:
-                print(test2.data)
-        print("Third context")
-        with TestClass() as test:
-            print(test.data)
-            with TestClass3() as test3:
-                test3.data = "test"
-
-        with TestClass2() as test:
-            with TestClass3() as test2:
-                print(hasattr(test, "data"))
-                print(hasattr(test2, "data"))
