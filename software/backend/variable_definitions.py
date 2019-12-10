@@ -96,7 +96,7 @@ class StanArray(VariableDef):
         shape_str = "[" + ",".join([str(shape_d)
                                     for shape_d in self._array_data.shape])
         shape_str += "]"
-        if self._type == "vector":
+        if self._type in ["vector"]:
             stan_code += shape_str + " " + self.name
 
         else:

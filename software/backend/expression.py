@@ -6,7 +6,7 @@ from .code_generator import Contextable
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Expression", "ReturnStatement",
+__all__ = ["Expression", "ReturnStatement", "StringExpression",
            "NamedExpression", "TExpression", "TListTExpression"]
 
 

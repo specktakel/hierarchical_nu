@@ -25,8 +25,10 @@ from backend import (
     DistributionMode,
     LognormalMixture,
     ForLoopContext,
+    ForwardVariableDef,
     ForwardArrayDef,
-    StanArray)
+    StanArray,
+    StringExpression)
 from fitting_tools import Residuals
 
 import logging
@@ -187,10 +189,18 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         self.n_components = 3
         self.setup()
 
+        if mode == DistributionMode.PDF:
+            mixture_name = "nt_energy_res_mix"
+        elif mode == DistributionMode.RNG:
+            mixture_name = "nt_energy_res_mix_rng"
+        else:
+            RuntimeError("This should never happen")
+
         lognorm = LognormalMixture(
-                "nt_energy_res",
+                mixture_name,
                 self.n_components,
                 self._mode)
+
         if mode == DistributionMode.PDF:
             UserDefinedFunction.__init__(
                 self,
@@ -202,10 +212,11 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         elif mode == DistributionMode.RNG:
             UserDefinedFunction.__init__(
                 self,
-                "NorthernTracksEnergyResolutionRNG",
+                "NorthernTracksEnergyResolution_rng",
                 ["true_energy"],
                 ["real"],
                 "real")
+            mixture_name = "nt_energy_res_mix_rng"
         else:
             RuntimeError("This should never happen")
 
@@ -213,7 +224,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             truncated_e = TruncatedParameterization(
                 "true_energy", *self.poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
-            log_reco_e = LogParameterization("reco_energy")
+
 
             mu_poly_coeffs = StanArray(
                 "NorthernTracksEnergyResolutionMuPolyCoeffs",
@@ -234,11 +245,20 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 "real",
                 ["[", self.n_components, "]"])
 
+
+            weights = ForwardVariableDef(
+                "weights",
+                "vector["+str(self.n_components)+"]")
+
+            with ForLoopContext(1, self.n_components, "i") as i:
+                weights[i] << StringExpression(["1.0/", self.n_components])
+
+            """
             weights = StanArray(
                 "NorthernTracksEnergyResolutionMixWeights",
-                "vector",
-                [1./self.n_components]*self.n_components)
-
+                "simplex",
+                ["1./self.n_components]*self.n_components)
+            """
             log_mu = FunctionCall([mu], "log")
 
             with ForLoopContext(1, self.n_components,  "i") as i:
@@ -252,6 +272,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             sigma_vec = FunctionCall([sigma], "to_vector")
 
             if mode == DistributionMode.PDF:
+                log_reco_e = LogParameterization("reco_energy")
                 ReturnStatement(
                     [lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
             elif mode == DistributionMode.RNG:
@@ -560,10 +581,10 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
         else:
             UserDefinedFunction.__init__(
                 self,
-                "NorthernTracksAngularResolutionRNG",
+                "NorthernTracksAngularResolution_rng",
                 ["true_energy", "true_dir"],
                 ["real", "vector"],
-                "real")
+                "vector")
 
         self.poly_params: Sequence = []
         self.e_min: float = float("nan")
@@ -591,7 +612,7 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
                     ["reco_dir", "true_dir"], kappa, mode)
 
             elif mode == DistributionMode.RNG:
-                vmf = VMFParameterization(["reco_dir"], kappa, mode)
+                vmf = VMFParameterization(["true_dir"], kappa, mode)
 
             ReturnStatement([vmf])
 
