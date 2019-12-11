@@ -225,7 +225,6 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 "true_energy", *self.poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
 
-
             mu_poly_coeffs = StanArray(
                 "NorthernTracksEnergyResolutionMuPolyCoeffs",
                 "real",
@@ -245,20 +244,15 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 "real",
                 ["[", self.n_components, "]"])
 
-
             weights = ForwardVariableDef(
                 "weights",
                 "vector["+str(self.n_components)+"]")
 
+            # for some reason stan complains about weights not adding to 1 if
+            # implementing this via StanArray
             with ForLoopContext(1, self.n_components, "i") as i:
                 weights[i] << StringExpression(["1.0/", self.n_components])
 
-            """
-            weights = StanArray(
-                "NorthernTracksEnergyResolutionMixWeights",
-                "simplex",
-                ["1./self.n_components]*self.n_components)
-            """
             log_mu = FunctionCall([mu], "log")
 
             with ForLoopContext(1, self.n_components,  "i") as i:
@@ -691,6 +685,14 @@ class DetectorModel(metaclass=ABCMeta):
 
 
 class NorthernTracksDetectorModel(DetectorModel):
+    """
+    Implements the detector model for the NT sample
+
+    Parameters:
+        mode: DistributionMode
+            Set mode to either RNG or PDF
+
+    """
 
     def __init__(
             self,
@@ -725,10 +727,9 @@ if __name__ == "__main__":
     from backend.stan_generator import (
         StanGenerator, GeneratedQuantitiesContext, DataContext,
         FunctionsContext, Include)
-    from backend.variable_definitions import ForwardVariableDef
 
     logging.basicConfig(level=logging.DEBUG)
-    import pystan
+    import pystan  # type: ignore
     import numpy as np
 
     with StanGenerator() as cg:

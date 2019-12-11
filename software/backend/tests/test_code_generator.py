@@ -1,45 +1,44 @@
 import unittest
 from ..code_generator import (
-    ContextSingleton, ToplevelContextSingleton, CodeGenerator)
+    ContextSingleton, ToplevelContextSingleton, CodeGenerator, 
+    NamedContextSingleton)
+from ..baseclasses import NamedObject
+import logging
 
 
-class TestClass(ContextSingleton):
+class TestClass(ContextSingleton, NamedObject):
     ORDER = 0
 
     def __init__(self):
         ContextSingleton.__init__(self)
         self._name = "Test"
 
-    @property
-    def name(self):
-        return self._name
 
-
-class TestClass2(ContextSingleton):
+class TestClass2(ContextSingleton, NamedObject):
     ORDER = 1
 
     def __init__(self):
         ContextSingleton.__init__(self)
         self._name = "Test2"
 
-    @property
-    def name(self):
-        return self._name
 
-
-class TestClass3(ToplevelContextSingleton):
+class TestClass3(ToplevelContextSingleton, NamedObject):
     ORDER = 3
 
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
         self._name = "Test3"
 
-    @property
-    def name(self):
-        return self._name
+
+class TestClass4(NamedContextSingleton):
+    ORDER = 1
+
+    def __init__(self, name):
+        NamedContextSingleton.__init__(self)
+        self._name = name
 
 
-class MyGen(CodeGenerator):
+class MyGen(CodeGenerator, NamedObject):
 
     def __init__(self):
         CodeGenerator.__init__(self)
@@ -66,8 +65,10 @@ class TestContextSingleton(unittest.TestCase):
                     test4.data = "baz"
 
         self.assertEqual(test, test2)
+        self.assertEqual(test.__dict__, test2.__dict__)
         self.assertNotEqual(test, test3)
-        self.assertNotEqual(test4, test)
+        self.assertNotEqual(test.__dict__, test3.__dict__)
+        self.assertNotEqual(test4.__dict__, test.__dict__)
 
     def test_toplevel_context_singleton(self):
         with MyGen():            
@@ -87,6 +88,18 @@ class TestContextSingleton(unittest.TestCase):
 
         self.assertGreater(test2, test)
 
+    def test_named_context_singleton(self):
+        with MyGen():
+            test = TestClass4("foo")
+            test2 = TestClass4("bar")
+            test3 = TestClass4("bar")
+
+        self.assertNotEqual(test, test2)
+        self.assertEqual(test2, test3)
+
+
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     unittest.main()

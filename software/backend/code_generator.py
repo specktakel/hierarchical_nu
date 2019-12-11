@@ -1,6 +1,8 @@
 from typing import List, Any
 from abc import ABCMeta, abstractmethod
 import logging
+import hashlib
+from .baseclasses import NamedObject
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +96,10 @@ class Comparable:
 
 class Contextable(Comparable):
     """
-    Mixin class for everything that should be assigned to a certain context
+    Mixin class for everything that should be assigned to a certain context.
+
+    On instantiation, this class fetches the context on top of the context
+    stack and adds itself to that context.
 
     Parameters:
         at_top: bool
@@ -115,6 +120,9 @@ class Contextable(Comparable):
 class ToplevelContextable(Contextable):
     """
     Mixin class for everything that should be assigned to the toplevel context
+
+    On instantiation, this class fetches the context on top of the context
+    stack and adds itself to the top of that context.
     """
 
     def __init__(self):
@@ -137,12 +145,25 @@ class ContextSingleton(Contextable, ContextStack):
     def __init__(self):
         ContextStack.__init__(self)
         context = ContextStack.get_context()
+
+        # If no object of the same type is in the context, initialize
+        # Contextable
+        if not self._check_context_and_set_dict(context):
+            Contextable.__init__(self)
+
+    def _check_context_and_set_dict(self, context) -> bool:
+        """
+        Check the given context for an object of type `cls' and copy its dict.
+
+        If no object of type `cls` is on the context stack, return `None`
+        """
+
         for obj in context.objects:
-            if isinstance(obj, type(self)):
-                logger.info("Object of type {} already on stack".format(type(self)))  # noqa: E501
+            if type(obj) == type(self):
+                logger.info("Object of type {} already on stack".format(self))  # noqa: E501
                 self.__dict__ = obj.__dict__
-                return
-        Contextable.__init__(self)
+                return True
+        return False
 
     def __eq__(self, other):
         if not isinstance(self, ContextSingleton):
@@ -171,9 +192,38 @@ class ToplevelContextSingleton(
     def __init__(self):
         ContextStack.__init__(self)
         context = ContextStack.get_context_stack()[0]
+
+        if not self._check_context_and_set_dict(context):
+            ToplevelContextable.__init__(self)
+
+
+class NamedContextSingleton(ContextSingleton, NamedObject):
+    """
+    Named context singleton class
+
+    Only one instance of this object with a given name can exist
+    within a given context
+    """
+
+    def _check_context_and_set_dict(self, context) -> bool:
+        """
+        Check the given context for an object of type `cls' and copy its dict.
+
+        If no object of type `cls` is on the context stack, return `None`
+        """
+
         for obj in context.objects:
-            if isinstance(obj, type(self)):
-                logger.info("Object of type {} already on stack".format(type(self)))  # noqa: E501
+            if (type(obj) == type(self)) and (obj.name == self.name):
+                logger.info("Object of type {} already on stack".format(self))  # noqa: E501
                 self.__dict__ = obj.__dict__
-                return
-        ToplevelContextable.__init__(self)
+                return True
+        return False
+
+    def __eq__(self, other):
+        return super().__eq__(other) and (self.name == other.name)
+
+    def __hash__(self):
+        hash_gen = hashlib.sha256()
+        hash_gen.update(str(self.context_id).encode())
+        hash_gen.update(self.name.encode())
+        return int.from_bytes(hash_gen.digest(), "big")

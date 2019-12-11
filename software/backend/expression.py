@@ -3,6 +3,7 @@ from typing import Union, Sequence, List
 import logging
 from .stan_code import StanCodeBit, TListStrStanCodeBit
 from .code_generator import Contextable
+from .baseclasses import NamedObject
 
 logger = logging.getLogger(__name__)
 
@@ -159,10 +160,10 @@ class Expression(_BaseExpression):
         return self._make_operator_expression(other, "-", True)
 
     def __pow__(self: "Expression", other: TExpression) -> "Expression":
-        return self._make_operator_expression(other, "**")
+        return self._make_operator_expression(other, "^")
 
     def __rpow__(self: "Expression", other: TExpression) -> "Expression":
-        return self._make_operator_expression(other, "**", True)
+        return self._make_operator_expression(other, "^", True)
 
 
 class StringExpression(Expression):
@@ -174,7 +175,7 @@ class StringExpression(Expression):
         Expression.__init__(self, inputs, stan_code)
 
 
-class NamedExpression(Expression):
+class NamedExpression(Expression, NamedObject):
     def __init__(
             self,
             inputs: Sequence[TExpression],
@@ -182,10 +183,6 @@ class NamedExpression(Expression):
             name: str):
         Expression.__init__(self, inputs, stan_code)
         self._name = name
-
-    @property
-    def name(self):
-        return self._name
 
 
 TNamedExpression = Union[NamedExpression, str, float, int]

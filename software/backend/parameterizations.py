@@ -255,7 +255,6 @@ class LognormalMixture(UserDefinedFunction):
         else:
             raise RuntimeError("This should not happen")
 
-
         UserDefinedFunction.__init__(
             self, name, val_names, val_types, "real")
 
