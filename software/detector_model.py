@@ -161,6 +161,71 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
         self._cosz_bin_edges = cosz_bin_edges
 
 
+class CascadesNuECCEffectiveArea(UserDefinedFunction):
+    """
+    Effective area for the MESE cascade release:
+    https://icecube.wisc.edu/science/data/HEnu_above1tev
+
+    """
+
+    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_cascades_HESE/effective_area.HESE.nue.CC.txt"
+    CACHE_FNAME = "aeff_cascades_nue_cc.npz"
+
+    def __init__(self) -> None:
+        UserDefinedFunction.__init__(
+            self,
+            "CascadesNuECCEffectiveArea",
+            ["true_energy", "true_dir"],
+            ["real", "vector"],
+            "real")
+
+        self.setup()
+
+        with self:
+            hist = SimpleHistogram(
+                self._eff_area,
+                [self._tE_bin_edges, self._cosz_bin_edges],
+                "CascadesNuECCEffAreaHist")
+
+            # z = cos(theta)
+            cos_dir = "true_dir[3]"
+            # cos_dir = FunctionCall(["true_dir"], "cos")
+            _ = ReturnStatement([hist("true_energy", cos_dir)])
+
+    def setup(self) -> None:
+
+        if self.CACHE_FNAME in Cache:
+            with Cache.open(self.CACHE_FNAME, "rb") as fr:
+                data = np.load(fr)
+                eff_area = data["eff_area"]
+                tE_bin_edges = data["tE_bin_edges"]
+                cosz_bin_edges = data["cosz_bin_edges"]
+        else:
+            infile = np.genfromtxt(self.DATA_PATH, skip_header=1)
+            e_bin_edges_low = infile[:, 0]
+            e_bin_edges_high = infile[:, 1]
+            tE_bin_edges = np.unique(np.concatenate((e_bin_edges_low, e_bin_edges_high)))
+            tE_bin_edges = np.power(10, tE_bin_edges)
+
+            costh_bin_edges_low = infile[:, 2]
+            costh_bin_edges_high = infile[:, 3]
+            cosz_bin_edges = np.unique(np.concatenate((costh_bin_edges_low, costh_bin_edges_high)))
+
+            eff_area = infile[:, 4].reshape(len(tE_bin_edges)-1, len(cosz_bin_edges)-1)
+
+            with Cache.open(self.CACHE_FNAME, "wb") as fr:
+                np.savez(
+                    fr,
+                    eff_area=eff_area,
+                    tE_bin_edges=tE_bin_edges,
+                    cosz_bin_edges=cosz_bin_edges,
+                    )
+
+        self._eff_area = eff_area
+        self._tE_bin_edges = tE_bin_edges
+        self._cosz_bin_edges = cosz_bin_edges
+
+
 class NorthernTracksEnergyResolution(UserDefinedFunction):
 
     """
