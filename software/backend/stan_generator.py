@@ -158,6 +158,9 @@ class DataContext(ToplevelContextSingleton):
         self._name = "data"
 
 class TransformedDataContext(ToplevelContextSingleton):
+
+    ORDER = 7.5
+
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
         self._name = "transformed data"
