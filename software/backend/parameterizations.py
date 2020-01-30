@@ -246,9 +246,14 @@ class LognormalMixture(UserDefinedFunction):
         self.sigmas = StringExpression(["sigmas"])
         self.weights = StringExpression(["weights"])
 
-        val_names = ["x", "means", "sigmas", "weights"]
-
-        val_types = ["real", "vector", "vector", "vector"]
+        if mode == DistributionMode.PDF:
+            val_names = ["x", "means", "sigmas", "weights"]
+            val_types = ["real", "vector", "vector", "vector"]
+        elif mode == DistributionMode.RNG:
+            val_names = ["means", "sigmas", "weights"]
+            val_types = ["vector", "vector", "vector"]
+        else:
+            raise RuntimeError("This should not happen")
 
         UserDefinedFunction.__init__(
             self, name, val_names, val_types, "real")
@@ -266,7 +271,7 @@ class LognormalMixture(UserDefinedFunction):
 
             index << ["categorical_rng(", self.weights, ")"]
             distribution = LognormalParameterization(
-                    "x",
+                    [],
                     self.means[index],
                     self.sigmas[index],
                     mode=DistributionMode.RNG)

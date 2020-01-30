@@ -25,8 +25,10 @@ from backend import (
     DistributionMode,
     LognormalMixture,
     ForLoopContext,
+    ForwardVariableDef,
     ForwardArrayDef,
-    StanArray)
+    StanArray,
+    StringExpression)
 from fitting_tools import Residuals
 
 import logging
@@ -187,10 +189,18 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         self.n_components = 3
         self.setup()
 
+        if mode == DistributionMode.PDF:
+            mixture_name = "nt_energy_res_mix"
+        elif mode == DistributionMode.RNG:
+            mixture_name = "nt_energy_res_mix_rng"
+        else:
+            RuntimeError("This should never happen")
+
         lognorm = LognormalMixture(
-                "nt_energy_res",
+                mixture_name,
                 self.n_components,
                 self._mode)
+
         if mode == DistributionMode.PDF:
             UserDefinedFunction.__init__(
                 self,
@@ -202,10 +212,11 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         elif mode == DistributionMode.RNG:
             UserDefinedFunction.__init__(
                 self,
-                "NorthernTracksEnergyResolutionRNG",
+                "NorthernTracksEnergyResolution_rng",
                 ["true_energy"],
                 ["real"],
                 "real")
+            mixture_name = "nt_energy_res_mix_rng"
         else:
             RuntimeError("This should never happen")
 
@@ -213,7 +224,6 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             truncated_e = TruncatedParameterization(
                 "true_energy", *self.poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
-            log_reco_e = LogParameterization("reco_energy")
 
             mu_poly_coeffs = StanArray(
                 "NorthernTracksEnergyResolutionMuPolyCoeffs",
@@ -234,10 +244,14 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 "real",
                 ["[", self.n_components, "]"])
 
-            weights = StanArray(
-                "NorthernTracksEnergyResolutionMixWeights",
-                "vector",
-                [1./self.n_components]*self.n_components)
+            weights = ForwardVariableDef(
+                "weights",
+                "vector["+str(self.n_components)+"]")
+
+            # for some reason stan complains about weights not adding to 1 if
+            # implementing this via StanArray
+            with ForLoopContext(1, self.n_components, "i") as i:
+                weights[i] << StringExpression(["1.0/", self.n_components])
 
             log_mu = FunctionCall([mu], "log")
 
@@ -252,6 +266,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             sigma_vec = FunctionCall([sigma], "to_vector")
 
             if mode == DistributionMode.PDF:
+                log_reco_e = LogParameterization("reco_energy")
                 ReturnStatement(
                     [lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
             elif mode == DistributionMode.RNG:
@@ -548,12 +563,23 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
     def __init__(
             self,
             mode: DistributionMode = DistributionMode.PDF) -> None:
-        UserDefinedFunction.__init__(
-            self,
-            "NorthernTracksAngularResolution",
-            ["true_energy", "true_dir", "reco_dir"],
-            ["real", "vector", "vector"],
-            "real")
+
+        if mode == DistributionMode.PDF:
+
+            UserDefinedFunction.__init__(
+                self,
+                "NorthernTracksAngularResolution",
+                ["true_energy", "true_dir", "reco_dir"],
+                ["real", "vector", "vector"],
+                "real")
+        else:
+            UserDefinedFunction.__init__(
+                self,
+                "NorthernTracksAngularResolution_rng",
+                ["true_energy", "true_dir"],
+                ["real", "vector"],
+                "vector")
+
         self.poly_params: Sequence = []
         self.e_min: float = float("nan")
         self.e_max: float = float("nan")
@@ -573,9 +599,16 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
                 clipped_log_e,
                 self.poly_params,
                 "NorthernTracksAngularResolutionPolyCoeffs")
-            # VMF expects x_obs, x_true
-            vmf = VMFParameterization(["reco_dir", "true_dir"], kappa)
-            _ = ReturnStatement([vmf])
+
+            if mode == DistributionMode.PDF:
+                # VMF expects x_obs, x_true
+                vmf = VMFParameterization(
+                    ["reco_dir", "true_dir"], kappa, mode)
+
+            elif mode == DistributionMode.RNG:
+                vmf = VMFParameterization(["true_dir"], kappa, mode)
+
+            ReturnStatement([vmf])
 
     def _calc_resolution(self):
         pass
@@ -652,6 +685,14 @@ class DetectorModel(metaclass=ABCMeta):
 
 
 class NorthernTracksDetectorModel(DetectorModel):
+    """
+    Implements the detector model for the NT sample
+
+    Parameters:
+        mode: DistributionMode
+            Set mode to either RNG or PDF
+
+    """
 
     def __init__(
             self,
@@ -686,10 +727,9 @@ if __name__ == "__main__":
     from backend.stan_generator import (
         StanGenerator, GeneratedQuantitiesContext, DataContext,
         FunctionsContext, Include)
-    from backend.variable_definitions import ForwardVariableDef
 
     logging.basicConfig(level=logging.DEBUG)
-    import pystan
+    import pystan  # type: ignore
     import numpy as np
 
     with StanGenerator() as cg:

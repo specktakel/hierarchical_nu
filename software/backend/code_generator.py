@@ -1,6 +1,8 @@
 from typing import List, Any
 from abc import ABCMeta, abstractmethod
 import logging
+import hashlib
+from .baseclasses import NamedObject
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,7 @@ class ContextStack:
     def __init__(self):
         self._objects: List[Any] = []  # TODO: Stricter type checking
         self._name: str = ""
+        self._stack_id = len(ContextStack.STACK)
 
     def __enter__(self):
         ContextStack.STACK.append(self)
@@ -22,6 +25,10 @@ class ContextStack:
 
     def __exit__(self, type, value, traceback):
         ContextStack.STACK.pop()
+
+    @property
+    def stack_id(self):
+        return self._stack_id
 
     @classmethod
     def get_context(cls):
@@ -89,7 +96,10 @@ class Comparable:
 
 class Contextable(Comparable):
     """
-    Mixin class for everything that should be assigned to a certain context
+    Mixin class for everything that should be assigned to a certain context.
+
+    On instantiation, this class fetches the context on top of the context
+    stack and adds itself to that context.
 
     Parameters:
         at_top: bool
@@ -98,27 +108,28 @@ class Contextable(Comparable):
 
     def __init__(self, at_top=False):
         Comparable.__init__(self)
-        ctx = ContextStack.get_context()
-        logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))  # noqa: E501
-        ctx.add_object(self, at_top)
+        self._ctx = ContextStack.get_context()
+        logger.debug("Adding object of type {} to context: {}".format(type(self), self._ctx))  # noqa: E501
+        self._ctx.add_object(self, at_top)
+
+    @property
+    def context_id(self):
+        return self._ctx.stack_id
 
 
-class ToplevelContextable(Comparable):
+class ToplevelContextable(Contextable):
     """
     Mixin class for everything that should be assigned to the toplevel context
-    """
-    """
-    def __new__(cls, *args, **kwargs):
-        inst = object.__new__(cls)
-        ContextStack.get_context_stack()[0].add_object(inst)
-        return inst
+
+    On instantiation, this class fetches the context on top of the context
+    stack and adds itself to the top of that context.
     """
 
     def __init__(self):
         Comparable.__init__(self)
-        ctx = ContextStack.get_context_stack()[0]
-        logger.debug("Adding object of type {} to context: {}".format(type(self), ctx))  # noqa: E501
-        ctx.add_object(self)
+        self._ctx = ContextStack.get_context_stack()[0]
+        logger.debug("Adding object of type {} to context: {}".format(type(self), self._ctx))  # noqa: E501
+        self._ctx.add_object(self)
 
 
 class ContextSingleton(Contextable, ContextStack):
@@ -134,15 +145,41 @@ class ContextSingleton(Contextable, ContextStack):
     def __init__(self):
         ContextStack.__init__(self)
         context = ContextStack.get_context()
+
+        # If no object of the same type is in the context, initialize
+        # Contextable
+        if not self._check_context_and_set_dict(context):
+            Contextable.__init__(self)
+
+    def _check_context_and_set_dict(self, context) -> bool:
+        """
+        Check the given context for an object of type `cls' and copy its dict.
+
+        If no object of type `cls` is on the context stack, return `None`
+        """
+
         for obj in context.objects:
-            if isinstance(obj, type(self)):
-                logger.info("Object of type {} already on stack".format(type(self)))  # noqa: E501
+            if type(obj) == type(self):
+                logger.info("Object of type {} already on stack".format(self))  # noqa: E501
                 self.__dict__ = obj.__dict__
-                return
-        Contextable.__init__(self)
+                return True
+        return False
+
+    def __eq__(self, other):
+        if not isinstance(self, ContextSingleton):
+            raise NotImplementedError()
+
+        if type(self) != type(other):
+            return False
+
+        return self.context_id == other.context_id
+
+    def __hash__(self):
+        return self.context_id
 
 
-class ToplevelContextSingleton(ToplevelContextable, ContextStack):
+class ToplevelContextSingleton(
+        ToplevelContextable, ContextSingleton, ContextStack):
     """
     Toplevel context singleton class.
 
@@ -155,78 +192,38 @@ class ToplevelContextSingleton(ToplevelContextable, ContextStack):
     def __init__(self):
         ContextStack.__init__(self)
         context = ContextStack.get_context_stack()[0]
+
+        if not self._check_context_and_set_dict(context):
+            ToplevelContextable.__init__(self)
+
+
+class NamedContextSingleton(ContextSingleton, NamedObject):
+    """
+    Named context singleton class
+
+    Only one instance of this object with a given name can exist
+    within a given context
+    """
+
+    def _check_context_and_set_dict(self, context) -> bool:
+        """
+        Check the given context for an object of type `cls' and copy its dict.
+
+        If no object of type `cls` is on the context stack, return `None`
+        """
+
         for obj in context.objects:
-            if isinstance(obj, type(self)):
-                logger.info("Object of type {} already on stack".format(type(self)))  # noqa: E501
+            if (type(obj) == type(self)) and (obj.name == self.name):
+                logger.info("Object of type {} already on stack".format(self))  # noqa: E501
                 self.__dict__ = obj.__dict__
-                return
-        ToplevelContextable.__init__(self)
+                return True
+        return False
 
+    def __eq__(self, other):
+        return super().__eq__(other) and (self.name == other.name)
 
-if __name__ == "__main__":
-    class TestClass(ContextSingleton):
-        def __init__(self):
-            ContextSingleton.__init__(self)
-            self._name = "Test"
-
-        @property
-        def name(self):
-            return self._name
-
-    class TestClass2(ContextSingleton):
-        def __init__(self):
-            ContextSingleton.__init__(self)
-            self._name = "Test2"
-
-        @property
-        def name(self):
-            return self._name
-
-    class TestClass3(ToplevelContextSingleton):
-        def __init__(self):
-            ContextSingleton.__init__(self)
-            self._name = "Test3"
-
-        @property
-        def name(self):
-            return self._name
-
-    class MyGen(CodeGenerator):
-
-        def __init__(self):
-            CodeGenerator.__init__(self)
-            self._name = "TOPLEVEL"
-
-        @property
-        def name(self):
-            return self._name
-
-        def add_object(self, object):
-            self._objects.append(object)
-
-        def generate(self):
-            pass
-
-    logging.basicConfig(level=logging.INFO)
-
-    with MyGen() as cg:
-        print("Entering TestClass context")
-        with TestClass() as test:
-            test.data = "test"
-            with TestClass2() as test2:
-                test2.data = "test2"
-        print("Second context")
-        with TestClass() as test:
-            print(test.data)
-            with TestClass2() as test2:
-                print(test2.data)
-        print("Third context")
-        with TestClass() as test:
-            print(test.data)
-            with TestClass3() as test3:
-                test3.data = "test"
-
-        with TestClass2() as test:
-            with TestClass3() as test2:
-                print(hasattr(test, "data"))
-                print(hasattr(test2, "data"))
+    def __hash__(self):
+        hash_gen = hashlib.sha256()
+        hash_gen.update(str(self.context_id).encode())
+        hash_gen.update(self.name.encode())
+        return int.from_bytes(hash_gen.digest(), "big")
