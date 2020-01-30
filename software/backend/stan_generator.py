@@ -2,7 +2,7 @@
 from typing import Dict, Iterable, Union
 from .code_generator import (
     CodeGenerator, ToplevelContextSingleton, ContextSingleton,
-    ContextStack, Contextable)
+    ContextStack, Contextable, NamedContextSingleton)
 from .stan_code import StanCodeBit
 from .expression import (
     TExpression, TNamedExpression, Expression,
@@ -10,6 +10,7 @@ from .expression import (
 from .operations import FunctionCall
 import logging
 import os
+import hashlib
 logger = logging.getLogger(__name__)
 
 # if TYPE_CHECKING:
@@ -92,6 +93,7 @@ class ForLoopContext(Contextable, ContextStack):
     
 
 class UserDefinedFunction(Contextable, ContextStack):
+
     def __init__(
             self,
             name: str,
@@ -102,30 +104,26 @@ class UserDefinedFunction(Contextable, ContextStack):
 
         ContextStack.__init__(self)
         self._func_name = name
-        self._fc = FunctionsContext()
 
-        # Check if there's another UserDefinedFunction on the stack
-        context = ContextStack.get_context()
-
-        at_top = False
-        if isinstance(context, UserDefinedFunction):
-            logger.debug("Found a function definition inside function")
-            # Move ourselves up in the  FunctionsContext object list
-            at_top = True
-        with self._fc:
-            # Add ourselves to the Functions context
-            Contextable.__init__(self, at_top=at_top)
-
-        """
-        if ContextStack.get_context().name != "functions":
-            raise RuntimeError("Not in a functions context")
-        """
         self._header_code = return_type + " " + name + "("
         self._header_code += ",".join([arg_type+" "+arg_name
                                        for arg_type, arg_name
                                        in zip(arg_types, arg_names)])
         self._header_code += ")"
         self._name = self._header_code
+
+        fc = FunctionsContext()
+        context = ContextStack.get_context()
+
+        at_top = False
+        # Check if there's another UserDefinedFunction on the stack
+        if isinstance(context, UserDefinedFunction):
+            logger.debug("Found a function definition inside function")
+            # Move ourselves up in the  FunctionsContext object list
+            at_top = True
+
+        with fc:
+            Contextable.__init__(self, at_top=at_top)
 
     @property
     def func_name(self):
@@ -134,6 +132,21 @@ class UserDefinedFunction(Contextable, ContextStack):
     def __call__(self, *args) -> FunctionCall:
         call = FunctionCall(args, self.func_name, len(args))
         return call
+
+    def __eq__(self, other):
+        """
+        Two user-defined functions will compare equal, if they have the
+        same function header.
+        """
+        return self.name == other.name
+
+    def __hash__(self):
+        """
+        The hash is given by the function header
+        """
+        hash_gen = hashlib.sha256()
+        hash_gen.update(self.name.encode())
+        return int.from_bytes(hash_gen.digest(), "big")
 
 
 class DataContext(ToplevelContextSingleton):
