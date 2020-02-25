@@ -122,7 +122,7 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
                 "NorthernTracksEffAreaHist")
 
             # z = cos(theta)
-            cos_dir = "true_dir[3]"
+            cos_dir = "cos(pi() - acos(true_dir[3]))"
             # cos_dir = FunctionCall(["true_dir"], "cos")
             _ = ReturnStatement([hist("true_energy", cos_dir)])
 
