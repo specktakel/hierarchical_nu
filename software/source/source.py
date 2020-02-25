@@ -13,7 +13,7 @@ from astromodels.core.units import get_units
 
 class PointSource(PS):
 
-    def __init__(self, source_name, redshift, **kwargs):
+    def __init__(self, source_name, redshift, unit_vector,  **kwargs):
         """
         Override astromodels PointSource to add redshift.
         """
@@ -21,6 +21,8 @@ class PointSource(PS):
         super().__init__(source_name, **kwargs)
 
         self.redshift = redshift
+
+        self.unit_vector = unit_vector
 
     @property
     def redshift(self):
@@ -40,6 +42,18 @@ class PointSource(PS):
             self._redshift = value
 
 
+    @property
+    def unit_vector(self):
+
+        return self._unit_vector
+
+    
+    @unit_vector.setter
+    def unit_vector(self, value):
+
+        self._unit_vector = value
+    
+            
 class ExtendedSource(ES):
 
     def __init__(self, source_name, redshift, **kwargs):
@@ -243,9 +257,10 @@ class TestSourceList(SourceList):
 
         ra, dec = uv_to_icrs(unit_vector)
 
-        for r, d, z in zip(np.rad2deg(ra), np.rad2deg(dec), redshift):
+        for r, d, z, uv in zip(np.rad2deg(ra), np.rad2deg(dec), redshift, unit_vector):
 
             source = PointSource('test_'+str(self.N), ra=r, dec=d, redshift=z,
+                                 unit_vector=uv,
                                  spectral_shape=self.spectral_shape)
 
             self.add(source)
@@ -257,7 +272,7 @@ class TestSourceList(SourceList):
         
         self.sources = [s for s in self.sources if s.redshift <= zth]
                 
-
+        
 def uv_to_icrs(unit_vector):
     """
     convert unit vector to ICRS coords (ra, dec)

@@ -960,7 +960,7 @@ return nt_energy_res_mix_rng(to_vector(log(mu_e_res)), to_vector(sigma_e_res), w
 }
 real NorthernTracksEffectiveArea(real true_energy,vector true_dir)
 {
-return NorthernTracksEffAreaHist(true_energy, true_dir[3]);
+return NorthernTracksEffAreaHist(true_energy, cos(pi() - acos(true_dir[3])));
 }
 real NorthernTracksAngularResolution(real true_energy,vector true_dir,vector reco_dir)
 {

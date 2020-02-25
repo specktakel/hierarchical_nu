@@ -90,7 +90,7 @@ class ExposureIntegral():
         Integral of (E/Emin)^-alpha from Elow to Ehigh.
         """
 
-        norm = 1 / (self._minimum_energy * (alpha-1))
+        norm = 1 / (np.power(self._minimum_energy, -alpha) * (alpha-1))
 
         integ = np.power(Elow, 1-alpha) - np.power(Ehigh, 1-alpha) 
 
@@ -122,7 +122,7 @@ class ExposureIntegral():
                     for Em, EM in zip(self.effective_area._tE_bin_edges[:-1],
                                       self.effective_area._tE_bin_edges[1:]):
 
-                        integ = self._power_law_integral(Em, EM, alpha) * np.power(1+z, -alpha) 
+                        integ = self._power_law_integral(Em, EM, alpha)  
 
                         if (cosz < self.effective_area._cosz_bin_edges[0]
                             or cosz > self._effective_area._cosz_bin_edges[-1]
@@ -133,9 +133,8 @@ class ExposureIntegral():
                         else:
  
                             aeff = self.effective_area._eff_area[j][np.digitize(cosz, self.effective_area._cosz_bin_edges)-1]
-                            aeff = aeff * m_to_cm**2
  
-                        integral_grid_tmp[i] += integ * aeff
+                        integral_grid_tmp[i] += integ * aeff * np.power(1+z, 1-alpha) 
 
                         j += 1
 
@@ -149,7 +148,7 @@ class ExposureIntegral():
                         for czm, czM in zip(self.effective_area._cosz_bin_edges[:-1],
                                             self.effective_area._cosz_bin_edges[1:]): 
 
-                            E_integ = self._power_law_integral(Em, EM, alpha) * np.power(1+z, -alpha)
+                            E_integ = self._power_law_integral(Em, EM, alpha) 
 
                             ang_integ = (czM - czm) * 2*np.pi
 
@@ -159,9 +158,9 @@ class ExposureIntegral():
 
                             else:
                                 
-                                aeff = self.effective_area._eff_area[j][k] * m_to_cm**2
+                                aeff = self.effective_area._eff_area[j][k] 
 
-                            integral_grid_tmp[i] += E_integ * ang_integ * aeff
+                            integral_grid_tmp[i] += E_integ * ang_integ * aeff * np.power(1+z, 1-alpha)
 
                             k += 1
 
