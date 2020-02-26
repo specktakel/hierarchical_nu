@@ -160,7 +160,7 @@ class ExposureIntegral():
                                 
                                 aeff = self.effective_area._eff_area[j][k] 
 
-                            integral_grid_tmp[i] += E_integ * (ang_integ/(4*np.pi)) * aeff * np.power(1+z, 1-alpha) # GeV m^2 sr
+                            integral_grid_tmp[i] += E_integ * (ang_integ/(4*np.pi)) * aeff * np.power(1+z, 1-alpha) # GeV m^2
 
                             k += 1
 
