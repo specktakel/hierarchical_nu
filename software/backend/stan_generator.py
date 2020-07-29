@@ -1,25 +1,41 @@
 """Module for autogenerating Stan code"""
 from typing import Dict, Iterable, Union
 from .code_generator import (
-    CodeGenerator, ToplevelContextSingleton, ContextSingleton,
-    ContextStack, Contextable, NamedContextSingleton)
+    CodeGenerator,
+    ToplevelContextSingleton,
+    ContextSingleton,
+    ContextStack,
+    Contextable,
+    NamedContextSingleton,
+)
 from .stan_code import StanCodeBit
 from .expression import (
-    TExpression, TNamedExpression, Expression,
-    NamedExpression, StringExpression)
+    TExpression,
+    TNamedExpression,
+    Expression,
+    NamedExpression,
+    StringExpression,
+)
 from .operations import FunctionCall
 import logging
 import os
 import hashlib
+
 logger = logging.getLogger(__name__)
 
 # if TYPE_CHECKING:
 
 
-__all__ = ["StanGenerator", "UserDefinedFunction",
-           "GeneratedQuantitiesContext", "Include",
-           "FunctionsContext", "DataContext", "DefinitionContext",
-           "ForLoopContext"]
+__all__ = [
+    "StanGenerator",
+    "UserDefinedFunction",
+    "GeneratedQuantitiesContext",
+    "Include",
+    "FunctionsContext",
+    "DataContext",
+    "DefinitionContext",
+    "ForLoopContext",
+]
 
 
 def stanify(var: TExpression) -> StanCodeBit:
@@ -37,9 +53,7 @@ class Include(Contextable):
 
     ORDER = 10
 
-    def __init__(
-            self,
-            file_name: str):
+    def __init__(self, file_name: str):
         Contextable.__init__(self)
         self._file_name = file_name
 
@@ -58,7 +72,6 @@ class FunctionsContext(ToplevelContextSingleton):
 
 
 class ForLoopContext(Contextable, ContextStack):
-
     @staticmethod
     def ensure_str(str: TNamedExpression) -> Union[str, int]:
         if isinstance(str, NamedExpression):
@@ -70,19 +83,15 @@ class ForLoopContext(Contextable, ContextStack):
             return str
 
     def __init__(
-            self,
-            min_val: TNamedExpression,
-            max_val: TNamedExpression,
-            loop_var_name: str,
-            ) -> None:
+        self, min_val: TNamedExpression, max_val: TNamedExpression, loop_var_name: str,
+    ) -> None:
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
 
         header_code = "for ({} in {}:{})".format(
-            loop_var_name,
-            self.ensure_str(min_val),
-            self.ensure_str(max_val))
+            loop_var_name, self.ensure_str(min_val), self.ensure_str(max_val)
+        )
         self._loop_var_name = loop_var_name
 
         self._name = header_code
@@ -90,25 +99,27 @@ class ForLoopContext(Contextable, ContextStack):
     def __enter__(self):
         ContextStack.__enter__(self)
         return StringExpression([self._loop_var_name])
-    
+
 
 class UserDefinedFunction(Contextable, ContextStack):
-
     def __init__(
-            self,
-            name: str,
-            arg_names: Iterable[str],
-            arg_types: Iterable[str],
-            return_type: str,
-            ) -> None:
+        self,
+        name: str,
+        arg_names: Iterable[str],
+        arg_types: Iterable[str],
+        return_type: str,
+    ) -> None:
 
         ContextStack.__init__(self)
         self._func_name = name
 
         self._header_code = return_type + " " + name + "("
-        self._header_code += ",".join([arg_type+" "+arg_name
-                                       for arg_type, arg_name
-                                       in zip(arg_types, arg_names)])
+        self._header_code += ",".join(
+            [
+                arg_type + " " + arg_name
+                for arg_type, arg_name in zip(arg_types, arg_names)
+            ]
+        )
         self._header_code += ")"
         self._name = self._header_code
 
@@ -157,6 +168,7 @@ class DataContext(ToplevelContextSingleton):
         ToplevelContextSingleton.__init__(self)
         self._name = "data"
 
+
 class TransformedDataContext(ToplevelContextSingleton):
 
     ORDER = 7.5
@@ -164,6 +176,7 @@ class TransformedDataContext(ToplevelContextSingleton):
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
         self._name = "transformed data"
+
 
 class GeneratedQuantitiesContext(ToplevelContextSingleton):
 
@@ -198,7 +211,9 @@ class StanGenerator(CodeGenerator):
 
     @staticmethod
     def parse_recursive(objects):
-        logger.debug("Entered recursive parser. Got {} objects".format(len(objects)))  # noqa: E501
+        logger.debug(
+            "Entered recursive parser. Got {} objects".format(len(objects))
+        )  # noqa: E501
         code_tree: Dict[str, str] = {}
 
         for code_bit in sorted(objects, reverse=True):
@@ -212,14 +227,21 @@ class StanGenerator(CodeGenerator):
                     if hasattr(code_bit, "stan_code"):
                         code = code_bit.stan_code + "\n"
                     else:
-                        logger.warn("Encountered a non-expression of type: {}".format(type(code_bit)))  # noqa: E501
+                        logger.warn(
+                            "Encountered a non-expression of type: {}".format(
+                                type(code_bit)
+                            )
+                        )  # noqa: E501
                         continue
                 else:
                     # Check whether this Expression is connected
-                    logger.debug("This bit is connected to: {}".format(code_bit.output))  # noqa: E501
+                    logger.debug(
+                        "This bit is connected to: {}".format(code_bit.output)
+                    )  # noqa: E501
 
-                    filtered_outs = [out for out in code_bit.output if
-                                     isinstance(out, Expression)]
+                    filtered_outs = [
+                        out for out in code_bit.output if isinstance(out, Expression)
+                    ]
 
                     # If at least one output is an expression supress code gen
                     if filtered_outs:
@@ -251,7 +273,9 @@ class StanGenerator(CodeGenerator):
                 # encountered a sub-tree
                 if isinstance(node, DefinitionContext):
                     if len(leaf) != 1:
-                        raise RuntimeError("Malformed tree. Definition subtree should have exactly one node.")  # noqa: E501
+                        raise RuntimeError(
+                            "Malformed tree. Definition subtree should have exactly one node."
+                        )  # noqa: E501
                     code += leaf["main"] + "\n"
 
                 else:
@@ -296,5 +320,14 @@ class StanFileGenerator(StanGenerator):
                 code = leaf
             if code:
                 name_ext = self.ensure_filename(node)
-                with open(self._base_filename+"_"+name_ext+".stan", "w") as f:
+                with open(self._base_filename + "_" + name_ext + ".stan", "w") as f:
                     f.write(code)
+
+    def generate_single_file(self) -> None:
+
+        code_str = self.generate()
+
+        self.filename = self._base_filename + ".stan"
+
+        with open(self.filename, "w") as f:
+            f.write(code_str)
