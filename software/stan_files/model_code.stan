@@ -1014,10 +1014,16 @@ parameters
 real<lower=0.0, upper=1e+60> Q;
 real<lower=0.0, upper=500> F0;
 real<lower=1.5, upper=3.5> alpha;
-vector<lower=Emin, upper=100000000.0>[N] Esrc;
+vector<lower=Emin, upper=100000000.0> [N] Esrc;
 
 Q;
 F0;
 alpha;
 Esrc;
+}
+transformed parameters
+{
+real<lower=0.0> Fs;
+
+Fs;
 }

@@ -46,42 +46,41 @@ class ParameterDef(ForwardVariableDef):
     """Define parameters"""
 
     def __init__(
-        self, name: str, var_type: str, lower_bound: float, upper_bound: float
+        self, name: str, var_type: str, lower_bound=None, upper_bound=None
     ) -> None:
 
         if isinstance(lower_bound, float) or isinstance(lower_bound, int):
-            self._lower_bound = str(lower_bound)
+            self._lower_bound = "lower=" + str(lower_bound)
         elif isinstance(lower_bound, ForwardVariableDef):
-            self._lower_bound = lower_bound.name
+            self._lower_bound = "lower=" + lower_bound.name
         else:
-            raise (
-                AttributeError,
-                "Parameter bounds must be floats, ints or instances of ForwardVariableDef.",
-            )
+            self._lower_bound = lower_bound
 
         if isinstance(upper_bound, float) or isinstance(upper_bound, int):
-            self._upper_bound = str(upper_bound)
+            self._upper_bound = "upper=" + str(upper_bound)
         elif isinstance(upper_bound, ForwardVariableDef):
-            self._upper_bound = upper_bound.name
+            self._upper_bound = "upper=" + upper_bound.name
         else:
-            raise (
-                AttributeError,
-                "Parameter bounds must be floats, ints or instances of ForwardVariableDef.",
-            )
+            self._upper_bound = upper_bound
 
         ForwardVariableDef.__init__(self, name, var_type)
 
+    def _gen_bound_str(self):
+
+        if not self._lower_bound:
+            bound = "<" + self._upper_bound + "> "
+        if not self._upper_bound:
+            bound = "<" + self._lower_bound + "> "
+        else:
+            bound = "<" + self._lower_bound + ", " + self._upper_bound + "> "
+
+        return bound
+
     def _gen_def_code(self) -> TListTExpression:
 
-        return [
-            self._var_type
-            + "<lower="
-            + self._lower_bound
-            + ", upper="
-            + self._upper_bound
-            + "> "
-            + self.name
-        ]
+        bound = self._gen_bound_str()
+
+        return [self._var_type + bound + self.name]
 
 
 class ForwardArrayDef(VariableDef):
@@ -118,18 +117,9 @@ class ParameterVectorDef(ParameterDef):
 
     def _gen_def_code(self) -> TListTExpression:
 
-        return (
-            [
-                self._var_type
-                + "<lower="
-                + self._lower_bound
-                + ", upper="
-                + self._upper_bound
-                + ">"
-            ]
-            + self._array_dim
-            + [" " + self.name]
-        )
+        bound = self._gen_bound_str()
+
+        return [self._var_type + bound] + self._array_dim + [" " + self.name]
 
 
 class StanArray(VariableDef):
