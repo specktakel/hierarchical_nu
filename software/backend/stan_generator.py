@@ -160,9 +160,18 @@ class UserDefinedFunction(Contextable, ContextStack):
         return int.from_bytes(hash_gen.digest(), "big")
 
 
-class DataContext(ToplevelContextSingleton):
+class DefinitionContext(ContextSingleton):
 
     ORDER = 8
+
+    def __init__(self):
+        ContextSingleton.__init__(self)
+        self._name = "__DEFS"
+
+
+class DataContext(ToplevelContextSingleton):
+
+    ORDER = 7
 
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
@@ -171,29 +180,38 @@ class DataContext(ToplevelContextSingleton):
 
 class TransformedDataContext(ToplevelContextSingleton):
 
-    ORDER = 7.5
+    ORDER = 6
 
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
         self._name = "transformed data"
 
 
+class ParametersContext(ToplevelContextSingleton):
+
+    ORDER = 5
+
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "parameters"
+
+
+class TransformedParametersContext(ToplevelContextSingleton):
+
+    ORDER = 4
+
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "transformed parameters"
+
+
 class GeneratedQuantitiesContext(ToplevelContextSingleton):
 
-    ORDER = 7
+    ORDER = 3
 
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
         self._name = "generated quantities"
-
-
-class DefinitionContext(ContextSingleton):
-
-    ORDER = 9
-
-    def __init__(self):
-        ContextSingleton.__init__(self)
-        self._name = "__DEFS"
 
 
 class StanGenerator(CodeGenerator):
