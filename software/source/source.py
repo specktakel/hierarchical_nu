@@ -12,8 +12,7 @@ from astromodels.core.units import get_units
 
 
 class PointSource(PS):
-
-    def __init__(self, source_name, redshift, unit_vector,  **kwargs):
+    def __init__(self, source_name, redshift, unit_vector, **kwargs):
         """
         Override astromodels PointSource to add redshift.
         """
@@ -29,33 +28,29 @@ class PointSource(PS):
 
         return self._redshift
 
-
     @redshift.setter
     def redshift(self, value):
 
         if value < 0 or value > 10:
 
-            raise ValueError(str(value) + ' is not a valid redshift.')
+            raise ValueError(str(value) + " is not a valid redshift.")
 
         else:
 
             self._redshift = value
-
 
     @property
     def unit_vector(self):
 
         return self._unit_vector
 
-    
     @unit_vector.setter
     def unit_vector(self, value):
 
         self._unit_vector = value
-    
-            
-class ExtendedSource(ES):
 
+
+class ExtendedSource(ES):
     def __init__(self, source_name, redshift, **kwargs):
         """
         Override astromodels ExtendedSource to add redshift.
@@ -63,38 +58,33 @@ class ExtendedSource(ES):
 
         super().__init__(source_name, **kwargs)
 
-        
         self.redshift = redshift
 
-        
     @property
     def redshift(self):
 
         return self._redshift
-
 
     @redshift.setter
     def redshift(self, value):
 
         if value < 0 or value > 10:
 
-            raise ValueError(str(value) + ' is not a valid redshift.')
+            raise ValueError(str(value) + " is not a valid redshift.")
 
         else:
 
             self._redshift = value
 
 
-            
 class DiffuseSource(Source, Node):
-
     def __init__(self, source_name, redshift, spectral_shape=None, components=None):
         """
         Diffuse source for isotropic emission.
         """
-        
+
         self.redshift = redshift
-        
+
         assert (spectral_shape is not None) ^ (components is not None)
 
         # If the user specified only one component, make a list of one element with a default name ("main")
@@ -109,10 +99,9 @@ class DiffuseSource(Source, Node):
 
         Node.__init__(self, source_name)
 
-
         # Add a node called 'spectrum'
-        
-        spectrum_node = Node('spectrum')
+
+        spectrum_node = Node("spectrum")
         spectrum_node._add_children(self._components.values())
 
         self._add_child(spectrum_node)
@@ -125,33 +114,32 @@ class DiffuseSource(Source, Node):
         # Components in this case have energy as x and differential flux as y
 
         x_unit = current_units.energy
-        y_unit = (current_units.energy * current_units.area * current_units.time) ** (-1)
+        y_unit = (current_units.energy * current_units.area * current_units.time) ** (
+            -1
+        )
 
         # Now set the units of the components
         for component in self._components.values():
 
             component.shape.set_units(x_unit, y_unit)
 
-        
     @property
     def redshift(self):
 
         return self._redshift
-
 
     @redshift.setter
     def redshift(self, value):
 
         if value < 0 or value > 10:
 
-            raise ValueError(str(value) + ' is not a valid redshift.')
+            raise ValueError(str(value) + " is not a valid redshift.")
 
         else:
 
             self._redshift = value
 
 
-            
 class SourceList(ABC):
     """
     Abstract base class for container of a list of sources.
@@ -165,36 +153,33 @@ class SourceList(ABC):
 
         self._sources = []
 
-
     @property
     def sources(self):
 
         return self._sources
-        
 
     @sources.setter
-    def sources (self, value):
+    def sources(self, value):
 
         if not isinstance(value, list):
 
-            raise ValueError(str(value) + ' is not a list')
+            raise ValueError(str(value) + " is not a list")
 
         if not isinstance(value[0], Source):
-            
-            raise ValueError(str(value) + ' is not a recognised source list')
-        
+
+            raise ValueError(str(value) + " is not a recognised source list")
+
         else:
 
             self._sources = value
-            
+
             self.N = len(self._sources)
 
-            
     def add(self, value):
-        
+
         if not isinstance(value, Source):
 
-            raise ValueError(str(value) + ' is not a recognised source')
+            raise ValueError(str(value) + " is not a recognised source")
 
         else:
 
@@ -202,16 +187,14 @@ class SourceList(ABC):
 
             self.N += 1
 
-            
-    def remove(self, index):           
+    def remove(self, index):
 
-            self._sources.pop(index)
+        self._sources.pop(index)
 
-            self.N -= 1
+        self.N -= 1
 
-        
+
 class TestSourceList(SourceList):
-
     def __init__(self, filename, spectral_shape=None):
         """
         Simple source list from test file used in 
@@ -223,56 +206,66 @@ class TestSourceList(SourceList):
         """
 
         super().__init__()
-        
+
         self._filename = filename
 
         self._spectral_shape = spectral_shape
 
         self._read_from_file()
 
-
     @property
     def spectral_shape(self):
 
         return self._spectral_shape
 
-    
     @spectral_shape.setter
     def spectral_shape(self, function):
 
         self._spectral_shape = function
-        
 
     def _read_from_file(self):
 
         import h5py
 
-        with h5py.File(self._filename, 'r') as f:
+        with h5py.File(self._filename, "r") as f:
 
-            redshift = f['output/redshift'][()]
+            redshift = f["output/redshift"][()]
 
-            position = f['output/position'][()]
-            
-        unit_vector = position/np.linalg.norm(position)
+            position = f["output/position"][()]
+
+        unit_vector = position / np.linalg.norm(position)
 
         ra, dec = uv_to_icrs(unit_vector)
 
         for r, d, z, uv in zip(np.rad2deg(ra), np.rad2deg(dec), redshift, unit_vector):
 
-            source = PointSource('test_'+str(self.N), ra=r, dec=d, redshift=z,
-                                 unit_vector=uv,
-                                 spectral_shape=self.spectral_shape)
+            source = PointSource(
+                "test_" + str(self.N),
+                ra=r,
+                dec=d,
+                redshift=z,
+                unit_vector=uv,
+                spectral_shape=self.spectral_shape,
+            )
 
             self.add(source)
-        
 
     def select_below_redshift(self, zth):
 
         self._zth = zth
-        
+
         self.sources = [s for s in self.sources if s.redshift <= zth]
-                
-        
+
+
+class ManualSourceList(SourceList):
+    def __init__(self, list_of_sources):
+
+        super().__init__()
+
+        for s in list_of_sources:
+            self.add(s)
+
+
 def uv_to_icrs(unit_vector):
     """
     convert unit vector to ICRS coords (ra, dec)
@@ -290,12 +283,7 @@ def uv_to_icrs(unit_vector):
         y = unit_vector[1]
         z = unit_vector[2]
 
-    coord = SkyCoord(x, y, z, unit="mpc", representation_type="cartesian",
-                     frame="icrs")
+    coord = SkyCoord(x, y, z, unit="mpc", representation_type="cartesian", frame="icrs")
     coord.representation_type = "spherical"
 
     return coord.ra.rad, coord.dec.rad
-
-
-
-    
