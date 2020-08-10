@@ -1,8 +1,13 @@
 """Module for autogenerating Stan code"""
 from typing import Dict, Iterable, Union, Sequence
 from .code_generator import (
-    CodeGenerator, ToplevelContextSingleton, ContextSingleton,
-    ContextStack, Contextable, NamedContextSingleton)
+    CodeGenerator,
+    ToplevelContextSingleton,
+    ContextSingleton,
+    ContextStack,
+    Contextable,
+    NamedContextSingleton,
+)
 from .stan_code import StanCodeBit
 from .expression import (
     TExpression, TNamedExpression, Expression,
@@ -11,15 +16,22 @@ from .operations import FunctionCall
 import logging
 import os
 import hashlib
+
 logger = logging.getLogger(__name__)
 
 # if TYPE_CHECKING:
 
 
-__all__ = ["StanGenerator", "UserDefinedFunction",
-           "GeneratedQuantitiesContext", "Include",
-           "FunctionsContext", "DataContext", "DefinitionContext",
-           "ForLoopContext"]
+__all__ = [
+    "StanGenerator",
+    "UserDefinedFunction",
+    "GeneratedQuantitiesContext",
+    "Include",
+    "FunctionsContext",
+    "DataContext",
+    "DefinitionContext",
+    "ForLoopContext",
+]
 
 
 def stanify(var: TExpression) -> StanCodeBit:
@@ -37,9 +49,7 @@ class Include(Contextable):
 
     ORDER = 10
 
-    def __init__(
-            self,
-            file_name: str):
+    def __init__(self, file_name: str):
         Contextable.__init__(self)
         self._file_name = file_name
 
@@ -58,7 +68,6 @@ class FunctionsContext(ToplevelContextSingleton):
 
 
 class ForLoopContext(Contextable, ContextStack):
-
     @staticmethod
     def ensure_str(str: TNamedExpression) -> Union[str, int]:
         if isinstance(str, NamedExpression):
@@ -129,23 +138,26 @@ class WhileLoopContext(Contextable, ContextStack):
         return None
     
 
-class UserDefinedFunction(Contextable, ContextStack):
 
+class UserDefinedFunction(Contextable, ContextStack):
     def __init__(
-            self,
-            name: str,
-            arg_names: Iterable[str],
-            arg_types: Iterable[str],
-            return_type: str,
-            ) -> None:
+        self,
+        name: str,
+        arg_names: Iterable[str],
+        arg_types: Iterable[str],
+        return_type: str,
+    ) -> None:
 
         ContextStack.__init__(self)
         self._func_name = name
 
         self._header_code = return_type + " " + name + "("
-        self._header_code += ",".join([arg_type+" "+arg_name
-                                       for arg_type, arg_name
-                                       in zip(arg_types, arg_names)])
+        self._header_code += ",".join(
+            [
+                arg_type + " " + arg_name
+                for arg_type, arg_name in zip(arg_types, arg_names)
+            ]
+        )
         self._header_code += ")"
         self._name = self._header_code
 
@@ -186,39 +198,59 @@ class UserDefinedFunction(Contextable, ContextStack):
         return int.from_bytes(hash_gen.digest(), "big")
 
 
-class DataContext(ToplevelContextSingleton):
-
-    ORDER = 8
-
-    def __init__(self):
-        ToplevelContextSingleton.__init__(self)
-        self._name = "data"
-
-class TransformedDataContext(ToplevelContextSingleton):
-
-    ORDER = 7.5
-
-    def __init__(self):
-        ToplevelContextSingleton.__init__(self)
-        self._name = "transformed data"
-
-class GeneratedQuantitiesContext(ToplevelContextSingleton):
-
-    ORDER = 7
-
-    def __init__(self):
-        ToplevelContextSingleton.__init__(self)
-        self._name = "generated quantities"
-
-
 class DefinitionContext(ContextSingleton):
 
-    ORDER = 9
+    ORDER = 8
 
     def __init__(self):
         ContextSingleton.__init__(self)
         self._name = ""
         self._delimiters = ("", "")
+
+
+class DataContext(ToplevelContextSingleton):
+
+    ORDER = 7
+
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "data"
+
+
+class TransformedDataContext(ToplevelContextSingleton):
+
+    ORDER = 6
+
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "transformed data"
+
+
+class ParametersContext(ToplevelContextSingleton):
+
+    ORDER = 5
+
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "parameters"
+
+
+class TransformedParametersContext(ToplevelContextSingleton):
+
+    ORDER = 4
+
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "transformed parameters"
+
+
+class GeneratedQuantitiesContext(ToplevelContextSingleton):
+
+    ORDER = 3
+
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "generated quantities"
 
 
 class StanGenerator(CodeGenerator):
@@ -236,7 +268,9 @@ class StanGenerator(CodeGenerator):
 
     @staticmethod
     def parse_recursive(objects):
-        logger.debug("Entered recursive parser. Got {} objects".format(len(objects)))  # noqa: E501
+        logger.debug(
+            "Entered recursive parser. Got {} objects".format(len(objects))
+        )  # noqa: E501
         code_tree: Dict[str, str] = {}
         
         code_list = []
@@ -255,14 +289,21 @@ class StanGenerator(CodeGenerator):
                     if hasattr(code_bit, "stan_code"):
                         code = code_bit.stan_code + "\n"
                     else:
-                        logger.warn("Encountered a non-expression of type: {}".format(type(code_bit)))  # noqa: E501
+                        logger.warn(
+                            "Encountered a non-expression of type: {}".format(
+                                type(code_bit)
+                            )
+                        )  # noqa: E501
                         continue
                 else:
                     # Check whether this Expression is connected
-                    logger.debug("This bit is connected to: {}".format(code_bit.output))  # noqa: E501
+                    logger.debug(
+                        "This bit is connected to: {}".format(code_bit.output)
+                    )  # noqa: E501
 
-                    filtered_outs = [out for out in code_bit.output if
-                                     isinstance(out, Expression)]
+                    filtered_outs = [
+                        out for out in code_bit.output if isinstance(out, Expression)
+                    ]
 
                     # If at least one output is an expression supress code gen
                     if filtered_outs:
@@ -300,7 +341,9 @@ class StanGenerator(CodeGenerator):
                 """
                 if isinstance(node, DefinitionContext):
                     if len(leaf) != 1:
-                        raise RuntimeError("Malformed tree. Definition subtree should have exactly one node.")  # noqa: E501
+                        raise RuntimeError(
+                            "Malformed tree. Definition subtree should have exactly one node."
+                        )  # noqa: E501
                     code += leaf["main"] + "\n"
 
                 else:
@@ -355,3 +398,12 @@ class StanFileGenerator(StanGenerator):
                 name_ext = self.ensure_filename(node[0])
                 with open(self._base_filename+"_"+name_ext+".stan", "w") as f:
                     f.write(code)
+
+    def generate_single_file(self) -> None:
+
+        code_str = self.generate()
+
+        self.filename = self._base_filename + ".stan"
+
+        with open(self.filename, "w") as f:
+            f.write(code_str)

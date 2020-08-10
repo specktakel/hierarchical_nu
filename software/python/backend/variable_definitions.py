@@ -1,16 +1,13 @@
 from abc import abstractmethod
 from typing import Iterable
 import numpy as np  # type:ignore
-from .expression import (
-    NamedExpression, TListTExpression,
-    Expression)
+from .expression import NamedExpression, TListTExpression, Expression
 from .stan_generator import DefinitionContext
 import logging
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["VariableDef", "StanArray", "ForwardArrayDef",
-           "ForwardVariableDef"]
+__all__ = ["VariableDef", "StanArray", "ForwardArrayDef", "ForwardVariableDef"]
 
 
 class VariableDef(NamedExpression):
@@ -18,9 +15,8 @@ class VariableDef(NamedExpression):
     Stan variable definition
 
     """
-    def __init__(
-            self,
-            name: str):
+
+    def __init__(self, name: str):
 
         NamedExpression.__init__(self, [], [name], name)
 
@@ -46,14 +42,51 @@ class ForwardVariableDef(VariableDef):
         return [self._var_type + " " + self.name]
 
 
+class ParameterDef(ForwardVariableDef):
+    """Define parameters"""
+
+    def __init__(
+        self, name: str, var_type: str, lower_bound=None, upper_bound=None
+    ) -> None:
+
+        if isinstance(lower_bound, float) or isinstance(lower_bound, int):
+            self._lower_bound = "lower=" + str(lower_bound)
+        elif isinstance(lower_bound, ForwardVariableDef):
+            self._lower_bound = "lower=" + lower_bound.name
+        else:
+            self._lower_bound = lower_bound
+
+        if isinstance(upper_bound, float) or isinstance(upper_bound, int):
+            self._upper_bound = "upper=" + str(upper_bound)
+        elif isinstance(upper_bound, ForwardVariableDef):
+            self._upper_bound = "upper=" + upper_bound.name
+        else:
+            self._upper_bound = upper_bound
+
+        ForwardVariableDef.__init__(self, name, var_type)
+
+    def _gen_bound_str(self):
+
+        if not self._lower_bound:
+            bound = "<" + self._upper_bound + "> "
+        if not self._upper_bound:
+            bound = "<" + self._lower_bound + "> "
+        else:
+            bound = "<" + self._lower_bound + ", " + self._upper_bound + "> "
+
+        return bound
+
+    def _gen_def_code(self) -> TListTExpression:
+
+        bound = self._gen_bound_str()
+
+        return [self._var_type + bound + self.name]
+
+
 class ForwardArrayDef(VariableDef):
     """Define an array of variables"""
 
-    def __init__(
-            self,
-            name: str,
-            var_type: str,
-            array_dim: TListTExpression) -> None:
+    def __init__(self, name: str, var_type: str, array_dim: TListTExpression) -> None:
 
         self._var_type = var_type
         self._array_dim = array_dim
@@ -67,6 +100,28 @@ class ForwardArrayDef(VariableDef):
         return [self._var_type + " " + self.name] + self._array_dim
 
 
+class ParameterVectorDef(ParameterDef):
+    """Define a vector of parameters"""
+
+    def __init__(
+        self,
+        name: str,
+        var_type: str,
+        array_dim: TListTExpression,
+        lower_bound: float,
+        upper_bound: float,
+    ) -> None:
+
+        self._array_dim = array_dim
+        ParameterDef.__init__(self, name, var_type, lower_bound, upper_bound)
+
+    def _gen_def_code(self) -> TListTExpression:
+
+        bound = self._gen_bound_str()
+
+        return [self._var_type + bound] + self._array_dim + [" " + self.name]
+
+
 class StanArray(VariableDef):
     """
     Stan real array definition
@@ -75,11 +130,7 @@ class StanArray(VariableDef):
         name: Variable name to use in stan code
     """
 
-    def __init__(
-            self,
-            name: str,
-            type_name: str,
-            array_data: Iterable):
+    def __init__(self, name: str, type_name: str, array_data: Iterable):
 
         self._array_data = np.asarray(array_data)
         self._type = type_name
@@ -93,8 +144,7 @@ class StanArray(VariableDef):
         # Variable Definition
         stan_code = self._type
 
-        shape_str = "[" + ",".join([str(shape_d)
-                                    for shape_d in self._array_data.shape])
+        shape_str = "[" + ",".join([str(shape_d) for shape_d in self._array_data.shape])
         shape_str += "]"
         if self._type in ["vector"]:
             stan_code += shape_str + " " + self.name
@@ -103,10 +153,7 @@ class StanArray(VariableDef):
             stan_code += " " + self.name + shape_str
 
         # Fill array
-        arraystr = np.array2string(
-            self._array_data,
-            threshold=np.inf,
-            separator=",")
+        arraystr = np.array2string(self._array_data, threshold=np.inf, separator=",")
         if self._type != "vector":
             arraystr = arraystr.replace("[", "{")
             arraystr = arraystr.replace("]", "}")
