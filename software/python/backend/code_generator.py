@@ -214,7 +214,7 @@ class NamedContextSingleton(ContextSingleton, NamedObject):
 
         for obj in context.objects:
             if (type(obj) == type(self)) and (obj.name == self.name):
-                logger.info("Object of type {} already on stack".format(self))  # noqa: E501
+                logger.info("Object of type {} and name {} already on stack".format(self, self.name))  # noqa: E501
                 self.__dict__ = obj.__dict__
                 return True
         return False

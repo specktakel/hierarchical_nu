@@ -20,8 +20,9 @@ class _BaseExpression(Contextable, metaclass=ABCMeta):
     Comes with converters to PyMC3 and Stan Code.
     """
 
-    def __init__(self, inputs: Sequence["TExpression"], block_output: bool):
+    def __init__(self, inputs: Sequence["TExpression"], block_output: bool, end_delim=";\n"):
         Contextable.__init__(self)
+        self._end_delim = end_delim
         logger.debug("Input is of type: {}".format(type(inputs)))
 
         # If inputs is an expression, rather than a list of expression,
@@ -57,7 +58,7 @@ class _BaseExpression(Contextable, metaclass=ABCMeta):
         Converts the expression into a StanCodeBit
         """
 
-        code_bit = StanCodeBit()
+        code_bit = StanCodeBit(end_delim=self._end_delim)
 
         converted_code: TListStrStanCodeBit = []
 
@@ -91,7 +92,7 @@ class Expression(_BaseExpression):
             inputs: Sequence["TExpression"],
             stan_code: TListTExpression,
             block_output=False):
-        _BaseExpression.__init__(self, inputs, block_output)
+        _BaseExpression.__init__(self, inputs, block_output, end_delim=";\n")
         self._stan_code = stan_code
 
     @property
@@ -164,6 +165,12 @@ class Expression(_BaseExpression):
 
     def __rpow__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "^", True)
+    
+    def __ne__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "!=")
+    
+    def __rne__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "!=", True)
 
 
 class StringExpression(Expression):
@@ -193,3 +200,15 @@ class ReturnStatement(Expression):
         stan_code: TListTExpression = ["return "]
         stan_code += inputs
         Expression.__init__(self, inputs, stan_code)
+
+        
+class LoopStatement(Expression):
+    def __init__(self, inputs: Sequence[TExpression]):
+        super().__init__(inputs, False)
+        self._end_delim = ""
+        self._stan_code = list(inputs)
+        
+   
+    
+     
+    

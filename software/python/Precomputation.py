@@ -5,8 +5,8 @@ to be passed to Stan models.
 
 import numpy as np
 
-from source.source import SourceList, PointSource, DiffuseSource
-from backend.stan_generator import StanGenerator
+from .source.source import SourceList, PointSource, DiffuseSource
+from .backend.stan_generator import StanGenerator
 
 
 m_to_cm = 100 # cm
