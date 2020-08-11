@@ -10,33 +10,30 @@ class Source(ABC):
     Abstract base class for sources.
     """
 
-
     @property
     def src_type(self):
 
         return self._src_type
 
-    
     @src_type.setter
     def src_type(self, value):
 
         if value is not DIFFUSE and value is not POINT:
 
-            raise ValueError(str(value) + ' is not a recognised source type')
-        
+            raise ValueError(str(value) + " is not a recognised source type")
+
         self._src_type = value
 
-        
     @property
     def tag(self):
 
         return self._tag
 
-    
     @tag.setter
     def tag(self, value):
 
         self._tag = value
+
 
 """    
     @property
@@ -71,36 +68,33 @@ class SourceList(ABC):
 
         self._sources = []
 
-
     @property
     def sources(self):
 
         return self._sources
-        
 
     @sources.setter
-    def sources (self, value):
+    def sources(self, value):
 
         if not isinstance(value, list):
 
-            raise ValueError(str(value) + ' is not a list')
+            raise ValueError(str(value) + " is not a list")
 
         if not isinstance(value[0], Source):
-            
-            raise ValueError(str(value) + ' is not a recognised source list')
-        
+
+            raise ValueError(str(value) + " is not a recognised source list")
+
         else:
 
             self._sources = value
-            
+
             self.N = len(self._sources)
 
-            
     def add(self, value):
-        
+
         if not isinstance(value, Source):
 
-            raise ValueError(str(value) + ' is not a recognised source')
+            raise ValueError(str(value) + " is not a recognised source")
 
         else:
 
@@ -108,48 +102,41 @@ class SourceList(ABC):
 
             self.N += 1
 
-            
-    def remove(self, index):           
+    def remove(self, index):
 
-            self._sources.pop(index)
+        self._sources.pop(index)
 
-            self.N -= 1
-            
+        self.N -= 1
+
 
 class PointSource(Source):
-
-    
     def __init__(self, coord, redshift, tag=None):
 
         super().__init__()
 
         self.src_type = POINT
-        
+
         self._coord = coord
 
         self._redshift = redshift
 
         self.tag = tag
 
-        
     @property
     def coord(self):
 
         return self._coord
 
-    
     @coord.setter
     def coord(self, value):
 
         self._coord = value
 
-        
     @property
     def redshift(self):
 
         return self._redshift
 
-    
     @redshift.setter
     def redshift(self, value):
 
@@ -157,32 +144,26 @@ class PointSource(Source):
 
 
 class DiffuseSource(Source):
-
-    
     def __init__(self, redshift=None, tag=None):
 
         super().__init__()
 
         self.src_type = DIFFUSE
-        
+
         self._redshift = redshift
 
-        
     @property
     def redshift(self):
 
         return self._redshift
 
-    
     @redshift.setter
     def redshift(self, value):
 
         self._redshift = value
 
-        
-        
-class TestSourceList(SourceList):
 
+class TestSourceList(SourceList):
     def __init__(self, filename, flux_model=None):
         """
         Simple source list from test file used in 
@@ -194,25 +175,24 @@ class TestSourceList(SourceList):
         """
 
         super().__init__()
-        
+
         self._filename = filename
 
         self._flux_model = flux_model
 
         self._read_from_file()
-        
 
     def _read_from_file(self):
 
         import h5py
 
-        with h5py.File(self._filename, 'r') as f:
+        with h5py.File(self._filename, "r") as f:
 
-            redshift = f['output/redshift'][()]
+            redshift = f["output/redshift"][()]
 
-            position = f['output/position'][()]
-            
-        unit_vector = position/np.linalg.norm(position)
+            position = f["output/position"][()]
+
+        unit_vector = position / np.linalg.norm(position)
 
         ra, dec = uv_to_icrs(unit_vector)
 
@@ -221,14 +201,13 @@ class TestSourceList(SourceList):
             source = PointSource((r, d), z)
 
             self.add(source)
-        
 
     def select_below_redshift(self, zth):
 
         self._zth = zth
-        
+
         self.sources = [s for s in self.sources if s.redshift <= zth]
-                
+
 
 def uv_to_icrs(unit_vector):
     """
@@ -237,9 +216,9 @@ def uv_to_icrs(unit_vector):
 
     if len(np.shape(unit_vector)) > 1:
 
-      theta = np.arccos(unit_vector.T[2])
+        theta = np.arccos(unit_vector.T[2])
 
-      phi = np.arctan(unit_vector.T[1] / unit_vector.T[0])
+        phi = np.arctan(unit_vector.T[1] / unit_vector.T[0])
 
     else:
 
@@ -251,7 +230,7 @@ def uv_to_icrs(unit_vector):
 
     return ra, dec
 
-        
+
 def spherical_to_icrs(theta, phi):
     """
     convert spherical coordinates to ICRS
@@ -260,14 +239,11 @@ def spherical_to_icrs(theta, phi):
 
     ra = phi
 
-    dec = np.pi/2 - theta
+    dec = np.pi / 2 - theta
 
     return ra, dec
 
 
 def lists_to_tuple(list1, list2):
 
-    return  [(list1[i], list2[i]) for i in range(0, len(list1))] 
-
-
-    
+    return [(list1[i], list2[i]) for i in range(0, len(list1))]
