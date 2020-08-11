@@ -1,22 +1,16 @@
 """Module for autogenerating Stan code"""
-from typing import Dict, Iterable, Union, Sequence
+from typing import Iterable, Union, Sequence
 from .code_generator import (
     CodeGenerator,
     ToplevelContextSingleton,
     ContextSingleton,
     ContextStack,
     Contextable,
-    NamedContextSingleton,
 )
 from .stan_code import StanCodeBit
 from .expression import (
-    TExpression,
-    TNamedExpression,
-    Expression,
-    NamedExpression,
-    StringExpression,
-    LoopStatement,
-)
+    TExpression, TNamedExpression, Expression,
+    NamedExpression, StringExpression, PlainStatement)
 from .operations import FunctionCall
 import logging
 import os
@@ -84,8 +78,10 @@ class ForLoopContext(Contextable, ContextStack):
             return str
 
     def __init__(
-        self, min_val: TNamedExpression, max_val: TNamedExpression, loop_var_name: str,
-    ) -> None:
+            self,
+            min_val: TNamedExpression,
+            max_val: TNamedExpression,
+            loop_var_name: str) -> None:
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
@@ -103,7 +99,7 @@ class ForLoopContext(Contextable, ContextStack):
 
 
 class _WhileLoopHeaderContext(Contextable, ContextStack):
-    def __init__(self,) -> None:
+    def __init__(self) -> None:
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
@@ -119,15 +115,101 @@ class _WhileLoopHeaderContext(Contextable, ContextStack):
 class WhileLoopContext(Contextable, ContextStack):
     def __init__(self, header_code: Sequence["TExpression"],) -> None:
 
+    def __init__(
+            self,
+            header_code: Sequence["TExpression"]) -> None:
+
         header_ctx = _WhileLoopHeaderContext()
 
         with header_ctx:
-            _ = LoopStatement(header_code)
+            _ = PlainStatement(header_code)
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
 
         self._name = ""
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return None
+
+
+class _IfHeaderContext(Contextable, ContextStack):
+    def __init__(self) -> None:
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        self._name = "if"
+        self._delimiters = ("(", ")")
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return None
+
+
+class _ElseIfHeaderContext(Contextable, ContextStack):
+    def __init__(self) -> None:
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        self._name = "else if"
+        self._delimiters = ("(", ")")
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return None
+
+
+class IfBlockContext(Contextable, ContextStack):
+
+    def __init__(
+            self,
+            header_code: Sequence["TExpression"]) -> None:
+
+        header_ctx = _IfHeaderContext()
+
+        with header_ctx:
+            _ = PlainStatement(header_code)
+
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        self._name = ""
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return None
+
+
+class ElseIfBlockContext(Contextable, ContextStack):
+
+    def __init__(
+            self,
+            header_code: Sequence["TExpression"]) -> None:
+
+        header_ctx = _ElseIfHeaderContext()
+
+        with header_ctx:
+            _ = PlainStatement(header_code)
+
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        self._name = ""
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return None
+
+
+class ElseBlockContext(Contextable, ContextStack):
+
+    def __init__(self) -> None:
+
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        self._name = "else"
 
     def __enter__(self):
         ContextStack.__enter__(self)
@@ -275,7 +357,6 @@ class StanGenerator(CodeGenerator):
         logger.debug(
             "Entered recursive parser. Got {} objects".format(len(objects))
         )  # noqa: E501
-        code_tree: Dict[str, str] = {}
 
         code_list = []
 
@@ -285,9 +366,8 @@ class StanGenerator(CodeGenerator):
             logger.debug("Currently parsing: {}".format(code_bit))
             if isinstance(code_bit, ContextStack):
                 # Encountered a new context, parse before continuing
-                objects = code_bit.objects
-                # code_tree[code_bit] = StanGenerator.parse_recursive(objects)
-                code_list.append((code_bit, StanGenerator.parse_recursive(objects)))
+                new_objects = code_bit.objects
+                code_list.append((code_bit, StanGenerator.parse_recursive(new_objects)))
             else:
                 if not isinstance(code_bit, Expression):
                     if hasattr(code_bit, "stan_code"):
@@ -316,42 +396,17 @@ class StanGenerator(CodeGenerator):
                     code_bit = code_bit.to_stan()
                     logger.debug("Adding: {}".format(type(code_bit)))
                     code = code_bit.code + code_bit.end_delim
-                """
-                if "main" not in code_tree:
-                    code_tree["main"] = ""
-                code_tree["main"] += code
-                """
                 code_list.append(code)
         return code_list
 
     @staticmethod
     def walk_code_list(code_list) -> str:
         code = ""
-        # defs = ""
-        # node_order = sorted(code_tree.keys(), reverse=True)
 
-        """
-        for node in list(node_order):
-            if isinstance(node, FunctionsContext):
-                node_order.remove(node)
-                node_order.insert(0, node)
-        """
-        # for node in node_order:
         for node in code_list:
-            # leaf = code_tree[node]
-            # if isinstance(leaf, dict):
             if isinstance(node, tuple):
                 # encountered a sub-tree
-                """
-                if isinstance(node, DefinitionContext):
-                    if len(leaf) != 1:
-                        raise RuntimeError(
-                            "Malformed tree. Definition subtree should have exactly one node."
-                        )  # noqa: E501
-                    code += leaf["main"] + "\n"
 
-                else:
-                """
                 node_obj, sub_code_list = node
 
                 if hasattr(node_obj, "_delimiters"):
@@ -397,7 +452,7 @@ class StanFileGenerator(StanGenerator):
             if isinstance(node, tuple):
                 code = self.walk_code_list(node[1])
             else:
-                code = leaf
+                code = node
             if code:
                 name_ext = self.ensure_filename(node[0])
                 with open(self._base_filename + "_" + name_ext + ".stan", "w") as f:

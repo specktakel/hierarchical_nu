@@ -148,10 +148,10 @@ class Expression(_BaseExpression):
     def __rmul__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "*", True)
 
-    def __div__(self: "Expression", other: TExpression) -> "Expression":
+    def __truediv__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "/")
 
-    def __rdiv__(self: "Expression", other: TExpression) -> "Expression":
+    def __rtruediv__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "/", True)
 
     def __sub__(self: "Expression", other: TExpression) -> "Expression":
@@ -165,19 +165,50 @@ class Expression(_BaseExpression):
 
     def __rpow__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "^", True)
-    
+
     def __ne__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "!=")
-    
+
     def __rne__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "!=", True)
 
+    def __eq__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "==")
+
+    def __req__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "==", True)
+
+    """
+    Comparisons are used internally to sort contexts, FIX
+    def __lt__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "<")
+
+    def __rlt__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "<", True)
+
+    def __le__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "<=")
+
+    def __rle__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "<=", True)
+
+    def __gt__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, ">")
+
+    def __rgt__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, ">", True)
+
+    def __ge__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, ">=")
+
+    def __rge__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, ">=", True)
+    """
 
 class StringExpression(Expression):
     def __init__(
             self,
-            inputs: Sequence["TExpression"]
-            ):
+            inputs: Sequence["TExpression"]):
         stan_code = list(inputs)
         Expression.__init__(self, inputs, stan_code)
 
@@ -201,14 +232,9 @@ class ReturnStatement(Expression):
         stan_code += inputs
         Expression.__init__(self, inputs, stan_code)
 
-        
-class LoopStatement(Expression):
+
+class PlainStatement(Expression):
     def __init__(self, inputs: Sequence[TExpression]):
-        super().__init__(inputs, False)
+        stan_code = list(inputs)
+        super().__init__(inputs, stan_code)
         self._end_delim = ""
-        self._stan_code = list(inputs)
-        
-   
-    
-     
-    
