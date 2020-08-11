@@ -9,8 +9,8 @@ import pandas as pd  # type: ignore
 import numpy as np  # type: ignore
 import scipy.stats as stats  # type: ignore
 
-from cache import Cache
-from backend import (
+from .cache import Cache
+from .backend import (
     Expression,
     TExpression,
     TListTExpression,
@@ -29,7 +29,7 @@ from backend import (
     ForwardArrayDef,
     StanArray,
     StringExpression)
-from fitting_tools import Residuals
+from .fitting_tools import Residuals
 
 import logging
 logger = logging.getLogger(__name__)
@@ -703,7 +703,8 @@ class NorthernTracksDetectorModel(DetectorModel):
         self._angular_resolution = ang_res
         energy_res = NorthernTracksEnergyResolution(mode)
         self._energy_resolution = energy_res
-        self._eff_area = NorthernTracksEffectiveArea()
+        if mode == DistributionMode.PDF:
+            self._eff_area = NorthernTracksEffectiveArea()
 
     def _get_effective_area(self):
         return self._eff_area

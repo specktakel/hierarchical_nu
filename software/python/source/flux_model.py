@@ -1,7 +1,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
-from power_law import BoundedPowerLaw
+from .power_law import BoundedPowerLaw
 
 """
 Module for simple flux models used in 
