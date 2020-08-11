@@ -1024,6 +1024,24 @@ Esrc;
 transformed parameters
 {
 real<lower=0.0> Fs;
+vector[Ns] F;
+vector[Ns+1] allF;
+vector[Ns+1] eps;
+real<lower=0, upper=1> f;
+real<lower=0> FT;
+vector[Ns+1] lp[N];
+vector[Ns+1] logF;
+real Nex;
+vector[N] E;
 
 Fs;
+F;
+allF;
+eps;
+f;
+FT;
+lp;
+logF;
+Nex;
+E;
 }
