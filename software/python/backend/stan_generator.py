@@ -10,8 +10,13 @@ from .code_generator import (
 )
 from .stan_code import StanCodeBit
 from .expression import (
-    TExpression, TNamedExpression, Expression,
-    NamedExpression, StringExpression, LoopStatement)
+    TExpression,
+    TNamedExpression,
+    Expression,
+    NamedExpression,
+    StringExpression,
+    LoopStatement,
+)
 from .operations import FunctionCall
 import logging
 import os
@@ -79,19 +84,15 @@ class ForLoopContext(Contextable, ContextStack):
             return str
 
     def __init__(
-            self,
-            min_val: TNamedExpression,
-            max_val: TNamedExpression,
-            loop_var_name: str,
-            ) -> None:
+        self, min_val: TNamedExpression, max_val: TNamedExpression, loop_var_name: str,
+    ) -> None:
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
 
         header_code = "for ({} in {}:{})".format(
-            loop_var_name,
-            self.ensure_str(min_val),
-            self.ensure_str(max_val))
+            loop_var_name, self.ensure_str(min_val), self.ensure_str(max_val)
+        )
         self._loop_var_name = loop_var_name
 
         self._name = header_code
@@ -99,44 +100,38 @@ class ForLoopContext(Contextable, ContextStack):
     def __enter__(self):
         ContextStack.__enter__(self)
         return StringExpression([self._loop_var_name])
-    
-    
+
+
 class _WhileLoopHeaderContext(Contextable, ContextStack):
-    def __init__(
-            self,
-            ) -> None:
+    def __init__(self,) -> None:
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
- 
+
         self._name = "while"
         self._delimiters = ("(", ")")
 
     def __enter__(self):
         ContextStack.__enter__(self)
         return None
-    
-class WhileLoopContext(Contextable, ContextStack):
 
-    def __init__(
-            self,
-            header_code: Sequence["TExpression"],
-            ) -> None:
-        
+
+class WhileLoopContext(Contextable, ContextStack):
+    def __init__(self, header_code: Sequence["TExpression"],) -> None:
+
         header_ctx = _WhileLoopHeaderContext()
-        
+
         with header_ctx:
             _ = LoopStatement(header_code)
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
-        
+
         self._name = ""
 
     def __enter__(self):
         ContextStack.__enter__(self)
         return None
-    
 
 
 class UserDefinedFunction(Contextable, ContextStack):
@@ -253,6 +248,15 @@ class GeneratedQuantitiesContext(ToplevelContextSingleton):
         self._name = "generated quantities"
 
 
+class ModelContext(ToplevelContextSingleton):
+
+    ORDER = 2
+
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "model"
+
+
 class StanGenerator(CodeGenerator):
     """
     Class for autogenerating Stan code
@@ -272,7 +276,7 @@ class StanGenerator(CodeGenerator):
             "Entered recursive parser. Got {} objects".format(len(objects))
         )  # noqa: E501
         code_tree: Dict[str, str] = {}
-        
+
         code_list = []
 
         sorted_bits = sorted(objects, reverse=True)
@@ -282,7 +286,7 @@ class StanGenerator(CodeGenerator):
             if isinstance(code_bit, ContextStack):
                 # Encountered a new context, parse before continuing
                 objects = code_bit.objects
-                #code_tree[code_bit] = StanGenerator.parse_recursive(objects)
+                # code_tree[code_bit] = StanGenerator.parse_recursive(objects)
                 code_list.append((code_bit, StanGenerator.parse_recursive(objects)))
             else:
                 if not isinstance(code_bit, Expression):
@@ -311,7 +315,7 @@ class StanGenerator(CodeGenerator):
 
                     code_bit = code_bit.to_stan()
                     logger.debug("Adding: {}".format(type(code_bit)))
-                    code = code_bit.code  + code_bit.end_delim
+                    code = code_bit.code + code_bit.end_delim
                 """
                 if "main" not in code_tree:
                     code_tree["main"] = ""
@@ -324,7 +328,7 @@ class StanGenerator(CodeGenerator):
     def walk_code_list(code_list) -> str:
         code = ""
         # defs = ""
-        #node_order = sorted(code_tree.keys(), reverse=True)
+        # node_order = sorted(code_tree.keys(), reverse=True)
 
         """
         for node in list(node_order):
@@ -332,10 +336,10 @@ class StanGenerator(CodeGenerator):
                 node_order.remove(node)
                 node_order.insert(0, node)
         """
-        #for node in node_order:
+        # for node in node_order:
         for node in code_list:
-            #leaf = code_tree[node]
-            #if isinstance(leaf, dict):
+            # leaf = code_tree[node]
+            # if isinstance(leaf, dict):
             if isinstance(node, tuple):
                 # encountered a sub-tree
                 """
@@ -349,7 +353,7 @@ class StanGenerator(CodeGenerator):
                 else:
                 """
                 node_obj, sub_code_list = node
-                
+
                 if hasattr(node_obj, "_delimiters"):
                     ldelim, rdelim = node_obj._delimiters
                 else:
@@ -396,7 +400,7 @@ class StanFileGenerator(StanGenerator):
                 code = leaf
             if code:
                 name_ext = self.ensure_filename(node[0])
-                with open(self._base_filename+"_"+name_ext+".stan", "w") as f:
+                with open(self._base_filename + "_" + name_ext + ".stan", "w") as f:
                     f.write(code)
 
     def generate_single_file(self) -> None:
