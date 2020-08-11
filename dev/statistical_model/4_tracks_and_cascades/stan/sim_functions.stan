@@ -60,7 +60,7 @@ real omega_to_zenith(vector omega) {
 /**
  * Calculate the expected number of detected events from each source.
  */
-real get_Nex_sim(vector F, vector eps) {
+real get_Nex(vector F, vector eps) {
   
   int K = num_elements(F);
   real Nex = 0;
