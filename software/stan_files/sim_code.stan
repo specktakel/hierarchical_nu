@@ -1044,7 +1044,7 @@ F[Ns+1] = F0;
 FT = Fs+FT;
 f = Fs/FT;
 eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
-Nex = get_Nex(F, eps);
+Nex = get_Nex_sim(F, eps);
 w_exposure = get_exposure_weights(F, eps);
 N = poisson_rng(Nex);
 print(w_exposure);

@@ -1019,23 +1019,25 @@ F[k] = Q/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
 allF[k] = F[k];
 Fs += F[k];
 }
-F[Ns+1] = F0;
+allF[Ns+1] = F0;
 FT = F0+Fs;
 f = Fs / FT;
+logF = log(allF);
 for (i in 1:N)
 {
 lp[i] = logF;
+print("lp[i]: ",lp[i]);
 for (k in 1:Ns+1)
 {
 lp[i][k] += pareto_lpdf(Esrc[i] | Emin , alpha-1);
 E[i] = Esrc[i] / (1+z[k]);
 if (k < Ns+1) {
-lp[i][k] += NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]);
+lp[i][k] += log(NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]));
 }
 else if (k == Ns+1) {
 lp[i][k] += -2.5310242469692907;
 };
-lp[i][k] = NorthernTracksEnergyResolution(E[i], Edet[i]);
+lp[i][k] += log(NorthernTracksEnergyResolution(E[i], Edet[i]));
 }
 }
 eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
