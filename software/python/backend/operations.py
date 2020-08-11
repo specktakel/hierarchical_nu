@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Optional
 from .expression import Expression, TExpression, TListTExpression
 import logging
 logger = logging.getLogger(__name__)
@@ -13,11 +13,12 @@ class FunctionCall(Expression):
             self,
             inputs: Sequence[TExpression],
             func_name: TExpression,
-            nargs: int = 1):
+            nargs: Optional[int] = None):
 
         if isinstance(func_name, Expression):
             func_name.add_output(self)
-
+        if nargs is None:
+            nargs = len(inputs)
         stan_code: TListTExpression = [func_name, "("]
         for i in range(nargs):
             stan_code.append(inputs[i])
