@@ -1026,18 +1026,17 @@ logF = log(allF);
 for (i in 1:N)
 {
 lp[i] = logF;
-print("lp[i]: ",lp[i]);
 for (k in 1:Ns+1)
 {
 lp[i][k] += pareto_lpdf(Esrc[i] | Emin , alpha-1);
 E[i] = Esrc[i] / (1+z[k]);
 if (k < Ns+1) {
-lp[i][k] += log(NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]));
+lp[i][k] += NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]);
 }
 else if (k == Ns+1) {
 lp[i][k] += -2.5310242469692907;
 };
-lp[i][k] += log(NorthernTracksEnergyResolution(E[i], Edet[i]));
+lp[i][k] += NorthernTracksEnergyResolution(E[i], Edet[i]);
 }
 }
 eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);

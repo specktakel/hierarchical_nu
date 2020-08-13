@@ -1044,7 +1044,7 @@ F[Ns+1] = F0;
 FT = Fs+FT;
 f = Fs/FT;
 eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
-Nex = get_Nex_sim(F, eps);
+Nex = get_Nex(F, eps);
 w_exposure = get_exposure_weights(F, eps);
 N = poisson_rng(Nex);
 print(w_exposure);
@@ -1101,6 +1101,6 @@ print("problem component: ", Lambda[i]);
 };
 }
 event[i] = NorthernTracksAngularResolution_rng(E[i], omega);
-Edet[i] = NorthernTracksEnergyResolution_rng(E[i]);
+Edet[i] = pow(10,NorthernTracksEnergyResolution_rng(E[i]));
 }
 }

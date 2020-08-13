@@ -9,8 +9,13 @@ from .code_generator import (
 )
 from .stan_code import StanCodeBit
 from .expression import (
-    TExpression, TNamedExpression, Expression,
-    NamedExpression, StringExpression, PlainStatement)
+    TExpression,
+    TNamedExpression,
+    Expression,
+    NamedExpression,
+    StringExpression,
+    PlainStatement,
+)
 from .operations import FunctionCall
 import logging
 import os
@@ -78,10 +83,8 @@ class ForLoopContext(Contextable, ContextStack):
             return str
 
     def __init__(
-            self,
-            min_val: TNamedExpression,
-            max_val: TNamedExpression,
-            loop_var_name: str) -> None:
+        self, min_val: TNamedExpression, max_val: TNamedExpression, loop_var_name: str
+    ) -> None:
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
@@ -113,11 +116,7 @@ class _WhileLoopHeaderContext(Contextable, ContextStack):
 
 
 class WhileLoopContext(Contextable, ContextStack):
-    def __init__(self, header_code: Sequence["TExpression"],) -> None:
-
-    def __init__(
-            self,
-            header_code: Sequence["TExpression"]) -> None:
+    def __init__(self, header_code: Sequence["TExpression"]) -> None:
 
         header_ctx = _WhileLoopHeaderContext()
 
@@ -161,10 +160,7 @@ class _ElseIfHeaderContext(Contextable, ContextStack):
 
 
 class IfBlockContext(Contextable, ContextStack):
-
-    def __init__(
-            self,
-            header_code: Sequence["TExpression"]) -> None:
+    def __init__(self, header_code: Sequence["TExpression"]) -> None:
 
         header_ctx = _IfHeaderContext()
 
@@ -182,10 +178,7 @@ class IfBlockContext(Contextable, ContextStack):
 
 
 class ElseIfBlockContext(Contextable, ContextStack):
-
-    def __init__(
-            self,
-            header_code: Sequence["TExpression"]) -> None:
+    def __init__(self, header_code: Sequence["TExpression"]) -> None:
 
         header_ctx = _ElseIfHeaderContext()
 
@@ -203,7 +196,6 @@ class ElseIfBlockContext(Contextable, ContextStack):
 
 
 class ElseBlockContext(Contextable, ContextStack):
-
     def __init__(self) -> None:
 
         ContextStack.__init__(self)
