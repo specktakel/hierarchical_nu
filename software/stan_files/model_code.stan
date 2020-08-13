@@ -983,6 +983,8 @@ int Ngrid;
 vector[Ngrid] alpha_grid;
 vector[Ngrid] integral_grid[Ns+1];
 real T;
+real Q_scale;
+real F0_scale;
 }
 transformed data
 {
@@ -1049,4 +1051,7 @@ for (i in 1:N)
 target += log_sum_exp(lp[i]);
 }
 target += -Nex;
+Q ~ normal(0, Q_scale);
+F0 ~ normal(0, F0_scale);
+alpha ~ normal(2.0, 2.0);
 }
