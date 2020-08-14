@@ -919,20 +919,57 @@ real hist_edge_0[281] = {1.00000000e+02,1.05925373e+02,1.12201845e+02,1.18850223
  7.94328235e+08,8.41395142e+08,8.91250938e+08,9.44060876e+08,
  1.00000000e+09};
 real hist_edge_1[12] = {-1. ,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0. , 0.1};
-
 return hist_array[binary_search(value_0, hist_edge_0)][binary_search(value_1, hist_edge_1)];
+}
+vector NorthernTracksAngularResolution_rng(real true_energy,vector true_dir)
+{
+vector[6] NorthernTracksAngularResolutionPolyCoeffs = [ 3.11287843e+01,-8.72542968e+02, 8.74576241e+03,-3.72847494e+04,
+  7.46309205e+04,-5.73160697e+04]';
+return vMF_rng(true_dir, eval_poly1d(log10(truncate_value(true_energy, 133.9845723819148, 772161836.8251529)),NorthernTracksAngularResolutionPolyCoeffs));
+}
+real nt_energy_res_mix_rng(vector means,vector sigmas,vector weights)
+{
+int index;
+index = categorical_rng(weights);
+return lognormal_rng(means[index], sigmas[index]);
+}
+real NorthernTracksEnergyResolution_rng(real true_energy)
+{
+real NorthernTracksEnergyResolutionMuPolyCoeffs[3,6] = {{ 1.79123316e-03,-4.53094872e-02, 4.36942224e-01,-1.97200894e+00,
+   4.31179843e+00,-8.01759468e-01},
+ { 1.49689538e-03,-4.20876747e-02, 4.40492341e-01,-2.10673628e+00,
+   4.96463645e+00,-1.72852955e+00},
+ { 3.21899096e-03,-7.46514921e-02, 6.42180173e-01,-2.44234586e+00,
+   4.37192616e+00,-1.46775692e-01}};
+real NorthernTracksEnergyResolutionSdPolyCoeffs[3,6] = {{-5.96059287e-05, 1.01057958e-03,-6.89582620e-03, 2.77225861e-02,
+  -4.86977053e-02, 5.38079289e-02},
+ {-5.62689396e-06,-1.00372291e-03, 2.17335300e-02,-1.58891590e-01,
+   4.85621776e-01,-4.64169589e-01},
+ {-7.19239071e-06,-9.01178002e-04, 2.07119386e-02,-1.59460481e-01,
+   5.12292363e-01,-5.24058691e-01}};
+real mu_e_res[3];
+real sigma_e_res[3];
+vector[3] weights;
+for (i in 1:3)
+{
+weights[i] = 1.0/3;
+}
+for (i in 1:3)
+{
+mu_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 259.05920320586245, 77339084.25215183)), to_vector(NorthernTracksEnergyResolutionMuPolyCoeffs[i]));
+sigma_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 259.05920320586245, 77339084.25215183)), to_vector(NorthernTracksEnergyResolutionSdPolyCoeffs[i]));
+}
+return nt_energy_res_mix_rng(to_vector(log(mu_e_res)), to_vector(sigma_e_res), weights);
 }
 real NorthernTracksAngularResolution(real true_energy,vector true_dir,vector reco_dir)
 {
 vector[6] NorthernTracksAngularResolutionPolyCoeffs = [ 3.11287843e+01,-8.72542968e+02, 8.74576241e+03,-3.72847494e+04,
   7.46309205e+04,-5.73160697e+04]';
-
 return vMF_lpdf(reco_dir | true_dir, eval_poly1d(log10(truncate_value(true_energy, 133.9845723819148, 772161836.8251529)),NorthernTracksAngularResolutionPolyCoeffs));
 }
 real nt_energy_res_mix(real x,vector means,vector sigmas,vector weights)
 {
 vector[3] result;
-
 for (i in 1:3)
 {
 result[i] = log(weights)[i]+lognormal_lpdf(x | means[i], sigmas[i]);
@@ -956,7 +993,6 @@ real NorthernTracksEnergyResolutionSdPolyCoeffs[3,6] = {{-5.96059287e-05, 1.0105
 real mu_e_res[3];
 real sigma_e_res[3];
 vector[3] weights;
-
 for (i in 1:3)
 {
 weights[i] = 1.0/3;
@@ -971,49 +1007,6 @@ return nt_energy_res_mix(log10(reco_energy), to_vector(log(mu_e_res)), to_vector
 real NorthernTracksEffectiveArea(real true_energy,vector true_dir)
 {
 return NorthernTracksEffAreaHist(true_energy, cos(pi() - acos(true_dir[3])));
-}
-vector NorthernTracksAngularResolution_rng(real true_energy,vector true_dir)
-{
-vector[6] NorthernTracksAngularResolutionPolyCoeffs = [ 3.11287843e+01,-8.72542968e+02, 8.74576241e+03,-3.72847494e+04,
-  7.46309205e+04,-5.73160697e+04]';
-
-return vMF_rng(true_dir, eval_poly1d(log10(truncate_value(true_energy, 133.9845723819148, 772161836.8251529)),NorthernTracksAngularResolutionPolyCoeffs));
-}
-real nt_energy_res_mix_rng(vector means,vector sigmas,vector weights)
-{
-int index;
-
-index = categorical_rng(weights);
-return lognormal_rng(means[index], sigmas[index]);
-}
-real NorthernTracksEnergyResolution_rng(real true_energy)
-{
-real NorthernTracksEnergyResolutionMuPolyCoeffs[3,6] = {{ 1.79123316e-03,-4.53094872e-02, 4.36942224e-01,-1.97200894e+00,
-   4.31179843e+00,-8.01759468e-01},
- { 1.49689538e-03,-4.20876747e-02, 4.40492341e-01,-2.10673628e+00,
-   4.96463645e+00,-1.72852955e+00},
- { 3.21899096e-03,-7.46514921e-02, 6.42180173e-01,-2.44234586e+00,
-   4.37192616e+00,-1.46775692e-01}};
-real NorthernTracksEnergyResolutionSdPolyCoeffs[3,6] = {{-5.96059287e-05, 1.01057958e-03,-6.89582620e-03, 2.77225861e-02,
-  -4.86977053e-02, 5.38079289e-02},
- {-5.62689396e-06,-1.00372291e-03, 2.17335300e-02,-1.58891590e-01,
-   4.85621776e-01,-4.64169589e-01},
- {-7.19239071e-06,-9.01178002e-04, 2.07119386e-02,-1.59460481e-01,
-   5.12292363e-01,-5.24058691e-01}};
-real mu_e_res[3];
-real sigma_e_res[3];
-vector[3] weights;
-
-for (i in 1:3)
-{
-weights[i] = 1.0/3;
-}
-for (i in 1:3)
-{
-mu_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 259.05920320586245, 77339084.25215183)), to_vector(NorthernTracksEnergyResolutionMuPolyCoeffs[i]));
-sigma_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 259.05920320586245, 77339084.25215183)), to_vector(NorthernTracksEnergyResolutionSdPolyCoeffs[i]));
-}
-return nt_energy_res_mix_rng(to_vector(log(mu_e_res)), to_vector(sigma_e_res), weights);
 }
 }
 data
@@ -1031,7 +1024,6 @@ vector[Ngrid] alpha_grid;
 vector[Ngrid] integral_grid[Ns+1];
 real aeff_max;
 real T;
-
 }
 transformed data
 {
@@ -1043,7 +1035,6 @@ simplex[Ns+1] w_exposure;
 real Nex;
 int N;
 vector[Ns+1] eps;
-
 for (k in 1:Ns)
 {
 F[k] = Q/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
@@ -1053,7 +1044,7 @@ F[Ns+1] = F0;
 FT = Fs+FT;
 f = Fs/FT;
 eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
-Nex = get_Nex_sim(F, eps);
+Nex = get_Nex(F, eps);
 w_exposure = get_exposure_weights(F, eps);
 N = poisson_rng(Nex);
 print(w_exposure);
@@ -1075,14 +1066,14 @@ int ntrials;
 simplex[2] prob;
 unit_vector[3] event[N];
 real Nex_sim;
-
 Nex_sim = Nex;
 for (i in 1:N)
 {
 Lambda[i] = categorical_rng(w_exposure);
 accept = 0;
 ntrials = 0;
-while(accept != 1) {
+while(accept!=1)
+{
 if (Lambda[i] < Ns+1) {
 omega = varpi[Lambda[i]];
 }
@@ -1108,8 +1099,8 @@ else {
 accept = 1;
 print("problem component: ", Lambda[i]);
 };
-};
+}
 event[i] = NorthernTracksAngularResolution_rng(E[i], omega);
-Edet[i] = NorthernTracksEnergyResolution_rng(E[i]);
+Edet[i] = pow(10,NorthernTracksEnergyResolution_rng(E[i]));
 }
 }

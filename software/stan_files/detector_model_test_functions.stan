@@ -912,20 +912,17 @@ real hist_edge_0[281] = {1.00000000e+02,1.05925373e+02,1.12201845e+02,1.18850223
  7.94328235e+08,8.41395142e+08,8.91250938e+08,9.44060876e+08,
  1.00000000e+09};
 real hist_edge_1[12] = {-1. ,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0. , 0.1};
-
 return hist_array[binary_search(value_0, hist_edge_0)][binary_search(value_1, hist_edge_1)];
 }
 vector NorthernTracksAngularResolution_rng(real true_energy,vector true_dir)
 {
 vector[6] NorthernTracksAngularResolutionPolyCoeffs = [ 3.11287843e+01,-8.72542968e+02, 8.74576241e+03,-3.72847494e+04,
   7.46309205e+04,-5.73160697e+04]';
-
 return vMF_rng(true_dir, eval_poly1d(log10(truncate_value(true_energy, 133.9845723819148, 772161836.8251529)),NorthernTracksAngularResolutionPolyCoeffs));
 }
 real nt_energy_res_mix_rng(vector means,vector sigmas,vector weights)
 {
 int index;
-
 index = categorical_rng(weights);
 return lognormal_rng(means[index], sigmas[index]);
 }
@@ -946,7 +943,6 @@ real NorthernTracksEnergyResolutionSdPolyCoeffs[3,6] = {{-5.96059287e-05, 1.0105
 real mu_e_res[3];
 real sigma_e_res[3];
 vector[3] weights;
-
 for (i in 1:3)
 {
 weights[i] = 1.0/3;
@@ -958,21 +954,15 @@ sigma_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 259.0592032058624
 }
 return nt_energy_res_mix_rng(to_vector(log(mu_e_res)), to_vector(sigma_e_res), weights);
 }
-real NorthernTracksEffectiveArea(real true_energy,vector true_dir)
-{
-return NorthernTracksEffAreaHist(true_energy, cos(pi() - acos(true_dir[3])));
-}
 real NorthernTracksAngularResolution(real true_energy,vector true_dir,vector reco_dir)
 {
 vector[6] NorthernTracksAngularResolutionPolyCoeffs = [ 3.11287843e+01,-8.72542968e+02, 8.74576241e+03,-3.72847494e+04,
   7.46309205e+04,-5.73160697e+04]';
-
 return vMF_lpdf(reco_dir | true_dir, eval_poly1d(log10(truncate_value(true_energy, 133.9845723819148, 772161836.8251529)),NorthernTracksAngularResolutionPolyCoeffs));
 }
 real nt_energy_res_mix(real x,vector means,vector sigmas,vector weights)
 {
 vector[3] result;
-
 for (i in 1:3)
 {
 result[i] = log(weights)[i]+lognormal_lpdf(x | means[i], sigmas[i]);
@@ -996,7 +986,6 @@ real NorthernTracksEnergyResolutionSdPolyCoeffs[3,6] = {{-5.96059287e-05, 1.0105
 real mu_e_res[3];
 real sigma_e_res[3];
 vector[3] weights;
-
 for (i in 1:3)
 {
 weights[i] = 1.0/3;
@@ -1007,4 +996,8 @@ mu_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 259.05920320586245, 
 sigma_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 259.05920320586245, 77339084.25215183)), to_vector(NorthernTracksEnergyResolutionSdPolyCoeffs[i]));
 }
 return nt_energy_res_mix(log10(reco_energy), to_vector(log(mu_e_res)), to_vector(sigma_e_res), weights);
+}
+real NorthernTracksEffectiveArea(real true_energy,vector true_dir)
+{
+return NorthernTracksEffAreaHist(true_energy, cos(pi() - acos(true_dir[3])));
 }
