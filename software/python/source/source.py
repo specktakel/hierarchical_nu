@@ -287,3 +287,17 @@ def uv_to_icrs(unit_vector):
     coord.representation_type = "spherical"
 
     return coord.ra.rad, coord.dec.rad
+
+
+def icrs_to_uv(ra, dec):
+    """
+    convert ICRS coords (ra, dec) to unit vector
+    """
+
+    coord = SkyCoord(ra, dec, unit="deg", representation_type="spherical", frame="icrs")
+    coord.representation_type = "cartesian"
+
+    v = [coord.x, coord.y, coord.z]
+    uv = v / np.linalg.norm(v)
+
+    return uv
