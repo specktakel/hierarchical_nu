@@ -982,6 +982,8 @@ vector[Ns+1] z;
 int Ngrid;
 vector[Ngrid] alpha_grid;
 vector[Ngrid] integral_grid[Ns+1];
+vector[Ngrid] E_grid;
+vector[Ngrid] Pdet_grid[Ns+1];
 real T;
 real Q_scale;
 real F0_scale;
@@ -1039,6 +1041,7 @@ else if (k == Ns+1) {
 lp[i][k] += -2.5310242469692907;
 };
 lp[i][k] += NorthernTracksEnergyResolution(E[i], Edet[i]);
+lp[i][k] += log(interpolate(E_grid, Pdet_grid[k], E[i]));
 }
 }
 eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
