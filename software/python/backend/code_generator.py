@@ -7,6 +7,10 @@ from .baseclasses import NamedObject
 logger = logging.getLogger(__name__)
 
 
+class NoCodeGenOnStackException(Exception):
+    pass
+
+
 class ContextStack:
     """
     Similar to pymc3 models, this class implements a context manager
@@ -35,14 +39,14 @@ class ContextStack:
         if cls.STACK:
             return cls.STACK[-1]
         else:
-            raise RuntimeError("No code generator on stack")
+            raise NoCodeGenOnStackException("No code generator on stack")
 
     @classmethod
     def get_context_stack(cls):
         if cls.STACK:
             return cls.STACK
         else:
-            raise RuntimeError("No code generator on stack")
+            raise NoCodeGenOnStackException("No code generator on stack")
 
     def add_object(self, obj, at_top=False):
         if at_top:
