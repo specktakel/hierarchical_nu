@@ -4,6 +4,7 @@ to be passed to Stan models.
 """
 from itertools import product
 
+import astropy.units as u
 import numpy as np
 
 from .source.simple_source import SourceList, PointSource, DiffuseSource
@@ -57,7 +58,6 @@ class ExposureIntegral:
                     free_pars.add(par_name)
 
         self._free_pars = [Parameter.get_parameter(par_name) for par_name in list(free_pars)]
-
         self._par_grids = []
         for par in list(self._free_pars):
             if not np.all(np.isfinite(par.par_range)):
@@ -108,7 +108,7 @@ class ExposureIntegral:
         for source in self.source_list.sources:
             z = source.redshift
 
-            integral_grids_tmp = np.zeros([self._n_grid_points] * len(self._par_grids))
+            integral_grids_tmp = np.zeros([self._n_grid_points] * len(self._par_grids)) << 1 /u.s
 
             for i, grid_points in enumerate(product(*self._par_grids)):
 
@@ -120,32 +120,82 @@ class ExposureIntegral:
                 if isinstance(source, PointSource):
                     # For point sources the integral over the space angle is trivial
 
-                    dec = source.coord[0]
+                    dec = source.dec
                     cosz = -np.sin(dec)  # ONLY FOR IC!
+
+                    lower_edges = self.effective_area._tE_bin_edges[:-1] << u.GeV
+                    upper_edges = self.effective_area._tE_bin_edges[1:] << u.GeV
+
+                    integ = source.flux_model.spectral_shape.integral(lower_edges, upper_edges)
+
+                    if (
+                        cosz < self.effective_area._cosz_bin_edges[0] or
+                        cosz > self._effective_area._cosz_bin_edges[-1]
+                    ):
+                        aeff = np.zeros(len(lower_edges)) << (u.m**2)
+
+                    else:
+                        aeff = self.effective_area._eff_area[
+                            :,
+                            np.digitize(cosz, self.effective_area._cosz_bin_edges) - 1
+                        ] * u.m**2
+
+                    aeff[upper_edges < self._minimum_energy * u.GeV] = 0
+                    integral_grids_tmp[indices] += (
+                        integ * aeff * source.redshift_factor(z)
+                    ).sum()  # 1 / yr
+
+                    """
                     for j, (Em, EM) in enumerate(zip(
                         self.effective_area._tE_bin_edges[:-1],
                         self.effective_area._tE_bin_edges[1:],
                     )):
 
-                        integ = source.flux_model.spectral_shape.integral((Em, EM))
+                        # integ = source.flux_model.spectral_shape.integral(Em * u.GeV, EM * u.GeV)
+                        integ = source.flux_model.spectral_shape._integral(Em, EM) # * (1 / u.m**2 / u.s)
 
                         if (
                             cosz < self.effective_area._cosz_bin_edges[0] or
                             cosz > self._effective_area._cosz_bin_edges[-1] or
                             EM < self._minimum_energy
                         ):
-                            aeff = 0
+                            aeff = 0 # * u.m**2
                         else:
                             aeff = self.effective_area._eff_area[j][
                                 np.digitize(cosz, self.effective_area._cosz_bin_edges) - 1
-                            ]
+                            ] # * u.m**2
 
                         integral_grids_tmp[indices] += (
-                            integ * aeff * source.redshift_factor(z) * 3.154E7  # seconds / year
+                            integ * aeff * source.redshift_factor(z)
                         )  # 1 / yr
+                    """
 
                 else:
 
+                    lower_e_edges = self.effective_area._tE_bin_edges[:-1] << u.GeV
+                    upper_e_edges = self.effective_area._tE_bin_edges[1:] << u.GeV
+
+                    lower_cz_edges = self.effective_area._cosz_bin_edges[:-1]
+                    upper_cz_edges = self.effective_area._cosz_bin_edges[1:]
+
+                    dec_lower = np.pi/2 * u.rad - np.arccos(lower_cz_edges) * u.rad
+                    dec_upper = np.pi/2 * u.rad - np.arccos(upper_cz_edges) * u.rad
+
+                    integral = source.flux_model.integral(
+                        lower_e_edges[:, np.newaxis], upper_e_edges[:, np.newaxis],
+                        dec_lower[np.newaxis, :], dec_upper[np.newaxis, :],
+                        0 * u.rad, 2 * np.pi * u.rad
+                    )
+
+                    aeff = np.array(self.effective_area._eff_area, copy=True) << (u.m**2)
+                    aeff[upper_edges < self._minimum_energy * u.GeV] = 0
+
+                    integral_grids_tmp[indices] += (
+                        integral
+                        * aeff
+                        * source.redshift_factor(z)
+                    ).sum()  # 1  / yr
+                    """
                     for j, (Em, EM) in enumerate(zip(
                         self.effective_area._tE_bin_edges[:-1],
                         self.effective_area._tE_bin_edges[1:],
@@ -155,26 +205,26 @@ class ExposureIntegral:
                             self.effective_area._cosz_bin_edges[1:],
                         )):
 
-                            dec_lower = np.pi/2 - np.arccos(czm)
-                            dec_upper = np.pi/2 - np.arccos(czM)
+                            dec_lower = np.pi/2 * u.rad - np.arccos(lower_cz_edges) * u.rad
+                            dec_upper = np.pi/2 * u.rad - np.arccos(czM) * u.rad
 
                             integral = source.flux_model.integral(
-                                (Em, EM),
-                                (dec_lower, dec_upper),
-                                (0, 2*np.pi)
+                                Em * u.GeV, EM * u.GeV,
+                                dec_lower, dec_upper,
+                                0 * u.rad, 2 * np.pi * u.rad
                             )
                             # print(integral)
 
                             if EM < self._minimum_energy:
-                                aeff = 0
+                                aeff = 0 * u.m**2
                             else:
-                                aeff = self.effective_area._eff_area[j][k]
+                                aeff = self.effective_area._eff_area[j][k] * u.m**2
                             integral_grids_tmp[indices] += (
                                 integral
                                 * aeff
                                 * source.redshift_factor(z)
-                                * 3.154E7  # seconds / year
                             )  # 1  / yr
+                    """
 
             self._integral_grid.append(integral_grids_tmp)
 

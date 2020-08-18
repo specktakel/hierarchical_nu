@@ -1,8 +1,12 @@
-import numpy as np
 from abc import ABC, abstractmethod
 from typing import Tuple, Callable
 
-from .flux_model import PointSourceFluxModel
+from astropy import units as u
+import numpy as np
+
+from .flux_model import PointSourceFluxModel, PowerLawSpectrum
+from .cosmology import luminosity_distance
+from .parameter import Parameter, ParScale
 
 
 class Source(ABC):
@@ -27,9 +31,9 @@ class Source(ABC):
     def flux_model(self):
         return self._flux_model
 
-    def flux(self, energy: float, dec: float, ra: float):
+    @u.quantity_input
+    def flux(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1/(u.GeV * u.m**2 * u.s * u.sr):
         return self._flux_model(energy, dec, ra)
-        pass
 
     @abstractmethod
     def redshift_factor(self, z: float):
@@ -47,33 +51,96 @@ class PointSource(Source):
     Parameters:
         name: str
         coord: Tuple[float, float]
-            Sky coordinate of the source (dec, ra)
+            Sky coordinate of the source (dec, ra) [deg]
+
         redshift: float
         spectral_shape:
             Spectral shape of the source. Should return units 1/(GeV cm^2 s)
     """
 
+    @u.quantity_input
     def __init__(
             self,
             name: str,
-            coord: Tuple[float, float],
+            dec: u.rad,
+            ra: u.rad,
             redshift: float,
             spectral_shape: Callable[[float], float],
             *args, **kwargs):
 
         super().__init__(name)
-        self._coord = coord
+        self._dec = dec
+        self._ra = ra
         self._redshift = redshift
-        self._flux_model = PointSourceFluxModel(spectral_shape, coord)
+        self._flux_model = PointSourceFluxModel(spectral_shape, dec, ra)
         self._parameters = self._flux_model.parameters
 
-    @property
-    def coord(self):
-        return self._coord
+        # calculate luminosity
+        total_flux_int = self._flux_model.total_flux_density
+        self._luminosity = total_flux_int * (4*np.pi * luminosity_distance(redshift)**2)
 
-    @coord.setter
-    def coord(self, value):
-        self._coord = value
+    @classmethod
+    @u.quantity_input
+    def make_powerlaw_source(
+            cls,
+            name: str,
+            dec: u.rad,
+            ra: u.rad,
+            luminosity: u.erg / u.s,
+            index: float,
+            redshift: float,
+            lower: u.GeV,
+            upper: u.GeV
+            ):
+        """
+        Factory class for creating sources with powerlaw spectrum and given luminosity.
+
+        Parameters:
+            name: str
+                Source name
+            dec: u.rad,
+                Declination of the source
+            ra: u.rad,
+                Right Ascension of the source
+            luminosity: u.erg / u.s,
+                luminosity
+            index: float
+                Spectral index
+            redshift: float
+            lower: u.GeV
+                Lower energy bound
+            upper: u.GeV
+                Upper energy bound
+        """
+
+        total_flux = luminosity / (4*np.pi * luminosity_distance(redshift)**2)  # here flux is W / m^2
+
+        norm = Parameter(
+            1/u.GeV/u.s/u.m**2, "{}_norm".format(name), fixed=True, par_range=(0, np.inf), scale=ParScale.log)
+        index = Parameter(index, "ps_index", fixed=True, par_range=(1.1, 4), scale=ParScale.lin)
+
+        shape = PowerLawSpectrum(norm, 1E5 * u.GeV, index, lower, upper)
+        total_power = shape.total_flux_density
+
+        norm.value *= total_flux / total_power
+
+        return cls(name, dec, ra, redshift, shape, luminosity)
+
+    @property
+    def dec(self):
+        return self._dec
+
+    @dec.setter
+    def dec(self, value):
+        self._dec = value
+
+    @property
+    def ra(self):
+        return self._ra
+
+    @ra.setter
+    def ra(self, value):
+        self._ra = value
 
     @property
     def redshift(self):
@@ -85,6 +152,11 @@ class PointSource(Source):
 
     def redshift_factor(self, z: float):
         return self._flux_model.redshift_factor(z)
+
+    @property
+    @u.quantity_input
+    def luminosity(self) -> u.erg / u.s:
+        return self._luminosity
 
 
 class DiffuseSource(Source):
@@ -112,18 +184,6 @@ class DiffuseSource(Source):
     @redshift.setter
     def redshift(self, value):
         self._redshift = value
-
-    def flux(self, energy: float, dec: float, ra: float):
-        return self._flux_model(energy, dec, ra)
-
-    def total_flux(self, energy: float):
-        return self._flux_model.total_flux(energy)
-
-    def integral_flux(self, dec: float, ra: float, lower: float, upper: float):
-        return self._flux_model.integral_flux(dec, ra, lower, upper)
-
-    def integral_total_flux(self, lower: float, upper: float):
-        return self._flux_model.integral_toal_flux(lower, upper)
 
     def redshift_factor(self, z: float):
         return self._flux_model.redshift_factor(z)
@@ -167,9 +227,18 @@ class SourceList(ABC):
         self._sources.pop(index)
         self.N -= 1
 
+    def total_flux_int(self):
+        tot = 0
+        for source in self:
+            tot += source.flux_model.total_flux_int
+        return tot
+
     def __iter__(self):
         for source in self._sources:
             yield source
+
+    def __getitem__(self, key):
+        return self._sources[key]
 
 
 class TestSourceList(SourceList):
@@ -200,7 +269,7 @@ class TestSourceList(SourceList):
         ra, dec = uv_to_icrs(unit_vector)
 
         for i, (r, d, z) in enumerate(zip(ra, dec, redshift)):
-            source = PointSource(str(i), (d, r), z, self._spectral_shape)
+            source = PointSource(str(i), d, r, z, self._spectral_shape)
             self.add(source)
 
     def select_below_redshift(self, zth):
@@ -236,10 +305,9 @@ def spherical_to_icrs(theta, phi):
     """
 
     ra = phi
-
     dec = np.pi / 2 - theta
 
-    return ra, dec
+    return ra * u.rad, dec*u.rad
 
 
 def lists_to_tuple(list1, list2):
