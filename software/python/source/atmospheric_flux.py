@@ -7,7 +7,9 @@ from matplotlib.colors import LogNorm
 import scipy
 import pickle
 
-from .flux_model import FluxModel
+from astromodels.functions.function import Function2D, FunctionMeta
+
+from .source import DiffuseSource
 from ..cache import Cache
 from ..backend import (
     UserDefinedFunction,
@@ -22,37 +24,32 @@ from ..backend import (
 
 Cache.set_cache_dir(".cache")
 
-class AtmosphericNuMuFlux(FluxModel, UserDefinedFunction):
-    
-    CACHE_FNAME = "mceq_flux.pickle"
-    EMAX = 1E9
-    EMIN = 1
-    
+
+class _AtmosphericNuMuFluxStan(UserDefinedFunction):
     def __init__(
-        self,
-        energy_points=100,
-        theta_points=50):
+            self,
+            splined_flux,
+            log_energy_grid,
+            theta_points=50):
+        
         UserDefinedFunction.__init__(
             self,
             "AtmopshericNumuFlux",
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real")
-        FluxModel.__init__(self)
-        
-        self.energy_points = energy_points
-        self.theta_points = theta_points  
-               
-        self._setup()
+            
+
+        self.theta_points = theta_points
         
         cos_theta_grid = np.linspace(0, 1, self.theta_points)
         cos_theta_centers = 0.5*(cos_theta_grid[1:] + cos_theta_grid[:-1])
-        log_energy_grid = np.linspace(np.log10(self.EMIN), np.log10(self.EMAX), self.energy_points)
+       
         
-        spl_evals = np.empty((self.theta_points, self.energy_points))
+        spl_evals = np.empty((self.theta_points, len(log_energy_grid)))
         
         for i, cos_theta in enumerate(cos_theta_grid):
-            spl_evals[i] = self._flux_spline(cos_theta, log_energy_grid).squeeze()
+            spl_evals[i] = splined_flux(cos_theta, log_energy_grid).squeeze()
         
         with self:       
             spl_evals_stan = StanArray(
@@ -64,14 +61,9 @@ class AtmosphericNuMuFlux(FluxModel, UserDefinedFunction):
             log_energy_grid_stan = StanArray("log_energy_grid", "real", log_energy_grid)
             
             truncated_e = TruncatedParameterization(
-                "true_energy", self.EMIN, self.EMAX)
+                "true_energy", 10**log_energy_grid[0], 10**log_energy_grid[-1])
             log_trunc_e = LogParameterization(truncated_e)
-            """
-            vector_log_trunc_e = ForwardVariableDef(
-                "vector_log_trunc_e",
-                "vector[1]")
-            vector_log_trunc_e[1] << log_trunc_e
-            """
+
             # abs() since the flux is symmetric around the horizon
             cos_dir = StringExpression(["abs(cos(pi() - acos(true_dir[3])))"])
             cos_theta_bin_index = FunctionCall([cos_dir, cos_theta_grid_stan], "binary_search", 2)
@@ -97,7 +89,16 @@ class AtmosphericNuMuFlux(FluxModel, UserDefinedFunction):
             interpolate_cosz = FunctionCall([vector_coz_grid_points, vector_log_trunc_e, cos_dir], "interpolate", 3)
             _ = ReturnStatement([interpolate_cosz])
         
-      
+class AtmosphericNuMuFlux():
+    
+    CACHE_FNAME = "mceq_flux.pickle"
+    EMAX = 1E9
+    EMIN = 1
+    THETA_BINS = 100
+    
+    def __init__(self):
+        self._setup()
+       
     def _setup(self):
         if self.CACHE_FNAME in Cache:
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
@@ -150,11 +151,36 @@ class AtmosphericNuMuFlux(FluxModel, UserDefinedFunction):
     
     def integrated_spectrum(self, energy, zenith):
         pass
+                 
+    def make_stan_function(self, energy_points=100, theta_points=50):
+        log_energy_grid = np.linspace(np.log10(self.EMIN), np.log10(self.EMAX), energy_points)
+        return _AtmosphericNuMuFluxStan(
+            self._flux_spline,
+            log_energy_grid,
+            theta_points)
+
+    
+class AtmosphericNuMuSpectrum(Function2D, metaclass=FunctionMeta):
+    r"""
+        description :
+        
+            Atmospheric numu flux
+        
+        latex : $ $
+                
+        parameters : {}
+        
+        """
+    
+    def _setup(self):
+        self.atmo_flux = AtmosphericNuMuFlux()
+        
+    def _set_units(self):
+        pass
     
     
+    def evaluate(self, x, y, *args):        
+        return self.atmo_flux(x, np.pi() - y)
 
-
-        
-        
-
-        
+    def get_boundaries(self):
+        return (self.atmo_flux.EMIN, self.atmo_flux.EMAX), (-np.pi/2, np.pi/2)
