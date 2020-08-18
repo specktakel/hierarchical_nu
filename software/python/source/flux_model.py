@@ -310,7 +310,7 @@ class PowerLawSpectrum(SpectralShape):
         if index == 1:
             # special case
             int_norm = (norm / (np.power(self._normalisation_energy, -index)))
-            return int_norm * (np.log(upper/lower))
+            return int_norm * (np.log(upper / lower))
 
         # Pull out the units here because astropy screwes this up sometimes
         int_norm = (norm / (np.power(self._normalisation_energy / u.GeV, -index) * (1 - index)))
@@ -325,7 +325,7 @@ class PowerLawSpectrum(SpectralShape):
         if index == 1:
             # special case
             int_norm = (norm / (np.power(e0, -index)))
-            return int_norm * (np.log(upper/lower))
+            return int_norm * (np.log(upper / lower))
 
         # Pull out the units here because astropy screwes this up sometimes
         int_norm = (norm / (np.power(e0, -index) * (1 - index)))
@@ -341,7 +341,7 @@ class PowerLawSpectrum(SpectralShape):
         if index == 2:
             # special case
             int_norm = (norm / (np.power(self._normalisation_energy, -index)))
-            return int_norm * (np.log(upper/lower))
+            return int_norm * (np.log(upper / lower))
 
         # Pull out the units here because astropy screwes this up sometimes
         int_norm = (norm / (np.power(self._normalisation_energy / u.GeV, -index) * (2 - index)))

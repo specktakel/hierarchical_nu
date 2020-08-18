@@ -32,7 +32,7 @@ class Source(ABC):
         return self._flux_model
 
     @u.quantity_input
-    def flux(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1/(u.GeV * u.m**2 * u.s * u.sr):
+    def flux(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1 / (u.GeV * u.m**2 * u.s * u.sr):
         return self._flux_model(energy, dec, ra)
 
     @abstractmethod
@@ -77,7 +77,7 @@ class PointSource(Source):
 
         # calculate luminosity
         total_flux_int = self._flux_model.total_flux_density
-        self._luminosity = total_flux_int * (4*np.pi * luminosity_distance(redshift)**2)
+        self._luminosity = total_flux_int * (4 * np.pi * luminosity_distance(redshift)**2)
 
     @classmethod
     @u.quantity_input
@@ -113,17 +113,25 @@ class PointSource(Source):
                 Upper energy bound
         """
 
-        total_flux = luminosity / (4*np.pi * luminosity_distance(redshift)**2)  # here flux is W / m^2
+        total_flux = luminosity / (4 * np.pi * luminosity_distance(redshift)**2)  # here flux is W / m^2
 
+        # Each source has an independent normalization, thus use the source name as identifier
         norm = Parameter(
-            1/u.GeV/u.s/u.m**2, "{}_norm".format(name), fixed=True, par_range=(0, np.inf), scale=ParScale.log)
+            1 / (u.GeV * u.s * u.m**2),
+            "{}_norm".format(name),
+            fixed=False,
+            par_range=(0, np.inf),
+            scale=ParScale.log)
+
+        # The spectral index is currently shared between all sources,
         index = Parameter(index, "ps_index", fixed=True, par_range=(1.1, 4), scale=ParScale.lin)
 
         shape = PowerLawSpectrum(norm, 1E5 * u.GeV, index, lower, upper)
         total_power = shape.total_flux_density
 
         norm.value *= total_flux / total_power
-
+        norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
+        norm.fixed = True
         return cls(name, dec, ra, redshift, shape, luminosity)
 
     @property
