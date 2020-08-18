@@ -9,8 +9,13 @@ from .code_generator import (
 )
 from .stan_code import StanCodeBit
 from .expression import (
-    TExpression, TNamedExpression, Expression,
-    NamedExpression, StringExpression, PlainStatement)
+    TExpression,
+    TNamedExpression,
+    Expression,
+    NamedExpression,
+    StringExpression,
+    PlainStatement,
+)
 from .operations import FunctionCall
 import logging
 import os
@@ -78,18 +83,15 @@ class ForLoopContext(Contextable, ContextStack):
             return str
 
     def __init__(
-            self,
-            min_val: TNamedExpression,
-            max_val: TNamedExpression,
-            loop_var_name: str) -> None:
+        self, min_val: TNamedExpression, max_val: TNamedExpression, loop_var_name: str
+    ) -> None:
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
 
         header_code = "for ({} in {}:{})".format(
-            loop_var_name,
-            self.ensure_str(min_val),
-            self.ensure_str(max_val))
+            loop_var_name, self.ensure_str(min_val), self.ensure_str(max_val)
+        )
         self._loop_var_name = loop_var_name
 
         self._name = header_code
@@ -114,10 +116,7 @@ class _WhileLoopHeaderContext(Contextable, ContextStack):
 
 
 class WhileLoopContext(Contextable, ContextStack):
-
-    def __init__(
-            self,
-            header_code: Sequence["TExpression"]) -> None:
+    def __init__(self, header_code: Sequence["TExpression"]) -> None:
 
         header_ctx = _WhileLoopHeaderContext()
 
@@ -161,10 +160,7 @@ class _ElseIfHeaderContext(Contextable, ContextStack):
 
 
 class IfBlockContext(Contextable, ContextStack):
-
-    def __init__(
-            self,
-            header_code: Sequence["TExpression"]) -> None:
+    def __init__(self, header_code: Sequence["TExpression"]) -> None:
 
         header_ctx = _IfHeaderContext()
 
@@ -182,10 +178,7 @@ class IfBlockContext(Contextable, ContextStack):
 
 
 class ElseIfBlockContext(Contextable, ContextStack):
-
-    def __init__(
-            self,
-            header_code: Sequence["TExpression"]) -> None:
+    def __init__(self, header_code: Sequence["TExpression"]) -> None:
 
         header_ctx = _ElseIfHeaderContext()
 
@@ -203,7 +196,6 @@ class ElseIfBlockContext(Contextable, ContextStack):
 
 
 class ElseBlockContext(Contextable, ContextStack):
-
     def __init__(self) -> None:
 
         ContextStack.__init__(self)
@@ -330,6 +322,15 @@ class GeneratedQuantitiesContext(ToplevelContextSingleton):
         self._name = "generated quantities"
 
 
+class ModelContext(ToplevelContextSingleton):
+
+    ORDER = 2
+
+    def __init__(self):
+        ToplevelContextSingleton.__init__(self)
+        self._name = "model"
+
+
 class StanGenerator(CodeGenerator):
     """
     Class for autogenerating Stan code
@@ -387,7 +388,6 @@ class StanGenerator(CodeGenerator):
                     code_bit = code_bit.to_stan()
                     logger.debug("Adding: {}".format(type(code_bit)))
                     code = code_bit.code + code_bit.end_delim
-
                 code_list.append(code)
         return code_list
 

@@ -4,6 +4,7 @@ functions
 #include vMF.stan
 #include interpolation.stan
 #include energy_spectrum.stan
+#include sim_functions.stan
 real NorthernTracksEffAreaHist(real value_0,real value_1)
 {
 real hist_array[280,11] = {{0.00000000e+00,0.00000000e+00,0.00000000e+00,0.00000000e+00,
@@ -918,20 +919,17 @@ real hist_edge_0[281] = {1.00000000e+02,1.05925373e+02,1.12201845e+02,1.18850223
  7.94328235e+08,8.41395142e+08,8.91250938e+08,9.44060876e+08,
  1.00000000e+09};
 real hist_edge_1[12] = {-1. ,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0. , 0.1};
-
 return hist_array[binary_search(value_0, hist_edge_0)][binary_search(value_1, hist_edge_1)];
 }
 real NorthernTracksAngularResolution(real true_energy,vector true_dir,vector reco_dir)
 {
 vector[6] NorthernTracksAngularResolutionPolyCoeffs = [ 3.11287843e+01,-8.72542968e+02, 8.74576241e+03,-3.72847494e+04,
   7.46309205e+04,-5.73160697e+04]';
-
 return vMF_lpdf(reco_dir | true_dir, eval_poly1d(log10(truncate_value(true_energy, 133.9845723819148, 772161836.8251529)),NorthernTracksAngularResolutionPolyCoeffs));
 }
 real nt_energy_res_mix(real x,vector means,vector sigmas,vector weights)
 {
 vector[3] result;
-
 for (i in 1:3)
 {
 result[i] = log(weights)[i]+lognormal_lpdf(x | means[i], sigmas[i]);
@@ -955,7 +953,6 @@ real NorthernTracksEnergyResolutionSdPolyCoeffs[3,6] = {{-5.96059287e-05, 1.0105
 real mu_e_res[3];
 real sigma_e_res[3];
 vector[3] weights;
-
 for (i in 1:3)
 {
 weights[i] = 1.0/3;
@@ -985,29 +982,20 @@ vector[Ns+1] z;
 int Ngrid;
 vector[Ngrid] alpha_grid;
 vector[Ngrid] integral_grid[Ns+1];
-real aeff_max;
+vector[Ngrid] E_grid;
+vector[Ngrid] Pdet_grid[Ns+1];
 real T;
-
-omega_det;
-Edet;
-Emin;
-varpi;
-D;
-z;
-Ngrid;
-alpha_grid;
-integral_grid;
-aeff_max;
-T;
+real Q_scale;
+real F0_scale;
 }
 transformed data
 {
 vector[N] zenith;
-
 for (i in 1:N)
 {
-zenith[i] = pi() - acos(omega[i][3]);
+zenith[i] = pi() - acos(omega_det[i][3]);
 }
+print(Ngrid);
 }
 parameters
 {
@@ -1015,15 +1003,58 @@ real<lower=0.0, upper=1e+60> Q;
 real<lower=0.0, upper=500> F0;
 real<lower=1.5, upper=3.5> alpha;
 vector<lower=Emin, upper=100000000.0> [N] Esrc;
-
-Q;
-F0;
-alpha;
-Esrc;
 }
 transformed parameters
 {
 real<lower=0.0> Fs;
-
-Fs;
+vector[Ns] F;
+vector[Ns+1] allF;
+vector[Ns+1] eps;
+real<lower=0, upper=1> f;
+real<lower=0> FT;
+vector[Ns+1] lp[N];
+vector[Ns+1] logF;
+real Nex;
+vector[N] E;
+Fs = 0;
+for (k in 1:Ns)
+{
+F[k] = Q/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
+allF[k] = F[k];
+Fs += F[k];
+}
+allF[Ns+1] = F0;
+FT = F0+Fs;
+f = Fs / FT;
+logF = log(allF);
+for (i in 1:N)
+{
+lp[i] = logF;
+for (k in 1:Ns+1)
+{
+lp[i][k] += pareto_lpdf(Esrc[i] | Emin , alpha-1);
+E[i] = Esrc[i] / (1+z[k]);
+if (k < Ns+1) {
+lp[i][k] += NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]);
+}
+else if (k == Ns+1) {
+lp[i][k] += -2.5310242469692907;
+};
+lp[i][k] += NorthernTracksEnergyResolution(E[i], Edet[i]);
+lp[i][k] += log(interpolate(E_grid, Pdet_grid[k], E[i]));
+}
+}
+eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
+Nex = get_Nex(allF, eps);
+}
+model
+{
+for (i in 1:N)
+{
+target += log_sum_exp(lp[i]);
+}
+target += -Nex;
+Q ~ normal(0, Q_scale);
+F0 ~ normal(0, F0_scale);
+alpha ~ normal(2.0, 2.0);
 }
