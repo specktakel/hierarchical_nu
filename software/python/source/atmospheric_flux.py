@@ -97,10 +97,15 @@ class AtmosphericNuMuFlux(FluxModel):
     EMIN = 1 * u.GeV
     THETA_BINS = 100
 
-    def __init__(self, *args, **kwargs):
+    @u.quantity_input
+    def __init__(self, lower_energy: u.GeV, upper_energy: u.GeV, *args, **kwargs):
         super().__init__()
         self._setup()
         self._parameters = {}
+        if (lower_energy < self.EMIN) or (upper_energy > self.EMAX):
+            raise ValueError("Invalid energy bounds")
+        self._lower_energy = lower_energy
+        self._upper_energy = upper_energy
 
     def _setup(self):
         if self.CACHE_FNAME in Cache:
@@ -183,7 +188,7 @@ class AtmosphericNuMuFlux(FluxModel):
         energy = energy.value
 
         def wrap_call(dec):
-            return self.call_fast(energy, dec, 0)
+            return self.call_fast(energy, dec, 0) * np.sin(dec)
 
         integral = quad(wrap_call, -np.pi, np.pi)[0] / (u.cm**2 * u.s * u.rad * u.GeV)
         ra_int = 2 * np.pi * u.rad
@@ -205,7 +210,7 @@ class AtmosphericNuMuFlux(FluxModel):
 
     @property
     def energy_bounds(self):
-        return (self.EMIN, self.EMAX)
+        return (self._lower_energy, self._upper_energy)
 
     @u.quantity_input
     def integral(
@@ -217,8 +222,8 @@ class AtmosphericNuMuFlux(FluxModel):
             ra_low: u.rad,
             ra_up: u.rad) -> 1 / (u.m**2 * u.s):
 
-        def wrap_call(log10_energy, dec):
-            return self.call_fast(10**log10_energy, dec, 0) * 10**log10_energy
+        def wrap_call(log_energy, dec):
+            return self.call_fast(np.exp(log_energy), dec, 0) * np.exp(log_energy) * (np.sin(dec))
 
         e_low = (e_low / u.GeV).value
         e_up = (e_up / u.GeV).value
@@ -230,7 +235,6 @@ class AtmosphericNuMuFlux(FluxModel):
         ra_up = (ra_up / u.rad).value
 
         # TODO: Make sure precision is good
-        integral = dblquad(wrap_call, dec_low, dec_up, lambda _: np.log10(e_low), lambda _: np.log10(e_up))
+        integral = dblquad(wrap_call, dec_low, dec_up, lambda _: np.log(e_low), lambda _: np.log(e_up))
         integral = integral[0] / (u.cm**2 * u.s * u.rad)
-
         return integral * ra_int
