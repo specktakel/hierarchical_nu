@@ -255,7 +255,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
 
             log_mu = FunctionCall([mu], "log")
 
-            with ForLoopContext(1, self.n_components,  "i") as i:
+            with ForLoopContext(1, self.n_components, "i") as i:
                 mu[i] << ["eval_poly1d(", log_trunc_e, ", ",
                           "to_vector(", mu_poly_coeffs[i], "))"]
 

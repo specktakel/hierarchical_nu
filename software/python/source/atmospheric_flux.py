@@ -1,5 +1,6 @@
 from functools import partial
 import pickle
+from itertools import product
 
 import astropy.units as u
 import numpy as np
@@ -222,19 +223,27 @@ class AtmosphericNuMuFlux(FluxModel):
             ra_low: u.rad,
             ra_up: u.rad) -> 1 / (u.m**2 * u.s):
 
-        def wrap_call(log_energy, dec):
-            return self.call_fast(np.exp(log_energy), dec, 0) * np.exp(log_energy) * (np.sin(dec))
+        def _integral(e_low, e_up, dec_low, dec_up, ra_low, ra_up):
+
+            def wrap_call(log_energy, dec):
+                return self.call_fast(np.exp(log_energy), dec, 0) * np.exp(log_energy) * (np.sin(dec))
+
+            ra_int = (ra_up - ra_low) * u.rad
+
+            integral = dblquad(wrap_call, dec_low, dec_up, lambda _: np.log(e_low), lambda _: np.log(e_up))
+            integral = integral[0] / (u.cm**2 * u.s * u.rad)
+
+            return integral * ra_int
+
+        vect_int = np.vectorize(_integral)
 
         e_low = (e_low / u.GeV).value
         e_up = (e_up / u.GeV).value
         dec_low = (dec_low / u.rad).value
         dec_up = (dec_up / u.rad).value
-
-        ra_int = ra_up - ra_low
         ra_low = (ra_low / u.rad).value
         ra_up = (ra_up / u.rad).value
 
-        # TODO: Make sure precision is good
-        integral = dblquad(wrap_call, dec_low, dec_up, lambda _: np.log(e_low), lambda _: np.log(e_up))
-        integral = integral[0] / (u.cm**2 * u.s * u.rad)
-        return integral * ra_int
+        return vect_int(e_low, e_up, dec_low, dec_up, ra_low, ra_up)
+
+

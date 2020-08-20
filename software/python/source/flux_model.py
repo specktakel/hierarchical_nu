@@ -6,6 +6,10 @@ import numpy as np
 
 from .power_law import BoundedPowerLaw
 from .parameter import Parameter
+from ..backend.stan_generator import UserDefinedFunction
+from ..backend.operations import FunctionCall
+from ..backend.variable_definitions import ForwardVariableDef
+from ..backend.expression import StringExpression, ReturnStatement
 
 """
 Module for simple flux models used in
@@ -21,12 +25,12 @@ class SpectralShape(ABC):
 
     @u.quantity_input
     @abstractmethod
-    def __call__(self, energy: u.GeV) -> 1/(u.GeV * u.m**2 * u.s):
+    def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
         pass
 
     @u.quantity_input
     @abstractmethod
-    def integral(self, lower: u.GeV, upper: u.GeV) -> 1/(u.m**2 * u.s):
+    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
         pass
 
     @property
@@ -46,6 +50,11 @@ class SpectralShape(ABC):
         """
         pass
 
+    @classmethod
+    @abstractmethod
+    def make_stan_sampling_func(cls):
+        pass
+
 
 class FluxModel(ABC):
     """
@@ -58,18 +67,18 @@ class FluxModel(ABC):
 
     @u.quantity_input
     @abstractmethod
-    def __call__(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1/(u.GeV * u.s * u.m**2 * u.sr):
+    def __call__(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
         pass
 
     @u.quantity_input
     @abstractmethod
-    def total_flux(self, energy: u.GeV) -> 1/(u.m**2 * u.s * u.GeV):
+    def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         pass
 
     @property
     @u.quantity_input
     @abstractmethod
-    def total_flux_int(self) -> 1/(u.m**2 * u.s):
+    def total_flux_int(self) -> 1 / (u.m**2 * u.s):
         pass
 
     @property
@@ -103,6 +112,11 @@ class FluxModel(ABC):
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
         pass
 
+    @classmethod
+    @abstractmethod
+    def make_stan_sampling_func(cls):
+        pass
+
 
 class PointSourceFluxModel(FluxModel):
     @u.quantity_input
@@ -119,7 +133,7 @@ class PointSourceFluxModel(FluxModel):
         self.ra = ra
 
     @u.quantity_input
-    def __call__(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1/(u.GeV * u.s * u.m**2 * u.sr):
+    def __call__(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
         if (dec == self.dec) and (ra == self.ra):
             return self._spectral_shape(energy) / (4 * np.pi * u.sr)
         return 0
@@ -157,12 +171,12 @@ class PointSourceFluxModel(FluxModel):
         return int
 
     @u.quantity_input
-    def total_flux(self, energy: u.GeV) -> 1/(u.m**2 * u.s * u.GeV):
+    def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         return self._spectral_shape(energy)
 
     @property
     @u.quantity_input
-    def total_flux_int(self) -> 1/(u.m**2 * u.s):
+    def total_flux_int(self) -> 1 / (u.m**2 * u.s):
         return self._spectral_shape.integral(*self._spectral_shape.energy_bounds)
 
     @property
@@ -173,6 +187,18 @@ class PointSourceFluxModel(FluxModel):
     def redshift_factor(self, z: float):
         return self._spectral_shape.redshift_factor(z)
 
+    def make_stan_sampling_func(self, f_name):
+        shape_rng = self._spectral_shape.make_stan_sampling_func()
+        func = UserDefinedFunction(f_name, ["alpha", "e_low", "e_up", "dec", "ra"], ["real", "real", "real"], "vector[3]")
+
+        with func:
+            ret_vec = ForwardVariableDef("ret_vec", "vector[3]")
+            ret_vec[1] << FunctionCall(["alpha", "e_low", "e_up"], shape_rng)
+            ret_vec[2] << StringExpression(["dec"])
+            ret_vec[3] << StringExpression(["ra"])
+
+            ReturnStatement([ret_vec])
+
 
 class IsotropicDiffuseBG(FluxModel):
     def __init__(self, spectral_shape: SpectralShape, *args, **kwargs):
@@ -181,16 +207,16 @@ class IsotropicDiffuseBG(FluxModel):
         self._parameters = spectral_shape.parameters
 
     @u.quantity_input
-    def __call__(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1/(u.GeV * u.s * u.m**2 * u.sr):
+    def __call__(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
         return self._spectral_shape(energy) / (4 * np.pi * u.sr)
 
     @u.quantity_input
-    def total_flux(self, energy: u.GeV) -> 1/(u.m**2 * u.s * u.GeV):
+    def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         return self._spectral_shape(energy)
 
     @property
     @u.quantity_input
-    def total_flux_int(self) -> 1/(u.m**2 * u.s):
+    def total_flux_int(self) -> 1 / (u.m**2 * u.s):
         return self._spectral_shape.integral(*self._spectral_shape.energy_bounds)
 
     @property
@@ -360,26 +386,20 @@ class PowerLawSpectrum(SpectralShape):
 
         return self.power_law.samples(N)
 
+    @classmethod
+    def make_stan_sampling_func(cls):
+        func = UserDefinedFunction("powerlaw_rng", ["alpha" "e_low", "e_up"], ["real", "real", "real"], "real")
 
-#     def _rejection_sample(self, min_energy):
-#         """
-#         Sample energies from the power law.
-#         Uses rejection sampling.
+        with func:
+            uni_sample = ForwardVariableDef("uni_sample", "real")
+            norm = ForwardVariableDef("norm", "real")
+            alpha = StringExpression(["alpha"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
 
-#         :param min_energy: Minimum energy to sample from [GeV].
-#         """
+            norm << (1 - alpha) / (e_up ** (1 - alpha) - e_low ** (1 - alpha))
 
-#         dist_upper_lim = self.spectrum(min_energy)
+            uni_sample << FunctionCall([0, 1], "uniform_rng")
+            ReturnStatement([(uni_sample * (1 - alpha) / norm + e_low ** (1 - alpha)) ** (1 / (1 - alpha))])
 
-#         accepted = False
-
-#         while not accepted:
-
-#             energy = np.random.uniform(min_energy, 1e3*min_energy)
-#             dist = np.random.uniform(0, dist_upper_lim)
-
-#             if dist < self.spectrum(energy):
-
-#                 accepted = True
-
-#         return energy
+        return "powerlaw_rng"
