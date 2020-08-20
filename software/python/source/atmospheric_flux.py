@@ -43,8 +43,7 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
 
         self.theta_points = theta_points
 
-        cos_theta_grid = np.linspace(0, 1, self.theta_points)
-        cos_theta_centers = 0.5 * (cos_theta_grid[1:] + cos_theta_grid[:-1])
+        cos_theta_grid = np.linspace(-1, 1, self.theta_points)
 
         spl_evals = np.empty((self.theta_points, len(log_energy_grid)))
 
@@ -63,11 +62,13 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             truncated_e = TruncatedParameterization(
                 "true_energy", 10**log_energy_grid[0], 10**log_energy_grid[-1])
             log_trunc_e = LogParameterization(truncated_e)
+            # StringExpression(["print(\"log_trunc_e = \",",log_trunc_e,")"])
 
             # abs() since the flux is symmetric around the horizon
             cos_dir = StringExpression(["abs(cos(pi() - acos(true_dir[3])))"])
             cos_theta_bin_index = FunctionCall([cos_dir, cos_theta_grid_stan], "binary_search", 2)
-
+            # StringExpression(["print(\"cos_dir = \",",cos_dir,")"])
+            # StringExpression(["print(\"cos_theta_bin_index = \",",cos_theta_bin_index,")"])
             vect_spl_vals_low = FunctionCall([spl_evals_stan[cos_theta_bin_index]], "to_vector")
             vect_spl_vals_high = FunctionCall([spl_evals_stan[cos_theta_bin_index + 1]], "to_vector")
             vect_log_e_grid = FunctionCall([log_energy_grid_stan], "to_vector")
@@ -88,7 +89,7 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             vector_coz_grid_points[2] << cos_theta_grid_stan[cos_theta_bin_index + 1]
 
             interpolate_cosz = FunctionCall([vector_coz_grid_points, vector_log_trunc_e, cos_dir], "interpolate", 3)
-            _ = ReturnStatement([interpolate_cosz])
+            _ = ReturnStatement([(10 ** interpolate_cosz) * 1E4])
 
 
 class AtmosphericNuMuFlux(FluxModel):
@@ -96,7 +97,7 @@ class AtmosphericNuMuFlux(FluxModel):
     CACHE_FNAME = "mceq_flux.pickle"
     EMAX = 1E9 * u.GeV
     EMIN = 1 * u.GeV
-    THETA_BINS = 100
+    THETA_BINS = 50
 
     @u.quantity_input
     def __init__(self, lower_energy: u.GeV, upper_energy: u.GeV, *args, **kwargs):
@@ -133,9 +134,12 @@ class AtmosphericNuMuFlux(FluxModel):
                     (mceq.get_solution('numu')
                      + mceq.get_solution('antinumu')))
 
-            emask = (mceq.e_grid < self.EMAX) & (mceq.e_grid > self.EMIN)
+            theta_grid_2 = np.degrees(np.arccos(np.linspace(-1, 0, self.THETA_BINS)))[:-1]
+            numu_fluxes = numu_fluxes[::-1][:-1] + numu_fluxes
+
+            emask = (mceq.e_grid < self.EMAX / u.GeV) & (mceq.e_grid > self.EMIN / u.GeV)
             splined_flux = scipy.interpolate.RectBivariateSpline(
-                np.cos(np.radians(theta_grid)),
+                np.cos(np.radians(np.concatenate((theta_grid_2, theta_grid)))),
                 np.log10(mceq.e_grid[emask]),
                 np.log10(numu_fluxes)[:, emask],
             )
@@ -144,11 +148,14 @@ class AtmosphericNuMuFlux(FluxModel):
                 pickle.dump(splined_flux, fr)
 
     def make_stan_function(self, energy_points=100, theta_points=50):
-        log_energy_grid = np.linspace(np.log10(self.EMIN), np.log10(self.EMAX), energy_points)
-        return _AtmosphericNuMuFluxStan(
+        log_energy_grid = np.linspace(np.log10(self.EMIN / u.GeV).value, np.log10(self.EMAX / u.GeV).value,
+                                      energy_points)
+
+        stan_func = _AtmosphericNuMuFluxStan(
             self._flux_spline,
             log_energy_grid,
             theta_points)
+        return stan_func
 
     @u.quantity_input
     def __call__(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
@@ -186,15 +193,20 @@ class AtmosphericNuMuFlux(FluxModel):
     @u.quantity_input
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
 
-        energy = energy.value
+        energy = (energy / u.GeV).value
 
-        def wrap_call(dec):
-            return self.call_fast(energy, dec, 0) * np.sin(dec)
+        def _integral(energy):
+            def wrap_call(dec):
+                return self.call_fast(energy, dec, 0) * np.sin(dec)
 
-        integral = quad(wrap_call, -np.pi, np.pi)[0] / (u.cm**2 * u.s * u.rad * u.GeV)
-        ra_int = 2 * np.pi * u.rad
+            integral = quad(wrap_call, -np.pi, np.pi)[0]
+            ra_int = 2 * np.pi
 
-        return integral * ra_int
+            return integral * ra_int
+
+        vect_int = np.vectorize(_integral)
+
+        return vect_int(energy) << (1 / (u.m**2 * u.s * u.GeV))
 
     @property
     @u.quantity_input
@@ -228,12 +240,12 @@ class AtmosphericNuMuFlux(FluxModel):
             def wrap_call(log_energy, dec):
                 return self.call_fast(np.exp(log_energy), dec, 0) * np.exp(log_energy) * (np.sin(dec))
 
-            ra_int = (ra_up - ra_low) * u.rad
+            ra_int = (ra_up - ra_low)
 
             integral = dblquad(wrap_call, dec_low, dec_up, lambda _: np.log(e_low), lambda _: np.log(e_up))
-            integral = integral[0] / (u.cm**2 * u.s * u.rad)
+            integral = integral[0] * ra_int
 
-            return integral * ra_int
+            return integral
 
         vect_int = np.vectorize(_integral)
 
@@ -244,6 +256,7 @@ class AtmosphericNuMuFlux(FluxModel):
         ra_low = (ra_low / u.rad).value
         ra_up = (ra_up / u.rad).value
 
-        return vect_int(e_low, e_up, dec_low, dec_up, ra_low, ra_up)
+        return vect_int(e_low, e_up, dec_low, dec_up, ra_low, ra_up) << (1 / (u.cm**2 * u.s))
 
-
+    def make_stan_sampling_func(cls, f_name):
+        pass

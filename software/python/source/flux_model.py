@@ -112,9 +112,8 @@ class FluxModel(ABC):
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
         pass
 
-    @classmethod
     @abstractmethod
-    def make_stan_sampling_func(cls):
+    def make_stan_sampling_func(self, f_name: str) -> UserDefinedFunction:
         pass
 
 
@@ -187,17 +186,20 @@ class PointSourceFluxModel(FluxModel):
     def redshift_factor(self, z: float):
         return self._spectral_shape.redshift_factor(z)
 
-    def make_stan_sampling_func(self, f_name):
+    def make_stan_sampling_func(self, f_name: str) -> UserDefinedFunction:
         shape_rng = self._spectral_shape.make_stan_sampling_func()
-        func = UserDefinedFunction(f_name, ["alpha", "e_low", "e_up", "dec", "ra"], ["real", "real", "real"], "vector[3]")
+        func = UserDefinedFunction(
+            f_name, ["alpha", "e_low", "e_up", "dec", "ra"], ["real", "real", "real"], "vector")
 
         with func:
             ret_vec = ForwardVariableDef("ret_vec", "vector[3]")
-            ret_vec[1] << FunctionCall(["alpha", "e_low", "e_up"], shape_rng)
+            ret_vec[1] << shape_rng("alpha", "e_low", "e_up")
             ret_vec[2] << StringExpression(["dec"])
             ret_vec[3] << StringExpression(["ra"])
 
             ReturnStatement([ret_vec])
+
+        return func
 
 
 class IsotropicDiffuseBG(FluxModel):
@@ -249,6 +251,22 @@ class IsotropicDiffuseBG(FluxModel):
         dec_int = (np.sin(dec_up) - np.sin(dec_low)) * u.rad
 
         return self._spectral_shape.integral(e_low, e_up) * ra_int * dec_int / (4 * np.pi * u.sr)
+
+    def make_stan_sampling_func(self, f_name: str) -> UserDefinedFunction:
+        shape_rng = self._spectral_shape.make_stan_sampling_func(f_name+"_shape_rng")
+        func = UserDefinedFunction(
+            f_name, ["alpha", "e_low", "e_up"], ["real", "real", "real"], "vector")
+
+        with func:
+            pi = FunctionCall([], "pi")
+            ret_vec = ForwardVariableDef("ret_vec", "vector[3]")
+            ret_vec[1] << shape_rng("alpha", "e_low", "e_up")
+            ret_vec[2] << FunctionCall([FunctionCall([-1, 1], "uniform_rng")], "acos") - (pi / 2)
+            ret_vec[3] << FunctionCall([0, 2 * pi], "uniform_rng")
+
+            ReturnStatement([ret_vec])
+
+        return func
 
 
 class PowerLawSpectrum(SpectralShape):
@@ -387,8 +405,8 @@ class PowerLawSpectrum(SpectralShape):
         return self.power_law.samples(N)
 
     @classmethod
-    def make_stan_sampling_func(cls):
-        func = UserDefinedFunction("powerlaw_rng", ["alpha" "e_low", "e_up"], ["real", "real", "real"], "real")
+    def make_stan_sampling_func(cls, f_name) -> UserDefinedFunction:
+        func = UserDefinedFunction(f_name, ["alpha", "e_low", "e_up"], ["real", "real", "real"], "real")
 
         with func:
             uni_sample = ForwardVariableDef("uni_sample", "real")
@@ -402,4 +420,4 @@ class PowerLawSpectrum(SpectralShape):
             uni_sample << FunctionCall([0, 1], "uniform_rng")
             ReturnStatement([(uni_sample * (1 - alpha) / norm + e_low ** (1 - alpha)) ** (1 / (1 - alpha))])
 
-        return "powerlaw_rng"
+        return func
