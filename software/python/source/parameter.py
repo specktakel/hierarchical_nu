@@ -37,6 +37,7 @@ class Parameter:
             self.__dict__ = self.__par_registry[name].__dict__
         else:
             self._value = value
+            self._initial_val = value
             self._fixed = fixed
             self._par_range = par_range
             self._scale = scale
@@ -102,3 +103,7 @@ class Parameter:
 
     def __repr__(self):
         return "Parameter {} = {}".format(self.name, self.value)
+    
+    def reset(self):
+        """Reset value to initial val"""
+        self.value = self._initial_val
