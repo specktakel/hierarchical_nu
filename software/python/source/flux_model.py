@@ -373,7 +373,8 @@ class PowerLawSpectrum(SpectralShape):
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value
 
-        # Check bounds
+        # Check bounds for each upper/lower pair
+        # FixMe make work for arrays too.
         if upper <= self._lower_energy:
             return 0.0 * 1 / (u.m ** 2 * u.s)
         elif lower < self._lower_energy and upper > self._lower_energy:

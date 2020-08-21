@@ -27,9 +27,9 @@ class ExposureIntegral:
     def __init__(
         self,
         source_list: SourceList,
-        effective_area,
+        detector_model,
         observation_time: u.year,
-        minimum_energy: u.GeV,
+        min_det_energy: u.GeV,
         n_grid_points: int = 50,
     ):
         """
@@ -38,19 +38,21 @@ class ExposureIntegral:
         effective area, multiplied by the observation time.
 
         :param source_list: An instance of SourceList.
-        :param effective_area: An uninstantiated EffectiveArea class.
+        :param DetectorModel: An uninstantiated DetectorModel class.
         :param observation_time: Observation time in years.
-        :param minimum_energy: The minimum energy to integrate over in GeV.
+        :param min_det_energy: The energy threshold of our detected sample in GeV.
         """
 
         self._source_list = source_list
         self._observation_time = observation_time
-        self._minimum_energy = minimum_energy
+        self._min_det_energy = min_det_energy
         self._n_grid_points = n_grid_points
 
-        # Instantiate the given effective area class to access values
+        # Instantiate the given Detector class to access values
         with StanGenerator() as cg:
-            self._effective_area = effective_area()
+            dm = detector_model()
+            self._effective_area = dm.effective_area
+            self._energy_resolution = dm.energy_resolution
 
         self._parameter_source_map = defaultdict(list)
         self._source_parameter_map = defaultdict(list)
@@ -135,8 +137,6 @@ class ExposureIntegral:
                     * u.m ** 2
                 )
 
-            aeff[upper_edges < self._minimum_energy] = 0
-
         else:
 
             lower_e_edges = self.effective_area._tE_bin_edges[:-1] << u.GeV
@@ -159,7 +159,6 @@ class ExposureIntegral:
             )
 
             aeff = np.array(self.effective_area._eff_area, copy=True) << (u.m ** 2)
-            aeff[upper_e_edges < self._minimum_energy] = 0
 
         return (integral * aeff * source.redshift_factor(z)).sum()
 
