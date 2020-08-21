@@ -1,131 +1,385 @@
-import numpy as np
 from abc import ABC, abstractmethod
+from typing import Dict, Tuple
+
+import astropy.units as u
+import numpy as np
 
 from .power_law import BoundedPowerLaw
+from .parameter import Parameter
 
 """
-Module for simple flux models used in 
+Module for simple flux models used in
 neutrino detection calculations
 """
+
+
+class SpectralShape(ABC):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self._parameters: Dict[str, Parameter] = {}
+
+    @u.quantity_input
+    @abstractmethod
+    def __call__(self, energy: u.GeV) -> 1/(u.GeV * u.m**2 * u.s):
+        pass
+
+    @u.quantity_input
+    @abstractmethod
+    def integral(self, lower: u.GeV, upper: u.GeV) -> 1/(u.m**2 * u.s):
+        pass
+
+    @property
+    @u.quantity_input
+    @abstractmethod
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
+        pass
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    @abstractmethod
+    def redshift_factor(self, redshift: float):
+        """
+        Factor that appears when evaluating the spectrum in the local frame
+        """
+        pass
+
 
 class FluxModel(ABC):
     """
     Abstract base class for flux models.
-    """        
-        
-    @abstractmethod
-    def spectrum(self):
-
-        pass
-
-    @abstractmethod
-    def integrated_spectrum(self):
-
-        pass
-
-
-    
-class PowerLawFlux(FluxModel):
-    """
-    Power law flux models.
     """
 
-    def __init__(self, normalisation, normalisation_energy, index,
-                 lower_energy=1e2, upper_energy=np.inf):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self._parameters: Dict[str, Parameter] = {}
+
+    @u.quantity_input
+    @abstractmethod
+    def __call__(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1/(u.GeV * u.s * u.m**2 * u.sr):
+        pass
+
+    @u.quantity_input
+    @abstractmethod
+    def total_flux(self, energy: u.GeV) -> 1/(u.m**2 * u.s * u.GeV):
+        pass
+
+    @property
+    @u.quantity_input
+    @abstractmethod
+    def total_flux_int(self) -> 1/(u.m**2 * u.s):
+        pass
+
+    @property
+    @abstractmethod
+    def energy_bounds(self):
+        pass
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    @abstractmethod
+    def redshift_factor(self, z: float):
+        pass
+
+    @u.quantity_input
+    @abstractmethod
+    def integral(
+            self,
+            e_low: u.GeV,
+            e_up: u.GeV,
+            dec_low: u.rad,
+            dec_up: u.rad,
+            ra_low: u.rad,
+            ra_up: u.rad) -> 1 / (u.m**2 * u.s):
+        pass
+
+    @property
+    @u.quantity_input
+    @abstractmethod
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
+        pass
+
+
+class PointSourceFluxModel(FluxModel):
+    @u.quantity_input
+    def __init__(
+            self,
+            spectral_shape: SpectralShape,
+            dec: u.rad,
+            ra: u.rad,
+            *args, **kwargs):
+        super().__init__(self)
+        self._spectral_shape = spectral_shape
+        self._parameters = spectral_shape.parameters
+        self.dec = dec
+        self.ra = ra
+
+    @u.quantity_input
+    def __call__(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1/(u.GeV * u.s * u.m**2 * u.sr):
+        if (dec == self.dec) and (ra == self.ra):
+            return self._spectral_shape(energy) / (4 * np.pi * u.sr)
+        return 0
+
+    @staticmethod
+    def _is_in_bounds(value: float, bounds: Tuple[float, float]):
+        return bounds[0] <= value <= bounds[1]
+
+    @property
+    def spectral_shape(self):
+        return self._spectral_shape
+
+    @property
+    def energy_bounds(self):
+        return self._spectral_shape.energy_bounds
+
+    @u.quantity_input
+    def integral(
+            self,
+            e_low: u.GeV,
+            e_up: u.GeV,
+            dec_low: u.rad,
+            dec_up: u.rad,
+            ra_low: u.rad,
+            ra_up: u.rad) -> 1 / (u.m**2 * u.s):
+        if not self._is_in_bounds(self.dec, (dec_low, dec_up)):
+            return 0
+        if not self._is_in_bounds(self.ra, ra_low, ra_up):
+            return 0
+
+        ra_int = ra_up - ra_low
+        dec_int = (np.sin(dec_up) - np.sin(dec_low)) * u.rad
+
+        int = self._spectral_shape.integral(e_low, e_up) * ra_int * dec_int / (4 * np.pi * u.sr)
+        return int
+
+    @u.quantity_input
+    def total_flux(self, energy: u.GeV) -> 1/(u.m**2 * u.s * u.GeV):
+        return self._spectral_shape(energy)
+
+    @property
+    @u.quantity_input
+    def total_flux_int(self) -> 1/(u.m**2 * u.s):
+        return self._spectral_shape.integral(*self._spectral_shape.energy_bounds)
+
+    @property
+    @u.quantity_input
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
+        return self._spectral_shape.total_flux_density
+
+    def redshift_factor(self, z: float):
+        return self._spectral_shape.redshift_factor(z)
+
+
+class IsotropicDiffuseBG(FluxModel):
+    def __init__(self, spectral_shape: SpectralShape, *args, **kwargs):
+        super().__init__(self)
+        self._spectral_shape = spectral_shape
+        self._parameters = spectral_shape.parameters
+
+    @u.quantity_input
+    def __call__(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1/(u.GeV * u.s * u.m**2 * u.sr):
+        return self._spectral_shape(energy) / (4 * np.pi * u.sr)
+
+    @u.quantity_input
+    def total_flux(self, energy: u.GeV) -> 1/(u.m**2 * u.s * u.GeV):
+        return self._spectral_shape(energy)
+
+    @property
+    @u.quantity_input
+    def total_flux_int(self) -> 1/(u.m**2 * u.s):
+        return self._spectral_shape.integral(*self._spectral_shape.energy_bounds)
+
+    @property
+    @u.quantity_input
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
+        return self._spectral_shape.total_flux_density
+
+    def redshift_factor(self, z: float):
+        return self._spectral_shape.redshift_factor(z)
+
+    @property
+    def spectral_shape(self):
+        return self._spectral_shape
+
+    @property
+    def energy_bounds(self):
+        return self._spectral_shape.energy_bounds
+
+    @u.quantity_input
+    def integral(
+            self,
+            e_low: u.GeV,
+            e_up: u.GeV,
+            dec_low: u.rad,
+            dec_up: u.rad,
+            ra_low: u.rad,
+            ra_up: u.rad) -> 1 / (u.m**2 * u.s):
+
+        ra_int = ra_up - ra_low
+        dec_int = (np.sin(dec_up) - np.sin(dec_low)) * u.rad
+
+        return self._spectral_shape.integral(e_low, e_up) * ra_int * dec_int / (4 * np.pi * u.sr)
+
+
+class PowerLawSpectrum(SpectralShape):
+    """
+    Power law shape
+    """
+    @u.quantity_input
+    def __init__(
+            self,
+            normalisation: Parameter,
+            normalisation_energy: u.GeV,
+            index: Parameter,
+            lower_energy: u.GeV = 1e2*u.GeV,
+            upper_energy: u.GeV = np.inf*u.GeV,
+            *args, **kwargs):
         """
-        Power law flux models. 
+        Power law flux models.
 
-        :param normalisation: Flux normalisation [GeV^-1 cm^-2 s^-1 sr^-1] or [GeV^-1 cm^-2 s^-1] for point sources.
-        :param normalisation energy: Energy at which flux is normalised [GeV].
-        :param index: Spectral index of the power law.
-        :param lower_energy: Lower energy bound [GeV].
-        :param upper_energy: Upper enegry bound [GeV], unbounded by default.
+        normalisation: float
+            Flux normalisation [GeV^-1 m^-2 s^-1]
+        normalisation_energy: float
+            Energy at which flux is normalised [GeV].
+        index: float
+            Spectral index of the power law.
+        lower_energy: float
+            Lower energy bound [GeV].
+        upper_energy: float
+            Upper enegry bound [GeV], unbounded by default.
         """
 
         super().__init__()
-        
-        self._normalisation = normalisation
-
         self._normalisation_energy = normalisation_energy
-
-        self._index = index
-
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
+        self._parameters = {
+            "norm": normalisation,
+            "index": index
+        }
 
+    @property
+    def energy_bounds(self):
+        return (self._lower_energy, self._upper_energy)
 
-    def spectrum(self, energy):
+    def set_parameter(self, par_name: str, par_value: float):
+        if par_name not in self._parameters:
+            raise ValueError("Parameter name {} not found".format(par_name))
+        par = self._parameters[par_name]
+        if not (par.par_range[0] <= self._par_value <= par.par_range[1]):
+            raise ValueError("Parameter {} is out of bounds".format(par_name))
+
+        par.value = par_value
+
+    def redshift_factor(self, z: float):
+        index = self._parameters["index"].value
+        return np.power(1 + z, 1 - index)
+
+    @u.quantity_input
+    def __call__(self, energy: u.GeV) -> 1/(u.GeV * u.m**2 * u.s):
         """
-        dN/dEdAdt or dN/dEdAdtdO depending on flux_type.
+        dN/dEdAdt.
         """
+        norm = self._parameters["norm"].value
+        index = self._parameters["index"].value
 
         if (energy < self._lower_energy) or (energy > self._upper_energy):
-
             return np.nan
-
         else:
-        
-            return self._normalisation * np.power(energy / self._normalisation_energy, -self._index)
+            return norm * np.power(energy / self._normalisation_energy, -index)
 
-    
-    def integrated_spectrum(self, lower_energy_bound, upper_energy_bound):
-        """
+    @u.quantity_input
+    def integral(self, lower: u.GeV, upper: u.GeV) -> 1/(u.m**2 * u.s):
+        r"""
         \int spectrum dE over finite energy bounds.
-        
-        :param lower_energy_bound: [GeV]
-        :param upper_energy_bound: [GeV]
+
+        Arguments:
+            lower: float
+                [GeV]
+            upper: float
+                [GeV]
         """
 
-        """
-        if lower_energy_bound < self._lower_energy and upper_energy_bound < self._lower_energy:
-            return 0
-        elif lower_energy_bound < self._lower_energy and upper_energy_bound > self._lower_energy:
-            lower_energy_bound = self._lower_energy
+        norm = self._parameters["norm"].value
+        index = self._parameters["index"].value
 
-        if upper_energy_bound > self._upper_energy and lower_energy_bound > self._upper_energy:
-            return 0
-        elif upper_energy_bound > self._upper_energy and lower_energy_bound < self._upper_energy:
-            upper_energy_bound = self._upper_energy
-        """
+        if index == 1:
+            # special case
+            int_norm = (norm / (np.power(self._normalisation_energy, -index)))
+            return int_norm * (np.log(upper / lower))
 
-        norm = self._normalisation / ( np.power(self._normalisation_energy, -self._index) * (1 - self._index) )
+        # Pull out the units here because astropy screwes this up sometimes
+        int_norm = (norm / (np.power(self._normalisation_energy / u.GeV, -index) * (1 - index)))
+        return int_norm * (np.power(upper / u.GeV, 1 - index) - np.power(lower / u.GeV, 1 - index)) * u.GeV
 
-        return norm * ( np.power(upper_energy_bound, 1-self._index) - np.power(lower_energy_bound, 1-self._index) )
+    def _integral(self, lower, upper):
+        norm = self._parameters["norm"].value.value
+        index = self._parameters["index"].value
 
+        e0 = self._normalisation_energy.value
+
+        if index == 1:
+            # special case
+            int_norm = (norm / (np.power(e0, -index)))
+            return int_norm * (np.log(upper / lower))
+
+        # Pull out the units here because astropy screwes this up sometimes
+        int_norm = (norm / (np.power(e0, -index) * (1 - index)))
+        return int_norm * (np.power(upper, 1 - index) - np.power(lower, 1 - index))
+
+    @property
+    @u.quantity_input
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
+        norm = self._parameters["norm"].value
+        index = self._parameters["index"].value  # diff flux * energy
+        lower, upper = self._lower_energy, self._upper_energy
+
+        if index == 2:
+            # special case
+            int_norm = (norm / (np.power(self._normalisation_energy, -index)))
+            return int_norm * (np.log(upper / lower))
+
+        # Pull out the units here because astropy screwes this up sometimes
+        int_norm = (norm / (np.power(self._normalisation_energy / u.GeV, -index) * (2 - index)))
+        return int_norm * (np.power(upper / u.GeV, 2 - index) - np.power(lower / u.GeV, 2 - index)) * u.GeV**2
 
     def sample(self, N):
         """
         Sample energies from the power law.
         Uses inverse transform sampling.
-        
+
         :param min_energy: Minimum energy to sample from [GeV].
         :param N: Number of samples.
         """
-        
-        self.power_law = BoundedPowerLaw(self._index, self._lower_energy, self._upper_energy)        
-        
+
+        self.power_law = BoundedPowerLaw(self._index, self._lower_energy, self._upper_energy)
+
         return self.power_law.samples(N)
 
-    
-    def _rejection_sample(self, min_energy):
-        """
-        Sample energies from the power law.
-        Uses rejection sampling.
 
-        :param min_energy: Minimum energy to sample from [GeV].
-        """
+#     def _rejection_sample(self, min_energy):
+#         """
+#         Sample energies from the power law.
+#         Uses rejection sampling.
 
-        dist_upper_lim = self.spectrum(min_energy)
+#         :param min_energy: Minimum energy to sample from [GeV].
+#         """
 
-        accepted = False
+#         dist_upper_lim = self.spectrum(min_energy)
 
-        while not accepted:
+#         accepted = False
 
-            energy = np.random.uniform(min_energy, 1e3*min_energy)
-            dist = np.random.uniform(0, dist_upper_lim)
+#         while not accepted:
 
-            if dist < self.spectrum(energy):
+#             energy = np.random.uniform(min_energy, 1e3*min_energy)
+#             dist = np.random.uniform(0, dist_upper_lim)
 
-                accepted = True
+#             if dist < self.spectrum(energy):
 
-        return energy
+#                 accepted = True
+
+#         return energy
