@@ -145,8 +145,9 @@ class ExposureIntegral:
             lower_cz_edges = self.effective_area._cosz_bin_edges[:-1]
             upper_cz_edges = self.effective_area._cosz_bin_edges[1:]
 
-            dec_lower = np.pi / 2 * u.rad - np.arccos(lower_cz_edges) * u.rad
-            dec_upper = np.pi / 2 * u.rad - np.arccos(upper_cz_edges) * u.rad
+            # Switch upper and lower since zen -> dec induces a -1
+            dec_lower = np.arccos(upper_cz_edges) * u.rad - np.pi / 2 * u.rad
+            dec_upper = np.arccos(lower_cz_edges) * u.rad - np.pi / 2 * u.rad
 
             integral = source.flux_model.integral(
                 lower_e_edges[:, np.newaxis],

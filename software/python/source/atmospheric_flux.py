@@ -1,6 +1,4 @@
-from functools import partial
 import pickle
-from itertools import product
 
 import astropy.units as u
 import numpy as np
@@ -97,7 +95,7 @@ class AtmosphericNuMuFlux(FluxModel):
     CACHE_FNAME = "mceq_flux.pickle"
     EMAX = 1E9 * u.GeV
     EMIN = 1 * u.GeV
-    THETA_BINS = 50
+    THETA_BINS = 100
 
     @u.quantity_input
     def __init__(self, lower_energy: u.GeV, upper_energy: u.GeV, *args, **kwargs):
@@ -196,10 +194,10 @@ class AtmosphericNuMuFlux(FluxModel):
         energy = (energy / u.GeV).value
 
         def _integral(energy):
-            def wrap_call(dec):
-                return self.call_fast(energy, dec, 0) * np.sin(dec)
+            def wrap_call(sindec):
+                return self.call_fast(energy, np.arcsin(sindec), 0)
 
-            integral = quad(wrap_call, -np.pi, np.pi)[0]
+            integral = quad(wrap_call, -1, 1)[0]
             ra_int = 2 * np.pi
 
             return integral * ra_int
@@ -211,7 +209,8 @@ class AtmosphericNuMuFlux(FluxModel):
     @property
     @u.quantity_input
     def total_flux_int(self) -> 1 / (u.m**2 * u.s):
-        return self.integral(*self.energy_bounds, -np.pi * u.rad, np.pi * u.rad, 0 * u.rad, 2 * np.pi * u.rad)
+        return self.integral(
+            *self.energy_bounds, (-np.pi / 2) * u.rad, (np.pi / 2) * u.rad, 0 * u.rad, 2 * np.pi * u.rad)
 
     @property
     @u.quantity_input
@@ -237,12 +236,15 @@ class AtmosphericNuMuFlux(FluxModel):
 
         def _integral(e_low, e_up, dec_low, dec_up, ra_low, ra_up):
 
-            def wrap_call(log_energy, dec):
-                return self.call_fast(np.exp(log_energy), dec, 0) * np.exp(log_energy) * (np.sin(dec))
+            def wrap_call(log_energy, sindec):
+                return self.call_fast(np.exp(log_energy), np.arcsin(sindec), 0) * np.exp(log_energy)
 
             ra_int = (ra_up - ra_low)
 
-            integral = dblquad(wrap_call, dec_low, dec_up, lambda _: np.log(e_low), lambda _: np.log(e_up))
+            integral = dblquad(
+                wrap_call,
+                np.sin(dec_low), np.sin(dec_up),
+                lambda _: np.log(e_low), lambda _: np.log(e_up))
             integral = integral[0] * ra_int
 
             return integral
