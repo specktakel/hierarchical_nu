@@ -26,11 +26,11 @@ class ExposureIntegral:
     @u.quantity_input
     def __init__(
         self,
-        source_list,
+        source_list: SourceList,
         effective_area,
         observation_time: u.year,
         minimum_energy: u.GeV,
-        n_grid_points=50,
+        n_grid_points: int = 50,
     ):
         """
         Handles calculation of the exposure integral, eps_k.
