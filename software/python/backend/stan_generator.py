@@ -313,22 +313,22 @@ class TransformedParametersContext(ToplevelContextSingleton):
         self._name = "transformed parameters"
 
 
-class GeneratedQuantitiesContext(ToplevelContextSingleton):
+class ModelContext(ToplevelContextSingleton):
 
     ORDER = 3
 
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
-        self._name = "generated quantities"
+        self._name = "model"
 
 
-class ModelContext(ToplevelContextSingleton):
+class GeneratedQuantitiesContext(ToplevelContextSingleton):
 
     ORDER = 2
 
     def __init__(self):
         ToplevelContextSingleton.__init__(self)
-        self._name = "model"
+        self._name = "generated quantities"
 
 
 class StanGenerator(CodeGenerator):
