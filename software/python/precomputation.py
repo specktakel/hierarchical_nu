@@ -13,7 +13,6 @@ from .source.parameter import ParScale, Parameter
 from .backend.stan_generator import StanGenerator
 
 
-
 m_to_cm = 100  # cm
 
 
@@ -24,12 +23,13 @@ class ExposureIntegral:
     effective area, multiplied by the observation time.
     """
 
+    @u.quantity_input
     def __init__(
         self,
         source_list,
         effective_area,
-        observation_time,
-        minimum_energy,
+        observation_time: u.year,
+        minimum_energy: u.GeV,
         n_grid_points=50,
     ):
         """
@@ -52,10 +52,9 @@ class ExposureIntegral:
         with StanGenerator() as cg:
             self._effective_area = effective_area()
 
-            
         self._parameter_source_map = defaultdict(list)
         self._source_parameter_map = defaultdict(list)
-        
+
         for source in source_list:
             for par in source.parameters.values():
                 if not par.fixed:
@@ -72,9 +71,13 @@ class ExposureIntegral:
             elif par.scale == ParScale.log:
                 grid = np.logspace(*np.log10(par.par_range), num=self._n_grid_points)
             elif par.scale == ParScale.cos:
-                grid = np.arccos(np.linspace(*np.cos(par.par_range), num=self._n_grid_points))
+                grid = np.arccos(
+                    np.linspace(*np.cos(par.par_range), num=self._n_grid_points)
+                )
             else:
-                raise NotImplementedError("This scale ({}) is not yet supported".format(par.scale))
+                raise NotImplementedError(
+                    "This scale ({}) is not yet supported".format(par.scale)
+                )
 
             self._par_grids[par_name] = grid
 
@@ -102,7 +105,7 @@ class ExposureIntegral:
     @property
     def integral_grid(self):
         return self._integral_grid
-    
+
     def calculate_rate(self, source):
         z = source.redshift
         if isinstance(source, PointSource):
@@ -114,21 +117,25 @@ class ExposureIntegral:
             lower_edges = self.effective_area._tE_bin_edges[:-1] << u.GeV
             upper_edges = self.effective_area._tE_bin_edges[1:] << u.GeV
 
-            integral = source.flux_model.spectral_shape.integral(lower_edges, upper_edges)
+            integral = source.flux_model.spectral_shape.integral(
+                lower_edges, upper_edges
+            )
 
             if (
-                cosz < self.effective_area._cosz_bin_edges[0] or
-                cosz > self._effective_area._cosz_bin_edges[-1]
+                cosz < self.effective_area._cosz_bin_edges[0]
+                or cosz > self._effective_area._cosz_bin_edges[-1]
             ):
-                aeff = np.zeros(len(lower_edges)) << (u.m**2)
+                aeff = np.zeros(len(lower_edges)) << (u.m ** 2)
 
             else:
-                aeff = self.effective_area._eff_area[
-                    :,
-                    np.digitize(cosz, self.effective_area._cosz_bin_edges) - 1
-                ] * u.m**2
+                aeff = (
+                    self.effective_area._eff_area[
+                        :, np.digitize(cosz, self.effective_area._cosz_bin_edges) - 1
+                    ]
+                    * u.m ** 2
+                )
 
-            aeff[upper_edges < self._minimum_energy * u.GeV] = 0
+            aeff[upper_edges < self._minimum_energy] = 0
 
         else:
 
@@ -142,13 +149,16 @@ class ExposureIntegral:
             dec_upper = np.pi / 2 * u.rad - np.arccos(upper_cz_edges) * u.rad
 
             integral = source.flux_model.integral(
-                lower_e_edges[:, np.newaxis], upper_e_edges[:, np.newaxis],
-                dec_lower[np.newaxis, :], dec_upper[np.newaxis, :],
-                0 * u.rad, 2 * np.pi * u.rad
+                lower_e_edges[:, np.newaxis],
+                upper_e_edges[:, np.newaxis],
+                dec_lower[np.newaxis, :],
+                dec_upper[np.newaxis, :],
+                0 * u.rad,
+                2 * np.pi * u.rad,
             )
 
-            aeff = np.array(self.effective_area._eff_area, copy=True) << (u.m**2)
-            aeff[upper_e_edges < self._minimum_energy * u.GeV] = 0
+            aeff = np.array(self.effective_area._eff_area, copy=True) << (u.m ** 2)
+            aeff[upper_e_edges < self._minimum_energy] = 0
 
         return (integral * aeff * source.redshift_factor(z)).sum()
 
@@ -165,7 +175,9 @@ class ExposureIntegral:
 
             this_free_pars = self._source_parameter_map[source]
             this_par_grids = [self._par_grids[par_name] for par_name in this_free_pars]
-            integral_grids_tmp = np.zeros([self._n_grid_points] * len(this_par_grids)) << (1 / u.s)
+            integral_grids_tmp = np.zeros(
+                [self._n_grid_points] * len(this_par_grids)
+            ) << (1 / u.s)
 
             for i, grid_points in enumerate(product(*this_par_grids)):
 
@@ -177,7 +189,14 @@ class ExposureIntegral:
 
                 integral_grids_tmp[indices] += self.calculate_rate(source)
 
-            self._integral_grid.append(integral_grids_tmp)
+            # To make units compatible with Stan model parametrisation
+            self._integral_grid.append(
+                (
+                    integral_grids_tmp
+                    / source.flux_model.total_flux_density.to(u.GeV / (u.m ** 2 * u.s))
+                )
+                * self._observation_time.to(u.s)
+            )
 
     def __call__(self):
         """
