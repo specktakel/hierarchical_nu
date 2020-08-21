@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Any
 from enum import Enum
 import numpy as np
 
@@ -6,16 +6,33 @@ ParScale = Enum("ParScale", "lin log cos")
 
 
 class Parameter:
+    """
+    Parameter class
+
+    Parameters with the same name share an internal state
+
+    Parameters:
+        value: Any
+        name: str
+            Parameter name. Parameters of the same name share an internal state.
+        fixed: bool
+            If set to true, value cannot be changed
+        par_range: Optional[Tuple[float, float]]
+            Parameter range. Will be used as check when setting the parameter value
+        scale: ParScale
+            Parameter scale
+    """
     __par_registry = {}
 
     def __init__(
             self,
-            value,
+            value: Any,
             name: str,
-            fixed=False,
+            fixed: bool = False,
             par_range=(-np.inf, np.inf),
             scale=ParScale.lin):
 
+        # If name is registered, copy internal state
         if name in Parameter.__par_registry:
             self.__dict__ = self.__par_registry[name].__dict__
         else:
@@ -33,6 +50,11 @@ class Parameter:
             raise ValueError("Parameter {} not found".format(par_name))
         return cls.__par_registry[par_name]
 
+    @classmethod
+    def clear_registry(cls):
+        """Clear the parameter registry"""
+        cls.__par_registry = {}
+
     @property
     def name(self):
         return self._name
@@ -47,6 +69,11 @@ class Parameter:
 
     @value.setter
     def value(self, value):
+        if self._par_range is not None:
+            if not self._par_range[0] <= value <= self._par_range[1]:
+                raise ValueError("Parameter {} out of bounds".format(self.name))
+        if self.fixed:
+            raise RuntimeError("Parameter {} is fixed".format(self.name))
         self._value = value
 
     @property
@@ -72,3 +99,6 @@ class Parameter:
     @par_range.setter
     def par_range(self, par_range: Tuple[float, float]):
         self._par_range = par_range
+
+    def __repr__(self):
+        return "Parameter {} = {}".format(self.name, self.value)
