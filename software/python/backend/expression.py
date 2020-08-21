@@ -130,9 +130,9 @@ class Expression(_BaseExpression):
             invert=False):
         stan_code: TListTExpression = []
         if invert:
-            stan_code += [other, op_code, self]
+            stan_code += ["(", other, op_code, self, ")"]
         else:
-            stan_code += [self, op_code, other]
+            stan_code += ["(", self, op_code, other, ")"]
 
         return Expression([self, other], stan_code)
 
