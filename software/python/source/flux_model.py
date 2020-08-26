@@ -373,31 +373,38 @@ class PowerLawSpectrum(SpectralShape):
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value
 
-        # Check bounds for each upper/lower pair
-        # FixMe make work for arrays too.
-        if upper <= self._lower_energy:
-            return 0.0 * 1 / (u.m ** 2 * u.s)
-        elif lower < self._lower_energy and upper > self._lower_energy:
-            lower = self._lower_energy
-        elif lower < self._upper_energy and upper > self._upper_energy:
-            upper = self._upper_energy
-        elif lower >= self._upper_energy:
-            return 0.0 * 1 / (u.m ** 2 * u.s)
+        # Check edge cases
+        lower[
+            ((lower < self._lower_energy) & (upper > self._lower_energy))
+        ] = self._lower_energy
+        upper[
+            ((lower < self._upper_energy) & (upper > self._upper_energy))
+        ] = self._upper_energy
 
         if index == 1:
             # special case
             int_norm = norm / (np.power(self._normalisation_energy, -index))
-            return int_norm * (np.log(upper / lower))
+            output = int_norm * (np.log(upper / lower))
+        else:
 
-        # Pull out the units here because astropy screwes this up sometimes
-        int_norm = norm / (
-            np.power(self._normalisation_energy / u.GeV, -index) * (1 - index)
-        )
-        return (
-            int_norm
-            * (np.power(upper / u.GeV, 1 - index) - np.power(lower / u.GeV, 1 - index))
-            * u.GeV
-        )
+            # Pull out the units here because astropy screwes this up sometimes
+            int_norm = norm / (
+                np.power(self._normalisation_energy / u.GeV, -index) * (1 - index)
+            )
+            output = (
+                int_norm
+                * (
+                    np.power(upper / u.GeV, 1 - index)
+                    - np.power(lower / u.GeV, 1 - index)
+                )
+                * u.GeV
+            )
+
+        # Correct if outside bounds
+        output[(upper <= self._lower_energy)] = 0.0 * 1 / (u.m ** 2 * u.s)
+        output[(lower >= self._upper_energy)] = 0.0 * 1 / (u.m ** 2 * u.s)
+
+        return output
 
     def _integral(self, lower, upper):
         norm = self._parameters["norm"].value.value
