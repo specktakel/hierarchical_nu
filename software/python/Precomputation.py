@@ -52,10 +52,10 @@ class ExposureIntegral:
         with StanGenerator() as cg:
             self._effective_area = effective_area()
 
-            
+
         self._parameter_source_map = defaultdict(list)
         self._source_parameter_map = defaultdict(list)
-        
+
         for source in source_list:
             for par in source.parameters.values():
                 if not par.fixed:
@@ -102,7 +102,7 @@ class ExposureIntegral:
     @property
     def integral_grid(self):
         return self._integral_grid
-    
+
     def calculate_rate(self, source):
         z = source.redshift
         if isinstance(source, PointSource):
@@ -138,8 +138,9 @@ class ExposureIntegral:
             lower_cz_edges = self.effective_area._cosz_bin_edges[:-1]
             upper_cz_edges = self.effective_area._cosz_bin_edges[1:]
 
-            dec_lower = np.pi / 2 * u.rad - np.arccos(lower_cz_edges) * u.rad
-            dec_upper = np.pi / 2 * u.rad - np.arccos(upper_cz_edges) * u.rad
+            # Switch upper and lower since zen -> dec induces a -1
+            dec_lower = np.arccos(upper_cz_edges) * u.rad - np.pi / 2 * u.rad
+            dec_upper = np.arccos(lower_cz_edges) * u.rad - np.pi / 2 * u.rad
 
             integral = source.flux_model.integral(
                 lower_e_edges[:, np.newaxis], upper_e_edges[:, np.newaxis],
