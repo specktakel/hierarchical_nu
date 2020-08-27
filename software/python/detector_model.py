@@ -303,10 +303,8 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         def _cumulative_model(xth, pars):
             result = 0
             for i in range(n_components):
-                result += (
-                    1
-                    / n_components
-                    * stats.lognorm.cdf(xth, scale=pars[2 * i], s=pars[2 * i + 1])
+                result += (1 / n_components) * stats.lognorm.cdf(
+                    xth, scale=pars[2 * i], s=pars[2 * i + 1]
                 )
             return result
 
@@ -318,7 +316,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         rE_binc: np.ndarray,
         eff_area: np.ndarray,
         n_components: int,
-    ) -> np.ndarray:
+    ) -> np.ndarrxay:
         from scipy.optimize import least_squares  # type: ignore
 
         fit_params = []
@@ -565,7 +563,8 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
     def _calc_resolution(self, param_dict: dict):
         pass
 
-    def prob_Edet_above_threshold(self, true_energy, threshold_energy):
+    @u.quantity_input
+    def prob_Edet_above_threshold(self, true_energy: u.GeV, threshold_energy: u.GeV):
         """
         P(Edet > Edet_min | E) for use in precomputation. 
         """
@@ -575,11 +574,11 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         prob = np.zeros_like(true_energy)
         model_params: List[float] = []
         for comp in range(self.n_components):
-            mu = np.poly1d(self.poly_params_mu[comp])(np.log10(true_energy))
-            sigma = np.poly1d(self.poly_params_sd[comp])(np.log10(true_energy))
+            mu = np.poly1d(self.poly_params_mu[comp])(np.log10(true_energy.value))
+            sigma = np.poly1d(self.poly_params_sd[comp])(np.log10(true_energy.value))
             model_params += [mu, sigma]
 
-        prob = model(np.log10(threshold_energy), model_params)
+        prob = 1 - model(np.log10(threshold_energy.value), model_params)
 
         return prob
 
