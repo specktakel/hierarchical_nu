@@ -972,7 +972,7 @@ real nt_energy_res_mix(real x,vector means,vector sigmas,vector weights)
 vector[3] result;
 for (i in 1:3)
 {
-result[i] = log(weights)[i]+lognormal_lpdf(x | means[i], sigmas[i]);
+result[i] = (log(weights)[i]+lognormal_lpdf(x | means[i], sigmas[i]));
 }
 return log_sum_exp(result);
 }
@@ -1017,13 +1017,12 @@ vector[Ns] D;
 vector[Ns+1] z;
 real alpha;
 real Emin;
-real Q;
+real L;
 real F0;
 int Ngrid;
 vector[Ngrid] alpha_grid;
 vector[Ngrid] integral_grid[Ns+1];
 real aeff_max;
-real T;
 }
 transformed data
 {
@@ -1037,13 +1036,13 @@ int N;
 vector[Ns+1] eps;
 for (k in 1:Ns)
 {
-F[k] = Q/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
+F[k] = L/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
 Fs += F[k];
 }
 F[Ns+1] = F0;
-FT = Fs+FT;
+FT = (Fs+FT);
 f = Fs/FT;
-eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
+eps = get_exposure_factor(alpha, alpha_grid, integral_grid, Ns);
 Nex = get_Nex(F, eps);
 w_exposure = get_exposure_weights(F, eps);
 N = poisson_rng(Nex);
@@ -1072,35 +1071,42 @@ for (i in 1:N)
 Lambda[i] = categorical_rng(w_exposure);
 accept = 0;
 ntrials = 0;
-while(accept!=1)
+while((accept!=1))
 {
-if (Lambda[i] < Ns+1) {
+if(Lambda[i]<(Ns+1))
+{
 omega = varpi[Lambda[i]];
 }
-else if (Lambda[i] == Ns+1) {
+else if((Lambda[i]==(Ns+1)))
+{
 omega = sphere_rng(1);
-};
+}
 cosz[i] = cos(omega_to_zenith(omega));
-Esrc[i] = spectrum_rng(alpha, Emin * (1+z[Lambda[i]]) );
-E[i] = Esrc[i]/ (1+z[Lambda[i]]);
-if (cosz[i] >= 0.1) {
+Esrc[i] = spectrum_rng(alpha, (Emin*(1+z[Lambda[i]])));
+E[i] = (Esrc[i]/(1+z[Lambda[i]]));
+if(cosz[i]>= 0.1)
+{
 Pdet[i] = 0;
 }
-else {
-Pdet[i] = NorthernTracksEffectiveArea(E[i], omega) / aeff_max;
-};
+else
+{
+Pdet[i] = (NorthernTracksEffectiveArea(E[i], omega)/aeff_max);
+}
 prob[1] = Pdet[i];
-prob[2] = 1-Pdet[i];
+prob[2] = (1-Pdet[i]);
 ntrials += 1;
-if (ntrials < 10000) {
+if(ntrials< 10000)
+{
 accept = categorical_rng(prob);
 }
-else {
+else
+{
 accept = 1;
 print("problem component: ", Lambda[i]);
-};
+;
+}
 }
 event[i] = NorthernTracksAngularResolution_rng(E[i], omega);
-Edet[i] = pow(10,NorthernTracksEnergyResolution_rng(E[i]));
+Edet[i] = NorthernTracksEnergyResolution_rng(E[i]);
 }
 }

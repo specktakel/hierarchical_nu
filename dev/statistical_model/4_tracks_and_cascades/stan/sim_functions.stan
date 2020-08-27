@@ -1,15 +1,15 @@
 /**
  * Get exposure factor from spline information and source positions.
- * Units of [m^2 yr]
+ * Units of [GeV^-1 m^2 s]
  */
-vector get_exposure_factor(real T, real Emin, real alpha, vector alpha_grid, vector[] integral_grid, int Ns) {
+vector get_exposure_factor(real alpha, vector alpha_grid, vector[] integral_grid, int Ns) {
 
   int K = Ns+1;
   vector[K] eps;
     
   for (k in 1:K) {
 
-    eps[k] = interpolate(alpha_grid, integral_grid[k], alpha) * ((alpha-1) / Emin) * T;
+    eps[k] = interpolate(alpha_grid, integral_grid[k], alpha);
       
   }
 

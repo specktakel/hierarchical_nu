@@ -965,7 +965,7 @@ real nt_energy_res_mix(real x,vector means,vector sigmas,vector weights)
 vector[3] result;
 for (i in 1:3)
 {
-result[i] = log(weights)[i]+lognormal_lpdf(x | means[i], sigmas[i]);
+result[i] = (log(weights)[i]+lognormal_lpdf(x | means[i], sigmas[i]));
 }
 return log_sum_exp(result);
 }
