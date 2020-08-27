@@ -97,6 +97,10 @@ class ExposureIntegral:
         return self._effective_area
 
     @property
+    def energy_resolution(self):
+        return self._energy_resolution
+
+    @property
     def observation_time(self):
         return self._observation_time
 
@@ -110,24 +114,26 @@ class ExposureIntegral:
 
     def calculate_rate(self, source):
         z = source.redshift
+
+        lower_e_edges = self.effective_area._tE_bin_edges[:-1] << u.GeV
+        upper_e_edges = self.effective_area._tE_bin_edges[1:] << u.GeV
+        e_cen = (lower_e_edges + upper_e_edges) / 2
+
         if isinstance(source, PointSource):
             # For point sources the integral over the space angle is trivial
 
             dec = source.dec
             cosz = -np.sin(dec)  # ONLY FOR IC!
 
-            lower_edges = self.effective_area._tE_bin_edges[:-1] << u.GeV
-            upper_edges = self.effective_area._tE_bin_edges[1:] << u.GeV
-
             integral = source.flux_model.spectral_shape.integral(
-                lower_edges, upper_edges
+                lower_e_edges, upper_e_edges
             )
 
             if (
                 cosz < self.effective_area._cosz_bin_edges[0]
                 or cosz > self._effective_area._cosz_bin_edges[-1]
             ):
-                aeff = np.zeros(len(lower_edges)) << (u.m ** 2)
+                aeff = np.zeros(len(lower_e_edges)) << (u.m ** 2)
 
             else:
                 aeff = (
@@ -138,9 +144,6 @@ class ExposureIntegral:
                 )
 
         else:
-
-            lower_e_edges = self.effective_area._tE_bin_edges[:-1] << u.GeV
-            upper_e_edges = self.effective_area._tE_bin_edges[1:] << u.GeV
 
             lower_cz_edges = self.effective_area._cosz_bin_edges[:-1]
             upper_cz_edges = self.effective_area._cosz_bin_edges[1:]
@@ -160,7 +163,11 @@ class ExposureIntegral:
 
             aeff = np.array(self.effective_area._eff_area, copy=True) << (u.m ** 2)
 
-        return (integral * aeff * source.redshift_factor(z)).sum()
+        p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+            e_cen, self._min_det_energy
+        )
+
+        return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
 
     def _compute_exposure_integral(self):
         """

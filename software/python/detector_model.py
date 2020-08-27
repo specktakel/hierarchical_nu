@@ -316,7 +316,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         rE_binc: np.ndarray,
         eff_area: np.ndarray,
         n_components: int,
-    ) -> np.ndarrxay:
+    ) -> np.ndarray:
         from scipy.optimize import least_squares  # type: ignore
 
         fit_params = []
@@ -579,6 +579,10 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             model_params += [mu, sigma]
 
         prob = 1 - model(np.log10(threshold_energy.value), model_params)
+
+        # Handle NaN at extreme energies
+        prob[true_energy.value < 1e2] = 0.0
+        prob[true_energy.value > 10 ** 8.5] = np.max(prob[~np.isnan(prob)])
 
         return prob
 
