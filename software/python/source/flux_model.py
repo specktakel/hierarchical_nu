@@ -482,3 +482,27 @@ class PowerLawSpectrum(SpectralShape):
             )
 
         return func
+
+    @classmethod
+    def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
+        """
+        Factor to convert from total_flux_density to total_flux_int. 
+        """
+
+        func = UserDefinedFunction(
+            f_name, ["alpha", "e_low", "e_up"], ["real", "real", "real"], "real"
+        )
+
+        with func:
+            alpha = StringExpression(["alpha"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
+
+            ReturnStatement(
+                [
+                    (e_up ** (1 - alpha) - e_low ** (1 - alpha))
+                    / (e_up ** (2 - alpha) - e_low ** (2 - alpha))
+                ]
+            )
+
+        return func
