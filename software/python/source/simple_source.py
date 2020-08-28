@@ -93,7 +93,7 @@ class PointSource(Source):
         dec: u.rad,
         ra: u.rad,
         luminosity: Parameter,
-        index: float,
+        index: Parameter,
         redshift: float,
         lower: u.GeV,
         upper: u.GeV,
@@ -108,9 +108,9 @@ class PointSource(Source):
                 Declination of the source
             ra: u.rad,
                 Right Ascension of the source
-            luminosity: u.erg / u.s,
+            luminosity: Parameter,
                 luminosity
-            index: float
+            index: Parameter
                 Spectral index
             redshift: float
             lower: u.GeV
@@ -130,11 +130,6 @@ class PointSource(Source):
             fixed=False,
             par_range=(0, np.inf),
             scale=ParScale.log,
-        )
-
-        # The spectral index is currently shared between all sources,
-        index = Parameter(
-            index, "ps_index", fixed=True, par_range=(1.1, 4), scale=ParScale.lin
         )
 
         shape = PowerLawSpectrum(norm, 1e5 * u.GeV, index, lower, upper)

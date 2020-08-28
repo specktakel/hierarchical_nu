@@ -112,6 +112,10 @@ class ExposureIntegral:
     def integral_grid(self):
         return self._integral_grid
 
+    @property
+    def integral_fixed_vals(self):
+        return self._integral_fixed_vals
+
     def calculate_rate(self, source):
         z = source.redshift
 
@@ -176,8 +180,18 @@ class ExposureIntegral:
 
         self._integral_grid = []
 
+        self._integral_fixed_vals = []
+
         for source in self.source_list.sources:
             if not self._source_parameter_map[source]:
+
+                self._integral_fixed_vals.append(
+                    (
+                        self.calculate_rate(source)
+                        / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
+                    )
+                    * self._observation_time.to(u.s)
+                )
                 continue
 
             this_free_pars = self._source_parameter_map[source]
