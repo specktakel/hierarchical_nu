@@ -200,7 +200,7 @@ class ExposureIntegral:
             self._integral_grid.append(
                 (
                     integral_grids_tmp
-                    / source.flux_model.total_flux_density.to(u.GeV / (u.m ** 2 * u.s))
+                    / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
                 )
                 * self._observation_time.to(u.s)
             )
