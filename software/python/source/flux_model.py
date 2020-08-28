@@ -6,7 +6,11 @@ import numpy as np
 
 from .power_law import BoundedPowerLaw
 from .parameter import Parameter
-from ..backend.stan_generator import UserDefinedFunction
+from ..backend.stan_generator import (
+    UserDefinedFunction,
+    IfBlockContext,
+    ElseBlockContext,
+)
 from ..backend.operations import FunctionCall
 from ..backend.variable_definitions import ForwardVariableDef
 from ..backend.expression import StringExpression, ReturnStatement
@@ -494,15 +498,23 @@ class PowerLawSpectrum(SpectralShape):
         )
 
         with func:
+            f1 = ForwardVariableDef("f1", "real")
+            f2 = ForwardVariableDef("f2", "real")
+
             alpha = StringExpression(["alpha"])
             e_low = StringExpression(["e_low"])
             e_up = StringExpression(["e_up"])
 
-            ReturnStatement(
-                [
-                    (e_up ** (1 - alpha) - e_low ** (1 - alpha))
-                    / (e_up ** (2 - alpha) - e_low ** (2 - alpha))
-                ]
-            )
+            with IfBlockContext([StringExpression([alpha, " == ", 1.0])]):
+                f1 << FunctionCall([e_up], "log") - FunctionCall([e_low], "log")
+            with ElseBlockContext():
+                f1 << (1 / (1 - alpha)) * (e_up ** (1 - alpha) - e_low ** (1 - alpha))
+
+            with IfBlockContext([StringExpression([alpha, " == ", 2.0])]):
+                f2 << FunctionCall([e_up], "log") - FunctionCall([e_low], "log")
+            with ElseBlockContext():
+                f2 << (1 / (2 - alpha)) * (e_up ** (2 - alpha) - e_low ** (2 - alpha))
+
+            ReturnStatement([f1 / f2])
 
         return func

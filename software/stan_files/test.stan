@@ -658,10 +658,6 @@ vector_coz_grid_points[1] = cos_theta_grid[binary_search(abs(cos(pi() - acos(tru
 vector_coz_grid_points[2] = cos_theta_grid[(binary_search(abs(cos(pi() - acos(true_dir[3]))), cos_theta_grid)+1)];
 return ((10^interpolate(vector_coz_grid_points, vector_interp_energies, abs(cos(pi() - acos(true_dir[3])))))*10000.0);
 }
-real flux_conv(real alpha,real e_low,real e_up)
-{
-return (((e_up^(1-alpha))-(e_low^(1-alpha)))/((e_up^(2-alpha))-(e_low^(2-alpha))));
-}
 }
 parameters
 {
