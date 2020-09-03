@@ -58,6 +58,11 @@ class SpectralShape(ABC):
     def make_stan_sampling_func(cls):
         pass
 
+    @classmethod
+    @abstractmethod
+    def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
+        pass
+
 
 class FluxModel(ABC):
     """

@@ -1088,6 +1088,7 @@ simplex[Ns+2] w_exposure;
 real Nex;
 int N;
 vector[Ns+2] eps;
+Fs = 0.0;
 for (k in 1:Ns)
 {
 F[k] = L/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
@@ -1098,6 +1099,7 @@ F[Ns+1] = F_diff;
 F[Ns+2] = F_atmo;
 FT = ((Fs+F_diff)+F_atmo);
 f = Fs/FT;
+print("f: ", f);
 eps = get_exposure_factor(alpha, alpha_grid, integral_grid, atmo_integ_val, Ns);
 Nex = get_Nex(F, eps);
 w_exposure = get_exposure_weights(F, eps);

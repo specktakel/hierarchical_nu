@@ -56,12 +56,14 @@ class ExposureIntegral:
 
         self._parameter_source_map = defaultdict(list)
         self._source_parameter_map = defaultdict(list)
+        self._original_param_values = defaultdict(list)
 
         for source in source_list:
             for par in source.parameters.values():
                 if not par.fixed:
                     self._parameter_source_map[par.name].append(source)
                     self._source_parameter_map[source].append(par.name)
+                    self._original_param_values[par.name].append(par.value)
 
         self._par_grids = {}
         for par_name in list(self._parameter_source_map.keys()):
@@ -182,7 +184,7 @@ class ExposureIntegral:
 
         self._integral_fixed_vals = []
 
-        for source in self.source_list.sources:
+        for k, source in enumerate(self.source_list.sources):
             if not self._source_parameter_map[source]:
 
                 self._integral_fixed_vals.append(
@@ -218,6 +220,11 @@ class ExposureIntegral:
                 )
                 * self._observation_time.to(u.s)
             )
+
+            # Reset free parameters to original values
+            for par_name in this_free_pars:
+                par = Parameter.get_parameter(par_name)
+                par.value = self._original_param_values[par_name][k]
 
     def __call__(self):
         """
