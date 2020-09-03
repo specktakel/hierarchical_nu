@@ -96,16 +96,38 @@ vector sphere_rng(real radius) {
   vector[3] result;
   real u = uniform_rng(0, 1);
   real v = uniform_rng(0, 1);
-  real theta = 2 * pi() * u;
-  real phi = acos( (2 * v) - 1 );
+  real phi = 2 * pi() * u;
+  real theta = acos( (2 * v) - 1 );
   
-  result[1] = radius * cos(theta) * sin(phi); 
+  result[1] = radius * sin(theta) * cos(phi); 
   result[2] = radius * sin(theta) * sin(phi); 
-  result[3] = radius * cos(phi);
+  result[3] = radius * cos(theta);
   
   return result;
     
 }
+
+/*
+ * Sample a point uniformly on the surface of a sphere of 
+ * a certain radius. The v_lim option can be used to limit the
+ * possible theta values.
+ */
+vector sphere_lim_rng(real radius, real v_lim) {
+
+  vector[3] result;
+  real u = uniform_rng(0, 1);
+  real v = uniform_rng(v_lim, 1);
+
+  real phi = 2 * pi() * u;
+  real theta = acos(2 * v - 1);
+
+  result[1] = radius * sin(theta) * cos(phi);
+  result[2] = radius * sin(theta) * sin(phi);
+  result[3] = radius * cos(theta);
+  
+  return result;
+}
+
   
 /**
  * Define the vMF PDF.

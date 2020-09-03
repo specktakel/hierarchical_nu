@@ -374,7 +374,7 @@ def uv_to_icrs(unit_vector):
 
 
 def icrs_to_uv(dec, ra):
-    theta = dec + np.pi / 2
+    theta = np.pi / 2 - dec
     x = np.sin(theta) * np.cos(ra)
     y = np.sin(theta) * np.sin(ra)
     z = np.cos(theta)

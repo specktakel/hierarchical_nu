@@ -1072,6 +1072,7 @@ vector[Ngrid] alpha_grid;
 vector[Ngrid] integral_grid[Ns+1];
 real atmo_integ_val;
 real aeff_max;
+real v_lim;
 int N_atmo;
 unit_vector[3] atmo_directions[N_atmo];
 vector[N_atmo] atmo_energies;
@@ -1137,7 +1138,7 @@ omega = varpi[Lambda[i]];
 }
 else if(Lambda[i] == (Ns+1))
 {
-omega = sphere_rng(1);
+omega = sphere_lim_rng(1, v_lim);
 }
 else if(Lambda[i] == (Ns+2))
 {
