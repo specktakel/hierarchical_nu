@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Callable
+from typing import Callable
 
 from astropy import units as u
 import numpy as np
@@ -171,6 +171,11 @@ class PointSource(Source):
     @u.quantity_input
     def luminosity(self) -> u.erg / u.s:
         return self._luminosity
+
+    @luminosity.setter
+    @u.quantity_input
+    def luminosity(self, value: u.erg / u.s):
+        self._luminosity = value
 
 
 class DiffuseSource(Source):
