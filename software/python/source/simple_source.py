@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Callable
+from typing import Callable
 
 from astropy import units as u
 import numpy as np
@@ -32,7 +32,9 @@ class Source(ABC):
         return self._flux_model
 
     @u.quantity_input
-    def flux(self, energy: u.GeV, dec: u.rad, ra: u.rad) -> 1 / (u.GeV * u.m**2 * u.s * u.sr):
+    def flux(
+        self, energy: u.GeV, dec: u.rad, ra: u.rad
+    ) -> 1 / (u.GeV * u.m ** 2 * u.s * u.sr):
         return self._flux_model(energy, dec, ra)
 
     @abstractmethod
@@ -60,13 +62,15 @@ class PointSource(Source):
 
     @u.quantity_input
     def __init__(
-            self,
-            name: str,
-            dec: u.rad,
-            ra: u.rad,
-            redshift: float,
-            spectral_shape: Callable[[float], float],
-            *args, **kwargs):
+        self,
+        name: str,
+        dec: u.rad,
+        ra: u.rad,
+        redshift: float,
+        spectral_shape: Callable[[float], float],
+        *args,
+        **kwargs
+    ):
 
         super().__init__(name)
         self._dec = dec
@@ -77,21 +81,23 @@ class PointSource(Source):
 
         # calculate luminosity
         total_flux_int = self._flux_model.total_flux_density
-        self._luminosity = total_flux_int * (4 * np.pi * luminosity_distance(redshift)**2)
+        self._luminosity = total_flux_int * (
+            4 * np.pi * luminosity_distance(redshift) ** 2
+        )
 
     @classmethod
     @u.quantity_input
     def make_powerlaw_source(
-            cls,
-            name: str,
-            dec: u.rad,
-            ra: u.rad,
-            luminosity: u.erg / u.s,
-            index: float,
-            redshift: float,
-            lower: u.GeV,
-            upper: u.GeV
-            ):
+        cls,
+        name: str,
+        dec: u.rad,
+        ra: u.rad,
+        luminosity: Parameter,
+        index: Parameter,
+        redshift: float,
+        lower: u.GeV,
+        upper: u.GeV,
+    ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
 
@@ -102,9 +108,9 @@ class PointSource(Source):
                 Declination of the source
             ra: u.rad,
                 Right Ascension of the source
-            luminosity: u.erg / u.s,
+            luminosity: Parameter,
                 luminosity
-            index: float
+            index: Parameter
                 Spectral index
             redshift: float
             lower: u.GeV
@@ -113,24 +119,24 @@ class PointSource(Source):
                 Upper energy bound
         """
 
-        total_flux = luminosity / (4 * np.pi * luminosity_distance(redshift)**2)  # here flux is W / m^2
+        total_flux = luminosity.value / (
+            4 * np.pi * luminosity_distance(redshift) ** 2
+        )  # here flux is W / m^2
 
         # Each source has an independent normalization, thus use the source name as identifier
         norm = Parameter(
-            1 / (u.GeV * u.s * u.m**2),
+            1 / (u.GeV * u.s * u.m ** 2),
             "{}_norm".format(name),
             fixed=False,
             par_range=(0, np.inf),
-            scale=ParScale.log)
+            scale=ParScale.log,
+        )
 
-        # The spectral index is currently shared between all sources,
-        index = Parameter(index, "ps_index", fixed=True, par_range=(1.1, 4), scale=ParScale.lin)
-
-        shape = PowerLawSpectrum(norm, 1E5 * u.GeV, index, lower, upper)
+        shape = PowerLawSpectrum(norm, 1e5 * u.GeV, index, lower, upper)
         total_power = shape.total_flux_density
 
         norm.value *= total_flux / total_power
-        norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
+        norm.value = norm.value.to(1 / (u.GeV * u.m ** 2 * u.s))
         norm.fixed = True
         return cls(name, dec, ra, redshift, shape, luminosity)
 
@@ -165,6 +171,11 @@ class PointSource(Source):
     @u.quantity_input
     def luminosity(self) -> u.erg / u.s:
         return self._luminosity
+
+    @luminosity.setter
+    @u.quantity_input
+    def luminosity(self, value: u.erg / u.s):
+        self._luminosity = value
 
 
 class DiffuseSource(Source):
@@ -249,20 +260,34 @@ class SourceList(ABC):
         return self._sources[key]
 
 
+@u.quantity_input
 class TestSourceList(SourceList):
-    def __init__(self, filename, spectral_shape=None):
+    def __init__(
+        self,
+        filename,
+        luminosity: Parameter,
+        index,
+        lower_energy: u.GeV,
+        upper_energy: u.GeV,
+    ):
         """
         Simple source list from test file used in
         development. Can be adapted to different
         catalogs.
 
         :param filename: File to read from.
-        :param spectral_shape: Option to specify spectral shape for all sources
+        :param luminosity: Luminosity shared by all sources
+        :param index: Spectral index of power law 
+        :param lower_energy: Lower energy for L definition
+        :param upper_energy: Upper energy for L definition
         """
 
         super().__init__()
         self._filename = filename
-        self._spectral_shape = spectral_shape
+        self._luminosity = luminosity
+        self._index = index
+        self._lower_energy = lower_energy
+        self._upper_energy = upper_energy
         self._read_from_file()
 
     def _read_from_file(self):
@@ -277,12 +302,59 @@ class TestSourceList(SourceList):
         ra, dec = uv_to_icrs(unit_vector)
 
         for i, (r, d, z) in enumerate(zip(ra, dec, redshift)):
-            source = PointSource(str(i), d, r, z, self._spectral_shape)
+            source = PointSource.make_powerlaw_source(
+                str(i),
+                d,
+                r,
+                self._luminosity,
+                self._index,
+                z,
+                self._lower_energy,
+                self._upper_energy,
+            )
             self.add(source)
 
     def select_below_redshift(self, zth):
         self._zth = zth
         self.sources = [s for s in self.sources if s.redshift <= zth]
+
+
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+
+
+class Direction:
+    """
+    Input the unit vector vMF samples and
+    store x, y, and z and galactic coordinates
+    of direction in Mpc.
+    """
+
+    def __init__(self, unit_vector_3d):
+        """
+        Input the unit vector samples and
+        store x, y, and z and galactic coordinates
+        of direction in Mpc.
+
+        :param unit_vector_3d: a 3-dimensional unit vector.
+        """
+
+        self.unit_vector = unit_vector_3d
+        transposed_uv = np.transpose(self.unit_vector)
+        self.x = transposed_uv[0]
+        self.y = transposed_uv[1]
+        self.z = transposed_uv[2]
+        self.d = SkyCoord(
+            self.x,
+            self.y,
+            self.z,
+            unit="mpc",
+            representation_type="cartesian",
+            frame="icrs",
+        )
+        self.d.representation_type = "spherical"
+        self.lons = self.d.galactic.l.wrap_at(360 * u.deg).deg
+        self.lats = self.d.galactic.b.wrap_at(180 * u.deg).deg
 
 
 def uv_to_icrs(unit_vector):
@@ -306,6 +378,14 @@ def uv_to_icrs(unit_vector):
     return ra, dec
 
 
+def icrs_to_uv(dec, ra):
+    theta = np.pi / 2 - dec
+    x = np.sin(theta) * np.cos(ra)
+    y = np.sin(theta) * np.sin(ra)
+    z = np.cos(theta)
+    return [x, y, z]
+
+
 def spherical_to_icrs(theta, phi):
     """
     convert spherical coordinates to ICRS
@@ -315,7 +395,7 @@ def spherical_to_icrs(theta, phi):
     ra = phi
     dec = np.pi / 2 - theta
 
-    return ra * u.rad, dec*u.rad
+    return ra * u.rad, dec * u.rad
 
 
 def lists_to_tuple(list1, list2):
