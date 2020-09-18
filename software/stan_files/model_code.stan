@@ -932,7 +932,7 @@ real nt_energy_res_mix(real x,vector means,vector sigmas,vector weights)
 vector[3] result;
 for (i in 1:3)
 {
-result[i] = log(weights)[i]+lognormal_lpdf(x | means[i], sigmas[i]);
+result[i] = (log(weights)[i]+lognormal_lpdf(x | means[i], sigmas[i]));
 }
 return log_sum_exp(result);
 }
@@ -968,13 +968,37 @@ real NorthernTracksEffectiveArea(real true_energy,vector true_dir)
 {
 return NorthernTracksEffAreaHist(true_energy, cos(pi() - acos(true_dir[3])));
 }
+real flux_conv(real alpha,real e_low,real e_up)
+{
+real f1;
+real f2;
+if(alpha == 1.0)
+{
+f1 = (log(e_up)-log(e_low));
+}
+else
+{
+f1 = ((1/(1-alpha))*((e_up^(1-alpha))-(e_low^(1-alpha))));
+}
+if(alpha == 2.0)
+{
+f2 = (log(e_up)-log(e_low));
+}
+else
+{
+f2 = ((1/(2-alpha))*((e_up^(2-alpha))-(e_low^(2-alpha))));
+}
+return (f1/f2);
+}
 }
 data
 {
 int N;
 unit_vector[3] omega_det[N];
 vector[N] Edet;
-real Emin;
+real Edet_min;
+real Esrc_min;
+real Edet_max;
 int Ns;
 unit_vector[3] varpi[Ns];
 vector[Ns] D;
@@ -982,11 +1006,12 @@ vector[Ns+1] z;
 int Ngrid;
 vector[Ngrid] alpha_grid;
 vector[Ngrid] integral_grid[Ns+1];
+real atmo_integ_val;
 vector[Ngrid] E_grid;
 vector[Ngrid] Pdet_grid[Ns+1];
-real T;
 real Q_scale;
 real F0_scale;
+atmo_integ_val;
 }
 transformed data
 {
@@ -999,41 +1024,41 @@ print(Ngrid);
 }
 parameters
 {
-real<lower=0.0, upper=1e+60> Q;
-real<lower=0.0, upper=500> F0;
-real<lower=1.5, upper=3.5> alpha;
-vector<lower=Emin, upper=100000000.0> [N] Esrc;
+real<lower=0.0, upper=1e+60> L;
+real<lower=0.0, upper=500> F_diff;
+real<lower=0.0, upper=500> F_atmo;
+real<lower=1.0, upper=4.0> alpha;
+vector<lower=Esrc_min, upper=100000000.0> [N] Esrc;
 }
 transformed parameters
 {
-real<lower=0.0> Fs;
-vector[Ns] F;
-vector[Ns+1] allF;
-vector[Ns+1] eps;
+real F;
+vector[Ns+2] F;
+vector[Ns+2] eps;
 real<lower=0, upper=1> f;
-real<lower=0> FT;
-vector[Ns+1] lp[N];
-vector[Ns+1] logF;
+real<lower=0> Ftot;
+vector[Ns+2] lp[N];
+vector[Ns+2] logF;
 real Nex;
 vector[N] E;
-Fs = 0;
 for (k in 1:Ns)
 {
-F[k] = Q/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
-allF[k] = F[k];
-Fs += F[k];
+F[k] = L/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
+F[k]*=flux_conv(alpha, Esrc_min, Edet_max);
+F+=F[k];
 }
-allF[Ns+1] = F0;
-FT = F0+Fs;
-f = Fs / FT;
-logF = log(allF);
+F[Ns+1] = F_diff;
+F[Ns+2] = F_atmo;
+Ftot = ((F_diff+F_atmo)+F);
+f = F / Ftot;
+logF = log(F);
 for (i in 1:N)
 {
 lp[i] = logF;
 for (k in 1:Ns+1)
 {
-lp[i][k] += pareto_lpdf(Esrc[i] | Emin , alpha-1);
-E[i] = Esrc[i] / (1+z[k]);
+lp[i][k] += pareto_lpdf(Esrc[i] | Edet_min , (alpha-1));
+E[i] = Esrc[i] / ((1+z[k]));
 if (k < Ns+1) {
 lp[i][k] += NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]);
 }

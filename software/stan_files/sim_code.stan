@@ -1081,7 +1081,7 @@ simplex[N_atmo] atmo_weights;
 transformed data
 {
 vector[Ns+2] F;
-real FT;
+real Ftot;
 real Fs;
 real f;
 simplex[Ns+2] w_exposure;
@@ -1097,8 +1097,8 @@ Fs += F[k];
 }
 F[Ns+1] = F_diff;
 F[Ns+2] = F_atmo;
-FT = ((Fs+F_diff)+F_atmo);
-f = Fs/FT;
+Ftot = ((Fs+F_diff)+F_atmo);
+f = Fs/Ftot;
 print("f: ", f);
 eps = get_exposure_factor(alpha, alpha_grid, integral_grid, atmo_integ_val, Ns);
 Nex = get_Nex(F, eps);
