@@ -8,7 +8,7 @@ from itertools import product
 import astropy.units as u
 import numpy as np
 
-from .source.simple_source import SourceList, PointSource, DiffuseSource
+from .source.simple_source import SourceList, PointSource, DiffuseSource, icrs_to_uv
 from .source.parameter import ParScale, Parameter
 from .backend.stan_generator import StanGenerator
 
@@ -213,9 +213,59 @@ class ExposureIntegral:
                 par = Parameter.get_parameter(par_name)
                 par.value = self._original_param_values[par_name][k]
 
+    def _compute_energy_detection_factor(self):
+        """
+        Loop over sources and calculate Aeff as a function of arrival energy.
+        """
+
+        epsilon = 1e-5  # to avoid indexing erros
+        self.energy_grid = (
+            10
+            ** np.linspace(
+                np.log10(self._min_det_energy.value),
+                np.log10(self.effective_area._tE_bin_edges[-1] - epsilon),
+            )
+            << u.GeV
+        )
+        self.pdet_grid = []
+
+        for k, source in enumerate(self.source_list.sources):
+
+            if isinstance(source, PointSource):
+
+                unit_vector = icrs_to_uv(source.dec.value, source.ra.value)
+                cosz = np.cos(np.pi - np.arccos(unit_vector[2]))
+                cosz_bin = np.digitize(cosz, self.effective_area._cosz_bin_edges) - 1
+
+                if cosz > 0.1:
+                    pg = [0.0 for E in self.energy_grid]
+                else:
+                    pg = [
+                        self.effective_area._eff_area[
+                            np.digitize(E.value, self.effective_area._tE_bin_edges) - 1
+                        ][cosz_bin]
+                        for E in self.energy_grid
+                    ]
+
+                # TODO: Should this be scaled?
+                self.pdet_grid.append(pg)
+
+            if isinstance(source, DiffuseSource):
+
+                aeff_vals = np.sum(self.effective_area._eff_area, axis=1)
+
+                pg = [
+                    aeff_vals[
+                        np.digitize(E.value, self.effective_area._tE_bin_edges) - 1
+                    ]
+                    for E in self.energy_grid
+                ]
+                self.pdet_grid.append(pg)
+
     def __call__(self):
         """
         Compute the exposure integrals.
         """
 
         self._compute_exposure_integral()
+        self._compute_energy_detection_factor()
