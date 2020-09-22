@@ -28,7 +28,6 @@ class ExposureIntegral:
         self,
         source_list: SourceList,
         detector_model,
-        observation_time: u.year,
         min_det_energy: u.GeV,
         n_grid_points: int = 50,
     ):
@@ -39,12 +38,10 @@ class ExposureIntegral:
 
         :param source_list: An instance of SourceList.
         :param DetectorModel: An uninstantiated DetectorModel class.
-        :param observation_time: Observation time in years.
         :param min_det_energy: The energy threshold of our detected sample in GeV.
         """
 
         self._source_list = source_list
-        self._observation_time = observation_time
         self._min_det_energy = min_det_energy
         self._n_grid_points = n_grid_points
 
@@ -101,10 +98,6 @@ class ExposureIntegral:
     @property
     def energy_resolution(self):
         return self._energy_resolution
-
-    @property
-    def observation_time(self):
-        return self._observation_time
 
     @property
     def par_grids(self):
@@ -188,11 +181,8 @@ class ExposureIntegral:
             if not self._source_parameter_map[source]:
 
                 self._integral_fixed_vals.append(
-                    (
-                        self.calculate_rate(source)
-                        / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
-                    )
-                    * self._observation_time.to(u.s)
+                    self.calculate_rate(source)
+                    / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
                 )
                 continue
 
@@ -214,11 +204,8 @@ class ExposureIntegral:
 
             # To make units compatible with Stan model parametrisation
             self._integral_grid.append(
-                (
-                    integral_grids_tmp
-                    / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
-                )
-                * self._observation_time.to(u.s)
+                integral_grids_tmp
+                / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
             )
 
             # Reset free parameters to original values

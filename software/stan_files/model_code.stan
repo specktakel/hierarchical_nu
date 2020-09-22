@@ -1023,6 +1023,7 @@ vector[Ngrid] integral_grid[Ns+1];
 real atmo_integ_val;
 vector[Ngrid] E_grid;
 vector[Ngrid] Pdet_grid[Ns+1];
+real T;
 real L_scale;
 real F_diff_scale;
 real F_atmo_scale;
@@ -1084,7 +1085,7 @@ lp[i][k] += NorthernTracksEnergyResolution(E[i], Edet[i]);
 lp[i][k] += log(interpolate(E_grid, Pdet_grid[k], E[i]));
 }
 }
-eps = get_exposure_factor(alpha, alpha_grid, integral_grid, atmo_integ_val, Ns);
+eps = get_exposure_factor(alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns);
 Nex = get_Nex(F, eps);
 }
 model
