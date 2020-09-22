@@ -3,7 +3,6 @@ functions
 #include utils.stan
 #include vMF.stan
 #include interpolation.stan
-#include energy_spectrum.stan
 #include sim_functions.stan
 real NorthernTracksEffAreaHist(real value_0,real value_1)
 {
@@ -990,6 +989,21 @@ f2 = ((1/(2-alpha))*((e_up^(2-alpha))-(e_low^(2-alpha))));
 }
 return (f1/f2);
 }
+real spectrum_lpdf(real E,real alpha,real e_low,real e_up)
+{
+real N;
+real p;
+if(alpha == 1.0)
+{
+N = (1.0/(log(e_up)-log(e_low)));
+}
+else
+{
+N = ((1.0-alpha)/((e_up^(1.0-alpha))-(e_low^(1.0-alpha))));
+}
+p = (N*pow(E, (alpha*-1)));
+return log(p);
+}
 }
 data
 {
@@ -1009,9 +1023,9 @@ vector[Ngrid] integral_grid[Ns+1];
 real atmo_integ_val;
 vector[Ngrid] E_grid;
 vector[Ngrid] Pdet_grid[Ns+1];
-real Q_scale;
-real F0_scale;
-atmo_integ_val;
+real L_scale;
+real F_diff_scale;
+real F_atmo_scale;
 }
 transformed data
 {
@@ -1021,6 +1035,7 @@ for (i in 1:N)
 zenith[i] = pi() - acos(omega_det[i][3]);
 }
 print(Ngrid);
+print(Edet_min);
 }
 parameters
 {
@@ -1032,7 +1047,7 @@ vector<lower=Esrc_min, upper=100000000.0> [N] Esrc;
 }
 transformed parameters
 {
-real F;
+real Fsrc;
 vector[Ns+2] F;
 vector[Ns+2] eps;
 real<lower=0, upper=1> f;
@@ -1045,19 +1060,19 @@ for (k in 1:Ns)
 {
 F[k] = L/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
 F[k]*=flux_conv(alpha, Esrc_min, Edet_max);
-F+=F[k];
+Fsrc+=F[k];
 }
 F[Ns+1] = F_diff;
 F[Ns+2] = F_atmo;
-Ftot = ((F_diff+F_atmo)+F);
-f = F / Ftot;
+Ftot = ((F_diff+F_atmo)+Fsrc);
+f = Fsrc / Ftot;
 logF = log(F);
 for (i in 1:N)
 {
 lp[i] = logF;
 for (k in 1:Ns+1)
 {
-lp[i][k] += pareto_lpdf(Esrc[i] | Edet_min , (alpha-1));
+lp[i][k] += pareto_lpdf(Esrc[i] | Esrc_min , (alpha-1));
 E[i] = Esrc[i] / ((1+z[k]));
 if (k < Ns+1) {
 lp[i][k] += NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]);
@@ -1069,8 +1084,8 @@ lp[i][k] += NorthernTracksEnergyResolution(E[i], Edet[i]);
 lp[i][k] += log(interpolate(E_grid, Pdet_grid[k], E[i]));
 }
 }
-eps = get_exposure_factor(T, Emin, alpha, alpha_grid, integral_grid, Ns);
-Nex = get_Nex(allF, eps);
+eps = get_exposure_factor(alpha, alpha_grid, integral_grid, atmo_integ_val, Ns);
+Nex = get_Nex(F, eps);
 }
 model
 {
@@ -1079,7 +1094,8 @@ for (i in 1:N)
 target += log_sum_exp(lp[i]);
 }
 target += -Nex;
-Q ~ normal(0, Q_scale);
-F0 ~ normal(0, F0_scale);
+L ~ normal(0, L_scale);
+F_diff ~ normal(0, F_diff_scale);
+F_atmo ~ normal(0, F_atmo_scale);
 alpha ~ normal(2.0, 2.0);
 }
