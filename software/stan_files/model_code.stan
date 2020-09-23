@@ -1642,9 +1642,8 @@ data
 int N;
 unit_vector[3] omega_det[N];
 vector[N] Edet;
-real Edet_min;
 real Esrc_min;
-real Edet_max;
+real Esrc_max;
 int Ns;
 unit_vector[3] varpi[Ns];
 vector[Ns] D;
@@ -1654,7 +1653,7 @@ vector[Ngrid] alpha_grid;
 vector[Ngrid] integral_grid[Ns+1];
 real atmo_integ_val;
 vector[Ngrid] E_grid;
-vector[Ngrid] Pdet_grid[Ns+1];
+vector[Ngrid] Pdet_grid[Ns+2];
 real T;
 real L_scale;
 real F_diff_scale;
@@ -1662,21 +1661,15 @@ real F_atmo_scale;
 }
 transformed data
 {
-vector[N] zenith;
-for (i in 1:N)
-{
-zenith[i] = pi() - acos(omega_det[i][3]);
-}
 print(Ngrid);
-print(Edet_min);
 }
 parameters
 {
 real<lower=0.0, upper=1e+60> L;
-real<lower=0.0, upper=500> F_diff;
-real<lower=0.0, upper=500> F_atmo;
+real<lower=0.0, upper=1e-05> F_diff;
+real<lower=0.0, upper=1e-05> F_atmo;
 real<lower=1.0, upper=4.0> alpha;
-vector<lower=Esrc_min, upper=100000000.0> [N] Esrc;
+vector<lower=Esrc_min, upper=Esrc_max> [N] Esrc;
 }
 transformed parameters
 {
@@ -1689,10 +1682,11 @@ vector[Ns+2] lp[N];
 vector[Ns+2] logF;
 real Nex;
 vector[N] E;
+Fsrc = 0.0;
 for (k in 1:Ns)
 {
 F[k] = L/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
-F[k]*=flux_conv(alpha, Esrc_min, Edet_max);
+F[k]*=flux_conv(alpha, Esrc_min, Esrc_max);
 Fsrc+=F[k];
 }
 F[Ns+1] = F_diff;
@@ -1707,13 +1701,13 @@ for (k in 1:Ns+2)
 {
 if(k < (Ns+1))
 {
-lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Edet_max);
+lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
 E[i] = Esrc[i] / ((1+z[k]));
 lp[i][k] += NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]);
 }
 else if(k == (Ns+1))
 {
-lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Edet_max);
+lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
 E[i] = Esrc[i] / ((1+z[k]));
 lp[i][k] += -2.5310242469692907;
 }
@@ -1735,7 +1729,6 @@ for (i in 1:N)
 {
 target += log_sum_exp(lp[i]);
 }
-target += -Nex;
 L ~ normal(0, L_scale);
 F_diff ~ normal(0, F_diff_scale);
 F_atmo ~ normal(0, F_atmo_scale);
