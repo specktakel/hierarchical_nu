@@ -1662,12 +1662,14 @@ real F_atmo_scale;
 transformed data
 {
 print(Ngrid);
+print(E_grid);
+print(Pdet_grid);
 }
 parameters
 {
-real<lower=0.0, upper=1e+60> L;
-real<lower=0.0, upper=1e-05> F_diff;
-real<lower=0.0, upper=1e-05> F_atmo;
+real<lower=0.0, upper=1e+55> L;
+real<lower=0.0, upper=1e-07> F_diff;
+real<lower=0.0, upper=1e-07> F_atmo;
 real<lower=1.0, upper=4.0> alpha;
 vector<lower=Esrc_min, upper=Esrc_max> [N] Esrc;
 }
@@ -1729,6 +1731,7 @@ for (i in 1:N)
 {
 target += log_sum_exp(lp[i]);
 }
+target += -Nex;
 L ~ normal(0, L_scale);
 F_diff ~ normal(0, F_diff_scale);
 F_atmo ~ normal(0, F_atmo_scale);

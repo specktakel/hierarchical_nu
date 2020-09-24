@@ -29,6 +29,8 @@ class ExposureIntegral:
         source_list: SourceList,
         detector_model,
         min_det_energy: u.GeV,
+        min_src_energy: u.GeV,
+        max_src_energy: u.GeV,
         n_grid_points: int = 50,
     ):
         """
@@ -39,10 +41,14 @@ class ExposureIntegral:
         :param source_list: An instance of SourceList.
         :param DetectorModel: An uninstantiated DetectorModel class.
         :param min_det_energy: The energy threshold of our detected sample in GeV.
+        :param: min_src_energy: Minimum source energy in GeV.
+        :param: max_src_energy: Maximum source energy in GeV.
         """
 
         self._source_list = source_list
         self._min_det_energy = min_det_energy
+        self._min_src_energy = min_src_energy
+        self._max_src_energy = max_src_energy
         self._n_grid_points = n_grid_points
 
         # Instantiate the given Detector class to access values
@@ -218,12 +224,11 @@ class ExposureIntegral:
         Loop over sources and calculate Aeff as a function of arrival energy.
         """
 
-        epsilon = 1e-5  # to avoid indexing erros
         self.energy_grid = (
             10
             ** np.linspace(
-                np.log10(self._min_det_energy.value),
-                np.log10(self.effective_area._tE_bin_edges[-1] - epsilon),
+                np.log10(self._min_src_energy.value),
+                np.log10(self._max_src_energy.value),
             )
             << u.GeV
         )
@@ -248,7 +253,7 @@ class ExposureIntegral:
                     ]
 
                 # TODO: Should this be scaled?
-                self.pdet_grid.append(pg)
+                self.pdet_grid.append(np.array(pg) / max(pg))
 
             if isinstance(source, DiffuseSource):
 
@@ -260,7 +265,7 @@ class ExposureIntegral:
                     ]
                     for E in self.energy_grid
                 ]
-                self.pdet_grid.append(pg)
+                self.pdet_grid.append(np.array(pg) / max(pg))
 
     def __call__(self):
         """
