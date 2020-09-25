@@ -243,7 +243,7 @@ class ExposureIntegral:
                 cosz_bin = np.digitize(cosz, self.effective_area._cosz_bin_edges) - 1
 
                 if cosz > 0.1:
-                    pg = [0.0 for E in self.energy_grid]
+                    pg = np.zeros_like(self.energy_grid)
                 else:
                     pg = [
                         self.effective_area._eff_area[
@@ -251,9 +251,9 @@ class ExposureIntegral:
                         ][cosz_bin]
                         for E in self.energy_grid
                     ]
+                    pg = np.array(pg) / max(pg)
 
-                # TODO: Should this be scaled?
-                self.pdet_grid.append(np.array(pg) / max(pg))
+                self.pdet_grid.append(pg)
 
             if isinstance(source, DiffuseSource):
 
@@ -265,7 +265,8 @@ class ExposureIntegral:
                     ]
                     for E in self.energy_grid
                 ]
-                self.pdet_grid.append(np.array(pg) / max(pg))
+                pg = np.array(pg) / max(pg)
+                self.pdet_grid.append(pg)
 
     def __call__(self):
         """
