@@ -8,7 +8,7 @@ from itertools import product
 import astropy.units as u
 import numpy as np
 
-from .source.simple_source import SourceList, PointSource, DiffuseSource
+from .source.simple_source import SourceList, PointSource, DiffuseSource, icrs_to_uv
 from .source.parameter import ParScale, Parameter
 from .backend.stan_generator import StanGenerator
 
@@ -28,8 +28,9 @@ class ExposureIntegral:
         self,
         source_list: SourceList,
         detector_model,
-        observation_time: u.year,
         min_det_energy: u.GeV,
+        min_src_energy: u.GeV,
+        max_src_energy: u.GeV,
         n_grid_points: int = 50,
     ):
         """
@@ -39,13 +40,15 @@ class ExposureIntegral:
 
         :param source_list: An instance of SourceList.
         :param DetectorModel: An uninstantiated DetectorModel class.
-        :param observation_time: Observation time in years.
         :param min_det_energy: The energy threshold of our detected sample in GeV.
+        :param: min_src_energy: Minimum source energy in GeV.
+        :param: max_src_energy: Maximum source energy in GeV.
         """
 
         self._source_list = source_list
-        self._observation_time = observation_time
         self._min_det_energy = min_det_energy
+        self._min_src_energy = min_src_energy
+        self._max_src_energy = max_src_energy
         self._n_grid_points = n_grid_points
 
         # Instantiate the given Detector class to access values
@@ -101,10 +104,6 @@ class ExposureIntegral:
     @property
     def energy_resolution(self):
         return self._energy_resolution
-
-    @property
-    def observation_time(self):
-        return self._observation_time
 
     @property
     def par_grids(self):
@@ -188,11 +187,8 @@ class ExposureIntegral:
             if not self._source_parameter_map[source]:
 
                 self._integral_fixed_vals.append(
-                    (
-                        self.calculate_rate(source)
-                        / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
-                    )
-                    * self._observation_time.to(u.s)
+                    self.calculate_rate(source)
+                    / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
                 )
                 continue
 
@@ -214,11 +210,8 @@ class ExposureIntegral:
 
             # To make units compatible with Stan model parametrisation
             self._integral_grid.append(
-                (
-                    integral_grids_tmp
-                    / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
-                )
-                * self._observation_time.to(u.s)
+                integral_grids_tmp
+                / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
             )
 
             # Reset free parameters to original values
@@ -226,9 +219,58 @@ class ExposureIntegral:
                 par = Parameter.get_parameter(par_name)
                 par.value = self._original_param_values[par_name][k]
 
+    def _compute_energy_detection_factor(self):
+        """
+        Loop over sources and calculate Aeff as a function of arrival energy.
+        """
+
+        self.energy_grid = (
+            10
+            ** np.linspace(
+                np.log10(self._min_src_energy.value),
+                np.log10(self._max_src_energy.value),
+            )
+            << u.GeV
+        )
+        self.pdet_grid = []
+
+        for k, source in enumerate(self.source_list.sources):
+
+            if isinstance(source, PointSource):
+
+                unit_vector = icrs_to_uv(source.dec.value, source.ra.value)
+                cosz = np.cos(np.pi - np.arccos(unit_vector[2]))
+                cosz_bin = np.digitize(cosz, self.effective_area._cosz_bin_edges) - 1
+
+                if cosz > 0.1:
+                    pg = [0.0 for E in self.energy_grid]
+                else:
+                    pg = [
+                        self.effective_area._eff_area[
+                            np.digitize(E.value, self.effective_area._tE_bin_edges) - 1
+                        ][cosz_bin]
+                        for E in self.energy_grid
+                    ]
+
+                # TODO: Should this be scaled?
+                self.pdet_grid.append(np.array(pg) / max(pg))
+
+            if isinstance(source, DiffuseSource):
+
+                aeff_vals = np.sum(self.effective_area._eff_area, axis=1)
+
+                pg = [
+                    aeff_vals[
+                        np.digitize(E.value, self.effective_area._tE_bin_edges) - 1
+                    ]
+                    for E in self.energy_grid
+                ]
+                self.pdet_grid.append(np.array(pg) / max(pg))
+
     def __call__(self):
         """
         Compute the exposure integrals.
         """
 
         self._compute_exposure_integral()
+        self._compute_energy_detection_factor()

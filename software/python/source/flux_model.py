@@ -60,6 +60,11 @@ class SpectralShape(ABC):
 
     @classmethod
     @abstractmethod
+    def make_stan_lpdf_func(cls):
+        pass
+
+    @classmethod
+    @abstractmethod
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
         pass
 
@@ -493,9 +498,39 @@ class PowerLawSpectrum(SpectralShape):
         return func
 
     @classmethod
+    def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
+        func = UserDefinedFunction(
+            f_name,
+            ["E", "alpha", "e_low", "e_up"],
+            ["real", "real", "real", "real"],
+            "real",
+        )
+
+        with func:
+
+            alpha = StringExpression(["alpha"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
+            E = StringExpression(["E"])
+
+            N = ForwardVariableDef("N", "real")
+            p = ForwardVariableDef("p", "real")
+
+            with IfBlockContext([StringExpression([alpha, " == ", 1.0])]):
+                N << 1.0 / (FunctionCall([e_up], "log") - FunctionCall([e_low], "log"))
+            with ElseBlockContext():
+                N << (1.0 - alpha) / (e_up ** (1.0 - alpha) - e_low ** (1.0 - alpha))
+
+            p << N * FunctionCall([E, alpha * -1], "pow")
+
+            ReturnStatement([FunctionCall([p], "log")])
+
+        return func
+
+    @classmethod
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
         """
-        Factor to convert from total_flux_density to total_flux_int. 
+        Factor to convert from total_flux_density to total_flux_int.
         """
 
         func = UserDefinedFunction(
