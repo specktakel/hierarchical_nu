@@ -1662,8 +1662,6 @@ real F_atmo_scale;
 transformed data
 {
 print(Ngrid);
-print(E_grid);
-print(Pdet_grid);
 }
 parameters
 {
@@ -1719,6 +1717,7 @@ lp[i][k] += log(AtmopshericNumuFlux(Esrc[i], omega_det[i]));
 E[i] = Esrc[i];
 }
 lp[i][k] += NorthernTracksEnergyResolution(E[i], Edet[i]);
+lp[i][k] += log(interpolate(E_grid, Pdet_grid[k], E[i]));
 }
 }
 eps = get_exposure_factor(alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns);
