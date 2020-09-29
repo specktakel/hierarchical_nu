@@ -172,7 +172,8 @@ class ExposureIntegral:
             e_cen, self._min_det_energy
         )
 
-        return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
+        return (integral * source.redshift_factor(z)).sum()
+        # return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
 
     def _compute_exposure_integral(self):
         """
@@ -251,7 +252,7 @@ class ExposureIntegral:
                         ][cosz_bin]
                         for E in self.energy_grid
                     ]
-                    pg = np.array(pg) / max(pg)
+                    pg = np.array(pg)  # / max(pg)
 
                 self.pdet_grid.append(pg)
 
@@ -265,7 +266,7 @@ class ExposureIntegral:
                     ]
                     for E in self.energy_grid
                 ]
-                pg = np.array(pg) / max(pg)
+                pg = np.array(pg)  # / max(pg)
                 self.pdet_grid.append(pg)
 
     def __call__(self):

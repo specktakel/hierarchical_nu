@@ -16,7 +16,20 @@ vector get_exposure_factor(real alpha, vector alpha_grid, vector[] integral_grid
 
   return eps * T;
 }
-  
+
+/**
+ * For use in simple one-component sims
+ */
+real get_eps_simple(real alpha, vector alpha_grid, vector integral_grid, real T) {
+
+  real eps;
+
+  eps = interpolate(alpha_grid, integral_grid, alpha) * T;
+
+  return eps;
+
+}
+
 /**
  * Calculate weights from exposure integral.
  */
