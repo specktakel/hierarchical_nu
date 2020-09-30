@@ -1065,14 +1065,18 @@ eps = get_eps_simple(alpha, alpha_grid, integral_grid, T);
 Nex = (F*eps);
 N = poisson_rng(Nex);
 print(Ngrid);
+print(F);
+print(Nex);
 }
 generated quantities
 {
 vector[N] Esrc;
 vector[N] E;
+vector[N] Edet;
 for (i in 1:N)
 {
 Esrc[i] = spec_rng(alpha, Esrc_min, Esrc_max);
 E[i] = (Esrc[i]/(1+redshift));
+Edet[i] = E[i];
 }
 }

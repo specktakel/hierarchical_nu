@@ -1008,7 +1008,7 @@ return log(p);
 data
 {
 int N;
-vector[N] E;
+vector[N] Edet;
 real Esrc_min;
 real Esrc_max;
 real D;
@@ -1017,19 +1017,23 @@ real T;
 int Ngrid;
 vector[Ngrid] alpha_grid;
 vector[Ngrid] integral_grid;
+vector[Ngrid] E_grid;
+vector[Ngrid] Pdet_grid;
 }
 transformed data
 {
 vector[N] Esrc;
+vector[N] E;
 real D_m;
 D_m = (D*3.086e+22);
+E = Edet;
 Esrc = (E*(1+redshift));
 print(Ngrid);
 print(N);
 }
 parameters
 {
-real<lower=0.0, upper=1e+55> L;
+real<lower=1e+35, upper=1e+55> L;
 real<lower=1.0, upper=4.0> alpha;
 }
 transformed parameters
@@ -1048,7 +1052,10 @@ vector[N] lp;
 for (i in 1:N)
 {
 lp[i] = 0;
+lp[i] = (lp[i]+log(F));
 lp[i] = (lp[i]+spec_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max));
+lp[i] += log(interpolate(E_grid, Pdet_grid, E[i]));
 target += lp[i];
 }
+target += -Nex;
 }

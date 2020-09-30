@@ -166,14 +166,19 @@ class ExposureIntegral:
                 2 * np.pi * u.rad,
             )
 
+            # For isotropic distributions
+            # TODO: Check this is implemented correctly, especially for atmo comp...
+            integral = integral / (4 * np.pi)
+
             aeff = np.array(self.effective_area._eff_area, copy=True) << (u.m ** 2)
 
         p_Edet = self.energy_resolution.prob_Edet_above_threshold(
             e_cen, self._min_det_energy
         )
 
-        return (integral * source.redshift_factor(z)).sum()
-        # return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
+        # aeff = 1 * u.m ** 2
+        # return (integral * aeff * source.redshift_factor(z)).sum()
+        return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
 
     def _compute_exposure_integral(self):
         """
@@ -254,8 +259,6 @@ class ExposureIntegral:
                     ]
                     pg = np.array(pg)  # / max(pg)
 
-                self.pdet_grid.append(pg)
-
             if isinstance(source, DiffuseSource):
 
                 aeff_vals = np.sum(self.effective_area._eff_area, axis=1)
@@ -267,7 +270,12 @@ class ExposureIntegral:
                     for E in self.energy_grid
                 ]
                 pg = np.array(pg)  # / max(pg)
-                self.pdet_grid.append(pg)
+
+            p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                self.energy_grid, self._min_det_energy
+            )
+
+            self.pdet_grid.append(p_Edet * pg)
 
     def __call__(self):
         """
