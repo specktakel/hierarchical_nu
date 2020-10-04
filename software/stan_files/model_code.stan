@@ -1658,6 +1658,7 @@ real T;
 real L_scale;
 real F_diff_scale;
 real F_atmo_scale;
+real F_tot_scale;
 }
 transformed data
 {
@@ -1709,7 +1710,6 @@ else if(k == (Ns+1))
 {
 lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
 E[i] = Esrc[i] / ((1+z[k]));
-lp[i][k] += -2.5310242469692907;
 }
 else if(k == (Ns+2))
 {
@@ -1732,6 +1732,7 @@ target += log_sum_exp(lp[i]);
 target += -Nex;
 L ~ normal(0, L_scale);
 F_diff ~ normal(0, F_diff_scale);
-F_atmo ~ normal(0, F_atmo_scale);
+F_atmo ~ normal(F_atmo_scale, (0.1*F_atmo_scale));
+Ftot ~ normal(F_tot_scale, (0.5*F_tot_scale));
 alpha ~ normal(2.0, 2.0);
 }

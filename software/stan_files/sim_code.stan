@@ -1151,10 +1151,10 @@ omega = atmo_directions[atmo_index];
 cosz[i] = cos(omega_to_zenith(omega));
 if(Lambda[i] <= (Ns+1))
 {
-Esrc[i] = spectrum_rng(alpha, (Edet_min*(1+z[Lambda[i]])), Esrc_max);
+Esrc[i] = spectrum_rng(alpha, Esrc_min, Esrc_max);
 E[i] = (Esrc[i]/(1+z[Lambda[i]]));
 }
-else if(Lambda[i] > (Ns+1))
+else if(Lambda[i] == (Ns+2))
 {
 E[i] = atmo_energies[atmo_index];
 }

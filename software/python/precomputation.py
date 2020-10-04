@@ -166,10 +166,6 @@ class ExposureIntegral:
                 2 * np.pi * u.rad,
             )
 
-            # For isotropic distributions
-            # TODO: Check this is implemented correctly, especially for atmo comp...
-            integral = integral / (4 * np.pi)
-
             aeff = np.array(self.effective_area._eff_area, copy=True) << (u.m ** 2)
 
         p_Edet = self.energy_resolution.prob_Edet_above_threshold(
