@@ -1683,6 +1683,8 @@ vector[Ns+2] lp[N];
 vector[Ns+2] logF;
 real Nex;
 vector[N] E;
+real diff;
+real atmo;
 Fsrc = 0.0;
 for (k in 1:Ns)
 {
@@ -1708,13 +1710,17 @@ lp[i][k] += NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]);
 }
 else if(k == (Ns+1))
 {
-lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
+diff = (spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max)+-2.5310242469692907);
 E[i] = Esrc[i] / ((1+z[k]));
+lp[i][k] += diff;
+print("diff = ", diff);
 }
 else if(k == (Ns+2))
 {
-lp[i][k] += log(AtmopshericNumuFlux(Esrc[i], omega_det[i]));
+atmo = log(AtmopshericNumuFlux(Esrc[i], omega_det[i]));
+lp[i][k] += atmo;
 E[i] = Esrc[i];
+print("atmo = ", atmo);
 }
 lp[i][k] += NorthernTracksEnergyResolution(E[i], Edet[i]);
 lp[i][k] += log(interpolate(E_grid, Pdet_grid[k], E[i]));
