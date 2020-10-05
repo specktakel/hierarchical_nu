@@ -920,92 +920,6 @@ real hist_edge_0[281] = {1.00000000e+02,1.05925373e+02,1.12201845e+02,1.18850223
 real hist_edge_1[12] = {-1. ,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0. , 0.1};
 return hist_array[binary_search(value_0, hist_edge_0)][binary_search(value_1, hist_edge_1)];
 }
-real spectrum_rng(real alpha,real e_low,real e_up)
-{
-real uni_sample;
-real norm;
-norm = ((1-alpha)/((e_up^(1-alpha))-(e_low^(1-alpha))));
-uni_sample = uniform_rng(0, 1);
-return ((((uni_sample*(1-alpha))/norm)+(e_low^(1-alpha)))^(1/(1-alpha)));
-}
-real diffuse_bg_rng_shape_rng(real alpha,real e_low,real e_up)
-{
-real uni_sample;
-real norm;
-norm = ((1-alpha)/((e_up^(1-alpha))-(e_low^(1-alpha))));
-uni_sample = uniform_rng(0, 1);
-return ((((uni_sample*(1-alpha))/norm)+(e_low^(1-alpha)))^(1/(1-alpha)));
-}
-vector diffuse_bg_rng(real alpha,real e_low,real e_up)
-{
-vector[3] ret_vec;
-ret_vec[1] = diffuse_bg_rng_shape_rng(alpha, e_low, e_up);
-ret_vec[2] = (acos(uniform_rng(-1, 1))-(pi()/2));
-ret_vec[3] = uniform_rng(0, (2*pi()));
-return ret_vec;
-}
-real flux_conv(real alpha,real e_low,real e_up)
-{
-real f1;
-real f2;
-if(alpha == 1.0)
-{
-f1 = (log(e_up)-log(e_low));
-}
-else
-{
-f1 = ((1/(1-alpha))*((e_up^(1-alpha))-(e_low^(1-alpha))));
-}
-if(alpha == 2.0)
-{
-f2 = (log(e_up)-log(e_low));
-}
-else
-{
-f2 = ((1/(2-alpha))*((e_up^(2-alpha))-(e_low^(2-alpha))));
-}
-return (f1/f2);
-}
-vector NorthernTracksAngularResolution_rng(real true_energy,vector true_dir)
-{
-vector[6] NorthernTracksAngularResolutionPolyCoeffs = [ 3.11287843e+01,-8.72542968e+02, 8.74576241e+03,-3.72847494e+04,
-  7.46309205e+04,-5.73160697e+04]';
-return vMF_rng(true_dir, eval_poly1d(log10(truncate_value(true_energy, 133.9845723819148, 772161836.8251529)),NorthernTracksAngularResolutionPolyCoeffs));
-}
-real nt_energy_res_mix_rng(vector means,vector sigmas,vector weights)
-{
-int index;
-index = categorical_rng(weights);
-return lognormal_rng(means[index], sigmas[index]);
-}
-real NorthernTracksEnergyResolution_rng(real true_energy)
-{
-real NorthernTracksEnergyResolutionMuPolyCoeffs[3,6] = {{ 1.79123316e-03,-4.53094872e-02, 4.36942224e-01,-1.97200894e+00,
-   4.31179843e+00,-8.01759468e-01},
- { 1.49689538e-03,-4.20876747e-02, 4.40492341e-01,-2.10673628e+00,
-   4.96463645e+00,-1.72852955e+00},
- { 3.21899096e-03,-7.46514921e-02, 6.42180173e-01,-2.44234586e+00,
-   4.37192616e+00,-1.46775692e-01}};
-real NorthernTracksEnergyResolutionSdPolyCoeffs[3,6] = {{-5.96059287e-05, 1.01057958e-03,-6.89582620e-03, 2.77225861e-02,
-  -4.86977053e-02, 5.38079289e-02},
- {-5.62689396e-06,-1.00372291e-03, 2.17335300e-02,-1.58891590e-01,
-   4.85621776e-01,-4.64169589e-01},
- {-7.19239071e-06,-9.01178002e-04, 2.07119386e-02,-1.59460481e-01,
-   5.12292363e-01,-5.24058691e-01}};
-real mu_e_res[3];
-real sigma_e_res[3];
-vector[3] weights;
-for (i in 1:3)
-{
-weights[i] = 1.0/3;
-}
-for (i in 1:3)
-{
-mu_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 259.05920320586245, 77339084.25215183)), to_vector(NorthernTracksEnergyResolutionMuPolyCoeffs[i]));
-sigma_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 259.05920320586245, 77339084.25215183)), to_vector(NorthernTracksEnergyResolutionSdPolyCoeffs[i]));
-}
-return nt_energy_res_mix_rng(to_vector(log(mu_e_res)), to_vector(sigma_e_res), weights);
-}
 real NorthernTracksAngularResolution(real true_energy,vector true_dir,vector reco_dir)
 {
 vector[6] NorthernTracksAngularResolutionPolyCoeffs = [ 3.11287843e+01,-8.72542968e+02, 8.74576241e+03,-3.72847494e+04,
@@ -1053,138 +967,95 @@ real NorthernTracksEffectiveArea(real true_energy,vector true_dir)
 {
 return NorthernTracksEffAreaHist(true_energy, cos(pi() - acos(true_dir[3])));
 }
+real flux_conv(real alpha,real e_low,real e_up)
+{
+real f1;
+real f2;
+if(alpha == 1.0)
+{
+f1 = (log(e_up)-log(e_low));
+}
+else
+{
+f1 = ((1/(1-alpha))*((e_up^(1-alpha))-(e_low^(1-alpha))));
+}
+if(alpha == 2.0)
+{
+f2 = (log(e_up)-log(e_low));
+}
+else
+{
+f2 = ((1/(2-alpha))*((e_up^(2-alpha))-(e_low^(2-alpha))));
+}
+return (f1/f2);
+}
+real spec_logpdf(real E,real alpha,real e_low,real e_up)
+{
+real N;
+real p;
+if(alpha == 1.0)
+{
+N = (1.0/(log(e_up)-log(e_low)));
+}
+else
+{
+N = ((1.0-alpha)/((e_up^(1.0-alpha))-(e_low^(1.0-alpha))));
+}
+p = (N*pow(E, (alpha*-1)));
+return log(p);
+}
 }
 data
 {
-int Ns;
-unit_vector[3] varpi[Ns];
-vector[Ns] D;
-vector[Ns+1] z;
-real alpha;
-real Edet_min;
+int N;
+vector[N] Edet;
 real Esrc_min;
 real Esrc_max;
-real L;
-real F_diff;
-real F_atmo;
+real D;
+real redshift;
+real T;
 int Ngrid;
 vector[Ngrid] alpha_grid;
-vector[Ngrid] integral_grid[Ns+1];
-real atmo_integ_val;
-real aeff_max;
-real v_lim;
-real T;
-int N_atmo;
-unit_vector[3] atmo_directions[N_atmo];
-vector[N_atmo] atmo_energies;
-simplex[N_atmo] atmo_weights;
+vector[Ngrid] integral_grid;
+vector[Ngrid] E_grid;
+vector[Ngrid] Pdet_grid;
 }
 transformed data
 {
-vector[Ns+2] F;
-real Ftot;
-real Fs;
-real f;
-simplex[Ns+2] w_exposure;
-real Nex;
-int N;
-vector[Ns+2] eps;
-Fs = 0.0;
-for (k in 1:Ns)
-{
-F[k] = L/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
-F[k]*=flux_conv(alpha, Esrc_min, Esrc_max);
-Fs += F[k];
-}
-F[Ns+1] = F_diff;
-F[Ns+2] = F_atmo;
-Ftot = ((Fs+F_diff)+F_atmo);
-f = Fs/Ftot;
-print("f: ", f);
-eps = get_exposure_factor(alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns);
-Nex = get_Nex(F, eps);
-w_exposure = get_exposure_weights(F, eps);
-N = poisson_rng(Nex);
-print(w_exposure);
-print(Ngrid);
-print(Nex);
-print(N);
-}
-generated quantities
-{
-int Lambda[N];
-unit_vector[3] omega;
 vector[N] Esrc;
 vector[N] E;
-vector[N] Edet;
-int atmo_index;
-real cosz[N];
-real Pdet[N];
-int accept;
-int detected;
-int ntrials;
-simplex[2] prob;
-unit_vector[3] event[N];
-real Nex_sim;
-Nex_sim = Nex;
+real D_m;
+D_m = (D*3.086e+22);
+E = Edet;
+Esrc = (E*(1+redshift));
+print(Ngrid);
+print(N);
+}
+parameters
+{
+real<lower=1e+35, upper=1e+55> L;
+real<lower=1.0, upper=4.0> alpha;
+}
+transformed parameters
+{
+real F;
+real eps;
+real Nex;
+F = L/ (4 * pi() * pow(D_m, 2));
+F = (F*flux_conv(alpha, Esrc_min, Esrc_max));
+eps = get_eps_simple(alpha, alpha_grid, integral_grid, T);
+Nex = (F*eps);
+}
+model
+{
+vector[N] lp;
 for (i in 1:N)
 {
-Lambda[i] = categorical_rng(w_exposure);
-accept = 0;
-detected = 0;
-ntrials = 0;
-while((accept!=1))
-{
-if(Lambda[i] <= Ns)
-{
-omega = varpi[Lambda[i]];
+lp[i] = 0;
+lp[i] = (lp[i]+log(F));
+lp[i] = (lp[i]+spec_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max));
+lp[i] += log(interpolate(E_grid, Pdet_grid, E[i]));
+target += lp[i];
 }
-else if(Lambda[i] == (Ns+1))
-{
-omega = sphere_lim_rng(1, v_lim);
-}
-else if(Lambda[i] == (Ns+2))
-{
-atmo_index = categorical_rng(atmo_weights);
-omega = atmo_directions[atmo_index];
-}
-cosz[i] = cos(omega_to_zenith(omega));
-if(Lambda[i] <= (Ns+1))
-{
-Esrc[i] = spectrum_rng(alpha, Esrc_min, Esrc_max);
-E[i] = (Esrc[i]/(1+z[Lambda[i]]));
-}
-else if(Lambda[i] == (Ns+2))
-{
-E[i] = atmo_energies[atmo_index];
-}
-if(cosz[i]>= 0.1)
-{
-Pdet[i] = 0;
-}
-else
-{
-Pdet[i] = (NorthernTracksEffectiveArea(E[i], omega)/aeff_max);
-}
-Edet[i] = (10^NorthernTracksEnergyResolution_rng(E[i]));
-prob[1] = Pdet[i];
-prob[2] = (1-Pdet[i]);
-ntrials += 1;
-if(ntrials< 1000000)
-{
-detected = categorical_rng(prob);
-if((Edet[i] >= Edet_min) && ((detected==1)))
-{
-accept = 1;
-}
-}
-else
-{
-accept = 1;
-print("problem component: ", Lambda[i]);
-;
-}
-}
-event[i] = NorthernTracksAngularResolution_rng(E[i], omega);
-}
+target += -Nex;
 }
