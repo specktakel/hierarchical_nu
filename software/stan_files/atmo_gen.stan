@@ -642,13 +642,6 @@ real Esrc_max;
 real cosz_min;
 real cosz_max;
 }
-transformed data
-{
-print(Edet_min);
-print(Esrc_max);
-print(cosz_min);
-print(cosz_max);
-}
 parameters
 {
 real<lower=Edet_min, upper=Esrc_max> energy;

@@ -1660,10 +1660,6 @@ real F_diff_scale;
 real F_atmo_scale;
 real F_tot_scale;
 }
-transformed data
-{
-print(Ngrid);
-}
 parameters
 {
 real<lower=0.0, upper=1e+55> L;
@@ -1683,8 +1679,6 @@ vector[Ns+2] lp[N];
 vector[Ns+2] logF;
 real Nex;
 vector[N] E;
-real diff;
-real atmo;
 Fsrc = 0.0;
 for (k in 1:Ns)
 {
@@ -1710,17 +1704,14 @@ lp[i][k] += NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]);
 }
 else if(k == (Ns+1))
 {
-diff = (spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max)+-2.5310242469692907);
+lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
 E[i] = Esrc[i] / ((1+z[k]));
-lp[i][k] += diff;
-print("diff = ", diff);
+lp[i][k] += -2.5310242469692907;
 }
 else if(k == (Ns+2))
 {
-atmo = log(AtmopshericNumuFlux(Esrc[i], omega_det[i]));
-lp[i][k] += atmo;
+lp[i][k] += log((AtmopshericNumuFlux(Esrc[i], omega_det[i])/1.8071375858713813e-08));
 E[i] = Esrc[i];
-print("atmo = ", atmo);
 }
 lp[i][k] += NorthernTracksEnergyResolution(E[i], Edet[i]);
 lp[i][k] += log(interpolate(E_grid, Pdet_grid[k], E[i]));
