@@ -4,11 +4,12 @@ to be passed to Stan models.
 """
 from collections import defaultdict
 from itertools import product
+import logging
 
 import astropy.units as u
 import numpy as np
 
-from .source.simple_source import SourceList, PointSource, DiffuseSource, icrs_to_uv
+from .source.source import Sources, PointSource, DiffuseSource, icrs_to_uv
 from .source.parameter import ParScale, Parameter
 from .backend.stan_generator import StanGenerator
 
@@ -18,7 +19,7 @@ m_to_cm = 100  # cm
 
 class ExposureIntegral:
     """
-    Handles calculation of the exposure integral, eps_k.
+    Handles calculation of the exposure integral.
     This is the convolution of the source spectrum and the
     effective area, multiplied by the observation time.
     """
@@ -26,30 +27,28 @@ class ExposureIntegral:
     @u.quantity_input
     def __init__(
         self,
-        source_list: SourceList,
+        sources: Sources,
         detector_model,
-        min_det_energy: u.GeV,
-        min_src_energy: u.GeV,
-        max_src_energy: u.GeV,
         n_grid_points: int = 50,
     ):
         """
-        Handles calculation of the exposure integral, eps_k.
+        Handles calculation of the exposure integral.
         This is the convolution of the source spectrum and the
         effective area, multiplied by the observation time.
 
         :param source_list: An instance of SourceList.
-        :param DetectorModel: An uninstantiated DetectorModel class.
-        :param min_det_energy: The energy threshold of our detected sample in GeV.
-        :param: min_src_energy: Minimum source energy in GeV.
-        :param: max_src_energy: Maximum source energy in GeV.
+        :param DetectorModel: A DetectorModel class.
         """
 
-        self._source_list = source_list
-        self._min_det_energy = min_det_energy
-        self._min_src_energy = min_src_energy
-        self._max_src_energy = max_src_energy
+        self._sources = sources
+        self._min_det_energy = Parameter.get_parameter("Emin_det").value
+        self._min_src_energy = Parameter.get_parameter("Emin").value
+        self._max_src_energy = Parameter.get_parameter("Emax").value
         self._n_grid_points = n_grid_points
+
+        # Silence log output
+        logger = logging.getLogger("python.backend.code_generator")
+        logger.propagate = False
 
         # Instantiate the given Detector class to access values
         with StanGenerator() as cg:
@@ -61,7 +60,7 @@ class ExposureIntegral:
         self._source_parameter_map = defaultdict(list)
         self._original_param_values = defaultdict(list)
 
-        for source in source_list:
+        for source in sources:
             for par in source.parameters.values():
                 if not par.fixed:
                     self._parameter_source_map[par.name].append(source)
@@ -88,14 +87,7 @@ class ExposureIntegral:
 
             self._par_grids[par_name] = grid
 
-    @property
-    def source_list(self):
-        return self._source_list
-
-    @source_list.setter
-    def source_list(self, value):
-        if not isinstance(value, SourceList):
-            raise ValueError(str(value) + " is not a recognised source list")
+        self.__call__()
 
     @property
     def effective_area(self):
@@ -185,7 +177,7 @@ class ExposureIntegral:
 
         self._integral_fixed_vals = []
 
-        for k, source in enumerate(self.source_list.sources):
+        for k, source in enumerate(self._sources.sources):
             if not self._source_parameter_map[source]:
 
                 self._integral_fixed_vals.append(
@@ -236,7 +228,7 @@ class ExposureIntegral:
         )
         self.pdet_grid = []
 
-        for k, source in enumerate(self.source_list.sources):
+        for k, source in enumerate(self._sources.sources):
 
             if isinstance(source, PointSource):
 

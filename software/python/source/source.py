@@ -405,6 +405,33 @@ class Sources:
 
         return point_source_ints / self.total_flux_int()
 
+    def organise(self):
+        """
+        Make sure diffuse and atmo components are second-to-last
+        and last respectively (if they exist).
+
+        NB: assumes only one diff/atmo component.
+        """
+
+        ps = []
+        diff = None
+        atmo = None
+
+        for source in self.sources:
+            if isinstance(source, PointSource):
+                ps.append(source)
+
+            elif isinstance(source, DiffuseSource):
+                if isinstance(source.flux_model, IsotropicDiffuseBG):
+                    diff = source
+                elif isinstance(source.flux_model, AtmosphericNuMuFlux):
+                    atmo = source
+        new_list = ps
+        if diff:
+            new_list.append(diff)
+        if atmo:
+            new_list.append(atmo)
+
     def __iter__(self):
         for source in self._sources:
             yield source
