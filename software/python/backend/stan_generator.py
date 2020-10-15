@@ -28,11 +28,19 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "StanGenerator",
+    "StanFileGenerator",
     "UserDefinedFunction",
     "GeneratedQuantitiesContext",
     "Include",
     "FunctionsContext",
     "DataContext",
+    "TransformedDataContext",
+    "FunctionCall",
+    "ModelContext",
+    "WhileLoopContext",
+    "IfBlockContext",
+    "ElseIfBlockContext",
+    "ElseBlockContext",
     "DefinitionContext",
     "ForLoopContext",
 ]
@@ -381,7 +389,9 @@ class StanGenerator(CodeGenerator):
                     # since they will generate once the output node generates.
                     # Also filter out None outputs (used e.g. for VariableDefs)
                     filtered_outs = [
-                        out for out in code_bit.output if (isinstance(out, Expression) or out is None)
+                        out
+                        for out in code_bit.output
+                        if (isinstance(out, Expression) or out is None)
                     ]
 
                     # If at least one output is an expression supress code gen

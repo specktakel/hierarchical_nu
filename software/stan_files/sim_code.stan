@@ -928,22 +928,6 @@ norm = ((1-alpha)/((e_up^(1-alpha))-(e_low^(1-alpha))));
 uni_sample = uniform_rng(0, 1);
 return ((((uni_sample*(1-alpha))/norm)+(e_low^(1-alpha)))^(1/(1-alpha)));
 }
-real diffuse_bg_rng_shape_rng(real alpha,real e_low,real e_up)
-{
-real uni_sample;
-real norm;
-norm = ((1-alpha)/((e_up^(1-alpha))-(e_low^(1-alpha))));
-uni_sample = uniform_rng(0, 1);
-return ((((uni_sample*(1-alpha))/norm)+(e_low^(1-alpha)))^(1/(1-alpha)));
-}
-vector diffuse_bg_rng(real alpha,real e_low,real e_up)
-{
-vector[3] ret_vec;
-ret_vec[1] = diffuse_bg_rng_shape_rng(alpha, e_low, e_up);
-ret_vec[2] = (acos(uniform_rng(-1, 1))-(pi()/2));
-ret_vec[3] = uniform_rng(0, (2*pi()));
-return ret_vec;
-}
 real flux_conv(real alpha,real e_low,real e_up)
 {
 real f1;
