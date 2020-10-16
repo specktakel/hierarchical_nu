@@ -171,14 +171,7 @@ class PointSource(Source):
         source_list = []
         for i, (r, d, z) in enumerate(zip(ra, dec, redshift)):
             source = PointSource.make_powerlaw_source(
-                str(i),
-                d,
-                r,
-                luminosity,
-                index,
-                z,
-                lower_energy,
-                upper_energy,
+                str(i), d, r, luminosity, index, z, lower_energy, upper_energy,
             )
             source_list.append(source)
 
@@ -414,8 +407,8 @@ class Sources:
         """
 
         ps = []
-        diff = None
-        atmo = None
+        self._diffuse_component = None
+        self._atmo_component = None
 
         for source in self.sources:
             if isinstance(source, PointSource):
@@ -423,14 +416,22 @@ class Sources:
 
             elif isinstance(source, DiffuseSource):
                 if isinstance(source.flux_model, IsotropicDiffuseBG):
-                    diff = source
+                    self._diffuse_component = source
                 elif isinstance(source.flux_model, AtmosphericNuMuFlux):
-                    atmo = source
+                    self._atmo_component = source
         new_list = ps
-        if diff:
-            new_list.append(diff)
-        if atmo:
-            new_list.append(atmo)
+        if self._diffuse_component:
+            new_list.append(self._diffuse_component)
+        if self._atmo_component:
+            new_list.append(self._atmo_component)
+
+    def diffuse_component(self):
+        self.organise()
+        return self._diffuse_component
+
+    def atmo_component(self):
+        self.organise()
+        return self._atmo_component
 
     def __iter__(self):
         for source in self._sources:
