@@ -20,9 +20,13 @@ class VariableDef(NamedExpression):
 
         NamedExpression.__init__(self, [], [name], name)
 
+        # Add None output. This will supress the generation of the variable
+        # name if the variable is not used in any expression
+        self.add_output(None)
         code = self._gen_def_code()
         with DefinitionContext() as _:
             Expression([], code)
+        
 
     @abstractmethod
     def _gen_def_code(self) -> TListTExpression:
