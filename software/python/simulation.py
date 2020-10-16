@@ -1,13 +1,15 @@
 import numpy as np
 import os
-
+from astropy import units as u
 import stan_utility
 
 from .detector_model import DetectorModel
 from .precomputation import ExposureIntegral
-from .source.source import Sources, PointSource
+from .source.source import Sources, PointSource, icrs_to_uv, Direction
+from .source.parameter import Parameter
 from .source.flux_model import IsotropicDiffuseBG
 from .source.atmospheric_flux import AtmosphericNuMuFlux
+from .source.cosmology import luminosity_distance
 
 from .backend.stan_generator import (
     StanFileGenerator,
@@ -42,14 +44,19 @@ class Simulation:
     To set up and run simulations.
     """
 
-    def __init__(self, sources: Sources, detector_model: DetectorModel):
+    @u.quantity_input
+    def __init__(
+        self, sources: Sources, detector_model: DetectorModel, observation_time: u.year
+    ):
         """
         To set up and run simulations.
         """
 
         self._sources = sources
         self._detector_model_type = detector_model
+        self._observation_time = observation_time
 
+        self._sources.organise()
         # Check source components
         source_types = [type(s) for s in self._sources.sources]
         flux_types = [type(s.flux_model) for s in self._sources.sources]
@@ -93,6 +100,127 @@ class Simulation:
             model_name="main_sim",
         )
 
+    def run(self, seed=None):
+
+        sim_inputs = self._get_sim_inputs(seed)
+
+        sim_output = self._main_sim.sampling(
+            data=sim_inputs, iter=1, chains=1, algorithm="Fixed_param", seed=seed
+        )
+
+        self._sim_output = sim_output
+
+        # TODO: generate EventList
+
+    def save(self):
+
+        pass
+
+    def show_spectrum(self):
+
+        pass
+
+    def show_skymap(self):
+
+        pass
+
+    def _get_sim_inputs(self, seed=None):
+
+        atmo_inputs = {}
+        sim_inputs = {}
+
+        cz_min = min(self._exposure_integral.effective_area._cosz_bin_edges)
+        cz_max = max(self._exposure_integral.effective_area._cosz_bin_edges)
+
+        if self._atmospheric_comp:
+
+            atmo_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.value
+            atmo_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.value
+
+            atmo_inputs["cosz_min"] = cz_min
+            atmo_inputs["cosz_max"] = cz_max
+
+            atmo_sim = self._atmo_sim.sampling(
+                data=atmo_inputs, iter=1000, chains=1, algorithm="NUTS", seed=seed,
+            )
+
+            atmo_energies = atmo_sim.extract(["energy"])["energy"]
+            atmo_directions = atmo_sim.extract(["omega"])["omega"]
+
+        redshift = [
+            s.redshift
+            for s in self._sources.sources
+            if isinstance(s, PointSource)
+            or isinstance(s.flux_model, IsotropicDiffuseBG)
+        ]
+        D = [
+            luminosity_distance(s.redshift).value
+            for s in self._sources.sources
+            if isinstance(s, PointSource)
+        ]
+        src_pos = [
+            icrs_to_uv(s.dec.value, s.ra.value)
+            for s in self._sources.sources
+            if isinstance(s, PointSource)
+        ]
+
+        sim_inputs["Ns"] = len(
+            [s for s in self._sources.sources if isinstance(s, PointSource)]
+        )
+        sim_inputs["z"] = redshift
+        sim_inputs["D"] = D
+        sim_inputs["varpi"] = src_pos
+
+        sim_inputs["Ngrid"] = len(self._exposure_integral.par_grids["index"])
+        sim_inputs["alpha_grid"] = self._exposure_integral.par_grids["index"]
+        sim_inputs["integral_grid"] = [
+            _.value for _ in self._exposure_integral.integral_grid
+        ]
+        if self._atmospheric_comp:
+            sim_inputs["atmo_integ_val"] = self._exposure_integral.integral_fixed_vals[
+                0
+            ].value
+        sim_inputs["T"] = self._observation_time.to(u.s).value
+
+        if self._atmospheric_comp:
+            sim_inputs["N_atmo"] = len(atmo_energies)
+            sim_inputs["atmo_energies"] = atmo_energies
+            sim_inputs["atmo_directions"] = atmo_directions
+            sim_inputs["atmo_weights"] = np.tile(
+                1.0 / len(atmo_energies), len(atmo_energies)
+            )
+
+        sim_inputs["alpha"] = Parameter.get_parameter("index").value
+        sim_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
+        sim_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+        sim_inputs["Edet_min"] = (
+            Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+        )
+
+        # Set maximum based on Emax to speed up rejection sampling
+        lbe = self._exposure_integral.effective_area._tE_bin_edges[:-1]
+        Emax = sim_inputs["Esrc_max"]
+        aeff_max = np.max(
+            self._exposure_integral.effective_area._eff_area[lbe < Emax][:]
+        )
+        sim_inputs["aeff_max"] = aeff_max + 0.1 * aeff_max
+
+        # Only sample from Northern hemisphere
+        sim_inputs["v_lim"] = (np.cos(np.pi - np.arccos(cz_max)) + 1) / 2
+
+        diffuse_bg = self._sources.diffuse_component()
+        sim_inputs["F_diff"] = diffuse_bg.flux_model.total_flux_int.value
+
+        if self._atmospheric_comp:
+            atmo_bg = self._sources.atmo_component()
+            sim_inputs["F_atmo"] = atmo_bg.flux_model.total_flux_int.value
+
+        sim_inputs["L"] = (
+            Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
+        )
+
+        return sim_inputs
+
     def _generate_atmospheric_sim_code(self):
 
         for s in self._sources.sources:
@@ -110,7 +238,7 @@ class Simulation:
                 atmu_nu_flux = atmo_flux_model.make_stan_function(theta_points=30)
 
             with DataContext():
-                Edet_min = ForwardVariableDef("Edet_min", "real")
+                Esrc_min = ForwardVariableDef("Esrc_min", "real")
                 Esrc_max = ForwardVariableDef("Esrc_max", "real")
 
                 cosz_min = ForwardVariableDef("cosz_min", "real")
@@ -118,7 +246,7 @@ class Simulation:
 
             with ParametersContext():
                 # Simulate from Edet_min and cosz bounds for efficiency
-                energy = ParameterDef("energy", "real", Edet_min, Esrc_max)
+                energy = ParameterDef("energy", "real", Esrc_min, Esrc_max)
                 coszen = ParameterDef("coszen", "real", cosz_min, cosz_max)
                 phi = ParameterDef("phi", "real", 0, 2 * np.pi)
 
@@ -167,7 +295,10 @@ class Simulation:
 
                 varpi = ForwardArrayDef("varpi", "unit_vector[3]", Ns_str)
                 D = ForwardVariableDef("D", "vector[Ns]")
-                z = ForwardVariableDef("z", "vector[Ns+1]")
+                if self._diffuse_bg_comp:
+                    z = ForwardVariableDef("z", "vector[Ns+1]")
+                else:
+                    z = ForwardVariableDef("z", "vector[Ns]")
 
                 # Energies
                 alpha = ForwardVariableDef("alpha", "real")
@@ -183,33 +314,55 @@ class Simulation:
                 # Precomputed quantities
                 Ngrid = ForwardVariableDef("Ngrid", "int")
                 alpha_grid = ForwardVariableDef("alpha_grid", "vector[Ngrid]")
-                integral_grid = ForwardArrayDef(
-                    "integral_grid", "vector[Ngrid]", Ns_1p_str
-                )
-                atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
+                if self._diffuse_bg_comp:
+                    integral_grid = ForwardArrayDef(
+                        "integral_grid", "vector[Ngrid]", Ns_1p_str
+                    )
+                else:
+                    integral_grid = ForwardArrayDef(
+                        "integral_grid", "vector[Ngrid]", Ns_str
+                    )
+
+                if self._atmospheric_comp:
+                    atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
+
                 aeff_max = ForwardVariableDef("aeff_max", "real")
 
                 v_lim = ForwardVariableDef("v_lim", "real")
                 T = ForwardVariableDef("T", "real")
 
-                # Atmo samples
-                N_atmo = ForwardVariableDef("N_atmo", "int")
-                N_atmo_str = ["[", N_atmo, "]"]
-                atmo_directions = ForwardArrayDef(
-                    "atmo_directions", "unit_vector[3]", N_atmo_str
-                )
-                atmo_energies = ForwardVariableDef("atmo_energies", "vector[N_atmo]")
-                atmo_weights = ForwardVariableDef("atmo_weights", "simplex[N_atmo]")
+                if self._atmospheric_comp:
+                    # Atmo samples
+                    N_atmo = ForwardVariableDef("N_atmo", "int")
+                    N_atmo_str = ["[", N_atmo, "]"]
+                    atmo_directions = ForwardArrayDef(
+                        "atmo_directions", "unit_vector[3]", N_atmo_str
+                    )
+                    atmo_energies = ForwardVariableDef(
+                        "atmo_energies", "vector[N_atmo]"
+                    )
+                    atmo_weights = ForwardVariableDef("atmo_weights", "simplex[N_atmo]")
 
             with TransformedDataContext():
-                F = ForwardVariableDef("F", "vector[Ns+2]")
+
+                if self._diffuse_bg_comp and self._atmospheric_comp:
+                    F = ForwardVariableDef("F", "vector[Ns+2]")
+                    w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns+2]")
+                    eps = ForwardVariableDef("eps", "vector[Ns+2]")
+                elif self._diffuse_bg_comp or self._atmospheric_comp:
+                    F = ForwardVariableDef("F", "vector[Ns+1]")
+                    w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns+1]")
+                    eps = ForwardVariableDef("eps", "vector[Ns+1]")
+                else:
+                    F = ForwardVariableDef("F", "vector[Ns]")
+                    w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns]")
+                    eps = ForwardVariableDef("eps", "vector[Ns]")
+
                 Ftot = ForwardVariableDef("Ftot", "real")
                 Fsrc = ForwardVariableDef("Fs", "real")
                 f = ForwardVariableDef("f", "real")
-                w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns+2]")
                 Nex = ForwardVariableDef("Nex", "real")
                 N = ForwardVariableDef("N", "int")
-                eps = ForwardVariableDef("eps", "vector[Ns+2]")
 
                 Fsrc << 0.0
                 with ForLoopContext(1, Ns, "k") as k:
@@ -219,30 +372,32 @@ class Simulation:
                     StringExpression([F[k], "*=", flux_fac(alpha, Esrc_min, Esrc_max)])
                     StringExpression([Fsrc, " += ", F[k]])
 
-                StringExpression("F[Ns+1]") << F_diff
-                StringExpression("F[Ns+2]") << F_atmo
+                if self._diffuse_bg_comp:
+                    StringExpression("F[Ns+1]") << F_diff
 
-                Ftot << Fsrc + F_diff + F_atmo
+                if self._atmospheric_comp:
+                    StringExpression("F[Ns+2]") << F_atmo
+
+                if self._diffuse_bg_comp and self._atmospheric_comp:
+                    Ftot << Fsrc + F_diff + F_atmo
+                elif self._diffuse_bg_comp:
+                    Ftot << Fsrc + F_diff
+                else:
+                    Ftot << Fsrc
+
                 f << StringExpression([Fsrc, "/", Ftot])
                 StringExpression(['print("f: ", ', f, ")"])
 
-                eps << StringExpression(
-                    [
-                        "get_exposure_factor(",
-                        alpha,
-                        ", ",
-                        alpha_grid,
-                        ", ",
-                        integral_grid,
-                        ", ",
-                        atmo_integ_val,
-                        ", ",
-                        T,
-                        ", ",
-                        Ns,
-                        ")",
-                    ]
-                )
+                if self._atmospheric_comp:
+                    eps << FunctionCall(
+                        [alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns],
+                        "get_exposure_factor_atmo",
+                    )
+                else:
+                    eps << FunctionCall(
+                        [alpha, alpha_grid, integral_grid, T, Ns], "get_exposure_factor"
+                    )
+
                 Nex << StringExpression(["get_Nex(", F, ", ", eps, ")"])
                 w_exposure << StringExpression(
                     ["get_exposure_weights(", F, ", ", eps, ")"]
@@ -265,7 +420,8 @@ class Simulation:
                 E = ForwardVariableDef("E", "vector[N]")
                 Edet = ForwardVariableDef("Edet", "vector[N]")
 
-                atmo_index = ForwardVariableDef("atmo_index", "int")
+                if self._atmospheric_comp:
+                    atmo_index = ForwardVariableDef("atmo_index", "int")
                 cosz = ForwardArrayDef("cosz", "real", N_str)
                 Pdet = ForwardArrayDef("Pdet", "real", N_str)
                 accept = ForwardVariableDef("accept", "int")
@@ -295,13 +451,14 @@ class Simulation:
                             [StringExpression([lam[i], " == ", Ns + 1])]
                         ):
                             omega << FunctionCall([1, v_lim], "sphere_lim_rng")
-                        with ElseIfBlockContext(
-                            [StringExpression([lam[i], " == ", Ns + 2])]
-                        ):
-                            atmo_index << FunctionCall(
-                                [atmo_weights], "categorical_rng"
-                            )
-                            omega << atmo_directions[atmo_index]
+                        if self._atmospheric_comp:
+                            with ElseIfBlockContext(
+                                [StringExpression([lam[i], " == ", Ns + 2])]
+                            ):
+                                atmo_index << FunctionCall(
+                                    [atmo_weights], "categorical_rng"
+                                )
+                                omega << atmo_directions[atmo_index]
 
                         cosz[i] << FunctionCall(
                             [FunctionCall([omega], "omega_to_zenith")], "cos"
@@ -312,10 +469,12 @@ class Simulation:
                         ):
                             Esrc[i] << spectrum_rng(alpha, Esrc_min, Esrc_max)
                             E[i] << Esrc[i] / (1 + z[lam[i]])
-                        with ElseIfBlockContext(
-                            [StringExpression([lam[i], " == ", Ns + 2])]
-                        ):
-                            E[i] << atmo_energies[atmo_index]
+
+                        if self._atmospheric_comp:
+                            with ElseIfBlockContext(
+                                [StringExpression([lam[i], " == ", Ns + 2])]
+                            ):
+                                E[i] << atmo_energies[atmo_index]
 
                         # Test against Aeff
                         with IfBlockContext([StringExpression([cosz[i], ">= 0.1"])]):

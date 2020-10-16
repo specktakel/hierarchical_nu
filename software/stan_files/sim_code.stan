@@ -1066,13 +1066,13 @@ simplex[N_atmo] atmo_weights;
 transformed data
 {
 vector[Ns+2] F;
+simplex[Ns+2] w_exposure;
+vector[Ns+2] eps;
 real Ftot;
 real Fs;
 real f;
-simplex[Ns+2] w_exposure;
 real Nex;
 int N;
-vector[Ns+2] eps;
 Fs = 0.0;
 for (k in 1:Ns)
 {
@@ -1085,7 +1085,7 @@ F[Ns+2] = F_atmo;
 Ftot = ((Fs+F_diff)+F_atmo);
 f = Fs/Ftot;
 print("f: ", f);
-eps = get_exposure_factor(alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns);
+eps = get_exposure_factor_atmo(alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns);
 Nex = get_Nex(F, eps);
 w_exposure = get_exposure_weights(F, eps);
 N = poisson_rng(Nex);
