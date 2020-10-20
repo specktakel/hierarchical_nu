@@ -69,19 +69,35 @@ class Events:
     @classmethod
     def from_file(cls, filename):
 
-        pass
+        with h5py.File(filename, "r") as f:
+
+            events_folder = f["events"]
+
+            energies = events_folder["energies"][()] * u.GeV
+            uvs = events_folder["unit_vectors"][()]
+            event_types = events_folder["event_types"][()]
+
+        coords = SkyCoord(
+            uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
+        )
+
+        return cls(energies, coords, event_types)
 
     def to_file(self, filename, append=False):
 
-        keys = ["energies", "unit_vectors", "event_types"]
-        values = [self.energies.to(u.GeV).value, self.unit_vectors, self.event_types]
+        self._file_keys = ["energies", "unit_vectors", "event_types"]
+        self._file_values = [
+            self.energies.to(u.GeV).value,
+            self.unit_vectors,
+            self.event_types,
+        ]
 
         if append:
             with h5py.File(filename, "r+") as f:
 
                 event_folder = f.create_group("events")
 
-                for key, value in zip(keys, values):
+                for key, value in zip(self._file_keys, self._file_values):
 
                     event_folder.create_dataset(key, data=value)
 
@@ -90,6 +106,6 @@ class Events:
 
                 event_folder = f.create_group("events")
 
-                for key, value in zip(keys, values):
+                for key, value in zip(self._file_keys, self._file_values):
 
                     event_folder.create_dataset(key, data=value)

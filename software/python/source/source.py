@@ -432,6 +432,8 @@ class Sources:
         if self._atmo_component:
             new_list.append(self._atmo_component)
 
+        self.sources = new_list
+
     def diffuse_component(self):
         self.organise()
         return self._diffuse_component

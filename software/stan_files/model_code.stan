@@ -967,6 +967,21 @@ real NorthernTracksEffectiveArea(real true_energy,vector true_dir)
 {
 return NorthernTracksEffAreaHist(true_energy, cos(pi() - acos(true_dir[3])));
 }
+real spectrum_logpdf(real E,real alpha,real e_low,real e_up)
+{
+real N;
+real p;
+if(alpha == 1.0)
+{
+N = (1.0/(log(e_up)-log(e_low)));
+}
+else
+{
+N = ((1.0-alpha)/((e_up^(1.0-alpha))-(e_low^(1.0-alpha))));
+}
+p = (N*pow(E, (alpha*-1)));
+return log(p);
+}
 real flux_conv(real alpha,real e_low,real e_up)
 {
 real f1;
@@ -988,21 +1003,6 @@ else
 f2 = ((1/(2-alpha))*((e_up^(2-alpha))-(e_low^(2-alpha))));
 }
 return (f1/f2);
-}
-real spectrum_logpdf(real E,real alpha,real e_low,real e_up)
-{
-real N;
-real p;
-if(alpha == 1.0)
-{
-N = (1.0/(log(e_up)-log(e_low)));
-}
-else
-{
-N = ((1.0-alpha)/((e_up^(1.0-alpha))-(e_low^(1.0-alpha))));
-}
-p = (N*pow(E, (alpha*-1)));
-return log(p);
 }
 real AtmopshericNumuFlux(real true_energy,vector true_dir)
 {
@@ -1662,10 +1662,10 @@ real F_tot_scale;
 }
 parameters
 {
-real<lower=0.0, upper=1e+55> L;
+real<lower=0, upper=1e+60> L;
 real<lower=0.0, upper=1e-07> F_diff;
 real<lower=0.0, upper=1e-07> F_atmo;
-real<lower=1.0, upper=4.0> alpha;
+real<lower=1.0, upper=4> alpha;
 vector<lower=Esrc_min, upper=Esrc_max> [N] Esrc;
 }
 transformed parameters
@@ -1717,7 +1717,7 @@ lp[i][k] += NorthernTracksEnergyResolution(E[i], Edet[i]);
 lp[i][k] += log(interpolate(E_grid, Pdet_grid[k], E[i]));
 }
 }
-eps = get_exposure_factor(alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns);
+eps = get_exposure_factor_atmo(alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns);
 Nex = get_Nex(F, eps);
 }
 model

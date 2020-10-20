@@ -227,8 +227,7 @@ class Simulation:
         self.generate_stan_code()
         self.compile_stan_code()
         self.run()
-    
-    
+
     def _get_sim_inputs(self, seed=None):
 
         atmo_inputs = {}
@@ -332,9 +331,8 @@ class Simulation:
 
     def _generate_atmospheric_sim_code(self):
 
-        for s in self._sources.sources:
-            if type(s.flux_model) == AtmosphericNuMuFlux:
-                atmo_flux_model = s.flux_model
+        if self._sources.atmo_component():
+            atmo_flux_model = self._sources.atmo_component().flux_model
 
         with StanFileGenerator(self.output_dir + "/atmo_gen") as atmo_gen:
 
