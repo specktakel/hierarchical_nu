@@ -1,15 +1,17 @@
 import numpy as np
 import os
 from astropy import units as u
+from astropy.coordinates import SkyCoord
 import stan_utility
 
 from .detector_model import DetectorModel
 from .precomputation import ExposureIntegral
-from .source.source import Sources, PointSource, icrs_to_uv, Direction
+from .source.source import Sources, PointSource, icrs_to_uv
 from .source.parameter import Parameter
 from .source.flux_model import IsotropicDiffuseBG
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.cosmology import luminosity_distance
+from .events import Events
 
 from .backend.stan_generator import (
     StanFileGenerator,
@@ -38,6 +40,9 @@ from .backend.variable_definitions import (
 from .backend.expression import StringExpression
 from .backend.parameterizations import DistributionMode
 
+TRACKS = 0
+CASCADES = 1
+
 
 class Simulation:
     """
@@ -46,7 +51,11 @@ class Simulation:
 
     @u.quantity_input
     def __init__(
-        self, sources: Sources, detector_model: DetectorModel, observation_time: u.year
+        self,
+        sources: Sources,
+        detector_model: DetectorModel,
+        observation_time: u.year,
+        output_dir="stan_files",
     ):
         """
         To set up and run simulations.
@@ -64,10 +73,13 @@ class Simulation:
         self._diffuse_bg_comp = IsotropicDiffuseBG in flux_types
         self._atmospheric_comp = AtmosphericNuMuFlux in flux_types
 
-        # TODO: Create stan cache if not done
+        if not os.path.exists("~/.stan_cache"):
+            os.makedirs("~/.stan_cache")
 
-        # TODO: Create output dir if not done
-        self.output_directory = "stan_files/"
+        self.output_dir = output_dir
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
 
     def precomputation(self):
         """
@@ -88,7 +100,7 @@ class Simulation:
     def compile_stan_code(self):
 
         this_dir = os.path.abspath("")
-        include_paths = [os.path.join(this_dir, self.output_directory)]
+        include_paths = [os.path.join(this_dir, self.output_dir)]
         self._atmo_sim = stan_utility.compile_model(
             filename=self._atmo_sim_filename,
             include_paths=include_paths,
@@ -110,7 +122,33 @@ class Simulation:
 
         self._sim_output = sim_output
 
-        # TODO: generate EventList
+        energies, coords, event_types = self._extract_sim_output()
+
+        self.events = Events(*self._extract_sim_output())
+
+    def _extract_sim_output(self):
+
+        energies = self._sim_output.extract(["Edet"])["Edet"][0] * u.GeV
+        dirs = self._sim_output.extract(["event"])["event"][0]
+        coords = SkyCoord(
+            dirs.T[0],
+            dirs.T[1],
+            dirs.T[2],
+            representation_type="cartesian",
+            frame="icrs",
+        )
+        stan_types = self._sim_output.extract(["event_type"])["event_type"][0]
+
+        event_types = []
+        for st in stan_types:
+            if st == TRACKS:
+                event_types.append("track")
+            elif st == CASCADES:
+                event_types.append("cascade")
+            else:
+                raise ValueError("Event type not recognised")
+
+        return energies, coords, event_types
 
     def save(self):
 
@@ -141,7 +179,11 @@ class Simulation:
             atmo_inputs["cosz_max"] = cz_max
 
             atmo_sim = self._atmo_sim.sampling(
-                data=atmo_inputs, iter=1000, chains=1, algorithm="NUTS", seed=seed,
+                data=atmo_inputs,
+                iter=1000,
+                chains=1,
+                algorithm="NUTS",
+                seed=seed,
             )
 
             atmo_energies = atmo_sim.extract(["energy"])["energy"]
@@ -203,7 +245,7 @@ class Simulation:
         aeff_max = np.max(
             self._exposure_integral.effective_area._eff_area[lbe < Emax][:]
         )
-        sim_inputs["aeff_max"] = aeff_max + 0.1 * aeff_max
+        sim_inputs["aeff_max"] = aeff_max + 0.01 * aeff_max
 
         # Only sample from Northern hemisphere
         sim_inputs["v_lim"] = (np.cos(np.pi - np.arccos(cz_max)) + 1) / 2
@@ -227,7 +269,7 @@ class Simulation:
             if type(s.flux_model) == AtmosphericNuMuFlux:
                 atmo_flux_model = s.flux_model
 
-        with StanFileGenerator(self.output_directory + "atmo_gen") as atmo_gen:
+        with StanFileGenerator(self.output_dir + "/atmo_gen") as atmo_gen:
 
             with FunctionsContext():
                 _ = Include("utils.stan")
@@ -275,7 +317,7 @@ class Simulation:
 
         ps_spec_shape = self._sources.sources[0].flux_model.spectral_shape
 
-        with StanFileGenerator(self.output_directory + "sim_code") as sim_gen:
+        with StanFileGenerator(self.output_dir + "/sim_code") as sim_gen:
 
             with FunctionsContext():
                 _ = Include("utils.stan")
@@ -358,6 +400,12 @@ class Simulation:
                     w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns]")
                     eps = ForwardVariableDef("eps", "vector[Ns]")
 
+                track_type = ForwardVariableDef("track_type", "int")
+                cascade_type = ForwardVariableDef("cascade_type", "int")
+
+                track_type << TRACKS
+                cascade_type << CASCADES
+
                 Ftot = ForwardVariableDef("Ftot", "real")
                 Fsrc = ForwardVariableDef("Fs", "real")
                 f = ForwardVariableDef("f", "real")
@@ -431,6 +479,8 @@ class Simulation:
 
                 event = ForwardArrayDef("event", "unit_vector[3]", N_str)
                 Nex_sim = ForwardVariableDef("Nex_sim", "real")
+
+                event_type = ForwardVariableDef("event_type", "vector[N]")
 
                 Nex_sim << Nex
 
@@ -514,6 +564,9 @@ class Simulation:
 
                     # Detection effects
                     event[i] << dm_rng.angular_resolution(E[i], omega)
+
+                    # To be extended
+                    event_type[i] << track_type
 
         sim_gen.generate_single_file()
 

@@ -171,7 +171,14 @@ class PointSource(Source):
         source_list = []
         for i, (r, d, z) in enumerate(zip(ra, dec, redshift)):
             source = PointSource.make_powerlaw_source(
-                str(i), d, r, luminosity, index, z, lower_energy, upper_energy,
+                str(i),
+                d,
+                r,
+                luminosity,
+                index,
+                z,
+                lower_energy,
+                upper_energy,
             )
             source_list.append(source)
 
@@ -269,7 +276,7 @@ class Sources:
         if not isinstance(value, list):
             raise ValueError(str(value) + " is not a list")
 
-        if not isinstance(value[0], Source):
+        elif not all(isinstance(s, Source) for s in value):
             raise ValueError(str(value) + " is not a recognised source list")
 
         else:
@@ -550,44 +557,6 @@ class TestSourceList(SourceList):
     def select_below_redshift(self, zth):
         self._zth = zth
         self.sources = [s for s in self.sources if s.redshift <= zth]
-
-
-from astropy.coordinates import SkyCoord
-from astropy import units as u
-
-
-class Direction:
-    """
-    Input the unit vector vMF samples and
-    store x, y, and z and galactic coordinates
-    of direction in Mpc.
-    """
-
-    def __init__(self, unit_vector_3d):
-        """
-        Input the unit vector samples and
-        store x, y, and z and galactic coordinates
-        of direction in Mpc.
-
-        :param unit_vector_3d: a 3-dimensional unit vector.
-        """
-
-        self.unit_vector = unit_vector_3d
-        transposed_uv = np.transpose(self.unit_vector)
-        self.x = transposed_uv[0]
-        self.y = transposed_uv[1]
-        self.z = transposed_uv[2]
-        self.d = SkyCoord(
-            self.x,
-            self.y,
-            self.z,
-            unit="mpc",
-            representation_type="cartesian",
-            frame="icrs",
-        )
-        self.d.representation_type = "spherical"
-        self.lons = self.d.galactic.l.wrap_at(360 * u.deg).deg
-        self.lats = self.d.galactic.b.wrap_at(180 * u.deg).deg
 
 
 def uv_to_icrs(unit_vector):
