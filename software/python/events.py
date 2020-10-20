@@ -1,7 +1,12 @@
 import numpy as np
+import os
+import h5py
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+
+TRACKS = 0
+CASCADES = 1
 
 
 class Events:
@@ -15,7 +20,7 @@ class Events:
         Events class for the storage of event observables
         """
 
-        self._recognised_types = ["track", "cascade"]
+        self._recognised_types = [TRACKS, CASCADES]
 
         self.N = len(energies)
 
@@ -52,6 +57,11 @@ class Events:
         return self._coords
 
     @property
+    def unit_vectors(self):
+
+        return self._unit_vectors
+
+    @property
     def event_types(self):
 
         return self._event_types
@@ -60,3 +70,26 @@ class Events:
     def from_file(cls, filename):
 
         pass
+
+    def to_file(self, filename, append=False):
+
+        keys = ["energies", "unit_vectors", "event_types"]
+        values = [self.energies.to(u.GeV).value, self.unit_vectors, self.event_types]
+
+        if append:
+            with h5py.File(filename, "r+") as f:
+
+                event_folder = f.create_group("events")
+
+                for key, value in zip(keys, values):
+
+                    event_folder.create_dataset(key, data=value)
+
+        else:
+            with h5py.File(filename, "w") as f:
+
+                event_folder = f.create_group("events")
+
+                for key, value in zip(keys, values):
+
+                    event_folder.create_dataset(key, data=value)

@@ -2,6 +2,8 @@ import numpy as np
 import os
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+import h5py
+from matplotlib import pyplot as plt
 import stan_utility
 
 from .detector_model import DetectorModel
@@ -11,7 +13,7 @@ from .source.parameter import Parameter
 from .source.flux_model import IsotropicDiffuseBG
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.cosmology import luminosity_distance
-from .events import Events
+from .events import Events, TRACKS, CASCADES
 
 from .backend.stan_generator import (
     StanFileGenerator,
@@ -39,9 +41,6 @@ from .backend.variable_definitions import (
 )
 from .backend.expression import StringExpression
 from .backend.parameterizations import DistributionMode
-
-TRACKS = 0
-CASCADES = 1
 
 
 class Simulation:
@@ -114,10 +113,10 @@ class Simulation:
 
     def run(self, seed=None):
 
-        sim_inputs = self._get_sim_inputs(seed)
+        self._sim_inputs = self._get_sim_inputs(seed)
 
         sim_output = self._main_sim.sampling(
-            data=sim_inputs, iter=1, chains=1, algorithm="Fixed_param", seed=seed
+            data=self._sim_inputs, iter=1, chains=1, algorithm="Fixed_param", seed=seed
         )
 
         self._sim_output = sim_output
@@ -137,31 +136,99 @@ class Simulation:
             representation_type="cartesian",
             frame="icrs",
         )
-        stan_types = self._sim_output.extract(["event_type"])["event_type"][0]
-
-        event_types = []
-        for st in stan_types:
-            if st == TRACKS:
-                event_types.append("track")
-            elif st == CASCADES:
-                event_types.append("cascade")
-            else:
-                raise ValueError("Event type not recognised")
+        event_types = self._sim_output.extract(["event_type"])["event_type"][0]
+        event_types = [int(_) for _ in event_types]
 
         return energies, coords, event_types
 
-    def save(self):
+    def save(self, filename):
 
-        pass
+        with h5py.File(filename, "w") as f:
+
+            sim_folder = f.create_group("sim")
+
+            inputs_folder = sim_folder.create_group("inputs")
+            for key, value in self._sim_inputs.items():
+                inputs_folder.create_dataset(key, data=value)
+
+            outputs_folder = sim_folder.create_group("outputs")
+            for key, value in self._sim_output.extract(permuted=True).items():
+                outputs_folder.create_dataset(key, data=value)
+
+        self.events.to_file(filename, append=True)
 
     def show_spectrum(self):
 
-        pass
+        Esrc = self._sim_output.extract(["Esrc"])["Esrc"][0]
+        E = self._sim_output.extract(["E"])["E"][0]
+        Edet = self.events.energies.value
+
+        bins = np.logspace(
+            np.log10(Parameter.get_parameter("Emin_det").value.to(u.GeV).value),
+            np.log10(Parameter.get_parameter("Emax").value.to(u.GeV).value),
+            20,
+            base=10,
+        )
+
+        fig, ax = plt.subplots()
+        ax.hist(Esrc, bins=bins, label="E at source", alpha=0.5)
+        ax.hist(E, bins=bins, label="E at detector", alpha=0.5)
+        ax.hist(Edet, bins=bins, label="E reconstructed", alpha=0.5)
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlabel("E")
+        ax.legend()
+
+        return fig, ax
 
     def show_skymap(self):
 
-        pass
+        import matplotlib.patches as mpatches
+        from matplotlib.collections import PatchCollection
 
+        lam = list(
+            self._sim_output.extract(["Lambda"])["Lambda"][0] - 1
+        )  # avoid Stan-style indexing
+        Ns = self._sim_inputs["Ns"]
+        label_cmap = plt.cm.get_cmap("plasma", self._sources.N)
+
+        N_src_ev = sum([lam.count(_) for _ in range(Ns)])
+        N_bg_ev = lam.count(Ns) + lam.count(Ns + 1)
+
+        fig = plt.figure()
+        fig.set_size_inches((10, 8))
+        ax = fig.add_subplot(111, projection="hammer")
+
+        circles = []
+        self.events.coords.representation_type = "spherical"
+        for r, d, l in zip(
+            self.events.coords.icrs.ra.rad, self.events.coords.icrs.dec.rad, lam
+        ):
+            color = label_cmap.colors[int(l)]
+            circles.append(
+                mpatches.Circle((r - np.pi, d), 0.05, color=color, alpha=0.7)
+            )  # TODO: Fix this so x-axis labels are correct
+
+        collection = PatchCollection(circles, match_original=True)
+        ax.add_collection(collection)
+
+        ax.set_title(
+            "N_src_events = %i, N_bg_events = %i" % (N_src_ev, N_bg_ev), pad=30
+        )
+
+        return fig, ax
+
+    def setup_and_run(self):
+        """
+        Wrapper around setup functions for convenience.
+        """
+
+        self.precomputation()
+        self.generate_stan_code()
+        self.compile_stan_code()
+        self.run()
+    
+    
     def _get_sim_inputs(self, seed=None):
 
         atmo_inputs = {}
