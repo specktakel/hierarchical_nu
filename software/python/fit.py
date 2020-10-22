@@ -53,6 +53,9 @@ class StanFit:
         To set up and run fits in Stan.
         """
 
+        # For use with plot_trace()
+        self._def_var_names = ["L", "F_diff", "F_atmo", "f", "alpha"]
+
         self._sources = sources
         self._detector_model_type = detector_model
         self._events = events
@@ -85,20 +88,53 @@ class StanFit:
             model_name="fit",
         )
 
-    def run(self, iterations=1000, chains=1):
+    def run(self, iterations=1000, chains=1, seed=None):
 
         fit_inputs = self._get_fit_inputs()
 
         self._fit_output = self._fit.sampling(
-            data=fit_inputs, iter=iterations, chains=chains, algorithm="NUTS"
+            data=fit_inputs, iter=iterations, chains=chains, algorithm="NUTS", seed=seed
         )
 
-    def setup_and_run(self, iterations=1000, chains=1):
+    def setup_and_run(self, iterations=1000, chains=1, seed=None):
 
         self.precomputation()
         self.generate_stan_code()
         self.compile_stan_code()
-        self.run(iterations=iterations, chains=chains)
+        self.run(iterations=iterations, chains=chains, seed=seed)
+
+    def plot_trace(self, var_names=None, **kwargs):
+        """
+        Trace plot using list of stan parameter keys.
+        """
+
+        import arviz
+
+        if not var_names:
+            var_names = self._def_var_names
+
+        arviz.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+
+    def corner_plot(self, list_of_keys, list_of_truths=None):
+        """
+        Corner plot using list of Stan parameter keys and optional
+        true values if working with simulated data.
+        """
+
+        pass
+
+    def save(self, filename):
+
+        pass
+
+    def check_classification(self):
+        """
+        For the case of simulated data, check if
+        events are correctly classified into the
+        different source categories.
+        """
+
+        pass
 
     def _get_fit_inputs(self):
 

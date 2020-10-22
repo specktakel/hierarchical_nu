@@ -155,6 +155,14 @@ class Simulation:
             for key, value in self._sim_output.extract(permuted=True).items():
                 outputs_folder.create_dataset(key, data=value)
 
+            source_folder = sim_folder.create_group("source")
+            source_folder.create_dataset(
+                "total_flux_int", data=self._sources.total_flux_int().value
+            )
+            source_folder.create_dataset(
+                "f", data=self._sources.associated_fraction().value
+            )
+
         self.events.to_file(filename, append=True)
 
     def show_spectrum(self):
