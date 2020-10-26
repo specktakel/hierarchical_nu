@@ -650,7 +650,7 @@ real<lower=0, upper=6.283185307179586> phi;
 }
 transformed parameters
 {
-vector[3] omega;
+unit_vector[3] omega;
 real zen;
 real theta;
 zen = acos(coszen);

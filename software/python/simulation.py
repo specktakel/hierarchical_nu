@@ -4,7 +4,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 import h5py
 from matplotlib import pyplot as plt
-import stan_utility
+from cmdstanpy import CmdStanModel
 
 from .detector_model import DetectorModel
 from .precomputation import ExposureIntegral
@@ -100,23 +100,28 @@ class Simulation:
 
         this_dir = os.path.abspath("")
         include_paths = [os.path.join(this_dir, self.output_dir)]
-        self._atmo_sim = stan_utility.compile_model(
-            filename=self._atmo_sim_filename,
-            include_paths=include_paths,
-            model_name="atmo_sim",
+
+        stanc_options = {"include_paths": include_paths}
+
+        self._atmo_sim = CmdStanModel(
+            stan_file=self._atmo_sim_filename,
+            stanc_options=stanc_options,
         )
-        self._main_sim = stan_utility.compile_model(
-            filename=self._main_sim_filename,
-            include_paths=include_paths,
-            model_name="main_sim",
+        self._main_sim = CmdStanModel(
+            stan_file=self._main_sim_filename,
+            stanc_options=stanc_options,
         )
 
     def run(self, seed=None):
 
         self._sim_inputs = self._get_sim_inputs(seed)
 
-        sim_output = self._main_sim.sampling(
-            data=self._sim_inputs, iter=1, chains=1, algorithm="Fixed_param", seed=seed
+        sim_output = self._main_sim.sample(
+            data=self._sim_inputs,
+            iter_sampling=1,
+            chains=1,
+            fixed_param=True,
+            seed=seed,
         )
 
         self._sim_output = sim_output
@@ -127,8 +132,10 @@ class Simulation:
 
     def _extract_sim_output(self):
 
-        energies = self._sim_output.extract(["Edet"])["Edet"][0] * u.GeV
-        dirs = self._sim_output.extract(["event"])["event"][0]
+        energies = self._sim_output.stan_variable("Edet").values[0] * u.GeV
+        dirs = (
+            self._sim_output.stan_variable("event").values.reshape(3, len(energies)).T
+        )
         coords = SkyCoord(
             dirs.T[0],
             dirs.T[1],
@@ -136,7 +143,7 @@ class Simulation:
             representation_type="cartesian",
             frame="icrs",
         )
-        event_types = self._sim_output.extract(["event_type"])["event_type"][0]
+        event_types = self._sim_output.stan_variable("event_type").values[0]
         event_types = [int(_) for _ in event_types]
 
         return energies, coords, event_types
@@ -152,8 +159,14 @@ class Simulation:
                 inputs_folder.create_dataset(key, data=value)
 
             outputs_folder = sim_folder.create_group("outputs")
-            for key, value in self._sim_output.extract(permuted=True).items():
-                outputs_folder.create_dataset(key, data=value)
+            N = len(self._sim_output.stan_variable("Edet").values[0])
+            for key, value in self._sim_output.stan_variables().items():
+                if key == "event":
+                    outputs_folder.create_dataset(
+                        key, data=value.values.reshape(3, N).T
+                    )
+                else:
+                    outputs_folder.create_dataset(key, data=value.values[0])
 
             source_folder = sim_folder.create_group("source")
             source_folder.create_dataset(
@@ -167,8 +180,8 @@ class Simulation:
 
     def show_spectrum(self):
 
-        Esrc = self._sim_output.extract(["Esrc"])["Esrc"][0]
-        E = self._sim_output.extract(["E"])["E"][0]
+        Esrc = self._sim_output.stan_variable("Esrc").values[0]
+        E = self._sim_output.stan_variable("E").values[0]
         Edet = self.events.energies.value
 
         bins = np.logspace(
@@ -195,7 +208,7 @@ class Simulation:
         from matplotlib.collections import PatchCollection
 
         lam = list(
-            self._sim_output.extract(["Lambda"])["Lambda"][0] - 1
+            self._sim_output.stan_variable("Lambda").values[0] - 1
         )  # avoid Stan-style indexing
         Ns = self._sim_inputs["Ns"]
         label_cmap = plt.cm.get_cmap("plasma", self._sources.N)
@@ -252,16 +265,22 @@ class Simulation:
             atmo_inputs["cosz_min"] = cz_min
             atmo_inputs["cosz_max"] = cz_max
 
-            atmo_sim = self._atmo_sim.sampling(
+            atmo_sim = self._atmo_sim.sample(
                 data=atmo_inputs,
-                iter=1000,
+                iter_sampling=1000,
                 chains=1,
-                algorithm="NUTS",
                 seed=seed,
             )
 
-            atmo_energies = atmo_sim.extract(["energy"])["energy"]
-            atmo_directions = atmo_sim.extract(["omega"])["omega"]
+            atmo_energies = atmo_sim.stan_variable("energy").values
+            atmo_energies = atmo_energies.reshape(len(atmo_energies))
+
+            atmo_directions = atmo_sim.stan_variable("omega").values
+
+            # Somehow precision of unit_vector gets lost from Stan to here - check
+            atmo_directions = [
+                (_ / np.linalg.norm(_)).tolist() for _ in atmo_directions
+            ]
 
         redshift = [
             s.redshift
@@ -290,7 +309,7 @@ class Simulation:
         sim_inputs["Ngrid"] = len(self._exposure_integral.par_grids["index"])
         sim_inputs["alpha_grid"] = self._exposure_integral.par_grids["index"]
         sim_inputs["integral_grid"] = [
-            _.value for _ in self._exposure_integral.integral_grid
+            _.value.tolist() for _ in self._exposure_integral.integral_grid
         ]
         if self._atmospheric_comp:
             sim_inputs["atmo_integ_val"] = self._exposure_integral.integral_fixed_vals[
@@ -335,6 +354,12 @@ class Simulation:
             Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
         )
 
+        # Remove np.ndarrays for use with cmdstanpy
+        sim_inputs = {
+            k: v if not isinstance(v, np.ndarray) else v.tolist()
+            for k, v in sim_inputs.items()
+        }
+
         return sim_inputs
 
     @classmethod
@@ -371,7 +396,7 @@ class Simulation:
                 phi = ParameterDef("phi", "real", 0, 2 * np.pi)
 
             with TransformedParametersContext():
-                omega = ForwardVariableDef("omega", "vector[3]")
+                omega = ForwardVariableDef("omega", "unit_vector[3]")
                 zen = ForwardVariableDef("zen", "real")
                 theta = ForwardVariableDef("theta", "real")
 

@@ -62,14 +62,14 @@ real truncate_value(real x, real min_val, real max_val){
 
 }
 
-real[] generate_bin_edges(real lower, real upper, int nbins)
+real[] generate_bin_edges(real lower_edge, real upper_edge, int nbins)
 {
 
     real binedges[nbins+1];
-    real binwidth = (upper-lower)/nbins;
+    real binwidth = (upper_edge-lower_edge)/nbins;
     for (i in 1:nbins+1)
     {
-        binedges[i] = lower + (i-1)*binwidth;
+        binedges[i] = lower_edge + (i-1)*binwidth;
     }
     return binedges;
 }
