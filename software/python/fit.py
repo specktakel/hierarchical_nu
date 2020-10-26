@@ -96,6 +96,8 @@ class StanFit:
             data=fit_inputs, iter=iterations, chains=chains, algorithm="NUTS", seed=seed
         )
 
+        # self.chain = self._fit_output.extract(permuted=True)
+
     def setup_and_run(self, iterations=1000, chains=1, seed=None):
 
         self.precomputation()
@@ -143,14 +145,57 @@ class StanFit:
 
         pass
 
-    def check_classification(self):
+    def check_classification(self, sim_outputs):
         """
         For the case of simulated data, check if
         events are correctly classified into the
         different source categories.
         """
 
-        pass
+        Ns = len([s for s in self._sources.sources if isinstance(s, PointSource)])
+
+        event_labels = sim_outputs["Lambda"][0] - 1
+
+        prob_each_src = self._get_event_classifications()
+
+        wrong = []
+        for i in range(len(prob_each_src)):
+            classified = np.where(prob_each_src[i] == np.max(prob_each_src[i]))[0][
+                0
+            ] == int(event_labels[i])
+            if not classified:
+                wrong.append(i)
+
+                print("Event %i is misclassified" % i)
+                for src in range(Ns):
+                    print("P(src%i) = %.6f" % (src, prob_each_src[i][src]))
+                print("P(diff) = %.6f" % prob_each_src[i][Ns])
+                print("P(atmo) = %.6f" % prob_each_src[i][Ns + 1])
+
+    def _get_event_classifications(self):
+
+        chain = self._fit_output.extract(permuted=True)
+
+        logprob = chain["lp"].transpose(1, 2, 0)
+
+        Ns = np.shape(logprob)[1] - 2
+
+        src_labels = ["src", "diff", "atmo"]
+
+        prob_each_src = []
+        for lp in logprob:
+            lps = []
+            ps = []
+            for src in range(Ns + 2):
+                lps.append(np.mean(np.exp(lp[src])))
+            norm = sum(lps)
+
+            for src in range(Ns + 2):
+                ps.append(lps[src] / norm)
+
+            prob_each_src.append(ps)
+
+        return prob_each_src
 
     def _get_fit_inputs(self):
 

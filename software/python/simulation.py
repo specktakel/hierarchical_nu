@@ -652,7 +652,7 @@ class Simulation:
 
 
 class SimInfo:
-    def __init__(self, truths):
+    def __init__(self, truths, inputs, outputs):
         """
         To store and reference simulation inputs/info.
 
@@ -662,22 +662,36 @@ class SimInfo:
 
         self.truths = truths
 
+        self.inputs = inputs
+
+        self.outputs = outputs
+
     @classmethod
     def from_file(cls, filename):
 
-        sim_inputs = {}
+        inputs = {}
+        outputs = {}
         with h5py.File("output/test_sim_file.h5", "r") as f:
-            for key in f["sim/inputs"]:
-                sim_inputs[key] = f["sim/inputs"][key][()]
-            for key in f["sim/source"]:
-                sim_inputs[key] = f["sim/source"][key][()]
+
+            inputs_folder = f["sim/inputs"]
+            source_folder = f["sim/source"]
+            outputs_folder = f["sim/outputs"]
+
+            for key in inputs_folder:
+                inputs[key] = inputs_folder[key][()]
+
+            for key in source_folder:
+                inputs[key] = source_folder[key][()]
+
+            for key in outputs_folder:
+                outputs[key] = outputs_folder[key][()]
 
         truths = {}
-        truths["F_diff"] = sim_inputs["F_diff"]
-        truths["F_atmo"] = sim_inputs["F_atmo"]
-        truths["L"] = sim_inputs["L"]
-        truths["Ftot"] = sim_inputs["total_flux_int"]
-        truths["f"] = sim_inputs["f"]
-        truths["alpha"] = sim_inputs["alpha"]
+        truths["F_diff"] = inputs["F_diff"]
+        truths["F_atmo"] = inputs["F_atmo"]
+        truths["L"] = inputs["L"]
+        truths["Ftot"] = inputs["total_flux_int"]
+        truths["f"] = inputs["f"]
+        truths["alpha"] = inputs["alpha"]
 
-        return cls(truths)
+        return cls(truths, inputs, outputs)
