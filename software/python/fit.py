@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import h5py
 import logging
 from astropy import units as u
 
@@ -90,10 +91,14 @@ class StanFit:
 
     def run(self, iterations=1000, chains=1, seed=None):
 
-        fit_inputs = self._get_fit_inputs()
+        self._fit_inputs = self._get_fit_inputs()
 
         self._fit_output = self._fit.sampling(
-            data=fit_inputs, iter=iterations, chains=chains, algorithm="NUTS", seed=seed
+            data=self._fit_inputs,
+            iter=iterations,
+            chains=chains,
+            algorithm="NUTS",
+            seed=seed,
         )
 
         # self.chain = self._fit_output.extract(permuted=True)
@@ -142,8 +147,22 @@ class StanFit:
         return corner.corner(samples, labels=var_names, truths=truths_list)
 
     def save(self, filename):
+        """
+        TODO: Add overwrite check.
+        """
 
-        pass
+        chain = self._fit_output.extract(permuted=True)
+
+        with h5py.File(filename, "w") as f:
+            fit_folder = f.create_group("fit")
+            inputs_folder = fit_folder.create_group("inputs")
+            outputs_folder = fit_folder.create_group("outputs")
+
+            for key, value in self._fit_inputs.items():
+                inputs_folder.create_dataset(key, data=value)
+
+            for key, value in chain.items():
+                outputs_folder.create_dataset(key, data=value)
 
     def check_classification(self, sim_outputs):
         """
@@ -171,6 +190,11 @@ class StanFit:
                     print("P(src%i) = %.6f" % (src, prob_each_src[i][src]))
                 print("P(diff) = %.6f" % prob_each_src[i][Ns])
                 print("P(atmo) = %.6f" % prob_each_src[i][Ns + 1])
+
+        if not wrong:
+            print("All events are correctly classified")
+        else:
+            print("A total of %i events are misclassified" % len(wrong))
 
     def _get_event_classifications(self):
 
