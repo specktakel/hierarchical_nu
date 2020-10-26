@@ -115,13 +115,29 @@ class StanFit:
 
         arviz.plot_trace(self._fit_output, var_names=var_names, **kwargs)
 
-    def corner_plot(self, list_of_keys, list_of_truths=None):
+    def corner_plot(self, var_names=None, truths=None):
         """
         Corner plot using list of Stan parameter keys and optional
         true values if working with simulated data.
         """
 
-        pass
+        import corner
+
+        if not var_names:
+            var_names = self._def_var_names
+
+        chain = self._fit_output.extract(permuted=True)
+
+        samples_list = [chain[key] for key in var_names]
+
+        if truths:
+            truths_list = [truths[key] for key in var_names]
+        else:
+            truths_list = None
+
+        samples = np.column_stack(samples_list)
+
+        return corner.corner(samples, labels=var_names, truths=truths_list)
 
     def save(self, filename):
 

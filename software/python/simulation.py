@@ -337,6 +337,11 @@ class Simulation:
 
         return sim_inputs
 
+    @classmethod
+    def from_file(cls, filename):
+
+        pass
+
     def _generate_atmospheric_sim_code(self):
 
         if self._sources.atmo_component():
@@ -644,3 +649,35 @@ class Simulation:
         sim_gen.generate_single_file()
 
         self._main_sim_filename = sim_gen.filename
+
+
+class SimInfo:
+    def __init__(self, truths):
+        """
+        To store and reference simulation inputs/info.
+
+        TODO: instead work on Simualtion.from_file() method
+        to fully load simulation from outptu file.
+        """
+
+        self.truths = truths
+
+    @classmethod
+    def from_file(cls, filename):
+
+        sim_inputs = {}
+        with h5py.File("output/test_sim_file.h5", "r") as f:
+            for key in f["sim/inputs"]:
+                sim_inputs[key] = f["sim/inputs"][key][()]
+            for key in f["sim/source"]:
+                sim_inputs[key] = f["sim/source"][key][()]
+
+        truths = {}
+        truths["F_diff"] = sim_inputs["F_diff"]
+        truths["F_atmo"] = sim_inputs["F_atmo"]
+        truths["L"] = sim_inputs["L"]
+        truths["Ftot"] = sim_inputs["total_flux_int"]
+        truths["f"] = sim_inputs["f"]
+        truths["alpha"] = sim_inputs["alpha"]
+
+        return cls(truths)
