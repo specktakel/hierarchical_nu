@@ -1,15 +1,19 @@
 import numpy as np
 import os
 from astropy import units as u
-import stan_utility
+from astropy.coordinates import SkyCoord
+import h5py
+from matplotlib import pyplot as plt
+from cmdstanpy import CmdStanModel
 
 from .detector_model import DetectorModel
 from .precomputation import ExposureIntegral
-from .source.source import Sources, PointSource, icrs_to_uv, Direction
+from .source.source import Sources, PointSource, icrs_to_uv
 from .source.parameter import Parameter
 from .source.flux_model import IsotropicDiffuseBG
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.cosmology import luminosity_distance
+from .events import Events, TRACKS, CASCADES
 
 from .backend.stan_generator import (
     StanFileGenerator,
@@ -46,7 +50,11 @@ class Simulation:
 
     @u.quantity_input
     def __init__(
-        self, sources: Sources, detector_model: DetectorModel, observation_time: u.year
+        self,
+        sources: Sources,
+        detector_model: DetectorModel,
+        observation_time: u.year,
+        output_dir="stan_files",
     ):
         """
         To set up and run simulations.
@@ -64,10 +72,13 @@ class Simulation:
         self._diffuse_bg_comp = IsotropicDiffuseBG in flux_types
         self._atmospheric_comp = AtmosphericNuMuFlux in flux_types
 
-        # TODO: Create stan cache if not done
+        if not os.path.exists("~/.stan_cache"):
+            os.makedirs("~/.stan_cache")
 
-        # TODO: Create output dir if not done
-        self.output_directory = "stan_files/"
+        self.output_dir = output_dir
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
 
     def precomputation(self):
         """
@@ -88,41 +99,155 @@ class Simulation:
     def compile_stan_code(self):
 
         this_dir = os.path.abspath("")
-        include_paths = [os.path.join(this_dir, self.output_directory)]
-        self._atmo_sim = stan_utility.compile_model(
-            filename=self._atmo_sim_filename,
-            include_paths=include_paths,
-            model_name="atmo_sim",
+        include_paths = [os.path.join(this_dir, self.output_dir)]
+
+        stanc_options = {"include_paths": include_paths}
+
+        self._atmo_sim = CmdStanModel(
+            stan_file=self._atmo_sim_filename,
+            stanc_options=stanc_options,
         )
-        self._main_sim = stan_utility.compile_model(
-            filename=self._main_sim_filename,
-            include_paths=include_paths,
-            model_name="main_sim",
+        self._main_sim = CmdStanModel(
+            stan_file=self._main_sim_filename,
+            stanc_options=stanc_options,
         )
 
     def run(self, seed=None):
 
-        sim_inputs = self._get_sim_inputs(seed)
+        self._sim_inputs = self._get_sim_inputs(seed)
 
-        sim_output = self._main_sim.sampling(
-            data=sim_inputs, iter=1, chains=1, algorithm="Fixed_param", seed=seed
+        sim_output = self._main_sim.sample(
+            data=self._sim_inputs,
+            iter_sampling=1,
+            chains=1,
+            fixed_param=True,
+            seed=seed,
         )
 
         self._sim_output = sim_output
 
-        # TODO: generate EventList
+        energies, coords, event_types = self._extract_sim_output()
 
-    def save(self):
+        self.events = Events(*self._extract_sim_output())
 
-        pass
+    def _extract_sim_output(self):
+
+        energies = self._sim_output.stan_variable("Edet").values[0] * u.GeV
+        dirs = (
+            self._sim_output.stan_variable("event").values.reshape(3, len(energies)).T
+        )
+        coords = SkyCoord(
+            dirs.T[0],
+            dirs.T[1],
+            dirs.T[2],
+            representation_type="cartesian",
+            frame="icrs",
+        )
+        event_types = self._sim_output.stan_variable("event_type").values[0]
+        event_types = [int(_) for _ in event_types]
+
+        return energies, coords, event_types
+
+    def save(self, filename):
+
+        with h5py.File(filename, "w") as f:
+
+            sim_folder = f.create_group("sim")
+
+            inputs_folder = sim_folder.create_group("inputs")
+            for key, value in self._sim_inputs.items():
+                inputs_folder.create_dataset(key, data=value)
+
+            outputs_folder = sim_folder.create_group("outputs")
+            N = len(self._sim_output.stan_variable("Edet").values[0])
+            for key, value in self._sim_output.stan_variables().items():
+                if key == "event":
+                    outputs_folder.create_dataset(
+                        key, data=value.values.reshape(3, N).T
+                    )
+                else:
+                    outputs_folder.create_dataset(key, data=value.values[0])
+
+            source_folder = sim_folder.create_group("source")
+            source_folder.create_dataset(
+                "total_flux_int", data=self._sources.total_flux_int().value
+            )
+            source_folder.create_dataset(
+                "f", data=self._sources.associated_fraction().value
+            )
+
+        self.events.to_file(filename, append=True)
 
     def show_spectrum(self):
 
-        pass
+        Esrc = self._sim_output.stan_variable("Esrc").values[0]
+        E = self._sim_output.stan_variable("E").values[0]
+        Edet = self.events.energies.value
+
+        bins = np.logspace(
+            np.log10(Parameter.get_parameter("Emin_det").value.to(u.GeV).value),
+            np.log10(Parameter.get_parameter("Emax").value.to(u.GeV).value),
+            20,
+            base=10,
+        )
+
+        fig, ax = plt.subplots()
+        ax.hist(Esrc, bins=bins, label="E at source", alpha=0.5)
+        ax.hist(E, bins=bins, label="E at detector", alpha=0.5)
+        ax.hist(Edet, bins=bins, label="E reconstructed", alpha=0.5)
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlabel("E")
+        ax.legend()
+
+        return fig, ax
 
     def show_skymap(self):
 
-        pass
+        import matplotlib.patches as mpatches
+        from matplotlib.collections import PatchCollection
+
+        lam = list(
+            self._sim_output.stan_variable("Lambda").values[0] - 1
+        )  # avoid Stan-style indexing
+        Ns = self._sim_inputs["Ns"]
+        label_cmap = plt.cm.get_cmap("plasma", self._sources.N)
+
+        N_src_ev = sum([lam.count(_) for _ in range(Ns)])
+        N_bg_ev = lam.count(Ns) + lam.count(Ns + 1)
+
+        fig = plt.figure()
+        fig.set_size_inches((10, 8))
+        ax = fig.add_subplot(111, projection="hammer")
+
+        circles = []
+        self.events.coords.representation_type = "spherical"
+        for r, d, l in zip(
+            self.events.coords.icrs.ra.rad, self.events.coords.icrs.dec.rad, lam
+        ):
+            color = label_cmap.colors[int(l)]
+            circles.append(
+                mpatches.Circle((r - np.pi, d), 0.05, color=color, alpha=0.7)
+            )  # TODO: Fix this so x-axis labels are correct
+
+        collection = PatchCollection(circles, match_original=True)
+        ax.add_collection(collection)
+
+        ax.set_title(
+            "N_src_events = %i, N_bg_events = %i" % (N_src_ev, N_bg_ev), pad=30
+        )
+
+        return fig, ax
+
+    def setup_and_run(self):
+        """
+        Wrapper around setup functions for convenience.
+        """
+
+        self.precomputation()
+        self.generate_stan_code()
+        self.compile_stan_code()
+        self.run()
 
     def _get_sim_inputs(self, seed=None):
 
@@ -140,12 +265,22 @@ class Simulation:
             atmo_inputs["cosz_min"] = cz_min
             atmo_inputs["cosz_max"] = cz_max
 
-            atmo_sim = self._atmo_sim.sampling(
-                data=atmo_inputs, iter=1000, chains=1, algorithm="NUTS", seed=seed,
+            atmo_sim = self._atmo_sim.sample(
+                data=atmo_inputs,
+                iter_sampling=1000,
+                chains=1,
+                seed=seed,
             )
 
-            atmo_energies = atmo_sim.extract(["energy"])["energy"]
-            atmo_directions = atmo_sim.extract(["omega"])["omega"]
+            atmo_energies = atmo_sim.stan_variable("energy").values
+            atmo_energies = atmo_energies.reshape(len(atmo_energies))
+
+            atmo_directions = atmo_sim.stan_variable("omega").values
+
+            # Somehow precision of unit_vector gets lost from Stan to here - check
+            atmo_directions = [
+                (_ / np.linalg.norm(_)).tolist() for _ in atmo_directions
+            ]
 
         redshift = [
             s.redshift
@@ -174,7 +309,7 @@ class Simulation:
         sim_inputs["Ngrid"] = len(self._exposure_integral.par_grids["index"])
         sim_inputs["alpha_grid"] = self._exposure_integral.par_grids["index"]
         sim_inputs["integral_grid"] = [
-            _.value for _ in self._exposure_integral.integral_grid
+            _.value.tolist() for _ in self._exposure_integral.integral_grid
         ]
         if self._atmospheric_comp:
             sim_inputs["atmo_integ_val"] = self._exposure_integral.integral_fixed_vals[
@@ -203,7 +338,7 @@ class Simulation:
         aeff_max = np.max(
             self._exposure_integral.effective_area._eff_area[lbe < Emax][:]
         )
-        sim_inputs["aeff_max"] = aeff_max + 0.1 * aeff_max
+        sim_inputs["aeff_max"] = aeff_max + 0.01 * aeff_max
 
         # Only sample from Northern hemisphere
         sim_inputs["v_lim"] = (np.cos(np.pi - np.arccos(cz_max)) + 1) / 2
@@ -219,15 +354,25 @@ class Simulation:
             Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
         )
 
+        # Remove np.ndarrays for use with cmdstanpy
+        sim_inputs = {
+            k: v if not isinstance(v, np.ndarray) else v.tolist()
+            for k, v in sim_inputs.items()
+        }
+
         return sim_inputs
+
+    @classmethod
+    def from_file(cls, filename):
+
+        pass
 
     def _generate_atmospheric_sim_code(self):
 
-        for s in self._sources.sources:
-            if type(s.flux_model) == AtmosphericNuMuFlux:
-                atmo_flux_model = s.flux_model
+        if self._sources.atmo_component():
+            atmo_flux_model = self._sources.atmo_component().flux_model
 
-        with StanFileGenerator(self.output_directory + "atmo_gen") as atmo_gen:
+        with StanFileGenerator(self.output_dir + "/atmo_gen") as atmo_gen:
 
             with FunctionsContext():
                 _ = Include("utils.stan")
@@ -251,7 +396,7 @@ class Simulation:
                 phi = ParameterDef("phi", "real", 0, 2 * np.pi)
 
             with TransformedParametersContext():
-                omega = ForwardVariableDef("omega", "vector[3]")
+                omega = ForwardVariableDef("omega", "unit_vector[3]")
                 zen = ForwardVariableDef("zen", "real")
                 theta = ForwardVariableDef("theta", "real")
 
@@ -275,7 +420,7 @@ class Simulation:
 
         ps_spec_shape = self._sources.sources[0].flux_model.spectral_shape
 
-        with StanFileGenerator(self.output_directory + "sim_code") as sim_gen:
+        with StanFileGenerator(self.output_dir + "/sim_code") as sim_gen:
 
             with FunctionsContext():
                 _ = Include("utils.stan")
@@ -358,6 +503,12 @@ class Simulation:
                     w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns]")
                     eps = ForwardVariableDef("eps", "vector[Ns]")
 
+                track_type = ForwardVariableDef("track_type", "int")
+                cascade_type = ForwardVariableDef("cascade_type", "int")
+
+                track_type << TRACKS
+                cascade_type << CASCADES
+
                 Ftot = ForwardVariableDef("Ftot", "real")
                 Fsrc = ForwardVariableDef("Fs", "real")
                 f = ForwardVariableDef("f", "real")
@@ -431,6 +582,8 @@ class Simulation:
 
                 event = ForwardArrayDef("event", "unit_vector[3]", N_str)
                 Nex_sim = ForwardVariableDef("Nex_sim", "real")
+
+                event_type = ForwardVariableDef("event_type", "vector[N]")
 
                 Nex_sim << Nex
 
@@ -515,6 +668,55 @@ class Simulation:
                     # Detection effects
                     event[i] << dm_rng.angular_resolution(E[i], omega)
 
+                    # To be extended
+                    event_type[i] << track_type
+
         sim_gen.generate_single_file()
 
         self._main_sim_filename = sim_gen.filename
+
+
+class SimInfo:
+    def __init__(self, truths, inputs, outputs):
+        """
+        To store and reference simulation inputs/info.
+
+        TODO: instead work on Simualtion.from_file() method
+        to fully load simulation from outptu file.
+        """
+
+        self.truths = truths
+
+        self.inputs = inputs
+
+        self.outputs = outputs
+
+    @classmethod
+    def from_file(cls, filename):
+
+        inputs = {}
+        outputs = {}
+        with h5py.File("output/test_sim_file.h5", "r") as f:
+
+            inputs_folder = f["sim/inputs"]
+            source_folder = f["sim/source"]
+            outputs_folder = f["sim/outputs"]
+
+            for key in inputs_folder:
+                inputs[key] = inputs_folder[key][()]
+
+            for key in source_folder:
+                inputs[key] = source_folder[key][()]
+
+            for key in outputs_folder:
+                outputs[key] = outputs_folder[key][()]
+
+        truths = {}
+        truths["F_diff"] = inputs["F_diff"]
+        truths["F_atmo"] = inputs["F_atmo"]
+        truths["L"] = inputs["L"]
+        truths["Ftot"] = inputs["total_flux_int"]
+        truths["f"] = inputs["f"]
+        truths["alpha"] = inputs["alpha"]
+
+        return cls(truths, inputs, outputs)

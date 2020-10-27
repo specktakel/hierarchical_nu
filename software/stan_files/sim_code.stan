@@ -1068,11 +1068,15 @@ transformed data
 vector[Ns+2] F;
 simplex[Ns+2] w_exposure;
 vector[Ns+2] eps;
+int track_type;
+int cascade_type;
 real Ftot;
 real Fs;
 real f;
 real Nex;
 int N;
+track_type = 0;
+cascade_type = 1;
 Fs = 0.0;
 for (k in 1:Ns)
 {
@@ -1110,6 +1114,7 @@ int ntrials;
 simplex[2] prob;
 unit_vector[3] event[N];
 real Nex_sim;
+vector[N] event_type;
 Nex_sim = Nex;
 for (i in 1:N)
 {
@@ -1170,5 +1175,6 @@ print("problem component: ", Lambda[i]);
 }
 }
 event[i] = NorthernTracksAngularResolution_rng(E[i], omega);
+event_type[i] = track_type;
 }
 }
