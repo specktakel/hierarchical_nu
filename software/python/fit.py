@@ -180,6 +180,10 @@ class StanFit:
 
         prob_each_src = self._get_event_classifications()
 
+        source_labels = ["src%i" % src for src in range(Ns)]
+        source_labels.append("diff")
+        source_labels.append("atmo")
+
         wrong = []
         for i in range(len(prob_each_src)):
             classified = np.where(prob_each_src[i] == np.max(prob_each_src[i]))[0][
@@ -193,6 +197,7 @@ class StanFit:
                     print("P(src%i) = %.6f" % (src, prob_each_src[i][src]))
                 print("P(diff) = %.6f" % prob_each_src[i][Ns])
                 print("P(atmo) = %.6f" % prob_each_src[i][Ns + 1])
+                print("The correct component is", source_labels[int(event_labels[i])])
 
         if not wrong:
             print("All events are correctly classified")
