@@ -4,7 +4,7 @@ import h5py
 import logging
 from astropy import units as u
 
-import stan_utility
+from cmdstanpy import CmdStanModel
 
 from .source.source import Sources, PointSource, icrs_to_uv
 from .source.parameter import Parameter
@@ -83,32 +83,37 @@ class StanFit:
 
         this_dir = os.path.abspath("")
         include_paths = [os.path.join(this_dir, self.output_dir)]
-        self._fit = stan_utility.compile_model(
-            filename=self._fit_filename,
-            include_paths=include_paths,
-            model_name="fit",
+        self._fit = CmdStanModel(
+            stan_file=self._fit_filename, stanc_options={"include_paths": include_paths}
         )
 
-    def run(self, iterations=1000, chains=1, seed=None):
+    def run(self, iterations=1000, chains=1, seed=None, show_progress=False, **kwargs):
 
         self._fit_inputs = self._get_fit_inputs()
 
-        self._fit_output = self._fit.sampling(
+        self._fit_output = self._fit.sample(
             data=self._fit_inputs,
-            iter=iterations,
+            iter_sampling=iterations,
             chains=chains,
-            algorithm="NUTS",
             seed=seed,
+            show_progress=False,
+            **kwargs
         )
 
-        # self.chain = self._fit_output.extract(permuted=True)
-
-    def setup_and_run(self, iterations=1000, chains=1, seed=None):
+    def setup_and_run(
+        self, iterations=1000, chains=1, seed=None, show_progress=False, **kwargs
+    ):
 
         self.precomputation()
         self.generate_stan_code()
         self.compile_stan_code()
-        self.run(iterations=iterations, chains=chains, seed=seed)
+        self.run(
+            iterations=iterations,
+            chains=chains,
+            seed=seed,
+            show_progress=show_progress,
+            **kwargs
+        )
 
     def plot_trace(self, var_names=None, **kwargs):
         """
@@ -133,9 +138,9 @@ class StanFit:
         if not var_names:
             var_names = self._def_var_names
 
-        chain = self._fit_output.extract(permuted=True)
+        chain = self._fit_output.stan_variables()
 
-        samples_list = [chain[key] for key in var_names]
+        samples_list = [chain[key].values.T[0] for key in var_names]
 
         if truths:
             truths_list = [truths[key] for key in var_names]
@@ -151,8 +156,6 @@ class StanFit:
         TODO: Add overwrite check.
         """
 
-        chain = self._fit_output.extract(permuted=True)
-
         with h5py.File(filename, "w") as f:
             fit_folder = f.create_group("fit")
             inputs_folder = fit_folder.create_group("inputs")
@@ -161,8 +164,8 @@ class StanFit:
             for key, value in self._fit_inputs.items():
                 inputs_folder.create_dataset(key, data=value)
 
-            for key, value in chain.items():
-                outputs_folder.create_dataset(key, data=value)
+            for key, value in self._fit_output.stan_variables().items():
+                outputs_folder.create_dataset(key, data=value.values.T[0])
 
     def check_classification(self, sim_outputs):
         """
@@ -173,7 +176,7 @@ class StanFit:
 
         Ns = len([s for s in self._sources.sources if isinstance(s, PointSource)])
 
-        event_labels = sim_outputs["Lambda"][0] - 1
+        event_labels = sim_outputs["Lambda"] - 1
 
         prob_each_src = self._get_event_classifications()
 
@@ -194,17 +197,22 @@ class StanFit:
         if not wrong:
             print("All events are correctly classified")
         else:
-            print("A total of %i events are misclassified" % len(wrong))
+            print(
+                "A total of %i events out of %i are misclassified"
+                % (len(wrong), len(event_labels))
+            )
 
     def _get_event_classifications(self):
 
-        chain = self._fit_output.extract(permuted=True)
+        N = self._fit_inputs["N"]
+        Nsc = self._sources.N
+        Nsamp = self._fit_output.chains * self._fit_output.num_draws
 
-        logprob = chain["lp"].transpose(1, 2, 0)
+        logprob = self._fit_output.stan_variable("lp").values.reshape(Nsamp, Nsc, N)
+
+        logprob = logprob.transpose(2, 1, 0)
 
         Ns = np.shape(logprob)[1] - 2
-
-        src_labels = ["src", "diff", "atmo"]
 
         prob_each_src = []
         for lp in logprob:
@@ -227,6 +235,9 @@ class StanFit:
         fit_inputs["N"] = self._events.N
         fit_inputs["Edet"] = self._events.energies.to(u.GeV).value
         fit_inputs["omega_det"] = self._events.unit_vectors
+        fit_inputs["omega_det"] = [
+            (_ / np.linalg.norm(_)).tolist() for _ in fit_inputs["omega_det"]
+        ]
         fit_inputs["Ns"] = len(
             [s for s in self._sources.sources if isinstance(s, PointSource)]
         )
@@ -261,7 +272,7 @@ class StanFit:
         fit_inputs["Ngrid"] = len(self._exposure_integral.par_grids["index"])
         fit_inputs["alpha_grid"] = self._exposure_integral.par_grids["index"]
         fit_inputs["integral_grid"] = [
-            _.value for _ in self._exposure_integral.integral_grid
+            _.value.tolist() for _ in self._exposure_integral.integral_grid
         ]
         fit_inputs["atmo_integ_val"] = self._exposure_integral.integral_fixed_vals[
             0
@@ -284,6 +295,12 @@ class StanFit:
         fit_inputs["F_atmo_scale"] = atmo_bg.flux_model.total_flux_int.value
 
         fit_inputs["F_tot_scale"] = self._sources.total_flux_int().value
+
+        # To work with cmdstanpy serialization
+        fit_inputs = {
+            k: v if not isinstance(v, np.ndarray) else v.tolist()
+            for k, v in fit_inputs.items()
+        }
 
         return fit_inputs
 
