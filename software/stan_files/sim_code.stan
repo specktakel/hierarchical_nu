@@ -928,22 +928,6 @@ norm = ((1-alpha)/((e_up^(1-alpha))-(e_low^(1-alpha))));
 uni_sample = uniform_rng(0, 1);
 return ((((uni_sample*(1-alpha))/norm)+(e_low^(1-alpha)))^(1/(1-alpha)));
 }
-real diffuse_bg_rng_shape_rng(real alpha,real e_low,real e_up)
-{
-real uni_sample;
-real norm;
-norm = ((1-alpha)/((e_up^(1-alpha))-(e_low^(1-alpha))));
-uni_sample = uniform_rng(0, 1);
-return ((((uni_sample*(1-alpha))/norm)+(e_low^(1-alpha)))^(1/(1-alpha)));
-}
-vector diffuse_bg_rng(real alpha,real e_low,real e_up)
-{
-vector[3] ret_vec;
-ret_vec[1] = diffuse_bg_rng_shape_rng(alpha, e_low, e_up);
-ret_vec[2] = (acos(uniform_rng(-1, 1))-(pi()/2));
-ret_vec[3] = uniform_rng(0, (2*pi()));
-return ret_vec;
-}
 real flux_conv(real alpha,real e_low,real e_up)
 {
 real f1;
@@ -1082,13 +1066,17 @@ simplex[N_atmo] atmo_weights;
 transformed data
 {
 vector[Ns+2] F;
+simplex[Ns+2] w_exposure;
+vector[Ns+2] eps;
+int track_type;
+int cascade_type;
 real Ftot;
 real Fs;
 real f;
-simplex[Ns+2] w_exposure;
 real Nex;
 int N;
-vector[Ns+2] eps;
+track_type = 0;
+cascade_type = 1;
 Fs = 0.0;
 for (k in 1:Ns)
 {
@@ -1101,7 +1089,7 @@ F[Ns+2] = F_atmo;
 Ftot = ((Fs+F_diff)+F_atmo);
 f = Fs/Ftot;
 print("f: ", f);
-eps = get_exposure_factor(alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns);
+eps = get_exposure_factor_atmo(alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns);
 Nex = get_Nex(F, eps);
 w_exposure = get_exposure_weights(F, eps);
 N = poisson_rng(Nex);
@@ -1126,6 +1114,7 @@ int ntrials;
 simplex[2] prob;
 unit_vector[3] event[N];
 real Nex_sim;
+vector[N] event_type;
 Nex_sim = Nex;
 for (i in 1:N)
 {
@@ -1186,5 +1175,6 @@ print("problem component: ", Lambda[i]);
 }
 }
 event[i] = NorthernTracksAngularResolution_rng(E[i], omega);
+event_type[i] = track_type;
 }
 }

@@ -2,7 +2,7 @@
  * Get exposure factor from spline information and source positions.
  * Units of [m^2 s]
  */
-vector get_exposure_factor(real alpha, vector alpha_grid, vector[] integral_grid, real atmo_integ_val, real T, int Ns) {
+vector get_exposure_factor_atmo(real alpha, vector alpha_grid, vector[] integral_grid, real atmo_integ_val, real T, int Ns) {
 
   int K = Ns+2;
   vector[K] eps;
@@ -16,6 +16,25 @@ vector get_exposure_factor(real alpha, vector alpha_grid, vector[] integral_grid
 
   return eps * T;
 }
+
+/**
+ * Get exposure factor from spline information and source positions.
+ * Units of [m^2 s]
+ */
+vector get_exposure_factor(real alpha, vector alpha_grid, vector[] integral_grid, real T) {
+
+  int K = num_elements(integral_grid);
+  vector[K] eps;
+    
+  for (k in 1:K) {
+
+    eps[k] = interpolate(alpha_grid, integral_grid[k], alpha);
+      
+  }
+
+  return eps * T;
+}
+
 
 /**
  * For use in simple one-component sims

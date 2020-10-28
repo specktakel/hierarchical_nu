@@ -637,27 +637,20 @@ return ((10^interpolate(vector_coz_grid_points, vector_interp_energies, abs(cos(
 }
 data
 {
-real Edet_min;
+real Esrc_min;
 real Esrc_max;
 real cosz_min;
 real cosz_max;
 }
-transformed data
-{
-print(Edet_min);
-print(Esrc_max);
-print(cosz_min);
-print(cosz_max);
-}
 parameters
 {
-real<lower=Edet_min, upper=Esrc_max> energy;
+real<lower=Esrc_min, upper=Esrc_max> energy;
 real<lower=cosz_min, upper=cosz_max> coszen;
 real<lower=0, upper=6.283185307179586> phi;
 }
 transformed parameters
 {
-vector[3] omega;
+unit_vector[3] omega;
 real zen;
 real theta;
 zen = acos(coszen);
@@ -665,6 +658,9 @@ theta = (pi()-zen);
 omega[1] = (sin(theta)*cos(phi));
 omega[2] = (sin(theta)*sin(phi));
 omega[3] = cos(theta);
+print("omega[1]:", omega[1]);
+print("omega[2]:", omega[2]);
+print("omega[3]:", omega[3]);
 }
 model
 {
