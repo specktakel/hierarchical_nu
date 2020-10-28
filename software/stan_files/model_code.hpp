@@ -58,379 +58,379 @@ using stan::math::pow;
 
 static int current_statement__ = 0;
 static const std::vector<string> locations_array__ = {" (found before start of program)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1665, column 0 to column 29)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1666, column 0 to column 36)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1667, column 0 to column 36)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1668, column 0 to column 31)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1669, column 0 to column 48)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1673, column 0 to column 10)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1674, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1675, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1676, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1677, column 0 to column 19)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1678, column 0 to column 19)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1679, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1680, column 0 to column 9)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1681, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1682, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1685, column 0 to column 48)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1686, column 0 to column 43)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1687, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1684, column 0 to line 1688, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1683, column 0 to line 1688, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1689, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1690, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1691, column 0 to column 30)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1692, column 0 to column 16)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1693, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1696, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1713, column 0 to column 85)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1714, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1712, column 0 to line 1715, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1711, column 5 to line 1715, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1707, column 0 to column 64)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1708, column 0 to column 28)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1709, column 0 to column 32)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1706, column 0 to line 1710, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1705, column 5 to line 1715, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1701, column 0 to column 64)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1702, column 0 to column 28)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1703, column 0 to column 74)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1700, column 0 to line 1704, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1699, column 0 to line 1715, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1716, column 0 to column 58)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1717, column 0 to column 57)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1698, column 0 to line 1718, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1697, column 0 to line 1718, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1695, column 0 to line 1719, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1694, column 0 to line 1719, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1720, column 0 to column 88)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1721, column 0 to column 22)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1727, column 0 to column 29)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1726, column 0 to line 1728, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1725, column 0 to line 1728, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1729, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1730, column 0 to column 23)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1731, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1732, column 0 to column 50)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1733, column 0 to column 46)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1734, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1642, column 0 to column 6)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1643, column 25 to column 26)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1643, column 0 to column 28)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1644, column 7 to column 8)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1644, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1645, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1646, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1647, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1648, column 21 to column 23)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1648, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1649, column 7 to column 9)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1649, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1650, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1650, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1651, column 0 to column 10)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1652, column 7 to column 12)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1652, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1653, column 28 to column 32)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1653, column 7 to column 12)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1653, column 0 to column 34)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1654, column 0 to column 20)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1655, column 7 to column 12)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1655, column 0 to column 21)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1656, column 24 to column 28)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1656, column 7 to column 12)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1656, column 0 to column 30)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1657, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1658, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1659, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1660, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1661, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1669, column 40 to column 41)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1674, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1675, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1678, column 16 to column 17)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1678, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1679, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1681, column 7 to column 8)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 13, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 14, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 18, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 16, column 19, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 16, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 22, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 11, column 45, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 31, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 31, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 32, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 35, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 34, column 17, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 34, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 38, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 29, column 39, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 46, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 47, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 49, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 48, column 15, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 48, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 51, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 45, column 39, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 59, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 58, column 25, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 58, column 10, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 56, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 55, column 20, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 55, column 5, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 61, column 5, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 54, column 55, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 68, column 18, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 68, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 69, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 72, column 8, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 71, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 70, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 74, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 66, column 0, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 79, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 80, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 81, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 89, column 12, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 95, column 16, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 93, column 16, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 92, column 17, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 91, column 16, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 90, column 12, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 88, column 8, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 87, column 8, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 86, column 8, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 85, column 8, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 84, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 83, column 8, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 82, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 98, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/utils.stan', line 78, column 0, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 13, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 14, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 16, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 18, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 17, column 17, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 17, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 20, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 21, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 11, column 34, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 30, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 31, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 31, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 32, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 32, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 33, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 33, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 36, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 35, column 19, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 35, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 39, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 40, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 42, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 28, column 44, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 52, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 53, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 54, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 55, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 57, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 58, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 59, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 60, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 62, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 63, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 64, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 66, column 6, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 65, column 57, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 65, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 61, column 17, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 61, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 70, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 50, column 44, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 79, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 80, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 80, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 82, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 83, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 83, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 85, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 86, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 77, column 38, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 96, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 97, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 98, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 99, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 100, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 102, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 103, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 104, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 106, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 94, column 31, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 117, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 118, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 119, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 121, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 122, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 124, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 125, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 126, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 128, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 115, column 47, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 140, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 145, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 144, column 7, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 142, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 141, column 19, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 141, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 147, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/vMF.stan', line 138, column 47, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 14, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 15, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 16, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 17, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 18, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 20, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 21, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 22, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 23, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 38, column 6, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 37, column 23, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 37, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 35, column 6, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 34, column 17, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 34, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 25, column 28, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 25, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 46, column 35, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 46, column 33, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 46, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 45, column 7, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 43, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 42, column 30, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 42, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 49, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 50, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 51, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 52, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 54, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 56, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/interpolation.stan', line 12, column 59, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 7, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 8, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 8, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 12, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 10, column 19, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 10, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 15, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 17, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 5, column 124, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 26, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 27, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 27, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 31, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 29, column 17, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 29, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 35, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 24, column 90, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 44, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 46, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 48, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 42, column 81, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 57, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 58, column 9, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 58, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 60, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 63, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 62, column 17, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 62, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 67, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 66, column 17, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 66, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 70, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 55, column 50, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 80, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 82, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 85, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 84, column 14, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 84, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 88, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 90, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 78, column 35, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 98, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 99, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 102, column 4, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 101, column 17, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 101, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 105, column 2, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/sim_functions.stan', line 96, column 35, included from\n'/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 9, column 0 to line 848, column 49)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 849, column 0 to line 919, column 17)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 920, column 0 to column 85)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 921, column 0 to column 92)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 8, column 0 to line 922, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 925, column 0 to line 926, column 35)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 927, column 0 to column 166)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 924, column 0 to line 928, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 931, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 934, column 0 to column 70)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 933, column 0 to line 935, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 932, column 0 to line 935, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 936, column 0 to column 27)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 930, column 0 to line 937, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 940, column 0 to line 945, column 36)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 946, column 0 to line 951, column 36)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 952, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 953, column 0 to column 20)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 954, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 957, column 0 to column 19)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 956, column 0 to line 958, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 955, column 0 to line 958, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 961, column 0 to column 159)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 962, column 0 to column 162)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 960, column 0 to line 963, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 959, column 0 to line 963, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 964, column 0 to column 104)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 939, column 0 to line 965, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 968, column 0 to column 77)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 967, column 0 to line 969, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 972, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 973, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 980, column 0 to column 59)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 979, column 0 to line 981, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 976, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 975, column 0 to line 977, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 974, column 0 to line 981, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 982, column 0 to column 27)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 983, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 971, column 0 to line 984, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 987, column 0 to column 8)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 988, column 0 to column 8)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 995, column 0 to column 58)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 994, column 0 to line 996, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 991, column 0 to column 28)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 990, column 0 to line 992, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 989, column 0 to line 996, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1003, column 0 to column 58)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1002, column 0 to line 1004, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 999, column 0 to column 28)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 998, column 0 to line 1000, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 997, column 0 to line 1004, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1005, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 986, column 0 to line 1006, column 1)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1009, column 0 to line 1608, column 69)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1609, column 0 to line 1613, column 74)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1614, column 0 to line 1630, column 46)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1631, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1632, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1633, column 0 to column 228)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1634, column 0 to column 232)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1635, column 0 to column 110)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1636, column 0 to column 114)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1637, column 0 to column 118)",
-                                                      " (in '/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files/model_code.stan', line 1008, column 0 to line 1638, column 1)"};
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1665, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1666, column 0 to column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1667, column 0 to column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1668, column 0 to column 31)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1669, column 0 to column 48)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1673, column 0 to column 10)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1674, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1675, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1676, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1677, column 0 to column 19)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1678, column 0 to column 19)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1679, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1680, column 0 to column 9)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1681, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1682, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1685, column 0 to column 48)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1686, column 0 to column 43)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1687, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1684, column 0 to line 1688, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1683, column 0 to line 1688, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1689, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1690, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1691, column 0 to column 30)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1692, column 0 to column 16)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1693, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1696, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1713, column 0 to column 85)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1714, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1712, column 0 to line 1715, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1711, column 5 to line 1715, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1707, column 0 to column 64)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1708, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1709, column 0 to column 32)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1706, column 0 to line 1710, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1705, column 5 to line 1715, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1701, column 0 to column 64)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1702, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1703, column 0 to column 74)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1700, column 0 to line 1704, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1699, column 0 to line 1715, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1716, column 0 to column 58)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1717, column 0 to column 57)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1698, column 0 to line 1718, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1697, column 0 to line 1718, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1695, column 0 to line 1719, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1694, column 0 to line 1719, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1720, column 0 to column 88)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1721, column 0 to column 22)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1727, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1726, column 0 to line 1728, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1725, column 0 to line 1728, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1729, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1730, column 0 to column 23)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1731, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1732, column 0 to column 50)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1733, column 0 to column 46)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1734, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1642, column 0 to column 6)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1643, column 25 to column 26)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1643, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1644, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1644, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1645, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1646, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1647, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1648, column 21 to column 23)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1648, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1649, column 7 to column 9)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1649, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1650, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1650, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1651, column 0 to column 10)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1652, column 7 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1652, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1653, column 28 to column 32)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1653, column 7 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1653, column 0 to column 34)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1654, column 0 to column 20)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1655, column 7 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1655, column 0 to column 21)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1656, column 24 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1656, column 7 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1656, column 0 to column 30)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1657, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1658, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1659, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1660, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1661, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1669, column 40 to column 41)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1674, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1675, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1678, column 16 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1678, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1679, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1681, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 13, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 14, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 18, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 16, column 19, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 16, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 22, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 11, column 45, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 31, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 31, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 32, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 35, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 34, column 17, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 34, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 38, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 29, column 39, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 46, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 47, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 49, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 48, column 15, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 48, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 51, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 45, column 39, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 59, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 58, column 25, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 58, column 10, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 56, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 55, column 20, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 55, column 5, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 61, column 5, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 54, column 55, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 68, column 18, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 68, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 69, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 72, column 8, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 71, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 70, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 74, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 66, column 0, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 79, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 80, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 81, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 89, column 12, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 95, column 16, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 93, column 16, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 92, column 17, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 91, column 16, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 90, column 12, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 88, column 8, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 87, column 8, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 86, column 8, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 85, column 8, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 84, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 83, column 8, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 82, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 98, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 78, column 0, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 3, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 13, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 14, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 16, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 18, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 17, column 17, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 17, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 20, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 21, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 11, column 34, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 30, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 31, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 31, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 32, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 32, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 33, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 33, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 36, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 35, column 19, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 35, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 39, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 40, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 42, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 28, column 44, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 52, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 53, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 54, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 55, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 57, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 58, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 59, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 60, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 62, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 63, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 64, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 66, column 6, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 65, column 57, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 65, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 61, column 17, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 61, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 70, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 50, column 44, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 79, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 80, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 80, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 82, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 83, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 83, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 85, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 86, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 77, column 38, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 96, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 97, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 98, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 99, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 100, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 102, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 103, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 104, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 106, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 94, column 31, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 117, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 118, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 119, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 121, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 122, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 124, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 125, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 126, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 128, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 115, column 47, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 140, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 145, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 144, column 7, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 142, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 141, column 19, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 141, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 147, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/vMF.stan', line 138, column 47, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 4, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 14, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 15, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 16, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 17, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 18, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 20, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 21, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 22, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 23, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 38, column 6, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 37, column 23, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 37, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 35, column 6, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 34, column 17, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 34, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 25, column 28, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 25, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 46, column 35, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 46, column 33, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 46, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 45, column 7, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 43, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 42, column 30, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 42, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 49, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 50, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 51, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 52, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 54, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 56, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/interpolation.stan', line 12, column 59, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 5, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 7, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 8, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 8, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 12, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 10, column 19, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 10, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 15, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 17, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 5, column 124, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 26, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 27, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 27, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 31, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 29, column 17, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 29, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 35, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 24, column 90, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 44, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 46, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 48, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 42, column 81, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 57, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 58, column 9, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 58, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 60, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 63, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 62, column 17, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 62, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 67, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 66, column 17, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 66, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 70, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 55, column 50, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 80, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 82, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 85, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 84, column 14, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 84, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 88, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 90, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 78, column 35, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 98, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 99, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 102, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 101, column 17, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 101, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 105, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 96, column 35, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 6, column 0)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 9, column 0 to line 848, column 49)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 849, column 0 to line 919, column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 920, column 0 to column 85)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 921, column 0 to column 92)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 8, column 0 to line 922, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 925, column 0 to line 926, column 35)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 927, column 0 to column 166)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 924, column 0 to line 928, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 931, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 934, column 0 to column 70)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 933, column 0 to line 935, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 932, column 0 to line 935, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 936, column 0 to column 27)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 930, column 0 to line 937, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 940, column 0 to line 945, column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 946, column 0 to line 951, column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 952, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 953, column 0 to column 20)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 954, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 957, column 0 to column 19)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 956, column 0 to line 958, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 955, column 0 to line 958, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 961, column 0 to column 159)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 962, column 0 to column 162)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 960, column 0 to line 963, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 959, column 0 to line 963, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 964, column 0 to column 104)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 939, column 0 to line 965, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 968, column 0 to column 77)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 967, column 0 to line 969, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 972, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 973, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 980, column 0 to column 59)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 979, column 0 to line 981, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 976, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 975, column 0 to line 977, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 974, column 0 to line 981, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 982, column 0 to column 27)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 983, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 971, column 0 to line 984, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 987, column 0 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 988, column 0 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 995, column 0 to column 58)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 994, column 0 to line 996, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 991, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 990, column 0 to line 992, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 989, column 0 to line 996, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1003, column 0 to column 58)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1002, column 0 to line 1004, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 999, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 998, column 0 to line 1000, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 997, column 0 to line 1004, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1005, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 986, column 0 to line 1006, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1009, column 0 to line 1608, column 69)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1609, column 0 to line 1613, column 74)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1614, column 0 to line 1630, column 46)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1631, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1632, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1633, column 0 to column 228)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1634, column 0 to column 232)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1635, column 0 to column 110)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1636, column 0 to column 114)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1637, column 0 to column 118)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1008, column 0 to line 1638, column 1)"};
 
 
 template <typename T0__, typename T1__>
@@ -3411,860 +3411,868 @@ AtmopshericNumuFlux(const T0__& true_energy,
       .add(-29.15368342).add(-29.52833128).add(-29.91235745).add(-30.2978475)
       .add(-30.70124633).add(-31.10831576).add(-31.52247839)
       .add(-31.94063427).add(-32.35710298).add(-32.54291653).array())
-      .add(stan::math::array_builder<double>().add(-1.97273715)
-      .add(-2.06235936).add(-2.27320675).add(-2.49676477).add(-2.73004429)
-      .add(-2.97289037).add(-3.22378955).add(-3.47438636).add(-3.72781913)
-      .add(-3.98375561).add(-4.24156869).add(-4.50161981).add(-4.76369906)
-      .add(-5.02723645).add(-5.29174488).add(-5.55711812).add(-5.82346161)
-      .add(-6.09122897).add(-6.36078763).add(-6.63294714).add(-6.91008602)
-      .add(-7.18888292).add(-7.46632699).add(-7.74368553).add(-8.02214581)
-      .add(-8.30147634).add(-8.58205724).add(-8.8642524).add(-9.14826642)
-      .add(-9.43410896).add(-9.72266415).add(-10.01411147).add(-10.30869586)
-      .add(-10.60651819).add(-10.90771454).add(-11.212256).add(-11.51978774)
-      .add(-11.83039428).add(-12.14423534).add(-12.46085922)
-      .add(-12.78007464).add(-13.10131291).add(-13.4247067).add(-13.75000772)
-      .add(-14.07704035).add(-14.40587188).add(-14.73614668)
-      .add(-15.06737567).add(-15.39955639).add(-15.73284893)
-      .add(-16.06751833).add(-16.40392445).add(-16.74100192)
-      .add(-17.07862358).add(-17.41720368).add(-17.75686334)
-      .add(-18.09770117).add(-18.4394944).add(-18.78204698).add(-19.12568494)
-      .add(-19.47007312).add(-19.81457894).add(-20.15865112).add(-20.5024149)
-      .add(-20.84575856).add(-21.1872893).add(-21.5255116).add(-21.86125377)
-      .add(-22.19460086).add(-22.52332435).add(-22.84682051)
-      .add(-23.16576492).add(-23.47998512).add(-23.78941212)
-      .add(-24.09388923).add(-24.39462806).add(-24.69264279)
-      .add(-24.98748577).add(-25.27991974).add(-25.57128461)
-      .add(-25.86452233).add(-26.16228847).add(-26.46209723)
-      .add(-26.76814944).add(-27.08081043).add(-27.40140624).add(-27.730839)
-      .add(-28.06964383).add(-28.41527312).add(-28.77068099)
-      .add(-29.13633958).add(-29.51125252).add(-29.89583027)
-      .add(-30.28242345).add(-30.68682315).add(-31.09523969).add(-31.5109227)
-      .add(-31.93084653).add(-32.34932578).add(-32.53607986).array())
-      .add(stan::math::array_builder<double>().add(-1.96501455)
-      .add(-2.0544769).add(-2.26497637).add(-2.48822829).add(-2.7212279)
-      .add(-2.96365947).add(-3.21400079).add(-3.46450424).add(-3.71792143)
-      .add(-3.97383778).add(-4.23162588).add(-4.49159674).add(-4.75353201)
-      .add(-5.01687381).add(-5.2811545).add(-5.54627201).add(-5.81232759)
-      .add(-6.07977683).add(-6.34898504).add(-6.62073745).add(-6.89722136)
-      .add(-7.17538348).add(-7.45245999).add(-7.7295693).add(-8.00774557)
-      .add(-8.28675515).add(-8.56693519).add(-8.8486226).add(-9.13200646)
-      .add(-9.41709044).add(-9.70476381).add(-9.99522233).add(-10.28873978)
-      .add(-10.58544644).add(-10.88551252).add(-11.18894416)
-      .add(-11.49541474).add(-11.80503161).add(-12.11796859)
-      .add(-12.43378805).add(-12.75230491).add(-13.07294929)
-      .add(-13.39585632).add(-13.72077171).add(-14.04751845).add(-14.3761671)
-      .add(-14.7063529).add(-15.0375854).add(-15.3698709).add(-15.70335764)
-      .add(-16.03832646).add(-16.37513726).add(-16.71273241)
-      .add(-17.05098604).add(-17.39031583).add(-17.7308509).add(-18.07268296)
-      .add(-18.41559642).add(-18.75938281).add(-19.10431539)
-      .add(-19.45007385).add(-19.7960442).add(-20.14166071).add(-20.48698742)
+      .add(stan::math::array_builder<double>().add(-1.97276985)
+      .add(-2.06239285).add(-2.27324221).add(-2.49680217).add(-2.73008337)
+      .add(-2.97293083).add(-3.22383104).add(-3.47442787).add(-3.72785996)
+      .add(-3.98379502).add(-4.24160601).add(-4.50165454).add(-4.76373087)
+      .add(-5.02726514).add(-5.29177041).add(-5.55714057).add(-5.82348116)
+      .add(-6.0912459).add(-6.36080221).add(-6.63295968).add(-6.91009685)
+      .add(-7.18889227).add(-7.46633503).add(-7.74369245).add(-8.02215182)
+      .add(-8.30148161).add(-8.58206192).add(-8.86425662).add(-9.14827027)
+      .add(-9.43411252).add(-9.72266747).add(-10.01411459).add(-10.30869882)
+      .add(-10.60652099).add(-10.9077172).add(-11.21225853).add(-11.51979014)
+      .add(-11.83039656).add(-12.14423751).add(-12.46086126)
+      .add(-12.78007657).add(-13.10131472).add(-13.42470841)
+      .add(-13.75000932).add(-14.07704185).add(-14.40587328)
+      .add(-14.73614799).add(-15.06737688).add(-15.39955751)
+      .add(-15.73284996).add(-16.06751929).add(-16.40392533)
+      .add(-16.74100273).add(-17.07862431).add(-17.41720435)
+      .add(-17.75686395).add(-18.09770172).add(-18.43949489)
+      .add(-18.78204741).add(-19.12568532).add(-19.47007346)
+      .add(-19.81457924).add(-20.15865138).add(-20.50241512)
+      .add(-20.84575875).add(-21.18728946).add(-21.52551175).add(-21.8612539)
+      .add(-22.19460098).add(-22.52332446).add(-22.84682062)
+      .add(-23.16576504).add(-23.47998524).add(-23.78941225)
+      .add(-24.09388936).add(-24.39462821).add(-24.69264295)
+      .add(-24.98748594).add(-25.27991992).add(-25.57128479)
+      .add(-25.86452252).add(-26.16228866).add(-26.46209742)
+      .add(-26.76814963).add(-27.08081061).add(-27.40140641)
+      .add(-27.73083916).add(-28.06964398).add(-28.41527326)
+      .add(-28.77068112).add(-29.13633969).add(-29.51125262)
+      .add(-29.89583036).add(-30.28242352).add(-30.68682321)
+      .add(-31.09523974).add(-31.51092274).add(-31.93084655).add(-32.3493258)
+      .add(-32.53607988).array()).add(stan::math::array_builder<double>()
+      .add(-1.96499252).add(-2.05445424).add(-2.26495215).add(-2.48820249)
+      .add(-2.72120067).add(-2.96363099).add(-3.21397128).add(-3.46447441)
+      .add(-3.71789182).add(-3.97380897).add(-4.23159842).add(-4.49157103)
+      .add(-4.75350837).add(-5.01685243).add(-5.28113546).add(-5.54625529)
+      .add(-5.81231308).add(-6.07976434).add(-6.34897438).add(-6.62072838)
+      .add(-6.89721365).add(-7.17537695).add(-7.45245451).add(-7.7295647)
+      .add(-8.0077417).add(-8.28675188).add(-8.56693239).add(-8.84862018)
+      .add(-9.13200433).add(-9.41708854).add(-9.7047621).add(-9.99522077)
+      .add(-10.28873833).add(-10.5854451).add(-10.88551128).add(-11.188943)
+      .add(-11.49541366).add(-11.80503061).add(-12.11796766)
+      .add(-12.43378719).add(-12.75230411).add(-13.07294856)
+      .add(-13.39585564).add(-13.72077109).add(-14.04751788)
+      .add(-14.37616658).add(-14.70635243).add(-15.03758498)
+      .add(-15.36987051).add(-15.70335729).add(-16.03832615)
+      .add(-16.37513699).add(-16.71273218).add(-17.05098584)
+      .add(-17.39031565).add(-17.73085075).add(-18.07268283)
+      .add(-18.41559631).add(-18.75938272).add(-19.10431533).add(-19.4500738)
+      .add(-19.79604417).add(-20.14166068).add(-20.48698741)
       .add(-20.83187603).add(-21.17492578).add(-21.51459496)
-      .add(-21.85161665).add(-22.18604679).add(-22.51569169)
-      .add(-22.83990605).add(-23.15930731).add(-23.47378095)
-      .add(-23.78328609).add(-24.08764425).add(-24.38805977)
-      .add(-24.68555503).add(-24.9797137).add(-25.2713273).add(-25.56177838)
-      .add(-25.85400519).add(-26.15065468).add(-26.44936547)
-      .add(-26.75431225).add(-27.06590606).add(-27.38549284)
-      .add(-27.71401958).add(-28.05202843).add(-28.39710011)
-      .add(-28.75214496).add(-29.11768549).add(-29.49279479)
-      .add(-29.87787673).add(-30.26556451).add(-30.67097017)
-      .add(-31.08078066).add(-31.49806617).add(-31.91988734).add(-32.3405584)
-      .add(-32.52834976).array()).add(stan::math::array_builder<double>()
-      .add(-1.95692411).add(-2.04618716).add(-2.25624968).add(-2.47911022)
-      .add(-2.71175352).add(-2.95370544).add(-3.20343624).add(-3.45380317)
-      .add(-3.70717853).add(-3.96306525).add(-4.22083138).add(-4.48073221)
-      .add(-4.74253594).add(-5.00569308).add(-5.26975229).add(-5.5346126)
-      .add(-5.80036762).add(-6.06747283).add(-6.33629336).add(-6.60759268)
-      .add(-6.88337435).add(-7.16085714).add(-7.43752539).add(-7.71435339)
-      .add(-7.99222573).add(-8.27090438).add(-8.55068).add(-8.83185747)
-      .add(-9.11460487).add(-9.39891439).add(-9.68567587).add(-9.97509846)
-      .add(-10.26748409).add(-10.56299317).add(-10.86183252)
-      .add(-11.16404727).add(-11.46934317).add(-11.77785446).add(-12.0897726)
-      .add(-12.40467725).add(-12.72239225).add(-13.04234828)
-      .add(-13.36468381).add(-13.68913883).add(-14.01553491)
-      .add(-14.34394548).add(-14.67399589).add(-15.00519383)
-      .add(-15.33755375).add(-15.67121139).add(-16.00646315)
-      .add(-16.34366877).add(-16.68177864).add(-17.02066854)
-      .add(-17.36076025).add(-17.70219206).add(-18.04504973)
-      .add(-18.38912672).add(-18.73420329).add(-19.08049893)
-      .add(-19.42771017).add(-19.77524465).add(-20.1225234).add(-20.46954642)
-      .add(-20.81612716).add(-21.1608582).add(-21.50214943).add(-21.84062916)
-      .add(-22.1763164).add(-22.50704922).add(-22.83213529).add(-23.15212844)
-      .add(-23.46696959).add(-23.77664399).add(-24.08095182)
-      .add(-24.38109019).add(-24.67809003).add(-24.97156763)
-      .add(-25.26234476).add(-25.55184817).add(-25.84301314).add(-26.138479)
-      .add(-26.4360127).add(-26.73976328).add(-27.05018946).add(-27.368659)
-      .add(-27.69616608).add(-28.03326139).add(-28.37766055)
-      .add(-28.73223172).add(-29.0975529).add(-29.47277196).add(-29.85829406)
-      .add(-30.24705435).add(-30.65346005).add(-31.06470606)
-      .add(-31.48367742).add(-31.90753598).add(-32.33060278)
-      .add(-32.51954268).array()).add(stan::math::array_builder<double>()
-      .add(-1.94847635).add(-2.03749466).add(-2.24701656).add(-2.46938459)
-      .add(-2.70157896).add(-2.94297058).add(-3.19202408).add(-3.44219668)
-      .add(-3.69549096).add(-3.9513282).add(-4.2090679).add(-4.46890424)
-      .add(-4.73058657).add(-4.99356944).add(-5.25741383).add(-5.52201584)
-      .add(-5.78745695).add(-6.05418944).add(-6.32257955).add(-6.59337145)
-      .add(-6.86839332).add(-7.14514043).add(-7.42134696).add(-7.69784962)
-      .add(-7.97538845).add(-8.2537196).add(-8.53308393).add(-8.81374888)
-      .add(-9.09585526).add(-9.37937709).add(-9.66519867).add(-9.95353846)
-      .add(-10.24472482).add(-10.53894818).add(-10.83645431)
-      .add(-11.13733152).add(-11.4413226).add(-11.74859345).add(-12.0593575)
-      .add(-12.37321583).add(-12.6900047).add(-13.0091578).add(-13.33081838)
-      .add(-13.65472118).add(-13.98068662).add(-14.30879053)
-      .add(-14.63864757).add(-14.96976299).add(-15.30215867)
-      .add(-15.63595696).add(-15.97146943).add(-16.3090553).add(-16.64767315)
-      .add(-16.98720074).add(-17.32806453).add(-17.67041326)
-      .add(-18.01432772).add(-18.35961256).add(-18.70603813)
-      .add(-19.05376939).add(-19.40252217).add(-19.75172938).add(-20.1008007)
-      .add(-20.44966942).add(-20.79810942).add(-21.14470864).add(-21.4878265)
-      .add(-21.82797578).add(-22.16512911).add(-22.49715228)
-      .add(-22.82329904).add(-23.14405256).add(-23.45940562)
-      .add(-23.76936675).add(-24.0737152).add(-24.37364079).add(-24.67018318)
-      .add(-24.96299287).add(-25.25292345).add(-25.5414476).add(-25.83149852)
-      .add(-26.12570914).add(-26.42197908).add(-26.72443233)
-      .add(-27.03357755).add(-27.35080646).add(-27.67716288)
-      .add(-28.01320776).add(-28.35679866).add(-28.71076353)
-      .add(-29.07574131).add(-29.45096069).add(-29.83683719)
-      .add(-30.22662931).add(-30.6340134).add(-31.0467274).add(-31.46746657)
-      .add(-31.89351283).add(-32.3192049).add(-32.50942186).array())
-      .add(stan::math::array_builder<double>().add(-1.93952015)
-      .add(-2.02823397).add(-2.2370758).add(-2.4588109).add(-2.69042327)
-      .add(-2.9311343).add(-3.17940659).add(-3.42929461).add(-3.68244321)
-      .add(-3.93819533).add(-4.19589861).add(-4.4556801).add(-4.71726361)
-      .add(-4.98010181).add(-5.24376176).add(-5.50813).add(-5.77326876)
-      .add(-6.03962144).add(-6.30755511).add(-6.57779606).add(-6.85200592)
-      .add(-7.12796186).add(-7.40365057).add(-7.6797796).add(-7.95695166)
-      .add(-8.23491687).add(-8.51386381).add(-8.79401719).add(-9.07548365)
-      .add(-9.35821121).add(-9.64307086).add(-9.93028466).add(-10.22020433)
-      .add(-10.5130492).add(-10.80910586).add(-11.10851018).add(-11.41104722)
-      .add(-11.71692014).add(-12.02636966).add(-12.33902348)
-      .add(-12.65473506).add(-12.97294451).add(-13.29380191)
-      .add(-13.61703784).add(-13.94247208).add(-14.27018253)
-      .add(-14.59977232).add(-14.9307436).add(-15.26312474).add(-15.59702365)
-      .add(-15.93276644).add(-16.27071117).add(-16.60982472)
-      .add(-16.94998699).add(-17.2916297).add(-17.63491322).add(-17.97991449)
-      .add(-18.32645169).add(-18.67428696).add(-19.02353021)
-      .add(-19.37391956).add(-19.72491759).add(-20.07592538)
-      .add(-20.42680728).add(-20.77729674).add(-21.12598015).add(-21.4711649)
-      .add(-21.81323602).add(-22.15210855).add(-22.48567062)
-      .add(-22.81311327).add(-23.1348399).add(-23.45088989).add(-23.76129105)
-      .add(-24.06580179).add(-24.36560437).add(-24.66174728)
-      .add(-24.95391693).add(-25.24300053).add(-25.53051865)
-      .add(-25.81940347).add(-26.11228302).add(-26.40719452)
-      .add(-26.70823772).add(-27.0159737).add(-27.33182066).add(-27.65687457)
-      .add(-27.99170862).add(-28.33432997).add(-28.68752857)
-      .add(-29.05201028).add(-29.42709125).add(-29.81320782)
-      .add(-30.20396563).add(-30.61228408).add(-31.02648368)
-      .add(-31.44906697).add(-31.87745987).add(-32.30603497).add(-32.4976778)
-      .array()).add(stan::math::array_builder<double>().add(-1.93020667)
-      .add(-2.01855192).add(-2.22656293).add(-2.44751091).add(-2.67839215)
-      .add(-2.91828551).add(-3.16565534).add(-3.41514535).add(-3.66805868)
-      .add(-3.92366488).add(-4.18129743).add(-4.44101151).add(-4.70249948)
-      .add(-4.96520631).add(-5.22869852).add(-5.49284574).add(-5.75768251)
-      .add(-6.02363599).add(-6.29107239).add(-6.56070058).add(-6.83402513)
-      .add(-7.10911034).add(-7.38419865).add(-7.65987958).add(-7.93662855)
-      .add(-8.21419107).add(-8.4927021).add(-8.77233849).add(-9.05316512)
-      .add(-9.33509453).add(-9.61897431).add(-9.90502201).add(-10.19360743)
-      .add(-10.48497587).add(-10.77945558).add(-11.07723414)
-      .add(-11.37814448).add(-11.68243346).add(-11.99037561)
-      .add(-12.30163184).add(-12.61607917).add(-12.93316885)
-      .add(-13.25306102).add(-13.57548384).add(-13.90025757)
-      .add(-14.22746206).add(-14.55668809).add(-14.88743403)
-      .add(-15.21973358).add(-15.55367888).add(-15.8896096).add(-16.22788178)
-      .add(-16.56747041).add(-16.90825758).add(-17.25068061)
-      .add(-17.59491275).add(-17.94102819).add(-18.28886118).add(-18.6381677)
-      .add(-18.98900242).add(-19.34112928).add(-19.69404596)
-      .add(-20.04714876).add(-20.40023155).add(-20.75298733)
-      .add(-21.10400549).add(-21.45154085).add(-21.79583702)
-      .add(-22.13673811).add(-22.47214769).add(-22.80118275)
-      .add(-23.12415484).add(-23.44114235).add(-23.75218647)
-      .add(-24.05702444).add(-24.35683012).add(-24.6526607).add(-24.94424038)
-      .add(-25.23249204).add(-25.51898637).add(-25.80665585)
-      .add(-26.09812547).add(-26.39157576).add(-26.69108325)
-      .add(-26.99726444).add(-27.31156671).add(-27.63514101)
-      .add(-27.96857488).add(-28.31003352).add(-28.66227137)
-      .add(-29.02606765).add(-29.40083337).add(-29.78703773)
-      .add(-30.17865989).add(-30.58783673).add(-31.003516).add(-31.42800711)
-      .add(-31.85891059).add(-32.29065679).add(-32.48389808).array())
-      .add(stan::math::array_builder<double>().add(-1.92050533)
-      .add(-2.00840356).add(-2.2153954).add(-2.4353581).add(-2.66531081)
-      .add(-2.90419925).add(-3.15049496).add(-3.39942243).add(-3.65196386)
-      .add(-3.90732425).add(-4.16482262).add(-4.42443866).add(-4.6858277)
-      .add(-4.9484204).add(-5.2117743).add(-5.47573205).add(-5.74028868)
-      .add(-6.00584375).add(-6.27275762).add(-6.54171964).add(-6.81408642)
-      .add(-7.08821461).add(-7.36260631).add(-7.63774726).add(-7.91399931)
-      .add(-8.19110755).add(-8.46915426).add(-8.74826458).add(-9.02845403)
-      .add(-9.30958887).add(-9.59248063).add(-9.8773313).add(-10.16452055)
-      .add(-10.45431395).add(-10.74708049).add(-11.04306302)
-      .add(-11.34214803).add(-11.64463328).add(-11.95083504)
-      .add(-12.26045588).add(-12.57340487).add(-12.88915118)
-      .add(-13.20786972).add(-13.52928931).add(-13.85323278)
-      .add(-14.17978223).add(-14.50851547).add(-14.83892647)
-      .add(-15.17105285).add(-15.50496933).add(-15.84102773)
-      .add(-16.17958079).add(-16.51961115).add(-16.8610028).add(-17.20419885)
-      .add(-17.54938641).add(-17.89663808).add(-18.24580688)
-      .add(-18.59664496).add(-18.949152).add(-19.30312199).add(-19.65809421)
-      .add(-20.01346548).add(-20.36895867).add(-20.72422765)
-      .add(-21.07787163).add(-21.4280939).add(-21.77498188).add(-22.11829303)
-      .add(-22.45593758).add(-22.7869439).add(-23.11151547).add(-23.42975855)
-      .add(-23.7417189).add(-24.04711127).add(-24.34709935).add(-24.64274836)
-      .add(-24.93382229).add(-25.22128201).add(-25.50675096)
-      .add(-25.79316352).add(-26.08314406).add(-26.37502324)
-      .add(-26.67285567).add(-26.97731681).add(-27.28988644)
-      .add(-27.61177343).add(-27.94358215).add(-28.28364495)
-      .add(-28.63468373).add(-28.99755781).add(-29.37178139)
-      .add(-29.75787024).add(-30.15020629).add(-30.56011954)
-      .add(-30.97723567).add(-31.40367414).add(-31.83724948)
-      .add(-32.27248482).add(-32.46752425).array())
-      .add(stan::math::array_builder<double>().add(-1.91053305)
-      .add(-1.99789584).add(-2.20365198).add(-2.42239543).add(-2.65117997)
-      .add(-2.88882999).add(-3.13383075).add(-3.38197554).add(-3.63395238)
-      .add(-3.88891448).add(-4.1461686).add(-4.40561797).add(-4.66687684)
-      .add(-4.92935552).add(-5.19259347).add(-5.45639455).add(-5.72069949)
-      .add(-5.98586457).add(-6.25223522).add(-6.52047544).add(-6.79180169)
-      .add(-7.06486698).add(-7.33843701).add(-7.61291173).add(-7.88855803)
-      .add(-8.16512855).add(-8.44265756).add(-8.72121707).add(-9.00076654)
-      .add(-9.28111418).add(-9.56301972).add(-9.84665468).add(-10.13239603)
-      .add(-10.42051971).add(-10.71143126).add(-11.0054306).add(-11.3024628)
-      .add(-11.60288417).add(-11.90706214).add(-12.21475154)
-      .add(-12.52590497).add(-12.8400191).add(-13.15729076).add(-13.47745454)
-      .add(-13.80033958).add(-14.12603142).add(-14.4540948).add(-14.78401895)
-      .add(-15.11584372).add(-15.44962445).add(-15.78572314)
-      .add(-16.12448729).add(-16.46490635).add(-16.8068655).add(-17.1508133)
-      .add(-17.49695152).add(-17.8453521).add(-18.1958896).add(-18.54831499)
-      .add(-18.90257365).add(-19.25849457).add(-19.61566647)
-      .add(-19.97349371).add(-20.33162933).add(-20.68969133)
-      .add(-21.04629876).add(-21.3996074).add(-21.74953303).add(-22.09572858)
-      .add(-22.43610005).add(-22.7695685).add(-23.09620738).add(-23.41613429)
+      .add(-21.85161664).add(-22.18604678).add(-22.51569168)
+      .add(-22.83990603).add(-23.15930729).add(-23.47378092)
+      .add(-23.78328605).add(-24.0876442).add(-24.38805971).add(-24.68555497)
+      .add(-24.97971363).add(-25.27132723).add(-25.56177831)
+      .add(-25.85400512).add(-26.15065461).add(-26.4493654).add(-26.75431219)
+      .add(-27.06590602).add(-27.38549281).add(-27.71401957)
+      .add(-28.05202843).add(-28.39710013).add(-28.752145).add(-29.11768555)
+      .add(-29.49279487).add(-29.87787682).add(-30.2655646).add(-30.67097026)
+      .add(-31.08078075).add(-31.49806626).add(-31.91988742)
+      .add(-32.34055847).add(-32.52834982).array())
+      .add(stan::math::array_builder<double>().add(-1.95695625)
+      .add(-2.04622042).add(-2.25628573).add(-2.47914922).add(-2.71179535)
+      .add(-2.95374992).add(-3.20348308).add(-3.45385129).add(-3.70722702)
+      .add(-3.96311309).add(-4.22087758).add(-4.48077593).add(-4.74257656)
+      .add(-5.00573013).add(-5.2697855).add(-5.5346419).add(-5.80039311)
+      .add(-6.06749476).add(-6.33631205).add(-6.60760849).add(-6.8833877)
+      .add(-7.16086834).add(-7.43753467).add(-7.71436103).add(-7.99223202)
+      .add(-8.27090956).add(-8.55068429).add(-8.83186107).add(-9.11460792)
+      .add(-9.39891702).add(-9.68567817).add(-9.97510051).add(-10.26748595)
+      .add(-10.56299487).add(-10.86183409).add(-11.16404874)
+      .add(-11.46934455).add(-11.77785576).add(-12.08977383)
+      .add(-12.40467842).add(-12.72239336).add(-13.04234933)
+      .add(-13.36468482).add(-13.68913978).add(-14.01553582)
+      .add(-14.34394635).add(-14.67399671).add(-15.00519461)
+      .add(-15.33755449).add(-15.67121209).add(-16.00646381)
+      .add(-16.34366939).add(-16.68177922).add(-17.02066908)
+      .add(-17.36076075).add(-17.70219252).add(-18.04505015)
+      .add(-18.38912711).add(-18.73420364).add(-19.08049924)
+      .add(-19.42771044).add(-19.77524489).add(-20.12252361).add(-20.4695466)
+      .add(-20.81612731).add(-21.16085834).add(-21.50214954)
+      .add(-21.84062927).add(-22.1763165).add(-22.50704931).add(-22.83213538)
+      .add(-23.15212854).add(-23.46696969).add(-23.7766441).add(-24.08095194)
+      .add(-24.38109032).add(-24.67809016).add(-24.97156778)
+      .add(-25.26234491).add(-25.55184833).add(-25.8430133).add(-26.13847916)
+      .add(-26.43601286).add(-26.73976343).add(-27.05018961)
+      .add(-27.36865913).add(-27.6961662).add(-28.0332615).add(-28.37766064)
+      .add(-28.7322318).add(-29.09755296).add(-29.47277201).add(-29.8582941)
+      .add(-30.24705437).add(-30.65346006).add(-31.06470606)
+      .add(-31.48367741).add(-31.90753597).add(-32.33060277)
+      .add(-32.51954267).array()).add(stan::math::array_builder<double>()
+      .add(-1.94845527).add(-2.03747273).add(-2.2469925).add(-2.46935822)
+      .add(-2.70155028).add(-2.94293964).add(-3.19199106).add(-3.44216229)
+      .add(-3.69545584).add(-3.95129312).add(-4.20903364).add(-4.46887148)
+      .add(-4.73055586).add(-4.99354121).add(-5.25738837).add(-5.52199328)
+      .add(-5.78743726).add(-6.05417249).add(-6.32256513).add(-6.5933593)
+      .add(-6.86838314).add(-7.14513199).add(-7.42134007).add(-7.69784405)
+      .add(-7.97538398).add(-8.25371605).add(-8.53308111).add(-8.81374666)
+      .add(-9.0958535).add(-9.37937571).add(-9.66519758).add(-9.95353759)
+      .add(-10.24472413).add(-10.53894763).add(-10.83645386)
+      .add(-11.13733115).add(-11.4413223).add(-11.74859321).add(-12.05935731)
+      .add(-12.37321566).add(-12.69000456).add(-13.00915769)
+      .add(-13.33081829).add(-13.65472111).add(-13.98068656)
+      .add(-14.30879049).add(-14.63864754).add(-14.96976297)
+      .add(-15.30215865).add(-15.63595694).add(-15.97146942)
+      .add(-16.30905529).add(-16.64767314).add(-16.98720073)
+      .add(-17.32806453).add(-17.67041326).add(-18.01432772)
+      .add(-18.35961256).add(-18.70603813).add(-19.05376938)
+      .add(-19.40252217).add(-19.75172938).add(-20.10080069)
+      .add(-20.44966942).add(-20.79810941).add(-21.14470864)
+      .add(-21.48782649).add(-21.82797577).add(-22.16512911)
+      .add(-22.49715228).add(-22.82329903).add(-23.14405255)
+      .add(-23.45940562).add(-23.76936675).add(-24.07371521)
+      .add(-24.37364079).add(-24.67018318).add(-24.96299288)
+      .add(-25.25292346).add(-25.54144761).add(-25.83149852)
+      .add(-26.12570915).add(-26.42197908).add(-26.72443234)
+      .add(-27.03357756).add(-27.35080647).add(-27.67716289)
+      .add(-28.01320777).add(-28.35679867).add(-28.71076353)
+      .add(-29.07574132).add(-29.45096069).add(-29.83683719)
+      .add(-30.22662931).add(-30.6340134).add(-31.04672739).add(-31.46746656)
+      .add(-31.89351282).add(-32.31920489).add(-32.50942185).array())
+      .add(stan::math::array_builder<double>().add(-1.93954285)
+      .add(-2.02825771).add(-2.23710214).add(-2.45884012).add(-2.69045546)
+      .add(-2.93116949).add(-3.17944463).add(-3.42933476).add(-3.68248473)
+      .add(-3.9382373).add(-4.19594007).add(-4.45572018).add(-4.71730156)
+      .add(-4.98013701).add(-5.24379377).add(-5.50815858).add(-5.77329386)
+      .add(-6.03964317).add(-6.30757368).add(-6.57781177).add(-6.85201912)
+      .add(-7.12797283).add(-7.40365955).add(-7.67978685).add(-7.95695746)
+      .add(-8.23492148).add(-8.51386744).add(-8.79402004).add(-9.07548588)
+      .add(-9.35821295).add(-9.64307222).add(-9.93028573).add(-10.22020517)
+      .add(-10.51304987).add(-10.8091064).add(-11.10851061).add(-11.41104757)
+      .add(-11.71692043).add(-12.0263699).add(-12.33902368).add(-12.65473523)
+      .add(-12.97294465).add(-13.29380204).add(-13.61703795)
+      .add(-13.94247217).add(-14.27018262).add(-14.5997724).add(-14.93074367)
+      .add(-15.2631248).add(-15.59702371).add(-15.93276649).add(-16.27071122)
+      .add(-16.60982477).add(-16.94998704).add(-17.29162975)
+      .add(-17.63491326).add(-17.97991453).add(-18.32645172).add(-18.674287)
+      .add(-19.02353024).add(-19.37391959).add(-19.72491762).add(-20.0759254)
+      .add(-20.42680731).add(-20.77729677).add(-21.12598017)
+      .add(-21.47116492).add(-21.81323603).add(-22.15210856)
+      .add(-22.48567064).add(-22.81311328).add(-23.1348399).add(-23.4508899)
+      .add(-23.76129105).add(-24.0658018).add(-24.36560437).add(-24.66174729)
+      .add(-24.95391693).add(-25.24300054).add(-25.53051866)
+      .add(-25.81940347).add(-26.11228303).add(-26.40719453)
+      .add(-26.70823772).add(-27.01597371).add(-27.33182067)
+      .add(-27.65687458).add(-27.99170862).add(-28.33432998)
+      .add(-28.68752858).add(-29.05201029).add(-29.42709126)
+      .add(-29.81320783).add(-30.20396564).add(-30.61228409)
+      .add(-31.02648369).add(-31.44906698).add(-31.87745988)
+      .add(-32.30603498).add(-32.49767781).array())
+      .add(stan::math::array_builder<double>().add(-1.93017477)
+      .add(-2.01851835).add(-2.22652506).add(-2.44746813).add(-2.6783441)
+      .add(-2.91823196).add(-3.16559633).add(-3.41508183).add(-3.66799172)
+      .add(-3.9235959).add(-4.18122804).add(-4.44094325).add(-4.70243379)
+      .add(-4.96514444).add(-5.22864147).add(-5.49279416).add(-5.75763669)
+      .add(-6.02359593).add(-6.29103784).add(-6.56067113).add(-6.83400023)
+      .add(-7.10908955).add(-7.38418155).add(-7.65986572).add(-7.93661742)
+      .add(-8.21418224).add(-8.49269515).add(-8.77233306).add(-9.05316091)
+      .add(-9.33509129).add(-9.61897182).add(-9.90502011).add(-10.19360598)
+      .add(-10.48497477).add(-10.77945474).add(-11.0772335).add(-11.378144)
+      .add(-11.6824331).add(-11.99037534).add(-12.30163164).add(-12.61607902)
+      .add(-12.93316875).add(-13.25306095).add(-13.57548379)
+      .add(-13.90025754).add(-14.22746205).add(-14.5566881).add(-14.88743404)
+      .add(-15.2197336).add(-15.55367891).add(-15.88960963).add(-16.22788181)
+      .add(-16.56747045).add(-16.90825761).add(-17.25068065)
+      .add(-17.59491278).add(-17.94102822).add(-18.28886121)
+      .add(-18.63816773).add(-18.98900245).add(-19.34112931)
+      .add(-19.69404598).add(-20.04714878).add(-20.40023157)
+      .add(-20.75298734).add(-21.10400551).add(-21.45154086)
+      .add(-21.79583703).add(-22.13673812).add(-22.4721477).add(-22.80118276)
+      .add(-23.12415485).add(-23.44114236).add(-23.75218648)
+      .add(-24.05702445).add(-24.35683013).add(-24.65266071)
+      .add(-24.94424039).add(-25.23249205).add(-25.51898638)
+      .add(-25.80665586).add(-26.09812548).add(-26.39157577)
+      .add(-26.69108326).add(-26.99726445).add(-27.31156672)
+      .add(-27.63514102).add(-27.9685749).add(-28.31003354).add(-28.66227139)
+      .add(-29.02606766).add(-29.40083339).add(-29.78703775)
+      .add(-30.17865991).add(-30.58783675).add(-31.00351602)
+      .add(-31.42800712).add(-31.85891061).add(-32.2906568).add(-32.48389809)
+      .array()).add(stan::math::array_builder<double>().add(-1.92050298)
+      .add(-2.00840107).add(-2.21539255).add(-2.43535482).add(-2.66530706)
+      .add(-2.904195).add(-3.15049019).add(-3.39941719).add(-3.65195823)
+      .add(-3.90731834).add(-4.16481655).add(-4.42443259).add(-4.68582174)
+      .add(-4.94841469).add(-5.21176896).add(-5.47572714).add(-5.74028425)
+      .add(-6.00583983).add(-6.2727542).add(-6.54171669).add(-6.81408389)
+      .add(-7.08821248).add(-7.36260453).add(-7.63774579).add(-7.91399812)
+      .add(-8.19110658).add(-8.46915348).add(-8.74826396).add(-9.02845353)
+      .add(-9.30958847).add(-9.59248031).add(-9.87733104).add(-10.16452033)
+      .add(-10.45431377).add(-10.74708034).add(-11.04306289)
+      .add(-11.34214791).add(-11.64463316).add(-11.95083493)
+      .add(-12.26045578).add(-12.57340477).add(-12.88915108)
+      .add(-13.20786962).add(-13.52928921).add(-13.85323268)
+      .add(-14.17978213).add(-14.50851538).add(-14.83892637)
+      .add(-15.17105275).add(-15.50496923).add(-15.84102764)
+      .add(-16.17958069).add(-16.51961106).add(-16.86100271)
+      .add(-17.20419876).add(-17.54938632).add(-17.89663799)
+      .add(-18.24580679).add(-18.59664488).add(-18.94915192)
+      .add(-19.30312192).add(-19.65809414).add(-20.01346541)
+      .add(-20.36895861).add(-20.72422759).add(-21.07787157)
+      .add(-21.42809385).add(-21.77498183).add(-22.11829299)
+      .add(-22.45593754).add(-22.78694386).add(-23.11151544)
+      .add(-23.42975852).add(-23.74171888).add(-24.04711125)
+      .add(-24.34709934).add(-24.64274835).add(-24.93382227).add(-25.221282)
+      .add(-25.50675094).add(-25.79316351).add(-26.08314405)
+      .add(-26.37502322).add(-26.67285564).add(-26.97731679)
+      .add(-27.28988642).add(-27.6117734).add(-27.94358211).add(-28.28364492)
+      .add(-28.63468369).add(-28.99755777).add(-29.37178135).add(-29.7578702)
+      .add(-30.15020624).add(-30.56011949).add(-30.97723562).add(-31.4036741)
+      .add(-31.83724944).add(-32.27248478).add(-32.46752421).array())
+      .add(stan::math::array_builder<double>().add(-1.91053194)
+      .add(-1.99789466).add(-2.20365062).add(-2.42239385).add(-2.65117815)
+      .add(-2.8888279).add(-3.13382839).add(-3.38197292).add(-3.63394954)
+      .add(-3.88891146).add(-4.14616548).add(-4.40561481).add(-4.66687373)
+      .add(-4.92935251).add(-5.19259063).add(-5.45639192).add(-5.7206971)
+      .add(-5.98586245).add(-6.25223335).add(-6.52047381).add(-6.79180029)
+      .add(-7.06486579).add(-7.33843601).add(-7.6129109).add(-7.88855735)
+      .add(-8.16512799).add(-8.4426571).add(-8.72121669).add(-9.00076624)
+      .add(-9.28111393).add(-9.56301951).add(-9.8466545).add(-10.13239588)
+      .add(-10.42051957).add(-10.71143115).add(-11.00543049).add(-11.3024627)
+      .add(-11.60288407).add(-11.90706205).add(-12.21475146)
+      .add(-12.52590489).add(-12.84001902).add(-13.15729068)
+      .add(-13.47745447).add(-13.80033951).add(-14.12603135)
+      .add(-14.45409474).add(-14.78401889).add(-15.11584367).add(-15.4496244)
+      .add(-15.7857231).add(-16.12448725).add(-16.46490631).add(-16.80686545)
+      .add(-17.15081326).add(-17.49695149).add(-17.84535207)
+      .add(-18.19588957).add(-18.54831496).add(-18.90257362)
+      .add(-19.25849455).add(-19.61566645).add(-19.9734937).add(-20.33162931)
+      .add(-20.68969131).add(-21.04629875).add(-21.39960739)
+      .add(-21.74953302).add(-22.09572857).add(-22.43610004)
+      .add(-22.76956849).add(-23.09620737).add(-23.41613428)
       .add(-23.72938621).add(-24.03565203).add(-24.33608177)
-      .add(-24.63174684).add(-24.92245301).add(-25.20920178)
-      .add(-25.49367233).add(-25.77880312).add(-26.06722102)
-      .add(-26.35741514).add(-26.65342007).add(-26.95597456)
-      .add(-27.26659446).add(-27.58654974).add(-27.9164645).add(-28.25484823)
-      .add(-28.60439355).add(-28.96604703).add(-29.33943518)
-      .add(-29.72513595).add(-30.11796623).add(-30.52842718)
+      .add(-24.63174683).add(-24.922453).add(-25.20920177).add(-25.49367232)
+      .add(-25.77880311).add(-26.06722101).add(-26.35741513)
+      .add(-26.65342006).add(-26.95597455).add(-27.26659444)
+      .add(-27.58654972).add(-27.91646448).add(-28.25484821)
+      .add(-28.60439354).add(-28.96604702).add(-29.33943517)
+      .add(-29.72513594).add(-30.11796622).add(-30.52842717)
       .add(-30.94687981).add(-31.37526202).add(-31.81165309)
       .add(-32.25072017).add(-32.44778674).array())
-      .add(stan::math::array_builder<double>().add(-1.90038817)
-      .add(-1.98711234).add(-2.19137186).add(-2.40860206).add(-2.63590437)
-      .add(-2.87199678).add(-3.11538729).add(-3.36242512).add(-3.61353961)
-      .add(-3.86785223).add(-4.12466523).add(-4.38380936).add(-4.64485727)
-      .add(-4.9071946).add(-5.17033352).add(-5.4340248).add(-5.69813536)
-      .add(-5.96295539).add(-6.22879865).add(-6.49629075).add(-6.76651151)
-      .add(-7.03841083).add(-7.31102072).add(-7.58467682).add(-7.85957538)
-      .add(-8.13549009).add(-8.41241779).add(-8.69038097).add(-8.96927955)
-      .add(-9.2488525).add(-9.5297894).add(-9.81221194).add(-10.09647615)
-      .add(-10.38285194).add(-10.67177201).add(-10.96359144).add(-11.2583168)
-      .add(-11.5563701).add(-11.85818063).add(-12.16356851).add(-12.47254533)
-      .add(-12.78464893).add(-13.10010891).add(-13.41867411)
-      .add(-13.74018658).add(-14.06473831).add(-14.39188197)
-      .add(-14.72110248).add(-15.05244019).add(-15.38592875)
-      .add(-15.72193758).add(-16.06080623).add(-16.40152947)
-      .add(-16.74399228).add(-17.08864766).add(-17.43571221)
-      .add(-17.78525778).add(-18.13718306).add(-18.49124068)
-      .add(-18.84732292).add(-19.20529943).add(-19.5648175).add(-19.92529829)
-      .add(-20.28632844).add(-20.6474963).add(-21.00745544).add(-21.36432291)
-      .add(-21.71782833).add(-22.06750072).add(-22.41122925)
-      .add(-22.74780398).add(-23.0771385).add(-23.39933721).add(-23.71440737)
-      .add(-24.02200495).add(-24.32325921).add(-24.61924366)
-      .add(-24.90980732).add(-25.19599499).add(-25.47954519)
-      .add(-25.76340323).add(-26.05020276).add(-26.33860201)
-      .add(-26.63261819).add(-26.93305886).add(-27.24148031)
-      .add(-27.55921704).add(-27.88691628).add(-28.22327547)
-      .add(-28.57096166).add(-28.93101588).add(-29.30318687)
-      .add(-29.68813227).add(-30.08113892).add(-30.49186122)
-      .add(-30.91146014).add(-31.34170752).add(-31.78101284)
-      .add(-32.22426171).add(-32.42361198).array())
-      .add(stan::math::array_builder<double>().add(-1.89036356)
-      .add(-1.97634121).add(-2.17881787).add(-2.39419284).add(-2.61962702)
-      .add(-2.85374943).add(-3.09510167).add(-3.34057282).add(-3.59038004)
-      .add(-3.84364245).add(-4.09967379).add(-4.35824467).add(-4.6188927)
-      .add(-4.88098021).add(-5.14398652).add(-5.40759547).add(-5.67157767)
-      .add(-5.93612669).add(-6.20149772).add(-6.46825387).add(-6.73733331)
-      .add(-7.00797499).add(-7.27947494).add(-7.5521283).add(-7.82609103)
-      .add(-8.10117814).add(-8.37736835).add(-8.65464684).add(-8.93285752)
-      .add(-9.21166288).add(-9.49166289).add(-9.77290587).add(-10.05570123)
-      .add(-10.34028716).add(-10.62710505).add(-10.91655617)
-      .add(-11.20870612).add(-11.50404683).add(-11.80308012)
-      .add(-12.10570654).add(-12.41201714).add(-12.72161016)
-      .add(-13.03476442).add(-13.351257).add(-13.67095459).add(-13.99396194)
-      .add(-14.31982329).add(-14.64802149).add(-14.97859605)
-      .add(-15.31155656).add(-15.64727615).add(-15.9860827).add(-16.32697386)
-      .add(-16.66983201).add(-17.01511236).add(-17.36304545)
-      .add(-17.71370286).add(-18.06700937).add(-18.42272193)
-      .add(-18.78068146).add(-19.14080425).add(-19.50280654)
-      .add(-19.86613787).add(-20.23032503).add(-20.59493714)
-      .add(-20.95868342).add(-21.31965872).add(-21.67739588)
-      .add(-22.03128149).add(-22.3791751).add(-22.71970723).add(-23.05259166)
-      .add(-23.37788311).add(-23.69552598).add(-24.00512905)
-      .add(-24.30778689).add(-24.60456602).add(-24.89535825)
-      .add(-25.18125385).add(-25.46405456).add(-25.74671619)
-      .add(-26.03188525).add(-26.31840332).add(-26.61027424)
-      .add(-26.90838171).add(-27.21432772).add(-27.52951496)
-      .add(-27.85461792).add(-28.18853339).add(-28.53390691)
-      .add(-28.89188093).add(-29.26233684).add(-29.646031).add(-30.03875684)
-      .add(-30.44931139).add(-30.86972622).add(-31.30163245)
-      .add(-31.74385297).add(-32.19159874).add(-32.39350431).array())
-      .add(stan::math::array_builder<double>().add(-1.88095044)
-      .add(-1.96608819).add(-2.16650857).add(-2.37966505).add(-2.60278332)
-      .add(-2.83442007).add(-3.07316154).add(-3.31641521).add(-3.56424684)
-      .add(-3.81581621).add(-4.07047772).add(-4.32796845).add(-4.5878109)
-      .add(-4.84935848).add(-5.11206271).add(-5.37553318).add(-5.63942357)
-      .add(-5.90379404).add(-6.1688015).add(-6.43490576).add(-6.70288226)
-      .add(-6.97223303).add(-7.24250247).add(-7.51396604).add(-7.78677285)
-      .add(-8.06080587).add(-8.3360561).add(-8.61249725).add(-8.8899345)
-      .add(-9.16795767).add(-9.44706188).add(-9.72719764).add(-10.00859498)
-      .add(-10.29142242).add(-10.57609775).add(-10.8630463).add(-11.15237869)
-      .add(-11.44465275).add(-11.74044965).add(-12.03976519)
-      .add(-12.34279533).add(-12.649225).add(-12.95940655).add(-13.27316824)
-      .add(-13.59042171).add(-13.91129752).add(-14.23534037)
-      .add(-14.56203754).add(-14.89142815).add(-15.2234962).add(-15.55861399)
-      .add(-15.89709273).add(-16.23792944).add(-16.58099989)
-      .add(-16.92675731).add(-17.27544343).add(-17.62712783)
-      .add(-17.98176172).add(-18.33910837).add(-18.69895928)
-      .add(-19.06128291).add(-19.42587491).add(-19.79222672)
-      .add(-20.15981563).add(-20.52820736).add(-20.89619631)
-      .add(-21.26188319).add(-21.62460322).add(-21.98358853)
-      .add(-22.33666058).add(-22.68226013).add(-23.01985084).add(-23.349385)
-      .add(-23.67069197).add(-23.98330585).add(-24.28825906)
-      .add(-24.58659136).add(-24.87823136).add(-25.16431409)
-      .add(-25.44670769).add(-25.72838288).add(-26.01200776)
-      .add(-26.29662711).add(-26.58623778).add(-26.88180991).add(-27.1849976)
-      .add(-27.49727558).add(-27.81935069).add(-28.1503301).add(-28.49284224)
-      .add(-28.84813663).add(-29.21623733).add(-29.59801895)
-      .add(-29.98981614).add(-30.39957135).add(-30.8202581).add(-31.25340452)
-      .add(-31.69834846).add(-32.15077471).add(-32.35548231).array())
-      .add(stan::math::array_builder<double>().add(-1.87294026)
-      .add(-1.95720994).add(-2.15543203).add(-2.36610124).add(-2.58649389)
-      .add(-2.81509926).add(-3.05054891).add(-3.29073074).add(-3.53563237)
-      .add(-3.78451207).add(-4.03681292).add(-4.29228853).add(-4.55049175)
-      .add(-4.81080773).add(-5.07269028).add(-5.33569028).add(-5.59934242)
-      .add(-5.86354326).add(-6.1283047).add(-6.39392486).add(-6.66097138)
-      .add(-6.92914764).add(-7.19819898).add(-7.46838421).add(-7.73986942)
-      .add(-8.01262942).add(-8.28670576).add(-8.56210254).add(-8.83862532)
-      .add(-9.11581811).add(-9.39407225).add(-9.67322666).add(-9.95339929)
-      .add(-10.23464077).add(-10.51729574).add(-10.80177052)
-      .add(-11.08818525).add(-11.37714046).add(-11.66929018)
-      .add(-11.96473177).add(-12.26379252).add(-12.56627568).add(-12.8726403)
-      .add(-13.18280118).add(-13.49674892).add(-13.81466463)
-      .add(-14.13611316).add(-14.46060176).add(-14.78817483)
-      .add(-15.11879274).add(-15.45282268).add(-15.79055349)
-      .add(-16.13097716).add(-16.4739568).add(-16.81993659).add(-17.16916341)
-      .add(-17.52170031).add(-17.87752196).add(-18.23639776)
-      .add(-18.59807178).add(-18.96256722).add(-19.32976668)
-      .add(-19.69921624).add(-20.07035737).add(-20.44277397)
-      .add(-20.81538317).add(-21.18633402).add(-21.55478278)
-      .add(-21.91981294).add(-22.27921372).add(-22.63121616)
-      .add(-22.97498195).add(-23.31029258).add(-23.63678576).add(-23.9538722)
-      .add(-24.26247038).add(-24.5635518).add(-24.8570612).add(-25.14416823)
-      .add(-25.42680559).add(-25.70796233).add(-25.99034003)
-      .add(-26.27321407).add(-26.56058499).add(-26.85352404)
-      .add(-27.15374533).add(-27.46279925).add(-27.78143113)
-      .add(-28.10896581).add(-28.44801917).add(-28.79994997)
-      .add(-29.16493174).add(-29.54397412).add(-29.93397488).add(-30.3420521)
-      .add(-30.76217412).add(-31.19581725).add(-31.64294348)
-      .add(-32.09989817).add(-32.30752376).array())
-      .add(stan::math::array_builder<double>().add(-1.86732791)
-      .add(-1.95086077).add(-2.14712998).add(-2.35544588).add(-2.57308466)
-      .add(-2.79843899).add(-3.03014606).add(-3.26647681).add(-3.50739861)
-      .add(-3.75231817).add(-4.00082496).add(-4.25276639).add(-4.50780631)
-      .add(-4.76544343).add(-5.02521128).add(-5.28667275).add(-5.54930139)
-      .add(-5.81285333).add(-6.07718396).add(-6.3423872).add(-6.60877168)
-      .add(-6.87613085).add(-7.14430629).add(-7.41349563).add(-7.6838601)
-      .add(-7.95545141).add(-8.22837762).add(-8.50271118).add(-8.77831136)
-      .add(-9.0547321).add(-9.33229359).add(-9.61074377).add(-9.89008035)
-      .add(-10.1701999).add(-10.45132002).add(-10.7337667).add(-11.01760747)
-      .add(-11.30343112).add(-11.59192854).add(-11.88327827).add(-12.177949)
-      .add(-12.47588546).add(-12.77768558).add(-13.08339414)
-      .add(-13.39312743).add(-13.70715609).add(-14.02510121)
-      .add(-14.34652025).add(-14.67147954).add(-14.99992748)
-      .add(-15.33222583).add(-15.66863818).add(-16.00814822).add(-16.3505996)
-      .add(-16.69641766).add(-17.04584419).add(-17.39892754)
-      .add(-17.75565687).add(-18.11580336).add(-18.47906588)
-      .add(-18.84551673).add(-19.21512191).add(-19.58748602)
-      .add(-19.96202801).add(-20.33837221).add(-20.71559267)
-      .add(-21.09193563).add(-21.46642728).add(-21.83804179)
-      .add(-22.20456928).add(-22.56404967).add(-22.91532609).add(-23.2579513)
-      .add(-23.59128926).add(-23.91456237).add(-24.22849676)
-      .add(-24.53392269).add(-24.8307513).add(-25.12015302).add(-25.40410599)
-      .add(-25.68561285).add(-25.96741991).add(-26.24906072)
-      .add(-26.53455566).add(-26.82509429).add(-27.12245847)
-      .add(-27.42827536).add(-27.74333461).add(-28.06717082)
-      .add(-28.40239169).add(-28.75045779).add(-29.11168735)
-      .add(-29.48722929).add(-29.87452146).add(-30.27995113).add(-30.6984553)
-      .add(-31.13151577).add(-31.57978305).add(-32.04042431).add(-32.2507126)
-      .array()).add(stan::math::array_builder<double>().add(-1.86467552)
-      .add(-1.94781467).add(-2.14298594).add(-2.3498804).add(-2.56572041)
-      .add(-2.78876714).add(-3.01758192).add(-3.25060162).add(-3.48774992)
-      .add(-3.72852798).add(-3.97264566).add(-4.22006615).add(-4.47060524)
-      .add(-4.72393499).add(-4.97975111).add(-5.2377408).add(-5.49745681)
-      .add(-5.7586643).add(-6.02119478).add(-6.28505073).add(-6.55037335)
-      .add(-6.81698242).add(-7.08471945).add(-7.35366407).add(-7.62389056)
-      .add(-7.89541787).add(-8.16833318).add(-8.44271948).add(-8.71846608)
-      .add(-8.99514737).add(-9.27303369).add(-9.55182683).add(-9.83144073)
-      .add(-10.11164484).add(-10.39253128).add(-10.67432236)
-      .add(-10.95699752).add(-11.24108509).add(-11.52726296)
-      .add(-11.81574157).add(-12.10709339).add(-12.40138117)
-      .add(-12.69933035).add(-13.00112188).add(-13.307012).add(-13.61738081)
-      .add(-13.93193334).add(-14.25030198).add(-14.57259428).add(-14.8987681)
-      .add(-15.22918765).add(-15.56409966).add(-15.9024827).add(-16.24416147)
-      .add(-16.58953927).add(-16.93884462).add(-17.29210634)
-      .add(-17.64931493).add(-18.01023671).add(-18.37453505)
-      .add(-18.74231074).add(-19.11358432).add(-19.48799954)
-      .add(-19.86496037).add(-20.24413434).add(-20.62473534)
-      .add(-21.00511378).add(-21.3842376).add(-21.7610392).add(-22.13334892)
-      .add(-22.4990997).add(-22.85691087).add(-23.2061438).add(-23.54590849)
-      .add(-23.87523721).add(-24.19464095).add(-24.50476862)
-      .add(-24.80544583).add(-25.09779638).add(-25.38380116)
-      .add(-25.66645709).add(-25.94854769).add(-26.22982928)
-      .add(-26.51435172).add(-26.80341285).add(-27.0988543).add(-27.40236466)
-      .add(-27.71477303).add(-28.03576548).add(-28.36794557)
-      .add(-28.71284381).add(-29.07088234).add(-29.44331425)
-      .add(-29.82796098).add(-30.23072602).add(-30.64724198)
-      .add(-31.07902775).add(-31.52727671).add(-31.98986268)
-      .add(-32.20183164).array()).add(stan::math::array_builder<double>()
-      .add(-1.86467552).add(-1.94781467).add(-2.14298594).add(-2.3498804)
-      .add(-2.56572041).add(-2.78876714).add(-3.01758192).add(-3.25060162)
-      .add(-3.48774992).add(-3.72852798).add(-3.97264566).add(-4.22006615)
-      .add(-4.47060524).add(-4.72393499).add(-4.97975111).add(-5.2377408)
-      .add(-5.49745681).add(-5.7586643).add(-6.02119478).add(-6.28505073)
-      .add(-6.55037335).add(-6.81698242).add(-7.08471945).add(-7.35366407)
-      .add(-7.62389056).add(-7.89541787).add(-8.16833318).add(-8.44271948)
-      .add(-8.71846608).add(-8.99514737).add(-9.27303369).add(-9.55182683)
-      .add(-9.83144073).add(-10.11164484).add(-10.39253128).add(-10.67432236)
-      .add(-10.95699752).add(-11.24108509).add(-11.52726296)
-      .add(-11.81574157).add(-12.10709339).add(-12.40138117)
-      .add(-12.69933035).add(-13.00112188).add(-13.307012).add(-13.61738081)
-      .add(-13.93193334).add(-14.25030198).add(-14.57259428).add(-14.8987681)
-      .add(-15.22918765).add(-15.56409966).add(-15.9024827).add(-16.24416147)
-      .add(-16.58953927).add(-16.93884462).add(-17.29210634)
-      .add(-17.64931493).add(-18.01023671).add(-18.37453505)
-      .add(-18.74231074).add(-19.11358432).add(-19.48799954)
-      .add(-19.86496037).add(-20.24413434).add(-20.62473534)
-      .add(-21.00511378).add(-21.3842376).add(-21.7610392).add(-22.13334892)
-      .add(-22.4990997).add(-22.85691087).add(-23.2061438).add(-23.54590849)
-      .add(-23.87523721).add(-24.19464095).add(-24.50476862)
-      .add(-24.80544583).add(-25.09779638).add(-25.38380116)
-      .add(-25.66645709).add(-25.94854769).add(-26.22982928)
-      .add(-26.51435172).add(-26.80341285).add(-27.0988543).add(-27.40236466)
-      .add(-27.71477303).add(-28.03576548).add(-28.36794557)
-      .add(-28.71284381).add(-29.07088234).add(-29.44331425)
-      .add(-29.82796098).add(-30.23072602).add(-30.64724198)
-      .add(-31.07902775).add(-31.52727671).add(-31.98986268)
-      .add(-32.20183164).array()).add(stan::math::array_builder<double>()
-      .add(-1.86732791).add(-1.95086077).add(-2.14712998).add(-2.35544588)
-      .add(-2.57308466).add(-2.79843899).add(-3.03014606).add(-3.26647681)
-      .add(-3.50739861).add(-3.75231817).add(-4.00082496).add(-4.25276639)
-      .add(-4.50780631).add(-4.76544343).add(-5.02521128).add(-5.28667275)
-      .add(-5.54930139).add(-5.81285333).add(-6.07718396).add(-6.3423872)
-      .add(-6.60877168).add(-6.87613085).add(-7.14430629).add(-7.41349563)
-      .add(-7.6838601).add(-7.95545141).add(-8.22837762).add(-8.50271118)
-      .add(-8.77831136).add(-9.0547321).add(-9.33229359).add(-9.61074377)
-      .add(-9.89008035).add(-10.1701999).add(-10.45132002).add(-10.7337667)
-      .add(-11.01760747).add(-11.30343112).add(-11.59192854)
-      .add(-11.88327827).add(-12.177949).add(-12.47588546).add(-12.77768558)
-      .add(-13.08339414).add(-13.39312743).add(-13.70715609)
-      .add(-14.02510121).add(-14.34652025).add(-14.67147954)
-      .add(-14.99992748).add(-15.33222583).add(-15.66863818)
-      .add(-16.00814822).add(-16.3505996).add(-16.69641766).add(-17.04584419)
-      .add(-17.39892754).add(-17.75565687).add(-18.11580336)
-      .add(-18.47906588).add(-18.84551673).add(-19.21512191)
-      .add(-19.58748602).add(-19.96202801).add(-20.33837221)
-      .add(-20.71559267).add(-21.09193563).add(-21.46642728)
-      .add(-21.83804179).add(-22.20456928).add(-22.56404967)
-      .add(-22.91532609).add(-23.2579513).add(-23.59128926).add(-23.91456237)
-      .add(-24.22849676).add(-24.53392269).add(-24.8307513).add(-25.12015302)
-      .add(-25.40410599).add(-25.68561285).add(-25.96741991)
-      .add(-26.24906072).add(-26.53455566).add(-26.82509429)
-      .add(-27.12245847).add(-27.42827536).add(-27.74333461)
-      .add(-28.06717082).add(-28.40239169).add(-28.75045779)
-      .add(-29.11168735).add(-29.48722929).add(-29.87452146)
-      .add(-30.27995113).add(-30.6984553).add(-31.13151577).add(-31.57978305)
-      .add(-32.04042431).add(-32.2507126).array())
-      .add(stan::math::array_builder<double>().add(-1.87294026)
-      .add(-1.95720994).add(-2.15543203).add(-2.36610124).add(-2.58649389)
-      .add(-2.81509926).add(-3.05054891).add(-3.29073074).add(-3.53563237)
-      .add(-3.78451207).add(-4.03681292).add(-4.29228853).add(-4.55049175)
-      .add(-4.81080773).add(-5.07269028).add(-5.33569028).add(-5.59934242)
-      .add(-5.86354326).add(-6.1283047).add(-6.39392486).add(-6.66097138)
-      .add(-6.92914764).add(-7.19819898).add(-7.46838421).add(-7.73986942)
-      .add(-8.01262942).add(-8.28670576).add(-8.56210254).add(-8.83862532)
-      .add(-9.11581811).add(-9.39407225).add(-9.67322666).add(-9.95339929)
-      .add(-10.23464077).add(-10.51729574).add(-10.80177052)
-      .add(-11.08818525).add(-11.37714046).add(-11.66929018)
-      .add(-11.96473177).add(-12.26379252).add(-12.56627568).add(-12.8726403)
-      .add(-13.18280118).add(-13.49674892).add(-13.81466463)
-      .add(-14.13611316).add(-14.46060176).add(-14.78817483)
-      .add(-15.11879274).add(-15.45282268).add(-15.79055349)
-      .add(-16.13097716).add(-16.4739568).add(-16.81993659).add(-17.16916341)
-      .add(-17.52170031).add(-17.87752196).add(-18.23639776)
-      .add(-18.59807178).add(-18.96256722).add(-19.32976668)
-      .add(-19.69921624).add(-20.07035737).add(-20.44277397)
-      .add(-20.81538317).add(-21.18633402).add(-21.55478278)
-      .add(-21.91981294).add(-22.27921372).add(-22.63121616)
-      .add(-22.97498195).add(-23.31029258).add(-23.63678576).add(-23.9538722)
-      .add(-24.26247038).add(-24.5635518).add(-24.8570612).add(-25.14416823)
-      .add(-25.42680559).add(-25.70796233).add(-25.99034003)
-      .add(-26.27321407).add(-26.56058499).add(-26.85352404)
-      .add(-27.15374533).add(-27.46279925).add(-27.78143113)
-      .add(-28.10896581).add(-28.44801917).add(-28.79994997)
-      .add(-29.16493174).add(-29.54397412).add(-29.93397488).add(-30.3420521)
-      .add(-30.76217412).add(-31.19581725).add(-31.64294348)
-      .add(-32.09989817).add(-32.30752376).array())
-      .add(stan::math::array_builder<double>().add(-1.88095044)
-      .add(-1.96608819).add(-2.16650857).add(-2.37966505).add(-2.60278332)
-      .add(-2.83442007).add(-3.07316154).add(-3.31641521).add(-3.56424684)
-      .add(-3.81581621).add(-4.07047772).add(-4.32796845).add(-4.5878109)
-      .add(-4.84935848).add(-5.11206271).add(-5.37553318).add(-5.63942357)
-      .add(-5.90379404).add(-6.1688015).add(-6.43490576).add(-6.70288226)
-      .add(-6.97223303).add(-7.24250247).add(-7.51396604).add(-7.78677285)
-      .add(-8.06080587).add(-8.3360561).add(-8.61249725).add(-8.8899345)
-      .add(-9.16795767).add(-9.44706188).add(-9.72719764).add(-10.00859498)
-      .add(-10.29142242).add(-10.57609775).add(-10.8630463).add(-11.15237869)
-      .add(-11.44465275).add(-11.74044965).add(-12.03976519)
-      .add(-12.34279533).add(-12.649225).add(-12.95940655).add(-13.27316824)
-      .add(-13.59042171).add(-13.91129752).add(-14.23534037)
-      .add(-14.56203754).add(-14.89142815).add(-15.2234962).add(-15.55861399)
-      .add(-15.89709273).add(-16.23792944).add(-16.58099989)
-      .add(-16.92675731).add(-17.27544343).add(-17.62712783)
-      .add(-17.98176172).add(-18.33910837).add(-18.69895928)
-      .add(-19.06128291).add(-19.42587491).add(-19.79222672)
-      .add(-20.15981563).add(-20.52820736).add(-20.89619631)
-      .add(-21.26188319).add(-21.62460322).add(-21.98358853)
-      .add(-22.33666058).add(-22.68226013).add(-23.01985084).add(-23.349385)
-      .add(-23.67069197).add(-23.98330585).add(-24.28825906)
-      .add(-24.58659136).add(-24.87823136).add(-25.16431409)
-      .add(-25.44670769).add(-25.72838288).add(-26.01200776)
-      .add(-26.29662711).add(-26.58623778).add(-26.88180991).add(-27.1849976)
-      .add(-27.49727558).add(-27.81935069).add(-28.1503301).add(-28.49284224)
-      .add(-28.84813663).add(-29.21623733).add(-29.59801895)
-      .add(-29.98981614).add(-30.39957135).add(-30.8202581).add(-31.25340452)
-      .add(-31.69834846).add(-32.15077471).add(-32.35548231).array())
-      .add(stan::math::array_builder<double>().add(-1.89036356)
-      .add(-1.97634121).add(-2.17881787).add(-2.39419284).add(-2.61962702)
-      .add(-2.85374943).add(-3.09510167).add(-3.34057282).add(-3.59038004)
-      .add(-3.84364245).add(-4.09967379).add(-4.35824467).add(-4.6188927)
-      .add(-4.88098021).add(-5.14398652).add(-5.40759547).add(-5.67157767)
-      .add(-5.93612669).add(-6.20149772).add(-6.46825387).add(-6.73733331)
-      .add(-7.00797499).add(-7.27947494).add(-7.5521283).add(-7.82609103)
-      .add(-8.10117814).add(-8.37736835).add(-8.65464684).add(-8.93285752)
-      .add(-9.21166288).add(-9.49166289).add(-9.77290587).add(-10.05570123)
-      .add(-10.34028716).add(-10.62710505).add(-10.91655617)
-      .add(-11.20870612).add(-11.50404683).add(-11.80308012)
-      .add(-12.10570654).add(-12.41201714).add(-12.72161016)
-      .add(-13.03476442).add(-13.351257).add(-13.67095459).add(-13.99396194)
-      .add(-14.31982329).add(-14.64802149).add(-14.97859605)
-      .add(-15.31155656).add(-15.64727615).add(-15.9860827).add(-16.32697386)
-      .add(-16.66983201).add(-17.01511236).add(-17.36304545)
-      .add(-17.71370286).add(-18.06700937).add(-18.42272193)
-      .add(-18.78068146).add(-19.14080425).add(-19.50280654)
-      .add(-19.86613787).add(-20.23032503).add(-20.59493714)
-      .add(-20.95868342).add(-21.31965872).add(-21.67739588)
-      .add(-22.03128149).add(-22.3791751).add(-22.71970723).add(-23.05259166)
-      .add(-23.37788311).add(-23.69552598).add(-24.00512905)
-      .add(-24.30778689).add(-24.60456602).add(-24.89535825)
-      .add(-25.18125385).add(-25.46405456).add(-25.74671619)
-      .add(-26.03188525).add(-26.31840332).add(-26.61027424)
-      .add(-26.90838171).add(-27.21432772).add(-27.52951496)
-      .add(-27.85461792).add(-28.18853339).add(-28.53390691)
-      .add(-28.89188093).add(-29.26233684).add(-29.646031).add(-30.03875684)
-      .add(-30.44931139).add(-30.86972622).add(-31.30163245)
-      .add(-31.74385297).add(-32.19159874).add(-32.39350431).array())
-      .add(stan::math::array_builder<double>().add(-1.90038817)
-      .add(-1.98711234).add(-2.19137186).add(-2.40860206).add(-2.63590437)
-      .add(-2.87199678).add(-3.11538729).add(-3.36242512).add(-3.61353961)
-      .add(-3.86785223).add(-4.12466523).add(-4.38380936).add(-4.64485727)
-      .add(-4.9071946).add(-5.17033352).add(-5.4340248).add(-5.69813536)
-      .add(-5.96295539).add(-6.22879865).add(-6.49629075).add(-6.76651151)
-      .add(-7.03841083).add(-7.31102072).add(-7.58467682).add(-7.85957538)
-      .add(-8.13549009).add(-8.41241779).add(-8.69038097).add(-8.96927955)
-      .add(-9.2488525).add(-9.5297894).add(-9.81221194).add(-10.09647615)
-      .add(-10.38285194).add(-10.67177201).add(-10.96359144).add(-11.2583168)
-      .add(-11.5563701).add(-11.85818063).add(-12.16356851).add(-12.47254533)
-      .add(-12.78464893).add(-13.10010891).add(-13.41867411)
-      .add(-13.74018658).add(-14.06473831).add(-14.39188197)
-      .add(-14.72110248).add(-15.05244019).add(-15.38592875)
-      .add(-15.72193758).add(-16.06080623).add(-16.40152947)
-      .add(-16.74399228).add(-17.08864766).add(-17.43571221)
-      .add(-17.78525778).add(-18.13718306).add(-18.49124068)
-      .add(-18.84732292).add(-19.20529943).add(-19.5648175).add(-19.92529829)
-      .add(-20.28632844).add(-20.6474963).add(-21.00745544).add(-21.36432291)
-      .add(-21.71782833).add(-22.06750072).add(-22.41122925)
-      .add(-22.74780398).add(-23.0771385).add(-23.39933721).add(-23.71440737)
-      .add(-24.02200495).add(-24.32325921).add(-24.61924366)
-      .add(-24.90980732).add(-25.19599499).add(-25.47954519)
-      .add(-25.76340323).add(-26.05020276).add(-26.33860201)
-      .add(-26.63261819).add(-26.93305886).add(-27.24148031)
-      .add(-27.55921704).add(-27.88691628).add(-28.22327547)
-      .add(-28.57096166).add(-28.93101588).add(-29.30318687)
-      .add(-29.68813227).add(-30.08113892).add(-30.49186122)
-      .add(-30.91146014).add(-31.34170752).add(-31.78101284)
-      .add(-32.22426171).add(-32.42361198).array())
-      .add(stan::math::array_builder<double>().add(-1.91053305)
-      .add(-1.99789584).add(-2.20365198).add(-2.42239543).add(-2.65117997)
-      .add(-2.88882999).add(-3.13383075).add(-3.38197554).add(-3.63395238)
-      .add(-3.88891448).add(-4.1461686).add(-4.40561797).add(-4.66687684)
-      .add(-4.92935552).add(-5.19259347).add(-5.45639455).add(-5.72069949)
-      .add(-5.98586457).add(-6.25223522).add(-6.52047544).add(-6.79180169)
-      .add(-7.06486698).add(-7.33843701).add(-7.61291173).add(-7.88855803)
-      .add(-8.16512855).add(-8.44265756).add(-8.72121707).add(-9.00076654)
-      .add(-9.28111418).add(-9.56301972).add(-9.84665468).add(-10.13239603)
-      .add(-10.42051971).add(-10.71143126).add(-11.0054306).add(-11.3024628)
-      .add(-11.60288417).add(-11.90706214).add(-12.21475154)
-      .add(-12.52590497).add(-12.8400191).add(-13.15729076).add(-13.47745454)
-      .add(-13.80033958).add(-14.12603142).add(-14.4540948).add(-14.78401895)
-      .add(-15.11584372).add(-15.44962445).add(-15.78572314)
-      .add(-16.12448729).add(-16.46490635).add(-16.8068655).add(-17.1508133)
-      .add(-17.49695152).add(-17.8453521).add(-18.1958896).add(-18.54831499)
-      .add(-18.90257365).add(-19.25849457).add(-19.61566647)
-      .add(-19.97349371).add(-20.33162933).add(-20.68969133)
-      .add(-21.04629876).add(-21.3996074).add(-21.74953303).add(-22.09572858)
-      .add(-22.43610005).add(-22.7695685).add(-23.09620738).add(-23.41613429)
-      .add(-23.72938621).add(-24.03565203).add(-24.33608177)
-      .add(-24.63174684).add(-24.92245301).add(-25.20920178)
-      .add(-25.49367233).add(-25.77880312).add(-26.06722102)
-      .add(-26.35741514).add(-26.65342007).add(-26.95597456)
-      .add(-27.26659446).add(-27.58654974).add(-27.9164645).add(-28.25484823)
-      .add(-28.60439355).add(-28.96604703).add(-29.33943518)
-      .add(-29.72513595).add(-30.11796623).add(-30.52842718)
-      .add(-30.94687981).add(-31.37526202).add(-31.81165309)
-      .add(-32.25072017).add(-32.44778674).array())
-      .add(stan::math::array_builder<double>().add(-1.92050533)
-      .add(-2.00840356).add(-2.2153954).add(-2.4353581).add(-2.66531081)
-      .add(-2.90419925).add(-3.15049496).add(-3.39942243).add(-3.65196386)
-      .add(-3.90732425).add(-4.16482262).add(-4.42443866).add(-4.6858277)
-      .add(-4.9484204).add(-5.2117743).add(-5.47573205).add(-5.74028868)
-      .add(-6.00584375).add(-6.27275762).add(-6.54171964).add(-6.81408642)
-      .add(-7.08821461).add(-7.36260631).add(-7.63774726).add(-7.91399931)
-      .add(-8.19110755).add(-8.46915426).add(-8.74826458).add(-9.02845403)
-      .add(-9.30958887).add(-9.59248063).add(-9.8773313).add(-10.16452055)
-      .add(-10.45431395).add(-10.74708049).add(-11.04306302)
-      .add(-11.34214803).add(-11.64463328).add(-11.95083504)
-      .add(-12.26045588).add(-12.57340487).add(-12.88915118)
-      .add(-13.20786972).add(-13.52928931).add(-13.85323278)
-      .add(-14.17978223).add(-14.50851547).add(-14.83892647)
-      .add(-15.17105285).add(-15.50496933).add(-15.84102773)
-      .add(-16.17958079).add(-16.51961115).add(-16.8610028).add(-17.20419885)
-      .add(-17.54938641).add(-17.89663808).add(-18.24580688)
-      .add(-18.59664496).add(-18.949152).add(-19.30312199).add(-19.65809421)
-      .add(-20.01346548).add(-20.36895867).add(-20.72422765)
-      .add(-21.07787163).add(-21.4280939).add(-21.77498188).add(-22.11829303)
-      .add(-22.45593758).add(-22.7869439).add(-23.11151547).add(-23.42975855)
-      .add(-23.7417189).add(-24.04711127).add(-24.34709935).add(-24.64274836)
-      .add(-24.93382229).add(-25.22128201).add(-25.50675096)
-      .add(-25.79316352).add(-26.08314406).add(-26.37502324)
-      .add(-26.67285567).add(-26.97731681).add(-27.28988644)
-      .add(-27.61177343).add(-27.94358215).add(-28.28364495)
-      .add(-28.63468373).add(-28.99755781).add(-29.37178139)
-      .add(-29.75787024).add(-30.15020629).add(-30.56011954)
-      .add(-30.97723567).add(-31.40367414).add(-31.83724948)
-      .add(-32.27248482).add(-32.46752425).array())
-      .add(stan::math::array_builder<double>().add(-1.93020667)
-      .add(-2.01855192).add(-2.22656293).add(-2.44751091).add(-2.67839215)
-      .add(-2.91828551).add(-3.16565534).add(-3.41514535).add(-3.66805868)
-      .add(-3.92366488).add(-4.18129743).add(-4.44101151).add(-4.70249948)
-      .add(-4.96520631).add(-5.22869852).add(-5.49284574).add(-5.75768251)
-      .add(-6.02363599).add(-6.29107239).add(-6.56070058).add(-6.83402513)
-      .add(-7.10911034).add(-7.38419865).add(-7.65987958).add(-7.93662855)
-      .add(-8.21419107).add(-8.4927021).add(-8.77233849).add(-9.05316512)
-      .add(-9.33509453).add(-9.61897431).add(-9.90502201).add(-10.19360743)
-      .add(-10.48497587).add(-10.77945558).add(-11.07723414)
-      .add(-11.37814448).add(-11.68243346).add(-11.99037561)
-      .add(-12.30163184).add(-12.61607917).add(-12.93316885)
-      .add(-13.25306102).add(-13.57548384).add(-13.90025757)
-      .add(-14.22746206).add(-14.55668809).add(-14.88743403)
-      .add(-15.21973358).add(-15.55367888).add(-15.8896096).add(-16.22788178)
-      .add(-16.56747041).add(-16.90825758).add(-17.25068061)
-      .add(-17.59491275).add(-17.94102819).add(-18.28886118).add(-18.6381677)
-      .add(-18.98900242).add(-19.34112928).add(-19.69404596)
-      .add(-20.04714876).add(-20.40023155).add(-20.75298733)
-      .add(-21.10400549).add(-21.45154085).add(-21.79583702)
-      .add(-22.13673811).add(-22.47214769).add(-22.80118275)
-      .add(-23.12415484).add(-23.44114235).add(-23.75218647)
-      .add(-24.05702444).add(-24.35683012).add(-24.6526607).add(-24.94424038)
-      .add(-25.23249204).add(-25.51898637).add(-25.80665585)
-      .add(-26.09812547).add(-26.39157576).add(-26.69108325)
-      .add(-26.99726444).add(-27.31156671).add(-27.63514101)
-      .add(-27.96857488).add(-28.31003352).add(-28.66227137)
-      .add(-29.02606765).add(-29.40083337).add(-29.78703773)
-      .add(-30.17865989).add(-30.58783673).add(-31.003516).add(-31.42800711)
-      .add(-31.85891059).add(-32.29065679).add(-32.48389808).array())
-      .add(stan::math::array_builder<double>().add(-1.93952015)
-      .add(-2.02823397).add(-2.2370758).add(-2.4588109).add(-2.69042327)
-      .add(-2.9311343).add(-3.17940659).add(-3.42929461).add(-3.68244321)
-      .add(-3.93819533).add(-4.19589861).add(-4.4556801).add(-4.71726361)
-      .add(-4.98010181).add(-5.24376176).add(-5.50813).add(-5.77326876)
-      .add(-6.03962144).add(-6.30755511).add(-6.57779606).add(-6.85200592)
-      .add(-7.12796186).add(-7.40365057).add(-7.6797796).add(-7.95695166)
-      .add(-8.23491687).add(-8.51386381).add(-8.79401719).add(-9.07548365)
-      .add(-9.35821121).add(-9.64307086).add(-9.93028466).add(-10.22020433)
-      .add(-10.5130492).add(-10.80910586).add(-11.10851018).add(-11.41104722)
-      .add(-11.71692014).add(-12.02636966).add(-12.33902348)
-      .add(-12.65473506).add(-12.97294451).add(-13.29380191)
-      .add(-13.61703784).add(-13.94247208).add(-14.27018253)
-      .add(-14.59977232).add(-14.9307436).add(-15.26312474).add(-15.59702365)
-      .add(-15.93276644).add(-16.27071117).add(-16.60982472)
-      .add(-16.94998699).add(-17.2916297).add(-17.63491322).add(-17.97991449)
-      .add(-18.32645169).add(-18.67428696).add(-19.02353021)
-      .add(-19.37391956).add(-19.72491759).add(-20.07592538)
-      .add(-20.42680728).add(-20.77729674).add(-21.12598015).add(-21.4711649)
-      .add(-21.81323602).add(-22.15210855).add(-22.48567062)
-      .add(-22.81311327).add(-23.1348399).add(-23.45088989).add(-23.76129105)
-      .add(-24.06580179).add(-24.36560437).add(-24.66174728)
-      .add(-24.95391693).add(-25.24300053).add(-25.53051865)
-      .add(-25.81940347).add(-26.11228302).add(-26.40719452)
-      .add(-26.70823772).add(-27.0159737).add(-27.33182066).add(-27.65687457)
-      .add(-27.99170862).add(-28.33432997).add(-28.68752857)
-      .add(-29.05201028).add(-29.42709125).add(-29.81320782)
-      .add(-30.20396563).add(-30.61228408).add(-31.02648368)
-      .add(-31.44906697).add(-31.87745987).add(-32.30603497).add(-32.4976778)
-      .array()).add(stan::math::array_builder<double>().add(-1.94847635)
-      .add(-2.03749466).add(-2.24701656).add(-2.46938459).add(-2.70157896)
-      .add(-2.94297058).add(-3.19202408).add(-3.44219668).add(-3.69549096)
-      .add(-3.9513282).add(-4.2090679).add(-4.46890424).add(-4.73058657)
-      .add(-4.99356944).add(-5.25741383).add(-5.52201584).add(-5.78745695)
-      .add(-6.05418944).add(-6.32257955).add(-6.59337145).add(-6.86839332)
-      .add(-7.14514043).add(-7.42134696).add(-7.69784962).add(-7.97538845)
-      .add(-8.2537196).add(-8.53308393).add(-8.81374888).add(-9.09585526)
-      .add(-9.37937709).add(-9.66519867).add(-9.95353846).add(-10.24472482)
-      .add(-10.53894818).add(-10.83645431).add(-11.13733152).add(-11.4413226)
-      .add(-11.74859345).add(-12.0593575).add(-12.37321583).add(-12.6900047)
-      .add(-13.0091578).add(-13.33081838).add(-13.65472118).add(-13.98068662)
-      .add(-14.30879053).add(-14.63864757).add(-14.96976299)
-      .add(-15.30215867).add(-15.63595696).add(-15.97146943).add(-16.3090553)
-      .add(-16.64767315).add(-16.98720074).add(-17.32806453)
+      .add(stan::math::array_builder<double>().add(-1.90037906)
+      .add(-1.98710252).add(-2.19136019).add(-2.40858812).add(-2.63588773)
+      .add(-2.87197707).add(-3.11536417).add(-3.36239856).add(-3.61350968)
+      .add(-3.86781924).add(-4.12462973).add(-4.38377206).add(-4.64481903)
+      .add(-4.90715635).add(-5.17029619).add(-5.43398921).add(-5.69810218)
+      .add(-5.96292506).add(-6.22877142).add(-6.49626669).add(-6.76649052)
+      .add(-7.03839278).add(-7.31100545).add(-7.58466408).add(-7.85956488)
+      .add(-8.13548154).add(-8.4124109).add(-8.69037548).add(-8.96927522)
+      .add(-9.2488491).add(-9.52978676).add(-9.8122099).add(-10.09647457)
+      .add(-10.38285073).add(-10.67177108).add(-10.96359073)
+      .add(-11.25831626).add(-11.55636968).add(-11.85818031)
+      .add(-12.16356826).add(-12.47254513).add(-12.78464878)
+      .add(-13.10010879).add(-13.41867401).add(-13.74018651)
+      .add(-14.06473824).add(-14.39188192).add(-14.72110244)
+      .add(-15.05244015).add(-15.38592872).add(-15.72193755)
+      .add(-16.06080621).add(-16.40152945).add(-16.74399226)
+      .add(-17.08864764).add(-17.43571219).add(-17.78525776)
+      .add(-18.13718305).add(-18.49124067).add(-18.84732291)
+      .add(-19.20529941).add(-19.56481748).add(-19.92529827)
+      .add(-20.28632842).add(-20.64749628).add(-21.00745542)
+      .add(-21.36432289).add(-21.71782831).add(-22.0675007).add(-22.41122923)
+      .add(-22.74780397).add(-23.07713848).add(-23.3993372).add(-23.71440736)
+      .add(-24.02200494).add(-24.3232592).add(-24.61924365).add(-24.90980731)
+      .add(-25.19599499).add(-25.47954519).add(-25.76340323)
+      .add(-26.05020276).add(-26.33860201).add(-26.63261819)
+      .add(-26.93305886).add(-27.24148032).add(-27.55921704)
+      .add(-27.88691629).add(-28.22327548).add(-28.57096167)
+      .add(-28.93101589).add(-29.30318688).add(-29.68813227)
+      .add(-30.08113893).add(-30.49186122).add(-30.91146014)
+      .add(-31.34170751).add(-31.78101283).add(-32.22426171)
+      .add(-32.42361197).array()).add(stan::math::array_builder<double>()
+      .add(-1.89035838).add(-1.97633559).add(-2.17881109).add(-2.39418459)
+      .add(-2.61961702).add(-2.85373734).add(-3.09508721).add(-3.34055584)
+      .add(-3.59036046).add(-3.84362035).add(-4.09964941).add(-4.35821842)
+      .add(-4.61886513).add(-4.88095197).add(-5.14395833).add(-5.40756801)
+      .add(-5.67155154).add(-5.93610235).add(-6.2014755).add(-6.46823395)
+      .add(-6.73731569).add(-7.00795965).add(-7.2794618).add(-7.55211722)
+      .add(-7.82608179).add(-8.10117054).add(-8.37736217).add(-8.65464187)
+      .add(-8.93285356).add(-9.21165975).add(-9.49166044).add(-9.77290396)
+      .add(-10.05569974).add(-10.34028601).add(-10.62710416)
+      .add(-10.91655548).add(-11.20870558).add(-11.50404641)
+      .add(-11.80307978).add(-12.10570627).add(-12.41201691)
+      .add(-12.72160998).add(-13.03476426).add(-13.35125687)
+      .add(-13.67095446).add(-13.99396183).add(-14.31982319).add(-14.6480214)
+      .add(-14.97859597).add(-15.31155648).add(-15.64727607)
+      .add(-15.98608262).add(-16.32697379).add(-16.66983194)
+      .add(-17.01511228).add(-17.36304537).add(-17.71370279)
+      .add(-18.06700929).add(-18.42272187).add(-18.7806814).add(-19.14080419)
+      .add(-19.50280647).add(-19.86613781).add(-20.23032497)
+      .add(-20.59493708).add(-20.95868337).add(-21.31965867)
+      .add(-21.67739583).add(-22.03128144).add(-22.37917506)
+      .add(-22.71970719).add(-23.05259162).add(-23.37788308)
+      .add(-23.69552595).add(-24.00512902).add(-24.30778687).add(-24.604566)
+      .add(-24.89535824).add(-25.18125384).add(-25.46405455)
+      .add(-25.74671618).add(-26.03188524).add(-26.31840331)
+      .add(-26.61027422).add(-26.90838169).add(-27.2143277).add(-27.52951494)
+      .add(-27.8546179).add(-28.18853336).add(-28.53390689).add(-28.89188091)
+      .add(-29.26233681).add(-29.64603097).add(-30.03875681)
+      .add(-30.44931135).add(-30.86972618).add(-31.30163242)
+      .add(-31.74385294).add(-32.19159871).add(-32.39350428).array())
+      .add(stan::math::array_builder<double>().add(-1.88094832)
+      .add(-1.96608587).add(-2.16650572).add(-2.3796615).add(-2.60277891)
+      .add(-2.8344146).add(-3.0731548).add(-3.31640704).add(-3.5642371)
+      .add(-3.81580482).add(-4.07046469).add(-4.32795388).add(-4.58779501)
+      .add(-4.8493416).add(-5.11204522).add(-5.37551554).add(-5.63940622)
+      .add(-5.90377737).add(-6.16878585).add(-6.43489136).add(-6.70286923)
+      .add(-6.97222146).add(-7.24249237).add(-7.51395736).add(-7.7867655)
+      .add(-8.06079972).add(-8.33605103).add(-8.61249312).add(-8.88993117)
+      .add(-9.16795501).add(-9.44705979).add(-9.727196).add(-10.00859371)
+      .add(-10.29142143).add(-10.57609699).add(-10.86304571)
+      .add(-11.15237824).add(-11.4446524).add(-11.74044939).add(-12.03976498)
+      .add(-12.34279517).add(-12.64922487).add(-12.95940645)
+      .add(-13.27316816).add(-13.59042164).add(-13.91129746)
+      .add(-14.23534031).add(-14.56203748).add(-14.8914281).add(-15.22349615)
+      .add(-15.55861394).add(-15.89709268).add(-16.23792939)
+      .add(-16.58099983).add(-16.92675725).add(-17.27544337)
+      .add(-17.62712777).add(-17.98176166).add(-18.3391083).add(-18.69895922)
+      .add(-19.06128285).add(-19.42587485).add(-19.79222666)
+      .add(-20.15981557).add(-20.5282073).add(-20.89619625).add(-21.26188314)
+      .add(-21.62460317).add(-21.98358848).add(-22.33666053)
+      .add(-22.68226009).add(-23.0198508).add(-23.34938497).add(-23.67069194)
+      .add(-23.98330582).add(-24.28825904).add(-24.58659134)
+      .add(-24.87823134).add(-25.16431407).add(-25.44670768)
+      .add(-25.72838288).add(-26.01200776).add(-26.29662711)
+      .add(-26.58623777).add(-26.8818099).add(-27.1849976).add(-27.49727558)
+      .add(-27.81935069).add(-28.15033009).add(-28.49284223)
+      .add(-28.84813663).add(-29.21623732).add(-29.59801894)
+      .add(-29.98981613).add(-30.39957134).add(-30.82025809).add(-31.2534045)
+      .add(-31.69834844).add(-32.15077468).add(-32.35548229).array())
+      .add(stan::math::array_builder<double>().add(-1.87293958)
+      .add(-1.95720919).add(-2.15543109).add(-2.36610006).add(-2.58649239)
+      .add(-2.81509736).add(-3.0505465).add(-3.29072772).add(-3.53562864)
+      .add(-3.78450752).add(-4.03680748).add(-4.29228217).add(-4.55048448)
+      .add(-4.81079963).add(-5.07268148).add(-5.335681).add(-5.59933287)
+      .add(-5.8635337).add(-6.12829538).add(-6.39391597).add(-6.6609631)
+      .add(-6.92914008).add(-7.19819222).add(-7.46837828).add(-7.73986432)
+      .add(-8.0126251).add(-8.28670217).add(-8.56209959).add(-8.83862295)
+      .add(-9.11581623).add(-9.39407079).add(-9.67322555).add(-9.95339846)
+      .add(-10.23464017).add(-10.51729532).add(-10.80177025).add(-11.0881851)
+      .add(-11.37714041).add(-11.66929021).add(-11.96473187)
+      .add(-12.26379268).add(-12.56627589).add(-12.87264055)
+      .add(-13.18280147).add(-13.49674924).add(-13.81466497)
+      .add(-14.13611353).add(-14.46060215).add(-14.78817522)
+      .add(-15.11879315).add(-15.4528231).add(-15.79055392).add(-16.13097759)
+      .add(-16.47395724).add(-16.81993703).add(-17.16916386)
+      .add(-17.52170076).add(-17.87752241).add(-18.2363982).add(-18.59807222)
+      .add(-18.96256765).add(-19.32976711).add(-19.69921666)
+      .add(-20.07035778).add(-20.44277437).add(-20.81538355)
+      .add(-21.18633438).add(-21.55478312).add(-21.91981325).add(-22.279214)
+      .add(-22.6312164).add(-22.97498217).add(-23.31029276).add(-23.63678591)
+      .add(-23.95387232).add(-24.26247048).add(-24.56355188)
+      .add(-24.85706128).add(-25.1441683).add(-25.42680565).add(-25.70796239)
+      .add(-25.99034009).add(-26.27321414).add(-26.56058507)
+      .add(-26.85352413).add(-27.15374543).add(-27.46279937)
+      .add(-27.78143125).add(-28.10896595).add(-28.44801933)
+      .add(-28.79995014).add(-29.16493193).add(-29.54397433)
+      .add(-29.93397511).add(-30.34205234).add(-30.76217437).add(-31.1958175)
+      .add(-31.64294374).add(-32.09989842).add(-32.30752399).array())
+      .add(stan::math::array_builder<double>().add(-1.86732812)
+      .add(-1.950861).add(-2.14713027).add(-2.35544627).add(-2.57308518)
+      .add(-2.79843968).add(-3.03014696).add(-3.26647799).add(-3.50740015)
+      .add(-3.75232014).add(-4.00082744).add(-4.25276945).add(-4.50781004)
+      .add(-4.76544786).add(-5.02521641).add(-5.28667855).add(-5.54930776)
+      .add(-5.81286013).add(-6.07719102).add(-6.34239433).add(-6.60877868)
+      .add(-6.87613755).add(-7.14431255).add(-7.41350134).add(-7.68386519)
+      .add(-7.95545587).add(-8.22838145).add(-8.50271442).add(-8.77831405)
+      .add(-9.05473431).add(-9.33229538).add(-9.6107452).add(-9.89008147)
+      .add(-10.17020077).add(-10.45132069).add(-10.73376722)
+      .add(-11.01760787).add(-11.30343143).add(-11.59192877)
+      .add(-11.88327845).add(-12.17794915).add(-12.47588558)
+      .add(-12.77768567).add(-13.08339422).add(-13.39312749)
+      .add(-13.70715614).add(-14.02510126).add(-14.3465203).add(-14.67147958)
+      .add(-14.99992752).add(-15.33222588).add(-15.66863823)
+      .add(-16.00814827).add(-16.35059965).add(-16.69641772)
+      .add(-17.04584425).add(-17.3989276).add(-17.75565693).add(-18.11580342)
+      .add(-18.47906595).add(-18.84551681).add(-19.21512198).add(-19.5874861)
+      .add(-19.96202809).add(-20.33837228).add(-20.71559274)
+      .add(-21.09193569).add(-21.46642734).add(-21.83804185)
+      .add(-22.20456934).add(-22.56404971).add(-22.91532612)
+      .add(-23.25795133).add(-23.59128928).add(-23.91456239)
+      .add(-24.22849677).add(-24.5339227).add(-24.83075131).add(-25.12015303)
+      .add(-25.404106).add(-25.68561286).add(-25.96741991).add(-26.24906072)
+      .add(-26.53455566).add(-26.8250943).add(-27.12245847).add(-27.42827537)
+      .add(-27.74333462).add(-28.06717083).add(-28.4023917).add(-28.7504578)
+      .add(-29.11168737).add(-29.48722932).add(-29.87452149)
+      .add(-30.27995116).add(-30.69845534).add(-31.13151581)
+      .add(-31.57978309).add(-32.04042436).add(-32.25071264).array())
+      .add(stan::math::array_builder<double>().add(-1.86467483)
+      .add(-1.94781389).add(-2.14298489).add(-2.34987897).add(-2.56571843)
+      .add(-2.78876437).add(-3.01757804).add(-3.2505962).add(-3.48774239)
+      .add(-3.7285176).add(-3.9726315).add(-4.220047).add(-4.47057964)
+      .add(-4.72390117).add(-4.97970704).add(-5.23768429).add(-5.49738568)
+      .add(-5.7585766).add(-6.02108907).add(-6.28492635).add(-6.55023066)
+      .add(-6.81682303).add(-7.08454627).add(-7.3534811).add(-7.62370253)
+      .add(-7.89522983).add(-8.16815011).add(-8.44254585).add(-8.71830552)
+      .add(-8.99500246).add(-9.27290579).add(-9.55171635).add(-9.83134718)
+      .add(-10.11156705).add(-10.39246763).add(-10.67427098)
+      .add(-10.95695651).add(-11.2410526).add(-11.52723733).add(-11.81572138)
+      .add(-12.10707742).add(-12.40136846).add(-12.69932012)
+      .add(-13.00111352).add(-13.30700505).add(-13.61737491)
+      .add(-13.93192822).add(-14.25029745).add(-14.5725902).add(-14.89876436)
+      .add(-15.22918417).add(-15.56409637).add(-15.90247956)
+      .add(-16.24415845).add(-16.58953635).add(-16.93884178)
+      .add(-17.29210356).add(-17.64931222).add(-18.01023405)
+      .add(-18.37453243).add(-18.74230817).add(-19.1135818).add(-19.48799706)
+      .add(-19.86495794).add(-20.24413197).add(-20.62473303)
+      .add(-21.00511155).add(-21.38423545).add(-21.76103716)
+      .add(-22.13334699).add(-22.49909791).add(-22.85690923)
+      .add(-23.20614233).add(-23.54590718).add(-23.87523608)
+      .add(-24.19463998).add(-24.50476779).add(-24.80544513)
+      .add(-25.09779579).add(-25.38380065).add(-25.66645664)
+      .add(-25.94854727).add(-26.22982888).add(-26.51435133)
+      .add(-26.80341245).add(-27.09885387).add(-27.4023642).add(-27.71477253)
+      .add(-28.03576492).add(-28.36794495).add(-28.71284313)
+      .add(-29.07088159).add(-29.44331342).add(-29.82796009)
+      .add(-30.23072506).add(-30.64724095).add(-31.07902667)
+      .add(-31.52727559).add(-31.98986156).add(-32.20183053).array())
+      .add(stan::math::array_builder<double>().add(-1.86467483)
+      .add(-1.94781389).add(-2.14298489).add(-2.34987897).add(-2.56571843)
+      .add(-2.78876437).add(-3.01757804).add(-3.2505962).add(-3.48774239)
+      .add(-3.7285176).add(-3.9726315).add(-4.220047).add(-4.47057964)
+      .add(-4.72390117).add(-4.97970704).add(-5.23768429).add(-5.49738568)
+      .add(-5.7585766).add(-6.02108907).add(-6.28492635).add(-6.55023066)
+      .add(-6.81682303).add(-7.08454627).add(-7.3534811).add(-7.62370253)
+      .add(-7.89522983).add(-8.16815011).add(-8.44254585).add(-8.71830552)
+      .add(-8.99500246).add(-9.27290579).add(-9.55171635).add(-9.83134718)
+      .add(-10.11156705).add(-10.39246763).add(-10.67427098)
+      .add(-10.95695651).add(-11.2410526).add(-11.52723733).add(-11.81572138)
+      .add(-12.10707742).add(-12.40136846).add(-12.69932012)
+      .add(-13.00111352).add(-13.30700505).add(-13.61737491)
+      .add(-13.93192822).add(-14.25029745).add(-14.5725902).add(-14.89876436)
+      .add(-15.22918417).add(-15.56409637).add(-15.90247956)
+      .add(-16.24415845).add(-16.58953635).add(-16.93884178)
+      .add(-17.29210356).add(-17.64931222).add(-18.01023405)
+      .add(-18.37453243).add(-18.74230817).add(-19.1135818).add(-19.48799706)
+      .add(-19.86495794).add(-20.24413197).add(-20.62473303)
+      .add(-21.00511155).add(-21.38423545).add(-21.76103716)
+      .add(-22.13334699).add(-22.49909791).add(-22.85690923)
+      .add(-23.20614233).add(-23.54590718).add(-23.87523608)
+      .add(-24.19463998).add(-24.50476779).add(-24.80544513)
+      .add(-25.09779579).add(-25.38380065).add(-25.66645664)
+      .add(-25.94854727).add(-26.22982888).add(-26.51435133)
+      .add(-26.80341245).add(-27.09885387).add(-27.4023642).add(-27.71477253)
+      .add(-28.03576492).add(-28.36794495).add(-28.71284313)
+      .add(-29.07088159).add(-29.44331342).add(-29.82796009)
+      .add(-30.23072506).add(-30.64724095).add(-31.07902667)
+      .add(-31.52727559).add(-31.98986156).add(-32.20183053).array())
+      .add(stan::math::array_builder<double>().add(-1.86732812)
+      .add(-1.950861).add(-2.14713027).add(-2.35544627).add(-2.57308518)
+      .add(-2.79843968).add(-3.03014696).add(-3.26647799).add(-3.50740015)
+      .add(-3.75232014).add(-4.00082744).add(-4.25276945).add(-4.50781004)
+      .add(-4.76544786).add(-5.02521641).add(-5.28667855).add(-5.54930776)
+      .add(-5.81286013).add(-6.07719102).add(-6.34239433).add(-6.60877868)
+      .add(-6.87613755).add(-7.14431255).add(-7.41350134).add(-7.68386519)
+      .add(-7.95545587).add(-8.22838145).add(-8.50271442).add(-8.77831405)
+      .add(-9.05473431).add(-9.33229538).add(-9.6107452).add(-9.89008147)
+      .add(-10.17020077).add(-10.45132069).add(-10.73376722)
+      .add(-11.01760787).add(-11.30343143).add(-11.59192877)
+      .add(-11.88327845).add(-12.17794915).add(-12.47588558)
+      .add(-12.77768567).add(-13.08339422).add(-13.39312749)
+      .add(-13.70715614).add(-14.02510126).add(-14.3465203).add(-14.67147958)
+      .add(-14.99992752).add(-15.33222588).add(-15.66863823)
+      .add(-16.00814827).add(-16.35059965).add(-16.69641772)
+      .add(-17.04584425).add(-17.3989276).add(-17.75565693).add(-18.11580342)
+      .add(-18.47906595).add(-18.84551681).add(-19.21512198).add(-19.5874861)
+      .add(-19.96202809).add(-20.33837228).add(-20.71559274)
+      .add(-21.09193569).add(-21.46642734).add(-21.83804185)
+      .add(-22.20456934).add(-22.56404971).add(-22.91532612)
+      .add(-23.25795133).add(-23.59128928).add(-23.91456239)
+      .add(-24.22849677).add(-24.5339227).add(-24.83075131).add(-25.12015303)
+      .add(-25.404106).add(-25.68561286).add(-25.96741991).add(-26.24906072)
+      .add(-26.53455566).add(-26.8250943).add(-27.12245847).add(-27.42827537)
+      .add(-27.74333462).add(-28.06717083).add(-28.4023917).add(-28.7504578)
+      .add(-29.11168737).add(-29.48722932).add(-29.87452149)
+      .add(-30.27995116).add(-30.69845534).add(-31.13151581)
+      .add(-31.57978309).add(-32.04042436).add(-32.25071264).array())
+      .add(stan::math::array_builder<double>().add(-1.87293958)
+      .add(-1.95720919).add(-2.15543109).add(-2.36610006).add(-2.58649239)
+      .add(-2.81509736).add(-3.0505465).add(-3.29072772).add(-3.53562864)
+      .add(-3.78450752).add(-4.03680748).add(-4.29228217).add(-4.55048448)
+      .add(-4.81079963).add(-5.07268148).add(-5.335681).add(-5.59933287)
+      .add(-5.8635337).add(-6.12829538).add(-6.39391597).add(-6.6609631)
+      .add(-6.92914008).add(-7.19819222).add(-7.46837828).add(-7.73986432)
+      .add(-8.0126251).add(-8.28670217).add(-8.56209959).add(-8.83862295)
+      .add(-9.11581623).add(-9.39407079).add(-9.67322555).add(-9.95339846)
+      .add(-10.23464017).add(-10.51729532).add(-10.80177025).add(-11.0881851)
+      .add(-11.37714041).add(-11.66929021).add(-11.96473187)
+      .add(-12.26379268).add(-12.56627589).add(-12.87264055)
+      .add(-13.18280147).add(-13.49674924).add(-13.81466497)
+      .add(-14.13611353).add(-14.46060215).add(-14.78817522)
+      .add(-15.11879315).add(-15.4528231).add(-15.79055392).add(-16.13097759)
+      .add(-16.47395724).add(-16.81993703).add(-17.16916386)
+      .add(-17.52170076).add(-17.87752241).add(-18.2363982).add(-18.59807222)
+      .add(-18.96256765).add(-19.32976711).add(-19.69921666)
+      .add(-20.07035778).add(-20.44277437).add(-20.81538355)
+      .add(-21.18633438).add(-21.55478312).add(-21.91981325).add(-22.279214)
+      .add(-22.6312164).add(-22.97498217).add(-23.31029276).add(-23.63678591)
+      .add(-23.95387232).add(-24.26247048).add(-24.56355188)
+      .add(-24.85706128).add(-25.1441683).add(-25.42680565).add(-25.70796239)
+      .add(-25.99034009).add(-26.27321414).add(-26.56058507)
+      .add(-26.85352413).add(-27.15374543).add(-27.46279937)
+      .add(-27.78143125).add(-28.10896595).add(-28.44801933)
+      .add(-28.79995014).add(-29.16493193).add(-29.54397433)
+      .add(-29.93397511).add(-30.34205234).add(-30.76217437).add(-31.1958175)
+      .add(-31.64294374).add(-32.09989842).add(-32.30752399).array())
+      .add(stan::math::array_builder<double>().add(-1.88094832)
+      .add(-1.96608587).add(-2.16650572).add(-2.3796615).add(-2.60277891)
+      .add(-2.8344146).add(-3.0731548).add(-3.31640704).add(-3.5642371)
+      .add(-3.81580482).add(-4.07046469).add(-4.32795388).add(-4.58779501)
+      .add(-4.8493416).add(-5.11204522).add(-5.37551554).add(-5.63940622)
+      .add(-5.90377737).add(-6.16878585).add(-6.43489136).add(-6.70286923)
+      .add(-6.97222146).add(-7.24249237).add(-7.51395736).add(-7.7867655)
+      .add(-8.06079972).add(-8.33605103).add(-8.61249312).add(-8.88993117)
+      .add(-9.16795501).add(-9.44705979).add(-9.727196).add(-10.00859371)
+      .add(-10.29142143).add(-10.57609699).add(-10.86304571)
+      .add(-11.15237824).add(-11.4446524).add(-11.74044939).add(-12.03976498)
+      .add(-12.34279517).add(-12.64922487).add(-12.95940645)
+      .add(-13.27316816).add(-13.59042164).add(-13.91129746)
+      .add(-14.23534031).add(-14.56203748).add(-14.8914281).add(-15.22349615)
+      .add(-15.55861394).add(-15.89709268).add(-16.23792939)
+      .add(-16.58099983).add(-16.92675725).add(-17.27544337)
+      .add(-17.62712777).add(-17.98176166).add(-18.3391083).add(-18.69895922)
+      .add(-19.06128285).add(-19.42587485).add(-19.79222666)
+      .add(-20.15981557).add(-20.5282073).add(-20.89619625).add(-21.26188314)
+      .add(-21.62460317).add(-21.98358848).add(-22.33666053)
+      .add(-22.68226009).add(-23.0198508).add(-23.34938497).add(-23.67069194)
+      .add(-23.98330582).add(-24.28825904).add(-24.58659134)
+      .add(-24.87823134).add(-25.16431407).add(-25.44670768)
+      .add(-25.72838288).add(-26.01200776).add(-26.29662711)
+      .add(-26.58623777).add(-26.8818099).add(-27.1849976).add(-27.49727558)
+      .add(-27.81935069).add(-28.15033009).add(-28.49284223)
+      .add(-28.84813663).add(-29.21623732).add(-29.59801894)
+      .add(-29.98981613).add(-30.39957134).add(-30.82025809).add(-31.2534045)
+      .add(-31.69834844).add(-32.15077468).add(-32.35548229).array())
+      .add(stan::math::array_builder<double>().add(-1.89035838)
+      .add(-1.97633559).add(-2.17881109).add(-2.39418459).add(-2.61961702)
+      .add(-2.85373734).add(-3.09508721).add(-3.34055584).add(-3.59036046)
+      .add(-3.84362035).add(-4.09964941).add(-4.35821842).add(-4.61886513)
+      .add(-4.88095197).add(-5.14395833).add(-5.40756801).add(-5.67155154)
+      .add(-5.93610235).add(-6.2014755).add(-6.46823395).add(-6.73731569)
+      .add(-7.00795965).add(-7.2794618).add(-7.55211722).add(-7.82608179)
+      .add(-8.10117054).add(-8.37736217).add(-8.65464187).add(-8.93285356)
+      .add(-9.21165975).add(-9.49166044).add(-9.77290396).add(-10.05569974)
+      .add(-10.34028601).add(-10.62710416).add(-10.91655548)
+      .add(-11.20870558).add(-11.50404641).add(-11.80307978)
+      .add(-12.10570627).add(-12.41201691).add(-12.72160998)
+      .add(-13.03476426).add(-13.35125687).add(-13.67095446)
+      .add(-13.99396183).add(-14.31982319).add(-14.6480214).add(-14.97859597)
+      .add(-15.31155648).add(-15.64727607).add(-15.98608262)
+      .add(-16.32697379).add(-16.66983194).add(-17.01511228)
+      .add(-17.36304537).add(-17.71370279).add(-18.06700929)
+      .add(-18.42272187).add(-18.7806814).add(-19.14080419).add(-19.50280647)
+      .add(-19.86613781).add(-20.23032497).add(-20.59493708)
+      .add(-20.95868337).add(-21.31965867).add(-21.67739583)
+      .add(-22.03128144).add(-22.37917506).add(-22.71970719)
+      .add(-23.05259162).add(-23.37788308).add(-23.69552595)
+      .add(-24.00512902).add(-24.30778687).add(-24.604566).add(-24.89535824)
+      .add(-25.18125384).add(-25.46405455).add(-25.74671618)
+      .add(-26.03188524).add(-26.31840331).add(-26.61027422)
+      .add(-26.90838169).add(-27.2143277).add(-27.52951494).add(-27.8546179)
+      .add(-28.18853336).add(-28.53390689).add(-28.89188091)
+      .add(-29.26233681).add(-29.64603097).add(-30.03875681)
+      .add(-30.44931135).add(-30.86972618).add(-31.30163242)
+      .add(-31.74385294).add(-32.19159871).add(-32.39350428).array())
+      .add(stan::math::array_builder<double>().add(-1.90037906)
+      .add(-1.98710252).add(-2.19136019).add(-2.40858812).add(-2.63588773)
+      .add(-2.87197707).add(-3.11536417).add(-3.36239856).add(-3.61350968)
+      .add(-3.86781924).add(-4.12462973).add(-4.38377206).add(-4.64481903)
+      .add(-4.90715635).add(-5.17029619).add(-5.43398921).add(-5.69810218)
+      .add(-5.96292506).add(-6.22877142).add(-6.49626669).add(-6.76649052)
+      .add(-7.03839278).add(-7.31100545).add(-7.58466408).add(-7.85956488)
+      .add(-8.13548154).add(-8.4124109).add(-8.69037548).add(-8.96927522)
+      .add(-9.2488491).add(-9.52978676).add(-9.8122099).add(-10.09647457)
+      .add(-10.38285073).add(-10.67177108).add(-10.96359073)
+      .add(-11.25831626).add(-11.55636968).add(-11.85818031)
+      .add(-12.16356826).add(-12.47254513).add(-12.78464878)
+      .add(-13.10010879).add(-13.41867401).add(-13.74018651)
+      .add(-14.06473824).add(-14.39188192).add(-14.72110244)
+      .add(-15.05244015).add(-15.38592872).add(-15.72193755)
+      .add(-16.06080621).add(-16.40152945).add(-16.74399226)
+      .add(-17.08864764).add(-17.43571219).add(-17.78525776)
+      .add(-18.13718305).add(-18.49124067).add(-18.84732291)
+      .add(-19.20529941).add(-19.56481748).add(-19.92529827)
+      .add(-20.28632842).add(-20.64749628).add(-21.00745542)
+      .add(-21.36432289).add(-21.71782831).add(-22.0675007).add(-22.41122923)
+      .add(-22.74780397).add(-23.07713848).add(-23.3993372).add(-23.71440736)
+      .add(-24.02200494).add(-24.3232592).add(-24.61924365).add(-24.90980731)
+      .add(-25.19599499).add(-25.47954519).add(-25.76340323)
+      .add(-26.05020276).add(-26.33860201).add(-26.63261819)
+      .add(-26.93305886).add(-27.24148032).add(-27.55921704)
+      .add(-27.88691629).add(-28.22327548).add(-28.57096167)
+      .add(-28.93101589).add(-29.30318688).add(-29.68813227)
+      .add(-30.08113893).add(-30.49186122).add(-30.91146014)
+      .add(-31.34170751).add(-31.78101283).add(-32.22426171)
+      .add(-32.42361197).array()).add(stan::math::array_builder<double>()
+      .add(-1.91053194).add(-1.99789466).add(-2.20365062).add(-2.42239385)
+      .add(-2.65117815).add(-2.8888279).add(-3.13382839).add(-3.38197292)
+      .add(-3.63394954).add(-3.88891146).add(-4.14616548).add(-4.40561481)
+      .add(-4.66687373).add(-4.92935251).add(-5.19259063).add(-5.45639192)
+      .add(-5.7206971).add(-5.98586245).add(-6.25223335).add(-6.52047381)
+      .add(-6.79180029).add(-7.06486579).add(-7.33843601).add(-7.6129109)
+      .add(-7.88855735).add(-8.16512799).add(-8.4426571).add(-8.72121669)
+      .add(-9.00076624).add(-9.28111393).add(-9.56301951).add(-9.8466545)
+      .add(-10.13239588).add(-10.42051957).add(-10.71143115)
+      .add(-11.00543049).add(-11.3024627).add(-11.60288407).add(-11.90706205)
+      .add(-12.21475146).add(-12.52590489).add(-12.84001902)
+      .add(-13.15729068).add(-13.47745447).add(-13.80033951)
+      .add(-14.12603135).add(-14.45409474).add(-14.78401889)
+      .add(-15.11584367).add(-15.4496244).add(-15.7857231).add(-16.12448725)
+      .add(-16.46490631).add(-16.80686545).add(-17.15081326)
+      .add(-17.49695149).add(-17.84535207).add(-18.19588957)
+      .add(-18.54831496).add(-18.90257362).add(-19.25849455)
+      .add(-19.61566645).add(-19.9734937).add(-20.33162931).add(-20.68969131)
+      .add(-21.04629875).add(-21.39960739).add(-21.74953302)
+      .add(-22.09572857).add(-22.43610004).add(-22.76956849)
+      .add(-23.09620737).add(-23.41613428).add(-23.72938621)
+      .add(-24.03565203).add(-24.33608177).add(-24.63174683).add(-24.922453)
+      .add(-25.20920177).add(-25.49367232).add(-25.77880311)
+      .add(-26.06722101).add(-26.35741513).add(-26.65342006)
+      .add(-26.95597455).add(-27.26659444).add(-27.58654972)
+      .add(-27.91646448).add(-28.25484821).add(-28.60439354)
+      .add(-28.96604702).add(-29.33943517).add(-29.72513594)
+      .add(-30.11796622).add(-30.52842717).add(-30.94687981)
+      .add(-31.37526202).add(-31.81165309).add(-32.25072017)
+      .add(-32.44778674).array()).add(stan::math::array_builder<double>()
+      .add(-1.92050298).add(-2.00840107).add(-2.21539255).add(-2.43535482)
+      .add(-2.66530706).add(-2.904195).add(-3.15049019).add(-3.39941719)
+      .add(-3.65195823).add(-3.90731834).add(-4.16481655).add(-4.42443259)
+      .add(-4.68582174).add(-4.94841469).add(-5.21176896).add(-5.47572714)
+      .add(-5.74028425).add(-6.00583983).add(-6.2727542).add(-6.54171669)
+      .add(-6.81408389).add(-7.08821248).add(-7.36260453).add(-7.63774579)
+      .add(-7.91399812).add(-8.19110658).add(-8.46915348).add(-8.74826396)
+      .add(-9.02845353).add(-9.30958847).add(-9.59248031).add(-9.87733104)
+      .add(-10.16452033).add(-10.45431377).add(-10.74708034)
+      .add(-11.04306289).add(-11.34214791).add(-11.64463316)
+      .add(-11.95083493).add(-12.26045578).add(-12.57340477)
+      .add(-12.88915108).add(-13.20786962).add(-13.52928921)
+      .add(-13.85323268).add(-14.17978213).add(-14.50851538)
+      .add(-14.83892637).add(-15.17105275).add(-15.50496923)
+      .add(-15.84102764).add(-16.17958069).add(-16.51961106)
+      .add(-16.86100271).add(-17.20419876).add(-17.54938632)
+      .add(-17.89663799).add(-18.24580679).add(-18.59664488)
+      .add(-18.94915192).add(-19.30312192).add(-19.65809414)
+      .add(-20.01346541).add(-20.36895861).add(-20.72422759)
+      .add(-21.07787157).add(-21.42809385).add(-21.77498183)
+      .add(-22.11829299).add(-22.45593754).add(-22.78694386)
+      .add(-23.11151544).add(-23.42975852).add(-23.74171888)
+      .add(-24.04711125).add(-24.34709934).add(-24.64274835)
+      .add(-24.93382227).add(-25.221282).add(-25.50675094).add(-25.79316351)
+      .add(-26.08314405).add(-26.37502322).add(-26.67285564)
+      .add(-26.97731679).add(-27.28988642).add(-27.6117734).add(-27.94358211)
+      .add(-28.28364492).add(-28.63468369).add(-28.99755777)
+      .add(-29.37178135).add(-29.7578702).add(-30.15020624).add(-30.56011949)
+      .add(-30.97723562).add(-31.4036741).add(-31.83724944).add(-32.27248478)
+      .add(-32.46752421).array()).add(stan::math::array_builder<double>()
+      .add(-1.93017477).add(-2.01851835).add(-2.22652506).add(-2.44746813)
+      .add(-2.6783441).add(-2.91823196).add(-3.16559633).add(-3.41508183)
+      .add(-3.66799172).add(-3.9235959).add(-4.18122804).add(-4.44094325)
+      .add(-4.70243379).add(-4.96514444).add(-5.22864147).add(-5.49279416)
+      .add(-5.75763669).add(-6.02359593).add(-6.29103784).add(-6.56067113)
+      .add(-6.83400023).add(-7.10908955).add(-7.38418155).add(-7.65986572)
+      .add(-7.93661742).add(-8.21418224).add(-8.49269515).add(-8.77233306)
+      .add(-9.05316091).add(-9.33509129).add(-9.61897182).add(-9.90502011)
+      .add(-10.19360598).add(-10.48497477).add(-10.77945474).add(-11.0772335)
+      .add(-11.378144).add(-11.6824331).add(-11.99037534).add(-12.30163164)
+      .add(-12.61607902).add(-12.93316875).add(-13.25306095)
+      .add(-13.57548379).add(-13.90025754).add(-14.22746205).add(-14.5566881)
+      .add(-14.88743404).add(-15.2197336).add(-15.55367891).add(-15.88960963)
+      .add(-16.22788181).add(-16.56747045).add(-16.90825761)
+      .add(-17.25068065).add(-17.59491278).add(-17.94102822)
+      .add(-18.28886121).add(-18.63816773).add(-18.98900245)
+      .add(-19.34112931).add(-19.69404598).add(-20.04714878)
+      .add(-20.40023157).add(-20.75298734).add(-21.10400551)
+      .add(-21.45154086).add(-21.79583703).add(-22.13673812).add(-22.4721477)
+      .add(-22.80118276).add(-23.12415485).add(-23.44114236)
+      .add(-23.75218648).add(-24.05702445).add(-24.35683013)
+      .add(-24.65266071).add(-24.94424039).add(-25.23249205)
+      .add(-25.51898638).add(-25.80665586).add(-26.09812548)
+      .add(-26.39157577).add(-26.69108326).add(-26.99726445)
+      .add(-27.31156672).add(-27.63514102).add(-27.9685749).add(-28.31003354)
+      .add(-28.66227139).add(-29.02606766).add(-29.40083339)
+      .add(-29.78703775).add(-30.17865991).add(-30.58783675)
+      .add(-31.00351602).add(-31.42800712).add(-31.85891061).add(-32.2906568)
+      .add(-32.48389809).array()).add(stan::math::array_builder<double>()
+      .add(-1.93954285).add(-2.02825771).add(-2.23710214).add(-2.45884012)
+      .add(-2.69045546).add(-2.93116949).add(-3.17944463).add(-3.42933476)
+      .add(-3.68248473).add(-3.9382373).add(-4.19594007).add(-4.45572018)
+      .add(-4.71730156).add(-4.98013701).add(-5.24379377).add(-5.50815858)
+      .add(-5.77329386).add(-6.03964317).add(-6.30757368).add(-6.57781177)
+      .add(-6.85201912).add(-7.12797283).add(-7.40365955).add(-7.67978685)
+      .add(-7.95695746).add(-8.23492148).add(-8.51386744).add(-8.79402004)
+      .add(-9.07548588).add(-9.35821295).add(-9.64307222).add(-9.93028573)
+      .add(-10.22020517).add(-10.51304987).add(-10.8091064).add(-11.10851061)
+      .add(-11.41104757).add(-11.71692043).add(-12.0263699).add(-12.33902368)
+      .add(-12.65473523).add(-12.97294465).add(-13.29380204)
+      .add(-13.61703795).add(-13.94247217).add(-14.27018262).add(-14.5997724)
+      .add(-14.93074367).add(-15.2631248).add(-15.59702371).add(-15.93276649)
+      .add(-16.27071122).add(-16.60982477).add(-16.94998704)
+      .add(-17.29162975).add(-17.63491326).add(-17.97991453)
+      .add(-18.32645172).add(-18.674287).add(-19.02353024).add(-19.37391959)
+      .add(-19.72491762).add(-20.0759254).add(-20.42680731).add(-20.77729677)
+      .add(-21.12598017).add(-21.47116492).add(-21.81323603)
+      .add(-22.15210856).add(-22.48567064).add(-22.81311328).add(-23.1348399)
+      .add(-23.4508899).add(-23.76129105).add(-24.0658018).add(-24.36560437)
+      .add(-24.66174729).add(-24.95391693).add(-25.24300054)
+      .add(-25.53051866).add(-25.81940347).add(-26.11228303)
+      .add(-26.40719453).add(-26.70823772).add(-27.01597371)
+      .add(-27.33182067).add(-27.65687458).add(-27.99170862)
+      .add(-28.33432998).add(-28.68752858).add(-29.05201029)
+      .add(-29.42709126).add(-29.81320783).add(-30.20396564)
+      .add(-30.61228409).add(-31.02648369).add(-31.44906698)
+      .add(-31.87745988).add(-32.30603498).add(-32.49767781).array())
+      .add(stan::math::array_builder<double>().add(-1.94845527)
+      .add(-2.03747273).add(-2.2469925).add(-2.46935822).add(-2.70155028)
+      .add(-2.94293964).add(-3.19199106).add(-3.44216229).add(-3.69545584)
+      .add(-3.95129312).add(-4.20903364).add(-4.46887148).add(-4.73055586)
+      .add(-4.99354121).add(-5.25738837).add(-5.52199328).add(-5.78743726)
+      .add(-6.05417249).add(-6.32256513).add(-6.5933593).add(-6.86838314)
+      .add(-7.14513199).add(-7.42134007).add(-7.69784405).add(-7.97538398)
+      .add(-8.25371605).add(-8.53308111).add(-8.81374666).add(-9.0958535)
+      .add(-9.37937571).add(-9.66519758).add(-9.95353759).add(-10.24472413)
+      .add(-10.53894763).add(-10.83645386).add(-11.13733115).add(-11.4413223)
+      .add(-11.74859321).add(-12.05935731).add(-12.37321566)
+      .add(-12.69000456).add(-13.00915769).add(-13.33081829)
+      .add(-13.65472111).add(-13.98068656).add(-14.30879049)
+      .add(-14.63864754).add(-14.96976297).add(-15.30215865)
+      .add(-15.63595694).add(-15.97146942).add(-16.30905529)
+      .add(-16.64767314).add(-16.98720073).add(-17.32806453)
       .add(-17.67041326).add(-18.01432772).add(-18.35961256)
-      .add(-18.70603813).add(-19.05376939).add(-19.40252217)
-      .add(-19.75172938).add(-20.1008007).add(-20.44966942).add(-20.79810942)
-      .add(-21.14470864).add(-21.4878265).add(-21.82797578).add(-22.16512911)
-      .add(-22.49715228).add(-22.82329904).add(-23.14405256)
-      .add(-23.45940562).add(-23.76936675).add(-24.0737152).add(-24.37364079)
-      .add(-24.67018318).add(-24.96299287).add(-25.25292345).add(-25.5414476)
-      .add(-25.83149852).add(-26.12570914).add(-26.42197908)
-      .add(-26.72443233).add(-27.03357755).add(-27.35080646)
-      .add(-27.67716288).add(-28.01320776).add(-28.35679866)
-      .add(-28.71076353).add(-29.07574131).add(-29.45096069)
-      .add(-29.83683719).add(-30.22662931).add(-30.6340134).add(-31.0467274)
-      .add(-31.46746657).add(-31.89351283).add(-32.3192049).add(-32.50942186)
-      .array()).add(stan::math::array_builder<double>().add(-1.95692411)
-      .add(-2.04618716).add(-2.25624968).add(-2.47911022).add(-2.71175352)
-      .add(-2.95370544).add(-3.20343624).add(-3.45380317).add(-3.70717853)
-      .add(-3.96306525).add(-4.22083138).add(-4.48073221).add(-4.74253594)
-      .add(-5.00569308).add(-5.26975229).add(-5.5346126).add(-5.80036762)
-      .add(-6.06747283).add(-6.33629336).add(-6.60759268).add(-6.88337435)
-      .add(-7.16085714).add(-7.43752539).add(-7.71435339).add(-7.99222573)
-      .add(-8.27090438).add(-8.55068).add(-8.83185747).add(-9.11460487)
-      .add(-9.39891439).add(-9.68567587).add(-9.97509846).add(-10.26748409)
-      .add(-10.56299317).add(-10.86183252).add(-11.16404727)
-      .add(-11.46934317).add(-11.77785446).add(-12.0897726).add(-12.40467725)
-      .add(-12.72239225).add(-13.04234828).add(-13.36468381)
-      .add(-13.68913883).add(-14.01553491).add(-14.34394548)
-      .add(-14.67399589).add(-15.00519383).add(-15.33755375)
-      .add(-15.67121139).add(-16.00646315).add(-16.34366877)
-      .add(-16.68177864).add(-17.02066854).add(-17.36076025)
-      .add(-17.70219206).add(-18.04504973).add(-18.38912672)
-      .add(-18.73420329).add(-19.08049893).add(-19.42771017)
-      .add(-19.77524465).add(-20.1225234).add(-20.46954642).add(-20.81612716)
-      .add(-21.1608582).add(-21.50214943).add(-21.84062916).add(-22.1763164)
-      .add(-22.50704922).add(-22.83213529).add(-23.15212844)
-      .add(-23.46696959).add(-23.77664399).add(-24.08095182)
-      .add(-24.38109019).add(-24.67809003).add(-24.97156763)
-      .add(-25.26234476).add(-25.55184817).add(-25.84301314).add(-26.138479)
-      .add(-26.4360127).add(-26.73976328).add(-27.05018946).add(-27.368659)
-      .add(-27.69616608).add(-28.03326139).add(-28.37766055)
-      .add(-28.73223172).add(-29.0975529).add(-29.47277196).add(-29.85829406)
-      .add(-30.24705435).add(-30.65346005).add(-31.06470606)
-      .add(-31.48367742).add(-31.90753598).add(-32.33060278)
-      .add(-32.51954268).array()).add(stan::math::array_builder<double>()
-      .add(-1.96501455).add(-2.0544769).add(-2.26497637).add(-2.48822829)
-      .add(-2.7212279).add(-2.96365947).add(-3.21400079).add(-3.46450424)
-      .add(-3.71792143).add(-3.97383778).add(-4.23162588).add(-4.49159674)
-      .add(-4.75353201).add(-5.01687381).add(-5.2811545).add(-5.54627201)
-      .add(-5.81232759).add(-6.07977683).add(-6.34898504).add(-6.62073745)
-      .add(-6.89722136).add(-7.17538348).add(-7.45245999).add(-7.7295693)
-      .add(-8.00774557).add(-8.28675515).add(-8.56693519).add(-8.8486226)
-      .add(-9.13200646).add(-9.41709044).add(-9.70476381).add(-9.99522233)
-      .add(-10.28873978).add(-10.58544644).add(-10.88551252)
-      .add(-11.18894416).add(-11.49541474).add(-11.80503161)
-      .add(-12.11796859).add(-12.43378805).add(-12.75230491)
-      .add(-13.07294929).add(-13.39585632).add(-13.72077171)
-      .add(-14.04751845).add(-14.3761671).add(-14.7063529).add(-15.0375854)
-      .add(-15.3698709).add(-15.70335764).add(-16.03832646).add(-16.37513726)
-      .add(-16.71273241).add(-17.05098604).add(-17.39031583).add(-17.7308509)
-      .add(-18.07268296).add(-18.41559642).add(-18.75938281)
-      .add(-19.10431539).add(-19.45007385).add(-19.7960442).add(-20.14166071)
-      .add(-20.48698742).add(-20.83187603).add(-21.17492578)
-      .add(-21.51459496).add(-21.85161665).add(-22.18604679)
-      .add(-22.51569169).add(-22.83990605).add(-23.15930731)
-      .add(-23.47378095).add(-23.78328609).add(-24.08764425)
-      .add(-24.38805977).add(-24.68555503).add(-24.9797137).add(-25.2713273)
-      .add(-25.56177838).add(-25.85400519).add(-26.15065468)
-      .add(-26.44936547).add(-26.75431225).add(-27.06590606)
-      .add(-27.38549284).add(-27.71401958).add(-28.05202843)
-      .add(-28.39710011).add(-28.75214496).add(-29.11768549)
-      .add(-29.49279479).add(-29.87787673).add(-30.26556451)
-      .add(-30.67097017).add(-31.08078066).add(-31.49806617)
-      .add(-31.91988734).add(-32.3405584).add(-32.52834976).array())
-      .add(stan::math::array_builder<double>().add(-1.97273715)
-      .add(-2.06235936).add(-2.27320675).add(-2.49676477).add(-2.73004429)
-      .add(-2.97289037).add(-3.22378955).add(-3.47438636).add(-3.72781913)
-      .add(-3.98375561).add(-4.24156869).add(-4.50161981).add(-4.76369906)
-      .add(-5.02723645).add(-5.29174488).add(-5.55711812).add(-5.82346161)
-      .add(-6.09122897).add(-6.36078763).add(-6.63294714).add(-6.91008602)
-      .add(-7.18888292).add(-7.46632699).add(-7.74368553).add(-8.02214581)
-      .add(-8.30147634).add(-8.58205724).add(-8.8642524).add(-9.14826642)
-      .add(-9.43410896).add(-9.72266415).add(-10.01411147).add(-10.30869586)
-      .add(-10.60651819).add(-10.90771454).add(-11.212256).add(-11.51978774)
-      .add(-11.83039428).add(-12.14423534).add(-12.46085922)
-      .add(-12.78007464).add(-13.10131291).add(-13.4247067).add(-13.75000772)
-      .add(-14.07704035).add(-14.40587188).add(-14.73614668)
-      .add(-15.06737567).add(-15.39955639).add(-15.73284893)
-      .add(-16.06751833).add(-16.40392445).add(-16.74100192)
-      .add(-17.07862358).add(-17.41720368).add(-17.75686334)
-      .add(-18.09770117).add(-18.4394944).add(-18.78204698).add(-19.12568494)
-      .add(-19.47007312).add(-19.81457894).add(-20.15865112).add(-20.5024149)
-      .add(-20.84575856).add(-21.1872893).add(-21.5255116).add(-21.86125377)
-      .add(-22.19460086).add(-22.52332435).add(-22.84682051)
-      .add(-23.16576492).add(-23.47998512).add(-23.78941212)
-      .add(-24.09388923).add(-24.39462806).add(-24.69264279)
-      .add(-24.98748577).add(-25.27991974).add(-25.57128461)
-      .add(-25.86452233).add(-26.16228847).add(-26.46209723)
-      .add(-26.76814944).add(-27.08081043).add(-27.40140624).add(-27.730839)
-      .add(-28.06964383).add(-28.41527312).add(-28.77068099)
-      .add(-29.13633958).add(-29.51125252).add(-29.89583027)
-      .add(-30.28242345).add(-30.68682315).add(-31.09523969).add(-31.5109227)
-      .add(-31.93084653).add(-32.34932578).add(-32.53607986).array())
-      .add(stan::math::array_builder<double>().add(-1.98015639)
-      .add(-2.06990581).add(-2.28102841).add(-2.5048243).add(-2.73832406)
-      .add(-2.98153484).add(-3.23295258).add(-3.4836111).add(-3.73704168)
-      .add(-3.9929935).add(-4.25083558).add(-4.51097506).add(-4.77320619)
-      .add(-5.03694404).add(-5.3016799).add(-5.56730132).add(-5.83391547)
-      .add(-6.10197286).add(-6.37184525).add(-6.64436918).add(-6.92212103)
-      .add(-7.20151475).add(-7.47929293).add(-7.75687533).add(-8.03560464)
-      .add(-8.31524896).add(-8.59622776).add(-8.87892723).add(-9.16356273)
-      .add(-9.45014546).add(-9.73955079).add(-10.03194011).add(-10.32752948)
-      .add(-10.62639137).add(-10.92863038).add(-11.23418615)
-      .add(-11.54267921).add(-11.85417477).add(-12.16882135)
-      .add(-12.48615571).add(-12.80598245).add(-13.12773531)
-      .add(-13.45154511).add(-13.77716961).add(-14.10443447)
-      .add(-14.43340331).add(-14.76372896).add(-15.09492324)
-      .add(-15.42697458).add(-15.76005429).add(-16.09441157)
-      .add(-16.43040613).add(-16.7669652).add(-17.10396077).add(-17.44180432)
-      .add(-17.78061009).add(-18.12048441).add(-18.46119902)
-      .add(-18.80257118).add(-19.14497854).add(-19.48807276)
-      .add(-19.83120512).add(-20.17383955).add(-20.51615953)
-      .add(-20.85808813).add(-21.19824132).add(-21.53516751)
-      .add(-21.86978185).add(-22.202192).add(-22.53013232).add(-22.85303624)
-      .add(-23.17163324).add(-23.48569116).add(-23.79511144)
-      .add(-24.09975962).add(-24.40085482).add(-24.69940318)
-      .add(-24.99492706).add(-25.28816168).add(-25.58040571)
-      .add(-25.87460545).add(-26.17342592).add(-26.47426044)
-      .add(-26.78133635).add(-27.09497504).add(-27.41648448)
-      .add(-27.74672402).add(-28.0862232).add(-28.43231211).add(-28.78799004)
-      .add(-29.15368342).add(-29.52833128).add(-29.91235745).add(-30.2978475)
-      .add(-30.70124633).add(-31.10831576).add(-31.52247839)
-      .add(-31.94063427).add(-32.35710298).add(-32.54291653).array())
-      .array(), "assigning variable AtmosphericFluxPolyCoeffs");
+      .add(-18.70603813).add(-19.05376938).add(-19.40252217)
+      .add(-19.75172938).add(-20.10080069).add(-20.44966942)
+      .add(-20.79810941).add(-21.14470864).add(-21.48782649)
+      .add(-21.82797577).add(-22.16512911).add(-22.49715228)
+      .add(-22.82329903).add(-23.14405255).add(-23.45940562)
+      .add(-23.76936675).add(-24.07371521).add(-24.37364079)
+      .add(-24.67018318).add(-24.96299288).add(-25.25292346)
+      .add(-25.54144761).add(-25.83149852).add(-26.12570915)
+      .add(-26.42197908).add(-26.72443234).add(-27.03357756)
+      .add(-27.35080647).add(-27.67716289).add(-28.01320777)
+      .add(-28.35679867).add(-28.71076353).add(-29.07574132)
+      .add(-29.45096069).add(-29.83683719).add(-30.22662931).add(-30.6340134)
+      .add(-31.04672739).add(-31.46746656).add(-31.89351282)
+      .add(-32.31920489).add(-32.50942185).array())
+      .add(stan::math::array_builder<double>().add(-1.95695625)
+      .add(-2.04622042).add(-2.25628573).add(-2.47914922).add(-2.71179535)
+      .add(-2.95374992).add(-3.20348308).add(-3.45385129).add(-3.70722702)
+      .add(-3.96311309).add(-4.22087758).add(-4.48077593).add(-4.74257656)
+      .add(-5.00573013).add(-5.2697855).add(-5.5346419).add(-5.80039311)
+      .add(-6.06749476).add(-6.33631205).add(-6.60760849).add(-6.8833877)
+      .add(-7.16086834).add(-7.43753467).add(-7.71436103).add(-7.99223202)
+      .add(-8.27090956).add(-8.55068429).add(-8.83186107).add(-9.11460792)
+      .add(-9.39891702).add(-9.68567817).add(-9.97510051).add(-10.26748595)
+      .add(-10.56299487).add(-10.86183409).add(-11.16404874)
+      .add(-11.46934455).add(-11.77785576).add(-12.08977383)
+      .add(-12.40467842).add(-12.72239336).add(-13.04234933)
+      .add(-13.36468482).add(-13.68913978).add(-14.01553582)
+      .add(-14.34394635).add(-14.67399671).add(-15.00519461)
+      .add(-15.33755449).add(-15.67121209).add(-16.00646381)
+      .add(-16.34366939).add(-16.68177922).add(-17.02066908)
+      .add(-17.36076075).add(-17.70219252).add(-18.04505015)
+      .add(-18.38912711).add(-18.73420364).add(-19.08049924)
+      .add(-19.42771044).add(-19.77524489).add(-20.12252361).add(-20.4695466)
+      .add(-20.81612731).add(-21.16085834).add(-21.50214954)
+      .add(-21.84062927).add(-22.1763165).add(-22.50704931).add(-22.83213538)
+      .add(-23.15212854).add(-23.46696969).add(-23.7766441).add(-24.08095194)
+      .add(-24.38109032).add(-24.67809016).add(-24.97156778)
+      .add(-25.26234491).add(-25.55184833).add(-25.8430133).add(-26.13847916)
+      .add(-26.43601286).add(-26.73976343).add(-27.05018961)
+      .add(-27.36865913).add(-27.6961662).add(-28.0332615).add(-28.37766064)
+      .add(-28.7322318).add(-29.09755296).add(-29.47277201).add(-29.8582941)
+      .add(-30.24705437).add(-30.65346006).add(-31.06470606)
+      .add(-31.48367741).add(-31.90753597).add(-32.33060277)
+      .add(-32.51954267).array()).add(stan::math::array_builder<double>()
+      .add(-1.96499252).add(-2.05445424).add(-2.26495215).add(-2.48820249)
+      .add(-2.72120067).add(-2.96363099).add(-3.21397128).add(-3.46447441)
+      .add(-3.71789182).add(-3.97380897).add(-4.23159842).add(-4.49157103)
+      .add(-4.75350837).add(-5.01685243).add(-5.28113546).add(-5.54625529)
+      .add(-5.81231308).add(-6.07976434).add(-6.34897438).add(-6.62072838)
+      .add(-6.89721365).add(-7.17537695).add(-7.45245451).add(-7.7295647)
+      .add(-8.0077417).add(-8.28675188).add(-8.56693239).add(-8.84862018)
+      .add(-9.13200433).add(-9.41708854).add(-9.7047621).add(-9.99522077)
+      .add(-10.28873833).add(-10.5854451).add(-10.88551128).add(-11.188943)
+      .add(-11.49541366).add(-11.80503061).add(-12.11796766)
+      .add(-12.43378719).add(-12.75230411).add(-13.07294856)
+      .add(-13.39585564).add(-13.72077109).add(-14.04751788)
+      .add(-14.37616658).add(-14.70635243).add(-15.03758498)
+      .add(-15.36987051).add(-15.70335729).add(-16.03832615)
+      .add(-16.37513699).add(-16.71273218).add(-17.05098584)
+      .add(-17.39031565).add(-17.73085075).add(-18.07268283)
+      .add(-18.41559631).add(-18.75938272).add(-19.10431533).add(-19.4500738)
+      .add(-19.79604417).add(-20.14166068).add(-20.48698741)
+      .add(-20.83187603).add(-21.17492578).add(-21.51459496)
+      .add(-21.85161664).add(-22.18604678).add(-22.51569168)
+      .add(-22.83990603).add(-23.15930729).add(-23.47378092)
+      .add(-23.78328605).add(-24.0876442).add(-24.38805971).add(-24.68555497)
+      .add(-24.97971363).add(-25.27132723).add(-25.56177831)
+      .add(-25.85400512).add(-26.15065461).add(-26.4493654).add(-26.75431219)
+      .add(-27.06590602).add(-27.38549281).add(-27.71401957)
+      .add(-28.05202843).add(-28.39710013).add(-28.752145).add(-29.11768555)
+      .add(-29.49279487).add(-29.87787682).add(-30.2655646).add(-30.67097026)
+      .add(-31.08078075).add(-31.49806626).add(-31.91988742)
+      .add(-32.34055847).add(-32.52834982).array())
+      .add(stan::math::array_builder<double>().add(-1.97276985)
+      .add(-2.06239285).add(-2.27324221).add(-2.49680217).add(-2.73008337)
+      .add(-2.97293083).add(-3.22383104).add(-3.47442787).add(-3.72785996)
+      .add(-3.98379502).add(-4.24160601).add(-4.50165454).add(-4.76373087)
+      .add(-5.02726514).add(-5.29177041).add(-5.55714057).add(-5.82348116)
+      .add(-6.0912459).add(-6.36080221).add(-6.63295968).add(-6.91009685)
+      .add(-7.18889227).add(-7.46633503).add(-7.74369245).add(-8.02215182)
+      .add(-8.30148161).add(-8.58206192).add(-8.86425662).add(-9.14827027)
+      .add(-9.43411252).add(-9.72266747).add(-10.01411459).add(-10.30869882)
+      .add(-10.60652099).add(-10.9077172).add(-11.21225853).add(-11.51979014)
+      .add(-11.83039656).add(-12.14423751).add(-12.46086126)
+      .add(-12.78007657).add(-13.10131472).add(-13.42470841)
+      .add(-13.75000932).add(-14.07704185).add(-14.40587328)
+      .add(-14.73614799).add(-15.06737688).add(-15.39955751)
+      .add(-15.73284996).add(-16.06751929).add(-16.40392533)
+      .add(-16.74100273).add(-17.07862431).add(-17.41720435)
+      .add(-17.75686395).add(-18.09770172).add(-18.43949489)
+      .add(-18.78204741).add(-19.12568532).add(-19.47007346)
+      .add(-19.81457924).add(-20.15865138).add(-20.50241512)
+      .add(-20.84575875).add(-21.18728946).add(-21.52551175).add(-21.8612539)
+      .add(-22.19460098).add(-22.52332446).add(-22.84682062)
+      .add(-23.16576504).add(-23.47998524).add(-23.78941225)
+      .add(-24.09388936).add(-24.39462821).add(-24.69264295)
+      .add(-24.98748594).add(-25.27991992).add(-25.57128479)
+      .add(-25.86452252).add(-26.16228866).add(-26.46209742)
+      .add(-26.76814963).add(-27.08081061).add(-27.40140641)
+      .add(-27.73083916).add(-28.06964398).add(-28.41527326)
+      .add(-28.77068112).add(-29.13633969).add(-29.51125262)
+      .add(-29.89583036).add(-30.28242352).add(-30.68682321)
+      .add(-31.09523974).add(-31.51092274).add(-31.93084655).add(-32.3493258)
+      .add(-32.53607988).array()).add(stan::math::array_builder<double>()
+      .add(-1.98015639).add(-2.06990581).add(-2.28102841).add(-2.5048243)
+      .add(-2.73832406).add(-2.98153484).add(-3.23295258).add(-3.4836111)
+      .add(-3.73704168).add(-3.9929935).add(-4.25083558).add(-4.51097506)
+      .add(-4.77320619).add(-5.03694404).add(-5.3016799).add(-5.56730132)
+      .add(-5.83391547).add(-6.10197286).add(-6.37184525).add(-6.64436918)
+      .add(-6.92212103).add(-7.20151475).add(-7.47929293).add(-7.75687533)
+      .add(-8.03560464).add(-8.31524896).add(-8.59622776).add(-8.87892723)
+      .add(-9.16356273).add(-9.45014546).add(-9.73955079).add(-10.03194011)
+      .add(-10.32752948).add(-10.62639137).add(-10.92863038)
+      .add(-11.23418615).add(-11.54267921).add(-11.85417477)
+      .add(-12.16882135).add(-12.48615571).add(-12.80598245)
+      .add(-13.12773531).add(-13.45154511).add(-13.77716961)
+      .add(-14.10443447).add(-14.43340331).add(-14.76372896)
+      .add(-15.09492324).add(-15.42697458).add(-15.76005429)
+      .add(-16.09441157).add(-16.43040613).add(-16.7669652).add(-17.10396077)
+      .add(-17.44180432).add(-17.78061009).add(-18.12048441)
+      .add(-18.46119902).add(-18.80257118).add(-19.14497854)
+      .add(-19.48807276).add(-19.83120512).add(-20.17383955)
+      .add(-20.51615953).add(-20.85808813).add(-21.19824132)
+      .add(-21.53516751).add(-21.86978185).add(-22.202192).add(-22.53013232)
+      .add(-22.85303624).add(-23.17163324).add(-23.48569116)
+      .add(-23.79511144).add(-24.09975962).add(-24.40085482)
+      .add(-24.69940318).add(-24.99492706).add(-25.28816168)
+      .add(-25.58040571).add(-25.87460545).add(-26.17342592)
+      .add(-26.47426044).add(-26.78133635).add(-27.09497504)
+      .add(-27.41648448).add(-27.74672402).add(-28.0862232).add(-28.43231211)
+      .add(-28.78799004).add(-29.15368342).add(-29.52833128)
+      .add(-29.91235745).add(-30.2978475).add(-30.70124633).add(-31.10831576)
+      .add(-31.52247839).add(-31.94063427).add(-32.35710298)
+      .add(-32.54291653).array()).array(),
+      "assigning variable AtmosphericFluxPolyCoeffs");
     std::vector<local_scalar_t__> cos_theta_grid;
     cos_theta_grid = std::vector<local_scalar_t__>(30, DUMMY_VAR__);
     
@@ -4427,7 +4435,7 @@ class model_code_model final : public model_base_crtp<model_code_model> {
   std::vector<std::string> model_compile_info() const {
     std::vector<std::string> stanc_info;
     stanc_info.push_back("stanc_version = stanc3 v2.24.1");
-    stanc_info.push_back("stancflags = --include_paths=/Users/fran/projects/astroparticle/hierarchical_nu/software/stan_files");
+    stanc_info.push_back("stancflags = --include_paths=/Users/fran/projects/hierarchical_nu/software/stan_files");
     return stanc_info;
   }
   
@@ -5025,7 +5033,7 @@ class model_code_model final : public model_base_crtp<model_code_model> {
                     stan::math::log(
                       (AtmopshericNumuFlux(Esrc[(i - 1)],
                          omega_det[(i - 1)], pstream__) /
-                        1.8071372593678136e-08))), "assigning variable lp");
+                        1.8071375858713813e-08))), "assigning variable lp");
                 current_statement__ = 28;
                 assign(E, cons_list(index_uni(i), nil_index_list()),
                   Esrc[(i - 1)], "assigning variable E");
@@ -5279,7 +5287,7 @@ class model_code_model final : public model_base_crtp<model_code_model> {
                     stan::math::log(
                       (AtmopshericNumuFlux(Esrc[(i - 1)],
                          omega_det[(i - 1)], pstream__) /
-                        1.8071372593678136e-08))), "assigning variable lp");
+                        1.8071375858713813e-08))), "assigning variable lp");
                 current_statement__ = 28;
                 assign(E, cons_list(index_uni(i), nil_index_list()),
                   Esrc[(i - 1)], "assigning variable E");
