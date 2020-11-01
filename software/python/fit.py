@@ -79,10 +79,16 @@ class StanFit:
 
         self._generate_stan_fit_code()
 
-    def compile_stan_code(self):
+    def set_stan_filename(self, fit_filename):
 
-        this_dir = os.path.abspath("")
-        include_paths = [os.path.join(this_dir, self.output_dir)]
+        self._fit_filename = fit_filename
+
+    def compile_stan_code(self, include_paths=None):
+
+        if not include_paths:
+            this_dir = os.path.abspath("")
+            include_paths = [os.path.join(this_dir, self.output_dir)]
+
         self._fit = CmdStanModel(
             stan_file=self._fit_filename, stanc_options={"include_paths": include_paths}
         )
@@ -101,12 +107,18 @@ class StanFit:
         )
 
     def setup_and_run(
-        self, iterations=1000, chains=1, seed=None, show_progress=False, **kwargs
+        self,
+        iterations=1000,
+        chains=1,
+        seed=None,
+        show_progress=False,
+        include_paths=None,
+        **kwargs
     ):
 
         self.precomputation()
         self.generate_stan_code()
-        self.compile_stan_code()
+        self.compile_stan_code(include_paths=include_paths)
         self.run(
             iterations=iterations,
             chains=chains,

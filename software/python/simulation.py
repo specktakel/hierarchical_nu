@@ -96,10 +96,17 @@ class Simulation:
 
         self._generate_main_sim_code()
 
-    def compile_stan_code(self):
+    def set_stan_filenames(self, atmo_sim_filename, main_sim_filename):
 
-        this_dir = os.path.abspath("")
-        include_paths = [os.path.join(this_dir, self.output_dir)]
+        self._atmo_sim_filename = atmo_sim_filename
+
+        self._main_sim_filename = main_sim_filename
+
+    def compile_stan_code(self, include_paths=None):
+
+        if not include_paths:
+            this_dir = os.path.abspath("")
+            include_paths = [os.path.join(this_dir, self.output_dir)]
 
         stanc_options = {"include_paths": include_paths}
 
@@ -239,14 +246,14 @@ class Simulation:
 
         return fig, ax
 
-    def setup_and_run(self):
+    def setup_and_run(self, include_paths=None):
         """
         Wrapper around setup functions for convenience.
         """
 
         self.precomputation()
         self.generate_stan_code()
-        self.compile_stan_code()
+        self.compile_stan_code(include_paths=include_paths)
         self.run()
 
     def _get_sim_inputs(self, seed=None):
