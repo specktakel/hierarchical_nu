@@ -5,6 +5,7 @@ from astropy.coordinates import SkyCoord
 import h5py
 from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
+import logging
 
 from .detector_model import DetectorModel
 from .precomputation import ExposureIntegral
@@ -13,34 +14,9 @@ from .source.parameter import Parameter
 from .source.flux_model import IsotropicDiffuseBG
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.cosmology import luminosity_distance
-from .events import Events, TRACKS, CASCADES
+from .events import Events
 
-from .backend.stan_generator import (
-    StanFileGenerator,
-    FunctionsContext,
-    Include,
-    DataContext,
-    TransformedDataContext,
-    ParametersContext,
-    TransformedParametersContext,
-    GeneratedQuantitiesContext,
-    ForLoopContext,
-    IfBlockContext,
-    ElseIfBlockContext,
-    ElseBlockContext,
-    WhileLoopContext,
-    ModelContext,
-    FunctionCall,
-)
-
-from .backend.variable_definitions import (
-    ForwardVariableDef,
-    ForwardArrayDef,
-    ParameterDef,
-    ParameterVectorDef,
-)
-from .backend.expression import StringExpression
-from .backend.parameterizations import DistributionMode
+from .stan_interface import generate_atmospheric_sim_code_, generate_main_sim_code_
 
 
 class Simulation:
@@ -79,6 +55,10 @@ class Simulation:
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
+
+        # Silence log output
+        logger = logging.getLogger("python.backend.code_generator")
+        logger.propagate = False
 
     def precomputation(self):
         """
@@ -376,311 +356,27 @@ class Simulation:
 
     def _generate_atmospheric_sim_code(self):
 
-        if self._sources.atmo_component():
-            atmo_flux_model = self._sources.atmo_component().flux_model
+        atmo_flux_model = self._sources.atmo_component().flux_model
 
-        with StanFileGenerator(self.output_dir + "/atmo_gen") as atmo_gen:
+        filename = self.output_dir + "/atmo_gen"
 
-            with FunctionsContext():
-                _ = Include("utils.stan")
-                _ = Include("interpolation.stan")
-
-                # Increasing theta points too much makes compilation very slow
-                # Could switch to passing array as data if problematic
-                atmu_nu_flux = atmo_flux_model.make_stan_function(theta_points=30)
-
-            with DataContext():
-                Esrc_min = ForwardVariableDef("Esrc_min", "real")
-                Esrc_max = ForwardVariableDef("Esrc_max", "real")
-
-                cosz_min = ForwardVariableDef("cosz_min", "real")
-                cosz_max = ForwardVariableDef("cosz_max", "real")
-
-            with ParametersContext():
-                # Simulate from Edet_min and cosz bounds for efficiency
-                energy = ParameterDef("energy", "real", Esrc_min, Esrc_max)
-                coszen = ParameterDef("coszen", "real", cosz_min, cosz_max)
-                phi = ParameterDef("phi", "real", 0, 2 * np.pi)
-
-            with TransformedParametersContext():
-                omega = ForwardVariableDef("omega", "unit_vector[3]")
-                zen = ForwardVariableDef("zen", "real")
-                theta = ForwardVariableDef("theta", "real")
-
-                zen << FunctionCall([coszen], "acos")
-                theta << FunctionCall([], "pi") - zen
-
-                omega[1] << FunctionCall([theta], "sin") * FunctionCall([phi], "cos")
-                omega[2] << FunctionCall([theta], "sin") * FunctionCall([phi], "sin")
-                omega[3] << FunctionCall([theta], "cos")
-
-            with ModelContext():
-
-                logflux = FunctionCall([atmu_nu_flux(energy, omega)], "log")
-                StringExpression(["target += ", logflux])
-
-        atmo_gen.generate_single_file()
-
-        self._atmo_sim_filename = atmo_gen.filename
+        self._atmo_sim_filename = generate_atmospheric_sim_code_(
+            filename, atmo_flux_model, theta_points=30
+        )
 
     def _generate_main_sim_code(self):
 
         ps_spec_shape = self._sources.sources[0].flux_model.spectral_shape
 
-        with StanFileGenerator(self.output_dir + "/sim_code") as sim_gen:
+        filename = self.output_dir + "/sim_code"
 
-            with FunctionsContext():
-                _ = Include("utils.stan")
-                _ = Include("vMF.stan")
-                _ = Include("interpolation.stan")
-                _ = Include("sim_functions.stan")
-
-                spectrum_rng = ps_spec_shape.make_stan_sampling_func("spectrum_rng")
-                flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
-
-            with DataContext():
-
-                # Sources
-                Ns = ForwardVariableDef("Ns", "int")
-                Ns_str = ["[", Ns, "]"]
-                Ns_1p_str = ["[", Ns, "+1]"]
-
-                varpi = ForwardArrayDef("varpi", "unit_vector[3]", Ns_str)
-                D = ForwardVariableDef("D", "vector[Ns]")
-                if self._diffuse_bg_comp:
-                    z = ForwardVariableDef("z", "vector[Ns+1]")
-                else:
-                    z = ForwardVariableDef("z", "vector[Ns]")
-
-                # Energies
-                alpha = ForwardVariableDef("alpha", "real")
-                Edet_min = ForwardVariableDef("Edet_min", "real")
-                Esrc_min = ForwardVariableDef("Esrc_min", "real")
-                Esrc_max = ForwardVariableDef("Esrc_max", "real")
-
-                # Luminosity/ diffuse flux
-                L = ForwardVariableDef("L", "real")
-                F_diff = ForwardVariableDef("F_diff", "real")
-                F_atmo = ForwardVariableDef("F_atmo", "real")
-
-                # Precomputed quantities
-                Ngrid = ForwardVariableDef("Ngrid", "int")
-                alpha_grid = ForwardVariableDef("alpha_grid", "vector[Ngrid]")
-                if self._diffuse_bg_comp:
-                    integral_grid = ForwardArrayDef(
-                        "integral_grid", "vector[Ngrid]", Ns_1p_str
-                    )
-                else:
-                    integral_grid = ForwardArrayDef(
-                        "integral_grid", "vector[Ngrid]", Ns_str
-                    )
-
-                if self._atmospheric_comp:
-                    atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
-
-                aeff_max = ForwardVariableDef("aeff_max", "real")
-
-                v_lim = ForwardVariableDef("v_lim", "real")
-                T = ForwardVariableDef("T", "real")
-
-                if self._atmospheric_comp:
-                    # Atmo samples
-                    N_atmo = ForwardVariableDef("N_atmo", "int")
-                    N_atmo_str = ["[", N_atmo, "]"]
-                    atmo_directions = ForwardArrayDef(
-                        "atmo_directions", "unit_vector[3]", N_atmo_str
-                    )
-                    atmo_energies = ForwardVariableDef(
-                        "atmo_energies", "vector[N_atmo]"
-                    )
-                    atmo_weights = ForwardVariableDef("atmo_weights", "simplex[N_atmo]")
-
-            with TransformedDataContext():
-
-                if self._diffuse_bg_comp and self._atmospheric_comp:
-                    F = ForwardVariableDef("F", "vector[Ns+2]")
-                    w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns+2]")
-                    eps = ForwardVariableDef("eps", "vector[Ns+2]")
-                elif self._diffuse_bg_comp or self._atmospheric_comp:
-                    F = ForwardVariableDef("F", "vector[Ns+1]")
-                    w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns+1]")
-                    eps = ForwardVariableDef("eps", "vector[Ns+1]")
-                else:
-                    F = ForwardVariableDef("F", "vector[Ns]")
-                    w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns]")
-                    eps = ForwardVariableDef("eps", "vector[Ns]")
-
-                track_type = ForwardVariableDef("track_type", "int")
-                cascade_type = ForwardVariableDef("cascade_type", "int")
-
-                track_type << TRACKS
-                cascade_type << CASCADES
-
-                Ftot = ForwardVariableDef("Ftot", "real")
-                Fsrc = ForwardVariableDef("Fs", "real")
-                f = ForwardVariableDef("f", "real")
-                Nex = ForwardVariableDef("Nex", "real")
-                N = ForwardVariableDef("N", "int")
-
-                Fsrc << 0.0
-                with ForLoopContext(1, Ns, "k") as k:
-                    F[k] << StringExpression(
-                        [L, "/ (4 * pi() * pow(", D[k], " * ", 3.086e22, ", 2))"]
-                    )
-                    StringExpression([F[k], "*=", flux_fac(alpha, Esrc_min, Esrc_max)])
-                    StringExpression([Fsrc, " += ", F[k]])
-
-                if self._diffuse_bg_comp:
-                    StringExpression("F[Ns+1]") << F_diff
-
-                if self._atmospheric_comp:
-                    StringExpression("F[Ns+2]") << F_atmo
-
-                if self._diffuse_bg_comp and self._atmospheric_comp:
-                    Ftot << Fsrc + F_diff + F_atmo
-                elif self._diffuse_bg_comp:
-                    Ftot << Fsrc + F_diff
-                else:
-                    Ftot << Fsrc
-
-                f << StringExpression([Fsrc, "/", Ftot])
-                StringExpression(['print("f: ", ', f, ")"])
-
-                if self._atmospheric_comp:
-                    eps << FunctionCall(
-                        [alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns],
-                        "get_exposure_factor_atmo",
-                    )
-                else:
-                    eps << FunctionCall(
-                        [alpha, alpha_grid, integral_grid, T, Ns], "get_exposure_factor"
-                    )
-
-                Nex << StringExpression(["get_Nex(", F, ", ", eps, ")"])
-                w_exposure << StringExpression(
-                    ["get_exposure_weights(", F, ", ", eps, ")"]
-                )
-                N << StringExpression(["poisson_rng(", Nex, ")"])
-                StringExpression(["print(", w_exposure, ")"])
-                StringExpression(["print(", Ngrid, ")"])
-                StringExpression(["print(", Nex, ")"])
-                StringExpression(["print(", N, ")"])
-
-            with GeneratedQuantitiesContext():
-                dm_rng = self._detector_model_type(mode=DistributionMode.RNG)
-                dm_pdf = self._detector_model_type(mode=DistributionMode.PDF)
-
-                N_str = ["[", N, "]"]
-                lam = ForwardArrayDef("Lambda", "int", N_str)
-                omega = ForwardVariableDef("omega", "unit_vector[3]")
-
-                Esrc = ForwardVariableDef("Esrc", "vector[N]")
-                E = ForwardVariableDef("E", "vector[N]")
-                Edet = ForwardVariableDef("Edet", "vector[N]")
-
-                if self._atmospheric_comp:
-                    atmo_index = ForwardVariableDef("atmo_index", "int")
-                cosz = ForwardArrayDef("cosz", "real", N_str)
-                Pdet = ForwardArrayDef("Pdet", "real", N_str)
-                accept = ForwardVariableDef("accept", "int")
-                detected = ForwardVariableDef("detected", "int")
-                ntrials = ForwardVariableDef("ntrials", "int")
-                prob = ForwardVariableDef("prob", "simplex[2]")
-
-                event = ForwardArrayDef("event", "unit_vector[3]", N_str)
-                Nex_sim = ForwardVariableDef("Nex_sim", "real")
-
-                event_type = ForwardVariableDef("event_type", "vector[N]")
-
-                Nex_sim << Nex
-
-                with ForLoopContext(1, N, "i") as i:
-
-                    lam[i] << FunctionCall([w_exposure], "categorical_rng")
-
-                    accept << 0
-                    detected << 0
-                    ntrials << 0
-
-                    with WhileLoopContext([StringExpression([accept != 1])]):
-
-                        # Sample position
-                        with IfBlockContext([StringExpression([lam[i], " <= ", Ns])]):
-                            omega << varpi[lam[i]]
-                        with ElseIfBlockContext(
-                            [StringExpression([lam[i], " == ", Ns + 1])]
-                        ):
-                            omega << FunctionCall([1, v_lim], "sphere_lim_rng")
-                        if self._atmospheric_comp:
-                            with ElseIfBlockContext(
-                                [StringExpression([lam[i], " == ", Ns + 2])]
-                            ):
-                                atmo_index << FunctionCall(
-                                    [atmo_weights], "categorical_rng"
-                                )
-                                omega << atmo_directions[atmo_index]
-
-                        cosz[i] << FunctionCall(
-                            [FunctionCall([omega], "omega_to_zenith")], "cos"
-                        )
-                        # Sample energy
-                        with IfBlockContext(
-                            [StringExpression([lam[i], " <= ", Ns + 1])]
-                        ):
-                            Esrc[i] << spectrum_rng(alpha, Esrc_min, Esrc_max)
-                            E[i] << Esrc[i] / (1 + z[lam[i]])
-
-                        if self._atmospheric_comp:
-                            with ElseIfBlockContext(
-                                [StringExpression([lam[i], " == ", Ns + 2])]
-                            ):
-                                E[i] << atmo_energies[atmo_index]
-
-                        # Test against Aeff
-                        with IfBlockContext([StringExpression([cosz[i], ">= 0.1"])]):
-                            Pdet[i] << 0
-                        with ElseBlockContext():
-                            Pdet[i] << dm_pdf.effective_area(E[i], omega) / aeff_max
-
-                        Edet[i] << 10 ** dm_rng.energy_resolution(E[i])
-
-                        prob[1] << Pdet[i]
-                        prob[2] << 1 - Pdet[i]
-                        StringExpression([ntrials, " += ", 1])
-
-                        with IfBlockContext([StringExpression([ntrials, "< 1000000"])]):
-                            detected << FunctionCall([prob], "categorical_rng")
-                            with IfBlockContext(
-                                [
-                                    StringExpression(
-                                        [
-                                            "(",
-                                            Edet[i],
-                                            " >= ",
-                                            Edet_min,
-                                            ") && (",
-                                            detected == 1,
-                                            ")",
-                                        ]
-                                    )
-                                ]
-                            ):
-                                accept << 1
-                        with ElseBlockContext():
-                            accept << 1
-                            StringExpression(
-                                ['print("problem component: ", ', lam[i], ");\n"]
-                            )
-
-                    # Detection effects
-                    event[i] << dm_rng.angular_resolution(E[i], omega)
-
-                    # To be extended
-                    event_type[i] << track_type
-
-        sim_gen.generate_single_file()
-
-        self._main_sim_filename = sim_gen.filename
+        self._main_sim_filename = generate_main_sim_code_(
+            filename,
+            ps_spec_shape,
+            self._detector_model_type,
+            self._diffuse_bg_comp,
+            self._atmospheric_comp,
+        )
 
 
 class SimInfo:
