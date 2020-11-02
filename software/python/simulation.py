@@ -48,9 +48,6 @@ class Simulation:
         self._diffuse_bg_comp = IsotropicDiffuseBG in flux_types
         self._atmospheric_comp = AtmosphericNuMuFlux in flux_types
 
-        if not os.path.exists("~/.stan_cache"):
-            os.makedirs("~/.stan_cache")
-
         self.output_dir = output_dir
 
         if not os.path.exists(self.output_dir):
