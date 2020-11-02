@@ -50,11 +50,14 @@ class StanFit:
         logger = logging.getLogger("python.backend.code_generator")
         logger.propagate = False
 
-    def precomputation(self):
+    def precomputation(self, exposure_integral=None):
 
-        self._exposure_integral = ExposureIntegral(
-            self._sources, self._detector_model_type
-        )
+        if not exposure_integral:
+            self._exposure_integral = ExposureIntegral(
+                self._sources, self._detector_model_type
+            )
+        else:
+            self._exposure_integral = exposure_integral
 
     def generate_stan_code(self):
 

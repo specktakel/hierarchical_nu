@@ -224,7 +224,7 @@ class ModelCheck:
 
             # Fit
             fit = StanFit(self._sources, NorthernTracksDetectorModel, events, obs_time)
-            fit.precomputation()
+            fit.precomputation(exposure_integral=sim._exposure_integral)
             fit.set_stan_filename(file_config["fit_filename"])
             fit.compile_stan_code(include_paths=file_config["include_paths"])
             fit.run()
