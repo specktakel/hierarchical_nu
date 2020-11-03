@@ -53,7 +53,7 @@ class ModelCheck:
         Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
 
         point_source = PointSource.make_powerlaw_source(
-            "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, index, 0.5, Emin, Emax
+            "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, index, 0.43, Emin, Emax
         )
 
         self._sources = Sources()
@@ -144,56 +144,107 @@ class ModelCheck:
 
         job_seeds = [(seed + job) * 10 for job in range(n_jobs)]
 
-        self.results = Parallel(n_jobs=n_jobs, backend="loky")(
+        self._results = Parallel(n_jobs=n_jobs, backend="loky")(
             delayed(self._single_run)(n_subjobs, seed=s) for s in job_seeds
         )
 
-    def save(self, output_file):
+    def save(self, filename):
 
-        with h5py.File(output_file, "w") as f:
+        with h5py.File(filename, "w") as f:
 
             truths_folder = f.create_group("truths")
             for key, value in self.truths.items():
                 truths_folder.create_dataset(key, data=value)
 
-            for i, res in enumerate(self.results):
+            for i, res in enumerate(self._results):
                 folder = f.create_group("results_%i" % i)
 
-                outputs_folder = folder.create_group("outputs")
-
                 for key, value in res.items():
-                    outputs_folder.create_dataset(key, data=value)
+                    folder.create_dataset(key, data=value)
 
-    def _single_run(self, n_subjobs, seed=None):
+    def load(self, filename_list):
+
+        self.truths = {}
+
+        self.results = {}
+        self.results["F_atmo"] = []
+        self.results["F_diff"] = []
+        self.results["L"] = []
+        self.results["alpha"] = []
+        self.results["f"] = []
+
+        file_truths = {}
+        for filename in filename_list:
+            with h5py.File(filename, "r") as f:
+
+                truths_folder = f["truths"]
+                for key, value in truths_folder.items():
+                    file_truths[key] = value[()]
+
+                if not self.truths:
+                    self.truths = file_truths
+
+                if self.truths != file_truths:
+                    raise ValueError(
+                        "Files in list have different truth settings and should not be combined"
+                    )
+
+                n_jobs = len([key for key in f if key != "truths"])
+                for i in range(n_jobs):
+                    job_folder = f["results_%i" % i]
+                    self.results["F_atmo"].extend(job_folder["F_atmo"][()])
+                    self.results["F_diff"].extend(job_folder["F_diff"][()])
+                    self.results["L"].extend(job_folder["L"][()])
+                    self.results["alpha"].extend(job_folder["alpha"][()])
+                    self.results["f"].extend(job_folder["f"][()])
+
+    def compare(self):
+
+        pass
+
+    def _single_run(self, n_subjobs, seed):
         """
         Single run to be called using Parallel.
         """
 
+        print("Random seed:", seed)
+
         parameter_config = ParameterConfig()
         file_config = FileConfig()
         Parameter.clear_registry()
-        _ = Parameter(
+        index = Parameter(
             parameter_config["alpha"],
             "index",
             fixed=False,
             par_range=parameter_config["alpha_range"],
         )
-        _ = Parameter(
+        L = Parameter(
             parameter_config["L"] * u.erg / u.s,
             "luminosity",
             fixed=True,
             par_range=parameter_config["L_range"],
         )
-        _ = Parameter(
+        diffuse_norm = Parameter(
             parameter_config["diff_norm"] * 1 / (u.GeV * u.m ** 2 * u.s),
             "diffuse_norm",
             fixed=True,
             par_range=(0, np.inf),
         )
-        _ = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
-        _ = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
-        _ = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
-        _ = Parameter(parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True)
+        Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
+        Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
+        Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
+        Emin_det = Parameter(
+            parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
+        )
+
+        point_source = PointSource.make_powerlaw_source(
+            "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, index, 0.43, Emin, Emax
+        )
+
+        self._sources = Sources()
+        self._sources.add(point_source)
+        self._sources.add_diffuse_component(diffuse_norm, Enorm.value)
+        self._sources.add_atmospheric_component()
 
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
@@ -219,19 +270,24 @@ class ModelCheck:
             )
             sim.compile_stan_code(include_paths=file_config["include_paths"])
             sim.run(seed=s)
+            self.sim = sim
 
             lam = sim._sim_output.stan_variable("Lambda").values[0]
             sim_output = {}
             sim_output["Lambda"] = lam
 
-            events = sim.events
+            self.events = sim.events
 
             # Fit
-            fit = StanFit(self._sources, NorthernTracksDetectorModel, events, obs_time)
+            fit = StanFit(
+                self._sources, NorthernTracksDetectorModel, sim.events, obs_time
+            )
             fit.precomputation(exposure_integral=sim._exposure_integral)
             fit.set_stan_filename(file_config["fit_filename"])
             fit.compile_stan_code(include_paths=file_config["include_paths"])
             fit.run(seed=s)
+
+            self.fit = fit
 
             # Store output
             outputs["F_diff"].append(

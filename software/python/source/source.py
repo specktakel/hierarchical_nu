@@ -72,7 +72,7 @@ class PointSource(Source):
         dec: u.rad,
         ra: u.rad,
         redshift: float,
-        spectral_shape: Callable[[float], float],
+        spectral_shape,  #: Callable[[float], float], <- causes issues in py3.7
         *args,
         **kwargs
     ):

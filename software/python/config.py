@@ -9,7 +9,6 @@ file_config["atmo_sim_filename"] = os.path.join(cwd, "stan_files/atmo_gen.stan")
 file_config["main_sim_filename"] = os.path.join(cwd, "stan_files/sim_code.stan")
 file_config["fit_filename"] = os.path.join(cwd, "stan_files/model_code.stan")
 file_config["include_paths"] = [
-    os.path.join(cwd, "../stan_files"),
     os.path.join(cwd, "stan_files"),
 ]
 
