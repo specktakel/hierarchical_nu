@@ -140,10 +140,12 @@ class ModelCheck:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-    def parallel_run(self, n_jobs=2, n_subjobs=1, seeds=None):
+    def parallel_run(self, n_jobs=1, n_subjobs=1, seed=None):
+
+        job_seeds = [(seed + job) * 10 for job in range(n_jobs)]
 
         self.results = Parallel(n_jobs=n_jobs, backend="loky")(
-            delayed(self._single_run)(n_subjobs) for _ in range(n_jobs)
+            delayed(self._single_run)(n_subjobs, seed=s) for s in job_seeds
         )
 
     def save(self, output_file):
@@ -162,7 +164,7 @@ class ModelCheck:
                 for key, value in res.items():
                     outputs_folder.create_dataset(key, data=value)
 
-    def _single_run(self, N, seed=None):
+    def _single_run(self, n_subjobs, seed=None):
         """
         Single run to be called using Parallel.
         """
@@ -193,6 +195,8 @@ class ModelCheck:
         _ = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
         _ = Parameter(parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True)
 
+        subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
+
         start_time = time.time()
 
         outputs = {}
@@ -202,7 +206,7 @@ class ModelCheck:
         outputs["f"] = []
         outputs["alpha"] = []
 
-        for i in range(N):
+        for i, s in enumerate(subjob_seeds):
 
             print("Run %i" % i)
 
@@ -214,7 +218,7 @@ class ModelCheck:
                 file_config["atmo_sim_filename"], file_config["main_sim_filename"]
             )
             sim.compile_stan_code(include_paths=file_config["include_paths"])
-            sim.run()
+            sim.run(seed=s)
 
             lam = sim._sim_output.stan_variable("Lambda").values[0]
             sim_output = {}
@@ -227,7 +231,7 @@ class ModelCheck:
             fit.precomputation(exposure_integral=sim._exposure_integral)
             fit.set_stan_filename(file_config["fit_filename"])
             fit.compile_stan_code(include_paths=file_config["include_paths"])
-            fit.run()
+            fit.run(seed=s)
 
             # Store output
             outputs["F_diff"].append(

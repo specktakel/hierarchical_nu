@@ -12,10 +12,13 @@ The configuration is specified in the YAMLConfig
 files as detailed in python.config 
 """
 
+n_jobs = int(sys.argv[1])
+n_subjobs = int(sys.argv[2])
+seed = int(sys.argv[3])
+
 cwd = os.getcwd()
-# TODO add job ID to filename
-output_file = os.path.join(cwd, "output/sim_study_test.h5")
+output_file = os.path.join(cwd, f"output/fit_sim_numu_{seed}.h5")
 
 model_check = ModelCheck()
-model_check.parallel_run(n_jobs=4)
+model_check.parallel_run(n_jobs=n_jobs, n_subjobs=n_subjobs, seed=seed)
 model_check.save(output_file)
