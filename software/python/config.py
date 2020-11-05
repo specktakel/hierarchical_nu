@@ -15,13 +15,13 @@ file_config["include_paths"] = [
 parameter_config = {}
 parameter_config["alpha"] = 2.3
 parameter_config["alpha_range"] = (1.0, 4.0)
-parameter_config["L"] = 1e47  # * u.erg / u.s
+parameter_config["L"] = 5e46  # * u.erg / u.s
 parameter_config["L_range"] = (0, 1e60)
 parameter_config["Enorm"] = 1e5  # * u.GeV
 parameter_config["Emin"] = 1e5  # * u.GeV
 parameter_config["Emax"] = 1e8  # * u.GeV
 parameter_config["Emin_det"] = 1e5  # * u.GeV
-parameter_config["diff_norm"] = 1.44e-14  # * (1 / (u.GeV * u.m**2 * u.s))
+parameter_config["diff_norm"] = 5e-14  # * (1 / (u.GeV * u.m**2 * u.s))
 parameter_config["obs_time"] = 10  # * u.year
 
 

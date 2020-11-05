@@ -1,7 +1,9 @@
 import os
+import sys
 import numpy as np
 import h5py
 import time
+from matplotlib import pyplot as plt
 from joblib import Parallel, delayed
 from astropy import units as u
 from cmdstanpy import CmdStanModel
@@ -198,16 +200,18 @@ class ModelCheck:
                     self.results["alpha"].extend(job_folder["alpha"][()])
                     self.results["f"].extend(job_folder["f"][()])
 
-    def compare(self):
+    def compare(self, var_name):
 
-        pass
+        fig, ax = plt.subplots()
+        ax.hist(self.results[key], alpha=0.7)
+        ax.axvline(self.truths[key], color="k", linestyle=":")
 
     def _single_run(self, n_subjobs, seed):
         """
         Single run to be called using Parallel.
         """
 
-        print("Random seed:", seed)
+        sys.stderr.write("Random seed: %i\n" % seed)
 
         parameter_config = ParameterConfig()
         file_config = FileConfig()
@@ -259,7 +263,7 @@ class ModelCheck:
 
         for i, s in enumerate(subjob_seeds):
 
-            print("Run %i" % i)
+            sys.stderr.write("Run %i\n" % i)
 
             # Simulation
             obs_time = parameter_config["obs_time"] * u.year
@@ -291,19 +295,17 @@ class ModelCheck:
 
             # Store output
             outputs["F_diff"].append(
-                np.mean(fit._fit_output.stan_variable("F_diff").values.T[0])
+                fit._fit_output.stan_variable("F_diff").values.T[0]
             )
             outputs["F_atmo"].append(
-                np.mean(fit._fit_output.stan_variable("F_atmo").values.T[0])
+                fit._fit_output.stan_variable("F_atmo").values.T[0]
             )
-            outputs["L"].append(np.mean(fit._fit_output.stan_variable("L").values.T[0]))
-            outputs["f"].append(np.mean(fit._fit_output.stan_variable("f").values.T[0]))
-            outputs["alpha"].append(
-                np.mean(fit._fit_output.stan_variable("alpha").values.T[0])
-            )
+            outputs["L"].append(fit._fit_output.stan_variable("L").values.T[0])
+            outputs["f"].append(fit._fit_output.stan_variable("f").values.T[0])
+            outputs["alpha"].append(fit._fit_output.stan_variable("alpha").values.T[0])
 
             fit.check_classification(sim_output)
 
-        print("time:", time.time() - start_time)
+            sys.stderr.write("time: %.5f\n" % (time.time() - start_time))
 
         return outputs
