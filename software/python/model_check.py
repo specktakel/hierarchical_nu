@@ -78,8 +78,6 @@ class ModelCheck:
     @u.quantity_input
     def initialise_env(
         cls,
-        Emin: u.GeV,
-        Emax: u.GeV,
         output_dir,
     ):
         """
@@ -91,13 +89,15 @@ class ModelCheck:
         Only need to run once before calling ModelCheck(...).run()
         """
 
+        parameter_config = ParameterConfig()
+
         # Run MCEq computation
         print("Setting up MCEq run for AtmopshericNumuFlux")
+        Emin = parameter_config["Emin"] * u.GeV
+        Emax = parameter_config["Emax"] * u.GeV
         atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
 
-        # Write configuration file
         file_config = FileConfig()
-        _ = ParameterConfig()
 
         atmo_sim_name = file_config["atmo_sim_filename"][:-5]
         _ = generate_atmospheric_sim_code_(
