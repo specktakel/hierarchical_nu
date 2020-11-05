@@ -98,7 +98,7 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
 
     """
 
-    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"  # noqa: E501
+    DATA_PATH = "input/effective_area.h5"  # noqa: E501
     CACHE_FNAME = "aeff_tracks.npz"
 
     def __init__(self) -> None:
@@ -168,7 +168,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
     Data from https://arxiv.org/pdf/1811.07979.pdf
     """
 
-    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_tracks/effective_area.h5"  # noqa: E501
+    DATA_PATH = "input/effective_area.h5"  # noqa: E501
     CACHE_FNAME = "energy_reso_tracks.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
@@ -358,7 +358,11 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                     bounds_lo += [0, 0.01]
                     bounds_hi += [8, 1]
 
-                res = least_squares(residuals, seed, bounds=(bounds_lo, bounds_hi),)
+                res = least_squares(
+                    residuals,
+                    seed,
+                    bounds=(bounds_lo, bounds_hi),
+                )
 
                 # Check for label swapping
                 mu_indices = np.arange(0, stop=n_components * 2, step=2)
@@ -566,7 +570,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
     @u.quantity_input
     def prob_Edet_above_threshold(self, true_energy: u.GeV, threshold_energy: u.GeV):
         """
-        P(Edet > Edet_min | E) for use in precomputation. 
+        P(Edet > Edet_min | E) for use in precomputation.
         """
 
         model = self.make_cumulative_model(self.n_components)
@@ -602,7 +606,7 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
 
     """
 
-    DATA_PATH = "NorthernTracksAngularRes.csv"
+    DATA_PATH = "input/NorthernTracksAngularRes.csv"
     CACHE_FNAME = "angular_reso_tracks.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
