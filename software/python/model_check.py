@@ -70,9 +70,11 @@ class ModelCheck:
         self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.value
         atmo_bg = self._sources.atmo_component()
         self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.value
-        self.truths["L"] = L.value.value
+        self.truths["L"] = L.value.to(u.GeV / u.s).value
         self.truths["f"] = f
         self.truths["alpha"] = parameter_config["alpha"]
+
+        self._default_var_names = [key for key in self.truths]
 
     @classmethod
     @u.quantity_input
@@ -200,11 +202,28 @@ class ModelCheck:
                     self.results["alpha"].extend(job_folder["alpha"][()])
                     self.results["f"].extend(job_folder["f"][()])
 
-    def compare(self, var_name):
+    def compare(self, var_names=None):
 
-        fig, ax = plt.subplots()
-        ax.hist(self.results[key], alpha=0.7)
-        ax.axvline(self.truths[key], color="k", linestyle=":")
+        if not var_names:
+            var_names = self._default_var_names
+
+        N = len(var_names)
+        fig, ax = plt.subplots(N, figsize=(5, 15))
+
+        for v, var_name in enumerate(var_names):
+            for i in range(len(self.results[var_name])):
+                ax[v].hist(
+                    self.results[var_name][i],
+                    color="g",
+                    alpha=0.1,
+                    histtype="step",
+                )
+
+            ax[v].axvline(self.truths[var_name], color="k", linestyle="--")
+            ax[v].set_xlabel(var_name)
+
+        fig.tight_layout()
+        return fig, ax
 
     def _single_run(self, n_subjobs, seed):
         """
