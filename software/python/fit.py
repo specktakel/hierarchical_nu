@@ -282,7 +282,7 @@ class StanFit:
 
         fit_inputs["E_grid"] = self._exposure_integral.energy_grid.value
         fit_inputs["Pdet_grid"] = (
-            np.array(self._exposure_integral.pdet_grid) + 1e-20
+            np.array(self._exposure_integral.pdet_grid) + 1e-10
         )  # avoid log(0)
 
         fit_inputs["L_scale"] = (
