@@ -29,39 +29,7 @@ class ModelCheck:
 
     def __init__(self):
 
-        parameter_config = ParameterConfig()
-
-        Parameter.clear_registry()
-        index = Parameter(
-            parameter_config["alpha"],
-            "index",
-            fixed=False,
-            par_range=parameter_config["alpha_range"],
-        )
-        L = Parameter(
-            parameter_config["L"] * u.erg / u.s,
-            "luminosity",
-            fixed=True,
-            par_range=parameter_config["L_range"],
-        )
-        diffuse_norm = Parameter(
-            parameter_config["diff_norm"] * 1 / (u.GeV * u.m ** 2 * u.s),
-            "diffuse_norm",
-            fixed=True,
-            par_range=(0, np.inf),
-        )
-        Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
-        Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
-        Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
-
-        point_source = PointSource.make_powerlaw_source(
-            "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, index, 0.43, Emin, Emax
-        )
-
-        self._sources = Sources()
-        self._sources.add(point_source)
-        self._sources.add_diffuse_component(diffuse_norm, Enorm.value)
-        self._sources.add_atmospheric_component()
+        self._initialise_sources()
 
         f = self._sources.associated_fraction().value
 
@@ -70,16 +38,18 @@ class ModelCheck:
         self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.value
         atmo_bg = self._sources.atmo_component()
         self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.value
-        self.truths["L"] = L.value.value
+        self.truths["L"] = (
+            Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
+        )
         self.truths["f"] = f
-        self.truths["alpha"] = parameter_config["alpha"]
+        self.truths["alpha"] = Parameter.get_parameter("index").value
+
+        self._default_var_names = [key for key in self.truths]
 
     @classmethod
     @u.quantity_input
     def initialise_env(
         cls,
-        Emin: u.GeV,
-        Emax: u.GeV,
         output_dir,
     ):
         """
@@ -91,13 +61,15 @@ class ModelCheck:
         Only need to run once before calling ModelCheck(...).run()
         """
 
+        parameter_config = ParameterConfig()
+
         # Run MCEq computation
         print("Setting up MCEq run for AtmopshericNumuFlux")
+        Emin = parameter_config["Emin"] * u.GeV
+        Emax = parameter_config["Emax"] * u.GeV
         atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
 
-        # Write configuration file
         file_config = FileConfig()
-        _ = ParameterConfig()
 
         atmo_sim_name = file_config["atmo_sim_filename"][:-5]
         _ = generate_atmospheric_sim_code_(
@@ -200,21 +172,33 @@ class ModelCheck:
                     self.results["alpha"].extend(job_folder["alpha"][()])
                     self.results["f"].extend(job_folder["f"][()])
 
-    def compare(self, var_name):
+    def compare(self, var_names=None):
 
-        fig, ax = plt.subplots()
-        ax.hist(self.results[key], alpha=0.7)
-        ax.axvline(self.truths[key], color="k", linestyle=":")
+        if not var_names:
+            var_names = self._default_var_names
 
-    def _single_run(self, n_subjobs, seed):
-        """
-        Single run to be called using Parallel.
-        """
+        N = len(var_names)
+        fig, ax = plt.subplots(N, figsize=(5, 15))
 
-        sys.stderr.write("Random seed: %i\n" % seed)
+        for v, var_name in enumerate(var_names):
+            for i in range(len(self.results[var_name])):
+                ax[v].hist(
+                    self.results[var_name][i],
+                    color="g",
+                    alpha=0.1,
+                    histtype="step",
+                )
+
+            ax[v].axvline(self.truths[var_name], color="k", linestyle="--")
+            ax[v].set_xlabel(var_name)
+
+        fig.tight_layout()
+        return fig, ax
+
+    def _initialise_sources(self):
 
         parameter_config = ParameterConfig()
-        file_config = FileConfig()
+
         Parameter.clear_registry()
         index = Parameter(
             parameter_config["alpha"],
@@ -249,6 +233,18 @@ class ModelCheck:
         self._sources.add(point_source)
         self._sources.add_diffuse_component(diffuse_norm, Enorm.value)
         self._sources.add_atmospheric_component()
+
+    def _single_run(self, n_subjobs, seed):
+        """
+        Single run to be called using Parallel.
+        """
+
+        sys.stderr.write("Random seed: %i\n" % seed)
+
+        self._initialise_sources()
+
+        file_config = FileConfig()
+        parameter_config = ParameterConfig()
 
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
