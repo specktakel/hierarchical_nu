@@ -1,0 +1,2820 @@
+Random seed: 10140
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+Random seed: 10080
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+Random seed: 10060
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10000
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10170
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10110
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10150
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10090
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10070
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10030
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10120
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10180
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10130
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10010
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10160
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10050
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10100
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10040
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10020
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+Random seed: 10190
+Run 0
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 791.61032
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 895.93346
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 1010.03480
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+time: 1029.61365
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 1087.52626
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 1110.93779
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 1120.78097
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 1146.14793
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 1149.44096
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 1161.12790
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 1208.94612
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 1225.01471
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 1455.70285
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 1540.03081
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 1646.59082
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 1651.80190
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 1807.36645
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 1878.56515
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 1954.23999
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 2008.07927
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+time: 2006.74741
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 2105.35075
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 2125.48403
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 2118.54848
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 2196.04674
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 2192.27698
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 2195.29691
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 2200.37822
+Run 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 2327.95266
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 2390.32939
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 2462.31658
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 2689.15318
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 2711.08881
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 2756.59326
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 2766.95560
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 2833.56812
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 2887.40205
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 2900.93304
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 3004.40267
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 3009.28366
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 3068.71532
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 3232.59703
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 3230.34796
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 3239.28636
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 3270.53389
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 3424.45535
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 3565.58112
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 3606.91480
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 3625.54582
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 3627.64024
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 3662.29930
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 3682.64634
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 3915.98006
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 3942.47523
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+time: 3984.90744
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 4076.01390
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 4081.77020
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 4182.10681
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 4239.61284
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 4322.33508
+Run 2
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 4423.87608
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 4438.82974
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 4609.35635
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 4610.66161
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+time: 4613.23431
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 4700.35372
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 4719.19827
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 4843.21293
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 4899.09047
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 4894.68515
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 4905.07718
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 4927.83461
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 5088.05278
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 5104.41993
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 5159.01203
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 5167.35201
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 5227.61407
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 5222.58524
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 5251.56449
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+time: 5245.60917
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 5258.34690
+Run 3
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 5420.08397
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 5488.25047
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 5746.88325
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 5746.90725
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 5761.97383
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 5827.49010
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 5925.13711
+Run 4
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 5973.87759
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 6050.22042
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 6096.88022
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 6153.32827
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 6251.02972
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 6387.31666
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 6431.68526
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 6504.93262
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 6621.08473
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 6745.68609
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 6799.15161
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 6845.18367
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 6926.70172
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 6970.16939
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 7027.22010
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 7045.68272
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 7178.68800
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 7252.29902
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 7270.19112
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 7363.02447
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 7448.64250
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+time: 7438.14677
+Run 5
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 7474.21863
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 7485.49954
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 7518.52542
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 7637.63456
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 7748.54422
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 7797.19837
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 7816.81872
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 7893.97378
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 7966.77268
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 7993.45591
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 8095.88418
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 8307.11633
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 8346.13985
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 8337.60201
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+time: 8363.84776
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 8523.93187
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 8561.62191
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 8595.21007
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 8619.95230
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 8731.61828
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 8749.11539
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+time: 8742.69483
+Run 6
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+time: 8752.79669
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 8845.31396
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 8848.48245
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 8889.20510
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 8933.16607
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 8988.35665
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 9121.13884
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 9216.14570
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 9431.22245
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 9465.85141
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 9553.43423
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 9588.34798
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 9785.54476
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 9802.99116
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 9884.71749
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 9899.06337
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 9980.41563
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 9995.65159
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+time: 9998.29728
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 10014.75522
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 10120.67405
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 10158.93540
+Run 7
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 10160.63146
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 10254.31881
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 10381.46248
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 10376.92628
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 10419.67354
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 10453.38437
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 10487.45462
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 10521.52434
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 10694.57280
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 10843.35652
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 11156.93880
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 11162.85328
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 11183.08463
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 11293.73278
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 11407.99167
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 11426.80995
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 11518.53080
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 11484.03605
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 11493.61144
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 11387.14672
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 11603.16003
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 11672.14543
+Run 8
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 11697.35868
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 11786.61691
+INFO:cmdstanpy:finish chain 1
+time: 11994.47953
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+time: 11977.62600
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+time: 11870.93647
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 12080.65748
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 12317.29710
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+time: 12122.25522
+time: 12140.66728
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 12170.76461
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+time: 12348.56654
+time: 12574.95182
+Run 9
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/atmo_gen
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/sim_code
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:start chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:finish chain 1
+INFO:cmdstanpy:found newer exe file, not recompiling
+INFO:cmdstanpy:compiled model file: /draco/u/fran/projects/hierarchical_nu/software/simulation_study/stan_files/model_code
+INFO:cmdstanpy:start chain 1
+time: 12384.66020
+time: 12387.21957
+time: 12409.93374
+time: 12448.62299
+time: 12454.36828
+INFO:cmdstanpy:finish chain 1
+time: 12608.89152
+time: 12631.61673
+time: 12666.56456
+INFO:cmdstanpy:finish chain 1
+time: 12869.49238
+INFO:cmdstanpy:finish chain 1
+time: 13052.59216
+INFO:cmdstanpy:finish chain 1
+time: 13299.25040
+time: 13438.64038
