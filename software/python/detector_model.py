@@ -1405,7 +1405,6 @@ class CascadesDetectorModel(DetectorModel):
         DetectorModel.__init__(self, mode)
 
         ang_res = CascadesAngularResolution(mode)
-        # ang_res = NorthernTracksAngularResolution(mode)
         self._angular_resolution = ang_res
         energy_res = CascadesEnergyResolution(mode)
         self._energy_resolution = energy_res
@@ -1427,9 +1426,7 @@ if __name__ == "__main__":
     e_reco_name = "e_reco"
     true_dir_name = "true_dir"
     reco_dir_name = "reco_dir"
-    # ntp = NorthernTracksAngularResolution([e_true, pos_true])
 
-    # print(ntp.to_stan())
     from backend.stan_generator import (
         StanGenerator, GeneratedQuantitiesContext, DataContext,
         FunctionsContext, Include)

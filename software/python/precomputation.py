@@ -12,7 +12,7 @@ import numpy as np
 from .source.source import Sources, PointSource, DiffuseSource, icrs_to_uv
 from .source.parameter import ParScale, Parameter
 from .backend.stan_generator import StanGenerator
-
+from .detector_model import NorthernTracksEnergyResolution
 
 m_to_cm = 100  # cm
 
@@ -128,7 +128,7 @@ class ExposureIntegral:
 
             if (
                 cosz < self.effective_area._cosz_bin_edges[0]
-                or cosz > self._effective_area._cosz_bin_edges[-1]
+                or cosz > self.effective_area._cosz_bin_edges[-1]
             ):
                 aeff = np.zeros(len(lower_e_edges)) << (u.m ** 2)
 
@@ -160,12 +160,20 @@ class ExposureIntegral:
 
             aeff = np.array(self.effective_area._eff_area, copy=True) << (u.m ** 2)
 
-        p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-            e_cen, self._min_det_energy
-        )
+        # For tracks, need to include energy thresholding effects
+        if isinstance(self.energy_resolution, NorthernTracksEnergyResolution):
+
+            p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                e_cen, self._min_det_energy
+            )
+
+        else:
+
+            p_Edet = 1.0
 
         # aeff = 1 * u.m ** 2
         # return (integral * aeff * source.redshift_factor(z)).sum()
+
         return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
 
     def _compute_exposure_integral(self):
@@ -271,4 +279,6 @@ class ExposureIntegral:
         """
 
         self._compute_exposure_integral()
-        self._compute_energy_detection_factor()
+
+        if isinstance(self.energy_resolution, NorthernTracksEnergyResolution):
+            self._compute_energy_detection_factor()
