@@ -98,7 +98,7 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
 
     """
 
-    DATA_PATH = "input/effective_area.h5"  # noqa: E501
+    DATA_PATH = "input/tracks/effective_area.h5"  # noqa: E501
     CACHE_FNAME = "aeff_tracks.npz"
 
     def __init__(self) -> None:
@@ -168,7 +168,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
     Data from https://arxiv.org/pdf/1811.07979.pdf
     """
 
-    DATA_PATH = "input/effective_area.h5"  # noqa: E501
+    DATA_PATH = "input/tracks/effective_area.h5"  # noqa: E501
     CACHE_FNAME = "energy_reso_tracks.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
@@ -606,7 +606,7 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
 
     """
 
-    DATA_PATH = "input/NorthernTracksAngularRes.csv"
+    DATA_PATH = "input/tracks/NorthernTracksAngularRes.csv"
     CACHE_FNAME = "angular_reso_tracks.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
@@ -840,7 +840,7 @@ class CascadesNuECCEffectiveArea(UserDefinedFunction):
     https://icecube.wisc.edu/science/data/HEnu_above1tev
     """
 
-    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_cascades_HESE/effective_area_HESE_nue_CC.hf5"
+    DATA_PATH = "input/cascades/effective_area_HESE_nue_CC.h5"
     CACHE_FNAME = "aeff_cascades_nue_cc.npz"
 
     def __init__(self) -> None:
@@ -908,7 +908,7 @@ class CascadesEnergyResolution(UserDefinedFunction):
     Data from https://arxiv.org/pdf/1811.07979.pdf
     """
 
-    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_cascades_HESE/effective_area_HESE_nue_CC.hf5"  # noqa: E501
+    DATA_PATH = "input/cascades/effective_area_HESE_nue_CC.h5"  # noqa: E501
     CACHE_FNAME = "energy_reso_cascade.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
@@ -923,7 +923,6 @@ class CascadesEnergyResolution(UserDefinedFunction):
         self.poly_params_sd: Sequence = []
         self.poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
 
-        # self.n_components = 1
         self.n_components = 3
         self.setup()
 
@@ -1039,7 +1038,6 @@ class CascadesEnergyResolution(UserDefinedFunction):
         fit_params = []
         # Rebin to have higher statistics at upper
         # and lower end of energy range
-        # rebin = 1
         rebin = 1
         rebinned_binc = np.zeros(int(len(tE_binc) / rebin))
         logrEbins = np.log10(rE_binc)
@@ -1227,20 +1225,11 @@ class CascadesEnergyResolution(UserDefinedFunction):
             rE_binc = 0.5*(rE_bin_edges[:-1]+rE_bin_edges[1:])
 
             n_components = 3
-            # n_components = 1
             fit_params, rebinned_binc = self._fit_energy_res(
                 tE_binc,
                 rE_binc,
                 eff_area,
                 n_components)
-
-            # Min and max values
-            # imin = 5
-#             imin = 10
-#             imax = -10
-# 
-#             e_min = rebinned_binc[imin]
-#             e_max = rebinned_binc[imax]
 
             def find_nearest_idx(array, value):
                 array = np.asarray(array)
@@ -1253,7 +1242,6 @@ class CascadesEnergyResolution(UserDefinedFunction):
             imax = find_nearest_idx(rebinned_binc, e_max)
 
             # Degree of polynomial
-            # polydeg = 5
             polydeg = 3
 
             log_rebinned = np.log10(rebinned_binc)
@@ -1310,7 +1298,7 @@ class CascadesAngularResolution(UserDefinedFunction):
         e_max: Upper energy bound of the polynomial
     """
 
-    DATA_PATH = "CascadesAngularResolution.csv"
+    DATA_PATH = "input/cascades/CascadesAngularResolution.csv"
     CACHE_FNAME = "angular_reso_cascades.npz"
 
     def __init__(
