@@ -862,7 +862,8 @@ class CascadesNuECCEffectiveArea(UserDefinedFunction):
             )
 
             # z = cos(theta)
-            cos_dir = "true_dir[3]"
+            #cos_dir = "true_dir[3]"
+            cos_dir = "cos(pi() - acos(true_dir[3]))"
             # cos_dir = FunctionCall(["true_dir"], "cos")
             _ = ReturnStatement([hist("true_energy", cos_dir)])
 
@@ -878,7 +879,7 @@ class CascadesNuECCEffectiveArea(UserDefinedFunction):
             import h5py  # type: ignore
 
             with h5py.File(self.DATA_PATH, "r") as f:
-                eff_area = f["aeff"][()]
+                eff_area = f["aeff"][()] / 1.0e4 # m^2
                 # sum over reco energy
                 eff_area = eff_area.sum(axis=2)
                 # True Energy [GeV]
@@ -1213,7 +1214,7 @@ class CascadesEnergyResolution(UserDefinedFunction):
         else:
             import h5py  # type: ignore
             with h5py.File(self.DATA_PATH, 'r') as f:
-                eff_area = f['aeff'][()]
+                eff_area = f['aeff'][()] / 1.0e4 # m^2
                 # True Energy [GeV]
                 tE_bin_edges = f['tE_edges'][:]
                 # cos(zenith)
@@ -1408,7 +1409,9 @@ class CascadesDetectorModel(DetectorModel):
         self._angular_resolution = ang_res
         energy_res = CascadesEnergyResolution(mode)
         self._energy_resolution = energy_res
-        self._eff_area = CascadesNuECCEffectiveArea()
+
+        if mode == DistributionMode.PDF:
+            self._eff_area = CascadesNuECCEffectiveArea()
 
     def _get_effective_area(self):
         return self._eff_area

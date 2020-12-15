@@ -29,6 +29,8 @@ from .backend.variable_definitions import (
 from .backend.expression import StringExpression
 from .backend.parameterizations import DistributionMode
 
+from .detector_model import NorthernTracksDetectorModel, CascadesDetectorModel
+
 
 def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):
 
@@ -289,9 +291,15 @@ def generate_main_sim_code_(
                             E[i] << atmo_energies[atmo_index]
 
                     # Test against Aeff
-                    with IfBlockContext([StringExpression([cosz[i], ">= 0.1"])]):
-                        Pdet[i] << 0
-                    with ElseBlockContext():
+                    if detector_model_type == NorthernTracksDetectorModel:
+
+                        with IfBlockContext([StringExpression([cosz[i], ">= 0.1"])]):
+                            Pdet[i] << 0
+                        with ElseBlockContext():
+                            Pdet[i] << dm_pdf.effective_area(E[i], omega) / aeff_max
+
+                    if detector_model_type == CascadesDetectorModel:
+
                         Pdet[i] << dm_pdf.effective_area(E[i], omega) / aeff_max
 
                     Edet[i] << 10 ** dm_rng.energy_resolution(E[i])
@@ -328,7 +336,10 @@ def generate_main_sim_code_(
                 event[i] << dm_rng.angular_resolution(E[i], omega)
 
                 # To be extended
-                event_type[i] << track_type
+                if detector_model_type == NorthernTracksDetectorModel:
+                    event_type[i] << track_type
+                if detector_model_type == CascadesDetectorModel:
+                    event_type[i] << cascade_type
 
     sim_gen.generate_single_file()
 
