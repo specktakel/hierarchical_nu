@@ -924,7 +924,7 @@ class CascadesEnergyResolution(UserDefinedFunction):
         self.poly_params_sd: Sequence = []
         self.poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
 
-        self.n_components = 3
+        self.n_components = 1
         self.setup()
 
         if mode == DistributionMode.PDF:
@@ -1225,19 +1225,18 @@ class CascadesEnergyResolution(UserDefinedFunction):
             tE_binc = 0.5*(tE_bin_edges[:-1]+tE_bin_edges[1:])
             rE_binc = 0.5*(rE_bin_edges[:-1]+rE_bin_edges[1:])
 
-            n_components = 3
             fit_params, rebinned_binc = self._fit_energy_res(
                 tE_binc,
                 rE_binc,
                 eff_area,
-                n_components)
+                self.n_components)
 
             def find_nearest_idx(array, value):
                 array = np.asarray(array)
                 idx = (np.abs(array - value)).argmin()
                 return idx
 
-            e_min = 1e5
+            e_min = 6e4
             e_max = 1e7
             imin = find_nearest_idx(rebinned_binc, e_min)
             imax = find_nearest_idx(rebinned_binc, e_max)
@@ -1246,10 +1245,10 @@ class CascadesEnergyResolution(UserDefinedFunction):
             polydeg = 3
 
             log_rebinned = np.log10(rebinned_binc)
-            poly_params_mu = np.zeros((n_components, polydeg+1))
+            poly_params_mu = np.zeros((self.n_components, polydeg+1))
 
             poly_params_sd = np.zeros_like(poly_params_mu)
-            for i in range(n_components):
+            for i in range(self.n_components):
                 poly_params_mu[i] = np.polyfit(
                     log_rebinned[imin:imax],
                     fit_params[:, 2*i][imin:imax],

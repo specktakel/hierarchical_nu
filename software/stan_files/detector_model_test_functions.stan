@@ -1475,16 +1475,46 @@ real hist_edge_1[21] = {-1. ,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0. , 
   0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1. };
 return hist_array[binary_search(value_0, hist_edge_0)][binary_search(value_1, hist_edge_1)];
 }
+vector CascadesAngularResolution_rng(real true_energy,vector true_dir)
+{
+vector[6] CascadesAngularResolutionPolyCoeffs = [-4.84839608e-01, 3.59082699e+00, 4.39765349e+01,-4.86964043e+02,
+  1.50499694e+03,-1.48474342e+03]';
+return vMF_rng(true_dir, eval_poly1d(log10(truncate_value(true_energy, 100.0, 100000000.0)),CascadesAngularResolutionPolyCoeffs));
+}
+real c_energy_res_mix_rng(vector means,vector sigmas,vector weights)
+{
+int index;
+index = categorical_rng(weights);
+return lognormal_rng(means[index], sigmas[index]);
+}
+real CascadeEnergyResolution_rng(real true_energy)
+{
+real CascadesEnergyResolutionMuPolyCoeffs[1,4] = {{ 7.50161629e-04,-1.20609837e-02, 1.06835482e+00,-1.44735721e-01}};
+real CascadesEnergyResolutionSdPolyCoeffs[1,4] = {{-1.76301679e-05, 3.20023507e-04,-1.92631841e-03, 1.38442612e-02}};
+real mu_e_res[1];
+real sigma_e_res[1];
+vector[1] weights;
+for (i in 1:1)
+{
+weights[i] = 1.0/1;
+}
+for (i in 1:1)
+{
+mu_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 60000.0, 10000000.0)), to_vector(CascadesEnergyResolutionMuPolyCoeffs[i]));
+sigma_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 60000.0, 10000000.0)), to_vector(CascadesEnergyResolutionSdPolyCoeffs[i]));
+}
+return c_energy_res_mix_rng(to_vector(log(mu_e_res)), to_vector(sigma_e_res), weights);
+}
 real CascadesAngularResolution(real true_energy,vector true_dir,vector reco_dir)
 {
 vector[6] CascadesAngularResolutionPolyCoeffs = [-4.84839608e-01, 3.59082699e+00, 4.39765349e+01,-4.86964043e+02,
   1.50499694e+03,-1.48474342e+03]';
-return vMF_lpdf(reco_dir | true_dir, eval_poly1d(log10(truncate_value(true_energy, 2.0, 8.0)),CascadesAngularResolutionPolyCoeffs));
+return vMF_lpdf(reco_dir | true_dir, eval_poly1d(log10(truncate_value(true_energy, 100.0, 100000000.0)),CascadesAngularResolutionPolyCoeffs));
 }
 real c_energy_res_mix(real x,vector means,vector sigmas,vector weights)
 {
-vector[3] result;
-for (i in 1:3)
+vector[1] result;
+for (i in 1:1)
 {
 result[i] = (log(weights)[i]+lognormal_lpdf(x | means[i], sigmas[i]));
 }
@@ -1492,23 +1522,19 @@ return log_sum_exp(result);
 }
 real CascadeEnergyResolution(real true_energy,real reco_energy)
 {
-real CascadesEnergyResolutionMuPolyCoeffs[3,4] = {{ 0.00452856,-0.0807379 , 1.48234865,-0.97226467},
- { 0.00458037,-0.08166141, 1.48778913,-0.98284375},
- { 0.00458804,-0.08179827, 1.48859608,-0.98441414}};
-real CascadesEnergyResolutionSdPolyCoeffs[3,4] = {{-7.85340415e-11, 1.42084199e-09,-8.52615860e-09, 1.00000170e-02},
- { 3.13560691e-07,-5.59624768e-06, 3.30086043e-05, 9.93572101e-03},
- { 1.03997124e-11,-1.81682953e-10, 1.02550056e-09, 9.99999818e-03}};
-real mu_e_res[3];
-real sigma_e_res[3];
-vector[3] weights;
-for (i in 1:3)
+real CascadesEnergyResolutionMuPolyCoeffs[1,4] = {{ 7.50161629e-04,-1.20609837e-02, 1.06835482e+00,-1.44735721e-01}};
+real CascadesEnergyResolutionSdPolyCoeffs[1,4] = {{-1.76301679e-05, 3.20023507e-04,-1.92631841e-03, 1.38442612e-02}};
+real mu_e_res[1];
+real sigma_e_res[1];
+vector[1] weights;
+for (i in 1:1)
 {
-weights[i] = 1.0/3;
+weights[i] = 1.0/1;
 }
-for (i in 1:3)
+for (i in 1:1)
 {
-mu_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 100000.0, 10000000.0)), to_vector(CascadesEnergyResolutionMuPolyCoeffs[i]));
-sigma_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 100000.0, 10000000.0)), to_vector(CascadesEnergyResolutionSdPolyCoeffs[i]));
+mu_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 60000.0, 10000000.0)), to_vector(CascadesEnergyResolutionMuPolyCoeffs[i]));
+sigma_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 60000.0, 10000000.0)), to_vector(CascadesEnergyResolutionSdPolyCoeffs[i]));
 }
 return c_energy_res_mix(log10(reco_energy), to_vector(log(mu_e_res)), to_vector(sigma_e_res), weights);
 }
