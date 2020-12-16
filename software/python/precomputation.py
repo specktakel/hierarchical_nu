@@ -51,7 +51,7 @@ class ExposureIntegral:
         logger.propagate = False
 
         # Instantiate the given Detector class to access values
-        with StanGenerator() as cg:
+        with StanGenerator():
             dm = detector_model()
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
