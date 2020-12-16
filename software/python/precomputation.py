@@ -160,16 +160,9 @@ class ExposureIntegral:
 
             aeff = np.array(self.effective_area._eff_area, copy=True) << (u.m ** 2)
 
-        # For tracks, need to include energy thresholding effects
-        if isinstance(self.energy_resolution, NorthernTracksEnergyResolution):
-
-            p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                e_cen, self._min_det_energy
-            )
-
-        else:
-
-            p_Edet = 1.0
+        p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+            e_cen, self._min_det_energy
+        )
 
         # aeff = 1 * u.m ** 2
         # return (integral * aeff * source.redshift_factor(z)).sum()
@@ -280,5 +273,4 @@ class ExposureIntegral:
 
         self._compute_exposure_integral()
 
-        if isinstance(self.energy_resolution, NorthernTracksEnergyResolution):
-            self._compute_energy_detection_factor()
+        self._compute_energy_detection_factor()

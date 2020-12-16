@@ -1027,6 +1027,23 @@ class CascadesEnergyResolution(UserDefinedFunction):
 
         return _model
 
+    @staticmethod
+    def make_cumulative_model(n_components):
+        """
+        Cumulative Lognormal mixture above xth
+        """
+
+        def _cumulative_model(xth, pars):
+            result = 0
+            for i in range(n_components):
+                result += (1 / n_components) * stats.lognorm.cdf(
+                    xth, scale=pars[2 * i], s=pars[2 * i + 1]
+                )
+            return result
+
+        return _cumulative_model
+
+
     def _fit_energy_res(
         self,
         tE_binc: np.ndarray,
@@ -1284,7 +1301,26 @@ class CascadesEnergyResolution(UserDefinedFunction):
             param_dict: dict):
         pass
 
+    @u.quantity_input
+    def prob_Edet_above_threshold(self, true_energy: u.GeV, threshold_energy: u.GeV):
+        """
+        P(Edet > Edet_min | E) for use in precomputation.
+        """
 
+        model = self.make_cumulative_model(self.n_components)
+
+        prob = np.zeros_like(true_energy)
+        model_params: List[float] = []
+        for comp in range(self.n_components):
+            mu = np.poly1d(self.poly_params_mu[comp])(np.log10(true_energy.value))
+            sigma = np.poly1d(self.poly_params_sd[comp])(np.log10(true_energy.value))
+            model_params += [mu, sigma]
+
+        prob = 1 - model(np.log10(threshold_energy.value), model_params)
+
+        return prob
+
+    
 class CascadesAngularResolution(UserDefinedFunction):
     """
     Angular resolution for Cascades
