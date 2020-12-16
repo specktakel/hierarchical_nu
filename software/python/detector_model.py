@@ -879,7 +879,7 @@ class CascadesNuECCEffectiveArea(UserDefinedFunction):
             import h5py  # type: ignore
 
             with h5py.File(self.DATA_PATH, "r") as f:
-                eff_area = f["aeff"][()] / 1.0e4 # m^2
+                eff_area = f["aeff"][()] / ( 1.0e4 / (2 * np.pi) ) # m^2
                 # sum over reco energy
                 eff_area = eff_area.sum(axis=2)
                 # True Energy [GeV]
@@ -1231,7 +1231,7 @@ class CascadesEnergyResolution(UserDefinedFunction):
         else:
             import h5py  # type: ignore
             with h5py.File(self.DATA_PATH, 'r') as f:
-                eff_area = f['aeff'][()] / 1.0e4 # m^2
+                eff_area = f['aeff'][()] / ( 1.0e4 / (2 * np.pi) ) # m^2
                 # True Energy [GeV]
                 tE_bin_edges = f['tE_edges'][:]
                 # cos(zenith)
