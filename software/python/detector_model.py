@@ -407,7 +407,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         axs[0].set_xlabel("log10(True Energy / GeV)")
         axs[0].set_ylabel("Parameter Value")
         plt.tight_layout()
-        plt.savefig("energy_fit_params.png", dpi=150)
+        plt.savefig("energy_fit_params_tracks.png", dpi=150)
 
     def plot_parameterizations(
         self,
@@ -485,7 +485,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         ax.set_xlabel("log10(Reconstructed Energy /GeV)")
         ax.set_ylabel("PDF")
         plt.tight_layout()
-        plt.savefig("energy_parameterizations.png", dpi=150)
+        plt.savefig("energy_parameterizations_tracks.png", dpi=150)
 
     def setup(self) -> None:
         # Load Aeff data
@@ -1196,7 +1196,7 @@ class CascadesEnergyResolution(UserDefinedFunction):
         axs[0].set_xlabel("log10(True Energy / GeV)")
         axs[0].set_ylabel("Parameter Value")
         plt.tight_layout()
-        plt.savefig("energy_fit_params.png", dpi=150)
+        plt.savefig("energy_fit_params_cascades.png", dpi=150)
 
     def plot_parameterizations(
             self,
@@ -1258,7 +1258,7 @@ class CascadesEnergyResolution(UserDefinedFunction):
 
             fl_ax[i].plot(xs, model(xs, model_params))
             fl_ax[i].plot(xs, model(xs, res))
-            fl_ax[i].set_ylim(1E-4, 10)
+            fl_ax[i].set_ylim(1E-4, 5)
             fl_ax[i].set_yscale("log")
             fl_ax[i].set_title("True E: {:.1E}".format(tE_binc[p_i]))
 
@@ -1271,7 +1271,7 @@ class CascadesEnergyResolution(UserDefinedFunction):
         ax.set_xlabel("log10(Reconstructed Energy /GeV)")
         ax.set_ylabel("PDF")
         plt.tight_layout()
-        plt.savefig("energy_parameterizations.png", dpi=150)
+        plt.savefig("energy_parameterizations_cascades.png", dpi=150)
 
     def setup(self) -> None:
 
@@ -1313,7 +1313,7 @@ class CascadesEnergyResolution(UserDefinedFunction):
                 idx = (np.abs(array - value)).argmin()
                 return idx
 
-            e_min = 6e4
+            e_min = 1e3
             e_max = 1e7
             imin = find_nearest_idx(tE_binc, e_min)
             imax = find_nearest_idx(tE_binc, e_max)
