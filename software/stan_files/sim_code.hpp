@@ -58,138 +58,138 @@ using stan::math::pow;
 
 static int current_statement__ = 0;
 static const std::vector<string> locations_array__ = {" (found before start of program)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1644, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1645, column 0 to column 21)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1646, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1647, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1648, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1649, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1650, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1651, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1652, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1653, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1654, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1655, column 0 to column 16)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1656, column 0 to column 24)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1657, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1658, column 0 to column 21)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1659, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1662, column 0 to column 40)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1663, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1664, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1665, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1678, column 0 to column 43)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1679, column 0 to column 36)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1677, column 0 to line 1680, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1676, column 5 to line 1680, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1674, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1673, column 0 to line 1675, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1672, column 5 to line 1680, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1670, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1669, column 0 to line 1671, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1668, column 0 to line 1680, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1681, column 0 to column 38)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1689, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1688, column 0 to line 1690, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1687, column 5 to line 1690, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1684, column 0 to column 50)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1685, column 0 to column 34)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1683, column 0 to line 1686, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1682, column 0 to line 1690, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1691, column 0 to column 61)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1692, column 0 to column 49)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1693, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1694, column 0 to column 22)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1695, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1706, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1707, column 0 to column 40)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1708, column 0 to column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1705, column 0 to line 1709, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1698, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1701, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1700, column 0 to line 1702, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1699, column 0 to line 1702, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1697, column 0 to line 1703, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1696, column 0 to line 1709, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1667, column 0 to line 1710, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1666, column 0 to line 1710, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1711, column 0 to column 54)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1712, column 0 to column 29)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1661, column 0 to line 1713, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1660, column 0 to line 1713, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1584, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1585, column 21 to column 23)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1585, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1586, column 7 to column 9)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1586, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1587, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1587, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1588, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1589, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1590, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1591, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1592, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1593, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1594, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1595, column 0 to column 10)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1596, column 7 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1596, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1597, column 28 to column 32)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1597, column 7 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1597, column 0 to column 34)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1598, column 0 to column 20)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1599, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1600, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1601, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1602, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1603, column 31 to column 37)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1603, column 0 to column 39)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1604, column 7 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1604, column 0 to column 29)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1605, column 8 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1605, column 0 to column 29)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1609, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1609, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1610, column 8 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1610, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1611, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1611, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1612, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1613, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1614, column 0 to column 10)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1615, column 0 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1616, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1617, column 0 to column 9)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1618, column 0 to column 6)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1619, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1620, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1621, column 0 to column 9)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1624, column 0 to column 48)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1625, column 0 to column 43)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1626, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1623, column 0 to line 1627, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1622, column 0 to line 1627, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1628, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1629, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1630, column 0 to column 28)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1631, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1632, column 0 to column 16)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1633, column 0 to column 88)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1634, column 0 to column 22)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1635, column 0 to column 42)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1636, column 0 to column 21)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1637, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1638, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1639, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1640, column 0 to column 9)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1644, column 11 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1646, column 7 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1647, column 7 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1648, column 7 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1650, column 10 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1651, column 10 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1656, column 21 to column 22)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1658, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 293, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 294, column 0 to column 21)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 295, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 296, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 297, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 298, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 299, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 300, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 301, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 302, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 303, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 304, column 0 to column 16)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 305, column 0 to column 24)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 306, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 307, column 0 to column 21)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 308, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 311, column 0 to column 40)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 312, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 313, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 314, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 327, column 0 to column 43)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 328, column 0 to column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 326, column 0 to line 329, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 325, column 5 to line 329, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 323, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 322, column 0 to line 324, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 321, column 5 to line 329, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 319, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 318, column 0 to line 320, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 317, column 0 to line 329, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 330, column 0 to column 38)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 338, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 337, column 0 to line 339, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 336, column 5 to line 339, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 333, column 0 to column 50)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 334, column 0 to column 34)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 332, column 0 to line 335, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 331, column 0 to line 339, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 340, column 0 to column 56)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 341, column 0 to column 49)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 342, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 343, column 0 to column 22)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 344, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 355, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 356, column 0 to column 40)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 357, column 0 to column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 354, column 0 to line 358, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 347, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 350, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 349, column 0 to line 351, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 348, column 0 to line 351, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 346, column 0 to line 352, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 345, column 0 to line 358, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 316, column 0 to line 359, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 315, column 0 to line 359, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 360, column 0 to column 54)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 361, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 310, column 0 to line 362, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 309, column 0 to line 362, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 233, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 234, column 21 to column 23)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 234, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 235, column 7 to column 9)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 235, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 236, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 236, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 237, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 238, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 239, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 240, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 241, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 242, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 243, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 244, column 0 to column 10)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 245, column 7 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 245, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 246, column 28 to column 32)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 246, column 7 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 246, column 0 to column 34)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 247, column 0 to column 20)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 248, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 249, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 250, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 251, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 252, column 31 to column 37)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 252, column 0 to column 39)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 253, column 7 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 253, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 254, column 8 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 254, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 258, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 258, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 259, column 8 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 259, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 260, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 260, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 261, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 262, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 263, column 0 to column 10)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 264, column 0 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 265, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 266, column 0 to column 9)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 267, column 0 to column 6)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 268, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 269, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 270, column 0 to column 9)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 273, column 0 to column 48)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 274, column 0 to column 43)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 275, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 272, column 0 to line 276, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 271, column 0 to line 276, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 277, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 278, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 279, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 280, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 281, column 0 to column 16)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 282, column 0 to column 88)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 283, column 0 to column 22)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 284, column 0 to column 42)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 285, column 0 to column 21)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 286, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 287, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 288, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 289, column 0 to column 9)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 293, column 11 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 295, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 296, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 297, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 299, column 10 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 300, column 10 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 305, column 21 to column 22)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 307, column 7 to column 8)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 13, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 3, column 0)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 14, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 3, column 0)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 18, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 3, column 0)",
@@ -403,77 +403,77 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 101, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 6, column 0)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 105, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 6, column 0)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 96, column 35, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 9, column 0 to line 1408, column 64)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1409, column 0 to line 1479, column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1480, column 0 to line 1481, column 37)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1482, column 0 to column 92)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 8, column 0 to line 1483, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1486, column 0 to column 16)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1487, column 0 to column 10)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1488, column 0 to column 56)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1489, column 0 to column 31)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1490, column 0 to column 73)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1485, column 0 to line 1491, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1494, column 0 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1495, column 0 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1502, column 0 to column 58)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1501, column 0 to line 1503, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1498, column 0 to column 28)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1497, column 0 to line 1499, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1496, column 0 to line 1503, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1510, column 0 to column 58)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1509, column 0 to line 1511, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1506, column 0 to column 28)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1505, column 0 to line 1507, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1504, column 0 to line 1511, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1512, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1493, column 0 to line 1513, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1516, column 0 to line 1517, column 35)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1518, column 0 to column 130)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1515, column 0 to line 1519, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1522, column 0 to column 10)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1523, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1524, column 0 to column 50)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1521, column 0 to line 1525, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1528, column 0 to column 117)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1529, column 0 to column 117)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1530, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1531, column 0 to column 20)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1532, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1535, column 0 to column 19)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1534, column 0 to line 1536, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1533, column 0 to line 1536, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1539, column 0 to column 135)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1540, column 0 to column 138)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1538, column 0 to line 1541, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1537, column 0 to line 1541, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1542, column 0 to column 87)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1527, column 0 to line 1543, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1546, column 0 to line 1547, column 35)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1548, column 0 to column 142)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1545, column 0 to line 1549, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1552, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1555, column 0 to column 70)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1554, column 0 to line 1556, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1553, column 0 to line 1556, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1557, column 0 to column 27)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1551, column 0 to line 1558, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1561, column 0 to column 117)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1562, column 0 to column 117)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1563, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1564, column 0 to column 20)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1565, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1568, column 0 to column 19)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1567, column 0 to line 1569, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1566, column 0 to line 1569, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1572, column 0 to column 135)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1573, column 0 to column 138)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1571, column 0 to line 1574, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1570, column 0 to line 1574, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1575, column 0 to column 103)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1560, column 0 to line 1576, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1579, column 0 to column 76)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1578, column 0 to line 1580, column 1)"};
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 9, column 0 to line 108, column 69)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 109, column 0 to line 121, column 47)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 122, column 0 to column 80)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 123, column 0 to column 92)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 8, column 0 to line 124, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 127, column 0 to column 16)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 128, column 0 to column 10)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 129, column 0 to column 56)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 130, column 0 to column 31)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 131, column 0 to column 73)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 126, column 0 to line 132, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 135, column 0 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 136, column 0 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 143, column 0 to column 58)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 142, column 0 to line 144, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 139, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 138, column 0 to line 140, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 137, column 0 to line 144, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 151, column 0 to column 58)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 150, column 0 to line 152, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 147, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 146, column 0 to line 148, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 145, column 0 to line 152, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 153, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 134, column 0 to line 154, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 157, column 0 to line 158, column 35)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 159, column 0 to column 130)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 156, column 0 to line 160, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 163, column 0 to column 10)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 164, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 165, column 0 to column 50)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 162, column 0 to line 166, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 169, column 0 to line 171, column 68)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 172, column 0 to line 174, column 68)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 175, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 176, column 0 to column 20)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 177, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 180, column 0 to column 19)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 179, column 0 to line 181, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 178, column 0 to line 181, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 184, column 0 to column 134)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 185, column 0 to column 137)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 183, column 0 to line 186, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 182, column 0 to line 186, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 187, column 0 to column 87)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 168, column 0 to line 188, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 191, column 0 to line 192, column 35)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 193, column 0 to column 142)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 190, column 0 to line 194, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 197, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 200, column 0 to column 70)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 199, column 0 to line 201, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 198, column 0 to line 201, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 202, column 0 to column 27)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 196, column 0 to line 203, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 206, column 0 to line 208, column 68)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 209, column 0 to line 211, column 68)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 212, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 213, column 0 to column 20)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 214, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 217, column 0 to column 19)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 216, column 0 to line 218, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 215, column 0 to line 218, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 221, column 0 to column 134)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 222, column 0 to column 137)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 220, column 0 to line 223, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 219, column 0 to line 223, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 224, column 0 to column 103)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 205, column 0 to line 225, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 228, column 0 to column 71)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 227, column 0 to line 229, column 1)"};
 
 
 template <typename T0__, typename T1__>
@@ -1654,8 +1654,8 @@ return get_Nex(F, eps, pstream__);
 template <typename T0__, typename T1__>
 stan::promote_args_t<T0__,
 T1__>
-CascadesNuECCEffAreaHist(const T0__& value_0, const T1__& value_1,
-                         std::ostream* pstream__) {
+CascadesEffAreaHist(const T0__& value_0, const T1__& value_1,
+                    std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<T0__, T1__>;
   const static bool propto__ = true;
   (void) propto__;
@@ -1664,2220 +1664,190 @@ CascadesNuECCEffAreaHist(const T0__& value_0, const T1__& value_1,
   
   try {
     std::vector<std::vector<local_scalar_t__>> hist_array;
-    hist_array = std::vector<std::vector<local_scalar_t__>>(280, std::vector<local_scalar_t__>(20, DUMMY_VAR__));
+    hist_array = std::vector<std::vector<local_scalar_t__>>(50, std::vector<local_scalar_t__>(10, DUMMY_VAR__));
     
     current_statement__ = 346;
     assign(hist_array, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(9.50596202e-06).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(1.42919840e-05).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(1.76282949e-05).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(1.67092378e-05).add(0.00000000e+00)
-      .add(3.37975011e-05).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(1.54413719e-02).add(1.66980258e-02).add(2.00701615e-02)
-      .add(2.35101783e-02).add(2.62841813e-02).add(2.90262468e-02)
-      .add(3.08893342e-02).add(3.24348101e-02).add(3.39829287e-02)
-      .add(3.47832658e-02).add(3.45607304e-02).add(3.20157596e-02)
-      .add(3.33426340e-02).add(3.37848075e-02).add(3.15428820e-02)
-      .add(3.33152687e-02).add(3.36436478e-02).add(3.45767464e-02)
-      .add(3.45660540e-02).add(3.45622686e-02).array())
-      .add(stan::math::array_builder<double>().add(3.94698914e-02)
-      .add(4.35492644e-02).add(5.26275049e-02).add(5.99796005e-02)
-      .add(6.76352078e-02).add(7.53735355e-02).add(7.92306727e-02)
-      .add(8.10788666e-02).add(8.68634186e-02).add(8.90650505e-02)
-      .add(8.72006446e-02).add(8.89380567e-02).add(9.02609740e-02)
-      .add(8.44068055e-02).add(8.76646160e-02).add(8.20997094e-02)
-      .add(8.48650826e-02).add(8.58448548e-02).add(9.00251754e-02)
-      .add(8.93179092e-02).array()).add(stan::math::array_builder<double>()
-      .add(5.02080134e-02).add(5.32958883e-02).add(6.39183730e-02)
-      .add(7.47527201e-02).add(8.60599703e-02).add(9.65919091e-02)
-      .add(9.97456659e-02).add(1.04458068e-01).add(1.09857229e-01)
-      .add(1.11425682e-01).add(1.12818798e-01).add(1.11706020e-01)
-      .add(1.11203302e-01).add(1.13012647e-01).add(1.09860300e-01)
-      .add(1.08631062e-01).add(1.07568193e-01).add(1.11944701e-01)
-      .add(1.12578273e-01).add(1.16705003e-01).array())
-      .add(stan::math::array_builder<double>().add(5.11673287e-02)
-      .add(5.83241447e-02).add(7.13011452e-02).add(8.24982104e-02)
-      .add(9.72619705e-02).add(1.06517085e-01).add(1.17670637e-01)
-      .add(1.20901147e-01).add(1.20674368e-01).add(1.23336585e-01)
-      .add(1.27724029e-01).add(1.29138264e-01).add(1.26990089e-01)
-      .add(1.25414933e-01).add(1.22522273e-01).add(1.24752579e-01)
-      .add(1.25873033e-01).add(1.21188286e-01).add(1.28531446e-01)
-      .add(1.28255639e-01).array()).add(stan::math::array_builder<double>()
-      .add(5.78091834e-02).add(6.29673794e-02).add(7.92789032e-02)
-      .add(9.47981766e-02).add(1.04678418e-01).add(1.18482106e-01)
-      .add(1.25553356e-01).add(1.29879337e-01).add(1.32988814e-01)
-      .add(1.37922770e-01).add(1.37206717e-01).add(1.44518995e-01)
-      .add(1.40294671e-01).add(1.43369673e-01).add(1.35950720e-01)
-      .add(1.37088876e-01).add(1.35412752e-01).add(1.33852108e-01)
-      .add(1.39051016e-01).add(1.42882705e-01).array())
-      .add(stan::math::array_builder<double>().add(6.08551531e-02)
-      .add(7.07236500e-02).add(8.44936435e-02).add(1.02879814e-01)
-      .add(1.16552683e-01).add(1.28437911e-01).add(1.38479865e-01)
-      .add(1.47300045e-01).add(1.53511031e-01).add(1.51388671e-01)
-      .add(1.61080506e-01).add(1.58021627e-01).add(1.54990711e-01)
-      .add(1.55646648e-01).add(1.48159424e-01).add(1.51508843e-01)
-      .add(1.49352889e-01).add(1.54238233e-01).add(1.51109650e-01)
-      .add(1.60258771e-01).array()).add(stan::math::array_builder<double>()
-      .add(6.53599057e-02).add(7.48363649e-02).add(9.45620923e-02)
-      .add(1.09159867e-01).add(1.26592172e-01).add(1.42963662e-01)
-      .add(1.51937863e-01).add(1.62946816e-01).add(1.68999656e-01)
-      .add(1.73674238e-01).add(1.72114643e-01).add(1.73020615e-01)
-      .add(1.70839081e-01).add(1.66868867e-01).add(1.64722776e-01)
-      .add(1.68382062e-01).add(1.69564123e-01).add(1.67256656e-01)
-      .add(1.71413886e-01).add(1.76440780e-01).array())
-      .add(stan::math::array_builder<double>().add(7.16737516e-02)
-      .add(7.98552161e-02).add(9.98869416e-02).add(1.19561198e-01)
-      .add(1.41183290e-01).add(1.58664087e-01).add(1.69770321e-01)
-      .add(1.83693971e-01).add(1.86907686e-01).add(1.87197350e-01)
-      .add(1.88671283e-01).add(1.90710859e-01).add(1.89091111e-01)
-      .add(1.86262586e-01).add(1.85422225e-01).add(1.83571785e-01)
-      .add(1.81855808e-01).add(1.87608678e-01).add(1.88558292e-01)
-      .add(1.97136324e-01).array()).add(stan::math::array_builder<double>()
-      .add(7.78578331e-02).add(8.74276697e-02).add(1.08830298e-01)
-      .add(1.33094332e-01).add(1.47026465e-01).add(1.71245272e-01)
-      .add(1.87879223e-01).add(1.95272378e-01).add(2.03978378e-01)
-      .add(2.11898286e-01).add(2.13177802e-01).add(2.13353979e-01)
-      .add(2.12133009e-01).add(2.09239871e-01).add(2.02432900e-01)
-      .add(2.04823471e-01).add(2.00958340e-01).add(2.11327604e-01)
-      .add(2.14823396e-01).add(2.17320475e-01).array())
-      .add(stan::math::array_builder<double>().add(7.97317712e-02)
-      .add(9.21951017e-02).add(1.18013367e-01).add(1.39561165e-01)
-      .add(1.65370202e-01).add(1.85076272e-01).add(1.99918454e-01)
-      .add(2.24986491e-01).add(2.24944358e-01).add(2.34527834e-01)
-      .add(2.36925106e-01).add(2.36717492e-01).add(2.32549828e-01)
-      .add(2.26514441e-01).add(2.29830563e-01).add(2.32685850e-01)
-      .add(2.25247120e-01).add(2.32130571e-01).add(2.39243096e-01)
-      .add(2.38255558e-01).array()).add(stan::math::array_builder<double>()
-      .add(8.54011440e-02).add(9.69024394e-02).add(1.26450019e-01)
-      .add(1.56793147e-01).add(1.78760311e-01).add(2.05382632e-01)
-      .add(2.21424997e-01).add(2.36719186e-01).add(2.51451154e-01)
-      .add(2.55915345e-01).add(2.57369588e-01).add(2.58793447e-01)
-      .add(2.46919435e-01).add(2.54772318e-01).add(2.53524942e-01)
-      .add(2.49461778e-01).add(2.47250456e-01).add(2.52981402e-01)
-      .add(2.66043557e-01).add(2.68552045e-01).array())
-      .add(stan::math::array_builder<double>().add(9.34603491e-02)
-      .add(1.06287407e-01).add(1.32973577e-01).add(1.67478401e-01)
-      .add(1.96531377e-01).add(2.24058774e-01).add(2.38346476e-01)
-      .add(2.69239847e-01).add(2.75111135e-01).add(2.82640195e-01)
-      .add(2.85755014e-01).add(2.82335028e-01).add(2.84620282e-01)
-      .add(2.81584465e-01).add(2.79270193e-01).add(2.79802134e-01)
-      .add(2.78303413e-01).add(2.85742101e-01).add(2.85752702e-01)
-      .add(2.93031411e-01).array()).add(stan::math::array_builder<double>()
-      .add(9.89042819e-02).add(1.15456231e-01).add(1.48499713e-01)
-      .add(1.80032943e-01).add(2.13452592e-01).add(2.44358362e-01)
-      .add(2.71098540e-01).add(2.83121444e-01).add(3.01130430e-01)
-      .add(3.14474830e-01).add(3.14026458e-01).add(3.16986588e-01)
-      .add(3.11780202e-01).add(3.10077699e-01).add(3.05657926e-01)
-      .add(3.01519784e-01).add(3.06093944e-01).add(3.02084202e-01)
-      .add(3.20576984e-01).add(3.27391792e-01).array())
-      .add(stan::math::array_builder<double>().add(1.01615533e-01)
-      .add(1.21255811e-01).add(1.60952895e-01).add(1.96215502e-01)
-      .add(2.31602261e-01).add(2.71435694e-01).add(2.95101901e-01)
-      .add(3.21190397e-01).add(3.36796174e-01).add(3.46614339e-01)
-      .add(3.50305477e-01).add(3.49989995e-01).add(3.42287994e-01)
-      .add(3.51574349e-01).add(3.34187485e-01).add(3.43821203e-01)
-      .add(3.41101021e-01).add(3.39522886e-01).add(3.44842905e-01)
-      .add(3.61595703e-01).array()).add(stan::math::array_builder<double>()
-      .add(1.12372533e-01).add(1.27791475e-01).add(1.67534016e-01)
-      .add(2.13700481e-01).add(2.59035617e-01).add(2.96745653e-01)
-      .add(3.26935689e-01).add(3.57512456e-01).add(3.70248204e-01)
-      .add(3.76380945e-01).add(3.93968901e-01).add(3.89758269e-01)
-      .add(3.82751671e-01).add(3.74371955e-01).add(3.73312467e-01)
-      .add(3.61995236e-01).add(3.69384712e-01).add(3.75023437e-01)
-      .add(3.82988905e-01).add(3.93254067e-01).array())
-      .add(stan::math::array_builder<double>().add(1.14792572e-01)
-      .add(1.36403794e-01).add(1.88191744e-01).add(2.25933236e-01)
-      .add(2.74337632e-01).add(3.20597549e-01).add(3.59814311e-01)
-      .add(3.80659457e-01).add(4.08247079e-01).add(4.10171188e-01)
-      .add(4.19529873e-01).add(4.37121501e-01).add(4.20492923e-01)
-      .add(4.19536319e-01).add(4.18487976e-01).add(4.08101904e-01)
-      .add(4.09699848e-01).add(4.17189369e-01).add(4.22008113e-01)
-      .add(4.37703351e-01).array()).add(stan::math::array_builder<double>()
-      .add(1.22763963e-01).add(1.46598425e-01).add(1.92799425e-01)
-      .add(2.46970898e-01).add(2.95006598e-01).add(3.46143078e-01)
-      .add(3.86587772e-01).add(4.24368818e-01).add(4.51154252e-01)
-      .add(4.60975809e-01).add(4.68468130e-01).add(4.67536136e-01)
-      .add(4.70017371e-01).add(4.52686198e-01).add(4.56920392e-01)
-      .add(4.58034128e-01).add(4.46595539e-01).add(4.60574439e-01)
-      .add(4.65843441e-01).add(4.74864625e-01).array())
-      .add(stan::math::array_builder<double>().add(1.28221698e-01)
-      .add(1.52360239e-01).add(2.06378892e-01).add(2.66970636e-01)
-      .add(3.26931697e-01).add(3.74781586e-01).add(4.32360596e-01)
-      .add(4.58936351e-01).add(4.95348226e-01).add(5.19224552e-01)
-      .add(5.15353076e-01).add(5.18104589e-01).add(5.05964564e-01)
-      .add(5.10068469e-01).add(4.96795186e-01).add(4.83775555e-01)
-      .add(4.95138653e-01).add(4.92478715e-01).add(5.20191334e-01)
-      .add(5.31269976e-01).array()).add(stan::math::array_builder<double>()
-      .add(1.41200846e-01).add(1.64952851e-01).add(2.22761894e-01)
-      .add(2.89207320e-01).add(3.52633857e-01).add(4.14284787e-01)
-      .add(4.65864035e-01).add(5.13498033e-01).add(5.30771523e-01)
-      .add(5.52227845e-01).add(5.70029181e-01).add(5.55642273e-01)
-      .add(5.72066027e-01).add(5.63301519e-01).add(5.63161566e-01)
-      .add(5.54905802e-01).add(5.51984170e-01).add(5.40939431e-01)
-      .add(5.67434228e-01).add(5.93557249e-01).array())
-      .add(stan::math::array_builder<double>().add(1.45233710e-01)
-      .add(1.73019023e-01).add(2.36491028e-01).add(3.07101449e-01)
-      .add(3.85779735e-01).add(4.47047521e-01).add(5.20451366e-01)
-      .add(5.49842118e-01).add(5.83523274e-01).add(6.09232489e-01)
-      .add(6.22194110e-01).add(6.25624637e-01).add(6.11820216e-01)
-      .add(5.99114862e-01).add(6.03648887e-01).add(5.98188983e-01)
-      .add(6.04349746e-01).add(6.24116600e-01).add(6.38567680e-01)
-      .add(6.54307310e-01).array()).add(stan::math::array_builder<double>()
-      .add(1.55898757e-01).add(1.88335518e-01).add(2.58640558e-01)
-      .add(3.37017572e-01).add(4.17285009e-01).add(4.72360863e-01)
-      .add(5.63745602e-01).add(5.95793089e-01).add(6.39952808e-01)
-      .add(6.67952927e-01).add(6.75076721e-01).add(6.82286666e-01)
-      .add(6.76470562e-01).add(6.85068255e-01).add(6.73495943e-01)
-      .add(6.53749092e-01).add(6.52781773e-01).add(6.77679113e-01)
-      .add(7.11938994e-01).add(7.21574607e-01).array())
-      .add(stan::math::array_builder<double>().add(1.62037310e-01)
-      .add(2.04846868e-01).add(2.75993946e-01).add(3.70798048e-01)
-      .add(4.43219444e-01).add(5.30008809e-01).add(5.96485540e-01)
-      .add(6.70533234e-01).add(6.96388979e-01).add(7.39750081e-01)
-      .add(7.65224930e-01).add(7.67457017e-01).add(7.52915933e-01)
-      .add(7.56647055e-01).add(7.25131731e-01).add(7.28900354e-01)
-      .add(7.26381857e-01).add(7.63698977e-01).add(7.69574510e-01)
-      .add(7.65240031e-01).array()).add(stan::math::array_builder<double>()
-      .add(1.69429867e-01).add(2.06998725e-01).add(2.88875830e-01)
-      .add(3.75029440e-01).add(4.79752511e-01).add(5.76033266e-01)
-      .add(6.64731936e-01).add(7.30055787e-01).add(7.67614428e-01)
-      .add(8.01028341e-01).add(8.32566593e-01).add(8.23007453e-01)
-      .add(8.18662338e-01).add(8.15867481e-01).add(8.14901566e-01)
-      .add(8.18474080e-01).add(8.12569888e-01).add(8.38285712e-01)
-      .add(8.35172653e-01).add(8.57218112e-01).array())
-      .add(stan::math::array_builder<double>().add(1.80093386e-01)
-      .add(2.20056660e-01).add(3.14907469e-01).add(4.20829005e-01)
-      .add(5.16770374e-01).add(6.23646632e-01).add(7.26383688e-01)
-      .add(7.94468479e-01).add(8.58609736e-01).add(9.04197988e-01)
-      .add(8.98567244e-01).add(9.10042027e-01).add(9.21933982e-01)
-      .add(9.09480287e-01).add(8.93943036e-01).add(8.92261985e-01)
-      .add(8.79793056e-01).add(9.06028012e-01).add(9.17479590e-01)
-      .add(9.39734540e-01).array()).add(stan::math::array_builder<double>()
-      .add(1.82630494e-01).add(2.33097714e-01).add(3.31288000e-01)
-      .add(4.38777831e-01).add(5.54609221e-01).add(6.62346077e-01)
-      .add(7.80058037e-01).add(8.82188477e-01).add(9.13529562e-01)
-      .add(9.60215594e-01).add(9.65372201e-01).add(9.96572313e-01)
-      .add(9.99134513e-01).add(9.86714748e-01).add(9.77213045e-01)
-      .add(9.69273934e-01).add(9.55785714e-01).add(9.72547466e-01)
-      .add(1.02219338e+00).add(1.09819493e+00).array())
-      .add(stan::math::array_builder<double>().add(1.98575077e-01)
-      .add(2.43953320e-01).add(3.57171894e-01).add(4.63420151e-01)
-      .add(6.14056120e-01).add(7.30229139e-01).add(8.57499275e-01)
-      .add(9.55005371e-01).add(1.03624443e+00).add(1.06956549e+00)
-      .add(1.06831598e+00).add(1.09730591e+00).add(1.09690404e+00)
-      .add(1.08290338e+00).add(1.05638557e+00).add(1.05692372e+00)
-      .add(1.07171158e+00).add(1.09594753e+00).add(1.12235738e+00)
-      .add(1.16753453e+00).array()).add(stan::math::array_builder<double>()
-      .add(2.02792861e-01).add(2.55766515e-01).add(3.68618218e-01)
-      .add(5.03266377e-01).add(6.44064194e-01).add(7.91985551e-01)
-      .add(9.33906167e-01).add(1.03602186e+00).add(1.10843565e+00)
-      .add(1.17698560e+00).add(1.20197233e+00).add(1.20868870e+00)
-      .add(1.16757926e+00).add(1.23171428e+00).add(1.17058273e+00)
-      .add(1.14177907e+00).add(1.18750328e+00).add(1.19367753e+00)
-      .add(1.24308594e+00).add(1.29439237e+00).array())
-      .add(stan::math::array_builder<double>().add(2.16212345e-01)
-      .add(2.59492460e-01).add(3.91183655e-01).add(5.32496864e-01)
-      .add(7.06129094e-01).add(8.63918320e-01).add(1.00591390e+00)
-      .add(1.12880259e+00).add(1.25262326e+00).add(1.25916208e+00)
-      .add(1.33284026e+00).add(1.30528477e+00).add(1.31154223e+00)
-      .add(1.29947637e+00).add(1.30239218e+00).add(1.27662462e+00)
-      .add(1.28118764e+00).add(1.28367703e+00).add(1.31584480e+00)
-      .add(1.41279876e+00).array()).add(stan::math::array_builder<double>()
-      .add(2.24509711e-01).add(2.84573773e-01).add(4.08147841e-01)
-      .add(5.64076639e-01).add(7.51523650e-01).add(9.39875987e-01)
-      .add(1.05283960e+00).add(1.22378714e+00).add(1.31635244e+00)
-      .add(1.40415824e+00).add(1.41581988e+00).add(1.43262168e+00)
-      .add(1.43245465e+00).add(1.44415886e+00).add(1.40479350e+00)
-      .add(1.36085596e+00).add(1.39713266e+00).add(1.44499226e+00)
-      .add(1.50755262e+00).add(1.49117113e+00).array())
-      .add(stan::math::array_builder<double>().add(2.33094684e-01)
-      .add(2.83306762e-01).add(4.40158167e-01).add(6.08736811e-01)
-      .add(8.11033482e-01).add(9.95509306e-01).add(1.17720831e+00)
-      .add(1.33728188e+00).add(1.45860511e+00).add(1.52435949e+00)
-      .add(1.57320601e+00).add(1.62081951e+00).add(1.56337672e+00)
-      .add(1.54324072e+00).add(1.57973647e+00).add(1.57222930e+00)
-      .add(1.57811833e+00).add(1.58419610e+00).add(1.65206481e+00)
-      .add(1.68396660e+00).array()).add(stan::math::array_builder<double>()
-      .add(2.37891905e-01).add(3.06042390e-01).add(4.56721058e-01)
-      .add(6.41516335e-01).add(8.58859097e-01).add(1.07011730e+00)
-      .add(1.27824710e+00).add(1.45535143e+00).add(1.56240668e+00)
-      .add(1.66718873e+00).add(1.71233986e+00).add(1.80315700e+00)
-      .add(1.74199478e+00).add(1.70850839e+00).add(1.69855908e+00)
-      .add(1.67221146e+00).add(1.69065750e+00).add(1.71194265e+00)
-      .add(1.79178240e+00).add(1.80512704e+00).array())
-      .add(stan::math::array_builder<double>().add(2.49218820e-01)
-      .add(3.19369416e-01).add(4.81346332e-01).add(6.91750866e-01)
-      .add(9.14302374e-01).add(1.15557481e+00).add(1.38140648e+00)
-      .add(1.62293909e+00).add(1.67641021e+00).add(1.81225707e+00)
-      .add(1.91429910e+00).add(1.92066480e+00).add(1.86425444e+00)
-      .add(1.91085603e+00).add(1.85659527e+00).add(1.83082169e+00)
-      .add(1.89885191e+00).add(1.89168738e+00).add(2.03304571e+00)
-      .add(2.04287040e+00).array()).add(stan::math::array_builder<double>()
-      .add(2.60738136e-01).add(3.28423981e-01).add(5.17103387e-01)
-      .add(7.27798983e-01).add(9.79057317e-01).add(1.26396570e+00)
-      .add(1.46623299e+00).add(1.65694341e+00).add(1.87804892e+00)
-      .add(1.95872543e+00).add(1.99950682e+00).add(2.03149998e+00)
-      .add(2.10309961e+00).add(2.07166619e+00).add(2.07348962e+00)
-      .add(2.00711452e+00).add(2.00433926e+00).add(2.07050928e+00)
-      .add(2.13322220e+00).add(2.17909536e+00).array())
-      .add(stan::math::array_builder<double>().add(2.66873334e-01)
-      .add(3.45737392e-01).add(5.39841667e-01).add(7.83579476e-01)
-      .add(1.04966834e+00).add(1.31895887e+00).add(1.57876197e+00)
-      .add(1.85622291e+00).add(2.00171255e+00).add(2.18790296e+00)
-      .add(2.22941425e+00).add(2.30382038e+00).add(2.31602025e+00)
-      .add(2.25589773e+00).add(2.24813682e+00).add(2.18927927e+00)
-      .add(2.20446881e+00).add(2.29421657e+00).add(2.37819874e+00)
-      .add(2.51800902e+00).array()).add(stan::math::array_builder<double>()
-      .add(2.77736316e-01).add(3.66755883e-01).add(5.67333043e-01)
-      .add(8.12150891e-01).add(1.10376235e+00).add(1.44788866e+00)
-      .add(1.72713334e+00).add(2.00434101e+00).add(2.22185016e+00)
-      .add(2.31387382e+00).add(2.47845500e+00).add(2.41619496e+00)
-      .add(2.52129856e+00).add(2.53187046e+00).add(2.47168895e+00)
-      .add(2.42746870e+00).add(2.46892541e+00).add(2.49549714e+00)
-      .add(2.56923742e+00).add(2.70145879e+00).array())
-      .add(stan::math::array_builder<double>().add(2.88010922e-01)
-      .add(3.83748217e-01).add(5.84681672e-01).add(8.63883057e-01)
-      .add(1.20406941e+00).add(1.52139551e+00).add(1.88548463e+00)
-      .add(2.14774754e+00).add(2.44382854e+00).add(2.53052907e+00)
-      .add(2.69017327e+00).add(2.74298641e+00).add(2.72423050e+00)
-      .add(2.72875442e+00).add(2.63554715e+00).add(2.61574748e+00)
-      .add(2.66110002e+00).add(2.72930884e+00).add(2.82336729e+00)
-      .add(2.91947856e+00).array()).add(stan::math::array_builder<double>()
-      .add(2.92188412e-01).add(3.91301003e-01).add(6.09570324e-01)
-      .add(9.03638830e-01).add(1.28009854e+00).add(1.68634855e+00)
-      .add(1.99603118e+00).add(2.31383893e+00).add(2.57530613e+00)
-      .add(2.84453053e+00).add(2.90809102e+00).add(2.98175914e+00)
-      .add(2.98826234e+00).add(3.00157837e+00).add(2.85918986e+00)
-      .add(2.93179520e+00).add(2.94096524e+00).add(2.94023112e+00)
-      .add(3.10271576e+00).add(3.20012565e+00).array())
-      .add(stan::math::array_builder<double>().add(3.05125305e-01)
-      .add(4.01691321e-01).add(6.43048759e-01).add(9.67341783e-01)
-      .add(1.35485188e+00).add(1.73465215e+00).add(2.10077860e+00)
-      .add(2.52245030e+00).add(2.83658478e+00).add(3.01521852e+00)
-      .add(3.17942894e+00).add(3.21167088e+00).add(3.22341476e+00)
-      .add(3.17512044e+00).add(3.15738879e+00).add(3.14958702e+00)
-      .add(3.22884498e+00).add(3.22088246e+00).add(3.35723104e+00)
-      .add(3.44137862e+00).array()).add(stan::math::array_builder<double>()
-      .add(3.20054295e-01).add(4.11920008e-01).add(6.88564290e-01)
-      .add(1.02969463e+00).add(1.46926964e+00).add(1.91323317e+00)
-      .add(2.27375189e+00).add(2.68300871e+00).add(3.02250576e+00)
-      .add(3.24813859e+00).add(3.41630350e+00).add(3.39062877e+00)
-      .add(3.51829909e+00).add(3.57690649e+00).add(3.53784285e+00)
-      .add(3.42792203e+00).add(3.50478871e+00).add(3.52658615e+00)
-      .add(3.70854630e+00).add(3.72176434e+00).array())
-      .add(stan::math::array_builder<double>().add(3.20739238e-01)
-      .add(4.30549717e-01).add(7.17918595e-01).add(1.10281607e+00)
-      .add(1.53213009e+00).add(2.02372251e+00).add(2.53438460e+00)
-      .add(2.90487104e+00).add(3.40684551e+00).add(3.54230606e+00)
-      .add(3.71627591e+00).add(3.74579872e+00).add(3.80197176e+00)
-      .add(3.93822420e+00).add(3.79573047e+00).add(3.73449649e+00)
-      .add(3.90952181e+00).add(3.84336689e+00).add(4.05367719e+00)
-      .add(4.15470823e+00).array()).add(stan::math::array_builder<double>()
-      .add(3.29533009e-01).add(4.36704878e-01).add(7.49281431e-01)
-      .add(1.13775419e+00).add(1.59535199e+00).add(2.09921038e+00)
-      .add(2.69047019e+00).add(3.11927243e+00).add(3.57725706e+00)
-      .add(3.89910002e+00).add(4.00440211e+00).add(4.15162105e+00)
-      .add(4.12988505e+00).add(4.33447267e+00).add(4.20368661e+00)
-      .add(4.17966409e+00).add(4.13048469e+00).add(4.25911297e+00)
-      .add(4.38737027e+00).add(4.50876801e+00).array())
-      .add(stan::math::array_builder<double>().add(3.33364429e-01)
-      .add(4.60997345e-01).add(7.88779256e-01).add(1.19247018e+00)
-      .add(1.72092823e+00).add(2.25343679e+00).add(2.91400874e+00)
-      .add(3.42368563e+00).add(3.93461087e+00).add(4.16995538e+00)
-      .add(4.31411918e+00).add(4.58862377e+00).add(4.55876909e+00)
-      .add(4.55465699e+00).add(4.51587448e+00).add(4.59814438e+00)
-      .add(4.56964250e+00).add(4.65758792e+00).add(4.76371714e+00)
-      .add(4.91878024e+00).array()).add(stan::math::array_builder<double>()
-      .add(3.44509525e-01).add(4.76431728e-01).add(8.08857159e-01)
-      .add(1.26728907e+00).add(1.81913379e+00).add(2.41146220e+00)
-      .add(3.11031553e+00).add(3.66058485e+00).add(4.21193691e+00)
-      .add(4.50963240e+00).add(4.78841107e+00).add(4.97489292e+00)
-      .add(4.90417312e+00).add(5.01933855e+00).add(5.02986014e+00)
-      .add(4.97415454e+00).add(5.03061610e+00).add(5.00741104e+00)
-      .add(5.15014921e+00).add(5.49097748e+00).array())
-      .add(stan::math::array_builder<double>().add(3.58923963e-01)
-      .add(4.76832844e-01).add(8.43725028e-01).add(1.31151603e+00)
-      .add(1.88979255e+00).add(2.58778471e+00).add(3.33528198e+00)
-      .add(3.95748127e+00).add(4.52268304e+00).add(4.80401950e+00)
-      .add(5.11505215e+00).add(5.40179772e+00).add(5.43942266e+00)
-      .add(5.54863083e+00).add(5.41503210e+00).add(5.36368442e+00)
-      .add(5.25995171e+00).add(5.45146403e+00).add(5.65627038e+00)
-      .add(5.92347788e+00).array()).add(stan::math::array_builder<double>()
-      .add(3.65760870e-01).add(4.99433265e-01).add(8.77777450e-01)
-      .add(1.43296561e+00).add(1.99169071e+00).add(2.75998898e+00)
-      .add(3.58057494e+00).add(4.15104362e+00).add(4.86743777e+00)
-      .add(5.56207162e+00).add(5.57199724e+00).add(5.83856651e+00)
-      .add(5.85984933e+00).add(5.90577317e+00).add(5.94302923e+00)
-      .add(5.84686327e+00).add(6.00019165e+00).add(5.63277923e+00)
-      .add(6.24490260e+00).add(6.55725880e+00).array())
-      .add(stan::math::array_builder<double>().add(3.72120083e-01)
-      .add(5.16189976e-01).add(9.09837919e-01).add(1.44335096e+00)
-      .add(2.09845843e+00).add(2.91256417e+00).add(3.72559583e+00)
-      .add(4.57566734e+00).add(5.16468396e+00).add(5.86300702e+00)
-      .add(6.18170902e+00).add(6.47650786e+00).add(6.29557227e+00)
-      .add(6.58426538e+00).add(6.21372021e+00).add(6.13085889e+00)
-      .add(6.23566537e+00).add(6.45281628e+00).add(6.56236907e+00)
-      .add(7.00076811e+00).array()).add(stan::math::array_builder<double>()
-      .add(3.78671318e-01).add(5.20345024e-01).add(9.28993269e-01)
-      .add(1.49841983e+00).add(2.25469906e+00).add(3.21169096e+00)
-      .add(3.89200081e+00).add(4.82202120e+00).add(5.56003753e+00)
-      .add(6.12977552e+00).add(6.59923135e+00).add(6.92711616e+00)
-      .add(6.88624969e+00).add(6.98435903e+00).add(7.00131422e+00)
-      .add(6.96688854e+00).add(7.06655548e+00).add(6.92970748e+00)
-      .add(7.53715444e+00).add(7.43187019e+00).array())
-      .add(stan::math::array_builder<double>().add(3.79886909e-01)
-      .add(5.47810761e-01).add(9.46098366e-01).add(1.61030156e+00)
-      .add(2.42832257e+00).add(3.33301683e+00).add(4.37822703e+00)
-      .add(5.27521026e+00).add(5.96217927e+00).add(6.67425662e+00)
-      .add(7.43420034e+00).add(7.42302773e+00).add(7.55001900e+00)
-      .add(7.69041239e+00).add(7.49587889e+00).add(7.64958423e+00)
-      .add(7.63437459e+00).add(7.73381082e+00).add(7.93045851e+00)
-      .add(8.31988271e+00).array()).add(stan::math::array_builder<double>()
-      .add(4.01982264e-01).add(5.51246968e-01).add(9.85803295e-01)
-      .add(1.65705537e+00).add(2.50631887e+00).add(3.41325379e+00)
-      .add(4.55719068e+00).add(5.68605031e+00).add(6.50907598e+00)
-      .add(7.27887532e+00).add(7.90622852e+00).add(8.14182483e+00)
-      .add(8.20654495e+00).add(8.32688487e+00).add(8.20736321e+00)
-      .add(8.25322732e+00).add(8.32460303e+00).add(8.44245833e+00)
-      .add(8.32556288e+00).add(8.74065612e+00).array())
-      .add(stan::math::array_builder<double>().add(3.81280016e-01)
-      .add(5.59852449e-01).add(1.05889941e+00).add(1.77185588e+00)
-      .add(2.65969539e+00).add(3.74434707e+00).add(4.90437071e+00)
-      .add(5.98820515e+00).add(6.80588072e+00).add(7.77563345e+00)
-      .add(8.57500438e+00).add(8.99030857e+00).add(8.94954143e+00)
-      .add(8.84429084e+00).add(9.01716160e+00).add(8.93695703e+00)
-      .add(9.19151589e+00).add(8.91721366e+00).add(9.77644450e+00)
-      .add(9.66906627e+00).array()).add(stan::math::array_builder<double>()
-      .add(3.94674116e-01).add(5.67213889e-01).add(1.07210780e+00)
-      .add(1.78282127e+00).add(2.73783973e+00).add(4.03318664e+00)
-      .add(5.23763513e+00).add(6.59588210e+00).add(7.68115784e+00)
-      .add(8.44576488e+00).add(9.27608473e+00).add(9.55463435e+00)
-      .add(1.01788533e+01).add(9.91023014e+00).add(9.69454569e+00)
-      .add(9.86865709e+00).add(9.89220078e+00).add(9.96821875e+00)
-      .add(9.88088677e+00).add(1.04383456e+01).array())
-      .add(stan::math::array_builder<double>().add(4.11328293e-01)
-      .add(5.77504625e-01).add(1.09176038e+00).add(1.83171944e+00)
-      .add(2.90710489e+00).add(4.14727902e+00).add(5.37542547e+00)
-      .add(6.88816164e+00).add(8.31209298e+00).add(9.12937907e+00)
-      .add(9.71390766e+00).add(1.06483697e+01).add(1.02942568e+01)
-      .add(1.06845624e+01).add(1.06383433e+01).add(1.03218364e+01)
-      .add(1.05934882e+01).add(1.04739549e+01).add(1.10829535e+01)
-      .add(1.12583617e+01).array()).add(stan::math::array_builder<double>()
-      .add(4.02650992e-01).add(5.92456577e-01).add(1.14040284e+00)
-      .add(1.96548803e+00).add(3.06070334e+00).add(4.39624077e+00)
-      .add(5.84382121e+00).add(7.57881539e+00).add(8.69802899e+00)
-      .add(9.73864901e+00).add(1.04509479e+01).add(1.12177373e+01)
-      .add(1.14117872e+01).add(1.13587655e+01).add(1.13977891e+01)
-      .add(1.14980574e+01).add(1.12743893e+01).add(1.17526428e+01)
-      .add(1.20367321e+01).add(1.23773589e+01).array())
-      .add(stan::math::array_builder<double>().add(4.11860993e-01)
-      .add(6.01851928e-01).add(1.16839467e+00).add(2.01977136e+00)
-      .add(3.18744063e+00).add(4.68812412e+00).add(6.39588799e+00)
-      .add(8.03160578e+00).add(9.38005148e+00).add(1.09430768e+01)
-      .add(1.14211716e+01).add(1.21812855e+01).add(1.24744613e+01)
-      .add(1.23334781e+01).add(1.27393521e+01).add(1.23774201e+01)
-      .add(1.25488464e+01).add(1.24831523e+01).add(1.28955282e+01)
-      .add(1.34720066e+01).array()).add(stan::math::array_builder<double>()
-      .add(4.16810661e-01).add(6.09060156e-01).add(1.19952172e+00)
-      .add(2.08551425e+00).add(3.41591265e+00).add(4.97640776e+00)
-      .add(6.56637036e+00).add(8.29037071e+00).add(9.94797424e+00)
-      .add(1.16281216e+01).add(1.23240069e+01).add(1.28842200e+01)
-      .add(1.37159507e+01).add(1.33705593e+01).add(1.40320659e+01)
-      .add(1.34398563e+01).add(1.34143578e+01).add(1.37437554e+01)
-      .add(1.41530377e+01).add(1.44040243e+01).array())
-      .add(stan::math::array_builder<double>().add(4.19822144e-01)
-      .add(6.11107868e-01).add(1.21315879e+00).add(2.17255084e+00)
-      .add(3.55391796e+00).add(5.28207468e+00).add(6.95059346e+00)
-      .add(8.93164794e+00).add(1.09586770e+01).add(1.20811955e+01)
-      .add(1.35231715e+01).add(1.47370219e+01).add(1.48130534e+01)
-      .add(1.49136428e+01).add(1.44735327e+01).add(1.43195632e+01)
-      .add(1.42558531e+01).add(1.50943505e+01).add(1.50576487e+01)
-      .add(1.55007914e+01).array()).add(stan::math::array_builder<double>()
-      .add(4.26666792e-01).add(6.08393433e-01).add(1.24474599e+00)
-      .add(2.24771805e+00).add(3.71552154e+00).add(5.41412222e+00)
-      .add(7.46554595e+00).add(9.84147324e+00).add(1.15014178e+01)
-      .add(1.32216627e+01).add(1.40931657e+01).add(1.53900620e+01)
-      .add(1.53711630e+01).add(1.58864281e+01).add(1.60162105e+01)
-      .add(1.57355857e+01).add(1.56712134e+01).add(1.58419934e+01)
-      .add(1.62839145e+01).add(1.65038581e+01).array())
-      .add(stan::math::array_builder<double>().add(4.26247837e-01)
-      .add(6.40431550e-01).add(1.25700725e+00).add(2.22529537e+00)
-      .add(3.77624952e+00).add(5.70311913e+00).add(7.85589574e+00)
-      .add(1.01893891e+01).add(1.23543250e+01).add(1.42716780e+01)
-      .add(1.57649156e+01).add(1.68928476e+01).add(1.71969987e+01)
-      .add(1.71337743e+01).add(1.71334228e+01).add(1.68560689e+01)
-      .add(1.70114465e+01).add(1.71010852e+01).add(1.78112211e+01)
-      .add(1.84796910e+01).array()).add(stan::math::array_builder<double>()
-      .add(4.21028355e-01).add(6.37868950e-01).add(1.32803835e+00)
-      .add(2.44944376e+00).add(3.99633834e+00).add(5.98950826e+00)
-      .add(8.17207201e+00).add(1.05442624e+01).add(1.33685284e+01)
-      .add(1.51119293e+01).add(1.70208549e+01).add(1.80846482e+01)
-      .add(1.82885407e+01).add(1.92565473e+01).add(1.86669952e+01)
-      .add(1.82659896e+01).add(1.82494204e+01).add(1.86512393e+01)
-      .add(1.93150540e+01).add(1.94583931e+01).array())
-      .add(stan::math::array_builder<double>().add(4.19393699e-01)
-      .add(6.39390130e-01).add(1.34749269e+00).add(2.40408882e+00)
-      .add(4.10113316e+00).add(6.47864188e+00).add(8.76421396e+00)
-      .add(1.15351251e+01).add(1.39064580e+01).add(1.66242768e+01)
-      .add(1.83604926e+01).add(1.95676546e+01).add(2.02398391e+01)
-      .add(2.09415073e+01).add(2.00788351e+01).add(1.94296896e+01)
-      .add(1.98974696e+01).add(2.02522710e+01).add(2.03457735e+01)
-      .add(2.01325247e+01).array()).add(stan::math::array_builder<double>()
-      .add(4.19160558e-01).add(6.37876970e-01).add(1.35702342e+00)
-      .add(2.51460896e+00).add(4.20984518e+00).add(6.58546141e+00)
-      .add(9.32852434e+00).add(1.22811516e+01).add(1.52062545e+01)
-      .add(1.72723126e+01).add(1.95459217e+01).add(2.07990908e+01)
-      .add(2.17888620e+01).add(2.17168338e+01).add(2.17469329e+01)
-      .add(2.18683535e+01).add(2.16590665e+01).add(2.13275638e+01)
-      .add(2.23329717e+01).add(2.19516840e+01).array())
-      .add(stan::math::array_builder<double>().add(4.16691233e-01)
-      .add(6.38969412e-01).add(1.39299284e+00).add(2.69408143e+00)
-      .add(4.38482949e+00).add(6.91134580e+00).add(9.90057720e+00)
-      .add(1.32149444e+01).add(1.60777214e+01).add(1.87549881e+01)
-      .add(2.06667446e+01).add(2.24457027e+01).add(2.33382026e+01)
-      .add(2.40592450e+01).add(2.35923732e+01).add(2.34980160e+01)
-      .add(2.36400519e+01).add(2.34842566e+01).add(2.43315719e+01)
-      .add(2.50535173e+01).array()).add(stan::math::array_builder<double>()
-      .add(4.21531433e-01).add(6.51599589e-01).add(1.44477312e+00)
-      .add(2.63888010e+00).add(4.60540119e+00).add(7.32228881e+00)
-      .add(1.05869183e+01).add(1.37102110e+01).add(1.71821676e+01)
-      .add(2.07191092e+01).add(2.24727401e+01).add(2.44536928e+01)
-      .add(2.54994113e+01).add(2.64640933e+01).add(2.53981824e+01)
-      .add(2.56292535e+01).add(2.47633506e+01).add(2.58168328e+01)
-      .add(2.57438863e+01).add(2.63803297e+01).array())
-      .add(stan::math::array_builder<double>().add(4.18390108e-01)
-      .add(6.63947176e-01).add(1.43999554e+00).add(2.75611282e+00)
-      .add(4.77389716e+00).add(7.76912482e+00).add(1.09571338e+01)
-      .add(1.48386582e+01).add(1.86710910e+01).add(2.21605961e+01)
-      .add(2.49312543e+01).add(2.61036818e+01).add(2.77116815e+01)
-      .add(2.76580077e+01).add(2.74638559e+01).add(2.69376067e+01)
-      .add(2.73021348e+01).add(2.74939998e+01).add(2.82182105e+01)
-      .add(2.79467866e+01).array()).add(stan::math::array_builder<double>()
-      .add(4.11655129e-01).add(6.64533049e-01).add(1.44027262e+00)
-      .add(2.82936441e+00).add(4.98130350e+00).add(7.88331717e+00)
-      .add(1.14879612e+01).add(1.55469990e+01).add(1.96994477e+01)
-      .add(2.37990469e+01).add(2.61808300e+01).add(2.81441576e+01)
-      .add(2.95602898e+01).add(3.08301348e+01).add(3.00503611e+01)
-      .add(3.03178343e+01).add(2.92992308e+01).add(2.91052926e+01)
-      .add(2.96107674e+01).add(3.06463861e+01).array())
-      .add(stan::math::array_builder<double>().add(4.09803939e-01)
-      .add(6.62036717e-01).add(1.47339352e+00).add(2.91046044e+00)
-      .add(5.05905792e+00).add(8.24908796e+00).add(1.22630498e+01)
-      .add(1.67255959e+01).add(2.10616663e+01).add(2.51931291e+01)
-      .add(2.82483445e+01).add(3.09609159e+01).add(3.21283685e+01)
-      .add(3.18118427e+01).add(3.25398710e+01).add(3.16818683e+01)
-      .add(3.13578341e+01).add(3.09785516e+01).add(3.26238307e+01)
-      .add(3.22625653e+01).array()).add(stan::math::array_builder<double>()
-      .add(4.12068066e-01).add(6.57676271e-01).add(1.52001145e+00)
-      .add(3.04537898e+00).add(5.32768089e+00).add(8.66309618e+00)
-      .add(1.29911622e+01).add(1.78529991e+01).add(2.25376433e+01)
-      .add(2.66473589e+01).add(3.01319311e+01).add(3.31382554e+01)
-      .add(3.37796016e+01).add(3.46001454e+01).add(3.53553574e+01)
-      .add(3.47902995e+01).add(3.43635517e+01).add(3.36187081e+01)
-      .add(3.46731482e+01).add(3.50282907e+01).array())
-      .add(stan::math::array_builder<double>().add(4.06938051e-01)
-      .add(6.51736394e-01).add(1.46397229e+00).add(3.04442507e+00)
-      .add(5.40804908e+00).add(9.05649404e+00).add(1.35249080e+01)
-      .add(1.86770902e+01).add(2.29853266e+01).add(2.84029805e+01)
-      .add(3.18998799e+01).add(3.57745019e+01).add(3.77273097e+01)
-      .add(3.79342894e+01).add(3.80126951e+01).add(3.68276723e+01)
-      .add(3.67153626e+01).add(3.70355807e+01).add(3.73579519e+01)
-      .add(3.74331598e+01).array()).add(stan::math::array_builder<double>()
-      .add(3.95506457e-01).add(6.56527444e-01).add(1.51550541e+00)
-      .add(3.12518995e+00).add(5.63475819e+00).add(9.37680316e+00)
-      .add(1.40989813e+01).add(1.97967338e+01).add(2.50278882e+01)
-      .add(3.05080400e+01).add(3.56411713e+01).add(3.83944165e+01)
-      .add(3.94220847e+01).add(4.09955717e+01).add(4.03135733e+01)
-      .add(4.02457098e+01).add(3.94762864e+01).add(3.93495913e+01)
-      .add(3.96853328e+01).add(3.93227167e+01).array())
-      .add(stan::math::array_builder<double>().add(4.03109087e-01)
-      .add(6.59434321e-01).add(1.52811511e+00).add(3.14714989e+00)
-      .add(5.84526703e+00).add(9.91758478e+00).add(1.48136061e+01)
-      .add(2.10050346e+01).add(2.73045804e+01).add(3.29378668e+01)
-      .add(3.70283197e+01).add(4.20022681e+01).add(4.37068999e+01)
-      .add(4.42418183e+01).add(4.40211454e+01).add(4.40311465e+01)
-      .add(4.28855638e+01).add(4.19710084e+01).add(4.21377464e+01)
-      .add(4.39825343e+01).array()).add(stan::math::array_builder<double>()
-      .add(3.82834061e-01).add(6.44627183e-01).add(1.53158058e+00)
-      .add(3.19370921e+00).add(5.92548001e+00).add(9.81106266e+00)
-      .add(1.56542791e+01).add(2.18574090e+01).add(2.94604075e+01)
-      .add(3.54657706e+01).add(4.02313862e+01).add(4.35141994e+01)
-      .add(4.57814196e+01).add(4.79259495e+01).add(4.66963755e+01)
-      .add(4.72008478e+01).add(4.54377848e+01).add(4.46547086e+01)
-      .add(4.63860351e+01).add(4.59836324e+01).array())
-      .add(stan::math::array_builder<double>().add(3.81366115e-01)
-      .add(6.47153068e-01).add(1.53718963e+00).add(3.31239790e+00)
-      .add(6.21856293e+00).add(1.04310114e+01).add(1.59370093e+01)
-      .add(2.31691591e+01).add(3.01623602e+01).add(3.70485375e+01)
-      .add(4.16971117e+01).add(4.66320218e+01).add(4.99628355e+01)
-      .add(5.14056862e+01).add(5.12344296e+01).add(5.08340840e+01)
-      .add(4.90521928e+01).add(4.92444452e+01).add(4.87340158e+01)
-      .add(4.94490650e+01).array()).add(stan::math::array_builder<double>()
-      .add(3.73533551e-01).add(6.59723872e-01).add(1.56493578e+00)
-      .add(3.27965591e+00).add(6.31556102e+00).add(1.06694771e+01)
-      .add(1.69469216e+01).add(2.42193060e+01).add(3.18960671e+01)
-      .add(3.99091880e+01).add(4.64242937e+01).add(5.10121008e+01)
-      .add(5.30719729e+01).add(5.51307716e+01).add(5.44816723e+01)
-      .add(5.36188923e+01).add(5.21738095e+01).add(5.18037466e+01)
-      .add(5.22089655e+01).add(5.25433588e+01).array())
-      .add(stan::math::array_builder<double>().add(3.67045473e-01)
-      .add(6.50018365e-01).add(1.56906100e+00).add(3.40276001e+00)
-      .add(6.61292714e+00).add(1.14328028e+01).add(1.80907099e+01)
-      .add(2.56664958e+01).add(3.39808689e+01).add(4.26985885e+01)
-      .add(4.98460888e+01).add(5.37933290e+01).add(5.74746138e+01)
-      .add(5.84323932e+01).add(5.89512146e+01).add(5.83898989e+01)
-      .add(5.86274643e+01).add(5.65736741e+01).add(5.77758116e+01)
-      .add(5.71666777e+01).array()).add(stan::math::array_builder<double>()
-      .add(3.70509997e-01).add(6.30924267e-01).add(1.55414341e+00)
-      .add(3.48820881e+00).add(6.65701585e+00).add(1.13578916e+01)
-      .add(1.85676180e+01).add(2.69077409e+01).add(3.56107566e+01)
-      .add(4.54928242e+01).add(5.30078372e+01).add(5.75089512e+01)
-      .add(6.21932126e+01).add(6.29769438e+01).add(6.30302834e+01)
-      .add(6.17723066e+01).add(6.13690399e+01).add(6.16496329e+01)
-      .add(5.82556712e+01).add(6.02317731e+01).array())
-      .add(stan::math::array_builder<double>().add(3.61040814e-01)
-      .add(6.19895016e-01).add(1.55924904e+00).add(3.43260332e+00)
-      .add(6.79230264e+00).add(1.19372413e+01).add(1.95599793e+01)
-      .add(2.88707064e+01).add(3.86112973e+01).add(4.85031588e+01)
-      .add(5.61518129e+01).add(6.36782244e+01).add(6.81785629e+01)
-      .add(6.94745137e+01).add(6.86274349e+01).add(6.67333690e+01)
-      .add(6.49169738e+01).add(6.47457176e+01).add(6.42828875e+01)
-      .add(6.30029763e+01).array()).add(stan::math::array_builder<double>()
-      .add(3.52254386e-01).add(6.16613663e-01).add(1.55205380e+00)
-      .add(3.62862165e+00).add(7.01163282e+00).add(1.27192181e+01)
-      .add(2.07083455e+01).add(2.94306020e+01).add(4.00570095e+01)
-      .add(5.14228056e+01).add(6.09518255e+01).add(6.80929779e+01)
-      .add(6.96353704e+01).add(7.38364824e+01).add(7.41691235e+01)
-      .add(7.10865885e+01).add(7.08251426e+01).add(6.69443989e+01)
-      .add(6.96042043e+01).add(6.81346493e+01).array())
-      .add(stan::math::array_builder<double>().add(3.44447999e-01)
-      .add(5.86449953e-01).add(1.52742333e+00).add(3.50478958e+00)
-      .add(7.16381292e+00).add(1.27300176e+01).add(2.14327285e+01)
-      .add(3.13877436e+01).add(4.26668026e+01).add(5.40894986e+01)
-      .add(6.53165056e+01).add(7.18957314e+01).add(7.68590200e+01)
-      .add(7.90021647e+01).add(7.87787254e+01).add(7.69880159e+01)
-      .add(7.54031353e+01).add(7.39683551e+01).add(7.11699089e+01)
-      .add(7.20823077e+01).array()).add(stan::math::array_builder<double>()
-      .add(3.34960232e-01).add(5.84864323e-01).add(1.53491542e+00)
-      .add(3.58272603e+00).add(7.24021642e+00).add(1.32424572e+01)
-      .add(2.15004126e+01).add(3.28217116e+01).add(4.56184318e+01)
-      .add(5.87714472e+01).add(6.93232870e+01).add(7.55886882e+01)
-      .add(8.63476977e+01).add(8.63681309e+01).add(8.49881806e+01)
-      .add(8.47764522e+01).add(8.38788974e+01).add(7.58791788e+01)
-      .add(7.86198549e+01).add(7.69275667e+01).array())
-      .add(stan::math::array_builder<double>().add(3.20201240e-01)
-      .add(5.67340041e-01).add(1.57698812e+00).add(3.56854098e+00)
-      .add(7.52876788e+00).add(1.38477096e+01).add(2.29292050e+01)
-      .add(3.42629774e+01).add(4.75578654e+01).add(6.29548536e+01)
-      .add(7.48308252e+01).add(8.21083715e+01).add(8.94845455e+01)
-      .add(9.18062820e+01).add(9.18788302e+01).add(9.02177011e+01)
-      .add(8.63802508e+01).add(8.41286986e+01).add(8.21893225e+01)
-      .add(8.11324777e+01).array()).add(stan::math::array_builder<double>()
-      .add(3.17351851e-01).add(5.70038325e-01).add(1.55895834e+00)
-      .add(3.70402305e+00).add(7.58549335e+00).add(1.39614532e+01)
-      .add(2.36767182e+01).add(3.56765904e+01).add(5.12507810e+01)
-      .add(6.66987909e+01).add(7.91136858e+01).add(8.69595957e+01)
-      .add(9.58170239e+01).add(9.85209445e+01).add(9.73066484e+01)
-      .add(9.66624979e+01).add(9.24076979e+01).add(9.15009306e+01)
-      .add(8.92829315e+01).add(8.67382165e+01).array())
-      .add(stan::math::array_builder<double>().add(3.07410652e-01)
-      .add(5.64611648e-01).add(1.50747982e+00).add(3.60043449e+00)
-      .add(7.64591400e+00).add(1.44528938e+01).add(2.49732495e+01)
-      .add(3.83808925e+01).add(5.43674591e+01).add(6.97703607e+01)
-      .add(8.46016773e+01).add(9.31469892e+01).add(1.02301100e+02)
-      .add(1.04594945e+02).add(1.05934419e+02).add(1.05262762e+02)
-      .add(9.95820098e+01).add(9.55469153e+01).add(9.38223154e+01)
-      .add(9.35585567e+01).array()).add(stan::math::array_builder<double>()
-      .add(3.01986698e-01).add(5.42771506e-01).add(1.50410374e+00)
-      .add(3.75326401e+00).add(7.82194665e+00).add(1.49421818e+01)
-      .add(2.61367452e+01).add(4.02312277e+01).add(5.80116326e+01)
-      .add(7.32877239e+01).add(8.87920513e+01).add(1.01686146e+02)
-      .add(1.08801655e+02).add(1.12331464e+02).add(1.14947547e+02)
-      .add(1.11149608e+02).add(1.08125798e+02).add(1.03140743e+02)
-      .add(9.67440433e+01).add(9.65578531e+01).array())
-      .add(stan::math::array_builder<double>().add(2.93706888e-01)
-      .add(5.36652207e-01).add(1.51737440e+00).add(3.70868040e+00)
-      .add(7.99597507e+00).add(1.51681940e+01).add(2.67104463e+01)
-      .add(4.20166332e+01).add(5.97960818e+01).add(7.88148336e+01)
-      .add(9.47758019e+01).add(1.08390934e+02).add(1.18263246e+02)
-      .add(1.24953304e+02).add(1.23800567e+02).add(1.17725599e+02)
-      .add(1.16298970e+02).add(1.07448376e+02).add(1.05202521e+02)
-      .add(1.02948660e+02).array()).add(stan::math::array_builder<double>()
-      .add(2.79676859e-01).add(5.33932877e-01).add(1.48251184e+00)
-      .add(3.76473874e+00).add(8.24874895e+00).add(1.57146654e+01)
-      .add(2.74733579e+01).add(4.41039180e+01).add(6.27088084e+01)
-      .add(8.24282116e+01).add(1.01832545e+02).add(1.16641524e+02)
-      .add(1.25664305e+02).add(1.30949590e+02).add(1.29886133e+02)
-      .add(1.30500433e+02).add(1.24295343e+02).add(1.14704127e+02)
-      .add(1.13977026e+02).add(1.11523834e+02).array())
-      .add(stan::math::array_builder<double>().add(2.69258385e-01)
-      .add(5.11808298e-01).add(1.49773139e+00).add(3.81936815e+00)
-      .add(8.40467579e+00).add(1.63877718e+01).add(2.94142646e+01)
-      .add(4.52105930e+01).add(6.54262625e+01).add(8.75748988e+01)
-      .add(1.04676619e+02).add(1.24661393e+02).add(1.37409407e+02)
-      .add(1.40695135e+02).add(1.42180252e+02).add(1.35916348e+02)
-      .add(1.32647546e+02).add(1.22231241e+02).add(1.17297610e+02)
-      .add(1.16568160e+02).array()).add(stan::math::array_builder<double>()
-      .add(2.55578744e-01).add(4.87095524e-01).add(1.39628622e+00)
-      .add(3.61466578e+00).add(8.22957301e+00).add(1.60567306e+01)
-      .add(2.92455339e+01).add(4.69093872e+01).add(6.74682629e+01)
-      .add(9.07288552e+01).add(1.11782627e+02).add(1.28760865e+02)
-      .add(1.45083025e+02).add(1.42698798e+02).add(1.44614122e+02)
-      .add(1.44974845e+02).add(1.33491025e+02).add(1.30150673e+02)
-      .add(1.19851518e+02).add(1.20668668e+02).array())
-      .add(stan::math::array_builder<double>().add(2.25939777e-01)
-      .add(4.15524090e-01).add(1.27032123e+00).add(3.28871284e+00)
-      .add(7.50499725e+00).add(1.46880447e+01).add(2.62420311e+01)
-      .add(4.42513810e+01).add(6.42341509e+01).add(8.71125937e+01)
-      .add(1.08368482e+02).add(1.24339139e+02).add(1.33972808e+02)
-      .add(1.41652997e+02).add(1.44060912e+02).add(1.41061326e+02)
-      .add(1.31001494e+02).add(1.23558540e+02).add(1.19633486e+02)
-      .add(1.12228207e+02).array()).add(stan::math::array_builder<double>()
-      .add(1.80693057e-01).add(3.47989837e-01).add(1.02477149e+00)
-      .add(2.61187546e+00).add(6.08552895e+00).add(1.18994887e+01)
-      .add(2.23187097e+01).add(3.54432366e+01).add(5.22495106e+01)
-      .add(7.04598624e+01).add(8.93389168e+01).add(1.00953752e+02)
-      .add(1.11595205e+02).add(1.15137812e+02).add(1.16645050e+02)
-      .add(1.17699157e+02).add(1.09838959e+02).add(1.03027208e+02)
-      .add(9.43276487e+01).add(9.33959067e+01).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array())
-      .add(stan::math::array_builder<double>().add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
-      .add(0.00000000e+00).add(0.00000000e+00).array()).array(),
-      "assigning variable hist_array");
+      .add(stan::math::array_builder<double>().add(4.12296733)
+      .add(4.84904949).add(5.5159688).add(5.98461963).add(6.2264291)
+      .add(6.32061887).add(6.29151569).add(6.24204368).add(6.24329538)
+      .add(6.28597893).array()).add(stan::math::array_builder<double>()
+      .add(4.80970912).add(5.80436843).add(6.76031).add(7.44312562)
+      .add(7.81468778).add(7.91065805).add(7.8829675).add(7.81922906)
+      .add(7.7740974).add(7.87470415).array())
+      .add(stan::math::array_builder<double>().add(5.51776154)
+      .add(6.89651517).add(8.24529477).add(9.14176934).add(9.62258856)
+      .add(9.73887223).add(9.70135805).add(9.63565683).add(9.60939348)
+      .add(9.77648883).array()).add(stan::math::array_builder<double>()
+      .add(6.24557864).add(8.02245607).add(9.76340998).add(11.05020688)
+      .add(11.71890126).add(11.90140345).add(11.85421953).add(11.66673361)
+      .add(11.68036352).add(11.9595978).array())
+      .add(stan::math::array_builder<double>().add(6.89677993)
+      .add(9.15852133).add(11.52702134).add(13.16020515).add(14.0922186)
+      .add(14.34602312).add(14.19747765).add(14.02563262).add(14.0031119)
+      .add(14.41821042).array()).add(stan::math::array_builder<double>()
+      .add(7.47380763).add(10.35116871).add(13.32941093).add(15.58301891)
+      .add(16.75795015).add(16.98714862).add(16.83158616).add(16.55713859)
+      .add(16.53995129).add(17.06290653).array())
+      .add(stan::math::array_builder<double>().add(8.04259851)
+      .add(11.50034853).add(15.28470428).add(18.03434338).add(19.61806089)
+      .add(20.05041451).add(19.70870582).add(19.4273524).add(19.39914553)
+      .add(20.14608909).array()).add(stan::math::array_builder<double>()
+      .add(8.42575318).add(12.54336005).add(17.12065422).add(20.74998752)
+      .add(22.82103944).add(23.25746295).add(23.01893536).add(22.48551862)
+      .add(22.58498322).add(23.35260732).array())
+      .add(stan::math::array_builder<double>().add(8.80265361)
+      .add(13.54083836).add(19.01812155).add(23.50122543).add(26.14473571)
+      .add(26.90099736).add(26.59836402).add(25.98037948).add(25.96265337)
+      .add(27.09307293).array()).add(stan::math::array_builder<double>()
+      .add(8.98256123).add(14.4452487).add(20.92482469).add(26.38465622)
+      .add(29.51981181).add(30.63035382).add(30.52535144).add(29.74796913)
+      .add(29.67039574).add(30.9455894).array())
+      .add(stan::math::array_builder<double>().add(9.09718134)
+      .add(15.13577111).add(22.65172658).add(29.149789).add(33.24113699)
+      .add(34.70102953).add(34.28177107).add(33.6870475).add(33.69121918)
+      .add(35.01225526).array()).add(stan::math::array_builder<double>()
+      .add(9.11895546).add(15.59907265).add(24.30949025).add(31.993905)
+      .add(36.82967489).add(38.82733539).add(38.77900657).add(37.8116203)
+      .add(37.75033926).add(39.40195187).array())
+      .add(stan::math::array_builder<double>().add(9.00401261)
+      .add(15.96568042).add(25.65624604).add(34.44531543).add(40.57637135)
+      .add(43.0682052).add(43.06107088).add(42.3928246).add(42.27420527)
+      .add(43.95651171).array()).add(stan::math::array_builder<double>()
+      .add(8.863984).add(16.24295866).add(26.79931792).add(36.89377039)
+      .add(44.10021485).add(47.49134857).add(47.9283423).add(47.04874884)
+      .add(46.75559324).add(48.65271708).array())
+      .add(stan::math::array_builder<double>().add(8.57455292)
+      .add(16.22519075).add(27.4241613).add(38.93818118).add(47.37650061)
+      .add(51.75018735).add(52.43402173).add(51.84001757).add(51.46705059)
+      .add(53.67239682).array()).add(stan::math::array_builder<double>()
+      .add(8.24606664).add(16.07173518).add(28.10786874).add(40.9131219)
+      .add(50.81609825).add(56.07744687).add(57.37073556).add(56.72449591)
+      .add(56.48920568).add(58.63695092).array())
+      .add(stan::math::array_builder<double>().add(7.96202504)
+      .add(15.76394099).add(28.23024104).add(42.33421441).add(53.83853495)
+      .add(60.25328115).add(62.22745928).add(61.757067).add(61.45460156)
+      .add(64.19215952).array()).add(stan::math::array_builder<double>()
+      .add(7.59948524).add(15.27734258).add(28.18065291).add(43.43990964)
+      .add(56.18729736).add(64.02649028).add(66.78489188).add(66.49801193)
+      .add(66.58882035).add(69.16036553).array())
+      .add(stan::math::array_builder<double>().add(7.30523783)
+      .add(14.82100535).add(27.85604638).add(43.97802841).add(58.47924795)
+      .add(67.8963467).add(71.69300824).add(71.80818528).add(71.83979779)
+      .add(74.55814349).array()).add(stan::math::array_builder<double>()
+      .add(6.9885602).add(14.24578681).add(27.46639226).add(44.21372446)
+      .add(60.46361308).add(71.53847092).add(76.70354813).add(77.14224757)
+      .add(77.36665534).add(79.90607097).array())
+      .add(stan::math::array_builder<double>().add(6.73760966)
+      .add(13.63674569).add(26.65024732).add(44.12855255).add(61.79036704)
+      .add(75.09143531).add(81.29224123).add(82.95391021).add(83.0047745)
+      .add(85.98608825).array()).add(stan::math::array_builder<double>()
+      .add(6.51026616).add(13.03930535).add(25.6552647).add(43.51288346)
+      .add(62.9146572).add(78.02524141).add(86.2484906).add(88.41299082)
+      .add(88.79389606).add(91.20928858).array())
+      .add(stan::math::array_builder<double>().add(6.33437994)
+      .add(12.4295668).add(24.72735226).add(42.75408991).add(63.51641884)
+      .add(81.32001708).add(91.6881147).add(94.69098435).add(95.15745839)
+      .add(97.07410404).array()).add(stan::math::array_builder<double>()
+      .add(6.25333966).add(11.87111609).add(23.43206155).add(41.81974708)
+      .add(64.14989325).add(84.31660257).add(96.95738112).add(101.70874261)
+      .add(101.45824311).add(102.78932066).array())
+      .add(stan::math::array_builder<double>().add(6.24225036)
+      .add(11.39324642).add(22.3188391).add(40.6372603).add(64.10298915)
+      .add(87.36858437).add(102.7039233).add(109.26807882).add(109.19419702)
+      .add(108.50741203).array()).add(stan::math::array_builder<double>()
+      .add(6.27950247).add(10.89280914).add(20.97967491).add(39.09561011)
+      .add(64.40875919).add(90.51633544).add(109.57442985).add(117.6026228)
+      .add(117.13951067).add(115.13208807).array())
+      .add(stan::math::array_builder<double>().add(6.51323624)
+      .add(10.52342966).add(19.81286005).add(37.63961154).add(64.25644245)
+      .add(93.74040859).add(116.77789301).add(127.62496078).add(125.85259725)
+      .add(122.01400893).array()).add(stan::math::array_builder<double>()
+      .add(6.84718529).add(10.23173577).add(18.73188456).add(36.04303434)
+      .add(64.31434596).add(97.13610512).add(124.72811145).add(138.40674932)
+      .add(136.68118169).add(128.93354052).array())
+      .add(stan::math::array_builder<double>().add(7.3175193).add(9.99213293)
+      .add(17.65486847).add(34.7091077).add(63.86523767).add(100.80940947)
+      .add(133.48502461).add(151.83081163).add(149.38255538)
+      .add(136.96508307).array()).add(stan::math::array_builder<double>()
+      .add(8.01365225).add(9.89733782).add(16.6091873).add(33.34762195)
+      .add(63.47882148).add(104.12490313).add(144.43640107).add(168.13467798)
+      .add(164.43349712).add(146.4083255).array())
+      .add(stan::math::array_builder<double>().add(9.00617125)
+      .add(9.86731814).add(15.80237125).add(32.13029151).add(63.40102447)
+      .add(108.11757916).add(155.41963967).add(186.67489883)
+      .add(181.86961045).add(156.96366516).array())
+      .add(stan::math::array_builder<double>().add(2.19785762)
+      .add(2.31089037).add(3.61816851).add(7.3561966).add(14.73279198)
+      .add(25.42202955).add(37.87556403).add(45.44645943).add(44.0483584)
+      .add(37.62063544).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).add(stan::math::array_builder<double>()
+      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.)
+      .add(0.).add(0.).array()).array(), "assigning variable hist_array");
     std::vector<local_scalar_t__> hist_edge_0;
-    hist_edge_0 = std::vector<local_scalar_t__>(281, DUMMY_VAR__);
+    hist_edge_0 = std::vector<local_scalar_t__>(51, DUMMY_VAR__);
     
     current_statement__ = 347;
     assign(hist_edge_0, nil_index_list(), stan::math::array_builder<double>()
-      .add(1.00000000e+02).add(1.05925373e+02).add(1.12201845e+02)
-      .add(1.18850223e+02).add(1.25892541e+02).add(1.33352143e+02)
-      .add(1.41253754e+02).add(1.49623566e+02).add(1.58489319e+02)
-      .add(1.67880402e+02).add(1.77827941e+02).add(1.88364909e+02)
-      .add(1.99526231e+02).add(2.11348904e+02).add(2.23872114e+02)
-      .add(2.37137371e+02).add(2.51188643e+02).add(2.66072506e+02)
-      .add(2.81838293e+02).add(2.98538262e+02).add(3.16227766e+02)
-      .add(3.34965439e+02).add(3.54813389e+02).add(3.75837404e+02)
-      .add(3.98107171e+02).add(4.21696503e+02).add(4.46683592e+02)
-      .add(4.73151259e+02).add(5.01187234e+02).add(5.30884444e+02)
-      .add(5.62341325e+02).add(5.95662144e+02).add(6.30957344e+02)
-      .add(6.68343918e+02).add(7.07945784e+02).add(7.49894209e+02)
-      .add(7.94328235e+02).add(8.41395142e+02).add(8.91250938e+02)
-      .add(9.44060876e+02).add(1.00000000e+03).add(1.05925373e+03)
-      .add(1.12201845e+03).add(1.18850223e+03).add(1.25892541e+03)
-      .add(1.33352143e+03).add(1.41253754e+03).add(1.49623566e+03)
-      .add(1.58489319e+03).add(1.67880402e+03).add(1.77827941e+03)
-      .add(1.88364909e+03).add(1.99526231e+03).add(2.11348904e+03)
-      .add(2.23872114e+03).add(2.37137371e+03).add(2.51188643e+03)
-      .add(2.66072506e+03).add(2.81838293e+03).add(2.98538262e+03)
-      .add(3.16227766e+03).add(3.34965439e+03).add(3.54813389e+03)
-      .add(3.75837404e+03).add(3.98107171e+03).add(4.21696503e+03)
-      .add(4.46683592e+03).add(4.73151259e+03).add(5.01187234e+03)
-      .add(5.30884444e+03).add(5.62341325e+03).add(5.95662144e+03)
-      .add(6.30957344e+03).add(6.68343918e+03).add(7.07945784e+03)
-      .add(7.49894209e+03).add(7.94328235e+03).add(8.41395142e+03)
-      .add(8.91250938e+03).add(9.44060876e+03).add(1.00000000e+04)
-      .add(1.05925373e+04).add(1.12201845e+04).add(1.18850223e+04)
-      .add(1.25892541e+04).add(1.33352143e+04).add(1.41253754e+04)
-      .add(1.49623566e+04).add(1.58489319e+04).add(1.67880402e+04)
-      .add(1.77827941e+04).add(1.88364909e+04).add(1.99526231e+04)
-      .add(2.11348904e+04).add(2.23872114e+04).add(2.37137371e+04)
-      .add(2.51188643e+04).add(2.66072506e+04).add(2.81838293e+04)
-      .add(2.98538262e+04).add(3.16227766e+04).add(3.34965439e+04)
-      .add(3.54813389e+04).add(3.75837404e+04).add(3.98107171e+04)
-      .add(4.21696503e+04).add(4.46683592e+04).add(4.73151259e+04)
-      .add(5.01187234e+04).add(5.30884444e+04).add(5.62341325e+04)
-      .add(5.95662144e+04).add(6.30957344e+04).add(6.68343918e+04)
-      .add(7.07945784e+04).add(7.49894209e+04).add(7.94328235e+04)
-      .add(8.41395142e+04).add(8.91250938e+04).add(9.44060876e+04)
-      .add(1.00000000e+05).add(1.05925373e+05).add(1.12201845e+05)
-      .add(1.18850223e+05).add(1.25892541e+05).add(1.33352143e+05)
-      .add(1.41253754e+05).add(1.49623566e+05).add(1.58489319e+05)
-      .add(1.67880402e+05).add(1.77827941e+05).add(1.88364909e+05)
-      .add(1.99526231e+05).add(2.11348904e+05).add(2.23872114e+05)
-      .add(2.37137371e+05).add(2.51188643e+05).add(2.66072506e+05)
-      .add(2.81838293e+05).add(2.98538262e+05).add(3.16227766e+05)
-      .add(3.34965439e+05).add(3.54813389e+05).add(3.75837404e+05)
-      .add(3.98107171e+05).add(4.21696503e+05).add(4.46683592e+05)
-      .add(4.73151259e+05).add(5.01187234e+05).add(5.30884444e+05)
-      .add(5.62341325e+05).add(5.95662144e+05).add(6.30957344e+05)
-      .add(6.68343918e+05).add(7.07945784e+05).add(7.49894209e+05)
-      .add(7.94328235e+05).add(8.41395142e+05).add(8.91250938e+05)
-      .add(9.44060876e+05).add(1.00000000e+06).add(1.05925373e+06)
-      .add(1.12201845e+06).add(1.18850223e+06).add(1.25892541e+06)
-      .add(1.33352143e+06).add(1.41253754e+06).add(1.49623566e+06)
-      .add(1.58489319e+06).add(1.67880402e+06).add(1.77827941e+06)
-      .add(1.88364909e+06).add(1.99526231e+06).add(2.11348904e+06)
-      .add(2.23872114e+06).add(2.37137371e+06).add(2.51188643e+06)
-      .add(2.66072506e+06).add(2.81838293e+06).add(2.98538262e+06)
-      .add(3.16227766e+06).add(3.34965439e+06).add(3.54813389e+06)
-      .add(3.75837404e+06).add(3.98107171e+06).add(4.21696503e+06)
-      .add(4.46683592e+06).add(4.73151259e+06).add(5.01187234e+06)
-      .add(5.30884444e+06).add(5.62341325e+06).add(5.95662144e+06)
-      .add(6.30957344e+06).add(6.68343918e+06).add(7.07945784e+06)
-      .add(7.49894209e+06).add(7.94328235e+06).add(8.41395142e+06)
-      .add(8.91250938e+06).add(9.44060876e+06).add(1.00000000e+07)
-      .add(1.05925373e+07).add(1.12201845e+07).add(1.18850223e+07)
-      .add(1.25892541e+07).add(1.33352143e+07).add(1.41253754e+07)
-      .add(1.49623566e+07).add(1.58489319e+07).add(1.67880402e+07)
-      .add(1.77827941e+07).add(1.88364909e+07).add(1.99526231e+07)
-      .add(2.11348904e+07).add(2.23872114e+07).add(2.37137371e+07)
-      .add(2.51188643e+07).add(2.66072506e+07).add(2.81838293e+07)
-      .add(2.98538262e+07).add(3.16227766e+07).add(3.34965439e+07)
-      .add(3.54813389e+07).add(3.75837404e+07).add(3.98107171e+07)
-      .add(4.21696503e+07).add(4.46683592e+07).add(4.73151259e+07)
-      .add(5.01187234e+07).add(5.30884444e+07).add(5.62341325e+07)
-      .add(5.95662144e+07).add(6.30957344e+07).add(6.68343918e+07)
-      .add(7.07945784e+07).add(7.49894209e+07).add(7.94328235e+07)
-      .add(8.41395142e+07).add(8.91250938e+07).add(9.44060876e+07)
-      .add(1.00000000e+08).add(1.05925373e+08).add(1.12201845e+08)
-      .add(1.18850223e+08).add(1.25892541e+08).add(1.33352143e+08)
-      .add(1.41253754e+08).add(1.49623566e+08).add(1.58489319e+08)
-      .add(1.67880402e+08).add(1.77827941e+08).add(1.88364909e+08)
-      .add(1.99526231e+08).add(2.11348904e+08).add(2.23872114e+08)
-      .add(2.37137371e+08).add(2.51188643e+08).add(2.66072506e+08)
-      .add(2.81838293e+08).add(2.98538262e+08).add(3.16227766e+08)
-      .add(3.34965439e+08).add(3.54813389e+08).add(3.75837404e+08)
-      .add(3.98107171e+08).add(4.21696503e+08).add(4.46683592e+08)
-      .add(4.73151259e+08).add(5.01187234e+08).add(5.30884444e+08)
-      .add(5.62341325e+08).add(5.95662144e+08).add(6.30957344e+08)
-      .add(6.68343918e+08).add(7.07945784e+08).add(7.49894209e+08)
-      .add(7.94328235e+08).add(8.41395142e+08).add(8.91250938e+08)
-      .add(9.44060876e+08).add(1.00000000e+09).array(),
+      .add(3.16227766e+04).add(3.80189396e+04).add(4.57088190e+04)
+      .add(5.49540874e+04).add(6.60693448e+04).add(7.94328235e+04)
+      .add(9.54992586e+04).add(1.14815362e+05).add(1.38038426e+05)
+      .add(1.65958691e+05).add(1.99526231e+05).add(2.39883292e+05)
+      .add(2.88403150e+05).add(3.46736850e+05).add(4.16869383e+05)
+      .add(5.01187234e+05).add(6.02559586e+05).add(7.24435960e+05)
+      .add(8.70963590e+05).add(1.04712855e+06).add(1.25892541e+06)
+      .add(1.51356125e+06).add(1.81970086e+06).add(2.18776162e+06)
+      .add(2.63026799e+06).add(3.16227766e+06).add(3.80189396e+06)
+      .add(4.57088190e+06).add(5.49540874e+06).add(6.60693448e+06)
+      .add(7.94328235e+06).add(9.54992586e+06).add(1.14815362e+07)
+      .add(1.38038426e+07).add(1.65958691e+07).add(1.99526231e+07)
+      .add(2.39883292e+07).add(2.88403150e+07).add(3.46736850e+07)
+      .add(4.16869383e+07).add(5.01187234e+07).add(6.02559586e+07)
+      .add(7.24435960e+07).add(8.70963590e+07).add(1.04712855e+08)
+      .add(1.25892541e+08).add(1.51356125e+08).add(1.81970086e+08)
+      .add(2.18776162e+08).add(2.63026799e+08).add(3.16227766e+08).array(),
       "assigning variable hist_edge_0");
     std::vector<local_scalar_t__> hist_edge_1;
-    hist_edge_1 = std::vector<local_scalar_t__>(21, DUMMY_VAR__);
+    hist_edge_1 = std::vector<local_scalar_t__>(11, DUMMY_VAR__);
     
     current_statement__ = 348;
     assign(hist_edge_1, nil_index_list(), stan::math::array_builder<double>()
-      .add(-1.).add(-0.9).add(-0.8).add(-0.7).add(-0.6).add(-0.5).add(
-      -0.4).add(-0.3).add(-0.2).add(-0.1).add(0.).add(0.1).add(0.2).add(0.3)
-      .add(0.4).add(0.5).add(0.6).add(0.7).add(0.8).add(0.9).add(1.).array(),
+      .add(-1.).add(-0.8).add(-0.6).add(-0.4).add(-0.2).add(0.).add(0.2)
+      .add(0.4).add(0.6).add(0.8).add(1.).array(),
       "assigning variable hist_edge_1");
     current_statement__ = 349;
     return hist_array[(binary_search(value_0, hist_edge_0, pstream__) - 1)][
@@ -3890,13 +1860,13 @@ CascadesNuECCEffAreaHist(const T0__& value_0, const T1__& value_1,
   
 }
 
-struct CascadesNuECCEffAreaHist_functor__ {
+struct CascadesEffAreaHist_functor__ {
 template <typename T0__, typename T1__>
 stan::promote_args_t<T0__,
 T1__>
 operator()(const T0__& value_0, const T1__& value_1, std::ostream* pstream__)  const 
 {
-return CascadesNuECCEffAreaHist(value_0, value_1, pstream__);
+return CascadesEffAreaHist(value_0, value_1, pstream__);
 }
 };
 
@@ -4106,52 +2076,60 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
   
   try {
     std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionMuPolyCoeffs;
-    CascadesEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(1, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
+    CascadesEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
     
     current_statement__ = 378;
     assign(CascadesEnergyResolutionMuPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(7.50161629e-04)
-      .add(-1.20609837e-02).add(1.06835482e+00).add(-1.44735721e-01).array())
+      .add(stan::math::array_builder<double>().add(8.48311815e-02)
+      .add(-1.40745871e+00).add(8.39735975e+00).add(-1.29122823e+01).array())
+      .add(stan::math::array_builder<double>().add(2.21533174e-02)
+      .add(-3.66019618e-01).add(2.96495761e+00).add(-3.60384901e+00).array())
+      .add(stan::math::array_builder<double>().add(2.32768758e-03)
+      .add(-4.24291672e-02).add(1.26012779e+00).add(-5.56780567e-01).array())
       .array(), "assigning variable CascadesEnergyResolutionMuPolyCoeffs");
     std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionSdPolyCoeffs;
-    CascadesEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(1, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
+    CascadesEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
     
     current_statement__ = 379;
     assign(CascadesEnergyResolutionSdPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(-1.76301679e-05)
-      .add(3.20023507e-04).add(-1.92631841e-03).add(1.38442612e-02).array())
+      .add(stan::math::array_builder<double>().add(-4.14191927e-03)
+      .add(7.53090015e-02).add(-4.31439496e-01).add(8.45584783e-01).array())
+      .add(stan::math::array_builder<double>().add(1.31648641e-03)
+      .add(-2.44148960e-02).add(1.55383237e-01).add(-3.02974555e-01).array())
+      .add(stan::math::array_builder<double>().add(-4.15523836e-04)
+      .add(7.44664372e-03).add(-4.42253583e-02).add(9.70242677e-02).array())
       .array(), "assigning variable CascadesEnergyResolutionSdPolyCoeffs");
     std::vector<local_scalar_t__> mu_e_res;
-    mu_e_res = std::vector<local_scalar_t__>(1, DUMMY_VAR__);
+    mu_e_res = std::vector<local_scalar_t__>(3, DUMMY_VAR__);
     
     std::vector<local_scalar_t__> sigma_e_res;
-    sigma_e_res = std::vector<local_scalar_t__>(1, DUMMY_VAR__);
+    sigma_e_res = std::vector<local_scalar_t__>(3, DUMMY_VAR__);
     
     Eigen::Matrix<local_scalar_t__, -1, 1> weights;
-    weights = Eigen::Matrix<local_scalar_t__, -1, 1>(1);
+    weights = Eigen::Matrix<local_scalar_t__, -1, 1>(3);
     stan::math::fill(weights, DUMMY_VAR__);
     
     current_statement__ = 385;
-    for (int i = 1; i <= 1; ++i) {
+    for (int i = 1; i <= 3; ++i) {
       current_statement__ = 383;
-      assign(weights, cons_list(index_uni(i), nil_index_list()), (1.0 / 1),
+      assign(weights, cons_list(index_uni(i), nil_index_list()), (1.0 / 3),
         "assigning variable weights");}
     current_statement__ = 389;
-    for (int i = 1; i <= 1; ++i) {
+    for (int i = 1; i <= 3; ++i) {
       current_statement__ = 386;
       assign(mu_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 60000.0, 10000000.0, pstream__)),
+            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable mu_e_res");
       current_statement__ = 387;
       assign(sigma_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 60000.0, 10000000.0, pstream__)),
+            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable sigma_e_res");}
     current_statement__ = 390;
@@ -4240,11 +2218,11 @@ c_energy_res_mix(const T0__& x, const Eigen::Matrix<T1__, -1, 1>& means,
   
   try {
     Eigen::Matrix<local_scalar_t__, -1, 1> result;
-    result = Eigen::Matrix<local_scalar_t__, -1, 1>(1);
+    result = Eigen::Matrix<local_scalar_t__, -1, 1>(3);
     stan::math::fill(result, DUMMY_VAR__);
     
     current_statement__ = 398;
-    for (int i = 1; i <= 1; ++i) {
+    for (int i = 1; i <= 3; ++i) {
       current_statement__ = 396;
       assign(result, cons_list(index_uni(i), nil_index_list()),
         (stan::math::log(weights)[(i - 1)] +
@@ -4285,52 +2263,60 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
   
   try {
     std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionMuPolyCoeffs;
-    CascadesEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(1, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
+    CascadesEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
     
     current_statement__ = 401;
     assign(CascadesEnergyResolutionMuPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(7.50161629e-04)
-      .add(-1.20609837e-02).add(1.06835482e+00).add(-1.44735721e-01).array())
+      .add(stan::math::array_builder<double>().add(8.48311815e-02)
+      .add(-1.40745871e+00).add(8.39735975e+00).add(-1.29122823e+01).array())
+      .add(stan::math::array_builder<double>().add(2.21533174e-02)
+      .add(-3.66019618e-01).add(2.96495761e+00).add(-3.60384901e+00).array())
+      .add(stan::math::array_builder<double>().add(2.32768758e-03)
+      .add(-4.24291672e-02).add(1.26012779e+00).add(-5.56780567e-01).array())
       .array(), "assigning variable CascadesEnergyResolutionMuPolyCoeffs");
     std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionSdPolyCoeffs;
-    CascadesEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(1, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
+    CascadesEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
     
     current_statement__ = 402;
     assign(CascadesEnergyResolutionSdPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(-1.76301679e-05)
-      .add(3.20023507e-04).add(-1.92631841e-03).add(1.38442612e-02).array())
+      .add(stan::math::array_builder<double>().add(-4.14191927e-03)
+      .add(7.53090015e-02).add(-4.31439496e-01).add(8.45584783e-01).array())
+      .add(stan::math::array_builder<double>().add(1.31648641e-03)
+      .add(-2.44148960e-02).add(1.55383237e-01).add(-3.02974555e-01).array())
+      .add(stan::math::array_builder<double>().add(-4.15523836e-04)
+      .add(7.44664372e-03).add(-4.42253583e-02).add(9.70242677e-02).array())
       .array(), "assigning variable CascadesEnergyResolutionSdPolyCoeffs");
     std::vector<local_scalar_t__> mu_e_res;
-    mu_e_res = std::vector<local_scalar_t__>(1, DUMMY_VAR__);
+    mu_e_res = std::vector<local_scalar_t__>(3, DUMMY_VAR__);
     
     std::vector<local_scalar_t__> sigma_e_res;
-    sigma_e_res = std::vector<local_scalar_t__>(1, DUMMY_VAR__);
+    sigma_e_res = std::vector<local_scalar_t__>(3, DUMMY_VAR__);
     
     Eigen::Matrix<local_scalar_t__, -1, 1> weights;
-    weights = Eigen::Matrix<local_scalar_t__, -1, 1>(1);
+    weights = Eigen::Matrix<local_scalar_t__, -1, 1>(3);
     stan::math::fill(weights, DUMMY_VAR__);
     
     current_statement__ = 408;
-    for (int i = 1; i <= 1; ++i) {
+    for (int i = 1; i <= 3; ++i) {
       current_statement__ = 406;
-      assign(weights, cons_list(index_uni(i), nil_index_list()), (1.0 / 1),
+      assign(weights, cons_list(index_uni(i), nil_index_list()), (1.0 / 3),
         "assigning variable weights");}
     current_statement__ = 412;
-    for (int i = 1; i <= 1; ++i) {
+    for (int i = 1; i <= 3; ++i) {
       current_statement__ = 409;
       assign(mu_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 60000.0, 10000000.0, pstream__)),
+            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable mu_e_res");
       current_statement__ = 410;
       assign(sigma_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 60000.0, 10000000.0, pstream__)),
+            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable sigma_e_res");}
     current_statement__ = 413;
@@ -4359,9 +2345,9 @@ return CascadeEnergyResolution(true_energy, reco_energy, pstream__);
 template <typename T0__, typename T1__>
 stan::promote_args_t<T0__,
 T1__>
-CascadesNuECCEffectiveArea(const T0__& true_energy,
-                           const Eigen::Matrix<T1__, -1, 1>& true_dir,
-                           std::ostream* pstream__) {
+CascadesEffectiveArea(const T0__& true_energy,
+                      const Eigen::Matrix<T1__, -1, 1>& true_dir,
+                      std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<T0__, T1__>;
   const static bool propto__ = true;
   (void) propto__;
@@ -4370,7 +2356,7 @@ CascadesNuECCEffectiveArea(const T0__& true_energy,
   
   try {
     current_statement__ = 415;
-    return CascadesNuECCEffAreaHist(true_energy,
+    return CascadesEffAreaHist(true_energy,
              stan::math::cos(
                (stan::math::pi() - stan::math::acos(true_dir[(3 - 1)]))), pstream__);
   } catch (const std::exception& e) {
@@ -4381,7 +2367,7 @@ CascadesNuECCEffectiveArea(const T0__& true_energy,
   
 }
 
-struct CascadesNuECCEffectiveArea_functor__ {
+struct CascadesEffectiveArea_functor__ {
 template <typename T0__, typename T1__>
 stan::promote_args_t<T0__,
 T1__>
@@ -4389,7 +2375,7 @@ operator()(const T0__& true_energy,
            const Eigen::Matrix<T1__, -1, 1>& true_dir,
            std::ostream* pstream__)  const 
 {
-return CascadesNuECCEffectiveArea(true_energy, true_dir, pstream__);
+return CascadesEffectiveArea(true_energy, true_dir, pstream__);
 }
 };
 
@@ -5091,8 +3077,8 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
           }
           current_statement__ = 39;
           assign(Pdet, cons_list(index_uni(i), nil_index_list()),
-            (CascadesNuECCEffectiveArea(E[(i - 1)], omega, pstream__) /
-              aeff_max), "assigning variable Pdet");
+            (CascadesEffectiveArea(E[(i - 1)], omega, pstream__) / aeff_max),
+            "assigning variable Pdet");
           current_statement__ = 40;
           assign(Edet, cons_list(index_uni(i), nil_index_list()),
             pow(10,
