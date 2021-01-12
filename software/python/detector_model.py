@@ -906,7 +906,7 @@ class CascadesEnergyResolution(UserDefinedFunction):
     """
 
     DATA_PATH = "input/cascades/cascade_detector_model_test.h5"  # noqa: E501
-    CACHE_FNAME = "energy_reso_cascade.npz"
+    CACHE_FNAME = "energy_reso_cascades.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
         """
