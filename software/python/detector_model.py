@@ -137,15 +137,18 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
             import h5py  # type: ignore
 
             with h5py.File(self.DATA_PATH, "r") as f:
-                eff_area = f["2010/nu_mu/area"][()]
-                # sum over reco energy
-                eff_area = eff_area.sum(axis=2)
+
+                aeff_numu = f["2010/nu_mu/area"][()]
+                aeff_numubar = f["2010/nu_mu_bar/area"][()]
+                
+                # Sum over reco energy and average numu/numubar
+                eff_area = 0.5 * (aeff_numu.sum(axis=2) + aeff_numubar.sum(axis=2))
+
                 # True Energy [GeV]
                 tE_bin_edges = f["2010/nu_mu/bin_edges_0"][:]
+
                 # cos(zenith)
                 cosz_bin_edges = f["2010/nu_mu/bin_edges_1"][:]
-                # Reco Energy [GeV]
-                # rE_bin_edges = f['2010/nu_mu/bin_edges_2'][:]
 
                 with Cache.open(self.CACHE_FNAME, "wb") as fr:
                     np.savez(
@@ -320,6 +323,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         from scipy.optimize import least_squares  # type: ignore
 
         fit_params = []
+        
         # Rebin to have higher statistics at upper
         # and lower end of energy range
         rebin = 3
@@ -327,8 +331,10 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         logrEbins = np.log10(rE_binc)
 
         model = self.make_fit_model(n_components)
+
         # Fitting loop
         for index in range(int(len(tE_binc) / rebin)):
+
             # Calculate rebinned bin-centers as mean of first and
             # last bin being summed
             rebinned_binc[index] = (
@@ -336,7 +342,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             )
 
             # Calculate the energy resolution for this true-energy bin
-            e_reso = eff_area.sum(axis=1)[index * rebin : (index + 1) * rebin]
+            e_reso = eff_area[index * rebin : (index + 1) * rebin]
             e_reso = e_reso.sum(axis=0)
             if e_reso.sum() > 0:
                 # Normalize to prob. density / bin
@@ -462,7 +468,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 mu = np.poly1d(self.poly_params_mu[comp])(log_plot_e)
                 sigma = np.poly1d(self.poly_params_sd[comp])(log_plot_e)
                 model_params += [mu, sigma]
-            e_reso = eff_area.sum(axis=1)
+            e_reso = eff_area
             e_reso = e_reso[int(p_i / rebin) * rebin : (int(p_i / rebin) + 1) * rebin]
             e_reso = e_reso.sum(axis=0) / e_reso.sum()
             e_reso /= logrEbins[1] - logrEbins[0]
@@ -502,11 +508,16 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             import h5py  # type: ignore
 
             with h5py.File(self.DATA_PATH, "r") as f:
-                eff_area = f["2010/nu_mu/area"][()]
+
+                aeff_numu = f["2010/nu_mu/area"][()]
+                aeff_numubar = f["2010/nu_mu_bar/area"][()]
+
+                # Sum over cosz and average over numu/numubar
+                eff_area = 0.5 * (aeff_numu.sum(axis=1) + aeff_numubar.sum(axis=1))
+                
                 # True Energy [GeV]
                 tE_bin_edges = f["2010/nu_mu/bin_edges_0"][:]
-                # cos(zenith)
-                # cosz_bin_edges = f['2010/nu_mu/bin_edges_1'][:]
+
                 # Reco Energy [GeV]
                 rE_bin_edges = f["2010/nu_mu/bin_edges_2"][:]
 
@@ -1038,7 +1049,6 @@ class CascadesEnergyResolution(UserDefinedFunction):
             return result
 
         return _cumulative_model
-
 
     def _fit_energy_res(
         self,
