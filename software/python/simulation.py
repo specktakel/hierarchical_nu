@@ -7,11 +7,11 @@ from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
 import logging
 
-from .detector_model import DetectorModel
+from .detector_model import DetectorModel, NorthernTracksDetectorModel
 from .precomputation import ExposureIntegral
 from .source.source import Sources, PointSource, icrs_to_uv
 from .source.parameter import Parameter
-from .source.flux_model import IsotropicDiffuseBG
+from .source.flux_model import IsotropicDiffuseBG, flux_conv_
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.cosmology import luminosity_distance
 from .events import Events
@@ -87,18 +87,29 @@ class Simulation:
 
         stanc_options = {"include_paths": include_paths}
 
-        self._atmo_sim = CmdStanModel(
-            stan_file=self._atmo_sim_filename,
-            stanc_options=stanc_options,
-        )
+        if self._atmospheric_comp:
+
+            self._atmo_sim = CmdStanModel(
+                stan_file=self._atmo_sim_filename,
+                stanc_options=stanc_options,
+            )
+
         self._main_sim = CmdStanModel(
             stan_file=self._main_sim_filename,
             stanc_options=stanc_options,
         )
 
-    def run(self, seed=None):
+    def run(self, seed=None, verbose=False):
 
         self._sim_inputs = self._get_sim_inputs(seed)
+
+        self._expected_Nnu = self._get_expected_Nnu(self._sim_inputs)
+
+        if verbose:
+            print(
+                "Running a simulation with expected Nnu = %.2f events"
+                % self._expected_Nnu
+            )
 
         sim_output = self._main_sim.sample(
             data=self._sim_inputs,
@@ -324,8 +335,11 @@ class Simulation:
         )
         sim_inputs["aeff_max"] = aeff_max + 0.01 * aeff_max
 
-        # Only sample from Northern hemisphere
-        sim_inputs["v_lim"] = (np.cos(np.pi - np.arccos(cz_max)) + 1) / 2
+        if self._detector_model_type == NorthernTracksDetectorModel:
+            # Only sample from Northern hemisphere
+            sim_inputs["v_lim"] = (np.cos(np.pi - np.arccos(cz_max)) + 1) / 2
+        else:
+            sim_inputs["v_lim"] = 0.0
 
         diffuse_bg = self._sources.diffuse_component()
         sim_inputs["F_diff"] = diffuse_bg.flux_model.total_flux_int.value
@@ -345,6 +359,39 @@ class Simulation:
         }
 
         return sim_inputs
+
+    def _get_expected_Nnu(self, sim_inputs):
+        """
+        Calculates expected number of neutrinos to be simulated.
+        Uses same approach as in the Stan code.
+        """
+
+        alpha = sim_inputs["alpha"]
+        alpha_grid = sim_inputs["alpha_grid"]
+        integral_grid = sim_inputs["integral_grid"]
+
+        eps = []
+        for igrid in integral_grid:
+            eps.append(np.interp(alpha, alpha_grid, igrid))
+
+        if self._atmospheric_comp:
+            eps.append(sim_inputs["atmo_integ_val"])
+
+        eps = np.array(eps) * sim_inputs["T"]
+
+        F = []
+        for d in sim_inputs["D"]:
+            flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
+            flux = flux * flux_conv_(
+                alpha, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
+            )
+            F.append(flux)
+        F.append(sim_inputs["F_diff"])
+
+        if self._atmospheric_comp:
+            F.append(sim_inputs["F_atmo"])
+
+        return sum(eps * F)
 
     @classmethod
     def from_file(cls, filename):
@@ -402,8 +449,11 @@ class SimInfo:
             source_folder = f["sim/source"]
             outputs_folder = f["sim/outputs"]
 
+            atmo_comp = False
             for key in inputs_folder:
                 inputs[key] = inputs_folder[key][()]
+                if key == "F_atmo":
+                    atmo_comp = True
 
             for key in source_folder:
                 inputs[key] = source_folder[key][()]
@@ -413,10 +463,12 @@ class SimInfo:
 
         truths = {}
         truths["F_diff"] = inputs["F_diff"]
-        truths["F_atmo"] = inputs["F_atmo"]
         truths["L"] = inputs["L"]
         truths["Ftot"] = inputs["total_flux_int"]
         truths["f"] = inputs["f"]
         truths["alpha"] = inputs["alpha"]
+
+        if atmo_comp:
+            truths["F_atmo"] = inputs["F_atmo"]
 
         return cls(truths, inputs, outputs)

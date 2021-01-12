@@ -98,7 +98,7 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
 
     """
 
-    DATA_PATH = "input/effective_area.h5"  # noqa: E501
+    DATA_PATH = "input/tracks/effective_area.h5"  # noqa: E501
     CACHE_FNAME = "aeff_tracks.npz"
 
     def __init__(self) -> None:
@@ -137,15 +137,18 @@ class NorthernTracksEffectiveArea(UserDefinedFunction):
             import h5py  # type: ignore
 
             with h5py.File(self.DATA_PATH, "r") as f:
-                eff_area = f["2010/nu_mu/area"][()]
-                # sum over reco energy
-                eff_area = eff_area.sum(axis=2)
+
+                aeff_numu = f["2010/nu_mu/area"][()]
+                aeff_numubar = f["2010/nu_mu_bar/area"][()]
+                
+                # Sum over reco energy and average numu/numubar
+                eff_area = 0.5 * (aeff_numu.sum(axis=2) + aeff_numubar.sum(axis=2))
+
                 # True Energy [GeV]
                 tE_bin_edges = f["2010/nu_mu/bin_edges_0"][:]
+
                 # cos(zenith)
                 cosz_bin_edges = f["2010/nu_mu/bin_edges_1"][:]
-                # Reco Energy [GeV]
-                # rE_bin_edges = f['2010/nu_mu/bin_edges_2'][:]
 
                 with Cache.open(self.CACHE_FNAME, "wb") as fr:
                     np.savez(
@@ -168,7 +171,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
     Data from https://arxiv.org/pdf/1811.07979.pdf
     """
 
-    DATA_PATH = "input/effective_area.h5"  # noqa: E501
+    DATA_PATH = "input/tracks/effective_area.h5"  # noqa: E501
     CACHE_FNAME = "energy_reso_tracks.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
@@ -320,6 +323,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         from scipy.optimize import least_squares  # type: ignore
 
         fit_params = []
+        
         # Rebin to have higher statistics at upper
         # and lower end of energy range
         rebin = 3
@@ -327,8 +331,10 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         logrEbins = np.log10(rE_binc)
 
         model = self.make_fit_model(n_components)
+
         # Fitting loop
         for index in range(int(len(tE_binc) / rebin)):
+
             # Calculate rebinned bin-centers as mean of first and
             # last bin being summed
             rebinned_binc[index] = (
@@ -336,7 +342,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             )
 
             # Calculate the energy resolution for this true-energy bin
-            e_reso = eff_area.sum(axis=1)[index * rebin : (index + 1) * rebin]
+            e_reso = eff_area[index * rebin : (index + 1) * rebin]
             e_reso = e_reso.sum(axis=0)
             if e_reso.sum() > 0:
                 # Normalize to prob. density / bin
@@ -407,7 +413,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         axs[0].set_xlabel("log10(True Energy / GeV)")
         axs[0].set_ylabel("Parameter Value")
         plt.tight_layout()
-        plt.savefig("energy_fit_params.png", dpi=150)
+        plt.savefig("energy_fit_params_tracks.png", dpi=150)
 
     def plot_parameterizations(
         self,
@@ -462,7 +468,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 mu = np.poly1d(self.poly_params_mu[comp])(log_plot_e)
                 sigma = np.poly1d(self.poly_params_sd[comp])(log_plot_e)
                 model_params += [mu, sigma]
-            e_reso = eff_area.sum(axis=1)
+            e_reso = eff_area
             e_reso = e_reso[int(p_i / rebin) * rebin : (int(p_i / rebin) + 1) * rebin]
             e_reso = e_reso.sum(axis=0) / e_reso.sum()
             e_reso /= logrEbins[1] - logrEbins[0]
@@ -485,7 +491,7 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         ax.set_xlabel("log10(Reconstructed Energy /GeV)")
         ax.set_ylabel("PDF")
         plt.tight_layout()
-        plt.savefig("energy_parameterizations.png", dpi=150)
+        plt.savefig("energy_parameterizations_tracks.png", dpi=150)
 
     def setup(self) -> None:
         # Load Aeff data
@@ -502,11 +508,16 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             import h5py  # type: ignore
 
             with h5py.File(self.DATA_PATH, "r") as f:
-                eff_area = f["2010/nu_mu/area"][()]
+
+                aeff_numu = f["2010/nu_mu/area"][()]
+                aeff_numubar = f["2010/nu_mu_bar/area"][()]
+
+                # Sum over cosz and average over numu/numubar
+                eff_area = 0.5 * (aeff_numu.sum(axis=1) + aeff_numubar.sum(axis=1))
+                
                 # True Energy [GeV]
                 tE_bin_edges = f["2010/nu_mu/bin_edges_0"][:]
-                # cos(zenith)
-                # cosz_bin_edges = f['2010/nu_mu/bin_edges_1'][:]
+
                 # Reco Energy [GeV]
                 rE_bin_edges = f["2010/nu_mu/bin_edges_2"][:]
 
@@ -606,7 +617,7 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
 
     """
 
-    DATA_PATH = "input/NorthernTracksAngularRes.csv"
+    DATA_PATH = "input/tracks/NorthernTracksAngularRes.csv"
     CACHE_FNAME = "angular_reso_tracks.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
@@ -834,19 +845,18 @@ if __name__ == "__main__":
     print(fit)
 
 
-class CascadesNuECCEffectiveArea(UserDefinedFunction):
+class CascadesEffectiveArea(UserDefinedFunction):
     """
-    Effective area for the MESE cascade release:
-    https://icecube.wisc.edu/science/data/HEnu_above1tev
+    Effective area based on the cascade_model simulation. 
     """
 
-    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_cascades_HESE/effective_area_HESE_nue_CC.hf5"
-    CACHE_FNAME = "aeff_cascades_nue_cc.npz"
+    DATA_PATH = "input/cascades/cascade_detector_model_test.h5"
+    CACHE_FNAME = "aeff_cascades.npz"
 
     def __init__(self) -> None:
         UserDefinedFunction.__init__(
             self,
-            "CascadesNuECCEffectiveArea",
+            "CascadesEffectiveArea",
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real",
@@ -858,11 +868,12 @@ class CascadesNuECCEffectiveArea(UserDefinedFunction):
             hist = SimpleHistogram(
                 self._eff_area,
                 [self._tE_bin_edges, self._cosz_bin_edges],
-                "CascadesNuECCEffAreaHist",
+                "CascadesEffAreaHist",
             )
 
             # z = cos(theta)
-            cos_dir = "true_dir[3]"
+            #cos_dir = "true_dir[3]"
+            cos_dir = "cos(pi() - acos(true_dir[3]))"
             # cos_dir = FunctionCall(["true_dir"], "cos")
             _ = ReturnStatement([hist("true_energy", cos_dir)])
 
@@ -878,15 +889,13 @@ class CascadesNuECCEffectiveArea(UserDefinedFunction):
             import h5py  # type: ignore
 
             with h5py.File(self.DATA_PATH, "r") as f:
-                eff_area = f["aeff"][()]
-                # sum over reco energy
-                eff_area = eff_area.sum(axis=2)
+                eff_area = f["aeff/aeff"][()] # m^2
+
                 # True Energy [GeV]
-                tE_bin_edges = f["tE_edges"][:]
+                tE_bin_edges = f["aeff/tE_bin_edges"][()]
+
                 # cos(zenith)
-                cosz_bin_edges = f["cosz_edges"][:]
-                # Reco Energy [GeV]
-                # rE_bin_edges = f['rE_edges'][:]
+                cosz_bin_edges = f["aeff/cosz_bin_edges"][()]
 
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
                 np.savez(
@@ -900,16 +909,15 @@ class CascadesNuECCEffectiveArea(UserDefinedFunction):
         self._tE_bin_edges = tE_bin_edges
         self._cosz_bin_edges = cosz_bin_edges
 
-
+        
 class CascadesEnergyResolution(UserDefinedFunction):
 
     """
-    Energy resolution for Northern Tracks Sample
-    Data from https://arxiv.org/pdf/1811.07979.pdf
+    Energy resolution based on the cascade_model simulation.
     """
 
-    DATA_PATH = "../dev/statistical_model/4_tracks_and_cascades/aeff_input_cascades_HESE/effective_area_HESE_nue_CC.hf5"  # noqa: E501
-    CACHE_FNAME = "energy_reso_cascade.npz"
+    DATA_PATH = "input/cascades/cascade_detector_model_test.h5"  # noqa: E501
+    CACHE_FNAME = "energy_reso_cascades.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
         """
@@ -923,7 +931,6 @@ class CascadesEnergyResolution(UserDefinedFunction):
         self.poly_params_sd: Sequence = []
         self.poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
 
-        # self.n_components = 1
         self.n_components = 3
         self.setup()
 
@@ -1027,39 +1034,45 @@ class CascadesEnergyResolution(UserDefinedFunction):
 
         return _model
 
+    @staticmethod
+    def make_cumulative_model(n_components):
+        """
+        Cumulative Lognormal mixture above xth
+        """
+
+        def _cumulative_model(xth, pars):
+            result = 0
+            for i in range(n_components):
+                result += (1 / n_components) * stats.lognorm.cdf(
+                    xth, scale=pars[2 * i], s=pars[2 * i + 1]
+                )
+            return result
+
+        return _cumulative_model
+
     def _fit_energy_res(
         self,
         tE_binc: np.ndarray,
         rE_binc: np.ndarray,
-        eff_area: np.ndarray,
+        eres: np.ndarray,
         n_components: int,
     ) -> np.ndarray:
         from scipy.optimize import least_squares  # type: ignore
 
         fit_params = []
-        # Rebin to have higher statistics at upper
-        # and lower end of energy range
-        # rebin = 1
-        rebin = 1
-        rebinned_binc = np.zeros(int(len(tE_binc) / rebin))
+
         logrEbins = np.log10(rE_binc)
 
         model = self.make_fit_model(n_components)
+
         # Fitting loop
-        for index in range(int(len(tE_binc) / rebin)):
-            # Calculate rebinned bin-centers as mean of first and
-            # last bin being summed
-            rebinned_binc[index] = (
-                0.5 * (tE_binc[[index * rebin, rebin * (index + 1) - 1]]).sum()
-            )
-
-            # Calculate the energy resolution for this true-energy bin
-            e_reso = eff_area.sum(axis=1)[index * rebin : (index + 1) * rebin]
-            e_reso = e_reso.sum(axis=0)
+        for index in range(len(tE_binc)):
+            
+            # Energy resolution for this true-energy bin
+            e_reso = eres[index]
+            
             if e_reso.sum() > 0:
-                # Normalize to prob. density / bin
-                e_reso = e_reso / e_reso.sum() / (logrEbins[1] - logrEbins[0])
-
+                
                 residuals = Residuals((logrEbins, e_reso), model)
 
                 # Calculate seed as mean of the resolution to help minimizer
@@ -1094,7 +1107,7 @@ class CascadesEnergyResolution(UserDefinedFunction):
             else:
                 fit_params.append(np.zeros(2 * n_components))
         fit_params = np.asarray(fit_params)
-        return fit_params, rebinned_binc
+        return fit_params
 
     def plot_fit_params(
         self, fit_params: np.ndarray, rebinned_binc: np.ndarray
@@ -1125,29 +1138,27 @@ class CascadesEnergyResolution(UserDefinedFunction):
         axs[0].set_xlabel("log10(True Energy / GeV)")
         axs[0].set_ylabel("Parameter Value")
         plt.tight_layout()
-        plt.savefig("energy_fit_params.png", dpi=150)
+        plt.savefig("energy_fit_params_cascades.png", dpi=150)
 
     def plot_parameterizations(
             self,
             tE_binc: np.ndarray,
-            rebinned_binc: np.ndarray,
             rE_binc: np.ndarray,
             fit_params: np.ndarray,
-            eff_area: np.ndarray):
+            eres: np.ndarray):
         """
         Plot fitted parameterizations
         Args:
             tE_binc: np.ndarray
                 True energy bin centers
-            rebinned_binc: np.ndarray:
-                Rebinned true energy bin centers
             rE_binc: np.ndarray
                 Reconstructed energy bin centers
             fit_params: np.ndarray
                 Fitted parameters for mu and sigma
-            eff_area: np.ndarray
-                Effective Area
+            eres: np.ndarray
+                P(Ereco | Etrue)
         """
+        
         import matplotlib.pyplot as plt  # type: ignore
 
         # plot_energies = [100, 200, 1E3, 5E3, 1E4, 5E4, 1E5, 5E5, 1E6]  # GeV
@@ -1156,53 +1167,57 @@ class CascadesEnergyResolution(UserDefinedFunction):
         if self.poly_params_mu is None:
             raise RuntimeError("Run setup() first")
 
+
         # Find true energy bins for the chosen plotting energies
         plot_indices = np.digitize(plot_energies, tE_binc)
+
         # Parameters are relative to the rebinned histogram
-        param_indices = np.digitize(plot_energies, rebinned_binc)
+        #param_indices = np.digitize(plot_energies, rebinned_binc)
 
         logrEbins = np.log10(rE_binc)
 
         fig, axs = plt.subplots(3, 3, figsize=(10, 10))
         xs = np.linspace(*np.log10(self.poly_limits), num=100)
 
-        rebin = int(len(tE_binc) / len(rebinned_binc))
-
         model = self.make_fit_model(self.n_components)
         fl_ax = axs.ravel()
+
         for i, p_i in enumerate(plot_indices):
+
             log_plot_e = np.log10(plot_energies[i])
+
             model_params: List[float] = []
             for comp in range(self.n_components):
+
                 mu = np.poly1d(self.poly_params_mu[comp])(log_plot_e)
                 sigma = np.poly1d(self.poly_params_sd[comp])(log_plot_e)
                 model_params += [mu, sigma]
-            e_reso = eff_area.sum(axis=1)
-            e_reso = e_reso[int(p_i/rebin)*rebin:(int(p_i/rebin)+1)*rebin]
-            e_reso = e_reso.sum(axis=0)/e_reso.sum()
-            e_reso /= (logrEbins[1]-logrEbins[0])
+
+            e_reso = eres[p_i]
             fl_ax[i].plot(logrEbins, e_reso)
 
-            res = fit_params[param_indices[i]]
+            res = fit_params[plot_indices[i]]
 
             fl_ax[i].plot(xs, model(xs, model_params))
             fl_ax[i].plot(xs, model(xs, res))
-            fl_ax[i].set_ylim(1E-4, 10)
+            fl_ax[i].set_ylim(1E-4, 5)
             fl_ax[i].set_yscale("log")
             fl_ax[i].set_title("True E: {:.1E}".format(tE_binc[p_i]))
 
         ax = fig.add_subplot(111, frameon=False)
-        # hide tick and tick label of the big axes
+
+        # Hide tick and tick label of the big axes
         ax.tick_params(labelcolor='none', top='off', bottom='off', left='off',
                        right='off')
         ax.grid(False)
         ax.set_xlabel("log10(Reconstructed Energy /GeV)")
         ax.set_ylabel("PDF")
         plt.tight_layout()
-        plt.savefig("energy_parameterizations.png", dpi=150)
+        plt.savefig("energy_parameterizations_cascades.png", dpi=150)
 
     def setup(self) -> None:
-        # Load Aeff data
+
+        # Load Eres data
 
         # Check cache
         if self.CACHE_FNAME in Cache:
@@ -1214,63 +1229,56 @@ class CascadesEnergyResolution(UserDefinedFunction):
 
         else:
             import h5py  # type: ignore
+
             with h5py.File(self.DATA_PATH, 'r') as f:
-                eff_area = f['aeff'][()]
+
+                # P(Ereco | Etrue)
+                eres = f["eres/eres"][()] 
+                
                 # True Energy [GeV]
-                tE_bin_edges = f['tE_edges'][:]
-                # cos(zenith)
-                # cosz_bin_edges = f['cosz_edges'][:]
+                tE_bin_edges = f["eres/tE_bin_edges"][()]
+
                 # Reco Energy [GeV]
-                rE_bin_edges = f['rE_edges'][:]
+                rE_bin_edges = f["eres/rE_bin_edges"][()]
 
             tE_binc = 0.5*(tE_bin_edges[:-1]+tE_bin_edges[1:])
             rE_binc = 0.5*(rE_bin_edges[:-1]+rE_bin_edges[1:])
 
-            n_components = 3
-            # n_components = 1
-            fit_params, rebinned_binc = self._fit_energy_res(
+            fit_params = self._fit_energy_res(
                 tE_binc,
                 rE_binc,
-                eff_area,
-                n_components)
-
-            # Min and max values
-            # imin = 5
-#             imin = 10
-#             imax = -10
-# 
-#             e_min = rebinned_binc[imin]
-#             e_max = rebinned_binc[imax]
+                eres,
+                self.n_components)
 
             def find_nearest_idx(array, value):
                 array = np.asarray(array)
                 idx = (np.abs(array - value)).argmin()
                 return idx
 
-            e_min = 1e5
+            e_min = 1e3
             e_max = 1e7
-            imin = find_nearest_idx(rebinned_binc, e_min)
-            imax = find_nearest_idx(rebinned_binc, e_max)
+            imin = find_nearest_idx(tE_binc, e_min)
+            imax = find_nearest_idx(tE_binc, e_max)
 
             # Degree of polynomial
-            # polydeg = 5
             polydeg = 3
 
-            log_rebinned = np.log10(rebinned_binc)
-            poly_params_mu = np.zeros((n_components, polydeg+1))
+            log10_tE_binc = np.log10(tE_binc)
+            poly_params_mu = np.zeros((self.n_components, polydeg+1))
 
             poly_params_sd = np.zeros_like(poly_params_mu)
-            for i in range(n_components):
+            for i in range(self.n_components):
                 poly_params_mu[i] = np.polyfit(
-                    log_rebinned[imin:imax],
+                    log10_tE_binc[imin:imax],
                     fit_params[:, 2*i][imin:imax],
                     polydeg)
                 poly_params_sd[i] = np.polyfit(
-                    log_rebinned[imin:imax],
+                    log10_tE_binc[imin:imax],
                     fit_params[:, 2*i+1][imin:imax],
                     polydeg)
 
             poly_limits = (e_min, e_max)
+            
             # Save polynomial
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
                 np.savez(
@@ -1282,9 +1290,9 @@ class CascadesEnergyResolution(UserDefinedFunction):
             self.poly_params_mu = poly_params_mu
             self.poly_params_sd = poly_params_sd
             self.poly_limits = poly_limits
-            self.plot_fit_params(fit_params, rebinned_binc)
-            self.plot_parameterizations(tE_binc, rebinned_binc, rE_binc,
-                                        fit_params, eff_area)
+            self.plot_fit_params(fit_params, tE_binc)
+            self.plot_parameterizations(tE_binc, rE_binc,
+                                        fit_params, eres)
 
         # poly params are now set
         self.poly_params_mu = poly_params_mu
@@ -1296,11 +1304,30 @@ class CascadesEnergyResolution(UserDefinedFunction):
             param_dict: dict):
         pass
 
+    @u.quantity_input
+    def prob_Edet_above_threshold(self, true_energy: u.GeV, threshold_energy: u.GeV):
+        """
+        P(Edet > Edet_min | E) for use in precomputation.
+        """
 
+        model = self.make_cumulative_model(self.n_components)
+
+        prob = np.zeros_like(true_energy)
+        model_params: List[float] = []
+        for comp in range(self.n_components):
+            mu = np.poly1d(self.poly_params_mu[comp])(np.log10(true_energy.value))
+            sigma = np.poly1d(self.poly_params_sd[comp])(np.log10(true_energy.value))
+            model_params += [mu, sigma]
+
+        prob = 1 - model(np.log10(threshold_energy.value), model_params)
+
+        return prob
+
+    
 class CascadesAngularResolution(UserDefinedFunction):
     """
     Angular resolution for Cascades
-    Data from https://arxiv.org/pdf/1311.4767.pdf
+    Data from https://arxiv.org/pdf/1311.4767.pdf (Fig. 14)
     Extrapolated using a complementary error function
     Fits a polynomial to the median angular resolution converted to
     `kappa` parameter of a VMF distribution
@@ -1310,7 +1337,7 @@ class CascadesAngularResolution(UserDefinedFunction):
         e_max: Upper energy bound of the polynomial
     """
 
-    DATA_PATH = "CascadesAngularResolution.csv"
+    DATA_PATH = "input/cascades/CascadesAngularResolution.csv"
     CACHE_FNAME = "angular_reso_cascades.npz"
 
     def __init__(
@@ -1417,11 +1444,12 @@ class CascadesDetectorModel(DetectorModel):
         DetectorModel.__init__(self, mode)
 
         ang_res = CascadesAngularResolution(mode)
-        # ang_res = NorthernTracksAngularResolution(mode)
         self._angular_resolution = ang_res
         energy_res = CascadesEnergyResolution(mode)
         self._energy_resolution = energy_res
-        self._eff_area = CascadesNuECCEffectiveArea()
+
+        if mode == DistributionMode.PDF:
+            self._eff_area = CascadesEffectiveArea()
 
     def _get_effective_area(self):
         return self._eff_area
@@ -1439,9 +1467,7 @@ if __name__ == "__main__":
     e_reco_name = "e_reco"
     true_dir_name = "true_dir"
     reco_dir_name = "reco_dir"
-    # ntp = NorthernTracksAngularResolution([e_true, pos_true])
 
-    # print(ntp.to_stan())
     from backend.stan_generator import (
         StanGenerator, GeneratedQuantitiesContext, DataContext,
         FunctionsContext, Include)

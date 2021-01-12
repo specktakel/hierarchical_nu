@@ -12,7 +12,7 @@ import numpy as np
 from .source.source import Sources, PointSource, DiffuseSource, icrs_to_uv
 from .source.parameter import ParScale, Parameter
 from .backend.stan_generator import StanGenerator
-
+from .detector_model import NorthernTracksEnergyResolution
 
 m_to_cm = 100  # cm
 
@@ -51,7 +51,7 @@ class ExposureIntegral:
         logger.propagate = False
 
         # Instantiate the given Detector class to access values
-        with StanGenerator() as cg:
+        with StanGenerator():
             dm = detector_model()
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
@@ -128,7 +128,7 @@ class ExposureIntegral:
 
             if (
                 cosz < self.effective_area._cosz_bin_edges[0]
-                or cosz > self._effective_area._cosz_bin_edges[-1]
+                or cosz > self.effective_area._cosz_bin_edges[-1]
             ):
                 aeff = np.zeros(len(lower_e_edges)) << (u.m ** 2)
 
@@ -166,6 +166,7 @@ class ExposureIntegral:
 
         # aeff = 1 * u.m ** 2
         # return (integral * aeff * source.redshift_factor(z)).sum()
+
         return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
 
     def _compute_exposure_integral(self):
@@ -271,4 +272,5 @@ class ExposureIntegral:
         """
 
         self._compute_exposure_integral()
+
         self._compute_energy_detection_factor()

@@ -558,3 +558,18 @@ class PowerLawSpectrum(SpectralShape):
             ReturnStatement([f1 / f2])
 
         return func
+
+
+def flux_conv_(alpha, e_low, e_up):
+
+    if alpha == 1.0:
+        f1 = np.log(e_up) - np.log(e_low)
+    else:
+        f1 = 1 / (1 - alpha) * (np.power(e_up, 1 - alpha) - np.power(e_low, 1 - alpha))
+
+    if alpha == 2.0:
+        f2 = np.log(e_up) - np.log(e_low)
+    else:
+        f2 = 1 / (2 - alpha) * (np.power(e_up, 2 - alpha) - np.power(e_low, 2 - alpha))
+
+    return f1 / f2

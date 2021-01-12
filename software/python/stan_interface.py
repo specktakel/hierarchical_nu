@@ -29,6 +29,8 @@ from .backend.variable_definitions import (
 from .backend.expression import StringExpression
 from .backend.parameterizations import DistributionMode
 
+from .detector_model import NorthernTracksDetectorModel, CascadesDetectorModel
+
 
 def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):
 
@@ -119,7 +121,6 @@ def generate_main_sim_code_(
             # Luminosity/ diffuse flux
             L = ForwardVariableDef("L", "real")
             F_diff = ForwardVariableDef("F_diff", "real")
-            F_atmo = ForwardVariableDef("F_atmo", "real")
 
             # Precomputed quantities
             Ngrid = ForwardVariableDef("Ngrid", "int")
@@ -133,15 +134,15 @@ def generate_main_sim_code_(
                     "integral_grid", "vector[Ngrid]", Ns_str
                 )
 
-            if atmospheric_comp:
-                atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
-
             aeff_max = ForwardVariableDef("aeff_max", "real")
 
             v_lim = ForwardVariableDef("v_lim", "real")
             T = ForwardVariableDef("T", "real")
 
             if atmospheric_comp:
+                F_atmo = ForwardVariableDef("F_atmo", "real")
+                atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
+
                 # Atmo samples
                 N_atmo = ForwardVariableDef("N_atmo", "int")
                 N_atmo_str = ["[", N_atmo, "]"]
@@ -289,9 +290,15 @@ def generate_main_sim_code_(
                             E[i] << atmo_energies[atmo_index]
 
                     # Test against Aeff
-                    with IfBlockContext([StringExpression([cosz[i], ">= 0.1"])]):
-                        Pdet[i] << 0
-                    with ElseBlockContext():
+                    if detector_model_type == NorthernTracksDetectorModel:
+
+                        with IfBlockContext([StringExpression([cosz[i], ">= 0.1"])]):
+                            Pdet[i] << 0
+                        with ElseBlockContext():
+                            Pdet[i] << dm_pdf.effective_area(E[i], omega) / aeff_max
+
+                    if detector_model_type == CascadesDetectorModel:
+
                         Pdet[i] << dm_pdf.effective_area(E[i], omega) / aeff_max
 
                     Edet[i] << 10 ** dm_rng.energy_resolution(E[i])
@@ -328,7 +335,10 @@ def generate_main_sim_code_(
                 event[i] << dm_rng.angular_resolution(E[i], omega)
 
                 # To be extended
-                event_type[i] << track_type
+                # if detector_model_type == NorthernTracksDetectorModel:
+                #    event_type[i] << track_type
+                # if detector_model_type == CascadesDetectorModel:
+                event_type[i] << cascade_type
 
     sim_gen.generate_single_file()
 
@@ -337,9 +347,9 @@ def generate_main_sim_code_(
 
 def generate_stan_fit_code_(
     filename,
-    ps_spec_shape,
-    atmo_flux_model,
     detector_model_type,
+    ps_spec_shape,
+    atmo_flux_model=None,
     diffuse_bg_comp=True,
     atmospheric_comp=True,
     theta_points=30,
@@ -389,10 +399,12 @@ def generate_stan_fit_code_(
             Ngrid = ForwardVariableDef("Ngrid", "int")
             alpha_grid = ForwardVariableDef("alpha_grid", "vector[Ngrid]")
             integral_grid = ForwardArrayDef("integral_grid", "vector[Ngrid]", Ns_1p_str)
-            if atmospheric_comp:
-                atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
             Eg = ForwardVariableDef("E_grid", "vector[Ngrid]")
-            Pg = ForwardArrayDef("Pdet_grid", "vector[Ngrid]", Ns_2p_str)
+
+            if atmospheric_comp:
+                Pg = ForwardArrayDef("Pdet_grid", "vector[Ngrid]", Ns_2p_str)
+            else:
+                Pg = ForwardArrayDef("Pdet_grid", "vector[Ngrid]", Ns_1p_str)
 
             # Inputs
             T = ForwardVariableDef("T", "real")
@@ -402,6 +414,7 @@ def generate_stan_fit_code_(
             if diffuse_bg_comp:
                 F_diff_scale = ForwardVariableDef("F_diff_scale", "real")
             if atmospheric_comp:
+                atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
                 F_atmo_scale = ForwardVariableDef("F_atmo_scale", "real")
             F_tot_scale = ForwardVariableDef("F_tot_scale", "real")
 
@@ -412,7 +425,8 @@ def generate_stan_fit_code_(
 
             L = ParameterDef("L", "real", Lmin, Lmax)
             F_diff = ParameterDef("F_diff", "real", 0.0, 1e-7)
-            F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-7)
+            if atmospheric_comp:
+                F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-7)
 
             alpha = ParameterDef("alpha", "real", alphamin, alphamax)
 
@@ -421,14 +435,29 @@ def generate_stan_fit_code_(
         with TransformedParametersContext():
 
             Fsrc = ForwardVariableDef("Fsrc", "real")
-            F = ForwardVariableDef("F", "vector[Ns+2]")
-            eps = ForwardVariableDef("eps", "vector[Ns+2]")
+
+            if diffuse_bg_comp and atmospheric_comp:
+                F = ForwardVariableDef("F", "vector[Ns+2]")
+                eps = ForwardVariableDef("eps", "vector[Ns+2]")
+                lp = ForwardArrayDef("lp", "vector[Ns+2]", N_str)
+                logF = ForwardVariableDef("logF", "vector[Ns+2]")
+                n_comps = "Ns+2"
+            elif diffuse_bg_comp or atmospheric_comp:
+                F = ForwardVariableDef("F", "vector[Ns+1]")
+                eps = ForwardVariableDef("eps", "vector[Ns+1]")
+                lp = ForwardArrayDef("lp", "vector[Ns+1]", N_str)
+                logF = ForwardVariableDef("logF", "vector[Ns+1]")
+                n_comps = "Ns+1"
+            else:
+                F = ForwardVariableDef("F", "vector[Ns]")
+                eps = ForwardVariableDef("eps", "vector[Ns]")
+                lp = ForwardArrayDef("lp", "vector[Ns]", N_str)
+                logF = ForwardVariableDef("logF", "vector[Ns]")
+                n_comps = "Ns"
 
             f = ParameterDef("f", "real", 0, 1)
             Ftot = ParameterDef("Ftot", "real", 0)
 
-            lp = ForwardArrayDef("lp", "vector[Ns+2]", N_str)
-            logF = ForwardVariableDef("logF", "vector[Ns+2]")
             Nex = ForwardVariableDef("Nex", "real")
             E = ForwardVariableDef("E", "vector[N]")
 
@@ -439,18 +468,23 @@ def generate_stan_fit_code_(
                 )
                 StringExpression([F[k], "*=", flux_fac(alpha, Esrc_min, Esrc_max)])
                 StringExpression([Fsrc, "+=", F[k]])
-
             StringExpression("F[Ns+1]") << F_diff
-            StringExpression("F[Ns+2]") << F_atmo
 
-            Ftot << F_diff + F_atmo + Fsrc
+            if atmospheric_comp:
+                StringExpression("F[Ns+2]") << F_atmo
+
+            if atmospheric_comp and diffuse_bg_comp:
+                Ftot << F_diff + F_atmo + Fsrc
+            if diffuse_bg_comp and not atmospheric_comp:
+                Ftot << F_diff + Fsrc
+
             f << StringExpression([Fsrc, " / ", Ftot])
             logF << StringExpression(["log(", F, ")"])
 
             with ForLoopContext(1, N, "i") as i:
                 lp[i] << logF
 
-                with ForLoopContext(1, "Ns+2", "k") as k:
+                with ForLoopContext(1, n_comps, "k") as k:
 
                     # Point source components
                     with IfBlockContext([StringExpression([k, " < ", Ns + 1])]):
@@ -469,35 +503,43 @@ def generate_stan_fit_code_(
                                 dm.angular_resolution(E[i], varpi[k], omega_det[i]),
                             ]
                         )
-                    # Diffuse component
-                    with ElseIfBlockContext([StringExpression([k, " == ", Ns + 1])]):
-                        StringExpression(
-                            [
-                                lp[i][k],
-                                " += ",
-                                spectrum_lpdf(Esrc[i], alpha, Esrc_min, Esrc_max),
-                            ]
-                        )
-                        E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
-                        StringExpression([lp[i][k], " += ", np.log(1 / (4 * np.pi))])
 
-                    # Atmospheric component
-                    with ElseIfBlockContext([StringExpression([k, " == ", Ns + 2])]):
-                        StringExpression(
-                            [
-                                lp[i][k],
-                                " += ",
-                                FunctionCall(
-                                    [
-                                        atmu_nu_flux(Esrc[i], omega_det[i])
-                                        / atmo_flux_integral
-                                    ],
-                                    "log",
-                                ),
-                            ]
-                        )
+                    if diffuse_bg_comp:
+                        # Diffuse component
+                        with ElseIfBlockContext(
+                            [StringExpression([k, " == ", Ns + 1])]
+                        ):
+                            StringExpression(
+                                [
+                                    lp[i][k],
+                                    " += ",
+                                    spectrum_lpdf(Esrc[i], alpha, Esrc_min, Esrc_max),
+                                ]
+                            )
+                            E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
+                            StringExpression(
+                                [lp[i][k], " += ", np.log(1 / (4 * np.pi))]
+                            )
 
-                        E[i] << Esrc[i]
+                    if atmospheric_comp:
+                        # Atmospheric component
+                        with ElseIfBlockContext(
+                            [StringExpression([k, " == ", Ns + 2])]
+                        ):
+                            StringExpression(
+                                [
+                                    lp[i][k],
+                                    " += ",
+                                    FunctionCall(
+                                        [
+                                            atmu_nu_flux(Esrc[i], omega_det[i])
+                                            / atmo_flux_integral
+                                        ],
+                                        "log",
+                                    ),
+                                ]
+                            )
+                            E[i] << Esrc[i]
 
                     # Detection effects
                     StringExpression(
@@ -516,10 +558,16 @@ def generate_stan_fit_code_(
                         ]
                     )
 
-            eps << FunctionCall(
-                [alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns],
-                "get_exposure_factor_atmo",
-            )
+            if atmospheric_comp:
+                eps << FunctionCall(
+                    [alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns],
+                    "get_exposure_factor_atmo",
+                )
+            else:
+                eps << FunctionCall(
+                    [alpha, alpha_grid, integral_grid, T, Ns],
+                    "get_exposure_factor",
+                )
             Nex << FunctionCall([F, eps], "get_Nex")
 
         with ModelContext():
@@ -530,13 +578,16 @@ def generate_stan_fit_code_(
 
             StringExpression([L, " ~ normal(0, ", L_scale, ")"])
             StringExpression([F_diff, " ~ normal(0, ", F_diff_scale, ")"])
-            StringExpression(
-                [
-                    F_atmo,
-                    " ~ ",
-                    FunctionCall([F_atmo_scale, 0.1 * F_atmo_scale], "normal"),
-                ]
-            )
+
+            if atmospheric_comp:
+                StringExpression(
+                    [
+                        F_atmo,
+                        " ~ ",
+                        FunctionCall([F_atmo_scale, 0.1 * F_atmo_scale], "normal"),
+                    ]
+                )
+
             StringExpression(
                 [
                     Ftot,
@@ -547,4 +598,5 @@ def generate_stan_fit_code_(
             StringExpression([alpha, " ~ normal(2.0, 2.0)"])
 
     fit_gen.generate_single_file()
+
     return fit_gen.filename

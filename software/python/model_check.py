@@ -46,6 +46,14 @@ class ModelCheck:
 
         self._default_var_names = [key for key in self.truths]
 
+        self._default_var_labels = [
+            "$F_\mathrm{diff}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
+            "$F_\mathrm{atmo}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
+            "$L$ / $\mathrm{GeV}~\mathrm{s}^{-1}$",
+            "$f$",
+            "$\\alpha$",
+        ]
+
     @classmethod
     @u.quantity_input
     def initialise_env(
@@ -172,25 +180,34 @@ class ModelCheck:
                     self.results["alpha"].extend(job_folder["alpha"][()])
                     self.results["f"].extend(job_folder["f"][()])
 
-    def compare(self, var_names=None):
+    def compare(self, var_names=None, var_labels=None):
 
         if not var_names:
             var_names = self._default_var_names
+
+        if not var_labels:
+            var_labels = self._default_var_labels
 
         N = len(var_names)
         fig, ax = plt.subplots(N, figsize=(5, 15))
 
         for v, var_name in enumerate(var_names):
+            bins = np.linspace(
+                np.min(self.results[var_name]), np.max(self.results[var_name]), 35
+            )
+
             for i in range(len(self.results[var_name])):
                 ax[v].hist(
                     self.results[var_name][i],
-                    color="g",
+                    color="#017B76",
                     alpha=0.1,
                     histtype="step",
+                    bins=bins,
+                    lw=1.5,
                 )
 
-            ax[v].axvline(self.truths[var_name], color="k", linestyle="--")
-            ax[v].set_xlabel(var_name)
+            ax[v].axvline(self.truths[var_name], color="k", linestyle="-")
+            ax[v].set_xlabel(var_labels[v], labelpad=10)
 
         fig.tight_layout()
         return fig, ax
