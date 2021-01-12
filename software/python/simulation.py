@@ -87,10 +87,13 @@ class Simulation:
 
         stanc_options = {"include_paths": include_paths}
 
-        self._atmo_sim = CmdStanModel(
-            stan_file=self._atmo_sim_filename,
-            stanc_options=stanc_options,
-        )
+        if self._atmospheric_comp:
+
+            self._atmo_sim = CmdStanModel(
+                stan_file=self._atmo_sim_filename,
+                stanc_options=stanc_options,
+            )
+
         self._main_sim = CmdStanModel(
             stan_file=self._main_sim_filename,
             stanc_options=stanc_options,
@@ -370,7 +373,10 @@ class Simulation:
         eps = []
         for igrid in integral_grid:
             eps.append(np.interp(alpha, alpha_grid, igrid))
-        eps.append(sim_inputs["atmo_integ_val"])
+
+        if self._atmospheric_comp:
+            eps.append(sim_inputs["atmo_integ_val"])
+
         eps = np.array(eps) * sim_inputs["T"]
 
         F = []
@@ -381,7 +387,9 @@ class Simulation:
             )
             F.append(flux)
         F.append(sim_inputs["F_diff"])
-        F.append(sim_inputs["F_atmo"])
+
+        if self._atmospheric_comp:
+            F.append(sim_inputs["F_atmo"])
 
         return sum(eps * F)
 
@@ -441,8 +449,11 @@ class SimInfo:
             source_folder = f["sim/source"]
             outputs_folder = f["sim/outputs"]
 
+            atmo_comp = False
             for key in inputs_folder:
                 inputs[key] = inputs_folder[key][()]
+                if key == "F_atmo":
+                    atmo_comp = True
 
             for key in source_folder:
                 inputs[key] = source_folder[key][()]
@@ -452,10 +463,12 @@ class SimInfo:
 
         truths = {}
         truths["F_diff"] = inputs["F_diff"]
-        truths["F_atmo"] = inputs["F_atmo"]
         truths["L"] = inputs["L"]
         truths["Ftot"] = inputs["total_flux_int"]
         truths["f"] = inputs["f"]
         truths["alpha"] = inputs["alpha"]
+
+        if atmo_comp:
+            truths["F_atmo"] = inputs["F_atmo"]
 
         return cls(truths, inputs, outputs)

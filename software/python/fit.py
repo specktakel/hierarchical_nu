@@ -35,9 +35,6 @@ class StanFit:
         To set up and run fits in Stan.
         """
 
-        # For use with plot_trace()
-        self._def_var_names = ["L", "F_diff", "F_atmo", "f", "alpha"]
-
         self._sources = sources
         self._detector_model_type = detector_model
         self._events = events
@@ -49,6 +46,12 @@ class StanFit:
         # Silence log output
         logger = logging.getLogger("python.backend.code_generator")
         logger.propagate = False
+
+        # For use with plot methods
+        if self._sources.atmo_component():
+            self._def_var_names = ["L", "F_diff", "F_atmo", "f", "alpha"]
+        else:
+            self._def_var_names = ["L", "F_diff", "f", "alpha"]
 
     def precomputation(self, exposure_integral=None):
 
@@ -178,7 +181,9 @@ class StanFit:
 
         source_labels = ["src%i" % src for src in range(Ns)]
         source_labels.append("diff")
-        source_labels.append("atmo")
+
+        if self._sources.atmo_component():
+            source_labels.append("atmo")
 
         wrong = []
         for i in range(len(prob_each_src)):
@@ -192,7 +197,10 @@ class StanFit:
                 for src in range(Ns):
                     print("P(src%i) = %.6f" % (src, prob_each_src[i][src]))
                 print("P(diff) = %.6f" % prob_each_src[i][Ns])
-                print("P(atmo) = %.6f" % prob_each_src[i][Ns + 1])
+
+                if self._sources.atmo_component():
+                    print("P(atmo) = %.6f" % prob_each_src[i][Ns + 1])
+
                 print("The correct component is", source_labels[int(event_labels[i])])
 
         if not wrong:
@@ -213,17 +221,21 @@ class StanFit:
 
         logprob = logprob.transpose(2, 1, 0)
 
-        Ns = np.shape(logprob)[1] - 2
+        n_comps = np.shape(logprob)[1]
+        if self._sources.atmo_component:
+            Ns = n_comps - 2
+        else:
+            Ns = n_comps - 1
 
         prob_each_src = []
         for lp in logprob:
             lps = []
             ps = []
-            for src in range(Ns + 2):
+            for src in range(n_comps):
                 lps.append(np.mean(np.exp(lp[src])))
             norm = sum(lps)
 
-            for src in range(Ns + 2):
+            for src in range(n_comps):
                 ps.append(lps[src] / norm)
 
             prob_each_src.append(ps)
@@ -275,9 +287,7 @@ class StanFit:
         fit_inputs["integral_grid"] = [
             _.value.tolist() for _ in self._exposure_integral.integral_grid
         ]
-        fit_inputs["atmo_integ_val"] = self._exposure_integral.integral_fixed_vals[
-            0
-        ].value
+
         fit_inputs["T"] = self._observation_time.to(u.s).value
 
         fit_inputs["E_grid"] = self._exposure_integral.energy_grid.value
@@ -292,8 +302,13 @@ class StanFit:
         diffuse_bg = self._sources.diffuse_component()
         fit_inputs["F_diff_scale"] = diffuse_bg.flux_model.total_flux_int.value
 
-        atmo_bg = self._sources.atmo_component()
-        fit_inputs["F_atmo_scale"] = atmo_bg.flux_model.total_flux_int.value
+        if self._sources.atmo_component():
+            fit_inputs["atmo_integ_val"] = self._exposure_integral.integral_fixed_vals[
+                0
+            ].value
+
+            atmo_bg = self._sources.atmo_component()
+            fit_inputs["F_atmo_scale"] = atmo_bg.flux_model.total_flux_int.value
 
         fit_inputs["F_tot_scale"] = self._sources.total_flux_int().value
 
@@ -313,16 +328,18 @@ class StanFit:
 
         if self._sources.atmo_component():
             atmo_flux_model = self._sources.atmo_component().flux_model
+        else:
+            atmo_flux_model = None
 
         filename = self.output_dir + "/model_code"
 
         self._fit_filename = generate_stan_fit_code_(
             filename,
-            ps_spec_shape,
-            atmo_flux_model,
             self._detector_model_type,
-            self._sources.diffuse_component(),
-            self._sources.atmo_component(),
+            ps_spec_shape,
+            atmo_flux_model=atmo_flux_model,
+            diffuse_bg_comp=self._sources.diffuse_component(),
+            atmospheric_comp=self._sources.atmo_component(),
             theta_points=30,
             lumi_par_range=Parameter.get_parameter("luminosity").par_range,
             alpha_par_range=Parameter.get_parameter("index").par_range,
