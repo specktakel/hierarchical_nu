@@ -1,9 +1,7 @@
-from typing import List, Sequence, Tuple
 import os
-import pandas as pd
 import numpy as np
-import scipy.stats as stats
-from astropy import units as u
+import pandas as pd
+from typing import Sequence, Tuple
 
 from ..cache import Cache
 from ..backend import (
@@ -23,8 +21,7 @@ from ..backend import (
     StanArray,
     StringExpression,
 )
-from ..fitting_tools import Residuals
-from .detector_model import EffectiveArea, DetectorModel
+from .detector_model import EffectiveArea, EnergyResolution, DetectorModel
 
 import logging
 
@@ -105,12 +102,14 @@ class CascadesEffectiveArea(EffectiveArea):
         self._cosz_bin_edges = cosz_bin_edges
 
 
-class CascadesEnergyResolution(UserDefinedFunction):
+class CascadesEnergyResolution(EnergyResolution):
     """
     Energy resolution based on the cascade_model simulation.
     """
 
-    DATA_PATH = "input/cascades/cascade_detector_model_test.h5"
+    local_path = "input/cascades/cascade_detector_model_test.h5"
+    DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
+
     CACHE_FNAME = "energy_reso_cascades.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
@@ -126,12 +125,12 @@ class CascadesEnergyResolution(UserDefinedFunction):
         self._mode = mode
 
         # Parameters of polynomials for lognormal mu and sd
-        self.poly_params_mu: Sequence = []
-        self.poly_params_sd: Sequence = []
-        self.poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
+        self._poly_params_mu: Sequence = []
+        self._poly_params_sd: Sequence = []
+        self._poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
 
         # Mixture of 3 lognormals
-        self.n_components = 3
+        self._n_components = 3
 
         # Load energy resolution and fit if not cached
         self.setup()
@@ -143,11 +142,11 @@ class CascadesEnergyResolution(UserDefinedFunction):
         else:
             RuntimeError("This should never happen")
 
-        lognorm = LognormalMixture(mixture_name, self.n_components, self._mode)
+        lognorm = LognormalMixture(mixture_name, self._n_components, self._mode)
 
         if mode == DistributionMode.PDF:
-            UserDefinedFunction.__init__(
-                self,
+
+            super().__init__(
                 "CascadeEnergyResolution",
                 ["true_energy", "reco_energy"],
                 ["real", "real"],
@@ -155,42 +154,49 @@ class CascadesEnergyResolution(UserDefinedFunction):
             )
 
         elif mode == DistributionMode.RNG:
-            UserDefinedFunction.__init__(
-                self, "CascadeEnergyResolution_rng", ["true_energy"], ["real"], "real"
+
+            super().__init__(
+                "CascadeEnergyResolution_rng", ["true_energy"], ["real"], "real"
             )
             mixture_name = "nt_energy_res_mix_rng"
+
         else:
-            RuntimeError("This should never happen")
+
+            RuntimeError(
+                "mode must be either DistributionMode.PDF or DistributionMode.RNG"
+            )
 
         with self:
-            truncated_e = TruncatedParameterization("true_energy", *self.poly_limits)
+
+            # Define parametrization in Stan.
+            truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
 
             mu_poly_coeffs = StanArray(
-                "CascadesEnergyResolutionMuPolyCoeffs", "real", self.poly_params_mu
+                "CascadesEnergyResolutionMuPolyCoeffs", "real", self._poly_params_mu
             )
 
             sd_poly_coeffs = StanArray(
-                "CascadesEnergyResolutionSdPolyCoeffs", "real", self.poly_params_sd
+                "CascadesEnergyResolutionSdPolyCoeffs", "real", self._poly_params_sd
             )
 
-            mu = ForwardArrayDef("mu_e_res", "real", ["[", self.n_components, "]"])
+            mu = ForwardArrayDef("mu_e_res", "real", ["[", self._n_components, "]"])
             sigma = ForwardArrayDef(
-                "sigma_e_res", "real", ["[", self.n_components, "]"]
+                "sigma_e_res", "real", ["[", self._n_components, "]"]
             )
 
             weights = ForwardVariableDef(
-                "weights", "vector[" + str(self.n_components) + "]"
+                "weights", "vector[" + str(self._n_components) + "]"
             )
 
             # for some reason stan complains about weights not adding to 1 if
             # implementing this via StanArray
-            with ForLoopContext(1, self.n_components, "i") as i:
-                weights[i] << StringExpression(["1.0/", self.n_components])
+            with ForLoopContext(1, self._n_components, "i") as i:
+                weights[i] << StringExpression(["1.0/", self._n_components])
 
             log_mu = FunctionCall([mu], "log")
 
-            with ForLoopContext(1, self.n_components, "i") as i:
+            with ForLoopContext(1, self._n_components, "i") as i:
                 mu[i] << [
                     "eval_poly1d(",
                     log_trunc_e,
@@ -218,214 +224,6 @@ class CascadesEnergyResolution(UserDefinedFunction):
             elif mode == DistributionMode.RNG:
                 ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
 
-    @staticmethod
-    def make_fit_model(n_components):
-        """
-        Lognormal mixture with n_components.
-        """
-
-        def _model(x, pars):
-            result = 0
-            for i in range(n_components):
-                result += (
-                    1
-                    / n_components
-                    * stats.lognorm.pdf(x, scale=pars[2 * i], s=pars[2 * i + 1])
-                )
-            return result
-
-        return _model
-
-    @staticmethod
-    def make_cumulative_model(n_components):
-        """
-        Cumulative Lognormal mixture above xth with n_components.
-        """
-
-        def _cumulative_model(xth, pars):
-            result = 0
-            for i in range(n_components):
-                result += (1 / n_components) * stats.lognorm.cdf(
-                    xth, scale=pars[2 * i], s=pars[2 * i + 1]
-                )
-            return result
-
-        return _cumulative_model
-
-    def _fit_energy_res(
-        self,
-        tE_binc: np.ndarray,
-        rE_binc: np.ndarray,
-        eres: np.ndarray,
-        n_components: int,
-    ) -> np.ndarray:
-        from scipy.optimize import least_squares
-
-        fit_params = []
-
-        logrEbins = np.log10(rE_binc)
-
-        # Lognormal mixture
-        model = self.make_fit_model(n_components)
-
-        # Fitting loop
-        for index in range(len(tE_binc)):
-
-            # Energy resolution for this true-energy bin
-            e_reso = eres[index]
-
-            if e_reso.sum() > 0:
-
-                residuals = Residuals((logrEbins, e_reso), model)
-
-                # Calculate seed as mean of the resolution to help minimizer
-                seed_mu = np.average(logrEbins, weights=e_reso)
-                if ~np.isfinite(seed_mu):
-                    seed_mu = 3
-
-                seed = np.zeros(n_components * 2)
-                bounds_lo: List[float] = []
-                bounds_hi: List[float] = []
-                for i in range(n_components):
-                    seed[2 * i] = seed_mu + 0.1 * (i + 1)
-                    seed[2 * i + 1] = 0.02
-                    bounds_lo += [0, 0.01]
-                    bounds_hi += [8, 1]
-
-                # Fit using simple least squares
-                res = least_squares(
-                    residuals,
-                    seed,
-                    bounds=(bounds_lo, bounds_hi),
-                )
-
-                # Check for label swapping
-                mu_indices = np.arange(0, stop=n_components * 2, step=2)
-                mu_order = np.argsort(res.x[mu_indices])
-
-                # Store fit parameters
-                this_fit_pars: List = []
-                for i in range(n_components):
-                    mu_index = mu_indices[mu_order[i]]
-                    this_fit_pars += [res.x[mu_index], res.x[mu_index + 1]]
-                fit_params.append(this_fit_pars)
-
-            else:
-
-                fit_params.append(np.zeros(2 * n_components))
-
-        fit_params = np.asarray(fit_params)
-
-        return fit_params
-
-    def plot_fit_params(
-        self, fit_params: np.ndarray, rebinned_binc: np.ndarray
-    ) -> None:
-
-        import matplotlib.pyplot as plt
-
-        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-        xs = np.linspace(*np.log10(self.poly_limits), num=100)
-
-        if self.poly_params_mu is None:
-
-            raise RuntimeError("Run setup() first")
-
-        # Plot polynomial fits for each mixture component.
-        for comp in range(self.n_components):
-
-            params_mu = self.poly_params_mu[comp]
-            axs[0].plot(xs, np.poly1d(params_mu)(xs))
-            axs[0].plot(
-                np.log10(rebinned_binc),
-                fit_params[:, 2 * comp],
-                label="Mean {}".format(comp),
-            )
-
-            params_sigma = self.poly_params_sd[comp]
-            axs[1].plot(xs, np.poly1d(params_sigma)(xs))
-            axs[1].plot(
-                np.log10(rebinned_binc),
-                fit_params[:, 2 * comp + 1],
-                label="SD {}".format(comp),
-            )
-
-        axs[0].set_xlabel("log10(True Energy / GeV)")
-        axs[0].set_ylabel("Parameter Value")
-        plt.tight_layout()
-
-    def plot_parameterizations(
-        self,
-        tE_binc: np.ndarray,
-        rE_binc: np.ndarray,
-        fit_params: np.ndarray,
-        eres: np.ndarray,
-    ):
-        """
-        Plot fitted parameterizations
-        Args:
-            tE_binc: np.ndarray
-                True energy bin centers
-            rE_binc: np.ndarray
-                Reconstructed energy bin centers
-            fit_params: np.ndarray
-                Fitted parameters for mu and sigma
-            eres: np.ndarray
-                P(Ereco | Etrue)
-        """
-
-        import matplotlib.pyplot as plt
-
-        plot_energies = [1e5, 3e5, 5e5, 8e5, 1e6, 3e6, 5e6, 8e6]  # GeV
-
-        if self.poly_params_mu is None:
-
-            raise RuntimeError("Run setup() first")
-
-        # Find true energy bins for the chosen plotting energies
-        plot_indices = np.digitize(plot_energies, tE_binc)
-
-        logrEbins = np.log10(rE_binc)
-
-        fig, axs = plt.subplots(3, 3, figsize=(10, 10))
-        xs = np.linspace(*np.log10(self.poly_limits), num=100)
-
-        model = self.make_fit_model(self.n_components)
-        fl_ax = axs.ravel()
-
-        for i, p_i in enumerate(plot_indices):
-
-            log_plot_e = np.log10(plot_energies[i])
-
-            model_params: List[float] = []
-            for comp in range(self.n_components):
-
-                mu = np.poly1d(self.poly_params_mu[comp])(log_plot_e)
-                sigma = np.poly1d(self.poly_params_sd[comp])(log_plot_e)
-                model_params += [mu, sigma]
-
-            e_reso = eres[p_i]
-            fl_ax[i].plot(logrEbins, e_reso)
-
-            res = fit_params[plot_indices[i]]
-
-            fl_ax[i].plot(xs, model(xs, model_params))
-            fl_ax[i].plot(xs, model(xs, res))
-            fl_ax[i].set_ylim(1e-4, 5)
-            fl_ax[i].set_yscale("log")
-            fl_ax[i].set_title("True E: {:.1E}".format(tE_binc[p_i]))
-
-        ax = fig.add_subplot(111, frameon=False)
-
-        # Hide tick and tick label of the big axes
-        ax.tick_params(
-            labelcolor="none", top="off", bottom="off", left="off", right="off"
-        )
-        ax.grid(False)
-        ax.set_xlabel("log10(Reconstructed Energy /GeV)")
-        ax.set_ylabel("PDF")
-        plt.tight_layout()
-
     def setup(self) -> None:
         """
         Load Eres data and perform fits, or load from cache
@@ -438,9 +236,12 @@ class CascadesEnergyResolution(UserDefinedFunction):
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
 
                 data = np.load(fr)
+                eres = data["eres"]
+                tE_bin_edges = data["tE_bin_edges"]
+                rE_bin_edges = data["rE_bin_edges"]
                 poly_params_mu = data["poly_params_mu"]
                 poly_params_sd = data["poly_params_sd"]
-                poly_limits = (float(data["e_min"]), float(data["e_max"]))
+                poly_limits = (float(data["Emin"]), float(data["Emax"]))
 
         # Load energy resolution from file
         else:
@@ -461,82 +262,47 @@ class CascadesEnergyResolution(UserDefinedFunction):
             tE_binc = 0.5 * (tE_bin_edges[:-1] + tE_bin_edges[1:])
             rE_binc = 0.5 * (rE_bin_edges[:-1] + rE_bin_edges[1:])
 
-            fit_params = self._fit_energy_res(tE_binc, rE_binc, eres, self.n_components)
+            fit_params, _ = self._fit_energy_res(
+                tE_binc, rE_binc, eres, self._n_components, rebin=1
+            )
 
-            def find_nearest_idx(array, value):
-                array = np.asarray(array)
-                idx = (np.abs(array - value)).argmin()
-                return idx
+            Emin = np.min(tE_bin_edges)  # GeV
+            Emax = np.max(tE_bin_edges)  # GeV
 
-            e_min = 1e3
-            e_max = 1e7
-            imin = find_nearest_idx(tE_binc, e_min)
-            imax = find_nearest_idx(tE_binc, e_max)
-
-            # Degree of polynomial to fit
-            polydeg = 3
-
-            log10_tE_binc = np.log10(tE_binc)
-            poly_params_mu = np.zeros((self.n_components, polydeg + 1))
-
-            # Fit polynomial
-            poly_params_sd = np.zeros_like(poly_params_mu)
-            for i in range(self.n_components):
-                poly_params_mu[i] = np.polyfit(
-                    log10_tE_binc[imin:imax], fit_params[:, 2 * i][imin:imax], polydeg
-                )
-                poly_params_sd[i] = np.polyfit(
-                    log10_tE_binc[imin:imax],
-                    fit_params[:, 2 * i + 1][imin:imax],
-                    polydeg,
-                )
-
-            poly_limits = (e_min, e_max)
+            poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
+                fit_params, tE_binc, Emin=Emin, Emax=Emax, polydeg=3
+            )
 
             # Save polynomial
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
                 np.savez(
                     fr,
+                    eres=eres,
+                    tE_bin_edges=tE_bin_edges,
+                    rE_bin_edges=rE_bin_edges,
                     poly_params_mu=poly_params_mu,
                     poly_params_sd=poly_params_sd,
-                    e_min=e_min,
-                    e_max=e_max,
+                    Emin=Emin,
+                    Emax=Emax,
                 )
 
             # Store params
-            self.poly_params_mu = poly_params_mu
-            self.poly_params_sd = poly_params_sd
-            self.poly_limits = poly_limits
+            self._eres = eres
+            self._tE_bin_edges = tE_bin_edges
+            self._rE_bin_edges = rE_bin_edges
+
+            self._poly_params_mu = poly_params_mu
+            self._poly_params_sd = poly_params_sd
+            self._poly_limits = poly_limits
 
             # Show results
             self.plot_fit_params(fit_params, tE_binc)
-            self.plot_parameterizations(tE_binc, rE_binc, fit_params, eres)
+            self.plot_parameterizations(tE_binc, rE_binc, fit_params)
 
         # poly params are now set
-        self.poly_params_mu = poly_params_mu
-        self.poly_params_sd = poly_params_sd
-        self.poly_limits = poly_limits
-
-    @u.quantity_input
-    def prob_Edet_above_threshold(self, true_energy: u.GeV, threshold_energy: u.GeV):
-        """
-        P(Edet > Edet_min | E) for use in precomputation.
-        """
-
-        model = self.make_cumulative_model(self.n_components)
-
-        prob = np.zeros_like(true_energy)
-        model_params: List[float] = []
-
-        for comp in range(self.n_components):
-
-            mu = np.poly1d(self.poly_params_mu[comp])(np.log10(true_energy.value))
-            sigma = np.poly1d(self.poly_params_sd[comp])(np.log10(true_energy.value))
-            model_params += [mu, sigma]
-
-        prob = 1 - model(np.log10(threshold_energy.value), model_params)
-
-        return prob
+        self._poly_params_mu = poly_params_mu
+        self._poly_params_sd = poly_params_sd
+        self._poly_limits = poly_limits
 
 
 class CascadesAngularResolution(UserDefinedFunction):
@@ -552,7 +318,9 @@ class CascadesAngularResolution(UserDefinedFunction):
         e_max: Upper energy bound of the polynomial
     """
 
-    DATA_PATH = "input/cascades/CascadesAngularResolution.csv"
+    local_path = "input/cascades/CascadesAngularResolution.csv"
+    DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
+
     CACHE_FNAME = "angular_reso_cascades.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
@@ -600,9 +368,6 @@ class CascadesAngularResolution(UserDefinedFunction):
                 vmf = VMFParameterization(["true_dir"], kappa, mode)
 
             ReturnStatement([vmf])
-
-    def _calc_resolution(self):
-        pass
 
     def setup(self) -> None:
         """

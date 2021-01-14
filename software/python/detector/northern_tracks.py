@@ -24,7 +24,7 @@ from ..backend import (
     StringExpression,
 )
 from ..fitting_tools import Residuals
-from .detector_model import EffectiveArea, DetectorModel
+from .detector_model import EffectiveArea, EnergyResolution, DetectorModel
 
 import logging
 
@@ -105,7 +105,7 @@ class NorthernTracksEffectiveArea(EffectiveArea):
         self._cosz_bin_edges = cosz_bin_edges
 
 
-class NorthernTracksEnergyResolution(UserDefinedFunction):
+class NorthernTracksEnergyResolution(EnergyResolution):
 
     """
     Energy resolution for Northern Tracks Sample
@@ -113,7 +113,9 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
     Data from https://arxiv.org/pdf/1811.07979.pdf
     """
 
-    DATA_PATH = "input/tracks/effective_area.h5"  # noqa: E501
+    local_path = "input/tracks/effective_area.h5"
+    DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
+
     CACHE_FNAME = "energy_reso_tracks.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
@@ -124,11 +126,11 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         """
 
         self._mode = mode
-        self.poly_params_mu: Sequence = []
-        self.poly_params_sd: Sequence = []
-        self.poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
+        self._poly_params_mu: Sequence = []
+        self._poly_params_sd: Sequence = []
+        self._poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
 
-        self.n_components = 3
+        self._n_components = 3
         self.setup()
 
         if mode == DistributionMode.PDF:
@@ -141,8 +143,8 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
         lognorm = LognormalMixture(mixture_name, self.n_components, self._mode)
 
         if mode == DistributionMode.PDF:
-            UserDefinedFunction.__init__(
-                self,
+
+            super().__init__(
                 "NorthernTracksEnergyResolution",
                 ["true_energy", "reco_energy"],
                 ["real", "real"],
@@ -150,50 +152,55 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             )
 
         elif mode == DistributionMode.RNG:
-            UserDefinedFunction.__init__(
-                self,
+
+            super().__init__(
                 "NorthernTracksEnergyResolution_rng",
                 ["true_energy"],
                 ["real"],
                 "real",
             )
-            mixture_name = "nt_energy_res_mix_rng"
-        else:
-            RuntimeError("This should never happen")
 
+            mixture_name = "nt_energy_res_mix_rng"
+
+        else:
+
+            RuntimeError("mode must be DistributionMode.PDF or DistributionMode.RNG")
+
+        # Define Stan interface.
         with self:
-            truncated_e = TruncatedParameterization("true_energy", *self.poly_limits)
+
+            truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
 
             mu_poly_coeffs = StanArray(
                 "NorthernTracksEnergyResolutionMuPolyCoeffs",
                 "real",
-                self.poly_params_mu,
+                self._poly_params_mu,
             )
 
             sd_poly_coeffs = StanArray(
                 "NorthernTracksEnergyResolutionSdPolyCoeffs",
                 "real",
-                self.poly_params_sd,
+                self._poly_params_sd,
             )
 
-            mu = ForwardArrayDef("mu_e_res", "real", ["[", self.n_components, "]"])
+            mu = ForwardArrayDef("mu_e_res", "real", ["[", self._n_components, "]"])
             sigma = ForwardArrayDef(
-                "sigma_e_res", "real", ["[", self.n_components, "]"]
+                "sigma_e_res", "real", ["[", self._n_components, "]"]
             )
 
             weights = ForwardVariableDef(
-                "weights", "vector[" + str(self.n_components) + "]"
+                "weights", "vector[" + str(self._n_components) + "]"
             )
 
             # for some reason stan complains about weights not adding to 1 if
             # implementing this via StanArray
-            with ForLoopContext(1, self.n_components, "i") as i:
-                weights[i] << StringExpression(["1.0/", self.n_components])
+            with ForLoopContext(1, self._n_components, "i") as i:
+                weights[i] << StringExpression(["1.0/", self._n_components])
 
             log_mu = FunctionCall([mu], "log")
 
-            with ForLoopContext(1, self.n_components, "i") as i:
+            with ForLoopContext(1, self._n_components, "i") as i:
                 mu[i] << [
                     "eval_poly1d(",
                     log_trunc_e,
@@ -221,233 +228,24 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
             elif mode == DistributionMode.RNG:
                 ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
 
-    @staticmethod
-    def make_fit_model(n_components):
-        """
-        Lognormal mixture
-        """
-
-        def _model(x, pars):
-            result = 0
-            for i in range(n_components):
-                result += (
-                    1
-                    / n_components
-                    * stats.lognorm.pdf(x, scale=pars[2 * i], s=pars[2 * i + 1])
-                )
-            return result
-
-        return _model
-
-    @staticmethod
-    def make_cumulative_model(n_components):
-        """
-        Cumulative Lognormal mixture above xth
-        """
-
-        def _cumulative_model(xth, pars):
-            result = 0
-            for i in range(n_components):
-                result += (1 / n_components) * stats.lognorm.cdf(
-                    xth, scale=pars[2 * i], s=pars[2 * i + 1]
-                )
-            return result
-
-        return _cumulative_model
-
-    def _fit_energy_res(
-        self,
-        tE_binc: np.ndarray,
-        rE_binc: np.ndarray,
-        eff_area: np.ndarray,
-        n_components: int,
-    ) -> np.ndarray:
-        from scipy.optimize import least_squares  # type: ignore
-
-        fit_params = []
-
-        # Rebin to have higher statistics at upper
-        # and lower end of energy range
-        rebin = 3
-        rebinned_binc = np.zeros(int(len(tE_binc) / rebin))
-        logrEbins = np.log10(rE_binc)
-
-        model = self.make_fit_model(n_components)
-
-        # Fitting loop
-        for index in range(int(len(tE_binc) / rebin)):
-
-            # Calculate rebinned bin-centers as mean of first and
-            # last bin being summed
-            rebinned_binc[index] = (
-                0.5 * (tE_binc[[index * rebin, rebin * (index + 1) - 1]]).sum()
-            )
-
-            # Calculate the energy resolution for this true-energy bin
-            e_reso = eff_area[index * rebin : (index + 1) * rebin]
-            e_reso = e_reso.sum(axis=0)
-            if e_reso.sum() > 0:
-                # Normalize to prob. density / bin
-                e_reso = e_reso / e_reso.sum() / (logrEbins[1] - logrEbins[0])
-
-                residuals = Residuals((logrEbins, e_reso), model)
-
-                # Calculate seed as mean of the resolution to help minimizer
-                seed_mu = np.average(logrEbins, weights=e_reso)
-                if ~np.isfinite(seed_mu):
-                    seed_mu = 3
-
-                seed = np.zeros(n_components * 2)
-                bounds_lo: List[float] = []
-                bounds_hi: List[float] = []
-                for i in range(n_components):
-                    seed[2 * i] = seed_mu + 0.1 * (i + 1)
-                    seed[2 * i + 1] = 0.02
-                    bounds_lo += [0, 0.01]
-                    bounds_hi += [8, 1]
-
-                res = least_squares(
-                    residuals,
-                    seed,
-                    bounds=(bounds_lo, bounds_hi),
-                )
-
-                # Check for label swapping
-                mu_indices = np.arange(0, stop=n_components * 2, step=2)
-                mu_order = np.argsort(res.x[mu_indices])
-
-                this_fit_pars: List = []
-                for i in range(n_components):
-                    mu_index = mu_indices[mu_order[i]]
-                    this_fit_pars += [res.x[mu_index], res.x[mu_index + 1]]
-                fit_params.append(this_fit_pars)
-            else:
-                fit_params.append(np.zeros(2 * n_components))
-        fit_params = np.asarray(fit_params)
-        return fit_params, rebinned_binc
-
-    def plot_fit_params(
-        self, fit_params: np.ndarray, rebinned_binc: np.ndarray
-    ) -> None:
-        import matplotlib.pyplot as plt  # type: ignore
-
-        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-        xs = np.linspace(*np.log10(self.poly_limits), num=100)
-
-        if self.poly_params_mu is None:
-            raise RuntimeError("Run setup() first")
-        for comp in range(self.n_components):
-            params_mu = self.poly_params_mu[comp]
-            axs[0].plot(xs, np.poly1d(params_mu)(xs))
-            axs[0].plot(
-                np.log10(rebinned_binc),
-                fit_params[:, 2 * comp],
-                label="Mean {}".format(comp),
-            )
-
-            params_sigma = self.poly_params_sd[comp]  # type: ignore
-            axs[1].plot(xs, np.poly1d(params_sigma)(xs))
-            axs[1].plot(
-                np.log10(rebinned_binc),
-                fit_params[:, 2 * comp + 1],
-                label="SD {}".format(comp),
-            )
-        axs[0].set_xlabel("log10(True Energy / GeV)")
-        axs[0].set_ylabel("Parameter Value")
-        plt.tight_layout()
-        plt.savefig("energy_fit_params_tracks.png", dpi=150)
-
-    def plot_parameterizations(
-        self,
-        tE_binc: np.ndarray,
-        rebinned_binc: np.ndarray,
-        rE_binc: np.ndarray,
-        fit_params: np.ndarray,
-        eff_area: np.ndarray,
-    ):
-        """
-        Plot fitted parameterizations
-
-        Args:
-            tE_binc: np.ndarray
-                True energy bin centers
-            rebinned_binc: np.ndarray:
-                Rebinned true energy bin centers
-            rE_binc: np.ndarray
-                Reconstructed energy bin centers
-
-            fit_params: np.ndarray
-                Fitted parameters for mu and sigma
-            eff_area: np.ndarray
-                Effective Area
-
-        """
-        import matplotlib.pyplot as plt  # type: ignore
-
-        plot_energies = [100, 200, 1e3, 5e3, 1e4, 5e4, 1e5, 5e5, 1e6]  # GeV
-
-        if self.poly_params_mu is None:
-            raise RuntimeError("Run setup() first")
-
-        # Find true energy bins for the chosen plotting energies
-        plot_indices = np.digitize(plot_energies, tE_binc)
-        # Parameters are relative to the rebinned histogram
-        param_indices = np.digitize(plot_energies, rebinned_binc)
-
-        logrEbins = np.log10(rE_binc)
-
-        fig, axs = plt.subplots(3, 3, figsize=(10, 10))
-        xs = np.linspace(*np.log10(self.poly_limits), num=100)
-
-        rebin = int(len(tE_binc) / len(rebinned_binc))
-
-        model = self.make_fit_model(self.n_components)
-        fl_ax = axs.ravel()
-        for i, p_i in enumerate(plot_indices):
-            log_plot_e = np.log10(plot_energies[i])
-            model_params: List[float] = []
-            for comp in range(self.n_components):
-                mu = np.poly1d(self.poly_params_mu[comp])(log_plot_e)
-                sigma = np.poly1d(self.poly_params_sd[comp])(log_plot_e)
-                model_params += [mu, sigma]
-            e_reso = eff_area
-            e_reso = e_reso[int(p_i / rebin) * rebin : (int(p_i / rebin) + 1) * rebin]
-            e_reso = e_reso.sum(axis=0) / e_reso.sum()
-            e_reso /= logrEbins[1] - logrEbins[0]
-            fl_ax[i].plot(logrEbins, e_reso)
-
-            res = fit_params[param_indices[i]]
-
-            fl_ax[i].plot(xs, model(xs, model_params))
-            fl_ax[i].plot(xs, model(xs, res))
-            fl_ax[i].set_ylim(1e-4, 10)
-            fl_ax[i].set_yscale("log")
-            fl_ax[i].set_title("True E: {:.1E}".format(tE_binc[p_i]))
-
-        ax = fig.add_subplot(111, frameon=False)
-        # hide tick and tick label of the big axes
-        ax.tick_params(
-            labelcolor="none", top="off", bottom="off", left="off", right="off"
-        )
-        ax.grid(False)
-        ax.set_xlabel("log10(Reconstructed Energy /GeV)")
-        ax.set_ylabel("PDF")
-        plt.tight_layout()
-        plt.savefig("energy_parameterizations_tracks.png", dpi=150)
-
     def setup(self) -> None:
-        # Load Aeff data
 
         # Check cache
         if self.CACHE_FNAME in Cache:
+
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
                 data = np.load(fr)
+                eres = data["eres"]
+                tE_bin_edges = data["tE_bin_edges"]
+                rE_bin_edges = data["rE_bin_edges"]
                 poly_params_mu = data["poly_params_mu"]
                 poly_params_sd = data["poly_params_sd"]
-                poly_limits = (float(data["e_min"]), float(data["e_max"]))
+                poly_limits = (float(data["Emin"]), float(data["Emax"]))
 
+        # Or load from file
         else:
-            import h5py  # type: ignore
+
+            import h5py
 
             with h5py.File(self.DATA_PATH, "r") as f:
 
@@ -463,85 +261,72 @@ class NorthernTracksEnergyResolution(UserDefinedFunction):
                 # Reco Energy [GeV]
                 rE_bin_edges = f["2010/nu_mu/bin_edges_2"][:]
 
+            # Normalize along Ereco
+            bin_width = np.log10(rE_bin_edges[1]) - np.log10(rE_bin_edges[0])
+            eres = np.zeros_like(eff_area)
+            for i, pdf in enumerate(eff_area):
+                if pdf.sum() > 0:
+                    eres[i] = pdf / (pdf.sum() * bin_width)
+
             tE_binc = 0.5 * (tE_bin_edges[:-1] + tE_bin_edges[1:])
             rE_binc = 0.5 * (rE_bin_edges[:-1] + rE_bin_edges[1:])
-            n_components = 3
-            fit_params, rebinned_binc = self._fit_energy_res(
-                tE_binc, rE_binc, eff_area, n_components
+
+            fit_params, rebin_tE_binc = self._fit_energy_res(
+                tE_binc, rE_binc, eres, self._n_components, rebin=3
             )
 
             # Min and max values
             imin = 5
             imax = -15
 
-            e_min = rebinned_binc[imin]
-            e_max = rebinned_binc[imax]
+            Emin = rebin_tE_binc[imin]
+            Emax = rebin_tE_binc[imax]
 
-            # Degree of polynomial
-            polydeg = 5
-
-            log_rebinned = np.log10(rebinned_binc)
-            poly_params_mu = np.zeros((n_components, polydeg + 1))
-
-            poly_params_sd = np.zeros_like(poly_params_mu)
-            for i in range(n_components):
-                poly_params_mu[i] = np.polyfit(
-                    log_rebinned[imin:imax], fit_params[:, 2 * i][imin:imax], polydeg
-                )
-                poly_params_sd[i] = np.polyfit(
-                    log_rebinned[imin:imax],
-                    fit_params[:, 2 * i + 1][imin:imax],
-                    polydeg,
-                )
-
-            poly_limits = (e_min, e_max)
-            # Save polynomial
-            with Cache.open(self.CACHE_FNAME, "wb") as fr:
-                np.savez(
-                    fr,
-                    poly_params_mu=poly_params_mu,
-                    poly_params_sd=poly_params_sd,
-                    e_min=e_min,
-                    e_max=e_max,
-                )
-            self.poly_params_mu = poly_params_mu
-            self.poly_params_sd = poly_params_sd
-            self.poly_limits = poly_limits
-            self.plot_fit_params(fit_params, rebinned_binc)
-            self.plot_parameterizations(
-                tE_binc, rebinned_binc, rE_binc, fit_params, eff_area
+            # Fit polynomial
+            poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
+                fit_params, rebin_tE_binc, Emin, Emax, polydeg=5
             )
 
-        # poly params are now set
-        self.poly_params_mu = poly_params_mu
-        self.poly_params_sd = poly_params_sd
-        self.poly_limits = poly_limits
+            # Save polynomial
+            with Cache.open(self.CACHE_FNAME, "wb") as fr:
 
-    def _calc_resolution(self, param_dict: dict):
-        pass
+                np.savez(
+                    fr,
+                    eres=eres,
+                    tE_bin_edges=tE_bin_edges,
+                    rE_bin_edges=rE_bin_edges,
+                    poly_params_mu=poly_params_mu,
+                    poly_params_sd=poly_params_sd,
+                    Emin=Emin,
+                    Emax=Emax,
+                )
 
-    @u.quantity_input
-    def prob_Edet_above_threshold(self, true_energy: u.GeV, threshold_energy: u.GeV):
-        """
-        P(Edet > Edet_min | E) for use in precomputation.
-        """
+            # Set properties
+            self._eres = eres
+            self._tE_bin_edges = tE_bin_edges
+            self._rE_bin_edges = rE_bin_edges
 
-        model = self.make_cumulative_model(self.n_components)
+            self._poly_params_mu = poly_params_mu
+            self._poly_params_sd = poly_params_sd
+            self._poly_limits = poly_limits
 
-        prob = np.zeros_like(true_energy)
-        model_params: List[float] = []
-        for comp in range(self.n_components):
-            mu = np.poly1d(self.poly_params_mu[comp])(np.log10(true_energy.value))
-            sigma = np.poly1d(self.poly_params_sd[comp])(np.log10(true_energy.value))
-            model_params += [mu, sigma]
+            # Show results
+            self.plot_fit_params(fit_params, rebin_tE_binc)
+            self.plot_parameterizations(
+                tE_binc,
+                rE_binc,
+                fit_params,
+                rebin_tE_binc=rebin_tE_binc,
+            )
 
-        prob = 1 - model(np.log10(threshold_energy.value), model_params)
+        # Set properties
+        self._eres = eres
+        self._tE_bin_edges = tE_bin_edges
+        self._rE_bin_edges = rE_bin_edges
 
-        # Handle NaN at extreme energies
-        prob[true_energy.value < 1e2] = 0.0
-        prob[true_energy.value > 10 ** 8.5] = np.max(prob[~np.isnan(prob)])
-
-        return prob
+        self._poly_params_mu = poly_params_mu
+        self._poly_params_sd = poly_params_sd
+        self._poly_limits = poly_limits
 
 
 class NorthernTracksAngularResolution(UserDefinedFunction):
