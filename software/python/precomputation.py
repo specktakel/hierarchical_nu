@@ -242,9 +242,10 @@ class ExposureIntegral:
                 cosz_bin = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
 
                 # Set to zero if outside cosz range
-                if (cosz > min(self.effective_area.cosz_bin_edges)) or (
-                    cosz <= max(self.effective_area.cosz_bin_edges)
+                if (cosz < min(self.effective_area.cosz_bin_edges)) or (
+                    cosz >= max(self.effective_area.cosz_bin_edges)
                 ):
+
                     pg = np.zeros_like(self.energy_grid)
 
                 else:

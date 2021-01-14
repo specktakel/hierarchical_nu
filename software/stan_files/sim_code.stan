@@ -1056,18 +1056,12 @@ vector[Ngrid] integral_grid[Ns+1];
 real aeff_max;
 real v_lim;
 real T;
-real F_atmo;
-real atmo_integ_val;
-int N_atmo;
-unit_vector[3] atmo_directions[N_atmo];
-vector[N_atmo] atmo_energies;
-simplex[N_atmo] atmo_weights;
 }
 transformed data
 {
-vector[Ns+2] F;
-simplex[Ns+2] w_exposure;
-vector[Ns+2] eps;
+vector[Ns+1] F;
+simplex[Ns+1] w_exposure;
+vector[Ns+1] eps;
 int track_type;
 int cascade_type;
 real Ftot;
@@ -1085,11 +1079,10 @@ F[k]*=flux_conv(alpha, Esrc_min, Esrc_max);
 Fs += F[k];
 }
 F[Ns+1] = F_diff;
-F[Ns+2] = F_atmo;
-Ftot = ((Fs+F_diff)+F_atmo);
+Ftot = (Fs+F_diff);
 f = Fs/Ftot;
 print("f: ", f);
-eps = get_exposure_factor_atmo(alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns);
+eps = get_exposure_factor(alpha, alpha_grid, integral_grid, T, Ns);
 Nex = get_Nex(F, eps);
 w_exposure = get_exposure_weights(F, eps);
 N = poisson_rng(Nex);
@@ -1105,7 +1098,6 @@ unit_vector[3] omega;
 vector[N] Esrc;
 vector[N] E;
 vector[N] Edet;
-int atmo_index;
 real cosz[N];
 real Pdet[N];
 int accept;
@@ -1132,20 +1124,11 @@ else if(Lambda[i] == (Ns+1))
 {
 omega = sphere_lim_rng(1, v_lim);
 }
-else if(Lambda[i] == (Ns+2))
-{
-atmo_index = categorical_rng(atmo_weights);
-omega = atmo_directions[atmo_index];
-}
 cosz[i] = cos(omega_to_zenith(omega));
 if(Lambda[i] <= (Ns+1))
 {
 Esrc[i] = spectrum_rng(alpha, Esrc_min, Esrc_max);
 E[i] = (Esrc[i]/(1+z[Lambda[i]]));
-}
-else if(Lambda[i] == (Ns+2))
-{
-E[i] = atmo_energies[atmo_index];
 }
 if(cosz[i]>= 0.1)
 {
