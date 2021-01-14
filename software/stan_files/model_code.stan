@@ -139,12 +139,12 @@ return log_sum_exp(result);
 }
 real CascadeEnergyResolution(real true_energy,real reco_energy)
 {
-real CascadesEnergyResolutionMuPolyCoeffs[3,4] = {{ 8.48311816e-02,-1.40745871e+00, 8.39735975e+00,-1.29122823e+01},
- { 2.21533176e-02,-3.66019621e-01, 2.96495763e+00,-3.60384905e+00},
- { 2.32768756e-03,-4.24291670e-02, 1.26012779e+00,-5.56780566e-01}};
-real CascadesEnergyResolutionSdPolyCoeffs[3,4] = {{-4.14191929e-03, 7.53090020e-02,-4.31439499e-01, 8.45584789e-01},
- { 1.31648640e-03,-2.44148959e-02, 1.55383236e-01,-3.02974554e-01},
- {-4.15523836e-04, 7.44664372e-03,-4.42253583e-02, 9.70242677e-02}};
+real CascadesEnergyResolutionMuPolyCoeffs[3,4] = {{ 8.48311818e-02,-1.40745872e+00, 8.39735977e+00,-1.29122824e+01},
+ { 2.21533177e-02,-3.66019622e-01, 2.96495763e+00,-3.60384905e+00},
+ { 2.32768755e-03,-4.24291668e-02, 1.26012779e+00,-5.56780564e-01}};
+real CascadesEnergyResolutionSdPolyCoeffs[3,4] = {{-4.14191919e-03, 7.53090002e-02,-4.31439490e-01, 8.45584771e-01},
+ { 1.31648644e-03,-2.44148964e-02, 1.55383239e-01,-3.02974559e-01},
+ {-4.15523836e-04, 7.44664372e-03,-4.42253583e-02, 9.70242676e-02}};
 real mu_e_res[3];
 real sigma_e_res[3];
 vector[3] weights;
@@ -154,8 +154,8 @@ weights[i] = 1.0/3;
 }
 for (i in 1:3)
 {
-mu_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 1000.0, 10000000.0)), to_vector(CascadesEnergyResolutionMuPolyCoeffs[i]));
-sigma_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 1000.0, 10000000.0)), to_vector(CascadesEnergyResolutionSdPolyCoeffs[i]));
+mu_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 31622.776601683792, 10000000.0)), to_vector(CascadesEnergyResolutionMuPolyCoeffs[i]));
+sigma_e_res[i] = eval_poly1d(log10(truncate_value(true_energy, 31622.776601683792, 10000000.0)), to_vector(CascadesEnergyResolutionSdPolyCoeffs[i]));
 }
 return c_energy_res_mix(log10(reco_energy), to_vector(log(mu_e_res)), to_vector(sigma_e_res), weights);
 }
@@ -225,7 +225,7 @@ real F_tot_scale;
 parameters
 {
 real<lower=0, upper=1e+60> L;
-real<lower=0.0, upper=1e-07> F_diff;
+real<lower=0.0, upper=1e-06> F_diff;
 real<lower=1.0, upper=4> alpha;
 vector<lower=Esrc_min, upper=Esrc_max> [N] Esrc;
 }

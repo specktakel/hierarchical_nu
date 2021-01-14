@@ -7,7 +7,8 @@ from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
 import logging
 
-from .detector_model import DetectorModel, NorthernTracksDetectorModel
+from .detector.detector_model import DetectorModel
+from .detector.northern_tracks import NorthernTracksDetectorModel
 from .precomputation import ExposureIntegral
 from .source.source import Sources, PointSource, icrs_to_uv
 from .source.parameter import Parameter

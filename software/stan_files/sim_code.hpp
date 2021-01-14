@@ -425,8 +425,8 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 180, column 0 to column 19)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 179, column 0 to line 181, column 1)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 178, column 0 to line 181, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 184, column 0 to column 134)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 185, column 0 to column 137)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 184, column 0 to column 146)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 185, column 0 to column 149)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 183, column 0 to line 186, column 1)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 182, column 0 to line 186, column 1)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 187, column 0 to column 87)",
@@ -448,8 +448,8 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 217, column 0 to column 19)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 216, column 0 to line 218, column 1)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 215, column 0 to line 218, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 221, column 0 to column 134)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 222, column 0 to column 137)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 221, column 0 to column 146)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 222, column 0 to column 149)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 220, column 0 to line 223, column 1)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 219, column 0 to line 223, column 1)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 224, column 0 to column 103)",
@@ -2062,12 +2062,12 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
     current_statement__ = 360;
     assign(CascadesEnergyResolutionMuPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(8.48311816e-02)
-      .add(-1.40745871e+00).add(8.39735975e+00).add(-1.29122823e+01).array())
-      .add(stan::math::array_builder<double>().add(2.21533176e-02)
-      .add(-3.66019621e-01).add(2.96495763e+00).add(-3.60384905e+00).array())
-      .add(stan::math::array_builder<double>().add(2.32768756e-03)
-      .add(-4.24291670e-02).add(1.26012779e+00).add(-5.56780566e-01).array())
+      .add(stan::math::array_builder<double>().add(8.48311818e-02)
+      .add(-1.40745872e+00).add(8.39735977e+00).add(-1.29122824e+01).array())
+      .add(stan::math::array_builder<double>().add(2.21533177e-02)
+      .add(-3.66019622e-01).add(2.96495763e+00).add(-3.60384905e+00).array())
+      .add(stan::math::array_builder<double>().add(2.32768755e-03)
+      .add(-4.24291668e-02).add(1.26012779e+00).add(-5.56780564e-01).array())
       .array(), "assigning variable CascadesEnergyResolutionMuPolyCoeffs");
     std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionSdPolyCoeffs;
     CascadesEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
@@ -2075,12 +2075,12 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
     current_statement__ = 361;
     assign(CascadesEnergyResolutionSdPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(-4.14191929e-03)
-      .add(7.53090020e-02).add(-4.31439499e-01).add(8.45584789e-01).array())
-      .add(stan::math::array_builder<double>().add(1.31648640e-03)
-      .add(-2.44148959e-02).add(1.55383236e-01).add(-3.02974554e-01).array())
+      .add(stan::math::array_builder<double>().add(-4.14191919e-03)
+      .add(7.53090002e-02).add(-4.31439490e-01).add(8.45584771e-01).array())
+      .add(stan::math::array_builder<double>().add(1.31648644e-03)
+      .add(-2.44148964e-02).add(1.55383239e-01).add(-3.02974559e-01).array())
       .add(stan::math::array_builder<double>().add(-4.15523836e-04)
-      .add(7.44664372e-03).add(-4.42253583e-02).add(9.70242677e-02).array())
+      .add(7.44664372e-03).add(-4.42253583e-02).add(9.70242676e-02).array())
       .array(), "assigning variable CascadesEnergyResolutionSdPolyCoeffs");
     std::vector<local_scalar_t__> mu_e_res;
     mu_e_res = std::vector<local_scalar_t__>(3, DUMMY_VAR__);
@@ -2103,14 +2103,16 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
       assign(mu_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
+            truncate_value(true_energy, 31622.776601683792,
+              10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable mu_e_res");
       current_statement__ = 369;
       assign(sigma_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
+            truncate_value(true_energy, 31622.776601683792,
+              10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable sigma_e_res");}
     current_statement__ = 372;
@@ -2249,12 +2251,12 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
     current_statement__ = 383;
     assign(CascadesEnergyResolutionMuPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(8.48311816e-02)
-      .add(-1.40745871e+00).add(8.39735975e+00).add(-1.29122823e+01).array())
-      .add(stan::math::array_builder<double>().add(2.21533176e-02)
-      .add(-3.66019621e-01).add(2.96495763e+00).add(-3.60384905e+00).array())
-      .add(stan::math::array_builder<double>().add(2.32768756e-03)
-      .add(-4.24291670e-02).add(1.26012779e+00).add(-5.56780566e-01).array())
+      .add(stan::math::array_builder<double>().add(8.48311818e-02)
+      .add(-1.40745872e+00).add(8.39735977e+00).add(-1.29122824e+01).array())
+      .add(stan::math::array_builder<double>().add(2.21533177e-02)
+      .add(-3.66019622e-01).add(2.96495763e+00).add(-3.60384905e+00).array())
+      .add(stan::math::array_builder<double>().add(2.32768755e-03)
+      .add(-4.24291668e-02).add(1.26012779e+00).add(-5.56780564e-01).array())
       .array(), "assigning variable CascadesEnergyResolutionMuPolyCoeffs");
     std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionSdPolyCoeffs;
     CascadesEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
@@ -2262,12 +2264,12 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
     current_statement__ = 384;
     assign(CascadesEnergyResolutionSdPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(-4.14191929e-03)
-      .add(7.53090020e-02).add(-4.31439499e-01).add(8.45584789e-01).array())
-      .add(stan::math::array_builder<double>().add(1.31648640e-03)
-      .add(-2.44148959e-02).add(1.55383236e-01).add(-3.02974554e-01).array())
+      .add(stan::math::array_builder<double>().add(-4.14191919e-03)
+      .add(7.53090002e-02).add(-4.31439490e-01).add(8.45584771e-01).array())
+      .add(stan::math::array_builder<double>().add(1.31648644e-03)
+      .add(-2.44148964e-02).add(1.55383239e-01).add(-3.02974559e-01).array())
       .add(stan::math::array_builder<double>().add(-4.15523836e-04)
-      .add(7.44664372e-03).add(-4.42253583e-02).add(9.70242677e-02).array())
+      .add(7.44664372e-03).add(-4.42253583e-02).add(9.70242676e-02).array())
       .array(), "assigning variable CascadesEnergyResolutionSdPolyCoeffs");
     std::vector<local_scalar_t__> mu_e_res;
     mu_e_res = std::vector<local_scalar_t__>(3, DUMMY_VAR__);
@@ -2290,14 +2292,16 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
       assign(mu_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
+            truncate_value(true_energy, 31622.776601683792,
+              10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable mu_e_res");
       current_statement__ = 392;
       assign(sigma_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
+            truncate_value(true_energy, 31622.776601683792,
+              10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable sigma_e_res");}
     current_statement__ = 395;

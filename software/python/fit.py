@@ -10,7 +10,7 @@ from .source.source import Sources, PointSource, icrs_to_uv
 from .source.parameter import Parameter
 from .source.flux_model import IsotropicDiffuseBG
 from .source.cosmology import luminosity_distance
-from .detector_model import DetectorModel
+from .detector.detector_model import DetectorModel
 from .precomputation import ExposureIntegral
 from .events import Events
 

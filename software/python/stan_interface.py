@@ -29,7 +29,8 @@ from .backend.variable_definitions import (
 from .backend.expression import StringExpression
 from .backend.parameterizations import DistributionMode
 
-from .detector_model import NorthernTracksDetectorModel, CascadesDetectorModel
+from .detector.northern_tracks import NorthernTracksDetectorModel
+from .detector.cascades import CascadesDetectorModel
 
 
 def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):
@@ -424,7 +425,7 @@ def generate_stan_fit_code_(
             alphamin, alphamax = alpha_par_range
 
             L = ParameterDef("L", "real", Lmin, Lmax)
-            F_diff = ParameterDef("F_diff", "real", 0.0, 1e-7)
+            F_diff = ParameterDef("F_diff", "real", 0.0, 1e-6)
             if atmospheric_comp:
                 F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-7)
 
