@@ -93,6 +93,26 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         self._tE_bin_edges = self._tE_bin_edges[tE_mask]
         self._eff_area = self._eff_area[bin_mask]
 
+    def set_cosz_range(self, cosz_min, cosz_max):
+        """
+        Change properties to match new cosz range.
+        """
+
+        # Get mask for cosz bin edges
+        cosz_mask = (self._cosz_bin_edges >= cosz_min) & (
+            self._cosz_bin_edges <= cosz_max
+        )
+
+        # Adapt to mask on eff_area bins
+        last_true_ind = np.max(np.where(cosz_mask == True))
+        bin_mask = cosz_mask.copy()
+        bin_mask[last_true_ind] = False
+        bin_mask = bin_mask[:-1]
+
+        # Set new properties
+        self._cosz_bin_edges = self._cosz_bin_edges[cosz_mask]
+        self._eff_area = self._eff_area[:, bin_mask]
+
 
 class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
     """

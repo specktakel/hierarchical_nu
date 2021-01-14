@@ -125,16 +125,16 @@ class ExposureIntegral:
             # For point sources the integral over the space angle is trivial
 
             dec = source.dec
-            cosz = -np.sin(dec)  # ONLY FOR IC!
+            cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
 
             integral = source.flux_model.spectral_shape.integral(
                 lower_e_edges, upper_e_edges
             )
 
-            if (
-                cosz < self.effective_area.cosz_bin_edges[0]
-                or cosz > self.effective_area.cosz_bin_edges[-1]
+            if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
+                self.effective_area.cosz_bin_edges
             ):
+
                 aeff = np.zeros(len(lower_e_edges)) << (u.m ** 2)
 
             else:
@@ -241,10 +241,14 @@ class ExposureIntegral:
                 cosz = np.cos(np.pi - np.arccos(unit_vector[2]))
                 cosz_bin = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
 
-                # Fix hard coded northern tracks things
-                if cosz > 0.1:
+                # Set to zero if outside cosz range
+                if (cosz > min(self.effective_area.cosz_bin_edges)) or (
+                    cosz <= max(self.effective_area.cosz_bin_edges)
+                ):
                     pg = np.zeros_like(self.energy_grid)
+
                 else:
+
                     pg = [
                         self.effective_area.eff_area[
                             np.digitize(E.value, self.effective_area.tE_bin_edges) - 1
