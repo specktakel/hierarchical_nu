@@ -73,6 +73,26 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
 
         return self._cosz_bin_edges
 
+    @u.quantity_input
+    def set_energy_range(self, Emin: u.GeV, Emax: u.GeV):
+        """
+        Change properties to match new energy range.
+        """
+
+        # Get mask for true energy bin edges
+        tE_mask = (self._tE_bin_edges >= Emin.value) & (
+            self._tE_bin_edges <= Emax.value
+        )
+
+        # Adapt to mask on eff_area bins
+        last_true_ind = np.max(np.where(tE_mask == True))
+        bin_mask = tE_mask.copy()[:-1]
+        bin_mask[last_true_ind] = False
+
+        # Set new properties
+        self._tE_bin_edges = self._tE_bin_edges[tE_mask]
+        self._eff_area = self._eff_area[bin_mask]
+
 
 class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
     """
@@ -502,7 +522,12 @@ class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
 
 
 class DetectorModel(metaclass=ABCMeta):
+    """
+    Abstract base class for detector models.
+    """
+
     def __init__(self, mode: DistributionMode = DistributionMode.PDF):
+
         self._mode = mode
 
     @property

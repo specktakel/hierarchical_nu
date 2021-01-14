@@ -355,8 +355,7 @@ class NorthernTracksAngularResolution(AngularResolution):
 
         if mode == DistributionMode.PDF:
 
-            UserDefinedFunction.__init__(
-                self,
+            super().__init__(
                 "NorthernTracksAngularResolution",
                 ["true_energy", "true_dir", "reco_dir"],
                 ["real", "vector", "vector"],
@@ -365,8 +364,7 @@ class NorthernTracksAngularResolution(AngularResolution):
 
         else:
 
-            UserDefinedFunction.__init__(
-                self,
+            super().__init__(
                 "NorthernTracksAngularResolution_rng",
                 ["true_energy", "true_dir"],
                 ["real", "vector"],
@@ -468,12 +466,15 @@ class NorthernTracksDetectorModel(DetectorModel):
     """
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF):
-        DetectorModel.__init__(self, mode)
+
+        super().__init__(mode)
 
         ang_res = NorthernTracksAngularResolution(mode)
         self._angular_resolution = ang_res
+
         energy_res = NorthernTracksEnergyResolution(mode)
         self._energy_resolution = energy_res
+
         if mode == DistributionMode.PDF:
             self._eff_area = NorthernTracksEffectiveArea()
 
@@ -487,6 +488,8 @@ class NorthernTracksDetectorModel(DetectorModel):
         return self._angular_resolution
 
 
+# Testing.
+# @TODO: This needs updating.
 if __name__ == "__main__":
 
     e_true_name = "e_true"
@@ -505,8 +508,7 @@ if __name__ == "__main__":
     )
 
     logging.basicConfig(level=logging.DEBUG)
-    import pystan  # type: ignore
-    import numpy as np
+    import pystan
 
     with StanGenerator() as cg:
 

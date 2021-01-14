@@ -332,8 +332,7 @@ class CascadesAngularResolution(AngularResolution):
 
         if mode == DistributionMode.PDF:
 
-            UserDefinedFunction.__init__(
-                self,
+            super().__init__(
                 "CascadesAngularResolution",
                 ["true_energy", "true_dir", "reco_dir"],
                 ["real", "vector", "vector"],
@@ -342,8 +341,7 @@ class CascadesAngularResolution(AngularResolution):
 
         else:
 
-            UserDefinedFunction.__init__(
-                self,
+            super().__init__(
                 "CascadesAngularResolution_rng",
                 ["true_energy", "true_dir"],
                 ["real", "vector"],
@@ -443,7 +441,8 @@ class CascadesDetectorModel(DetectorModel):
     """
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF):
-        DetectorModel.__init__(self, mode)
+
+        super().__init__(mode)
 
         ang_res = CascadesAngularResolution(mode)
         self._angular_resolution = ang_res

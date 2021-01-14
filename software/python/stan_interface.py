@@ -29,7 +29,8 @@ from .backend.variable_definitions import (
 from .backend.expression import StringExpression
 from .backend.parameterizations import DistributionMode
 
-from .detector_model import NorthernTracksDetectorModel, CascadesDetectorModel
+from .detector.northern_tracks import NorthernTracksDetectorModel
+from .detector.cascades import CascadesDetectorModel
 
 
 def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):

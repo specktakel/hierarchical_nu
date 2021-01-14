@@ -58,120 +58,142 @@ using stan::math::pow;
 
 static int current_statement__ = 0;
 static const std::vector<string> locations_array__ = {" (found before start of program)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 286, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 287, column 0 to column 21)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 288, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 289, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 290, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 291, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 292, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 293, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 294, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 295, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 296, column 0 to column 16)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 297, column 0 to column 24)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 298, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 299, column 0 to column 21)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 300, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 303, column 0 to column 40)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 304, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 305, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 306, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 315, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 314, column 0 to line 316, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 313, column 5 to line 316, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 311, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 310, column 0 to line 312, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 309, column 0 to line 316, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 317, column 0 to column 38)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 320, column 0 to column 50)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 321, column 0 to column 34)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 319, column 0 to line 322, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 318, column 0 to line 322, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 323, column 0 to column 56)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 324, column 0 to column 49)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 325, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 326, column 0 to column 22)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 327, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 338, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 339, column 0 to column 40)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 340, column 0 to column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 337, column 0 to line 341, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 330, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 333, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 332, column 0 to line 334, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 331, column 0 to line 334, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 329, column 0 to line 335, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 328, column 0 to line 341, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 308, column 0 to line 342, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 307, column 0 to line 342, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 343, column 0 to column 54)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 344, column 0 to column 29)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 302, column 0 to line 345, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 301, column 0 to line 345, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 233, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 234, column 21 to column 23)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 234, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 235, column 7 to column 9)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 235, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 236, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 236, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 237, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 238, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 239, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 240, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 241, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 242, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 243, column 0 to column 10)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 244, column 7 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 244, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 245, column 28 to column 32)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 245, column 7 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 245, column 0 to column 34)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 246, column 0 to column 14)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 247, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 248, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 252, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 252, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 253, column 8 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 253, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 254, column 7 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 254, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 255, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 256, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 257, column 0 to column 10)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 258, column 0 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 259, column 0 to column 7)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 260, column 0 to column 9)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 261, column 0 to column 6)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 262, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 263, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 264, column 0 to column 9)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 267, column 0 to column 48)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 268, column 0 to column 43)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 269, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 266, column 0 to line 270, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 265, column 0 to line 270, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 271, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 272, column 0 to column 19)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 273, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 274, column 0 to column 16)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 275, column 0 to column 67)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 276, column 0 to column 22)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 277, column 0 to column 42)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 278, column 0 to column 21)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 279, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 280, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 281, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 282, column 0 to column 9)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 286, column 11 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 288, column 7 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 289, column 7 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 290, column 7 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 291, column 10 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 292, column 10 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 297, column 21 to column 22)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 299, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1103, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1104, column 0 to column 21)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1105, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1106, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1107, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1108, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1109, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1110, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1111, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1112, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1113, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1114, column 0 to column 16)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1115, column 0 to column 24)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1116, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1117, column 0 to column 21)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1118, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1121, column 0 to column 40)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1122, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1123, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1124, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1137, column 0 to column 43)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1138, column 0 to column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1136, column 0 to line 1139, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1135, column 5 to line 1139, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1133, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1132, column 0 to line 1134, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1131, column 5 to line 1139, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1129, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1128, column 0 to line 1130, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1127, column 0 to line 1139, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1140, column 0 to column 38)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1148, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1147, column 0 to line 1149, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1146, column 5 to line 1149, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1143, column 0 to column 50)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1144, column 0 to column 34)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1142, column 0 to line 1145, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1141, column 0 to line 1149, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1156, column 0 to column 62)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1155, column 0 to line 1157, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1152, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1151, column 0 to line 1153, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1150, column 0 to line 1157, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1158, column 0 to column 56)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1159, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1160, column 0 to column 22)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1161, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1172, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1173, column 0 to column 40)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1174, column 0 to column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1171, column 0 to line 1175, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1164, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1167, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1166, column 0 to line 1168, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1165, column 0 to line 1168, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1163, column 0 to line 1169, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1162, column 0 to line 1175, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1126, column 0 to line 1176, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1125, column 0 to line 1176, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1177, column 0 to column 60)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1178, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1120, column 0 to line 1179, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1119, column 0 to line 1179, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1043, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1044, column 21 to column 23)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1044, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1045, column 7 to column 9)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1045, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1046, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1046, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1047, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1048, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1049, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1050, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1051, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1052, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1053, column 0 to column 10)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1054, column 7 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1054, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1055, column 28 to column 32)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1055, column 7 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1055, column 0 to column 34)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1056, column 0 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1057, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1058, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1059, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1060, column 0 to column 20)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1061, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1062, column 31 to column 37)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1062, column 0 to column 39)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1063, column 7 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1063, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1064, column 8 to column 14)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1064, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1068, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1068, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1069, column 8 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1069, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1070, column 7 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1070, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1071, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1072, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1073, column 0 to column 10)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1074, column 0 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1075, column 0 to column 7)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1076, column 0 to column 9)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1077, column 0 to column 6)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1078, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1079, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1080, column 0 to column 9)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1083, column 0 to column 48)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1084, column 0 to column 43)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1085, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1082, column 0 to line 1086, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1081, column 0 to line 1086, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1087, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1088, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1089, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1090, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1091, column 0 to column 16)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1092, column 0 to column 88)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1093, column 0 to column 22)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1094, column 0 to column 42)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1095, column 0 to column 21)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1096, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1097, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1098, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1099, column 0 to column 9)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1103, column 11 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1105, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1106, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1107, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1109, column 10 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1110, column 10 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1115, column 21 to column 22)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1117, column 7 to column 8)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 13, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 3, column 0)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 14, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 3, column 0)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 18, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 3, column 0)",
@@ -385,77 +407,77 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 101, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 6, column 0)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 105, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 6, column 0)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_functions.stan', line 96, column 35, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 6, column 0)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 9, column 0 to line 108, column 52)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 109, column 0 to line 121, column 47)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 122, column 0 to column 80)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 123, column 0 to column 92)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 8, column 0 to line 124, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 127, column 0 to column 16)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 128, column 0 to column 10)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 129, column 0 to column 56)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 130, column 0 to column 31)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 131, column 0 to column 73)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 126, column 0 to line 132, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 135, column 0 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 136, column 0 to column 8)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 143, column 0 to column 58)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 142, column 0 to line 144, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 139, column 0 to column 28)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 138, column 0 to line 140, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 137, column 0 to line 144, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 151, column 0 to column 58)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 150, column 0 to line 152, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 147, column 0 to column 28)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 146, column 0 to line 148, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 145, column 0 to line 152, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 153, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 134, column 0 to line 154, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 157, column 0 to line 158, column 35)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 159, column 0 to column 130)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 156, column 0 to line 160, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 163, column 0 to column 10)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 164, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 165, column 0 to column 50)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 162, column 0 to line 166, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 169, column 0 to line 171, column 68)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 172, column 0 to line 174, column 68)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 175, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 176, column 0 to column 20)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 177, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 180, column 0 to column 19)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 179, column 0 to line 181, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 178, column 0 to line 181, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 184, column 0 to column 134)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 185, column 0 to column 137)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 183, column 0 to line 186, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 182, column 0 to line 186, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 187, column 0 to column 87)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 168, column 0 to line 188, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 191, column 0 to line 192, column 35)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 193, column 0 to column 142)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 190, column 0 to line 194, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 197, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 200, column 0 to column 70)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 199, column 0 to line 201, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 198, column 0 to line 201, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 202, column 0 to column 27)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 196, column 0 to line 203, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 206, column 0 to line 208, column 68)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 209, column 0 to line 211, column 68)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 212, column 0 to column 17)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 213, column 0 to column 20)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 214, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 217, column 0 to column 19)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 216, column 0 to line 218, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 215, column 0 to line 218, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 221, column 0 to column 134)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 222, column 0 to column 137)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 220, column 0 to line 223, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 219, column 0 to line 223, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 224, column 0 to column 103)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 205, column 0 to line 225, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 228, column 0 to column 71)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 227, column 0 to line 229, column 1)"};
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 9, column 0 to line 848, column 49)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 849, column 0 to line 919, column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 920, column 0 to column 85)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 921, column 0 to column 92)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 8, column 0 to line 922, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 925, column 0 to column 16)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 926, column 0 to column 10)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 927, column 0 to column 56)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 928, column 0 to column 31)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 929, column 0 to column 73)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 924, column 0 to line 930, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 933, column 0 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 934, column 0 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 941, column 0 to column 58)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 940, column 0 to line 942, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 937, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 936, column 0 to line 938, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 935, column 0 to line 942, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 949, column 0 to column 58)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 948, column 0 to line 950, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 945, column 0 to column 28)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 944, column 0 to line 946, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 943, column 0 to line 950, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 951, column 0 to column 15)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 932, column 0 to line 952, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 955, column 0 to line 956, column 35)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 957, column 0 to column 154)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 954, column 0 to line 958, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 961, column 0 to column 10)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 962, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 963, column 0 to column 50)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 960, column 0 to line 964, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 967, column 0 to line 972, column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 973, column 0 to line 978, column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 979, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 980, column 0 to column 20)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 981, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 984, column 0 to column 19)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 983, column 0 to line 985, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 982, column 0 to line 985, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 988, column 0 to column 159)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 989, column 0 to column 162)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 987, column 0 to line 990, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 986, column 0 to line 990, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 991, column 0 to column 88)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 966, column 0 to line 992, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 995, column 0 to line 996, column 35)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 997, column 0 to column 166)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 994, column 0 to line 998, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1001, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1004, column 0 to column 70)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1003, column 0 to line 1005, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1002, column 0 to line 1005, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1006, column 0 to column 27)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1000, column 0 to line 1007, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1010, column 0 to line 1015, column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1016, column 0 to line 1021, column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1022, column 0 to column 17)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1023, column 0 to column 20)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1024, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1027, column 0 to column 19)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1026, column 0 to line 1028, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1025, column 0 to line 1028, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1031, column 0 to column 159)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1032, column 0 to column 162)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1030, column 0 to line 1033, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1029, column 0 to line 1033, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1034, column 0 to column 104)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1009, column 0 to line 1035, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1038, column 0 to column 77)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1037, column 0 to line 1039, column 1)"};
 
 
 template <typename T0__, typename T1__>
@@ -473,20 +495,20 @@ trapz(const Eigen::Matrix<T0__, -1, 1>& x_values,
     int N;
     N = std::numeric_limits<int>::min();
     
-    current_statement__ = 115;
+    current_statement__ = 137;
     N = num_elements(x_values);
     local_scalar_t__ I;
     I = DUMMY_VAR__;
     
-    current_statement__ = 116;
+    current_statement__ = 138;
     I = 0;
-    current_statement__ = 119;
+    current_statement__ = 141;
     for (int i = 1; i <= (N - 1); ++i) {
-      current_statement__ = 117;
+      current_statement__ = 139;
       I = (I +
             ((0.5 * (x_values[((i + 1) - 1)] - x_values[(i - 1)])) *
               (y_values[(i - 1)] + y_values[((i + 1) - 1)])));}
-    current_statement__ = 120;
+    current_statement__ = 142;
     return I;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -519,7 +541,7 @@ linspace(const T0__& A, const T1__& B, const int& N, std::ostream* pstream__) {
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    current_statement__ = 122;
+    current_statement__ = 144;
     validate_non_negative_index("output", "N", N);
     Eigen::Matrix<local_scalar_t__, -1, 1> output;
     output = Eigen::Matrix<local_scalar_t__, -1, 1>(N);
@@ -528,14 +550,14 @@ linspace(const T0__& A, const T1__& B, const int& N, std::ostream* pstream__) {
     local_scalar_t__ dx;
     dx = DUMMY_VAR__;
     
-    current_statement__ = 124;
+    current_statement__ = 146;
     dx = ((B - A) / (N - 1));
-    current_statement__ = 127;
+    current_statement__ = 149;
     for (int i = 1; i <= N; ++i) {
-      current_statement__ = 125;
+      current_statement__ = 147;
       assign(output, cons_list(index_uni(i), nil_index_list()),
         (A + ((i - 1) * dx)), "assigning variable output");}
-    current_statement__ = 128;
+    current_statement__ = 150;
     return output;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -571,18 +593,18 @@ eval_poly1d(const T0__& x, const Eigen::Matrix<T1__, -1, 1>& coeffs,
     int N;
     N = std::numeric_limits<int>::min();
     
-    current_statement__ = 130;
+    current_statement__ = 152;
     N = num_elements(coeffs);
     local_scalar_t__ res;
     res = DUMMY_VAR__;
     
-    current_statement__ = 131;
+    current_statement__ = 153;
     res = 0;
-    current_statement__ = 134;
+    current_statement__ = 156;
     for (int i = 1; i <= N; ++i) {
-      current_statement__ = 132;
+      current_statement__ = 154;
       res = (res + (coeffs[(i - 1)] * pow(x, (N - i))));}
-    current_statement__ = 135;
+    current_statement__ = 157;
     return res;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -615,18 +637,18 @@ truncate_value(const T0__& x, const T1__& min_val, const T2__& max_val,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    current_statement__ = 142;
+    current_statement__ = 164;
     if (logical_lt(x, min_val)) {
-      current_statement__ = 140;
+      current_statement__ = 162;
       return min_val;
     } else {
-      current_statement__ = 139;
+      current_statement__ = 161;
       if (logical_gt(x, max_val)) {
-        current_statement__ = 137;
+        current_statement__ = 159;
         return max_val;
       } 
     }
-    current_statement__ = 143;
+    current_statement__ = 165;
     return x;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -659,7 +681,7 @@ generate_bin_edges(const T0__& lower_edge, const T1__& upper_edge,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    current_statement__ = 145;
+    current_statement__ = 167;
     validate_non_negative_index("binedges", "nbins + 1", (nbins + 1));
     std::vector<local_scalar_t__> binedges;
     binedges = std::vector<local_scalar_t__>((nbins + 1), DUMMY_VAR__);
@@ -667,14 +689,14 @@ generate_bin_edges(const T0__& lower_edge, const T1__& upper_edge,
     local_scalar_t__ binwidth;
     binwidth = DUMMY_VAR__;
     
-    current_statement__ = 147;
+    current_statement__ = 169;
     binwidth = ((upper_edge - lower_edge) / nbins);
-    current_statement__ = 150;
+    current_statement__ = 172;
     for (int i = 1; i <= (nbins + 1); ++i) {
-      current_statement__ = 148;
+      current_statement__ = 170;
       assign(binedges, cons_list(index_uni(i), nil_index_list()),
         (lower_edge + ((i - 1) * binwidth)), "assigning variable binedges");}
-    current_statement__ = 151;
+    current_statement__ = 173;
     return binedges;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -709,48 +731,48 @@ binary_search(const T0__& value, const std::vector<T1__>& binedges,
     int L;
     L = std::numeric_limits<int>::min();
     
-    current_statement__ = 153;
+    current_statement__ = 175;
     L = 1;
     int R;
     R = std::numeric_limits<int>::min();
     
-    current_statement__ = 154;
+    current_statement__ = 176;
     R = size(binedges);
     int m;
     m = std::numeric_limits<int>::min();
     
-    current_statement__ = 168;
+    current_statement__ = 190;
     if (logical_lt(value, binedges[(1 - 1)])) {
-      current_statement__ = 167;
+      current_statement__ = 189;
       return 0;
     } else {
-      current_statement__ = 166;
+      current_statement__ = 188;
       if (logical_gt(value, binedges[(R - 1)])) {
-        current_statement__ = 165;
+        current_statement__ = 187;
         return (R + 1);
       } else {
-        current_statement__ = 163;
+        current_statement__ = 185;
         while (logical_lt(L, (R - 1))) {
-          current_statement__ = 156;
+          current_statement__ = 178;
           m = ((L + R) / 2);
-          current_statement__ = 161;
+          current_statement__ = 183;
           if (logical_lt(binedges[(m - 1)], value)) {
-            current_statement__ = 160;
+            current_statement__ = 182;
             L = m;
           } else {
-            current_statement__ = 159;
+            current_statement__ = 181;
             if (logical_gt(binedges[(m - 1)], value)) {
-              current_statement__ = 158;
+              current_statement__ = 180;
               R = m;
             } else {
-              current_statement__ = 157;
+              current_statement__ = 179;
               return m;
             }
           }
         }
       }
     }
-    current_statement__ = 169;
+    current_statement__ = 191;
     return L;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -787,21 +809,21 @@ abs_val(const Eigen::Matrix<T0__, -1, 1>& input_vector,
     int n;
     n = std::numeric_limits<int>::min();
     
-    current_statement__ = 172;
+    current_statement__ = 194;
     n = num_elements(input_vector);
     local_scalar_t__ sum_squares;
     sum_squares = DUMMY_VAR__;
     
-    current_statement__ = 173;
+    current_statement__ = 195;
     sum_squares = 0;
-    current_statement__ = 176;
+    current_statement__ = 198;
     for (int i = 1; i <= n; ++i) {
-      current_statement__ = 174;
+      current_statement__ = 196;
       sum_squares = (sum_squares +
                       (input_vector[(i - 1)] * input_vector[(i - 1)]));}
-    current_statement__ = 177;
+    current_statement__ = 199;
     av = stan::math::sqrt(sum_squares);
-    current_statement__ = 178;
+    current_statement__ = 200;
     return av;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -835,39 +857,39 @@ sample_orthonormal_to_rng(const Eigen::Matrix<T0__, -1, 1>& mu,
     int dim;
     dim = std::numeric_limits<int>::min();
     
-    current_statement__ = 180;
+    current_statement__ = 202;
     dim = num_elements(mu);
-    current_statement__ = 181;
+    current_statement__ = 203;
     validate_non_negative_index("v", "dim", dim);
     Eigen::Matrix<local_scalar_t__, -1, 1> v;
     v = Eigen::Matrix<local_scalar_t__, -1, 1>(dim);
     stan::math::fill(v, DUMMY_VAR__);
     
-    current_statement__ = 183;
+    current_statement__ = 205;
     validate_non_negative_index("proj_mu_v", "dim", dim);
     Eigen::Matrix<local_scalar_t__, -1, 1> proj_mu_v;
     proj_mu_v = Eigen::Matrix<local_scalar_t__, -1, 1>(dim);
     stan::math::fill(proj_mu_v, DUMMY_VAR__);
     
-    current_statement__ = 185;
+    current_statement__ = 207;
     validate_non_negative_index("orthto", "dim", dim);
     Eigen::Matrix<local_scalar_t__, -1, 1> orthto;
     orthto = Eigen::Matrix<local_scalar_t__, -1, 1>(dim);
     stan::math::fill(orthto, DUMMY_VAR__);
     
-    current_statement__ = 189;
+    current_statement__ = 211;
     for (int i = 1; i <= dim; ++i) {
-      current_statement__ = 187;
+      current_statement__ = 209;
       assign(v, cons_list(index_uni(i), nil_index_list()),
         normal_rng(0, 1, base_rng__), "assigning variable v");}
-    current_statement__ = 190;
+    current_statement__ = 212;
     assign(proj_mu_v, nil_index_list(),
       divide(multiply(mu, dot_product(mu, v)), abs_val(mu, pstream__)),
       "assigning variable proj_mu_v");
-    current_statement__ = 191;
+    current_statement__ = 213;
     assign(orthto, nil_index_list(), subtract(v, proj_mu_v),
       "assigning variable orthto");
-    current_statement__ = 192;
+    current_statement__ = 214;
     return divide(orthto, abs_val(orthto, pstream__));
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -901,29 +923,29 @@ sample_weight_rng(const T0__& kappa, const int& dim, RNG& base_rng__,
     local_scalar_t__ sdim;
     sdim = DUMMY_VAR__;
     
-    current_statement__ = 194;
+    current_statement__ = 216;
     sdim = (dim - 1);
     local_scalar_t__ b;
     b = DUMMY_VAR__;
     
-    current_statement__ = 195;
+    current_statement__ = 217;
     b = (sdim /
           (stan::math::sqrt(((4. * pow(kappa, 2)) + pow(sdim, 2))) +
             (2 * kappa)));
     local_scalar_t__ x;
     x = DUMMY_VAR__;
     
-    current_statement__ = 196;
+    current_statement__ = 218;
     x = ((1 - b) / (1 + b));
     local_scalar_t__ c;
     c = DUMMY_VAR__;
     
-    current_statement__ = 197;
+    current_statement__ = 219;
     c = ((kappa * x) + (sdim * stan::math::log((1 - pow(x, 2)))));
     int i;
     i = std::numeric_limits<int>::min();
     
-    current_statement__ = 198;
+    current_statement__ = 220;
     i = 0;
     local_scalar_t__ z;
     z = DUMMY_VAR__;
@@ -934,23 +956,23 @@ sample_weight_rng(const T0__& kappa, const int& dim, RNG& base_rng__,
     local_scalar_t__ u;
     u = DUMMY_VAR__;
     
-    current_statement__ = 209;
+    current_statement__ = 231;
     while (logical_eq(i, 0)) {
-      current_statement__ = 202;
+      current_statement__ = 224;
       z = beta_rng((sdim / 2), (sdim / 2), base_rng__);
-      current_statement__ = 203;
+      current_statement__ = 225;
       w = ((1 - ((1 + b) * z)) / (1 - ((1 - b) * z)));
-      current_statement__ = 204;
+      current_statement__ = 226;
       u = uniform_rng(0, 1, base_rng__);
-      current_statement__ = 207;
+      current_statement__ = 229;
       if (logical_gte(
             (((kappa * w) + (sdim * stan::math::log((1 - (x * w))))) - c),
             stan::math::log(u))) {
-        current_statement__ = 205;
+        current_statement__ = 227;
         i = 1;
       } 
     }
-    current_statement__ = 210;
+    current_statement__ = 232;
     return w;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -985,9 +1007,9 @@ vMF_rng(const Eigen::Matrix<T0__, -1, 1>& mu, const T1__& kappa,
     int dim;
     dim = std::numeric_limits<int>::min();
     
-    current_statement__ = 212;
+    current_statement__ = 234;
     dim = num_elements(mu);
-    current_statement__ = 213;
+    current_statement__ = 235;
     validate_non_negative_index("result", "dim", dim);
     Eigen::Matrix<local_scalar_t__, -1, 1> result;
     result = Eigen::Matrix<local_scalar_t__, -1, 1>(dim);
@@ -996,23 +1018,23 @@ vMF_rng(const Eigen::Matrix<T0__, -1, 1>& mu, const T1__& kappa,
     local_scalar_t__ w;
     w = DUMMY_VAR__;
     
-    current_statement__ = 215;
+    current_statement__ = 237;
     w = sample_weight_rng(kappa, dim, base_rng__, pstream__);
-    current_statement__ = 216;
+    current_statement__ = 238;
     validate_non_negative_index("v", "dim", dim);
     Eigen::Matrix<local_scalar_t__, -1, 1> v;
     v = Eigen::Matrix<local_scalar_t__, -1, 1>(dim);
     stan::math::fill(v, DUMMY_VAR__);
     
-    current_statement__ = 217;
+    current_statement__ = 239;
     assign(v, nil_index_list(),
       sample_orthonormal_to_rng(mu, base_rng__, pstream__),
       "assigning variable v");
-    current_statement__ = 218;
+    current_statement__ = 240;
     assign(result, nil_index_list(),
       add(multiply(v, stan::math::sqrt((1 - pow(w, 2)))), multiply(w, mu)),
       "assigning variable result");
-    current_statement__ = 219;
+    current_statement__ = 241;
     return result;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1050,35 +1072,35 @@ sphere_rng(const T0__& radius, RNG& base_rng__, std::ostream* pstream__) {
     local_scalar_t__ u;
     u = DUMMY_VAR__;
     
-    current_statement__ = 222;
+    current_statement__ = 244;
     u = uniform_rng(0, 1, base_rng__);
     local_scalar_t__ v;
     v = DUMMY_VAR__;
     
-    current_statement__ = 223;
+    current_statement__ = 245;
     v = uniform_rng(0, 1, base_rng__);
     local_scalar_t__ phi;
     phi = DUMMY_VAR__;
     
-    current_statement__ = 224;
+    current_statement__ = 246;
     phi = ((2 * stan::math::pi()) * u);
     local_scalar_t__ theta;
     theta = DUMMY_VAR__;
     
-    current_statement__ = 225;
+    current_statement__ = 247;
     theta = stan::math::acos(((2 * v) - 1));
-    current_statement__ = 226;
+    current_statement__ = 248;
     assign(result, cons_list(index_uni(1), nil_index_list()),
       ((radius * stan::math::sin(theta)) * stan::math::cos(phi)),
       "assigning variable result");
-    current_statement__ = 227;
+    current_statement__ = 249;
     assign(result, cons_list(index_uni(2), nil_index_list()),
       ((radius * stan::math::sin(theta)) * stan::math::sin(phi)),
       "assigning variable result");
-    current_statement__ = 228;
+    current_statement__ = 250;
     assign(result, cons_list(index_uni(3), nil_index_list()),
       (radius * stan::math::cos(theta)), "assigning variable result");
-    current_statement__ = 229;
+    current_statement__ = 251;
     return result;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1116,35 +1138,35 @@ sphere_lim_rng(const T0__& radius, const T1__& v_lim, RNG& base_rng__,
     local_scalar_t__ u;
     u = DUMMY_VAR__;
     
-    current_statement__ = 232;
+    current_statement__ = 254;
     u = uniform_rng(0, 1, base_rng__);
     local_scalar_t__ v;
     v = DUMMY_VAR__;
     
-    current_statement__ = 233;
+    current_statement__ = 255;
     v = uniform_rng(v_lim, 1, base_rng__);
     local_scalar_t__ phi;
     phi = DUMMY_VAR__;
     
-    current_statement__ = 234;
+    current_statement__ = 256;
     phi = ((2 * stan::math::pi()) * u);
     local_scalar_t__ theta;
     theta = DUMMY_VAR__;
     
-    current_statement__ = 235;
+    current_statement__ = 257;
     theta = stan::math::acos(((2 * v) - 1));
-    current_statement__ = 236;
+    current_statement__ = 258;
     assign(result, cons_list(index_uni(1), nil_index_list()),
       ((radius * stan::math::sin(theta)) * stan::math::cos(phi)),
       "assigning variable result");
-    current_statement__ = 237;
+    current_statement__ = 259;
     assign(result, cons_list(index_uni(2), nil_index_list()),
       ((radius * stan::math::sin(theta)) * stan::math::sin(phi)),
       "assigning variable result");
-    current_statement__ = 238;
+    current_statement__ = 260;
     assign(result, cons_list(index_uni(3), nil_index_list()),
       (radius * stan::math::cos(theta)), "assigning variable result");
-    current_statement__ = 239;
+    current_statement__ = 261;
     return result;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1179,19 +1201,19 @@ vMF_lpdf(const Eigen::Matrix<T0__, -1, 1>& v,
     local_scalar_t__ lprob;
     lprob = DUMMY_VAR__;
     
-    current_statement__ = 246;
+    current_statement__ = 268;
     if (logical_gt(kappa, 100)) {
-      current_statement__ = 244;
+      current_statement__ = 266;
       lprob = (((((kappa * dot_product(v, mu)) + stan::math::log(kappa)) -
                   stan::math::log((4 * stan::math::pi()))) - kappa) +
                 stan::math::log(2));
     } else {
-      current_statement__ = 242;
+      current_statement__ = 264;
       lprob = (((kappa * dot_product(v, mu)) + stan::math::log(kappa)) -
                 stan::math::log(
                   ((4 * stan::math::pi()) * stan::math::sinh(kappa))));
     }
-    current_statement__ = 247;
+    current_statement__ = 269;
     return lprob;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1244,60 +1266,60 @@ interpolate(const Eigen::Matrix<T0__, -1, 1>& x_values,
     int Nx;
     Nx = std::numeric_limits<int>::min();
     
-    current_statement__ = 254;
+    current_statement__ = 276;
     Nx = num_elements(x_values);
     local_scalar_t__ xmin;
     xmin = DUMMY_VAR__;
     
-    current_statement__ = 255;
+    current_statement__ = 277;
     xmin = x_values[(1 - 1)];
     local_scalar_t__ xmax;
     xmax = DUMMY_VAR__;
     
-    current_statement__ = 256;
+    current_statement__ = 278;
     xmax = x_values[(Nx - 1)];
     int i;
     i = std::numeric_limits<int>::min();
     
-    current_statement__ = 257;
+    current_statement__ = 279;
     i = 1;
-    current_statement__ = 265;
+    current_statement__ = 287;
     if ((primitive_value(logical_gt(x, xmax)) || primitive_value(
         logical_lt(x, xmin)))) {
-      current_statement__ = 263;
+      current_statement__ = 285;
       if (logical_gt(x, xmax)) {
-        current_statement__ = 261;
+        current_statement__ = 283;
         return y_values[(Nx - 1)];
       } else {
-        current_statement__ = 260;
+        current_statement__ = 282;
         if (logical_lt(x, xmin)) {
-          current_statement__ = 258;
+          current_statement__ = 280;
           return y_values[(1 - 1)];
         } 
       }
     } 
-    current_statement__ = 272;
+    current_statement__ = 294;
     if (logical_gte(x, x_values[((Nx - 1) - 1)])) {
-      current_statement__ = 270;
+      current_statement__ = 292;
       i = (Nx - 1);
     } else {
-      current_statement__ = 268;
+      current_statement__ = 290;
       while (logical_gt(x, x_values[((i + 1) - 1)])) {
-        current_statement__ = 266;
+        current_statement__ = 288;
         i = (i + 1);
       }
     }
-    current_statement__ = 273;
+    current_statement__ = 295;
     x_left = x_values[(i - 1)];
-    current_statement__ = 274;
+    current_statement__ = 296;
     y_left = y_values[(i - 1)];
-    current_statement__ = 275;
+    current_statement__ = 297;
     x_right = x_values[((i + 1) - 1)];
-    current_statement__ = 276;
+    current_statement__ = 298;
     y_right = y_values[((i + 1) - 1)];
-    current_statement__ = 277;
+    current_statement__ = 299;
     dydx = ((y_right - y_left) / (x_right - x_left));
-    current_statement__ = 278;
+    current_statement__ = 300;
     return (y_left + (dydx * (x - x_left)));
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1342,24 +1364,24 @@ get_exposure_factor_atmo(const T0__& alpha,
     int K;
     K = std::numeric_limits<int>::min();
     
-    current_statement__ = 280;
+    current_statement__ = 302;
     K = (Ns + 2);
-    current_statement__ = 281;
+    current_statement__ = 303;
     validate_non_negative_index("eps", "K", K);
     Eigen::Matrix<local_scalar_t__, -1, 1> eps;
     eps = Eigen::Matrix<local_scalar_t__, -1, 1>(K);
     stan::math::fill(eps, DUMMY_VAR__);
     
-    current_statement__ = 285;
+    current_statement__ = 307;
     for (int k = 1; k <= (K - 1); ++k) {
-      current_statement__ = 283;
+      current_statement__ = 305;
       assign(eps, cons_list(index_uni(k), nil_index_list()),
         interpolate(alpha_grid, integral_grid[(k - 1)], alpha, pstream__),
         "assigning variable eps");}
-    current_statement__ = 286;
+    current_statement__ = 308;
     assign(eps, cons_list(index_uni(K), nil_index_list()), atmo_integ_val,
       "assigning variable eps");
-    current_statement__ = 287;
+    current_statement__ = 309;
     return multiply(eps, T);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1401,21 +1423,21 @@ get_exposure_factor(const T0__& alpha,
     int K;
     K = std::numeric_limits<int>::min();
     
-    current_statement__ = 289;
+    current_statement__ = 311;
     K = (Ns + 1);
-    current_statement__ = 290;
+    current_statement__ = 312;
     validate_non_negative_index("eps", "K", K);
     Eigen::Matrix<local_scalar_t__, -1, 1> eps;
     eps = Eigen::Matrix<local_scalar_t__, -1, 1>(K);
     stan::math::fill(eps, DUMMY_VAR__);
     
-    current_statement__ = 294;
+    current_statement__ = 316;
     for (int k = 1; k <= K; ++k) {
-      current_statement__ = 292;
+      current_statement__ = 314;
       assign(eps, cons_list(index_uni(k), nil_index_list()),
         (interpolate(alpha_grid, integral_grid[(k - 1)], alpha, pstream__) *
           T), "assigning variable eps");}
-    current_statement__ = 295;
+    current_statement__ = 317;
     return eps;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1455,9 +1477,9 @@ get_eps_simple(const T0__& alpha,
     local_scalar_t__ eps;
     eps = DUMMY_VAR__;
     
-    current_statement__ = 298;
+    current_statement__ = 320;
     eps = (interpolate(alpha_grid, integral_grid, alpha, pstream__) * T);
-    current_statement__ = 299;
+    current_statement__ = 321;
     return eps;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1495,9 +1517,9 @@ get_exposure_weights(const Eigen::Matrix<T0__, -1, 1>& F,
     int K;
     K = std::numeric_limits<int>::min();
     
-    current_statement__ = 301;
+    current_statement__ = 323;
     K = num_elements(F);
-    current_statement__ = 302;
+    current_statement__ = 324;
     validate_non_negative_index("weights", "K", K);
     Eigen::Matrix<local_scalar_t__, -1, 1> weights;
     weights = Eigen::Matrix<local_scalar_t__, -1, 1>(K);
@@ -1506,19 +1528,19 @@ get_exposure_weights(const Eigen::Matrix<T0__, -1, 1>& F,
     local_scalar_t__ normalisation;
     normalisation = DUMMY_VAR__;
     
-    current_statement__ = 304;
+    current_statement__ = 326;
     normalisation = 0;
-    current_statement__ = 307;
+    current_statement__ = 329;
     for (int k = 1; k <= K; ++k) {
-      current_statement__ = 305;
+      current_statement__ = 327;
       normalisation = (normalisation + (F[(k - 1)] * eps[(k - 1)]));}
-    current_statement__ = 310;
+    current_statement__ = 332;
     for (int k = 1; k <= K; ++k) {
-      current_statement__ = 308;
+      current_statement__ = 330;
       assign(weights, cons_list(index_uni(k), nil_index_list()),
         ((F[(k - 1)] * eps[(k - 1)]) / normalisation),
         "assigning variable weights");}
-    current_statement__ = 311;
+    current_statement__ = 333;
     return weights;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1556,19 +1578,19 @@ omega_to_zenith(const Eigen::Matrix<T0__, -1, 1>& omega,
     int N;
     N = std::numeric_limits<int>::min();
     
-    current_statement__ = 314;
+    current_statement__ = 336;
     N = num_elements(omega);
-    current_statement__ = 317;
+    current_statement__ = 339;
     if (logical_neq(N, 3)) {
-      current_statement__ = 315;
+      current_statement__ = 337;
       if (pstream__) {
         stan_print(pstream__, "Error: input vector omega must be of 3 dimensions");
         stan_print(pstream__, "\n");
       }
     } 
-    current_statement__ = 318;
+    current_statement__ = 340;
     zenith = (stan::math::pi() - stan::math::acos(omega[(3 - 1)]));
-    current_statement__ = 319;
+    current_statement__ = 341;
     return zenith;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1602,18 +1624,18 @@ get_Nex(const Eigen::Matrix<T0__, -1, 1>& F,
     int K;
     K = std::numeric_limits<int>::min();
     
-    current_statement__ = 321;
+    current_statement__ = 343;
     K = num_elements(F);
     local_scalar_t__ Nex;
     Nex = DUMMY_VAR__;
     
-    current_statement__ = 322;
+    current_statement__ = 344;
     Nex = 0;
-    current_statement__ = 325;
+    current_statement__ = 347;
     for (int k = 1; k <= K; ++k) {
-      current_statement__ = 323;
+      current_statement__ = 345;
       Nex = (Nex + (F[(k - 1)] * eps[(k - 1)]));}
-    current_statement__ = 326;
+    current_statement__ = 348;
     return Nex;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1637,8 +1659,8 @@ return get_Nex(F, eps, pstream__);
 template <typename T0__, typename T1__>
 stan::promote_args_t<T0__,
 T1__>
-CascadesEffAreaHist(const T0__& value_0, const T1__& value_1,
-                    std::ostream* pstream__) {
+NorthernTracksEffAreaHist(const T0__& value_0, const T1__& value_1,
+                          std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<T0__, T1__>;
   const static bool propto__ = true;
   (void) propto__;
@@ -1647,190 +1669,1381 @@ CascadesEffAreaHist(const T0__& value_0, const T1__& value_1,
   
   try {
     std::vector<std::vector<local_scalar_t__>> hist_array;
-    hist_array = std::vector<std::vector<local_scalar_t__>>(50, std::vector<local_scalar_t__>(10, DUMMY_VAR__));
+    hist_array = std::vector<std::vector<local_scalar_t__>>(280, std::vector<local_scalar_t__>(11, DUMMY_VAR__));
     
-    current_statement__ = 328;
+    current_statement__ = 350;
     assign(hist_array, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(0.68716122)
-      .add(0.80817492).add(0.91932813).add(0.9974366).add(1.03773818)
-      .add(1.05343648).add(1.04858595).add(1.04034061).add(1.04054923)
-      .add(1.04766316).array()).add(stan::math::array_builder<double>()
-      .add(0.80161819).add(0.96739474).add(1.12671833).add(1.24052094)
-      .add(1.30244796).add(1.31844301).add(1.31382792).add(1.30320484)
-      .add(1.2956829).add(1.31245069).array())
-      .add(stan::math::array_builder<double>().add(0.91962692)
-      .add(1.14941919).add(1.37421579).add(1.52362822).add(1.60376476)
-      .add(1.62314537).add(1.61689301).add(1.6059428).add(1.60156558)
-      .add(1.62941481).array()).add(stan::math::array_builder<double>()
-      .add(1.04092977).add(1.33707601).add(1.627235).add(1.84170115)
-      .add(1.95315021).add(1.98356724).add(1.97570325).add(1.9444556)
-      .add(1.94672725).add(1.9932663).array())
-      .add(stan::math::array_builder<double>().add(1.14946332)
-      .add(1.52642022).add(1.92117022).add(2.19336752).add(2.3487031)
-      .add(2.39100385).add(2.36624627).add(2.33760544).add(2.33385198)
-      .add(2.40303507).array()).add(stan::math::array_builder<double>()
-      .add(1.2456346).add(1.72519479).add(2.22156849).add(2.59716982)
-      .add(2.79299169).add(2.83119144).add(2.80526436).add(2.7595231)
-      .add(2.75665855).add(2.84381776).array())
-      .add(stan::math::array_builder<double>().add(1.34043309)
-      .add(1.91672475).add(2.54745071).add(3.0057239).add(3.26967682)
-      .add(3.34173575).add(3.2847843).add(3.23789207).add(3.23319092)
-      .add(3.35768151).array()).add(stan::math::array_builder<double>()
-      .add(1.4042922).add(2.09056001).add(2.85344237).add(3.45833125)
-      .add(3.80350657).add(3.87624382).add(3.83648923).add(3.74758644)
-      .add(3.76416387).add(3.89210122).array())
-      .add(stan::math::array_builder<double>().add(1.46710894)
-      .add(2.25680639).add(3.16968692).add(3.91687091).add(4.35745595)
-      .add(4.48349956).add(4.43306067).add(4.33006325).add(4.32710889)
-      .add(4.51551216).array()).add(stan::math::array_builder<double>()
-      .add(1.49709354).add(2.40754145).add(3.48747078).add(4.3974427)
-      .add(4.91996863).add(5.10505897).add(5.08755857).add(4.95799486)
-      .add(4.94506596).add(5.15759823).array())
-      .add(stan::math::array_builder<double>().add(1.51619689)
-      .add(2.52262852).add(3.77528776).add(4.85829817).add(5.5401895)
-      .add(5.78350492).add(5.71362851).add(5.61450792).add(5.6152032)
-      .add(5.83537588).array()).add(stan::math::array_builder<double>()
-      .add(1.51982591).add(2.59984544).add(4.05158171).add(5.3323175)
-      .add(6.13827915).add(6.47122256).add(6.46316776).add(6.30193672)
-      .add(6.29172321).add(6.56699198).array())
-      .add(stan::math::array_builder<double>().add(1.50066877)
-      .add(2.66094674).add(4.27604101).add(5.7408859).add(6.76272856)
-      .add(7.1780342).add(7.17684515).add(7.06547077).add(7.04570088)
-      .add(7.32608529).array()).add(stan::math::array_builder<double>()
-      .add(1.47733067).add(2.70715978).add(4.46655299).add(6.14896173)
-      .add(7.35003581).add(7.91522476).add(7.98805705).add(7.84145814)
-      .add(7.79259887).add(8.10878618).array())
-      .add(stan::math::array_builder<double>().add(1.42909215)
-      .add(2.70419846).add(4.57069355).add(6.48969686).add(7.89608343)
-      .add(8.62503123).add(8.73900362).add(8.64000293).add(8.57784177)
-      .add(8.94539947).array()).add(stan::math::array_builder<double>()
-      .add(1.37434444).add(2.67862253).add(4.68464479).add(6.81885365)
-      .add(8.46934971).add(9.34624114).add(9.56178926).add(9.45408265)
-      .add(9.41486761).add(9.77282515).array())
-      .add(stan::math::array_builder<double>().add(1.32700417).add(2.6273235)
-      .add(4.70504017).add(7.0557024).add(8.97308916).add(10.04221352)
-      .add(10.37124321).add(10.2928445).add(10.24243359).add(10.69869325)
-      .array()).add(stan::math::array_builder<double>().add(1.26658087)
-      .add(2.54622376).add(4.69677548).add(7.23998494).add(9.36454956)
-      .add(10.67108171).add(11.13081531).add(11.08300199).add(11.09813672)
-      .add(11.52672759).array()).add(stan::math::array_builder<double>()
-      .add(1.21753964).add(2.47016756).add(4.6426744).add(7.3296714)
-      .add(9.74654133).add(11.31605778).add(11.94883471).add(11.96803088)
-      .add(11.97329963).add(12.42635725).array())
-      .add(stan::math::array_builder<double>().add(1.16476003).add(2.3742978)
-      .add(4.57773204).add(7.36895408).add(10.07726885).add(11.92307849)
-      .add(12.78392469).add(12.85704126).add(12.89444256).add(13.31767849)
-      .array()).add(stan::math::array_builder<double>().add(1.12293494)
-      .add(2.27279095).add(4.44170789).add(7.35475876).add(10.29839451)
-      .add(12.51523922).add(13.54870687).add(13.8256517).add(13.83412908)
-      .add(14.33101471).array()).add(stan::math::array_builder<double>()
-      .add(1.08504436).add(2.17321756).add(4.27587745).add(7.25214724)
-      .add(10.4857762).add(13.0042069).add(14.37474843).add(14.73549847)
-      .add(14.79898268).add(15.2015481).array())
-      .add(stan::math::array_builder<double>().add(1.05572999)
-      .add(2.07159447).add(4.12122538).add(7.12568165).add(10.58606981)
-      .add(13.55333618).add(15.28135245).add(15.78183072).add(15.8595764)
-      .add(16.17901734).array()).add(stan::math::array_builder<double>()
-      .add(1.04222328).add(1.97851935).add(3.90534359).add(6.96995785)
-      .add(10.69164887).add(14.0527671).add(16.15956352).add(16.9514571)
-      .add(16.90970719).add(17.13155344).array())
-      .add(stan::math::array_builder<double>().add(1.04037506).add(1.8988744)
-      .add(3.71980652).add(6.77287672).add(10.68383153).add(14.56143073)
-      .add(17.11732055).add(18.21134647).add(18.19903284).add(18.08456867)
-      .array()).add(stan::math::array_builder<double>().add(1.04658375)
-      .add(1.81546819).add(3.49661248).add(6.51593502).add(10.7347932)
-      .add(15.08605591).add(18.26240498).add(19.60043713).add(19.52325178)
-      .add(19.18868135).array()).add(stan::math::array_builder<double>()
-      .add(1.08553937).add(1.75390494).add(3.30214334).add(6.27326859)
-      .add(10.70940707).add(15.62340143).add(19.46298217).add(21.2708268)
-      .add(20.97543287).add(20.33566816).array())
-      .add(stan::math::array_builder<double>().add(1.14119755).add(1.7052893)
-      .add(3.12198076).add(6.00717239).add(10.71905766).add(16.18935085)
-      .add(20.78801857).add(23.06779155).add(22.78019695).add(21.48892342)
-      .array()).add(stan::math::array_builder<double>().add(1.21958655)
-      .add(1.66535549).add(2.94247808).add(5.78485128).add(10.64420628)
-      .add(16.80156825).add(22.2475041).add(25.30513527).add(24.89709256)
-      .add(22.82751385).array()).add(stan::math::array_builder<double>()
-      .add(1.33560871).add(1.6495563).add(2.76819788).add(5.55793699)
-      .add(10.57980358).add(17.35415052).add(24.07273351).add(28.02244633)
-      .add(27.40558285).add(24.40138758).array())
-      .add(stan::math::array_builder<double>().add(1.50102854)
-      .add(1.64455302).add(2.63372854).add(5.35504859).add(10.56683741)
-      .add(18.01959653).add(25.90327328).add(31.11248314).add(30.31160174)
-      .add(26.16061086).array()).add(stan::math::array_builder<double>()
-      .add(0.3663096).add(0.3851484).add(0.60302809).add(1.22603277)
-      .add(2.45546533).add(4.23700492).add(6.312594).add(7.5744099)
-      .add(7.34139307).add(6.27010591).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .add(stan::math::array_builder<double>().add(0.).add(0.).add(0.)
-      .add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).add(0.).array())
-      .array(), "assigning variable hist_array");
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(4.03805436e-06)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(2.64191710e-06).add(0.00000000e+00).add(0.00000000e+00)
+      .add(2.81826790e-06).add(0.00000000e+00).add(0.00000000e+00)
+      .add(2.83362256e-06).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(2.82618385e-06).add(0.00000000e+00)
+      .add(0.00000000e+00).add(3.04747270e-06).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(1.36621158e-05).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(3.14751887e-06)
+      .add(0.00000000e+00).add(0.00000000e+00).add(1.23225127e-05)
+      .add(9.07658470e-06).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(2.57199557e-05)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(3.50272789e-06).add(6.88045867e-06).add(0.00000000e+00)
+      .add(1.27552779e-05).add(6.73611539e-06).add(3.60006936e-06)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(1.60469306e-05).add(1.22928499e-05).add(3.87522078e-06)
+      .add(0.00000000e+00).add(0.00000000e+00).add(7.21320566e-06)
+      .add(1.52015931e-05).add(1.79286538e-05).add(1.11643932e-05)
+      .add(1.08268116e-05).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(2.92718596e-05)
+      .add(7.70911308e-06).add(0.00000000e+00).add(1.95397486e-05)
+      .add(0.00000000e+00).add(1.17350545e-05).add(3.56067769e-05)
+      .add(2.80620927e-05).add(3.10984752e-05).add(1.65412349e-05)
+      .add(1.19143389e-05).array()).add(stan::math::array_builder<double>()
+      .add(4.68219685e-05).add(2.74852676e-05).add(2.16865149e-05)
+      .add(4.78998410e-06).add(3.03392541e-05).add(2.54352586e-05)
+      .add(3.94649036e-05).add(1.06430132e-04).add(3.32628886e-05)
+      .add(7.59907453e-05).add(1.66682374e-05).array())
+      .add(stan::math::array_builder<double>().add(8.82348326e-05)
+      .add(2.36677380e-05).add(2.56542176e-05).add(1.97688245e-05)
+      .add(3.05209290e-05).add(5.77495312e-05).add(7.10784972e-05)
+      .add(9.09137277e-05).add(1.01585091e-04).add(8.73198676e-05)
+      .add(1.05590929e-05).array()).add(stan::math::array_builder<double>()
+      .add(1.70706430e-04).add(4.24625263e-05).add(2.84765680e-05)
+      .add(3.22442263e-05).add(5.92836495e-05).add(8.19212382e-05)
+      .add(1.39115358e-04).add(1.61614814e-04).add(1.63623175e-04)
+      .add(1.23716730e-04).add(1.51380053e-05).array())
+      .add(stan::math::array_builder<double>().add(2.58506519e-04)
+      .add(7.66507230e-05).add(6.80011773e-05).add(6.16353586e-05)
+      .add(8.66237330e-05).add(1.39648856e-04).add(1.73201702e-04)
+      .add(2.37076701e-04).add(2.50169469e-04).add(2.01198761e-04)
+      .add(2.33058523e-05).array()).add(stan::math::array_builder<double>()
+      .add(3.65531218e-04).add(1.42441020e-04).add(1.10955281e-04)
+      .add(1.09508869e-04).add(1.49468133e-04).add(2.26325724e-04)
+      .add(3.14163575e-04).add(3.56256119e-04).add(3.61013791e-04)
+      .add(3.10092859e-04).add(3.07130013e-05).array())
+      .add(stan::math::array_builder<double>().add(5.45970886e-04)
+      .add(2.56708927e-04).add(1.79933673e-04).add(2.08156798e-04)
+      .add(2.25486253e-04).add(3.14365030e-04).add(4.20347423e-04)
+      .add(5.50059380e-04).add(5.17714503e-04).add(4.98260774e-04)
+      .add(4.06728681e-05).array()).add(stan::math::array_builder<double>()
+      .add(7.91054776e-04).add(3.91862683e-04).add(3.07989889e-04)
+      .add(3.08399876e-04).add(3.93574910e-04).add(4.86604677e-04)
+      .add(6.27758321e-04).add(7.16032634e-04).add(8.14980527e-04)
+      .add(6.85877479e-04).add(7.95207136e-05).array())
+      .add(stan::math::array_builder<double>().add(1.08323094e-03)
+      .add(6.79267628e-04).add(5.75780064e-04).add(4.94775890e-04)
+      .add(5.22640759e-04).add(6.21964136e-04).add(9.01160186e-04)
+      .add(1.04107087e-03).add(1.10008758e-03).add(8.91328376e-04)
+      .add(8.11890853e-05).array()).add(stan::math::array_builder<double>()
+      .add(1.66810209e-03).add(9.68692575e-04).add(7.56164690e-04)
+      .add(7.21870040e-04).add(7.44072800e-04).add(9.15170584e-04)
+      .add(1.20828865e-03).add(1.40596385e-03).add(1.42337975e-03)
+      .add(1.28043940e-03).add(1.47127619e-04).array())
+      .add(stan::math::array_builder<double>().add(2.03473798e-03)
+      .add(1.36440400e-03).add(1.18930138e-03).add(9.79097465e-04)
+      .add(1.06364701e-03).add(1.28276312e-03).add(1.63394413e-03)
+      .add(1.87503399e-03).add(1.98568868e-03).add(1.62701638e-03)
+      .add(1.80051345e-04).array()).add(stan::math::array_builder<double>()
+      .add(2.79302366e-03).add(1.99270767e-03).add(1.69238465e-03)
+      .add(1.54050501e-03).add(1.58404955e-03).add(1.71501613e-03)
+      .add(2.00457656e-03).add(2.43177970e-03).add(2.42531517e-03)
+      .add(2.19428136e-03).add(2.58509544e-04).array())
+      .add(stan::math::array_builder<double>().add(3.59350025e-03)
+      .add(2.72953804e-03).add(2.34056396e-03).add(2.02037176e-03)
+      .add(2.01511710e-03).add(2.32819547e-03).add(2.79784601e-03)
+      .add(3.12893524e-03).add(3.14965079e-03).add(2.74795046e-03)
+      .add(3.48890026e-04).array()).add(stan::math::array_builder<double>()
+      .add(4.74612404e-03).add(3.62614055e-03).add(3.08323174e-03)
+      .add(2.91564599e-03).add(2.80110990e-03).add(2.95099646e-03)
+      .add(3.62952865e-03).add(3.80068830e-03).add(4.06712615e-03)
+      .add(3.61214675e-03).add(3.95726482e-04).array())
+      .add(stan::math::array_builder<double>().add(5.86589272e-03)
+      .add(4.77511196e-03).add(4.10966930e-03).add(3.98359999e-03)
+      .add(3.58712455e-03).add(3.91490582e-03).add(4.16092455e-03)
+      .add(4.77148746e-03).add(4.80916109e-03).add(4.35129121e-03)
+      .add(3.94523567e-04).array()).add(stan::math::array_builder<double>()
+      .add(7.35810238e-03).add(5.94786263e-03).add(5.55681475e-03)
+      .add(4.85001319e-03).add(4.59989335e-03).add(4.80180734e-03)
+      .add(5.38883985e-03).add(6.07539943e-03).add(6.05244608e-03)
+      .add(5.39554699e-03).add(5.72872734e-04).array())
+      .add(stan::math::array_builder<double>().add(9.29974993e-03)
+      .add(7.22041490e-03).add(6.57801882e-03).add(6.38157445e-03)
+      .add(5.67437222e-03).add(5.83455647e-03).add(6.40027981e-03)
+      .add(7.19026755e-03).add(7.19181365e-03).add(6.74339071e-03)
+      .add(7.87205872e-04).array()).add(stan::math::array_builder<double>()
+      .add(1.09567339e-02).add(9.19790999e-03).add(8.28841225e-03)
+      .add(7.17082945e-03).add(7.18214538e-03).add(7.02818936e-03)
+      .add(7.92281863e-03).add(8.68585984e-03).add(8.83725225e-03)
+      .add(8.01897022e-03).add(9.85994686e-04).array())
+      .add(stan::math::array_builder<double>().add(1.31774033e-02)
+      .add(1.09206667e-02).add(1.00617491e-02).add(9.52021118e-03)
+      .add(8.83187830e-03).add(8.67771772e-03).add(9.33513175e-03)
+      .add(1.05739496e-02).add(1.01782750e-02).add(9.39504172e-03)
+      .add(1.27273965e-03).array()).add(stan::math::array_builder<double>()
+      .add(1.60822005e-02).add(1.37446300e-02).add(1.27384565e-02)
+      .add(1.09646226e-02).add(1.04535754e-02).add(1.12292954e-02)
+      .add(1.11085398e-02).add(1.21469712e-02).add(1.29609881e-02)
+      .add(1.15104945e-02).add(1.42321607e-03).array())
+      .add(stan::math::array_builder<double>().add(1.84830683e-02)
+      .add(1.64356682e-02).add(1.52081641e-02).add(1.42978801e-02)
+      .add(1.32434324e-02).add(1.31528669e-02).add(1.33747393e-02)
+      .add(1.42121810e-02).add(1.51294506e-02).add(1.42588747e-02)
+      .add(1.89037109e-03).array()).add(stan::math::array_builder<double>()
+      .add(2.23280667e-02).add(1.95892702e-02).add(1.80037744e-02)
+      .add(1.65868256e-02).add(1.54947758e-02).add(1.56759008e-02)
+      .add(1.58033209e-02).add(1.73794977e-02).add(1.75950571e-02)
+      .add(1.65739566e-02).add(2.13353733e-03).array())
+      .add(stan::math::array_builder<double>().add(2.61543030e-02)
+      .add(2.29671856e-02).add(2.13328282e-02).add(1.91691378e-02)
+      .add(1.89306805e-02).add(1.84517956e-02).add(1.94360438e-02)
+      .add(1.98846398e-02).add(2.07234807e-02).add(1.92225579e-02)
+      .add(2.55810592e-03).array()).add(stan::math::array_builder<double>()
+      .add(3.06427462e-02).add(2.64564564e-02).add(2.57875059e-02)
+      .add(2.29112481e-02).add(2.13713263e-02).add(2.22161875e-02)
+      .add(2.29032270e-02).add(2.44718563e-02).add(2.45115292e-02)
+      .add(2.23780064e-02).add(3.18194754e-03).array())
+      .add(stan::math::array_builder<double>().add(3.66594226e-02)
+      .add(3.21385859e-02).add(2.99899348e-02).add(2.82391931e-02)
+      .add(2.58580026e-02).add(2.52179690e-02).add(2.56644028e-02)
+      .add(2.63785379e-02).add(2.93177229e-02).add(2.63643959e-02)
+      .add(3.87050815e-03).array()).add(stan::math::array_builder<double>()
+      .add(4.05715406e-02).add(3.77418917e-02).add(3.40493997e-02)
+      .add(3.22662711e-02).add(2.86856922e-02).add(3.05894749e-02)
+      .add(3.04228009e-02).add(3.15661883e-02).add(3.41617275e-02)
+      .add(3.04522880e-02).add(4.28700843e-03).array())
+      .add(stan::math::array_builder<double>().add(4.74861236e-02)
+      .add(4.32055159e-02).add(3.77906340e-02).add(3.74198672e-02)
+      .add(3.42945542e-02).add(3.44262064e-02).add(3.54063211e-02)
+      .add(3.82108517e-02).add(3.82028351e-02).add(3.50259158e-02)
+      .add(4.67332838e-03).array()).add(stan::math::array_builder<double>()
+      .add(5.32937526e-02).add(4.97126501e-02).add(4.72043146e-02)
+      .add(4.31842348e-02).add(4.13525430e-02).add(3.93015699e-02)
+      .add(4.13954997e-02).add(4.29991143e-02).add(4.45733152e-02)
+      .add(4.09739775e-02).add(5.71634996e-03).array())
+      .add(stan::math::array_builder<double>().add(6.22668675e-02)
+      .add(5.88874102e-02).add(5.43112543e-02).add(5.00450582e-02)
+      .add(4.76996121e-02).add(4.67032932e-02).add(4.64021733e-02)
+      .add(4.87157490e-02).add(5.05688499e-02).add(4.80461206e-02)
+      .add(7.10340468e-03).array()).add(stan::math::array_builder<double>()
+      .add(7.10929981e-02).add(6.38331523e-02).add(6.05294419e-02)
+      .add(5.68202707e-02).add(5.45280358e-02).add(5.22313662e-02)
+      .add(5.30351631e-02).add(5.71900834e-02).add(5.92136164e-02)
+      .add(5.36587954e-02).add(7.86032781e-03).array())
+      .add(stan::math::array_builder<double>().add(7.98065866e-02)
+      .add(7.58567551e-02).add(7.29125538e-02).add(6.53200047e-02)
+      .add(6.38448326e-02).add(6.31749673e-02).add(6.36607486e-02)
+      .add(6.57761792e-02).add(6.68592146e-02).add(6.51036418e-02)
+      .add(9.41799110e-03).array()).add(stan::math::array_builder<double>()
+      .add(9.30373138e-02).add(8.48705594e-02).add(8.04773626e-02)
+      .add(7.57394436e-02).add(7.20105791e-02).add(7.19372385e-02)
+      .add(7.25124706e-02).add(7.60925096e-02).add(7.80526645e-02)
+      .add(7.30739719e-02).add(1.20483518e-02).array())
+      .add(stan::math::array_builder<double>().add(1.06681934e-01)
+      .add(1.02436333e-01).add(9.10460758e-02).add(8.67895071e-02)
+      .add(8.66509399e-02).add(8.41445970e-02).add(8.50172896e-02)
+      .add(8.51335797e-02).add(8.81485355e-02).add(8.73511129e-02)
+      .add(1.33789825e-02).array()).add(stan::math::array_builder<double>()
+      .add(1.22336558e-01).add(1.12337100e-01).add(1.08485397e-01)
+      .add(1.00260608e-01).add(9.83498028e-02).add(9.59567654e-02)
+      .add(9.84395754e-02).add(9.50587964e-02).add(1.03465967e-01)
+      .add(9.55788412e-02).add(1.62194132e-02).array())
+      .add(stan::math::array_builder<double>().add(1.35835571e-01)
+      .add(1.32223565e-01).add(1.23722490e-01).add(1.14416494e-01)
+      .add(1.12962099e-01).add(1.09551954e-01).add(1.12281092e-01)
+      .add(1.11824985e-01).add(1.17213487e-01).add(1.13896344e-01)
+      .add(1.79148945e-02).array()).add(stan::math::array_builder<double>()
+      .add(1.56563714e-01).add(1.51293299e-01).add(1.39382044e-01)
+      .add(1.35477576e-01).add(1.29210775e-01).add(1.27683695e-01)
+      .add(1.26926980e-01).add(1.25239067e-01).add(1.32595463e-01)
+      .add(1.25674710e-01).add(2.25973556e-02).array())
+      .add(stan::math::array_builder<double>().add(1.76652512e-01)
+      .add(1.70340880e-01).add(1.56751997e-01).add(1.50627243e-01)
+      .add(1.46199979e-01).add(1.45491966e-01).add(1.48720875e-01)
+      .add(1.48054453e-01).add(1.49536209e-01).add(1.50088982e-01)
+      .add(2.33828280e-02).array()).add(stan::math::array_builder<double>()
+      .add(1.98841526e-01).add(1.88420572e-01).add(1.83523848e-01)
+      .add(1.70667493e-01).add(1.67036368e-01).add(1.67622938e-01)
+      .add(1.63734756e-01).add(1.65903625e-01).add(1.73058887e-01)
+      .add(1.62180533e-01).add(2.69783140e-02).array())
+      .add(stan::math::array_builder<double>().add(2.19758597e-01)
+      .add(2.15371474e-01).add(2.05918885e-01).add(1.88889842e-01)
+      .add(1.90404882e-01).add(1.84359564e-01).add(1.88439083e-01)
+      .add(1.88810306e-01).add(1.94430442e-01).add(1.87283454e-01)
+      .add(3.21829619e-02).array()).add(stan::math::array_builder<double>()
+      .add(2.45847181e-01).add(2.36403253e-01).add(2.30931184e-01)
+      .add(2.21631619e-01).add(2.09296593e-01).add(2.11270849e-01)
+      .add(2.11604846e-01).add(2.09565442e-01).add(2.18954638e-01)
+      .add(2.13300134e-01).add(3.70231040e-02).array())
+      .add(stan::math::array_builder<double>().add(2.71767401e-01)
+      .add(2.68030326e-01).add(2.59329555e-01).add(2.50470325e-01)
+      .add(2.39660629e-01).add(2.43975835e-01).add(2.34765524e-01)
+      .add(2.40546352e-01).add(2.46257592e-01).add(2.40352229e-01)
+      .add(4.30482488e-02).array()).add(stan::math::array_builder<double>()
+      .add(3.12463222e-01).add(3.11314402e-01).add(2.75576796e-01)
+      .add(2.69242805e-01).add(2.77100483e-01).add(2.71318991e-01)
+      .add(2.61128839e-01).add(2.74010276e-01).add(2.76032331e-01)
+      .add(2.68672774e-01).add(4.65152267e-02).array())
+      .add(stan::math::array_builder<double>().add(3.53925404e-01)
+      .add(3.48716400e-01).add(3.26864836e-01).add(2.97590361e-01)
+      .add(2.96076022e-01).add(3.05859178e-01).add(3.07230248e-01)
+      .add(2.99084491e-01).add(3.08038807e-01).add(3.02143830e-01)
+      .add(5.64193301e-02).array()).add(stan::math::array_builder<double>()
+      .add(3.91313878e-01).add(3.80161388e-01).add(3.60746504e-01)
+      .add(3.50554282e-01).add(3.55184253e-01).add(3.53930216e-01)
+      .add(3.44659127e-01).add(3.43379628e-01).add(3.33936651e-01)
+      .add(3.40178540e-01).add(6.22859508e-02).array())
+      .add(stan::math::array_builder<double>().add(4.31283570e-01)
+      .add(4.20226322e-01).add(3.87457033e-01).add(4.08273321e-01)
+      .add(3.88687792e-01).add(3.91639100e-01).add(3.99898810e-01)
+      .add(3.98434376e-01).add(4.05215089e-01).add(3.82462517e-01)
+      .add(7.66687398e-02).array()).add(stan::math::array_builder<double>()
+      .add(5.06402318e-01).add(4.62668431e-01).add(4.41436071e-01)
+      .add(4.40928019e-01).add(4.34774069e-01).add(4.49768656e-01)
+      .add(4.36955115e-01).add(4.44771935e-01).add(4.52077288e-01)
+      .add(4.42957477e-01).add(8.33557381e-02).array())
+      .add(stan::math::array_builder<double>().add(5.24054179e-01)
+      .add(5.23628761e-01).add(5.03677264e-01).add(4.88010723e-01)
+      .add(4.91201134e-01).add(4.96786433e-01).add(4.95347603e-01)
+      .add(4.83797049e-01).add(5.10218212e-01).add(4.73829209e-01)
+      .add(9.45342061e-02).array()).add(stan::math::array_builder<double>()
+      .add(6.09090387e-01).add(5.99895905e-01).add(5.64788178e-01)
+      .add(5.33506608e-01).add(5.47698118e-01).add(5.63972228e-01)
+      .add(5.43380752e-01).add(5.60566358e-01).add(5.62825129e-01)
+      .add(5.37963287e-01).add(1.14038464e-01).array())
+      .add(stan::math::array_builder<double>().add(6.47375426e-01)
+      .add(6.21126389e-01).add(6.08228621e-01).add(5.90580023e-01)
+      .add(6.00256596e-01).add(6.37378595e-01).add(5.95571671e-01)
+      .add(6.11783068e-01).add(6.26408796e-01).add(5.78916193e-01)
+      .add(1.27175369e-01).array()).add(stan::math::array_builder<double>()
+      .add(7.52916310e-01).add(6.81488006e-01).add(6.77417072e-01)
+      .add(6.77150728e-01).add(6.60507911e-01).add(6.46770947e-01)
+      .add(6.76903921e-01).add(6.72683131e-01).add(6.74762035e-01)
+      .add(6.54702590e-01).add(1.29452886e-01).array())
+      .add(stan::math::array_builder<double>().add(7.75182400e-01)
+      .add(7.97230450e-01).add(7.60396783e-01).add(7.15098665e-01)
+      .add(7.43680163e-01).add(7.27341166e-01).add(7.67151769e-01)
+      .add(7.57566576e-01).add(7.54677782e-01).add(7.59364062e-01)
+      .add(1.56054992e-01).array()).add(stan::math::array_builder<double>()
+      .add(8.59750002e-01).add(8.74634190e-01).add(8.32327419e-01)
+      .add(8.03798004e-01).add(8.30679533e-01).add(8.29229492e-01)
+      .add(8.48478636e-01).add(8.22960290e-01).add(8.72561171e-01)
+      .add(8.33878518e-01).add(1.78919778e-01).array())
+      .add(stan::math::array_builder<double>().add(9.33933004e-01)
+      .add(9.36031091e-01).add(9.34719975e-01).add(9.09797386e-01)
+      .add(9.69836465e-01).add(9.95459865e-01).add(9.25591020e-01)
+      .add(9.42415208e-01).add(9.78769779e-01).add(9.30199881e-01)
+      .add(2.03412310e-01).array()).add(stan::math::array_builder<double>()
+      .add(1.06919805e+00).add(1.06784039e+00).add(1.02806262e+00)
+      .add(1.01475255e+00).add(9.79344351e-01).add(1.01455863e+00)
+      .add(1.08977990e+00).add(1.06131008e+00).add(1.09552274e+00)
+      .add(1.04883543e+00).add(2.44429312e-01).array())
+      .add(stan::math::array_builder<double>().add(1.14590680e+00)
+      .add(1.15324176e+00).add(1.14411798e+00).add(1.13540758e+00)
+      .add(1.17345929e+00).add(1.12436761e+00).add(1.15206312e+00)
+      .add(1.16582912e+00).add(1.22469126e+00).add(1.16226573e+00)
+      .add(2.59384195e-01).array()).add(stan::math::array_builder<double>()
+      .add(1.29438294e+00).add(1.25815426e+00).add(1.23925861e+00)
+      .add(1.28449124e+00).add(1.35043539e+00).add(1.24920012e+00)
+      .add(1.26965322e+00).add(1.30587260e+00).add(1.39435335e+00)
+      .add(1.27233957e+00).add(2.87993511e-01).array())
+      .add(stan::math::array_builder<double>().add(1.45338203e+00)
+      .add(1.41829312e+00).add(1.33129282e+00).add(1.34582274e+00)
+      .add(1.41638020e+00).add(1.39186740e+00).add(1.43684182e+00)
+      .add(1.37490233e+00).add(1.47468996e+00).add(1.42619777e+00)
+      .add(3.24127605e-01).array()).add(stan::math::array_builder<double>()
+      .add(1.54699987e+00).add(1.49940235e+00).add(1.50357401e+00)
+      .add(1.50776394e+00).add(1.56701094e+00).add(1.64126621e+00)
+      .add(1.55902945e+00).add(1.58390145e+00).add(1.65289343e+00)
+      .add(1.53284075e+00).add(3.99002294e-01).array())
+      .add(stan::math::array_builder<double>().add(1.64690621e+00)
+      .add(1.64738748e+00).add(1.63726922e+00).add(1.62816530e+00)
+      .add(1.66663894e+00).add(1.68960202e+00).add(1.69609260e+00)
+      .add(1.72241254e+00).add(1.76434407e+00).add(1.73061199e+00)
+      .add(4.20326117e-01).array()).add(stan::math::array_builder<double>()
+      .add(1.80248673e+00).add(1.79815807e+00).add(1.79813336e+00)
+      .add(1.78949620e+00).add(1.82389456e+00).add(1.86982841e+00)
+      .add(1.89166356e+00).add(1.90151311e+00).add(1.92832013e+00)
+      .add(1.88301370e+00).add(4.70691109e-01).array())
+      .add(stan::math::array_builder<double>().add(1.95862189e+00)
+      .add(1.98699384e+00).add(1.96186015e+00).add(1.93941373e+00)
+      .add(1.97446665e+00).add(2.02829766e+00).add(2.05580131e+00)
+      .add(2.08894524e+00).add(2.12400289e+00).add(2.09002194e+00)
+      .add(5.06184218e-01).array()).add(stan::math::array_builder<double>()
+      .add(2.11208282e+00).add(2.11336810e+00).add(2.12694801e+00)
+      .add(2.10907067e+00).add(2.14660409e+00).add(2.23212224e+00)
+      .add(2.27252747e+00).add(2.28515167e+00).add(2.32769037e+00)
+      .add(2.28790767e+00).add(5.93173683e-01).array())
+      .add(stan::math::array_builder<double>().add(2.28421234e+00)
+      .add(2.35257539e+00).add(2.33834546e+00).add(2.34664931e+00)
+      .add(2.40117232e+00).add(2.45976138e+00).add(2.45682680e+00)
+      .add(2.52983308e+00).add(2.58324602e+00).add(2.51083811e+00)
+      .add(6.57276483e-01).array()).add(stan::math::array_builder<double>()
+      .add(2.52344813e+00).add(2.55534589e+00).add(2.55073035e+00)
+      .add(2.57509984e+00).add(2.64878701e+00).add(2.68992068e+00)
+      .add(2.67965770e+00).add(2.79857731e+00).add(2.85107147e+00)
+      .add(2.78742677e+00).add(7.49803399e-01).array())
+      .add(stan::math::array_builder<double>().add(2.73983954e+00)
+      .add(2.76372693e+00).add(2.76121475e+00).add(2.84160364e+00)
+      .add(2.85962438e+00).add(2.99543152e+00).add(3.00101323e+00)
+      .add(3.01488639e+00).add(3.14674872e+00).add(3.02845274e+00)
+      .add(8.54875521e-01).array()).add(stan::math::array_builder<double>()
+      .add(2.91422631e+00).add(3.03236352e+00).add(2.97685539e+00)
+      .add(3.06721742e+00).add(3.15739257e+00).add(3.21006260e+00)
+      .add(3.26564152e+00).add(3.35069402e+00).add(3.47742932e+00)
+      .add(3.35584387e+00).add(9.51188827e-01).array())
+      .add(stan::math::array_builder<double>().add(3.16019354e+00)
+      .add(3.25192145e+00).add(3.28196460e+00).add(3.31435240e+00)
+      .add(3.41182680e+00).add(3.52699517e+00).add(3.55012339e+00)
+      .add(3.68738116e+00).add(3.70983813e+00).add(3.65103589e+00)
+      .add(1.07858338e+00).array()).add(stan::math::array_builder<double>()
+      .add(3.38808057e+00).add(3.59985501e+00).add(3.54373914e+00)
+      .add(3.63992741e+00).add(3.71137077e+00).add(3.86224301e+00)
+      .add(3.92504669e+00).add(3.97105962e+00).add(4.11915726e+00)
+      .add(3.97364285e+00).add(1.19149586e+00).array())
+      .add(stan::math::array_builder<double>().add(3.65968562e+00)
+      .add(3.86588693e+00).add(3.93362596e+00).add(3.97450589e+00)
+      .add(4.11317425e+00).add(4.21518350e+00).add(4.28505787e+00)
+      .add(4.29902950e+00).add(4.47832633e+00).add(4.43501142e+00)
+      .add(1.34130500e+00).array()).add(stan::math::array_builder<double>()
+      .add(4.00794056e+00).add(4.14313319e+00).add(4.21750922e+00)
+      .add(4.31433685e+00).add(4.40033495e+00).add(4.59953995e+00)
+      .add(4.67774724e+00).add(4.84794552e+00).add(4.89827078e+00)
+      .add(4.76236731e+00).add(1.47465423e+00).array())
+      .add(stan::math::array_builder<double>().add(4.29374378e+00)
+      .add(4.41803974e+00).add(4.62057320e+00).add(4.53694247e+00)
+      .add(4.70791246e+00).add(4.99733926e+00).add(5.02965693e+00)
+      .add(5.20931336e+00).add(5.42548726e+00).add(5.29144492e+00)
+      .add(1.65051150e+00).array()).add(stan::math::array_builder<double>()
+      .add(4.54250031e+00).add(4.83359672e+00).add(4.92394340e+00)
+      .add(5.01327512e+00).add(5.14968664e+00).add(5.34972398e+00)
+      .add(5.56622202e+00).add(5.71105026e+00).add(5.79220983e+00)
+      .add(5.71365923e+00).add(1.79522501e+00).array())
+      .add(stan::math::array_builder<double>().add(4.87616765e+00)
+      .add(5.10007300e+00).add(5.28802613e+00).add(5.43413282e+00)
+      .add(5.45628305e+00).add(5.75648761e+00).add(5.91467414e+00)
+      .add(6.07300701e+00).add(6.24733981e+00).add(6.16649269e+00)
+      .add(1.97393191e+00).array()).add(stan::math::array_builder<double>()
+      .add(5.12675412e+00).add(5.45492535e+00).add(5.59191609e+00)
+      .add(5.77032562e+00).add(6.03328293e+00).add(6.28493033e+00)
+      .add(6.29745015e+00).add(6.52779911e+00).add(6.56861536e+00)
+      .add(6.66647971e+00).add(2.14327630e+00).array())
+      .add(stan::math::array_builder<double>().add(5.44691537e+00)
+      .add(5.95483901e+00).add(6.08126257e+00).add(6.19658341e+00)
+      .add(6.49763506e+00).add(6.62754941e+00).add(6.93960564e+00)
+      .add(7.02896438e+00).add(7.34383616e+00).add(7.16455405e+00)
+      .add(2.38244095e+00).array()).add(stan::math::array_builder<double>()
+      .add(5.92753021e+00).add(6.20644158e+00).add(6.50654893e+00)
+      .add(6.81690655e+00).add(7.01619353e+00).add(7.18402910e+00)
+      .add(7.62933578e+00).add(7.68125251e+00).add(7.97089138e+00)
+      .add(7.86167039e+00).add(2.62069402e+00).array())
+      .add(stan::math::array_builder<double>().add(6.30865097e+00)
+      .add(6.86981956e+00).add(7.00205561e+00).add(7.32262936e+00)
+      .add(7.54979097e+00).add(7.96886394e+00).add(8.21006454e+00)
+      .add(8.32482170e+00).add(8.50443826e+00).add(8.51788684e+00)
+      .add(3.02132373e+00).array()).add(stan::math::array_builder<double>()
+      .add(6.58193828e+00).add(7.31570292e+00).add(7.53249645e+00)
+      .add(7.84836716e+00).add(8.23968611e+00).add(8.45458766e+00)
+      .add(8.72978209e+00).add(9.08043661e+00).add(9.41175912e+00)
+      .add(9.33186215e+00).add(3.33419254e+00).array())
+      .add(stan::math::array_builder<double>().add(7.13294694e+00)
+      .add(7.64617109e+00).add(8.04262052e+00).add(8.34556498e+00)
+      .add(8.77194194e+00).add(9.24278320e+00).add(9.38763406e+00)
+      .add(9.63642022e+00).add(1.03725465e+01).add(1.00581827e+01)
+      .add(3.57220924e+00).array()).add(stan::math::array_builder<double>()
+      .add(7.47178744e+00).add(8.45881191e+00).add(8.65487878e+00)
+      .add(8.95810690e+00).add(9.22734497e+00).add(9.84671216e+00)
+      .add(1.02481671e+01).add(1.05887561e+01).add(1.08658692e+01)
+      .add(1.08278042e+01).add(3.82892635e+00).array())
+      .add(stan::math::array_builder<double>().add(7.86035988e+00)
+      .add(8.74474597e+00).add(9.37164833e+00).add(9.78506389e+00)
+      .add(1.03931400e+01).add(1.06819323e+01).add(1.10678368e+01)
+      .add(1.12313096e+01).add(1.17502031e+01).add(1.15152935e+01)
+      .add(4.34741053e+00).array()).add(stan::math::array_builder<double>()
+      .add(8.68027226e+00).add(9.58286017e+00).add(9.77424238e+00)
+      .add(1.05615395e+01).add(1.09580117e+01).add(1.15586378e+01)
+      .add(1.17949617e+01).add(1.22529030e+01).add(1.28308648e+01)
+      .add(1.26873180e+01).add(4.64579904e+00).array())
+      .add(stan::math::array_builder<double>().add(8.95238030e+00)
+      .add(9.96519225e+00).add(1.07544169e+01).add(1.12882781e+01)
+      .add(1.16138476e+01).add(1.22632660e+01).add(1.24208156e+01)
+      .add(1.33413160e+01).add(1.37565830e+01).add(1.36206932e+01)
+      .add(5.16704313e+00).array()).add(stan::math::array_builder<double>()
+      .add(9.48243665e+00).add(1.05701715e+01).add(1.13383011e+01)
+      .add(1.17119619e+01).add(1.23510341e+01).add(1.30222249e+01)
+      .add(1.33349082e+01).add(1.41513605e+01).add(1.47655939e+01)
+      .add(1.48555746e+01).add(5.73792222e+00).array())
+      .add(stan::math::array_builder<double>().add(9.71915276e+00)
+      .add(1.11843553e+01).add(1.18893692e+01).add(1.25767460e+01)
+      .add(1.33049428e+01).add(1.38073942e+01).add(1.46806500e+01)
+      .add(1.47727603e+01).add(1.57892016e+01).add(1.57372264e+01)
+      .add(6.19840417e+00).array()).add(stan::math::array_builder<double>()
+      .add(1.04760057e+01).add(1.19783801e+01).add(1.27231289e+01)
+      .add(1.32425551e+01).add(1.40966830e+01).add(1.47011630e+01)
+      .add(1.55879617e+01).add(1.58642199e+01).add(1.67902701e+01)
+      .add(1.67462765e+01).add(7.05623693e+00).array())
+      .add(stan::math::array_builder<double>().add(1.09477754e+01)
+      .add(1.24540123e+01).add(1.38568448e+01).add(1.39878439e+01)
+      .add(1.50464542e+01).add(1.56245607e+01).add(1.64190248e+01)
+      .add(1.71177032e+01).add(1.82337987e+01).add(1.84055829e+01)
+      .add(7.37851087e+00).array()).add(stan::math::array_builder<double>()
+      .add(1.12032425e+01).add(1.31864945e+01).add(1.45970724e+01)
+      .add(1.52971814e+01).add(1.60897837e+01).add(1.70718939e+01)
+      .add(1.74636026e+01).add(1.83080269e+01).add(1.97374583e+01)
+      .add(1.97457982e+01).add(8.10312511e+00).array())
+      .add(stan::math::array_builder<double>().add(1.16797437e+01)
+      .add(1.38605818e+01).add(1.52092061e+01).add(1.60555935e+01)
+      .add(1.71824803e+01).add(1.75236197e+01).add(1.88826933e+01)
+      .add(1.93842148e+01).add(2.11492037e+01).add(2.11436465e+01)
+      .add(9.12235061e+00).array()).add(stan::math::array_builder<double>()
+      .add(1.23957890e+01).add(1.53505700e+01).add(1.60514685e+01)
+      .add(1.72523063e+01).add(1.80296743e+01).add(1.89523803e+01)
+      .add(2.01330879e+01).add(2.11296314e+01).add(2.21064394e+01)
+      .add(2.29128704e+01).add(9.42961453e+00).array())
+      .add(stan::math::array_builder<double>().add(1.32916664e+01)
+      .add(1.52820160e+01).add(1.74945197e+01).add(1.77913734e+01)
+      .add(1.94132404e+01).add(2.01924090e+01).add(2.17391298e+01)
+      .add(2.23805013e+01).add(2.35942682e+01).add(2.33680613e+01)
+      .add(1.03933153e+01).array()).add(stan::math::array_builder<double>()
+      .add(1.35265628e+01).add(1.69954092e+01).add(1.81528903e+01)
+      .add(2.00917032e+01).add(2.05745527e+01).add(2.14906060e+01)
+      .add(2.23413044e+01).add(2.42875996e+01).add(2.54811591e+01)
+      .add(2.62051575e+01).add(1.16026541e+01).array())
+      .add(stan::math::array_builder<double>().add(1.41351532e+01)
+      .add(1.74182478e+01).add(1.89973108e+01).add(2.02913266e+01)
+      .add(2.16406374e+01).add(2.32853386e+01).add(2.43890116e+01)
+      .add(2.49315054e+01).add(2.68074245e+01).add(2.78235699e+01)
+      .add(1.23276797e+01).array()).add(stan::math::array_builder<double>()
+      .add(1.45533945e+01).add(1.83946490e+01).add(2.02081164e+01)
+      .add(2.19586428e+01).add(2.36101558e+01).add(2.37998787e+01)
+      .add(2.66308586e+01).add(2.70997393e+01).add(2.82631194e+01)
+      .add(2.97795943e+01).add(1.31859530e+01).array())
+      .add(stan::math::array_builder<double>().add(1.55569845e+01)
+      .add(1.87337073e+01).add(2.12169779e+01).add(2.23639256e+01)
+      .add(2.42587415e+01).add(2.58914824e+01).add(2.76465872e+01)
+      .add(2.88030520e+01).add(3.04054219e+01).add(3.17963402e+01)
+      .add(1.46343892e+01).array()).add(stan::math::array_builder<double>()
+      .add(1.58195572e+01).add(1.92606208e+01).add(2.19288046e+01)
+      .add(2.39469051e+01).add(2.58284385e+01).add(2.74191381e+01)
+      .add(2.89754131e+01).add(2.99951119e+01).add(3.30506742e+01)
+      .add(3.32724777e+01).add(1.63084281e+01).array())
+      .add(stan::math::array_builder<double>().add(1.62448125e+01)
+      .add(2.06588418e+01).add(2.27711834e+01).add(2.44266677e+01)
+      .add(2.61547721e+01).add(2.90860376e+01).add(3.08613328e+01)
+      .add(3.19597526e+01).add(3.40338620e+01).add(3.47076289e+01)
+      .add(1.66162236e+01).array()).add(stan::math::array_builder<double>()
+      .add(1.66283079e+01).add(2.14475198e+01).add(2.46167363e+01)
+      .add(2.58595763e+01).add(2.83690240e+01).add(3.10945024e+01)
+      .add(3.25211330e+01).add(3.39081528e+01).add(3.61274225e+01)
+      .add(3.72340134e+01).add(1.79242664e+01).array())
+      .add(stan::math::array_builder<double>().add(1.67610975e+01)
+      .add(2.18426714e+01).add(2.55639461e+01).add(2.67598111e+01)
+      .add(2.89466499e+01).add(3.12332135e+01).add(3.29833518e+01)
+      .add(3.61309782e+01).add(3.84297922e+01).add(4.01411181e+01)
+      .add(1.93711883e+01).array()).add(stan::math::array_builder<double>()
+      .add(1.73471826e+01).add(2.22574433e+01).add(2.63375193e+01)
+      .add(2.84906552e+01).add(3.12770304e+01).add(3.31990657e+01)
+      .add(3.56763000e+01).add(3.74676283e+01).add(4.04330304e+01)
+      .add(4.25756198e+01).add(2.07476464e+01).array())
+      .add(stan::math::array_builder<double>().add(1.81773710e+01)
+      .add(2.35747929e+01).add(2.83313075e+01).add(3.07820669e+01)
+      .add(3.31176080e+01).add(3.49603958e+01).add(3.79349374e+01)
+      .add(3.87829866e+01).add(4.47551438e+01).add(4.49766271e+01)
+      .add(2.21934948e+01).array()).add(stan::math::array_builder<double>()
+      .add(1.86451537e+01).add(2.48987386e+01).add(2.86378197e+01)
+      .add(3.07453649e+01).add(3.52187350e+01).add(3.67872161e+01)
+      .add(3.94496486e+01).add(4.16244425e+01).add(4.48785899e+01)
+      .add(4.79593112e+01).add(2.29271877e+01).array())
+      .add(stan::math::array_builder<double>().add(1.92882761e+01)
+      .add(2.47668058e+01).add(2.99353990e+01).add(3.14569955e+01)
+      .add(3.54291283e+01).add(3.89931879e+01).add(4.21821033e+01)
+      .add(4.45426717e+01).add(4.78808257e+01).add(4.99487405e+01)
+      .add(2.49615262e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.02043734e+01).add(2.69599550e+01).add(3.05918571e+01)
+      .add(3.39488252e+01).add(3.68258977e+01).add(4.09152668e+01)
+      .add(4.46793399e+01).add(4.74057768e+01).add(5.05616328e+01)
+      .add(5.30445490e+01).add(2.69585312e+01).array())
+      .add(stan::math::array_builder<double>().add(1.99442771e+01)
+      .add(2.79255765e+01).add(3.22256972e+01).add(3.72645330e+01)
+      .add(3.91630305e+01).add(4.44880330e+01).add(4.62892874e+01)
+      .add(4.90475007e+01).add(5.35016988e+01).add(5.75663228e+01)
+      .add(2.99718315e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.12727461e+01).add(2.88402036e+01).add(3.46312371e+01)
+      .add(3.82005505e+01).add(4.13380659e+01).add(4.57470780e+01)
+      .add(4.84986638e+01).add(5.30633010e+01).add(5.51422239e+01)
+      .add(6.07616262e+01).add(3.13053246e+01).array())
+      .add(stan::math::array_builder<double>().add(2.08168372e+01)
+      .add(2.94739647e+01).add(3.45970383e+01).add(3.90800059e+01)
+      .add(4.27783507e+01).add(4.73086976e+01).add(5.14327470e+01)
+      .add(5.59452035e+01).add(6.05005296e+01).add(6.54437872e+01)
+      .add(3.38761641e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.12135581e+01).add(3.01845717e+01).add(3.68978191e+01)
+      .add(4.13105446e+01).add(4.39663640e+01).add(4.82046769e+01)
+      .add(5.33878929e+01).add(5.88815603e+01).add(6.14827615e+01)
+      .add(6.68631802e+01).add(3.62688986e+01).array())
+      .add(stan::math::array_builder<double>().add(1.99778758e+01)
+      .add(3.09463863e+01).add(3.76199149e+01).add(4.33557206e+01)
+      .add(4.60913767e+01).add(5.33056108e+01).add(5.67133596e+01)
+      .add(6.14300131e+01).add(6.82819173e+01).add(7.32232618e+01)
+      .add(4.08506033e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.17598838e+01).add(3.34013051e+01).add(4.08247348e+01)
+      .add(4.37374455e+01).add(4.79463826e+01).add(5.32172749e+01)
+      .add(6.08317594e+01).add(6.30837938e+01).add(7.25203318e+01)
+      .add(7.44213757e+01).add(3.91246244e+01).array())
+      .add(stan::math::array_builder<double>().add(2.33420468e+01)
+      .add(3.54253472e+01).add(4.30526354e+01).add(4.45859129e+01)
+      .add(5.07322196e+01).add(5.64376493e+01).add(6.22376443e+01)
+      .add(6.87322311e+01).add(7.36384503e+01).add(7.83233197e+01)
+      .add(4.53335372e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.27854612e+01).add(3.41088809e+01).add(4.04531944e+01)
+      .add(4.91869823e+01).add(5.38400000e+01).add(6.07530914e+01)
+      .add(6.31500576e+01).add(7.01472628e+01).add(7.86890534e+01)
+      .add(8.35852476e+01).add(4.84470490e+01).array())
+      .add(stan::math::array_builder<double>().add(2.29420318e+01)
+      .add(3.68314235e+01).add(4.48190669e+01).add(4.81933247e+01)
+      .add(5.59629138e+01).add(6.34748697e+01).add(6.81932320e+01)
+      .add(7.31028444e+01).add(8.42185527e+01).add(8.85092989e+01)
+      .add(4.98580661e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.18196313e+01).add(3.72185365e+01).add(4.69067734e+01)
+      .add(4.92319282e+01).add(5.78398188e+01).add(6.70279929e+01)
+      .add(6.88489222e+01).add(7.81865850e+01).add(8.80552873e+01)
+      .add(9.24160202e+01).add(5.27882063e+01).array())
+      .add(stan::math::array_builder<double>().add(2.35683692e+01)
+      .add(3.64075923e+01).add(4.53983008e+01).add(5.36539155e+01)
+      .add(6.24166846e+01).add(6.66608325e+01).add(7.69766874e+01)
+      .add(8.44829549e+01).add(8.71826519e+01).add(9.94471707e+01)
+      .add(5.55358403e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.34655710e+01).add(3.80801425e+01).add(4.90488718e+01)
+      .add(5.18016539e+01).add(6.09330749e+01).add(7.04329485e+01)
+      .add(7.70045493e+01).add(8.81319394e+01).add(9.18048982e+01)
+      .add(1.02872479e+02).add(5.76682938e+01).array())
+      .add(stan::math::array_builder<double>().add(2.53446634e+01)
+      .add(4.02393960e+01).add(4.62676428e+01).add(6.10164295e+01)
+      .add(6.13314706e+01).add(7.82032904e+01).add(7.69582093e+01)
+      .add(8.86728991e+01).add(9.64918353e+01).add(1.03749824e+02)
+      .add(6.08700897e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.33680969e+01).add(3.88701151e+01).add(4.98596493e+01)
+      .add(5.82312238e+01).add(6.87122271e+01).add(7.37122642e+01)
+      .add(8.67371620e+01).add(8.97002035e+01).add(1.05398401e+02)
+      .add(1.10630643e+02).add(6.57672541e+01).array())
+      .add(stan::math::array_builder<double>().add(2.39501330e+01)
+      .add(3.79280267e+01).add(5.29220557e+01).add(5.87268161e+01)
+      .add(6.84622678e+01).add(7.45208249e+01).add(8.17453197e+01)
+      .add(9.35110036e+01).add(1.10276454e+02).add(1.17417062e+02)
+      .add(7.13859481e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.17589942e+01).add(4.03105991e+01).add(5.48471267e+01)
+      .add(6.53873328e+01).add(6.88802125e+01).add(7.82511733e+01)
+      .add(9.17781197e+01).add(1.03791089e+02).add(1.08773902e+02)
+      .add(1.29813756e+02).add(7.26647891e+01).array())
+      .add(stan::math::array_builder<double>().add(2.31931915e+01)
+      .add(4.20499414e+01).add(5.06766928e+01).add(6.36101661e+01)
+      .add(7.07681744e+01).add(8.62291241e+01).add(9.34906602e+01)
+      .add(1.02528891e+02).add(1.23427366e+02).add(1.33884901e+02)
+      .add(7.89558826e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.45987354e+01).add(4.30169404e+01).add(5.28589881e+01)
+      .add(6.83004973e+01).add(7.59214682e+01).add(8.41929447e+01)
+      .add(1.02386304e+02).add(1.10402502e+02).add(1.19328954e+02)
+      .add(1.39131497e+02).add(8.11802223e+01).array())
+      .add(stan::math::array_builder<double>().add(2.40941473e+01)
+      .add(4.38257446e+01).add(5.51884021e+01).add(7.36431154e+01)
+      .add(7.72962362e+01).add(9.62408145e+01).add(1.06767648e+02)
+      .add(1.15001562e+02).add(1.28280075e+02).add(1.42473927e+02)
+      .add(8.49973371e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.50289545e+01).add(4.08826561e+01).add(5.98535501e+01)
+      .add(6.70513708e+01).add(8.32835237e+01).add(9.17767023e+01)
+      .add(1.05639681e+02).add(1.17670107e+02).add(1.36138175e+02)
+      .add(1.59934738e+02).add(8.56115527e+01).array())
+      .add(stan::math::array_builder<double>().add(2.30285817e+01)
+      .add(4.33870102e+01).add(5.96467036e+01).add(7.22709781e+01)
+      .add(8.57867731e+01).add(9.74358485e+01).add(1.15923322e+02)
+      .add(1.20694322e+02).add(1.32402260e+02).add(1.56389373e+02)
+      .add(9.51053929e+01).array()).add(stan::math::array_builder<double>()
+      .add(2.35398554e+01).add(4.44202357e+01).add(6.35692980e+01)
+      .add(7.11782865e+01).add(8.08992014e+01).add(1.06333731e+02)
+      .add(1.14929189e+02).add(1.24726645e+02).add(1.55263260e+02)
+      .add(1.72197054e+02).add(1.12461089e+02).array())
+      .add(stan::math::array_builder<double>().add(2.24467882e+01)
+      .add(4.29485530e+01).add(5.91763493e+01).add(7.74726151e+01)
+      .add(9.01081832e+01).add(9.55033996e+01).add(1.19811670e+02)
+      .add(1.28360423e+02).add(1.49743844e+02).add(1.76214799e+02)
+      .add(1.03286234e+02).array()).add(stan::math::array_builder<double>()
+      .add(2.62835814e+01).add(4.62649714e+01).add(6.33056351e+01)
+      .add(8.11792394e+01).add(8.46990299e+01).add(1.04695660e+02)
+      .add(1.16973481e+02).add(1.47101684e+02).add(1.59033299e+02)
+      .add(1.71423106e+02).add(1.09804516e+02).array())
+      .add(stan::math::array_builder<double>().add(2.15098984e+01)
+      .add(4.31242454e+01).add(6.00941758e+01).add(8.04334995e+01)
+      .add(9.25993031e+01).add(1.08973178e+02).add(1.28028040e+02)
+      .add(1.39458931e+02).add(1.70155776e+02).add(1.79507932e+02)
+      .add(1.15705411e+02).array()).add(stan::math::array_builder<double>()
+      .add(2.00048382e+01).add(4.49797049e+01).add(6.60357607e+01)
+      .add(8.18854249e+01).add(9.07199948e+01).add(1.18045829e+02)
+      .add(1.28811192e+02).add(1.53147989e+02).add(1.65782312e+02)
+      .add(2.09909455e+02).add(1.24985389e+02).array())
+      .add(stan::math::array_builder<double>().add(2.20478550e+01)
+      .add(4.08128227e+01).add(6.27460198e+01).add(8.00999729e+01)
+      .add(1.00568587e+02).add(1.10287773e+02).add(1.28760410e+02)
+      .add(1.60718766e+02).add(1.80997132e+02).add(1.88081018e+02)
+      .add(1.32346026e+02).array()).add(stan::math::array_builder<double>()
+      .add(2.13673196e+01).add(4.60836499e+01).add(6.42901767e+01)
+      .add(8.26182123e+01).add(9.90435537e+01).add(1.21809169e+02)
+      .add(1.48603711e+02).add(1.68606197e+02).add(1.77138350e+02)
+      .add(2.21745472e+02).add(1.31141718e+02).array())
+      .add(stan::math::array_builder<double>().add(2.25534293e+01)
+      .add(4.71243110e+01).add(6.14748877e+01).add(8.22741173e+01)
+      .add(1.07354127e+02).add(1.24471246e+02).add(1.51576051e+02)
+      .add(1.54537414e+02).add(1.97976042e+02).add(2.27655936e+02)
+      .add(1.47170055e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.96443387e+01).add(4.31278812e+01).add(7.02840698e+01)
+      .add(9.44780594e+01).add(1.04710783e+02).add(1.27297009e+02)
+      .add(1.47174402e+02).add(1.72288790e+02).add(1.94196142e+02)
+      .add(2.27642502e+02).add(1.54784282e+02).array())
+      .add(stan::math::array_builder<double>().add(1.94184118e+01)
+      .add(4.51376764e+01).add(7.29802087e+01).add(7.95094391e+01)
+      .add(1.07516755e+02).add(1.31851271e+02).add(1.60296161e+02)
+      .add(1.83416554e+02).add(2.08992109e+02).add(2.70755023e+02)
+      .add(1.60675501e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.79767948e+01).add(4.28268630e+01).add(6.55584516e+01)
+      .add(7.96201459e+01).add(1.13254161e+02).add(1.30683477e+02)
+      .add(1.70818203e+02).add(1.82676141e+02).add(2.11704322e+02)
+      .add(2.53341816e+02).add(1.70873885e+02).array())
+      .add(stan::math::array_builder<double>().add(1.37430348e+01)
+      .add(4.78646317e+01).add(6.10214780e+01).add(9.83019310e+01)
+      .add(1.14930726e+02).add(1.29745119e+02).add(1.70094302e+02)
+      .add(1.77332912e+02).add(2.18826260e+02).add(2.62307237e+02)
+      .add(1.66839429e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.90400056e+01).add(4.43324697e+01).add(7.01109607e+01)
+      .add(9.22334252e+01).add(1.12575255e+02).add(1.40445020e+02)
+      .add(1.70555040e+02).add(2.02693918e+02).add(2.23815053e+02)
+      .add(2.84493642e+02).add(1.90154929e+02).array())
+      .add(stan::math::array_builder<double>().add(1.70806405e+01)
+      .add(4.47259448e+01).add(6.91710528e+01).add(9.34740874e+01)
+      .add(1.15400636e+02).add(1.44906231e+02).add(1.61282247e+02)
+      .add(2.09485453e+02).add(2.31061491e+02).add(2.76792723e+02)
+      .add(2.01275319e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.74651355e+01).add(4.15951743e+01).add(5.92579553e+01)
+      .add(9.07475607e+01).add(1.18854957e+02).add(1.45509470e+02)
+      .add(1.73045024e+02).add(1.94620620e+02).add(2.64548297e+02)
+      .add(3.20397923e+02).add(2.17990172e+02).array())
+      .add(stan::math::array_builder<double>().add(1.53796156e+01)
+      .add(4.31436059e+01).add(7.35233899e+01).add(9.80788418e+01)
+      .add(1.16330665e+02).add(1.42136599e+02).add(1.93050144e+02)
+      .add(2.22632919e+02).add(2.69139734e+02).add(3.08842745e+02)
+      .add(2.06602807e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.94474646e+01).add(3.72650990e+01).add(6.70829390e+01)
+      .add(8.79786381e+01).add(1.21147067e+02).add(1.48558611e+02)
+      .add(2.20743983e+02).add(2.29164288e+02).add(2.50564390e+02)
+      .add(3.50511751e+02).add(2.32934394e+02).array())
+      .add(stan::math::array_builder<double>().add(1.72026498e+01)
+      .add(3.80043769e+01).add(8.14801337e+01).add(1.06885616e+02)
+      .add(1.13687957e+02).add(1.40905288e+02).add(2.02481153e+02)
+      .add(2.28127555e+02).add(2.84301224e+02).add(3.41840086e+02)
+      .add(2.41488932e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.61372976e+01).add(4.01883544e+01).add(7.66644206e+01)
+      .add(8.13086810e+01).add(1.18582980e+02).add(1.71997212e+02)
+      .add(1.87298180e+02).add(2.39506897e+02).add(2.79337519e+02)
+      .add(3.26138078e+02).add(2.37160261e+02).array())
+      .add(stan::math::array_builder<double>().add(1.48741209e+01)
+      .add(3.79402993e+01).add(8.95515304e+01).add(9.03983231e+01)
+      .add(1.17688628e+02).add(1.52326279e+02).add(2.05290269e+02)
+      .add(2.30466738e+02).add(2.88861418e+02).add(3.84864401e+02)
+      .add(2.45530638e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.48340853e+01).add(4.21098804e+01).add(7.03328650e+01)
+      .add(1.04537136e+02).add(1.10248788e+02).add(1.52372814e+02)
+      .add(2.04969103e+02).add(2.63990698e+02).add(2.91898840e+02)
+      .add(4.08646845e+02).add(2.47594646e+02).array())
+      .add(stan::math::array_builder<double>().add(1.10210739e+01)
+      .add(3.57779114e+01).add(6.01995669e+01).add(8.62727212e+01)
+      .add(1.25250350e+02).add(1.71271523e+02).add(2.15586096e+02)
+      .add(2.68472018e+02).add(3.12510788e+02).add(3.70133190e+02)
+      .add(2.74667149e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.47162213e+01).add(2.93264101e+01).add(8.43009371e+01)
+      .add(9.37754831e+01).add(1.18214684e+02).add(1.58264743e+02)
+      .add(1.97932420e+02).add(2.56435799e+02).add(3.10659214e+02)
+      .add(4.30821448e+02).add(3.07721143e+02).array())
+      .add(stan::math::array_builder<double>().add(1.14603116e+01)
+      .add(3.98020434e+01).add(6.67862600e+01).add(9.93332260e+01)
+      .add(1.19182477e+02).add(1.90806454e+02).add(2.13179850e+02)
+      .add(2.60392753e+02).add(3.38911475e+02).add(4.57972463e+02)
+      .add(2.88726833e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.06035803e+01).add(4.08641977e+01).add(7.21035034e+01)
+      .add(9.84894765e+01).add(1.24588218e+02).add(1.86743536e+02)
+      .add(2.37981021e+02).add(2.90214299e+02).add(3.56223662e+02)
+      .add(4.50785065e+02).add(3.02675829e+02).array())
+      .add(stan::math::array_builder<double>().add(1.16855430e+01)
+      .add(3.56399002e+01).add(7.06492423e+01).add(1.08529482e+02)
+      .add(1.45081780e+02).add(1.66384547e+02).add(2.36644387e+02)
+      .add(2.69162152e+02).add(3.73642670e+02).add(4.33987104e+02)
+      .add(3.22976096e+02).array()).add(stan::math::array_builder<double>()
+      .add(8.69391242e+00).add(3.25825449e+01).add(5.81285062e+01)
+      .add(9.99002118e+01).add(1.34805597e+02).add(1.67771364e+02)
+      .add(2.12189177e+02).add(2.76119415e+02).add(3.63926917e+02)
+      .add(4.69231201e+02).add(3.60808846e+02).array())
+      .add(stan::math::array_builder<double>().add(1.08735523e+01)
+      .add(3.15331920e+01).add(5.39566816e+01).add(1.01330310e+02)
+      .add(1.38949239e+02).add(1.82489579e+02).add(2.53319065e+02)
+      .add(3.08780341e+02).add(4.19958033e+02).add(5.08006154e+02)
+      .add(3.77764365e+02).array()).add(stan::math::array_builder<double>()
+      .add(6.89036149e+00).add(3.70826191e+01).add(5.81884508e+01)
+      .add(1.03937977e+02).add(1.35884910e+02).add(1.65706897e+02)
+      .add(2.85751699e+02).add(2.98891168e+02).add(3.71378946e+02)
+      .add(5.27221242e+02).add(3.47411073e+02).array())
+      .add(stan::math::array_builder<double>().add(6.41580314e+00)
+      .add(3.11398481e+01).add(5.31769145e+01).add(1.04731599e+02)
+      .add(1.38029642e+02).add(2.01797389e+02).add(2.69320199e+02)
+      .add(3.14163114e+02).add(4.55829650e+02).add(5.24102287e+02)
+      .add(3.58517266e+02).array()).add(stan::math::array_builder<double>()
+      .add(9.24538543e+00).add(2.61507053e+01).add(6.11924254e+01)
+      .add(1.08606566e+02).add(1.28971147e+02).add(1.77735950e+02)
+      .add(2.50041183e+02).add(3.16767649e+02).add(4.53583430e+02)
+      .add(5.31664447e+02).add(4.16955805e+02).array())
+      .add(stan::math::array_builder<double>().add(1.13608258e+01)
+      .add(2.93578528e+01).add(6.07414139e+01).add(7.65395031e+01)
+      .add(1.72120572e+02).add(1.82252633e+02).add(2.65307148e+02)
+      .add(2.97408975e+02).add(4.33813603e+02).add(5.59003064e+02)
+      .add(3.96570401e+02).array()).add(stan::math::array_builder<double>()
+      .add(5.29457127e+00).add(2.74342444e+01).add(4.57724740e+01)
+      .add(9.35349906e+01).add(1.16232682e+02).add(1.84913547e+02)
+      .add(2.58768340e+02).add(3.33877111e+02).add(4.66281635e+02)
+      .add(5.91196093e+02).add(4.37465110e+02).array())
+      .add(stan::math::array_builder<double>().add(1.02609214e+01)
+      .add(2.15398779e+01).add(6.69101641e+01).add(9.88571183e+01)
+      .add(1.58559499e+02).add(1.94450328e+02).add(2.83381823e+02)
+      .add(3.32376523e+02).add(4.36461582e+02).add(6.23346524e+02)
+      .add(4.71922085e+02).array()).add(stan::math::array_builder<double>()
+      .add(7.84538805e+00).add(2.61162197e+01).add(7.07161374e+01)
+      .add(6.24950043e+01).add(1.54267048e+02).add(2.01754856e+02)
+      .add(2.54476846e+02).add(3.94378369e+02).add(4.54152485e+02)
+      .add(6.73415767e+02).add(5.17595974e+02).array())
+      .add(stan::math::array_builder<double>().add(5.98446686e+00)
+      .add(2.59524199e+01).add(4.51523678e+01).add(7.28562595e+01)
+      .add(1.39840035e+02).add(1.77100086e+02).add(2.75688925e+02)
+      .add(3.80613692e+02).add(4.91077220e+02).add(7.04850811e+02)
+      .add(5.08712111e+02).array()).add(stan::math::array_builder<double>()
+      .add(7.03058407e+00).add(2.51641191e+01).add(6.31977140e+01)
+      .add(9.05319157e+01).add(1.28305335e+02).add(1.58001514e+02)
+      .add(2.68508878e+02).add(3.78372169e+02).add(5.07189718e+02)
+      .add(6.60662232e+02).add(4.71544200e+02).array())
+      .add(stan::math::array_builder<double>().add(4.60212279e+00)
+      .add(2.03290780e+01).add(5.97168001e+01).add(7.03150879e+01)
+      .add(1.51869972e+02).add(2.21253002e+02).add(3.00769643e+02)
+      .add(3.68936857e+02).add(5.03652644e+02).add(6.58901192e+02)
+      .add(4.85794150e+02).array()).add(stan::math::array_builder<double>()
+      .add(3.70015365e+00).add(3.02256224e+01).add(3.86465433e+01)
+      .add(7.53216810e+01).add(1.67721914e+02).add(2.10855044e+02)
+      .add(3.23247579e+02).add(3.95714339e+02).add(5.20160673e+02)
+      .add(8.22531335e+02).add(5.60845436e+02).array())
+      .add(stan::math::array_builder<double>().add(3.58631827e+00)
+      .add(2.23508384e+01).add(5.04943675e+01).add(8.58439603e+01)
+      .add(1.33303053e+02).add(1.67647440e+02).add(2.66401426e+02)
+      .add(3.91323928e+02).add(5.49697529e+02).add(7.66987099e+02)
+      .add(6.42492606e+02).array()).add(stan::math::array_builder<double>()
+      .add(3.73306615e+00).add(2.72553038e+01).add(4.68009299e+01)
+      .add(7.52229787e+01).add(1.56168745e+02).add(1.86158796e+02)
+      .add(3.10018883e+02).add(3.90372521e+02).add(5.11117226e+02)
+      .add(7.25206660e+02).add(6.43169165e+02).array())
+      .add(stan::math::array_builder<double>().add(3.36692530e+00)
+      .add(1.40021301e+01).add(4.57413819e+01).add(8.01560248e+01)
+      .add(1.42996436e+02).add(1.63205489e+02).add(3.21093091e+02)
+      .add(4.64813244e+02).add(5.97720736e+02).add(7.63951996e+02)
+      .add(5.86087185e+02).array()).add(stan::math::array_builder<double>()
+      .add(2.98688455e+00).add(1.71791688e+01).add(4.84468576e+01)
+      .add(9.13967471e+01).add(1.09315681e+02).add(1.66006716e+02)
+      .add(3.14479153e+02).add(4.11249724e+02).add(5.85624614e+02)
+      .add(7.99836942e+02).add(6.51421053e+02).array())
+      .add(stan::math::array_builder<double>().add(3.37108120e+00)
+      .add(1.19516684e+01).add(4.82631700e+01).add(6.60141905e+01)
+      .add(1.30793213e+02).add(1.88800224e+02).add(2.97209929e+02)
+      .add(4.15099226e+02).add(6.25703810e+02).add(8.67791761e+02)
+      .add(6.66271081e+02).array()).add(stan::math::array_builder<double>()
+      .add(2.29984437e+00).add(1.66402609e+01).add(5.48041015e+01)
+      .add(4.74716246e+01).add(1.45888059e+02).add(2.21937449e+02)
+      .add(3.21862074e+02).add(4.40958158e+02).add(6.91665956e+02)
+      .add(8.68827862e+02).add(6.30237643e+02).array())
+      .add(stan::math::array_builder<double>().add(1.94533401e+00)
+      .add(1.54901395e+01).add(3.95555156e+01).add(7.80404016e+01)
+      .add(9.73447573e+01).add(2.09788615e+02).add(2.93886274e+02)
+      .add(5.06872226e+02).add(5.98723886e+02).add(8.63000336e+02)
+      .add(7.95740288e+02).array()).add(stan::math::array_builder<double>()
+      .add(3.02152139e+00).add(1.74970527e+01).add(5.39770066e+01)
+      .add(5.64627730e+01).add(1.12428361e+02).add(1.74333932e+02)
+      .add(3.25980518e+02).add(4.10820787e+02).add(6.49182337e+02)
+      .add(9.95178669e+02).add(7.89776047e+02).array())
+      .add(stan::math::array_builder<double>().add(7.88349096e+00)
+      .add(9.92592725e+00).add(5.24752497e+01).add(5.92313512e+01)
+      .add(9.00359086e+01).add(2.35980492e+02).add(3.74107742e+02)
+      .add(5.01553984e+02).add(5.93777442e+02).add(1.02993173e+03)
+      .add(7.50987409e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.41302087e+00).add(1.94965378e+01).add(3.94913621e+01)
+      .add(7.72666776e+01).add(1.06728033e+02).add(2.01980553e+02)
+      .add(3.18236281e+02).add(4.58800158e+02).add(6.55390324e+02)
+      .add(1.01694741e+03).add(7.97100792e+02).array())
+      .add(stan::math::array_builder<double>().add(2.09779980e+00)
+      .add(1.46362959e+01).add(4.92903429e+01).add(5.94244779e+01)
+      .add(1.05527147e+02).add(2.39289664e+02).add(2.64856780e+02)
+      .add(5.34133424e+02).add(7.11287852e+02).add(1.05441459e+03)
+      .add(8.19025292e+02).array()).add(stan::math::array_builder<double>()
+      .add(1.71420203e+00).add(2.08970546e+01).add(3.87631937e+01)
+      .add(7.13273945e+01).add(8.12744363e+01).add(1.78849762e+02)
+      .add(2.85802887e+02).add(4.67040344e+02).add(6.33921153e+02)
+      .add(1.13430162e+03).add(8.22484199e+02).array())
+      .add(stan::math::array_builder<double>().add(2.45665851e+00)
+      .add(9.03298216e+00).add(3.53465638e+01).add(6.97162090e+01)
+      .add(9.64147058e+01).add(2.51967369e+02).add(3.57114545e+02)
+      .add(5.05877565e+02).add(7.57729935e+02).add(1.21087019e+03)
+      .add(7.78711087e+02).array()).add(stan::math::array_builder<double>()
+      .add(3.03974138e+00).add(9.85081929e+00).add(2.75342628e+01)
+      .add(5.61076030e+01).add(1.10342125e+02).add(1.53732247e+02)
+      .add(3.15669154e+02).add(4.86910111e+02).add(7.39223139e+02)
+      .add(1.25563623e+03).add(9.38819435e+02).array())
+      .add(stan::math::array_builder<double>().add(2.93480999e+00)
+      .add(1.14853270e+01).add(4.62688350e+01).add(4.28177075e+01)
+      .add(9.57858979e+01).add(1.50427248e+02).add(3.15352972e+02)
+      .add(4.11628105e+02).add(6.76887810e+02).add(1.38019439e+03)
+      .add(9.74710000e+02).array()).add(stan::math::array_builder<double>()
+      .add(6.22884405e-01).add(3.47757156e+00).add(1.76813522e+01)
+      .add(4.33940338e+01).add(1.16855009e+02).add(1.13292318e+02)
+      .add(3.13928088e+02).add(5.53756914e+02).add(8.04934287e+02)
+      .add(1.01736497e+03).add(8.38406516e+02).array())
+      .add(stan::math::array_builder<double>().add(4.87643248e-01)
+      .add(2.26936075e+01).add(3.69086462e+01).add(4.18192457e+01)
+      .add(1.12030324e+02).add(1.56010589e+02).add(2.22563392e+02)
+      .add(4.83489156e+02).add(7.50362948e+02).add(1.13081567e+03)
+      .add(1.11517408e+03).array()).add(stan::math::array_builder<double>()
+      .add(3.21119431e+00).add(4.01323860e+00).add(2.92026288e+01)
+      .add(4.47173790e+01).add(1.07527461e+02).add(2.16794182e+02)
+      .add(2.57282425e+02).add(5.55915533e+02).add(7.24819102e+02)
+      .add(1.14337787e+03).add(1.18332004e+03).array())
+      .add(stan::math::array_builder<double>().add(2.14797891e+00)
+      .add(5.92444889e+00).add(5.52126430e+01).add(4.32373541e+01)
+      .add(9.52395929e+01).add(2.08171624e+02).add(2.91327859e+02)
+      .add(4.02708876e+02).add(8.08047594e+02).add(1.32463042e+03)
+      .add(1.23867846e+03).array()).add(stan::math::array_builder<double>()
+      .add(2.22387895e+00).add(1.25305113e+01).add(5.36173611e+01)
+      .add(8.01224269e+01).add(4.30968386e+01).add(1.93332711e+02)
+      .add(3.46120788e+02).add(4.70812336e+02).add(8.52739180e+02)
+      .add(1.36268164e+03).add(1.19092806e+03).array())
+      .add(stan::math::array_builder<double>().add(9.75181194e-01)
+      .add(3.57725866e+00).add(2.22854449e+01).add(6.38809632e+01)
+      .add(4.61606334e+01).add(1.21503175e+02).add(3.70779517e+02)
+      .add(5.16126470e+02).add(8.62562333e+02).add(1.24610909e+03)
+      .add(1.24901202e+03).array()).add(stan::math::array_builder<double>()
+      .add(7.47219335e-01).add(6.18567077e+00).add(1.13543820e+01)
+      .add(3.41319788e+01).add(1.03953023e+02).add(1.29662069e+02)
+      .add(2.77554610e+02).add(4.97666074e+02).add(9.09960360e+02)
+      .add(1.22580687e+03).add(1.49280506e+03).array())
+      .add(stan::math::array_builder<double>().add(6.56169559e-01)
+      .add(6.50952388e+00).add(2.79560661e+01).add(3.34402996e+01)
+      .add(9.99767146e+01).add(1.25736740e+02).add(3.40393523e+02)
+      .add(5.58053137e+02).add(1.01474927e+03).add(1.46998296e+03)
+      .add(1.10094008e+03).array()).add(stan::math::array_builder<double>()
+      .add(6.86071991e-01).add(4.15238599e+00).add(7.11059115e+00)
+      .add(2.68799467e+01).add(1.29505567e+02).add(2.00814377e+02)
+      .add(4.17146835e+02).add(3.62822621e+02).add(8.39568041e+02)
+      .add(1.39947826e+03).add(1.31947479e+03).array())
+      .add(stan::math::array_builder<double>().add(3.09781215e-01)
+      .add(5.49239785e+00).add(1.57549417e+01).add(3.88986720e+01)
+      .add(6.54577069e+01).add(1.38165586e+02).add(3.04363472e+02)
+      .add(3.72081775e+02).add(8.65001671e+02).add(1.33687390e+03)
+      .add(1.21865757e+03).array()).add(stan::math::array_builder<double>()
+      .add(1.23944312e+00).add(1.70979482e+00).add(1.02144682e+01)
+      .add(2.74288662e+01).add(4.48795833e+01).add(1.33761477e+02)
+      .add(3.10451152e+02).add(4.07706707e+02).add(1.06563191e+03)
+      .add(1.78882620e+03).add(1.43465838e+03).array())
+      .add(stan::math::array_builder<double>().add(1.65296861e-01)
+      .add(1.29749804e+01).add(1.65130369e+01).add(4.19810386e+01)
+      .add(3.78595103e+01).add(1.85409766e+02).add(3.17261479e+02)
+      .add(5.38770486e+02).add(1.06425725e+03).add(2.04298594e+03)
+      .add(9.67279215e+02).array()).add(stan::math::array_builder<double>()
+      .add(2.15976609e-01).add(1.01304085e+00).add(3.45638866e+01)
+      .add(1.82057278e+01).add(3.43481846e+01).add(1.22862123e+02)
+      .add(3.11669659e+02).add(4.28107264e+02).add(1.01586929e+03)
+      .add(1.19856801e+03).add(7.99292054e+02).array())
+      .add(stan::math::array_builder<double>().add(4.18642729e-02)
+      .add(7.28133445e-01).add(1.38536119e+01).add(2.64810966e+01)
+      .add(9.33130681e+01).add(2.80105579e+02).add(3.53608141e+02)
+      .add(5.98708101e+02).add(1.04443697e+03).add(1.83198274e+03)
+      .add(1.78078664e+03).array()).add(stan::math::array_builder<double>()
+      .add(3.83782720e-01).add(4.44637198e-01).add(2.44323817e+00)
+      .add(3.52706041e+01).add(4.89143559e+01).add(1.78420740e+02)
+      .add(4.35716309e+02).add(4.04295312e+02).add(9.67598911e+02)
+      .add(2.21090667e+03).add(1.69182231e+03).array())
+      .add(stan::math::array_builder<double>().add(6.00750801e-01)
+      .add(3.53394140e+00).add(9.92882115e+00).add(2.25478216e+01)
+      .add(1.81998158e+01).add(1.23294710e+02).add(2.19410321e+02)
+      .add(5.74153319e+02).add(1.12651627e+03).add(1.69972991e+03)
+      .add(1.56499597e+03).array()).add(stan::math::array_builder<double>()
+      .add(3.25925538e-01).add(1.32812833e+00).add(1.11976433e+01)
+      .add(2.45180744e+01).add(2.61119090e+01).add(1.02484864e+02)
+      .add(2.98896060e+02).add(4.32301173e+02).add(5.98990801e+02)
+      .add(2.14585948e+03).add(1.69267943e+03).array())
+      .add(stan::math::array_builder<double>().add(1.55109476e-01)
+      .add(8.14521687e-01).add(2.18834715e+00).add(5.57425220e+00)
+      .add(4.54303923e+01).add(1.24038780e+02).add(3.70369476e+02)
+      .add(5.09452562e+02).add(9.34943442e+02).add(1.96321985e+03)
+      .add(2.16943508e+03).array()).add(stan::math::array_builder<double>()
+      .add(2.66261694e+00).add(4.61197775e+00).add(4.28352626e+00)
+      .add(3.79186810e+01).add(4.10497402e+01).add(5.33928459e+01)
+      .add(1.81887697e+02).add(3.09530553e+02).add(9.12133160e+02)
+      .add(1.89553947e+03).add(1.65775766e+03).array())
+      .add(stan::math::array_builder<double>().add(3.55960582e-01)
+      .add(3.66016881e+00).add(3.52517151e+00).add(1.15902577e+01)
+      .add(5.26850006e+01).add(1.24326887e+02).add(3.05482538e+02)
+      .add(7.00391344e+02).add(1.04943496e+03).add(1.04979239e+03)
+      .add(2.08656329e+03).array()).add(stan::math::array_builder<double>()
+      .add(4.16226226e-01).add(1.31427979e+00).add(1.59562777e+00)
+      .add(5.64218913e+00).add(1.79093786e+01).add(5.64419244e+01)
+      .add(1.44839180e+02).add(4.52537358e+02).add(1.10129699e+03)
+      .add(2.13502651e+03).add(1.86077088e+03).array())
+      .add(stan::math::array_builder<double>().add(5.01501140e-02)
+      .add(8.72484719e-01).add(4.14821234e+00).add(6.78076968e+00)
+      .add(7.24017088e+00).add(7.86475949e+01).add(2.45727373e+02)
+      .add(6.34594528e+02).add(1.06218959e+03).add(2.40234029e+03)
+      .add(1.26308554e+03).array()).add(stan::math::array_builder<double>()
+      .add(1.78891311e-02).add(1.00702955e+00).add(3.02835941e+00)
+      .add(1.36794989e+01).add(2.55557775e+01).add(4.86635558e+01)
+      .add(4.22332512e+02).add(6.94527052e+02).add(1.03758132e+03)
+      .add(2.32945416e+03).add(2.71735865e+03).array())
+      .add(stan::math::array_builder<double>().add(4.85297432e-01)
+      .add(2.59937945e-01).add(7.33628301e+00).add(1.08878784e+01)
+      .add(3.50371090e+01).add(5.54019868e+01).add(1.62856246e+02)
+      .add(5.13641268e+02).add(1.10565345e+03).add(1.96497909e+03)
+      .add(1.13365991e+03).array()).add(stan::math::array_builder<double>()
+      .add(6.86976196e-01).add(4.98667699e-01).add(8.53327442e+00)
+      .add(1.64076296e+00).add(9.25362166e+00).add(2.49727770e+01)
+      .add(1.28450840e+02).add(5.75321141e+02).add(7.55400691e+02)
+      .add(4.00857729e+03).add(2.38152641e+03).array())
+      .add(stan::math::array_builder<double>().add(2.34903896e-01)
+      .add(4.42740850e-01).add(2.04196517e+00).add(5.24238589e+00)
+      .add(8.06035984e+00).add(1.07947075e+02).add(2.18132848e+02)
+      .add(7.85449313e+02).add(1.27757080e+03).add(2.33828948e+03)
+      .add(2.04078908e+03).array()).add(stan::math::array_builder<double>()
+      .add(2.37217554e-01).add(3.09858105e-01).add(2.94156525e+01)
+      .add(1.65046040e+00).add(1.67525905e+01).add(1.21009539e+02)
+      .add(1.63557680e+02).add(5.23359000e+02).add(1.24803819e+03)
+      .add(3.07680499e+03).add(1.94255657e+03).array())
+      .add(stan::math::array_builder<double>().add(1.04064738e-01)
+      .add(2.83941698e+00).add(3.15257598e+00).add(7.49334180e+00)
+      .add(1.09289187e+01).add(7.34033205e+01).add(1.16664990e+02)
+      .add(8.81379351e+02).add(1.06590027e+03).add(3.51825339e+03)
+      .add(3.57193118e+03).array()).add(stan::math::array_builder<double>()
+      .add(1.27563863e-01).add(3.18252972e+00).add(4.85066352e+00)
+      .add(1.31150665e+01).add(3.85415319e+01).add(7.21098241e+01)
+      .add(3.88639238e+02).add(4.49334829e+02).add(6.27794681e+02)
+      .add(2.13388798e+03).add(2.53444081e+03).array())
+      .add(stan::math::array_builder<double>().add(6.41737049e-02)
+      .add(1.22639883e-01).add(3.69566163e+00).add(9.40334862e+00)
+      .add(5.41740862e+00).add(4.35092303e+01).add(5.66948314e+01)
+      .add(7.59580967e+02).add(1.49017521e+03).add(2.25815321e+03)
+      .add(1.81356859e+03).array()).add(stan::math::array_builder<double>()
+      .add(3.75829072e-02).add(1.54918669e+00).add(5.00630983e-02)
+      .add(7.29758408e+00).add(1.06164936e+01).add(1.25873769e+02)
+      .add(1.30014154e+02).add(7.34081919e+02).add(1.35383499e+03)
+      .add(1.49831091e+03).add(2.36479281e+03).array())
+      .add(stan::math::array_builder<double>().add(6.97969731e-02)
+      .add(3.95630113e-02).add(9.12196380e-01).add(1.18926585e+01)
+      .add(8.37384679e+00).add(6.02223209e+01).add(4.98858052e+02)
+      .add(1.35657479e+02).add(7.61398339e+02).add(1.91321189e+03)
+      .add(2.43378654e+03).array()).add(stan::math::array_builder<double>()
+      .add(5.63855645e-01).add(2.43527636e-01).add(1.46624979e-01)
+      .add(1.42837540e+01).add(1.79775576e+01).add(2.45417467e+02)
+      .add(7.94963795e+01).add(9.73863124e+02).add(2.21284189e+03)
+      .add(2.85600887e+03).add(4.47503409e+03).array())
+      .add(stan::math::array_builder<double>().add(3.22673461e-02)
+      .add(6.18005920e-02).add(1.04309662e+00).add(4.19051193e+01)
+      .add(1.68936542e+00).add(8.04856146e+01).add(6.61415235e+01)
+      .add(1.16260533e+02).add(7.97317060e+02).add(2.61488120e+03)
+      .add(1.44409060e+03).array()).add(stan::math::array_builder<double>()
+      .add(2.45296285e-03).add(3.42293715e+00).add(5.33558679e-01)
+      .add(1.06016731e+01).add(1.24007522e+01).add(8.76834450e+01)
+      .add(1.35582540e+02).add(7.00432373e+02).add(8.42637142e+02)
+      .add(3.39902532e+03).add(3.86903695e+03).array())
+      .add(stan::math::array_builder<double>().add(2.52115837e-01)
+      .add(3.06349148e-02).add(1.60314140e+00).add(2.09082155e-01)
+      .add(2.33342038e-01).add(1.42882082e+01).add(8.87224505e+01)
+      .add(3.03972072e+02).add(1.78780502e+03).add(2.06843855e+03)
+      .add(2.96699828e+03).array()).add(stan::math::array_builder<double>()
+      .add(5.75335265e-04).add(4.22488770e-01).add(1.66680145e-02)
+      .add(2.30355615e-01).add(1.22626760e+01).add(7.89382822e+01)
+      .add(9.78221020e+01).add(5.08472083e+02).add(7.29191698e+02)
+      .add(2.40119132e+03).add(3.58813241e+03).array())
+      .add(stan::math::array_builder<double>().add(2.78136733e-03)
+      .add(1.89029764e-01).add(7.82773145e-01).add(4.71274152e+00)
+      .add(1.27098391e+00).add(1.50760361e+02).add(4.54984731e+02)
+      .add(3.61884149e+01).add(1.43525392e+03).add(4.44107824e+03)
+      .add(2.64452424e+03).array()).add(stan::math::array_builder<double>()
+      .add(1.44312299e-02).add(1.09986275e-02).add(3.78355581e+00)
+      .add(4.60822925e+00).add(6.72832800e+00).add(2.98595583e+01)
+      .add(8.30012419e+01).add(9.18750604e+01).add(1.45041720e+03)
+      .add(1.96377866e+03).add(2.93532057e+03).array())
+      .add(stan::math::array_builder<double>().add(9.34624467e-03)
+      .add(1.61376666e-02).add(4.61762131e-01).add(5.60049568e-01)
+      .add(4.28801104e+00).add(4.23604779e+01).add(7.16101198e+01)
+      .add(2.93073343e+02).add(4.67164547e+02).add(3.41600130e+03)
+      .add(2.20668924e+03).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(2.39417861e-01).add(4.11491437e+00)
+      .add(1.16581692e+00).add(9.19820377e+00).add(5.85459357e+00)
+      .add(2.12101164e+01).add(7.85750755e+01).add(6.80882037e+02)
+      .add(1.68390686e+03).add(5.01346916e+03).array())
+      .add(stan::math::array_builder<double>().add(1.27602323e-02)
+      .add(5.60400472e-02).add(5.69951711e-01).add(1.15836267e-01)
+      .add(2.28199727e+00).add(2.20779668e+02).add(7.45194950e+01)
+      .add(1.53653574e+02).add(4.86578058e+02).add(4.88797835e+03)
+      .add(3.98634263e+03).array()).add(stan::math::array_builder<double>()
+      .add(2.54998088e-04).add(3.33245001e-02).add(9.12639496e-01)
+      .add(1.70790687e-01).add(8.04568812e+00).add(1.74256089e+01)
+      .add(1.01823047e+02).add(5.05799485e+01).add(4.99718560e+02)
+      .add(6.25143494e+03).add(6.73906883e+03).array())
+      .add(stan::math::array_builder<double>().add(7.33273538e-03)
+      .add(5.02561494e-02).add(4.00404942e-02).add(2.58473775e-01)
+      .add(7.43227610e-02).add(7.15189560e+01).add(4.89319472e+01)
+      .add(8.25941857e+02).add(1.47300545e+03).add(1.24280786e+03)
+      .add(4.55359542e+03).array()).add(stan::math::array_builder<double>()
+      .add(1.79493322e-03).add(2.87909174e-02).add(4.79413240e-01)
+      .add(1.50376056e-01).add(1.00014159e+01).add(8.13444132e+01)
+      .add(5.91957304e+01).add(8.54578885e+02).add(1.22128795e+03)
+      .add(3.67024631e+03).add(5.31050905e+03).array())
+      .add(stan::math::array_builder<double>().add(8.84861033e-03)
+      .add(1.53686631e-01).add(5.50970332e+00).add(4.04535720e-01)
+      .add(6.80598165e+00).add(1.33162798e+02).add(1.42418628e+02)
+      .add(2.83341198e+02).add(2.66171190e+03).add(2.57241412e+03)
+      .add(4.54024779e+03).array()).add(stan::math::array_builder<double>()
+      .add(2.94756576e-02).add(6.95696824e-02).add(1.95638456e-01)
+      .add(1.26594278e+00).add(3.85276521e+00).add(4.22026347e+00)
+      .add(1.44147278e+02).add(5.47480815e+02).add(2.12646635e+03)
+      .add(1.62379386e+03).add(4.70104983e+03).array())
+      .add(stan::math::array_builder<double>().add(3.62355582e-04)
+      .add(8.84853329e-04).add(5.56252806e-02).add(2.86496284e-01)
+      .add(8.26280895e+00).add(1.28096869e+01).add(5.34199510e+01)
+      .add(2.77704248e+02).add(8.50003439e+01).add(3.51599432e+03)
+      .add(6.13934401e+03).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(1.10754652e-01).add(5.76036356e-02)
+      .add(2.81772484e-01).add(1.19970569e+01).add(2.83276174e+00)
+      .add(9.42668661e-01).add(8.12281764e+00).add(1.86995095e+03)
+      .add(2.66899164e+03).add(3.87225199e+03).array())
+      .add(stan::math::array_builder<double>().add(1.10472895e-04)
+      .add(3.79588797e-03).add(2.32353602e-02).add(8.36571348e-02)
+      .add(2.43172738e+01).add(1.85922153e+01).add(3.69494819e+01)
+      .add(5.28671973e+02).add(4.77692211e+02).add(2.39858945e+03)
+      .add(5.03986871e+03).array()).add(stan::math::array_builder<double>()
+      .add(7.50695705e-03).add(1.68716652e-01).add(0.00000000e+00)
+      .add(0.00000000e+00).add(4.90692994e-01).add(2.55683753e+01)
+      .add(2.17177740e+02).add(2.75987379e+02).add(1.93045237e+03)
+      .add(4.05450857e+03).add(7.53727676e+03).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(1.82888553e-01)
+      .add(0.00000000e+00).add(7.61870994e+01).add(2.60348042e+02)
+      .add(0.00000000e+00).add(3.98343120e+01).add(1.88699560e+03)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(1.21820347e-01).add(4.09290561e+01)
+      .add(0.00000000e+00).add(3.86776381e-04).add(1.40844224e+00)
+      .add(1.54562738e+01).add(0.00000000e+00).add(2.91917702e+02)
+      .add(0.00000000e+00).add(5.80854979e+02).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(1.39238603e+01).add(9.83570783e+02).add(2.68584081e+04)
+      .add(9.88845762e+03).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(3.78636150e-01).add(1.18378283e-01)
+      .add(4.74307295e+01).add(0.00000000e+00).add(0.00000000e+00)
+      .add(2.89971254e+01).add(9.69221293e+00).add(1.50021718e+03)
+      .add(2.87188641e+04).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(1.65202718e+01).add(4.53174067e+02)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(1.44995102e+02).add(0.00000000e+00).add(0.00000000e+00)
+      .add(1.38554492e+03).array()).add(stan::math::array_builder<double>()
+      .add(4.66768171e-05).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(2.16342989e+03).add(1.70742270e+01).add(9.61103124e+01)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(1.11521322e-01).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(1.20587171e-03).add(0.00000000e+00).add(8.87526030e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(1.66915996e+03).add(2.10089909e+04).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(2.20395254e-04).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(1.69172993e+01)
+      .add(0.00000000e+00).add(2.92446181e+03).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(8.58865976e-03).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(7.70979653e-01)
+      .add(0.00000000e+00).add(0.00000000e+00).add(6.01210065e+03)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(3.13445997e-01).add(0.00000000e+00)
+      .add(1.44641858e+00).add(4.66357743e+03).add(0.00000000e+00)
+      .add(0.00000000e+00).add(5.18714760e+04).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(1.19000728e-05)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(1.82738243e+02).add(7.87786797e+00).add(0.00000000e+00)
+      .add(2.09199525e+04).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(2.34007692e-01)
+      .add(0.00000000e+00).add(0.00000000e+00).add(2.25170013e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(1.38865336e+02).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(3.33122221e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(1.87545997e+01).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(4.79124579e-01).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(9.06417399e+03).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(5.77877642e+04).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(1.48993382e-04).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(1.00119774e-07).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array())
+      .add(stan::math::array_builder<double>().add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).array()).add(stan::math::array_builder<double>()
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).add(0.00000000e+00)
+      .add(0.00000000e+00).add(0.00000000e+00).array()).array(),
+      "assigning variable hist_array");
     std::vector<local_scalar_t__> hist_edge_0;
-    hist_edge_0 = std::vector<local_scalar_t__>(51, DUMMY_VAR__);
+    hist_edge_0 = std::vector<local_scalar_t__>(281, DUMMY_VAR__);
     
-    current_statement__ = 329;
+    current_statement__ = 351;
     assign(hist_edge_0, nil_index_list(), stan::math::array_builder<double>()
-      .add(3.16227766e+04).add(3.80189396e+04).add(4.57088190e+04)
-      .add(5.49540874e+04).add(6.60693448e+04).add(7.94328235e+04)
-      .add(9.54992586e+04).add(1.14815362e+05).add(1.38038426e+05)
-      .add(1.65958691e+05).add(1.99526231e+05).add(2.39883292e+05)
-      .add(2.88403150e+05).add(3.46736850e+05).add(4.16869383e+05)
-      .add(5.01187234e+05).add(6.02559586e+05).add(7.24435960e+05)
-      .add(8.70963590e+05).add(1.04712855e+06).add(1.25892541e+06)
-      .add(1.51356125e+06).add(1.81970086e+06).add(2.18776162e+06)
-      .add(2.63026799e+06).add(3.16227766e+06).add(3.80189396e+06)
-      .add(4.57088190e+06).add(5.49540874e+06).add(6.60693448e+06)
-      .add(7.94328235e+06).add(9.54992586e+06).add(1.14815362e+07)
-      .add(1.38038426e+07).add(1.65958691e+07).add(1.99526231e+07)
-      .add(2.39883292e+07).add(2.88403150e+07).add(3.46736850e+07)
-      .add(4.16869383e+07).add(5.01187234e+07).add(6.02559586e+07)
-      .add(7.24435960e+07).add(8.70963590e+07).add(1.04712855e+08)
-      .add(1.25892541e+08).add(1.51356125e+08).add(1.81970086e+08)
-      .add(2.18776162e+08).add(2.63026799e+08).add(3.16227766e+08).array(),
+      .add(1.00000000e+02).add(1.05925373e+02).add(1.12201845e+02)
+      .add(1.18850223e+02).add(1.25892541e+02).add(1.33352143e+02)
+      .add(1.41253754e+02).add(1.49623566e+02).add(1.58489319e+02)
+      .add(1.67880402e+02).add(1.77827941e+02).add(1.88364909e+02)
+      .add(1.99526231e+02).add(2.11348904e+02).add(2.23872114e+02)
+      .add(2.37137371e+02).add(2.51188643e+02).add(2.66072506e+02)
+      .add(2.81838293e+02).add(2.98538262e+02).add(3.16227766e+02)
+      .add(3.34965439e+02).add(3.54813389e+02).add(3.75837404e+02)
+      .add(3.98107171e+02).add(4.21696503e+02).add(4.46683592e+02)
+      .add(4.73151259e+02).add(5.01187234e+02).add(5.30884444e+02)
+      .add(5.62341325e+02).add(5.95662144e+02).add(6.30957344e+02)
+      .add(6.68343918e+02).add(7.07945784e+02).add(7.49894209e+02)
+      .add(7.94328235e+02).add(8.41395142e+02).add(8.91250938e+02)
+      .add(9.44060876e+02).add(1.00000000e+03).add(1.05925373e+03)
+      .add(1.12201845e+03).add(1.18850223e+03).add(1.25892541e+03)
+      .add(1.33352143e+03).add(1.41253754e+03).add(1.49623566e+03)
+      .add(1.58489319e+03).add(1.67880402e+03).add(1.77827941e+03)
+      .add(1.88364909e+03).add(1.99526231e+03).add(2.11348904e+03)
+      .add(2.23872114e+03).add(2.37137371e+03).add(2.51188643e+03)
+      .add(2.66072506e+03).add(2.81838293e+03).add(2.98538262e+03)
+      .add(3.16227766e+03).add(3.34965439e+03).add(3.54813389e+03)
+      .add(3.75837404e+03).add(3.98107171e+03).add(4.21696503e+03)
+      .add(4.46683592e+03).add(4.73151259e+03).add(5.01187234e+03)
+      .add(5.30884444e+03).add(5.62341325e+03).add(5.95662144e+03)
+      .add(6.30957344e+03).add(6.68343918e+03).add(7.07945784e+03)
+      .add(7.49894209e+03).add(7.94328235e+03).add(8.41395142e+03)
+      .add(8.91250938e+03).add(9.44060876e+03).add(1.00000000e+04)
+      .add(1.05925373e+04).add(1.12201845e+04).add(1.18850223e+04)
+      .add(1.25892541e+04).add(1.33352143e+04).add(1.41253754e+04)
+      .add(1.49623566e+04).add(1.58489319e+04).add(1.67880402e+04)
+      .add(1.77827941e+04).add(1.88364909e+04).add(1.99526231e+04)
+      .add(2.11348904e+04).add(2.23872114e+04).add(2.37137371e+04)
+      .add(2.51188643e+04).add(2.66072506e+04).add(2.81838293e+04)
+      .add(2.98538262e+04).add(3.16227766e+04).add(3.34965439e+04)
+      .add(3.54813389e+04).add(3.75837404e+04).add(3.98107171e+04)
+      .add(4.21696503e+04).add(4.46683592e+04).add(4.73151259e+04)
+      .add(5.01187234e+04).add(5.30884444e+04).add(5.62341325e+04)
+      .add(5.95662144e+04).add(6.30957344e+04).add(6.68343918e+04)
+      .add(7.07945784e+04).add(7.49894209e+04).add(7.94328235e+04)
+      .add(8.41395142e+04).add(8.91250938e+04).add(9.44060876e+04)
+      .add(1.00000000e+05).add(1.05925373e+05).add(1.12201845e+05)
+      .add(1.18850223e+05).add(1.25892541e+05).add(1.33352143e+05)
+      .add(1.41253754e+05).add(1.49623566e+05).add(1.58489319e+05)
+      .add(1.67880402e+05).add(1.77827941e+05).add(1.88364909e+05)
+      .add(1.99526231e+05).add(2.11348904e+05).add(2.23872114e+05)
+      .add(2.37137371e+05).add(2.51188643e+05).add(2.66072506e+05)
+      .add(2.81838293e+05).add(2.98538262e+05).add(3.16227766e+05)
+      .add(3.34965439e+05).add(3.54813389e+05).add(3.75837404e+05)
+      .add(3.98107171e+05).add(4.21696503e+05).add(4.46683592e+05)
+      .add(4.73151259e+05).add(5.01187234e+05).add(5.30884444e+05)
+      .add(5.62341325e+05).add(5.95662144e+05).add(6.30957344e+05)
+      .add(6.68343918e+05).add(7.07945784e+05).add(7.49894209e+05)
+      .add(7.94328235e+05).add(8.41395142e+05).add(8.91250938e+05)
+      .add(9.44060876e+05).add(1.00000000e+06).add(1.05925373e+06)
+      .add(1.12201845e+06).add(1.18850223e+06).add(1.25892541e+06)
+      .add(1.33352143e+06).add(1.41253754e+06).add(1.49623566e+06)
+      .add(1.58489319e+06).add(1.67880402e+06).add(1.77827941e+06)
+      .add(1.88364909e+06).add(1.99526231e+06).add(2.11348904e+06)
+      .add(2.23872114e+06).add(2.37137371e+06).add(2.51188643e+06)
+      .add(2.66072506e+06).add(2.81838293e+06).add(2.98538262e+06)
+      .add(3.16227766e+06).add(3.34965439e+06).add(3.54813389e+06)
+      .add(3.75837404e+06).add(3.98107171e+06).add(4.21696503e+06)
+      .add(4.46683592e+06).add(4.73151259e+06).add(5.01187234e+06)
+      .add(5.30884444e+06).add(5.62341325e+06).add(5.95662144e+06)
+      .add(6.30957344e+06).add(6.68343918e+06).add(7.07945784e+06)
+      .add(7.49894209e+06).add(7.94328235e+06).add(8.41395142e+06)
+      .add(8.91250938e+06).add(9.44060876e+06).add(1.00000000e+07)
+      .add(1.05925373e+07).add(1.12201845e+07).add(1.18850223e+07)
+      .add(1.25892541e+07).add(1.33352143e+07).add(1.41253754e+07)
+      .add(1.49623566e+07).add(1.58489319e+07).add(1.67880402e+07)
+      .add(1.77827941e+07).add(1.88364909e+07).add(1.99526231e+07)
+      .add(2.11348904e+07).add(2.23872114e+07).add(2.37137371e+07)
+      .add(2.51188643e+07).add(2.66072506e+07).add(2.81838293e+07)
+      .add(2.98538262e+07).add(3.16227766e+07).add(3.34965439e+07)
+      .add(3.54813389e+07).add(3.75837404e+07).add(3.98107171e+07)
+      .add(4.21696503e+07).add(4.46683592e+07).add(4.73151259e+07)
+      .add(5.01187234e+07).add(5.30884444e+07).add(5.62341325e+07)
+      .add(5.95662144e+07).add(6.30957344e+07).add(6.68343918e+07)
+      .add(7.07945784e+07).add(7.49894209e+07).add(7.94328235e+07)
+      .add(8.41395142e+07).add(8.91250938e+07).add(9.44060876e+07)
+      .add(1.00000000e+08).add(1.05925373e+08).add(1.12201845e+08)
+      .add(1.18850223e+08).add(1.25892541e+08).add(1.33352143e+08)
+      .add(1.41253754e+08).add(1.49623566e+08).add(1.58489319e+08)
+      .add(1.67880402e+08).add(1.77827941e+08).add(1.88364909e+08)
+      .add(1.99526231e+08).add(2.11348904e+08).add(2.23872114e+08)
+      .add(2.37137371e+08).add(2.51188643e+08).add(2.66072506e+08)
+      .add(2.81838293e+08).add(2.98538262e+08).add(3.16227766e+08)
+      .add(3.34965439e+08).add(3.54813389e+08).add(3.75837404e+08)
+      .add(3.98107171e+08).add(4.21696503e+08).add(4.46683592e+08)
+      .add(4.73151259e+08).add(5.01187234e+08).add(5.30884444e+08)
+      .add(5.62341325e+08).add(5.95662144e+08).add(6.30957344e+08)
+      .add(6.68343918e+08).add(7.07945784e+08).add(7.49894209e+08)
+      .add(7.94328235e+08).add(8.41395142e+08).add(8.91250938e+08)
+      .add(9.44060876e+08).add(1.00000000e+09).array(),
       "assigning variable hist_edge_0");
     std::vector<local_scalar_t__> hist_edge_1;
-    hist_edge_1 = std::vector<local_scalar_t__>(11, DUMMY_VAR__);
+    hist_edge_1 = std::vector<local_scalar_t__>(12, DUMMY_VAR__);
     
-    current_statement__ = 330;
+    current_statement__ = 352;
     assign(hist_edge_1, nil_index_list(), stan::math::array_builder<double>()
-      .add(-1.).add(-0.8).add(-0.6).add(-0.4).add(-0.2).add(0.).add(0.2)
-      .add(0.4).add(0.6).add(0.8).add(1.).array(),
+      .add(-1.).add(-0.9).add(-0.8).add(-0.7).add(-0.6).add(-0.5).add(
+      -0.4).add(-0.3).add(-0.2).add(-0.1).add(0.).add(0.1).array(),
       "assigning variable hist_edge_1");
-    current_statement__ = 331;
+    current_statement__ = 353;
     return hist_array[(binary_search(value_0, hist_edge_0, pstream__) - 1)][
         (binary_search(value_1, hist_edge_1, pstream__) - 1)];
   } catch (const std::exception& e) {
@@ -1841,13 +3054,13 @@ CascadesEffAreaHist(const T0__& value_0, const T1__& value_1,
   
 }
 
-struct CascadesEffAreaHist_functor__ {
+struct NorthernTracksEffAreaHist_functor__ {
 template <typename T0__, typename T1__>
 stan::promote_args_t<T0__,
 T1__>
 operator()(const T0__& value_0, const T1__& value_1, std::ostream* pstream__)  const 
 {
-return CascadesEffAreaHist(value_0, value_1, pstream__);
+return NorthernTracksEffAreaHist(value_0, value_1, pstream__);
 }
 };
 
@@ -1869,11 +3082,11 @@ spectrum_rng(const T0__& alpha, const T1__& e_low, const T2__& e_up,
     local_scalar_t__ norm;
     norm = DUMMY_VAR__;
     
-    current_statement__ = 335;
+    current_statement__ = 357;
     norm = ((1 - alpha) / (pow(e_up, (1 - alpha)) - pow(e_low, (1 - alpha))));
-    current_statement__ = 336;
+    current_statement__ = 358;
     uni_sample = uniform_rng(0, 1, base_rng__);
-    current_statement__ = 337;
+    current_statement__ = 359;
     return pow(
              (((uni_sample * (1 - alpha)) / norm) + pow(e_low, (1 - alpha))),
              (1 / (1 - alpha)));
@@ -1914,25 +3127,25 @@ flux_conv(const T0__& alpha, const T1__& e_low, const T2__& e_up,
     local_scalar_t__ f2;
     f2 = DUMMY_VAR__;
     
-    current_statement__ = 345;
+    current_statement__ = 367;
     if (logical_eq(alpha, 1.0)) {
-      current_statement__ = 343;
+      current_statement__ = 365;
       f1 = (stan::math::log(e_up) - stan::math::log(e_low));
     } else {
-      current_statement__ = 341;
+      current_statement__ = 363;
       f1 = ((1 / (1 - alpha)) *
              (pow(e_up, (1 - alpha)) - pow(e_low, (1 - alpha))));
     }
-    current_statement__ = 350;
+    current_statement__ = 372;
     if (logical_eq(alpha, 2.0)) {
-      current_statement__ = 348;
+      current_statement__ = 370;
       f2 = (stan::math::log(e_up) - stan::math::log(e_low));
     } else {
-      current_statement__ = 346;
+      current_statement__ = 368;
       f2 = ((1 / (2 - alpha)) *
              (pow(e_up, (2 - alpha)) - pow(e_low, (2 - alpha))));
     }
-    current_statement__ = 351;
+    current_statement__ = 373;
     return (f1 / f2);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1956,9 +3169,9 @@ return flux_conv(alpha, e_low, e_up, pstream__);
 template <typename T0__, typename T1__, typename RNG>
 Eigen::Matrix<stan::promote_args_t<T0__,
 T1__>, -1, 1>
-CascadesAngularResolution_rng(const T0__& true_energy,
-                              const Eigen::Matrix<T1__, -1, 1>& true_dir,
-                              RNG& base_rng__, std::ostream* pstream__) {
+NorthernTracksAngularResolution_rng(const T0__& true_energy,
+                                    const Eigen::Matrix<T1__, -1, 1>& true_dir,
+                                    RNG& base_rng__, std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<T0__, T1__>;
   const static bool propto__ = true;
   (void) propto__;
@@ -1966,22 +3179,24 @@ CascadesAngularResolution_rng(const T0__& true_energy,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    Eigen::Matrix<local_scalar_t__, -1, 1> CascadesAngularResolutionPolyCoeffs;
-    CascadesAngularResolutionPolyCoeffs = Eigen::Matrix<local_scalar_t__, -1, 1>(6);
-    stan::math::fill(CascadesAngularResolutionPolyCoeffs, DUMMY_VAR__);
+    Eigen::Matrix<local_scalar_t__, -1, 1> NorthernTracksAngularResolutionPolyCoeffs;
+    NorthernTracksAngularResolutionPolyCoeffs = Eigen::Matrix<local_scalar_t__, -1, 1>(6);
+    stan::math::fill(NorthernTracksAngularResolutionPolyCoeffs, DUMMY_VAR__);
     
-    current_statement__ = 353;
-    assign(CascadesAngularResolutionPolyCoeffs, nil_index_list(),
+    current_statement__ = 375;
+    assign(NorthernTracksAngularResolutionPolyCoeffs, nil_index_list(),
       transpose(stan::math::to_row_vector(stan::math::array_builder<double>()
-        .add(-4.84839608e-01).add(3.59082699e+00).add(4.39765349e+01)
-        .add(-4.86964043e+02).add(1.50499694e+03).add(-1.48474342e+03)
-        .array())), "assigning variable CascadesAngularResolutionPolyCoeffs");
-    current_statement__ = 354;
+        .add(3.11287843e+01).add(-8.72542968e+02).add(8.74576241e+03)
+        .add(-3.72847494e+04).add(7.46309205e+04).add(-5.73160697e+04)
+        .array())),
+      "assigning variable NorthernTracksAngularResolutionPolyCoeffs");
+    current_statement__ = 376;
     return vMF_rng(true_dir,
              eval_poly1d(
                stan::math::log10(
-                 truncate_value(true_energy, 100.0, 100000000.0, pstream__)),
-               CascadesAngularResolutionPolyCoeffs, pstream__), base_rng__, pstream__);
+                 truncate_value(true_energy, 133.9845723819148,
+                   772161836.8251529, pstream__)),
+               NorthernTracksAngularResolutionPolyCoeffs, pstream__), base_rng__, pstream__);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
       // Next line prevents compiler griping about no return
@@ -1990,7 +3205,7 @@ CascadesAngularResolution_rng(const T0__& true_energy,
   
 }
 
-struct CascadesAngularResolution_rng_functor__ {
+struct NorthernTracksAngularResolution_rng_functor__ {
 template <typename T0__, typename T1__, typename RNG>
 Eigen::Matrix<stan::promote_args_t<T0__,
 T1__>, -1, 1>
@@ -1998,7 +3213,7 @@ operator()(const T0__& true_energy,
            const Eigen::Matrix<T1__, -1, 1>& true_dir, RNG& base_rng__,
            std::ostream* pstream__)  const 
 {
-return CascadesAngularResolution_rng(true_energy, true_dir, base_rng__,
+return NorthernTracksAngularResolution_rng(true_energy, true_dir, base_rng__,
          pstream__);
 }
 };
@@ -2006,10 +3221,10 @@ return CascadesAngularResolution_rng(true_energy, true_dir, base_rng__,
 template <typename T0__, typename T1__, typename T2__, typename RNG>
 stan::promote_args_t<T0__, T1__,
 T2__>
-c_energy_res_mix_rng(const Eigen::Matrix<T0__, -1, 1>& means,
-                     const Eigen::Matrix<T1__, -1, 1>& sigmas,
-                     const Eigen::Matrix<T2__, -1, 1>& weights,
-                     RNG& base_rng__, std::ostream* pstream__) {
+nt_energy_res_mix_rng(const Eigen::Matrix<T0__, -1, 1>& means,
+                      const Eigen::Matrix<T1__, -1, 1>& sigmas,
+                      const Eigen::Matrix<T2__, -1, 1>& weights,
+                      RNG& base_rng__, std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<T0__, T1__, T2__>;
   const static bool propto__ = true;
   (void) propto__;
@@ -2020,9 +3235,9 @@ c_energy_res_mix_rng(const Eigen::Matrix<T0__, -1, 1>& means,
     int index;
     index = std::numeric_limits<int>::min();
     
-    current_statement__ = 357;
+    current_statement__ = 379;
     index = categorical_rng(weights, base_rng__);
-    current_statement__ = 358;
+    current_statement__ = 380;
     return lognormal_rng(means[(index - 1)], sigmas[(index - 1)], base_rng__);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -2032,7 +3247,7 @@ c_energy_res_mix_rng(const Eigen::Matrix<T0__, -1, 1>& means,
   
 }
 
-struct c_energy_res_mix_rng_functor__ {
+struct nt_energy_res_mix_rng_functor__ {
 template <typename T0__, typename T1__, typename T2__, typename RNG>
 stan::promote_args_t<T0__, T1__,
 T2__>
@@ -2041,14 +3256,14 @@ operator()(const Eigen::Matrix<T0__, -1, 1>& means,
            const Eigen::Matrix<T2__, -1, 1>& weights, RNG& base_rng__,
            std::ostream* pstream__)  const 
 {
-return c_energy_res_mix_rng(means, sigmas, weights, base_rng__, pstream__);
+return nt_energy_res_mix_rng(means, sigmas, weights, base_rng__, pstream__);
 }
 };
 
 template <typename T0__, typename RNG>
 stan::promote_args_t<T0__>
-CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
-                            std::ostream* pstream__) {
+NorthernTracksEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
+                                   std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<T0__>;
   const static bool propto__ = true;
   (void) propto__;
@@ -2056,32 +3271,38 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionMuPolyCoeffs;
-    CascadesEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
+    std::vector<std::vector<local_scalar_t__>> NorthernTracksEnergyResolutionMuPolyCoeffs;
+    NorthernTracksEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(6, DUMMY_VAR__));
     
-    current_statement__ = 360;
-    assign(CascadesEnergyResolutionMuPolyCoeffs, nil_index_list(),
+    current_statement__ = 382;
+    assign(NorthernTracksEnergyResolutionMuPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(8.48311816e-02)
-      .add(-1.40745871e+00).add(8.39735975e+00).add(-1.29122823e+01).array())
-      .add(stan::math::array_builder<double>().add(2.21533176e-02)
-      .add(-3.66019621e-01).add(2.96495763e+00).add(-3.60384905e+00).array())
-      .add(stan::math::array_builder<double>().add(2.32768756e-03)
-      .add(-4.24291670e-02).add(1.26012779e+00).add(-5.56780566e-01).array())
-      .array(), "assigning variable CascadesEnergyResolutionMuPolyCoeffs");
-    std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionSdPolyCoeffs;
-    CascadesEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
+      .add(stan::math::array_builder<double>().add(1.08685003e-03)
+      .add(-2.53648066e-02).add(2.24501632e-01).add(-9.06537500e-01)
+      .add(1.79134801e+00).add(1.45476554e+00).array())
+      .add(stan::math::array_builder<double>().add(1.49206774e-03)
+      .add(-4.06887250e-02).add(4.13936311e-01).add(-1.92576615e+00)
+      .add(4.45364752e+00).add(-1.22862501e+00).array())
+      .add(stan::math::array_builder<double>().add(2.45833954e-03)
+      .add(-5.57506668e-02).add(4.59717951e-01).add(-1.59189249e+00)
+      .add(2.47139014e+00).add(1.46858275e+00).array()).array(),
+      "assigning variable NorthernTracksEnergyResolutionMuPolyCoeffs");
+    std::vector<std::vector<local_scalar_t__>> NorthernTracksEnergyResolutionSdPolyCoeffs;
+    NorthernTracksEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(6, DUMMY_VAR__));
     
-    current_statement__ = 361;
-    assign(CascadesEnergyResolutionSdPolyCoeffs, nil_index_list(),
+    current_statement__ = 383;
+    assign(NorthernTracksEnergyResolutionSdPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(-4.14191929e-03)
-      .add(7.53090020e-02).add(-4.31439499e-01).add(8.45584789e-01).array())
-      .add(stan::math::array_builder<double>().add(1.31648640e-03)
-      .add(-2.44148959e-02).add(1.55383236e-01).add(-3.02974554e-01).array())
-      .add(stan::math::array_builder<double>().add(-4.15523836e-04)
-      .add(7.44664372e-03).add(-4.42253583e-02).add(9.70242677e-02).array())
-      .array(), "assigning variable CascadesEnergyResolutionSdPolyCoeffs");
+      .add(stan::math::array_builder<double>().add(-2.43665255e-04)
+      .add(5.54317551e-03).add(-4.99986849e-02).add(2.25353690e-01)
+      .add(-4.84908813e-01).add(4.24449440e-01).array())
+      .add(stan::math::array_builder<double>().add(-2.41338525e-04)
+      .add(4.95693555e-03).add(-3.63341016e-02).add(1.13324177e-01)
+      .add(-1.27443586e-01).add(6.49296554e-02).array())
+      .add(stan::math::array_builder<double>().add(-6.14022403e-05)
+      .add(5.19916035e-04).add(6.62942739e-03).add(-9.33095655e-02)
+      .add(3.64903707e-01).add(-3.99972753e-01).array()).array(),
+      "assigning variable NorthernTracksEnergyResolutionSdPolyCoeffs");
     std::vector<local_scalar_t__> mu_e_res;
     mu_e_res = std::vector<local_scalar_t__>(3, DUMMY_VAR__);
     
@@ -2092,29 +3313,31 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
     weights = Eigen::Matrix<local_scalar_t__, -1, 1>(3);
     stan::math::fill(weights, DUMMY_VAR__);
     
-    current_statement__ = 367;
+    current_statement__ = 389;
     for (int i = 1; i <= 3; ++i) {
-      current_statement__ = 365;
+      current_statement__ = 387;
       assign(weights, cons_list(index_uni(i), nil_index_list()), (1.0 / 3),
         "assigning variable weights");}
-    current_statement__ = 371;
+    current_statement__ = 393;
     for (int i = 1; i <= 3; ++i) {
-      current_statement__ = 368;
+      current_statement__ = 390;
       assign(mu_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
-          to_vector(CascadesEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
+            truncate_value(true_energy, 259.05920320586245,
+              77339084.25215183, pstream__)),
+          to_vector(NorthernTracksEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable mu_e_res");
-      current_statement__ = 369;
+      current_statement__ = 391;
       assign(sigma_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
-          to_vector(CascadesEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
+            truncate_value(true_energy, 259.05920320586245,
+              77339084.25215183, pstream__)),
+          to_vector(NorthernTracksEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable sigma_e_res");}
-    current_statement__ = 372;
-    return c_energy_res_mix_rng(to_vector(stan::math::log(mu_e_res)),
+    current_statement__ = 394;
+    return nt_energy_res_mix_rng(to_vector(stan::math::log(mu_e_res)),
              to_vector(sigma_e_res), weights, base_rng__, pstream__);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -2124,22 +3347,22 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
   
 }
 
-struct CascadeEnergyResolution_rng_functor__ {
+struct NorthernTracksEnergyResolution_rng_functor__ {
 template <typename T0__, typename RNG>
 stan::promote_args_t<T0__>
 operator()(const T0__& true_energy, RNG& base_rng__, std::ostream* pstream__)  const 
 {
-return CascadeEnergyResolution_rng(true_energy, base_rng__, pstream__);
+return NorthernTracksEnergyResolution_rng(true_energy, base_rng__, pstream__);
 }
 };
 
 template <typename T0__, typename T1__, typename T2__>
 stan::promote_args_t<T0__, T1__,
 T2__>
-CascadesAngularResolution(const T0__& true_energy,
-                          const Eigen::Matrix<T1__, -1, 1>& true_dir,
-                          const Eigen::Matrix<T2__, -1, 1>& reco_dir,
-                          std::ostream* pstream__) {
+NorthernTracksAngularResolution(const T0__& true_energy,
+                                const Eigen::Matrix<T1__, -1, 1>& true_dir,
+                                const Eigen::Matrix<T2__, -1, 1>& reco_dir,
+                                std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<T0__, T1__, T2__>;
   const static bool propto__ = true;
   (void) propto__;
@@ -2147,22 +3370,24 @@ CascadesAngularResolution(const T0__& true_energy,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    Eigen::Matrix<local_scalar_t__, -1, 1> CascadesAngularResolutionPolyCoeffs;
-    CascadesAngularResolutionPolyCoeffs = Eigen::Matrix<local_scalar_t__, -1, 1>(6);
-    stan::math::fill(CascadesAngularResolutionPolyCoeffs, DUMMY_VAR__);
+    Eigen::Matrix<local_scalar_t__, -1, 1> NorthernTracksAngularResolutionPolyCoeffs;
+    NorthernTracksAngularResolutionPolyCoeffs = Eigen::Matrix<local_scalar_t__, -1, 1>(6);
+    stan::math::fill(NorthernTracksAngularResolutionPolyCoeffs, DUMMY_VAR__);
     
-    current_statement__ = 374;
-    assign(CascadesAngularResolutionPolyCoeffs, nil_index_list(),
+    current_statement__ = 396;
+    assign(NorthernTracksAngularResolutionPolyCoeffs, nil_index_list(),
       transpose(stan::math::to_row_vector(stan::math::array_builder<double>()
-        .add(-4.84839608e-01).add(3.59082699e+00).add(4.39765349e+01)
-        .add(-4.86964043e+02).add(1.50499694e+03).add(-1.48474342e+03)
-        .array())), "assigning variable CascadesAngularResolutionPolyCoeffs");
-    current_statement__ = 375;
+        .add(3.11287843e+01).add(-8.72542968e+02).add(8.74576241e+03)
+        .add(-3.72847494e+04).add(7.46309205e+04).add(-5.73160697e+04)
+        .array())),
+      "assigning variable NorthernTracksAngularResolutionPolyCoeffs");
+    current_statement__ = 397;
     return vMF_lpdf<false>(reco_dir, true_dir,
              eval_poly1d(
                stan::math::log10(
-                 truncate_value(true_energy, 100.0, 100000000.0, pstream__)),
-               CascadesAngularResolutionPolyCoeffs, pstream__), pstream__);
+                 truncate_value(true_energy, 133.9845723819148,
+                   772161836.8251529, pstream__)),
+               NorthernTracksAngularResolutionPolyCoeffs, pstream__), pstream__);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
       // Next line prevents compiler griping about no return
@@ -2171,7 +3396,7 @@ CascadesAngularResolution(const T0__& true_energy,
   
 }
 
-struct CascadesAngularResolution_functor__ {
+struct NorthernTracksAngularResolution_functor__ {
 template <typename T0__, typename T1__, typename T2__>
 stan::promote_args_t<T0__, T1__,
 T2__>
@@ -2180,17 +3405,18 @@ operator()(const T0__& true_energy,
            const Eigen::Matrix<T2__, -1, 1>& reco_dir,
            std::ostream* pstream__)  const 
 {
-return CascadesAngularResolution(true_energy, true_dir, reco_dir, pstream__);
+return NorthernTracksAngularResolution(true_energy, true_dir, reco_dir,
+         pstream__);
 }
 };
 
 template <typename T0__, typename T1__, typename T2__, typename T3__>
 stan::promote_args_t<T0__, T1__, T2__,
 T3__>
-c_energy_res_mix(const T0__& x, const Eigen::Matrix<T1__, -1, 1>& means,
-                 const Eigen::Matrix<T2__, -1, 1>& sigmas,
-                 const Eigen::Matrix<T3__, -1, 1>& weights,
-                 std::ostream* pstream__) {
+nt_energy_res_mix(const T0__& x, const Eigen::Matrix<T1__, -1, 1>& means,
+                  const Eigen::Matrix<T2__, -1, 1>& sigmas,
+                  const Eigen::Matrix<T3__, -1, 1>& weights,
+                  std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<T0__, T1__, T2__, T3__>;
   const static bool propto__ = true;
   (void) propto__;
@@ -2202,14 +3428,14 @@ c_energy_res_mix(const T0__& x, const Eigen::Matrix<T1__, -1, 1>& means,
     result = Eigen::Matrix<local_scalar_t__, -1, 1>(3);
     stan::math::fill(result, DUMMY_VAR__);
     
-    current_statement__ = 380;
+    current_statement__ = 402;
     for (int i = 1; i <= 3; ++i) {
-      current_statement__ = 378;
+      current_statement__ = 400;
       assign(result, cons_list(index_uni(i), nil_index_list()),
         (stan::math::log(weights)[(i - 1)] +
           lognormal_lpdf<false>(x, means[(i - 1)], sigmas[(i - 1)])),
         "assigning variable result");}
-    current_statement__ = 381;
+    current_statement__ = 403;
     return log_sum_exp(result);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -2219,7 +3445,7 @@ c_energy_res_mix(const T0__& x, const Eigen::Matrix<T1__, -1, 1>& means,
   
 }
 
-struct c_energy_res_mix_functor__ {
+struct nt_energy_res_mix_functor__ {
 template <typename T0__, typename T1__, typename T2__, typename T3__>
 stan::promote_args_t<T0__, T1__, T2__,
 T3__>
@@ -2227,15 +3453,16 @@ operator()(const T0__& x, const Eigen::Matrix<T1__, -1, 1>& means,
            const Eigen::Matrix<T2__, -1, 1>& sigmas,
            const Eigen::Matrix<T3__, -1, 1>& weights, std::ostream* pstream__)  const 
 {
-return c_energy_res_mix(x, means, sigmas, weights, pstream__);
+return nt_energy_res_mix(x, means, sigmas, weights, pstream__);
 }
 };
 
 template <typename T0__, typename T1__>
 stan::promote_args_t<T0__,
 T1__>
-CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
-                        std::ostream* pstream__) {
+NorthernTracksEnergyResolution(const T0__& true_energy,
+                               const T1__& reco_energy,
+                               std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<T0__, T1__>;
   const static bool propto__ = true;
   (void) propto__;
@@ -2243,32 +3470,38 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionMuPolyCoeffs;
-    CascadesEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
+    std::vector<std::vector<local_scalar_t__>> NorthernTracksEnergyResolutionMuPolyCoeffs;
+    NorthernTracksEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(6, DUMMY_VAR__));
     
-    current_statement__ = 383;
-    assign(CascadesEnergyResolutionMuPolyCoeffs, nil_index_list(),
+    current_statement__ = 405;
+    assign(NorthernTracksEnergyResolutionMuPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(8.48311816e-02)
-      .add(-1.40745871e+00).add(8.39735975e+00).add(-1.29122823e+01).array())
-      .add(stan::math::array_builder<double>().add(2.21533176e-02)
-      .add(-3.66019621e-01).add(2.96495763e+00).add(-3.60384905e+00).array())
-      .add(stan::math::array_builder<double>().add(2.32768756e-03)
-      .add(-4.24291670e-02).add(1.26012779e+00).add(-5.56780566e-01).array())
-      .array(), "assigning variable CascadesEnergyResolutionMuPolyCoeffs");
-    std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionSdPolyCoeffs;
-    CascadesEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
+      .add(stan::math::array_builder<double>().add(1.08685003e-03)
+      .add(-2.53648066e-02).add(2.24501632e-01).add(-9.06537500e-01)
+      .add(1.79134801e+00).add(1.45476554e+00).array())
+      .add(stan::math::array_builder<double>().add(1.49206774e-03)
+      .add(-4.06887250e-02).add(4.13936311e-01).add(-1.92576615e+00)
+      .add(4.45364752e+00).add(-1.22862501e+00).array())
+      .add(stan::math::array_builder<double>().add(2.45833954e-03)
+      .add(-5.57506668e-02).add(4.59717951e-01).add(-1.59189249e+00)
+      .add(2.47139014e+00).add(1.46858275e+00).array()).array(),
+      "assigning variable NorthernTracksEnergyResolutionMuPolyCoeffs");
+    std::vector<std::vector<local_scalar_t__>> NorthernTracksEnergyResolutionSdPolyCoeffs;
+    NorthernTracksEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(6, DUMMY_VAR__));
     
-    current_statement__ = 384;
-    assign(CascadesEnergyResolutionSdPolyCoeffs, nil_index_list(),
+    current_statement__ = 406;
+    assign(NorthernTracksEnergyResolutionSdPolyCoeffs, nil_index_list(),
       stan::math::array_builder<std::vector<double>>()
-      .add(stan::math::array_builder<double>().add(-4.14191929e-03)
-      .add(7.53090020e-02).add(-4.31439499e-01).add(8.45584789e-01).array())
-      .add(stan::math::array_builder<double>().add(1.31648640e-03)
-      .add(-2.44148959e-02).add(1.55383236e-01).add(-3.02974554e-01).array())
-      .add(stan::math::array_builder<double>().add(-4.15523836e-04)
-      .add(7.44664372e-03).add(-4.42253583e-02).add(9.70242677e-02).array())
-      .array(), "assigning variable CascadesEnergyResolutionSdPolyCoeffs");
+      .add(stan::math::array_builder<double>().add(-2.43665255e-04)
+      .add(5.54317551e-03).add(-4.99986849e-02).add(2.25353690e-01)
+      .add(-4.84908813e-01).add(4.24449440e-01).array())
+      .add(stan::math::array_builder<double>().add(-2.41338525e-04)
+      .add(4.95693555e-03).add(-3.63341016e-02).add(1.13324177e-01)
+      .add(-1.27443586e-01).add(6.49296554e-02).array())
+      .add(stan::math::array_builder<double>().add(-6.14022403e-05)
+      .add(5.19916035e-04).add(6.62942739e-03).add(-9.33095655e-02)
+      .add(3.64903707e-01).add(-3.99972753e-01).array()).array(),
+      "assigning variable NorthernTracksEnergyResolutionSdPolyCoeffs");
     std::vector<local_scalar_t__> mu_e_res;
     mu_e_res = std::vector<local_scalar_t__>(3, DUMMY_VAR__);
     
@@ -2279,29 +3512,31 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
     weights = Eigen::Matrix<local_scalar_t__, -1, 1>(3);
     stan::math::fill(weights, DUMMY_VAR__);
     
-    current_statement__ = 390;
+    current_statement__ = 412;
     for (int i = 1; i <= 3; ++i) {
-      current_statement__ = 388;
+      current_statement__ = 410;
       assign(weights, cons_list(index_uni(i), nil_index_list()), (1.0 / 3),
         "assigning variable weights");}
-    current_statement__ = 394;
+    current_statement__ = 416;
     for (int i = 1; i <= 3; ++i) {
-      current_statement__ = 391;
+      current_statement__ = 413;
       assign(mu_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
-          to_vector(CascadesEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
+            truncate_value(true_energy, 259.05920320586245,
+              77339084.25215183, pstream__)),
+          to_vector(NorthernTracksEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable mu_e_res");
-      current_statement__ = 392;
+      current_statement__ = 414;
       assign(sigma_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
-            truncate_value(true_energy, 1000.0, 10000000.0, pstream__)),
-          to_vector(CascadesEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
+            truncate_value(true_energy, 259.05920320586245,
+              77339084.25215183, pstream__)),
+          to_vector(NorthernTracksEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable sigma_e_res");}
-    current_statement__ = 395;
-    return c_energy_res_mix(stan::math::log10(reco_energy),
+    current_statement__ = 417;
+    return nt_energy_res_mix(stan::math::log10(reco_energy),
              to_vector(stan::math::log(mu_e_res)), to_vector(sigma_e_res),
              weights, pstream__);
   } catch (const std::exception& e) {
@@ -2312,23 +3547,23 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
   
 }
 
-struct CascadeEnergyResolution_functor__ {
+struct NorthernTracksEnergyResolution_functor__ {
 template <typename T0__, typename T1__>
 stan::promote_args_t<T0__,
 T1__>
 operator()(const T0__& true_energy, const T1__& reco_energy,
            std::ostream* pstream__)  const 
 {
-return CascadeEnergyResolution(true_energy, reco_energy, pstream__);
+return NorthernTracksEnergyResolution(true_energy, reco_energy, pstream__);
 }
 };
 
 template <typename T0__, typename T1__>
 stan::promote_args_t<T0__,
 T1__>
-CascadesEffectiveArea(const T0__& true_energy,
-                      const Eigen::Matrix<T1__, -1, 1>& true_dir,
-                      std::ostream* pstream__) {
+NorthernTracksEffectiveArea(const T0__& true_energy,
+                            const Eigen::Matrix<T1__, -1, 1>& true_dir,
+                            std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<T0__, T1__>;
   const static bool propto__ = true;
   (void) propto__;
@@ -2336,8 +3571,8 @@ CascadesEffectiveArea(const T0__& true_energy,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    current_statement__ = 397;
-    return CascadesEffAreaHist(true_energy,
+    current_statement__ = 419;
+    return NorthernTracksEffAreaHist(true_energy,
              stan::math::cos(
                (stan::math::pi() - stan::math::acos(true_dir[(3 - 1)]))), pstream__);
   } catch (const std::exception& e) {
@@ -2348,7 +3583,7 @@ CascadesEffectiveArea(const T0__& true_energy,
   
 }
 
-struct CascadesEffectiveArea_functor__ {
+struct NorthernTracksEffectiveArea_functor__ {
 template <typename T0__, typename T1__>
 stan::promote_args_t<T0__,
 T1__>
@@ -2356,7 +3591,7 @@ operator()(const T0__& true_energy,
            const Eigen::Matrix<T1__, -1, 1>& true_dir,
            std::ostream* pstream__)  const 
 {
-return CascadesEffectiveArea(true_energy, true_dir, pstream__);
+return NorthernTracksEffectiveArea(true_energy, true_dir, pstream__);
 }
 };
 
@@ -2379,6 +3614,12 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
   double aeff_max;
   double v_lim;
   double T;
+  double F_atmo;
+  double atmo_integ_val;
+  int N_atmo;
+  std::vector<Eigen::Matrix<double, -1, 1>> atmo_directions;
+  Eigen::Matrix<double, -1, 1> atmo_energies;
+  Eigen::Matrix<double, -1, 1> atmo_weights;
   Eigen::Matrix<double, -1, 1> F;
   Eigen::Matrix<double, -1, 1> w_exposure;
   Eigen::Matrix<double, -1, 1> eps;
@@ -2420,16 +3661,16 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       pos__ = std::numeric_limits<int>::min();
       
       pos__ = 1;
-      current_statement__ = 52;
+      current_statement__ = 64;
       context__.validate_dims("data initialization","Ns","int",
           context__.to_vec());
       Ns = std::numeric_limits<int>::min();
       
-      current_statement__ = 52;
+      current_statement__ = 64;
       Ns = context__.vals_i("Ns")[(1 - 1)];
-      current_statement__ = 53;
+      current_statement__ = 65;
       validate_non_negative_index("varpi", "Ns", Ns);
-      current_statement__ = 54;
+      current_statement__ = 66;
       context__.validate_dims("data initialization","varpi","double",
           context__.to_vec(Ns, 3));
       varpi = std::vector<Eigen::Matrix<double, -1, 1>>(Ns, Eigen::Matrix<double, -1, 1>(3));
@@ -2437,31 +3678,31 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> varpi_flat__;
-        current_statement__ = 54;
+        current_statement__ = 66;
         assign(varpi_flat__, nil_index_list(), context__.vals_r("varpi"),
           "assigning variable varpi_flat__");
-        current_statement__ = 54;
+        current_statement__ = 66;
         pos__ = 1;
-        current_statement__ = 54;
+        current_statement__ = 66;
         for (int sym1__ = 1; sym1__ <= 3; ++sym1__) {
-          current_statement__ = 54;
+          current_statement__ = 66;
           for (int sym2__ = 1; sym2__ <= Ns; ++sym2__) {
-            current_statement__ = 54;
+            current_statement__ = 66;
             assign(varpi,
               cons_list(index_uni(sym2__),
                 cons_list(index_uni(sym1__), nil_index_list())),
               varpi_flat__[(pos__ - 1)], "assigning variable varpi");
-            current_statement__ = 54;
+            current_statement__ = 66;
             pos__ = (pos__ + 1);}}
       }
-      current_statement__ = 54;
+      current_statement__ = 66;
       for (int sym1__ = 1; sym1__ <= Ns; ++sym1__) {
-        current_statement__ = 54;
-        current_statement__ = 54;
+        current_statement__ = 66;
+        current_statement__ = 66;
         check_unit_vector(function__, "varpi[sym1__]", varpi[(sym1__ - 1)]);}
-      current_statement__ = 55;
+      current_statement__ = 67;
       validate_non_negative_index("D", "Ns", Ns);
-      current_statement__ = 56;
+      current_statement__ = 68;
       context__.validate_dims("data initialization","D","double",
           context__.to_vec(Ns));
       D = Eigen::Matrix<double, -1, 1>(Ns);
@@ -2469,22 +3710,22 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> D_flat__;
-        current_statement__ = 56;
+        current_statement__ = 68;
         assign(D_flat__, nil_index_list(), context__.vals_r("D"),
           "assigning variable D_flat__");
-        current_statement__ = 56;
+        current_statement__ = 68;
         pos__ = 1;
-        current_statement__ = 56;
+        current_statement__ = 68;
         for (int sym1__ = 1; sym1__ <= Ns; ++sym1__) {
-          current_statement__ = 56;
+          current_statement__ = 68;
           assign(D, cons_list(index_uni(sym1__), nil_index_list()),
             D_flat__[(pos__ - 1)], "assigning variable D");
-          current_statement__ = 56;
+          current_statement__ = 68;
           pos__ = (pos__ + 1);}
       }
-      current_statement__ = 57;
+      current_statement__ = 69;
       validate_non_negative_index("z", "Ns + 1", (Ns + 1));
-      current_statement__ = 58;
+      current_statement__ = 70;
       context__.validate_dims("data initialization","z","double",
           context__.to_vec((Ns + 1)));
       z = Eigen::Matrix<double, -1, 1>((Ns + 1));
@@ -2492,71 +3733,71 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> z_flat__;
-        current_statement__ = 58;
+        current_statement__ = 70;
         assign(z_flat__, nil_index_list(), context__.vals_r("z"),
           "assigning variable z_flat__");
-        current_statement__ = 58;
+        current_statement__ = 70;
         pos__ = 1;
-        current_statement__ = 58;
+        current_statement__ = 70;
         for (int sym1__ = 1; sym1__ <= (Ns + 1); ++sym1__) {
-          current_statement__ = 58;
+          current_statement__ = 70;
           assign(z, cons_list(index_uni(sym1__), nil_index_list()),
             z_flat__[(pos__ - 1)], "assigning variable z");
-          current_statement__ = 58;
+          current_statement__ = 70;
           pos__ = (pos__ + 1);}
       }
-      current_statement__ = 59;
+      current_statement__ = 71;
       context__.validate_dims("data initialization","alpha","double",
           context__.to_vec());
       alpha = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 59;
+      current_statement__ = 71;
       alpha = context__.vals_r("alpha")[(1 - 1)];
-      current_statement__ = 60;
+      current_statement__ = 72;
       context__.validate_dims("data initialization","Edet_min","double",
           context__.to_vec());
       Edet_min = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 60;
+      current_statement__ = 72;
       Edet_min = context__.vals_r("Edet_min")[(1 - 1)];
-      current_statement__ = 61;
+      current_statement__ = 73;
       context__.validate_dims("data initialization","Esrc_min","double",
           context__.to_vec());
       Esrc_min = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 61;
+      current_statement__ = 73;
       Esrc_min = context__.vals_r("Esrc_min")[(1 - 1)];
-      current_statement__ = 62;
+      current_statement__ = 74;
       context__.validate_dims("data initialization","Esrc_max","double",
           context__.to_vec());
       Esrc_max = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 62;
+      current_statement__ = 74;
       Esrc_max = context__.vals_r("Esrc_max")[(1 - 1)];
-      current_statement__ = 63;
+      current_statement__ = 75;
       context__.validate_dims("data initialization","L","double",
           context__.to_vec());
       L = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 63;
+      current_statement__ = 75;
       L = context__.vals_r("L")[(1 - 1)];
-      current_statement__ = 64;
+      current_statement__ = 76;
       context__.validate_dims("data initialization","F_diff","double",
           context__.to_vec());
       F_diff = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 64;
+      current_statement__ = 76;
       F_diff = context__.vals_r("F_diff")[(1 - 1)];
-      current_statement__ = 65;
+      current_statement__ = 77;
       context__.validate_dims("data initialization","Ngrid","int",
           context__.to_vec());
       Ngrid = std::numeric_limits<int>::min();
       
-      current_statement__ = 65;
+      current_statement__ = 77;
       Ngrid = context__.vals_i("Ngrid")[(1 - 1)];
-      current_statement__ = 66;
+      current_statement__ = 78;
       validate_non_negative_index("alpha_grid", "Ngrid", Ngrid);
-      current_statement__ = 67;
+      current_statement__ = 79;
       context__.validate_dims("data initialization","alpha_grid","double",
           context__.to_vec(Ngrid));
       alpha_grid = Eigen::Matrix<double, -1, 1>(Ngrid);
@@ -2564,25 +3805,25 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> alpha_grid_flat__;
-        current_statement__ = 67;
+        current_statement__ = 79;
         assign(alpha_grid_flat__, nil_index_list(),
           context__.vals_r("alpha_grid"),
           "assigning variable alpha_grid_flat__");
-        current_statement__ = 67;
+        current_statement__ = 79;
         pos__ = 1;
-        current_statement__ = 67;
+        current_statement__ = 79;
         for (int sym1__ = 1; sym1__ <= Ngrid; ++sym1__) {
-          current_statement__ = 67;
+          current_statement__ = 79;
           assign(alpha_grid, cons_list(index_uni(sym1__), nil_index_list()),
             alpha_grid_flat__[(pos__ - 1)], "assigning variable alpha_grid");
-          current_statement__ = 67;
+          current_statement__ = 79;
           pos__ = (pos__ + 1);}
       }
-      current_statement__ = 68;
+      current_statement__ = 80;
       validate_non_negative_index("integral_grid", "Ns + 1", (Ns + 1));
-      current_statement__ = 69;
+      current_statement__ = 81;
       validate_non_negative_index("integral_grid", "Ngrid", Ngrid);
-      current_statement__ = 70;
+      current_statement__ = 82;
       context__.validate_dims("data initialization","integral_grid","double",
           context__.to_vec((Ns + 1), Ngrid));
       integral_grid = std::vector<Eigen::Matrix<double, -1, 1>>((Ns + 1), Eigen::Matrix<double, -1, 1>(Ngrid));
@@ -2590,166 +3831,280 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> integral_grid_flat__;
-        current_statement__ = 70;
+        current_statement__ = 82;
         assign(integral_grid_flat__, nil_index_list(),
           context__.vals_r("integral_grid"),
           "assigning variable integral_grid_flat__");
-        current_statement__ = 70;
+        current_statement__ = 82;
         pos__ = 1;
-        current_statement__ = 70;
+        current_statement__ = 82;
         for (int sym1__ = 1; sym1__ <= Ngrid; ++sym1__) {
-          current_statement__ = 70;
+          current_statement__ = 82;
           for (int sym2__ = 1; sym2__ <= (Ns + 1); ++sym2__) {
-            current_statement__ = 70;
+            current_statement__ = 82;
             assign(integral_grid,
               cons_list(index_uni(sym2__),
                 cons_list(index_uni(sym1__), nil_index_list())),
               integral_grid_flat__[(pos__ - 1)],
               "assigning variable integral_grid");
-            current_statement__ = 70;
+            current_statement__ = 82;
             pos__ = (pos__ + 1);}}
       }
-      current_statement__ = 71;
+      current_statement__ = 83;
       context__.validate_dims("data initialization","aeff_max","double",
           context__.to_vec());
       aeff_max = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 71;
+      current_statement__ = 83;
       aeff_max = context__.vals_r("aeff_max")[(1 - 1)];
-      current_statement__ = 72;
+      current_statement__ = 84;
       context__.validate_dims("data initialization","v_lim","double",
           context__.to_vec());
       v_lim = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 72;
+      current_statement__ = 84;
       v_lim = context__.vals_r("v_lim")[(1 - 1)];
-      current_statement__ = 73;
+      current_statement__ = 85;
       context__.validate_dims("data initialization","T","double",
           context__.to_vec());
       T = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 73;
-      T = context__.vals_r("T")[(1 - 1)];
-      current_statement__ = 74;
-      validate_non_negative_index("F", "Ns + 1", (Ns + 1));
-      current_statement__ = 75;
-      F = Eigen::Matrix<double, -1, 1>((Ns + 1));
-      stan::math::fill(F, std::numeric_limits<double>::quiet_NaN());
-      
-      current_statement__ = 76;
-      validate_non_negative_index("w_exposure", "Ns + 1", (Ns + 1));
-      current_statement__ = 77;
-      w_exposure = Eigen::Matrix<double, -1, 1>((Ns + 1));
-      stan::math::fill(w_exposure, std::numeric_limits<double>::quiet_NaN());
-      
-      current_statement__ = 78;
-      validate_non_negative_index("eps", "Ns + 1", (Ns + 1));
-      current_statement__ = 79;
-      eps = Eigen::Matrix<double, -1, 1>((Ns + 1));
-      stan::math::fill(eps, std::numeric_limits<double>::quiet_NaN());
-      
-      current_statement__ = 80;
-      track_type = std::numeric_limits<int>::min();
-      
-      current_statement__ = 81;
-      cascade_type = std::numeric_limits<int>::min();
-      
-      current_statement__ = 82;
-      Ftot = std::numeric_limits<double>::quiet_NaN();
-      
-      current_statement__ = 83;
-      Fs = std::numeric_limits<double>::quiet_NaN();
-      
-      current_statement__ = 84;
-      f = std::numeric_limits<double>::quiet_NaN();
-      
       current_statement__ = 85;
-      Nex = std::numeric_limits<double>::quiet_NaN();
+      T = context__.vals_r("T")[(1 - 1)];
+      current_statement__ = 86;
+      context__.validate_dims("data initialization","F_atmo","double",
+          context__.to_vec());
+      F_atmo = std::numeric_limits<double>::quiet_NaN();
       
       current_statement__ = 86;
-      N = std::numeric_limits<int>::min();
+      F_atmo = context__.vals_r("F_atmo")[(1 - 1)];
+      current_statement__ = 87;
+      context__.validate_dims("data initialization","atmo_integ_val",
+          "double",context__.to_vec());
+      atmo_integ_val = std::numeric_limits<double>::quiet_NaN();
       
       current_statement__ = 87;
-      track_type = 0;
+      atmo_integ_val = context__.vals_r("atmo_integ_val")[(1 - 1)];
       current_statement__ = 88;
-      cascade_type = 1;
+      context__.validate_dims("data initialization","N_atmo","int",
+          context__.to_vec());
+      N_atmo = std::numeric_limits<int>::min();
+      
+      current_statement__ = 88;
+      N_atmo = context__.vals_i("N_atmo")[(1 - 1)];
       current_statement__ = 89;
-      Fs = 0.0;
-      current_statement__ = 94;
-      for (int k = 1; k <= Ns; ++k) {
+      validate_non_negative_index("atmo_directions", "N_atmo", N_atmo);
+      current_statement__ = 90;
+      context__.validate_dims("data initialization","atmo_directions",
+          "double",context__.to_vec(N_atmo, 3));
+      atmo_directions = std::vector<Eigen::Matrix<double, -1, 1>>(N_atmo, Eigen::Matrix<double, -1, 1>(3));
+      stan::math::fill(atmo_directions, std::numeric_limits<double>::quiet_NaN());
+      
+      {
+        std::vector<local_scalar_t__> atmo_directions_flat__;
         current_statement__ = 90;
+        assign(atmo_directions_flat__, nil_index_list(),
+          context__.vals_r("atmo_directions"),
+          "assigning variable atmo_directions_flat__");
+        current_statement__ = 90;
+        pos__ = 1;
+        current_statement__ = 90;
+        for (int sym1__ = 1; sym1__ <= 3; ++sym1__) {
+          current_statement__ = 90;
+          for (int sym2__ = 1; sym2__ <= N_atmo; ++sym2__) {
+            current_statement__ = 90;
+            assign(atmo_directions,
+              cons_list(index_uni(sym2__),
+                cons_list(index_uni(sym1__), nil_index_list())),
+              atmo_directions_flat__[(pos__ - 1)],
+              "assigning variable atmo_directions");
+            current_statement__ = 90;
+            pos__ = (pos__ + 1);}}
+      }
+      current_statement__ = 90;
+      for (int sym1__ = 1; sym1__ <= N_atmo; ++sym1__) {
+        current_statement__ = 90;
+        current_statement__ = 90;
+        check_unit_vector(function__, "atmo_directions[sym1__]",
+                          atmo_directions[(sym1__ - 1)]);}
+      current_statement__ = 91;
+      validate_non_negative_index("atmo_energies", "N_atmo", N_atmo);
+      current_statement__ = 92;
+      context__.validate_dims("data initialization","atmo_energies","double",
+          context__.to_vec(N_atmo));
+      atmo_energies = Eigen::Matrix<double, -1, 1>(N_atmo);
+      stan::math::fill(atmo_energies, std::numeric_limits<double>::quiet_NaN());
+      
+      {
+        std::vector<local_scalar_t__> atmo_energies_flat__;
+        current_statement__ = 92;
+        assign(atmo_energies_flat__, nil_index_list(),
+          context__.vals_r("atmo_energies"),
+          "assigning variable atmo_energies_flat__");
+        current_statement__ = 92;
+        pos__ = 1;
+        current_statement__ = 92;
+        for (int sym1__ = 1; sym1__ <= N_atmo; ++sym1__) {
+          current_statement__ = 92;
+          assign(atmo_energies,
+            cons_list(index_uni(sym1__), nil_index_list()),
+            atmo_energies_flat__[(pos__ - 1)],
+            "assigning variable atmo_energies");
+          current_statement__ = 92;
+          pos__ = (pos__ + 1);}
+      }
+      current_statement__ = 93;
+      validate_non_negative_index("atmo_weights", "N_atmo", N_atmo);
+      current_statement__ = 94;
+      context__.validate_dims("data initialization","atmo_weights","double",
+          context__.to_vec(N_atmo));
+      atmo_weights = Eigen::Matrix<double, -1, 1>(N_atmo);
+      stan::math::fill(atmo_weights, std::numeric_limits<double>::quiet_NaN());
+      
+      {
+        std::vector<local_scalar_t__> atmo_weights_flat__;
+        current_statement__ = 94;
+        assign(atmo_weights_flat__, nil_index_list(),
+          context__.vals_r("atmo_weights"),
+          "assigning variable atmo_weights_flat__");
+        current_statement__ = 94;
+        pos__ = 1;
+        current_statement__ = 94;
+        for (int sym1__ = 1; sym1__ <= N_atmo; ++sym1__) {
+          current_statement__ = 94;
+          assign(atmo_weights,
+            cons_list(index_uni(sym1__), nil_index_list()),
+            atmo_weights_flat__[(pos__ - 1)],
+            "assigning variable atmo_weights");
+          current_statement__ = 94;
+          pos__ = (pos__ + 1);}
+      }
+      current_statement__ = 94;
+      current_statement__ = 94;
+      check_simplex(function__, "atmo_weights", atmo_weights);
+      current_statement__ = 95;
+      validate_non_negative_index("F", "Ns + 2", (Ns + 2));
+      current_statement__ = 96;
+      F = Eigen::Matrix<double, -1, 1>((Ns + 2));
+      stan::math::fill(F, std::numeric_limits<double>::quiet_NaN());
+      
+      current_statement__ = 97;
+      validate_non_negative_index("w_exposure", "Ns + 2", (Ns + 2));
+      current_statement__ = 98;
+      w_exposure = Eigen::Matrix<double, -1, 1>((Ns + 2));
+      stan::math::fill(w_exposure, std::numeric_limits<double>::quiet_NaN());
+      
+      current_statement__ = 99;
+      validate_non_negative_index("eps", "Ns + 2", (Ns + 2));
+      current_statement__ = 100;
+      eps = Eigen::Matrix<double, -1, 1>((Ns + 2));
+      stan::math::fill(eps, std::numeric_limits<double>::quiet_NaN());
+      
+      current_statement__ = 101;
+      track_type = std::numeric_limits<int>::min();
+      
+      current_statement__ = 102;
+      cascade_type = std::numeric_limits<int>::min();
+      
+      current_statement__ = 103;
+      Ftot = std::numeric_limits<double>::quiet_NaN();
+      
+      current_statement__ = 104;
+      Fs = std::numeric_limits<double>::quiet_NaN();
+      
+      current_statement__ = 105;
+      f = std::numeric_limits<double>::quiet_NaN();
+      
+      current_statement__ = 106;
+      Nex = std::numeric_limits<double>::quiet_NaN();
+      
+      current_statement__ = 107;
+      N = std::numeric_limits<int>::min();
+      
+      current_statement__ = 108;
+      track_type = 0;
+      current_statement__ = 109;
+      cascade_type = 1;
+      current_statement__ = 110;
+      Fs = 0.0;
+      current_statement__ = 115;
+      for (int k = 1; k <= Ns; ++k) {
+        current_statement__ = 111;
         assign(F, cons_list(index_uni(k), nil_index_list()),
           (L / ((4 * stan::math::pi()) * pow((D[(k - 1)] * 3.086e+22), 2))),
           "assigning variable F");
-        current_statement__ = 91;
+        current_statement__ = 112;
         assign(F, cons_list(index_uni(k), nil_index_list()),
           (F[(k - 1)] * flux_conv(alpha, Esrc_min, Esrc_max, pstream__)),
           "assigning variable F");
-        current_statement__ = 92;
+        current_statement__ = 113;
         Fs = (Fs + F[(k - 1)]);}
-      current_statement__ = 95;
+      current_statement__ = 116;
       assign(F, cons_list(index_uni((Ns + 1)), nil_index_list()), F_diff,
         "assigning variable F");
-      current_statement__ = 96;
-      Ftot = (Fs + F_diff);
-      current_statement__ = 97;
+      current_statement__ = 117;
+      assign(F, cons_list(index_uni((Ns + 2)), nil_index_list()), F_atmo,
+        "assigning variable F");
+      current_statement__ = 118;
+      Ftot = ((Fs + F_diff) + F_atmo);
+      current_statement__ = 119;
       f = (Fs / Ftot);
-      current_statement__ = 98;
+      current_statement__ = 120;
       if (pstream__) {
         stan_print(pstream__, "f: ");
         stan_print(pstream__, f);
         stan_print(pstream__, "\n");
       }
-      current_statement__ = 99;
+      current_statement__ = 121;
       assign(eps, nil_index_list(),
-        get_exposure_factor(alpha, alpha_grid, integral_grid, T,
-          Ns, pstream__), "assigning variable eps");
-      current_statement__ = 100;
+        get_exposure_factor_atmo(alpha, alpha_grid, integral_grid,
+          atmo_integ_val, T, Ns, pstream__), "assigning variable eps");
+      current_statement__ = 122;
       Nex = get_Nex(F, eps, pstream__);
-      current_statement__ = 101;
+      current_statement__ = 123;
       assign(w_exposure, nil_index_list(),
         get_exposure_weights(F, eps, pstream__),
         "assigning variable w_exposure");
-      current_statement__ = 102;
+      current_statement__ = 124;
       N = poisson_rng(Nex, base_rng__);
-      current_statement__ = 103;
+      current_statement__ = 125;
       if (pstream__) {
         stan_print(pstream__, w_exposure);
         stan_print(pstream__, "\n");
       }
-      current_statement__ = 104;
+      current_statement__ = 126;
       if (pstream__) {
         stan_print(pstream__, Ngrid);
         stan_print(pstream__, "\n");
       }
-      current_statement__ = 105;
+      current_statement__ = 127;
       if (pstream__) {
         stan_print(pstream__, Nex);
         stan_print(pstream__, "\n");
       }
-      current_statement__ = 106;
+      current_statement__ = 128;
       if (pstream__) {
         stan_print(pstream__, N);
         stan_print(pstream__, "\n");
       }
-      current_statement__ = 77;
-      current_statement__ = 77;
+      current_statement__ = 98;
+      current_statement__ = 98;
       check_simplex(function__, "w_exposure", w_exposure);
-      current_statement__ = 107;
+      current_statement__ = 129;
       validate_non_negative_index("Lambda", "N", N);
-      current_statement__ = 108;
+      current_statement__ = 130;
       validate_non_negative_index("Esrc", "N", N);
-      current_statement__ = 109;
+      current_statement__ = 131;
       validate_non_negative_index("E", "N", N);
-      current_statement__ = 110;
+      current_statement__ = 132;
       validate_non_negative_index("Edet", "N", N);
-      current_statement__ = 111;
+      current_statement__ = 133;
       validate_non_negative_index("cosz", "N", N);
-      current_statement__ = 112;
+      current_statement__ = 134;
       validate_non_negative_index("Pdet", "N", N);
-      current_statement__ = 113;
+      current_statement__ = 135;
       validate_non_negative_index("event", "N", N);
-      current_statement__ = 114;
+      current_statement__ = 136;
       validate_non_negative_index("event_type", "N", N);
     } catch (const std::exception& e) {
       stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -2841,6 +4196,9 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       Edet = Eigen::Matrix<double, -1, 1>(N);
       stan::math::fill(Edet, std::numeric_limits<double>::quiet_NaN());
       
+      int atmo_index;
+      atmo_index = std::numeric_limits<int>::min();
+      
       std::vector<double> cosz;
       cosz = std::vector<double>(N, std::numeric_limits<double>::quiet_NaN());
       
@@ -2871,82 +4229,107 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       event_type = Eigen::Matrix<double, -1, 1>(N);
       stan::math::fill(event_type, std::numeric_limits<double>::quiet_NaN());
       
-      current_statement__ = 15;
+      current_statement__ = 16;
       Nex_sim = Nex;
-      current_statement__ = 51;
+      current_statement__ = 63;
       for (int i = 1; i <= N; ++i) {
-        current_statement__ = 16;
+        current_statement__ = 17;
         assign(Lambda, cons_list(index_uni(i), nil_index_list()),
           categorical_rng(w_exposure, base_rng__),
           "assigning variable Lambda");
-        current_statement__ = 17;
-        accept = 0;
         current_statement__ = 18;
-        detected = 0;
+        accept = 0;
         current_statement__ = 19;
+        detected = 0;
+        current_statement__ = 20;
         ntrials = 0;
-        current_statement__ = 47;
+        current_statement__ = 59;
         while (logical_neq(accept, 1)) {
-          current_statement__ = 25;
+          current_statement__ = 30;
           if (logical_lte(Lambda[(i - 1)], Ns)) {
-            current_statement__ = 23;
+            current_statement__ = 28;
             assign(omega, nil_index_list(), varpi[(Lambda[(i - 1)] - 1)],
               "assigning variable omega");
           } else {
-            current_statement__ = 22;
+            current_statement__ = 27;
             if (logical_eq(Lambda[(i - 1)], (Ns + 1))) {
-              current_statement__ = 20;
+              current_statement__ = 25;
               assign(omega, nil_index_list(),
                 sphere_lim_rng(1, v_lim, base_rng__, pstream__),
                 "assigning variable omega");
-            } 
+            } else {
+              current_statement__ = 24;
+              if (logical_eq(Lambda[(i - 1)], (Ns + 2))) {
+                current_statement__ = 21;
+                atmo_index = categorical_rng(atmo_weights, base_rng__);
+                current_statement__ = 22;
+                assign(omega, nil_index_list(),
+                  atmo_directions[(atmo_index - 1)],
+                  "assigning variable omega");
+              } 
+            }
           }
-          current_statement__ = 26;
+          current_statement__ = 31;
           assign(cosz, cons_list(index_uni(i), nil_index_list()),
             stan::math::cos(omega_to_zenith(omega, pstream__)),
             "assigning variable cosz");
-          current_statement__ = 30;
+          current_statement__ = 38;
           if (logical_lte(Lambda[(i - 1)], (Ns + 1))) {
-            current_statement__ = 27;
+            current_statement__ = 35;
             assign(Esrc, cons_list(index_uni(i), nil_index_list()),
               spectrum_rng(alpha, Esrc_min, Esrc_max, base_rng__, pstream__),
               "assigning variable Esrc");
-            current_statement__ = 28;
+            current_statement__ = 36;
             assign(E, cons_list(index_uni(i), nil_index_list()),
               (Esrc[(i - 1)] / (1 + z[(Lambda[(i - 1)] - 1)])),
               "assigning variable E");
-          } 
-          current_statement__ = 31;
-          assign(Pdet, cons_list(index_uni(i), nil_index_list()),
-            (CascadesEffectiveArea(E[(i - 1)], omega, pstream__) / aeff_max),
-            "assigning variable Pdet");
-          current_statement__ = 32;
+          } else {
+            current_statement__ = 34;
+            if (logical_eq(Lambda[(i - 1)], (Ns + 2))) {
+              current_statement__ = 32;
+              assign(E, cons_list(index_uni(i), nil_index_list()),
+                atmo_energies[(atmo_index - 1)], "assigning variable E");
+            } 
+          }
+          current_statement__ = 43;
+          if (logical_gte(cosz[(i - 1)], 0.1)) {
+            current_statement__ = 41;
+            assign(Pdet, cons_list(index_uni(i), nil_index_list()), 0,
+              "assigning variable Pdet");
+          } else {
+            current_statement__ = 39;
+            assign(Pdet, cons_list(index_uni(i), nil_index_list()),
+              (NorthernTracksEffectiveArea(E[(i - 1)], omega, pstream__) /
+                aeff_max), "assigning variable Pdet");
+          }
+          current_statement__ = 44;
           assign(Edet, cons_list(index_uni(i), nil_index_list()),
             pow(10,
-              CascadeEnergyResolution_rng(E[(i - 1)], base_rng__, pstream__)),
+              NorthernTracksEnergyResolution_rng(
+                E[(i - 1)], base_rng__, pstream__)),
             "assigning variable Edet");
-          current_statement__ = 33;
+          current_statement__ = 45;
           assign(prob, cons_list(index_uni(1), nil_index_list()),
             Pdet[(i - 1)], "assigning variable prob");
-          current_statement__ = 34;
+          current_statement__ = 46;
           assign(prob, cons_list(index_uni(2), nil_index_list()),
             (1 - Pdet[(i - 1)]), "assigning variable prob");
-          current_statement__ = 35;
+          current_statement__ = 47;
           ntrials = (ntrials + 1);
-          current_statement__ = 45;
+          current_statement__ = 57;
           if (logical_lt(ntrials, 1000000)) {
-            current_statement__ = 40;
+            current_statement__ = 52;
             detected = categorical_rng(prob, base_rng__);
-            current_statement__ = 43;
+            current_statement__ = 55;
             if ((primitive_value(logical_gte(Edet[(i - 1)], Edet_min)) &&
                 primitive_value(logical_eq(detected, 1)))) {
-              current_statement__ = 41;
+              current_statement__ = 53;
               accept = 1;
             } 
           } else {
-            current_statement__ = 36;
+            current_statement__ = 48;
             accept = 1;
-            current_statement__ = 37;
+            current_statement__ = 49;
             if (pstream__) {
               stan_print(pstream__, "problem component: ");
               stan_print(pstream__, Lambda[(i - 1)]);
@@ -2955,23 +4338,23 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
             ;
           }
         }
-        current_statement__ = 48;
+        current_statement__ = 60;
         assign(event, cons_list(index_uni(i), nil_index_list()),
-          CascadesAngularResolution_rng(E[(i - 1)],
+          NorthernTracksAngularResolution_rng(E[(i - 1)],
             omega, base_rng__, pstream__), "assigning variable event");
-        current_statement__ = 49;
+        current_statement__ = 61;
         assign(event_type, cons_list(index_uni(i), nil_index_list()),
           cascade_type, "assigning variable event_type");}
       current_statement__ = 2;
       current_statement__ = 2;
       check_unit_vector(function__, "omega", omega);
-      current_statement__ = 11;
-      current_statement__ = 11;
-      check_simplex(function__, "prob", prob);
       current_statement__ = 12;
+      current_statement__ = 12;
+      check_simplex(function__, "prob", prob);
+      current_statement__ = 13;
       for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
-        current_statement__ = 12;
-        current_statement__ = 12;
+        current_statement__ = 13;
+        current_statement__ = 13;
         check_unit_vector(function__, "event[sym1__]", event[(sym1__ - 1)]);}
       for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
         vars__.emplace_back(Lambda[(sym1__ - 1)]);}
@@ -2983,6 +4366,7 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
         vars__.emplace_back(E[(sym1__ - 1)]);}
       for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
         vars__.emplace_back(Edet[(sym1__ - 1)]);}
+      vars__.emplace_back(atmo_index);
       for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
         vars__.emplace_back(cosz[(sym1__ - 1)]);}
       for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
@@ -3034,6 +4418,7 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
     names__.emplace_back("Esrc");
     names__.emplace_back("E");
     names__.emplace_back("Edet");
+    names__.emplace_back("atmo_index");
     names__.emplace_back("cosz");
     names__.emplace_back("Pdet");
     names__.emplace_back("accept");
@@ -3057,6 +4442,8 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
     dimss__.emplace_back(std::vector<size_t>{static_cast<size_t>(N)});
     
     dimss__.emplace_back(std::vector<size_t>{static_cast<size_t>(N)});
+    
+    dimss__.emplace_back(std::vector<size_t>{});
     
     dimss__.emplace_back(std::vector<size_t>{static_cast<size_t>(N)});
     
@@ -3111,6 +4498,7 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
         {
           param_names__.emplace_back(std::string() + "Edet" + '.' + std::to_string(sym1__));
         }}
+      param_names__.emplace_back(std::string() + "atmo_index");
       for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
         {
           param_names__.emplace_back(std::string() + "cosz" + '.' + std::to_string(sym1__));
@@ -3174,6 +4562,7 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
         {
           param_names__.emplace_back(std::string() + "Edet" + '.' + std::to_string(sym1__));
         }}
+      param_names__.emplace_back(std::string() + "atmo_index");
       for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
         {
           param_names__.emplace_back(std::string() + "cosz" + '.' + std::to_string(sym1__));
@@ -3207,13 +4596,13 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
     
   inline std::string get_constrained_sizedtypes() const {
     stringstream s__;
-    s__ << "[{\"name\":\"Lambda\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"int\"}},\"block\":\"generated_quantities\"},{\"name\":\"omega\",\"type\":{\"name\":\"vector\",\"length\":" << 3 << "},\"block\":\"generated_quantities\"},{\"name\":\"Esrc\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"E\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"Edet\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"cosz\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"Pdet\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"accept\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"detected\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"ntrials\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"prob\",\"type\":{\"name\":\"vector\",\"length\":" << 2 << "},\"block\":\"generated_quantities\"},{\"name\":\"event\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"vector\",\"length\":" << 3 << "}},\"block\":\"generated_quantities\"},{\"name\":\"Nex_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"event_type\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"}]";
+    s__ << "[{\"name\":\"Lambda\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"int\"}},\"block\":\"generated_quantities\"},{\"name\":\"omega\",\"type\":{\"name\":\"vector\",\"length\":" << 3 << "},\"block\":\"generated_quantities\"},{\"name\":\"Esrc\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"E\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"Edet\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"atmo_index\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"cosz\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"Pdet\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"accept\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"detected\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"ntrials\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"prob\",\"type\":{\"name\":\"vector\",\"length\":" << 2 << "},\"block\":\"generated_quantities\"},{\"name\":\"event\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"vector\",\"length\":" << 3 << "}},\"block\":\"generated_quantities\"},{\"name\":\"Nex_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"event_type\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"}]";
     return s__.str();
     } // get_constrained_sizedtypes() 
     
   inline std::string get_unconstrained_sizedtypes() const {
     stringstream s__;
-    s__ << "[{\"name\":\"Lambda\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"int\"}},\"block\":\"generated_quantities\"},{\"name\":\"omega\",\"type\":{\"name\":\"vector\",\"length\":" << 3 << "},\"block\":\"generated_quantities\"},{\"name\":\"Esrc\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"E\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"Edet\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"cosz\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"Pdet\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"accept\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"detected\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"ntrials\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"prob\",\"type\":{\"name\":\"vector\",\"length\":" << (2 - 1) << "},\"block\":\"generated_quantities\"},{\"name\":\"event\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"vector\",\"length\":" << 3 << "}},\"block\":\"generated_quantities\"},{\"name\":\"Nex_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"event_type\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"}]";
+    s__ << "[{\"name\":\"Lambda\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"int\"}},\"block\":\"generated_quantities\"},{\"name\":\"omega\",\"type\":{\"name\":\"vector\",\"length\":" << 3 << "},\"block\":\"generated_quantities\"},{\"name\":\"Esrc\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"E\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"Edet\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"atmo_index\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"cosz\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"Pdet\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"accept\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"detected\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"ntrials\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"prob\",\"type\":{\"name\":\"vector\",\"length\":" << (2 - 1) << "},\"block\":\"generated_quantities\"},{\"name\":\"event\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"vector\",\"length\":" << 3 << "}},\"block\":\"generated_quantities\"},{\"name\":\"Nex_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"event_type\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"}]";
     return s__.str();
     } // get_unconstrained_sizedtypes() 
     

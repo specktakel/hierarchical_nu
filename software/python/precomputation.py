@@ -12,7 +12,6 @@ import numpy as np
 from .source.source import Sources, PointSource, DiffuseSource, icrs_to_uv
 from .source.parameter import ParScale, Parameter
 from .backend.stan_generator import StanGenerator
-from .detector_model import NorthernTracksEnergyResolution
 
 m_to_cm = 100  # cm
 
@@ -55,6 +54,11 @@ class ExposureIntegral:
             dm = detector_model()
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
+
+        # Setup effective area to match Emin/Emax
+        self._effective_area.set_energy_range(
+            self._min_src_energy, self._max_src_energy
+        )
 
         self._parameter_source_map = defaultdict(list)
         self._source_parameter_map = defaultdict(list)
@@ -110,10 +114,11 @@ class ExposureIntegral:
         return self._integral_fixed_vals
 
     def calculate_rate(self, source):
+
         z = source.redshift
 
-        lower_e_edges = self.effective_area._tE_bin_edges[:-1] << u.GeV
-        upper_e_edges = self.effective_area._tE_bin_edges[1:] << u.GeV
+        lower_e_edges = self.effective_area.tE_bin_edges[:-1] << u.GeV
+        upper_e_edges = self.effective_area.tE_bin_edges[1:] << u.GeV
         e_cen = (lower_e_edges + upper_e_edges) / 2
 
         if isinstance(source, PointSource):
@@ -127,23 +132,23 @@ class ExposureIntegral:
             )
 
             if (
-                cosz < self.effective_area._cosz_bin_edges[0]
-                or cosz > self.effective_area._cosz_bin_edges[-1]
+                cosz < self.effective_area.cosz_bin_edges[0]
+                or cosz > self.effective_area.cosz_bin_edges[-1]
             ):
                 aeff = np.zeros(len(lower_e_edges)) << (u.m ** 2)
 
             else:
                 aeff = (
-                    self.effective_area._eff_area[
-                        :, np.digitize(cosz, self.effective_area._cosz_bin_edges) - 1
+                    self.effective_area.eff_area[
+                        :, np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
                     ]
                     * u.m ** 2
                 )
 
         else:
 
-            lower_cz_edges = self.effective_area._cosz_bin_edges[:-1]
-            upper_cz_edges = self.effective_area._cosz_bin_edges[1:]
+            lower_cz_edges = self.effective_area.cosz_bin_edges[:-1]
+            upper_cz_edges = self.effective_area.cosz_bin_edges[1:]
 
             # Switch upper and lower since zen -> dec induces a -1
             dec_lower = np.arccos(upper_cz_edges) * u.rad - np.pi / 2 * u.rad
@@ -158,7 +163,7 @@ class ExposureIntegral:
                 2 * np.pi * u.rad,
             )
 
-            aeff = np.array(self.effective_area._eff_area, copy=True) << (u.m ** 2)
+            aeff = np.array(self.effective_area.eff_area, copy=True) << (u.m ** 2)
 
         p_Edet = self.energy_resolution.prob_Edet_above_threshold(
             e_cen, self._min_det_energy
@@ -219,14 +224,13 @@ class ExposureIntegral:
         Loop over sources and calculate Aeff as a function of arrival energy.
         """
 
+        epsilon = 1e-5
+        Emin = min(self.effective_area.tE_bin_edges)
+        Emax = max(self.effective_area.tE_bin_edges)
         self.energy_grid = (
-            10
-            ** np.linspace(
-                np.log10(self._min_src_energy.value),
-                np.log10(self._max_src_energy.value),
-            )
-            << u.GeV
+            10 ** np.linspace(np.log10(Emin), np.log10(Emax - epsilon)) << u.GeV
         )
+
         self.pdet_grid = []
 
         for k, source in enumerate(self._sources.sources):
@@ -235,14 +239,15 @@ class ExposureIntegral:
 
                 unit_vector = icrs_to_uv(source.dec.value, source.ra.value)
                 cosz = np.cos(np.pi - np.arccos(unit_vector[2]))
-                cosz_bin = np.digitize(cosz, self.effective_area._cosz_bin_edges) - 1
+                cosz_bin = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
 
+                # Fix hard coded northern tracks things
                 if cosz > 0.1:
                     pg = np.zeros_like(self.energy_grid)
                 else:
                     pg = [
-                        self.effective_area._eff_area[
-                            np.digitize(E.value, self.effective_area._tE_bin_edges) - 1
+                        self.effective_area.eff_area[
+                            np.digitize(E.value, self.effective_area.tE_bin_edges) - 1
                         ][cosz_bin]
                         for E in self.energy_grid
                     ]
@@ -250,11 +255,11 @@ class ExposureIntegral:
 
             if isinstance(source, DiffuseSource):
 
-                aeff_vals = np.sum(self.effective_area._eff_area, axis=1)
+                aeff_vals = np.sum(self.effective_area.eff_area, axis=1)
 
                 pg = [
                     aeff_vals[
-                        np.digitize(E.value, self.effective_area._tE_bin_edges) - 1
+                        np.digitize(E.value, self.effective_area.tE_bin_edges) - 1
                     ]
                     for E in self.energy_grid
                 ]
