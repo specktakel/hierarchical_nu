@@ -451,6 +451,56 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         return prob
 
 
+class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
+    """
+    Abstract base class for angular resolution implementation.
+    """
+
+    @abstractmethod
+    def setup(self):
+        """
+        Load the angular resolution and transform into the
+        properties listed below.
+        """
+
+        pass
+
+    @property
+    def kappa(self):
+        """
+        1D array of kappa values with changing energy. Here,
+        kappa is the scale parameter of the vMF distribution.
+        """
+
+        return self._kappa
+
+    @property
+    def Egrid(self):
+        """
+        Energy in [GeV] corresponding to above kappa values.
+        """
+
+        return self._Egrid
+
+    @property
+    def poly_params(self):
+        """
+        Parameters of polynomial that describes the
+        evolution of the vMF kappa parameter with energy.
+        """
+
+        return self._poly_params
+
+    @property
+    def poly_limits(self):
+        """
+        Mininum and maximum energy in [GeV] over which the
+        polynomial is fit.
+        """
+
+        return self._poly_limits
+
+
 class DetectorModel(metaclass=ABCMeta):
     def __init__(self, mode: DistributionMode = DistributionMode.PDF):
         self._mode = mode

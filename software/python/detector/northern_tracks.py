@@ -1,9 +1,7 @@
-from typing import List, Sequence, Tuple
+from typing import Sequence, Tuple
 import os
 import pandas as pd
 import numpy as np
-import scipy.stats as stats
-from astropy import units as u
 
 from ..cache import Cache
 from ..backend import (
@@ -23,8 +21,12 @@ from ..backend import (
     StanArray,
     StringExpression,
 )
-from ..fitting_tools import Residuals
-from .detector_model import EffectiveArea, EnergyResolution, DetectorModel
+from .detector_model import (
+    EffectiveArea,
+    EnergyResolution,
+    AngularResolution,
+    DetectorModel,
+)
 
 import logging
 
@@ -329,7 +331,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         self._poly_limits = poly_limits
 
 
-class NorthernTracksAngularResolution(UserDefinedFunction):
+class NorthernTracksAngularResolution(AngularResolution):
     """
     Angular resolution for Northern Tracks Sample
 
@@ -344,7 +346,9 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
 
     """
 
-    DATA_PATH = "input/tracks/NorthernTracksAngularRes.csv"
+    local_path = "input/tracks/NorthernTracksAngularRes.csv"
+    DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
+
     CACHE_FNAME = "angular_reso_tracks.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
@@ -358,7 +362,9 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
                 ["real", "vector", "vector"],
                 "real",
             )
+
         else:
+
             UserDefinedFunction.__init__(
                 self,
                 "NorthernTracksAngularResolution_rng",
@@ -367,21 +373,25 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
                 "vector",
             )
 
-        self.poly_params: Sequence = []
-        self.e_min: float = float("nan")
-        self.e_max: float = float("nan")
+        self._kappa: np.ndarray = None
+        self._Egrid: np.ndarray = None
+        self._poly_params: Sequence = []
+        self._Emin: float = float("nan")
+        self._Emax: float = float("nan")
 
         self.setup()
 
+        # Define Stan interface
         with self:
+
             # Clip true energy
-            clipped_e = TruncatedParameterization("true_energy", self.e_min, self.e_max)
+            clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
 
             clipped_log_e = LogParameterization(clipped_e)
 
             kappa = PolynomialParameterization(
                 clipped_log_e,
-                self.poly_params,
+                self._poly_params,
                 "NorthernTracksAngularResolutionPolyCoeffs",
             )
 
@@ -394,22 +404,25 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
 
             ReturnStatement([vmf])
 
-    def _calc_resolution(self):
-        pass
-
     def setup(self) -> None:
-        """See base class"""
 
         # Check cache
         if self.CACHE_FNAME in Cache:
+
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
                 data = np.load(fr)
-                self.poly_params = data["poly_params"]
-                self.e_min = float(data["e_min"])
-                self.e_max = float(data["e_max"])
+                self._kappa = data["kappa"]
+                self._Egrid = data["Egrid"]
+                self._poly_params = data["poly_params"]
+                self._Emin = float(data["Emin"])
+                self._Emax = float(data["Emax"])
+                self._poly_limits = (self._Emin, self._Emax)
+
         else:
+
             # Load input data and fit polynomial
             if not os.path.exists(self.DATA_PATH):
+
                 raise RuntimeError(self.DATA_PATH, "is not a valid path")
 
             data = pd.read_csv(
@@ -423,17 +436,24 @@ class NorthernTracksAngularResolution(UserDefinedFunction):
             # Kappa parameter of VMF distribution
             data["kappa"] = 1.38 / np.radians(data.resolution) ** 2
 
-            self.poly_params = np.polyfit(data.log10energy, data.kappa, 5)
-            self.e_min = float(data.log10energy.min())
-            self.e_max = float(data.log10energy.max())
+            self._kappa = data.kappa.values
+            self._Egrid = 10 ** data.log10energy.values
+            self._poly_params = np.polyfit(
+                data.log10energy.values, data.kappa.values, 5
+            )
+            self._Emin = 10 ** float(data.log10energy.min())
+            self._Emax = 10 ** float(data.log10energy.max())
+            self._poly_limits = (self._Emin, self._Emax)
 
             # Save polynomial
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
                 np.savez(
                     fr,
-                    poly_params=self.poly_params,
-                    e_min=10 ** data.log10energy.min(),
-                    e_max=10 ** data.log10energy.max(),
+                    kappa=self._kappa,
+                    Egrid=self._Egrid,
+                    poly_params=self._poly_params,
+                    Emin=self._Emin,
+                    Emax=self._Emax,
                 )
 
 
