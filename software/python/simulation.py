@@ -392,6 +392,8 @@ class Simulation:
         if self._atmospheric_comp:
             F.append(sim_inputs["F_atmo"])
 
+        self._expected_Nnu_per_comp = eps * F
+
         return sum(eps * F)
 
     @classmethod

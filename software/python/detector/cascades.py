@@ -39,7 +39,7 @@ class CascadesEffectiveArea(EffectiveArea):
     Effective area based on the cascade_model simulation.
     """
 
-    local_path = "input/cascades/cascade_detector_model_test.h5"
+    local_path = "input/cascades/cascade_detector_model_test_mu_NC.h5"
     DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
 
     CACHE_FNAME = "aeff_cascades.npz"
@@ -112,7 +112,7 @@ class CascadesEnergyResolution(EnergyResolution):
     Energy resolution based on the cascade_model simulation.
     """
 
-    local_path = "input/cascades/cascade_detector_model_test.h5"
+    local_path = "input/cascades/cascade_detector_model_test_mu_NC.h5"
     DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
 
     CACHE_FNAME = "energy_reso_cascades.npz"
