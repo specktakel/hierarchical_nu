@@ -29,6 +29,7 @@ class ExposureIntegral:
         sources: Sources,
         detector_model,
         n_grid_points: int = 50,
+        event_type=None,
     ):
         """
         Handles calculation of the exposure integral.
@@ -51,7 +52,7 @@ class ExposureIntegral:
 
         # Instantiate the given Detector class to access values
         with StanGenerator():
-            dm = detector_model()
+            dm = detector_model(event_type=event_type)
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
 

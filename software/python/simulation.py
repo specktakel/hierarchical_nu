@@ -6,6 +6,7 @@ import h5py
 from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
 import logging
+import collections
 
 from .detector.detector_model import DetectorModel
 from .detector.northern_tracks import NorthernTracksDetectorModel
@@ -17,7 +18,11 @@ from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.cosmology import luminosity_distance
 from .events import Events
 
-from .stan_interface import generate_atmospheric_sim_code_, generate_main_sim_code_
+from .stan_interface import (
+    generate_atmospheric_sim_code_,
+    generate_main_sim_code_,
+    generate_main_sim_code_hybrid_,
+)
 
 
 class Simulation:
@@ -54,6 +59,8 @@ class Simulation:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
+        self._exposure_integral = collections.OrderedDict()
+
         # Silence log output
         logger = logging.getLogger("python.backend.code_generator")
         logger.propagate = False
@@ -63,9 +70,13 @@ class Simulation:
         Run the necessary precomputation
         """
 
-        self._exposure_integral = ExposureIntegral(
-            self._sources, self._detector_model_type
-        )
+        for event_type in self._detector_model_type.event_types:
+
+            self._exposure_integral[event_type] = ExposureIntegral(
+                self._sources,
+                self._detector_model_type,
+                event_type=event_type,
+            )
 
     def generate_stan_code(self):
 
@@ -417,13 +428,25 @@ class Simulation:
 
         filename = self.output_dir + "/sim_code"
 
-        self._main_sim_filename = generate_main_sim_code_(
-            filename,
-            ps_spec_shape,
-            self._detector_model_type,
-            self._diffuse_bg_comp,
-            self._atmospheric_comp,
-        )
+        if len(self._detector_model_type.event_types) > 1:
+
+            self._main_sim_filename = generate_main_sim_code_hybrid_(
+                filename,
+                ps_spec_shape,
+                self._detector_model_type,
+                self._diffuse_bg_comp,
+                self._atmospheric_comp,
+            )
+
+        else:
+
+            self._main_sim_filename = generate_main_sim_code_(
+                filename,
+                ps_spec_shape,
+                self._detector_model_type,
+                self._diffuse_bg_comp,
+                self._atmospheric_comp,
+            )
 
 
 class SimInfo:
