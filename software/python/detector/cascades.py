@@ -440,9 +440,15 @@ class CascadesDetectorModel(DetectorModel):
             Set mode to either RNG or PDF
     """
 
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF):
+    event_types = ["cascades"]
 
-        super().__init__(mode)
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        event_type=None,
+    ):
+
+        super().__init__(mode, event_type="cascades")
 
         ang_res = CascadesAngularResolution(mode)
         self._angular_resolution = ang_res

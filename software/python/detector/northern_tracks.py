@@ -465,9 +465,15 @@ class NorthernTracksDetectorModel(DetectorModel):
 
     """
 
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF):
+    event_types = ["tracks"]
 
-        super().__init__(mode)
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        event_type=None,
+    ):
+
+        super().__init__(mode, event_type="tracks")
 
         ang_res = NorthernTracksAngularResolution(mode)
         self._angular_resolution = ang_res

@@ -546,9 +546,15 @@ class DetectorModel(metaclass=ABCMeta):
     Abstract base class for detector models.
     """
 
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF):
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        event_type=None,
+    ):
 
         self._mode = mode
+
+        self._event_type = event_type
 
     @property
     def effective_area(self):
@@ -572,4 +578,8 @@ class DetectorModel(metaclass=ABCMeta):
 
     @abstractmethod
     def _get_angular_resolution(self):
-        self._angular_resolution
+        return self._angular_resolution
+
+    @property
+    def event_type(self):
+        return self._event_type
