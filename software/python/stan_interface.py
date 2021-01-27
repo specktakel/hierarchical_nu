@@ -337,11 +337,10 @@ def generate_main_sim_code_(
                 # Detection effects
                 event[i] << dm_rng.angular_resolution(E[i], omega)
 
-                # To be extended
-                # if detector_model_type == NorthernTracksDetectorModel:
-                #    event_type[i] << track_type
-                # if detector_model_type == CascadesDetectorModel:
-                event_type[i] << cascade_type
+                if detector_model_type == NorthernTracksDetectorModel:
+                    event_type[i] << track_type
+                if detector_model_type == CascadesDetectorModel:
+                    event_type[i] << cascade_type
 
     sim_gen.generate_single_file()
 

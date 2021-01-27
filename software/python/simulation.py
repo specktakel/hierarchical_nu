@@ -8,6 +8,11 @@ from cmdstanpy import CmdStanModel
 import logging
 import collections
 
+import ligo.skymap.plot
+from matplotlib import pyplot as plt
+from matplotlib.patches import Circle
+from pyipn.io.plotting.spherical_circle import SphericalCircle
+
 from .detector.detector_model import DetectorModel
 from .detector.icecube import IceCubeDetectorModel
 from .detector.northern_tracks import NorthernTracksDetectorModel
@@ -212,38 +217,47 @@ class Simulation:
 
     def show_skymap(self):
 
-        import matplotlib.patches as mpatches
-        from matplotlib.collections import PatchCollection
-
         lam = list(
             self._sim_output.stan_variable("Lambda").values[0] - 1
         )  # avoid Stan-style indexing
+        event_type = self._sim_output.stan_variable("event_type").values[0]
         Ns = self._sim_inputs["Ns"]
         label_cmap = plt.cm.get_cmap("plasma", self._sources.N)
 
         N_src_ev = sum([lam.count(_) for _ in range(Ns)])
-        N_bg_ev = lam.count(Ns) + lam.count(Ns + 1)
+        N_bg_ev = lam.count(Ns)
+        N_atmo_ev = lam.count(Ns + 1)
 
-        fig = plt.figure()
-        fig.set_size_inches((10, 8))
-        ax = fig.add_subplot(111, projection="hammer")
+        # Something simple just to differentiate
+        event_size = [2.0, 6.0]
 
-        circles = []
+        fig, ax = plt.subplots(subplot_kw={"projection": "astro degrees mollweide"})
+        fig.set_size_inches((7, 5))
+
         self.events.coords.representation_type = "spherical"
-        for r, d, l in zip(
-            self.events.coords.icrs.ra.rad, self.events.coords.icrs.dec.rad, lam
+        for r, d, l, e in zip(
+            self.events.coords.icrs.ra,
+            self.events.coords.icrs.dec,
+            lam,
+            event_type,
         ):
             color = label_cmap.colors[int(l)]
-            circles.append(
-                mpatches.Circle((r - np.pi, d), 0.05, color=color, alpha=0.7)
-            )  # TODO: Fix this so x-axis labels are correct
+            circle = SphericalCircle(
+                (r, d),
+                event_size[int(e)] * u.deg,
+                color=color,
+                alpha=0.5,
+                transform=ax.get_transform("icrs"),
+            )
 
-        collection = PatchCollection(circles, match_original=True)
-        ax.add_collection(collection)
+            ax.add_patch(circle)
 
-        ax.set_title(
-            "N_src_events = %i, N_bg_events = %i" % (N_src_ev, N_bg_ev), pad=30
+        fig.suptitle(
+            "N_src_events = %i, N_bg_events = %i, N_atmo_events = %i"
+            % (N_src_ev, N_bg_ev, N_atmo_ev),
+            y=0.85,
         )
+        fig.tight_layout()
 
         return fig, ax
 
