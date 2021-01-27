@@ -9,6 +9,7 @@ import logging
 import collections
 
 from .detector.detector_model import DetectorModel
+from .detector.icecube import IceCubeDetectorModel
 from .detector.northern_tracks import NorthernTracksDetectorModel
 from .precomputation import ExposureIntegral
 from .source.source import Sources, PointSource, icrs_to_uv
@@ -261,8 +262,18 @@ class Simulation:
         atmo_inputs = {}
         sim_inputs = {}
 
-        cz_min = min(self._exposure_integral.effective_area._cosz_bin_edges)
-        cz_max = max(self._exposure_integral.effective_area._cosz_bin_edges)
+        cz_min = min(
+            [
+                min(e.effective_area._cosz_bin_edges)
+                for _, e in self._exposure_integral.items()
+            ]
+        )
+        cz_max = max(
+            [
+                max(e.effective_area._cosz_bin_edges)
+                for _, e in self._exposure_integral.items()
+            ]
+        )
 
         if self._atmospheric_comp:
 
@@ -313,15 +324,39 @@ class Simulation:
         sim_inputs["D"] = D
         sim_inputs["varpi"] = src_pos
 
-        sim_inputs["Ngrid"] = len(self._exposure_integral.par_grids["index"])
-        sim_inputs["alpha_grid"] = self._exposure_integral.par_grids["index"]
-        sim_inputs["integral_grid"] = [
-            _.value.tolist() for _ in self._exposure_integral.integral_grid
-        ]
+        for event_type in self._detector_model_type.event_types:
+            sim_inputs["Ngrid"] = len(
+                self._exposure_integral[event_type].par_grids["index"]
+            )
+            sim_inputs["alpha_grid"] = self._exposure_integral[event_type].par_grids[
+                "index"
+            ]
+            if (
+                event_type == "tracks"
+                and len(self._detector_model_type.event_types) > 1
+            ):
+                sim_inputs["integral_grid_t"] = [
+                    _.value.tolist()
+                    for _ in self._exposure_integral["tracks"].integral_grid
+                ]
+            elif (
+                event_type == "cascades"
+                and len(self._detector_model_type.event_types) > 1
+            ):
+                sim_inputs["integral_grid_c"] = [
+                    _.value.tolist()
+                    for _ in self._exposure_integral["cascades"].integral_grid
+                ]
+            else:
+                sim_inputs["integral_grid"] = [
+                    _.value.tolist()
+                    for _ in self._exposure_integral[event_type].integral_grid
+                ]
+
         if self._atmospheric_comp:
-            sim_inputs["atmo_integ_val"] = self._exposure_integral.integral_fixed_vals[
-                0
-            ].value
+            sim_inputs["atmo_integ_val"] = (
+                self._exposure_integral["tracks"].integral_fixed_vals[0].value
+            )
         sim_inputs["T"] = self._observation_time.to(u.s).value
 
         if self._atmospheric_comp:
@@ -340,15 +375,41 @@ class Simulation:
         )
 
         # Set maximum based on Emax to speed up rejection sampling
-        lbe = self._exposure_integral.effective_area._tE_bin_edges[:-1]
         Emax = sim_inputs["Esrc_max"]
-        aeff_max = np.max(
-            self._exposure_integral.effective_area._eff_area[lbe < Emax][:]
-        )
-        sim_inputs["aeff_max"] = aeff_max + 0.01 * aeff_max
+        if self._detector_model_type == IceCubeDetectorModel:
 
-        if self._detector_model_type == NorthernTracksDetectorModel:
+            for event_type in self._detector_model_type.event_types:
+                lbe = self._exposure_integral[event_type].effective_area._tE_bin_edges[
+                    :-1
+                ]
+                aeff_max = np.max(
+                    self._exposure_integral[event_type].effective_area._eff_area[
+                        lbe < Emax
+                    ][:]
+                )
+                if event_type == "tracks":
+                    sim_inputs["aeff_t_max"] = aeff_max + 0.01 * aeff_max
+                if event_type == "cascades":
+                    sim_inputs["aeff_c_max"] = aeff_max + 0.01 * aeff_max
+
+        else:
+            event_type = self._detector_model_type.event_types[0]
+            lbe = self._exposure_integral[event_type].effective_area._tE_bin_edges[:-1]
+            aeff_max = np.max(
+                self._exposure_integral[event_type].effective_area._eff_area[
+                    lbe < Emax
+                ][:]
+            )
+            sim_inputs["aeff_max"] = aeff_max + 0.01 * aeff_max
+
+        if (
+            self._detector_model_type == NorthernTracksDetectorModel
+            or self._detector_model_type == IceCubeDetectorModel
+        ):
             # Only sample from Northern hemisphere
+            cz_max = max(
+                self._exposure_integral["tracks"].effective_area._cosz_bin_edges
+            )
             sim_inputs["v_lim"] = (np.cos(np.pi - np.arccos(cz_max)) + 1) / 2
         else:
             sim_inputs["v_lim"] = 0.0
@@ -375,37 +436,31 @@ class Simulation:
     def _get_expected_Nnu(self, sim_inputs):
         """
         Calculates expected number of neutrinos to be simulated.
-        Uses same approach as in the Stan code.
+        Uses same approach as in the Stan code for cross-checks.
         """
 
-        alpha = sim_inputs["alpha"]
-        alpha_grid = sim_inputs["alpha_grid"]
-        integral_grid = sim_inputs["integral_grid"]
+        if self._detector_model_type == IceCubeDetectorModel:
 
-        eps = []
-        for igrid in integral_grid:
-            eps.append(np.interp(alpha, alpha_grid, igrid))
-
-        if self._atmospheric_comp:
-            eps.append(sim_inputs["atmo_integ_val"])
-
-        eps = np.array(eps) * sim_inputs["T"]
-
-        F = []
-        for d in sim_inputs["D"]:
-            flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
-            flux = flux * flux_conv_(
-                alpha, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
+            integral_grid_t = sim_inputs["integral_grid_t"]
+            Nex_t = _get_expected_Nnu_(
+                sim_inputs, integral_grid_t, self._atmospheric_comp
             )
-            F.append(flux)
-        F.append(sim_inputs["F_diff"])
 
-        if self._atmospheric_comp:
-            F.append(sim_inputs["F_atmo"])
+            integral_grid_c = sim_inputs["integral_grid_c"]
+            Nex_c = _get_expected_Nnu_(
+                sim_inputs, integral_grid_c, self._atmospheric_comp
+            )
 
-        self._expected_Nnu_per_comp = eps * F
+            Nex = Nex_t + Nex_c
 
-        return sum(eps * F)
+        else:
+
+            integral_grid = sim_inputs["integral_grid"]
+            Nex = _get_expected_Nnu_(sim_inputs, integral_grid, self._atmospheric_comp)
+
+        self._expected_Nnu_per_comp = Nex
+
+        return sum(Nex)
 
     @classmethod
     def from_file(cls, filename):
@@ -498,3 +553,34 @@ class SimInfo:
             truths["F_atmo"] = inputs["F_atmo"]
 
         return cls(truths, inputs, outputs)
+
+
+def _get_expected_Nnu_(sim_inputs, integral_grid, atmospheric_comp=False):
+    """
+    Helper function for calculating expected Nnu
+    using stan sim_inputs.
+    """
+
+    alpha = sim_inputs["alpha"]
+    alpha_grid = sim_inputs["alpha_grid"]
+
+    eps = []
+    for igrid in integral_grid:
+        eps.append(np.interp(alpha, alpha_grid, igrid))
+
+    if atmospheric_comp:
+        eps.append(sim_inputs["atmo_integ_val"])
+
+    eps = np.array(eps) * sim_inputs["T"]
+
+    F = []
+    for d in sim_inputs["D"]:
+        flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
+        flux = flux * flux_conv_(alpha, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"])
+        F.append(flux)
+    F.append(sim_inputs["F_diff"])
+
+    if atmospheric_comp:
+        F.append(sim_inputs["F_atmo"])
+
+    return eps * F

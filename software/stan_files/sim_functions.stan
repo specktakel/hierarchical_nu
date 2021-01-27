@@ -95,7 +95,7 @@ real omega_to_zenith(vector omega) {
  */
 real get_Nex(vector F, vector eps) {
   
-  int K = num_elements(F);
+  int K = num_elements(eps);
   real Nex = 0;
   
   for (k in 1:K) {

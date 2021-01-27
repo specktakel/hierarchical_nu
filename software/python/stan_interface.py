@@ -507,13 +507,13 @@ def generate_main_sim_code_hybrid_(
             w_exposure_t << FunctionCall([F, eps_t], "get_exposure_weights")
 
             Nex_c << FunctionCall([F, eps_c], "get_Nex")
-            w_exposure_c = FunctionCall([F, eps_c], "get_exposure_weights")
+            w_exposure_c << FunctionCall([F, eps_c], "get_exposure_weights")
 
             N_t << StringExpression(["poisson_rng(", Nex_t, ")"])
             N_c << StringExpression(["poisson_rng(", Nex_c, ")"])
 
             N << N_t + N_c
-            StringExpression(["print(", Ngrid, ")"])
+            StringExpression(['print("Ngrid: ", ', Ngrid, ")"])
 
         with GeneratedQuantitiesContext():
 
@@ -669,7 +669,7 @@ def generate_main_sim_code_hybrid_(
                     with ElseIfBlockContext(
                         [StringExpression([lam[i], " == ", Ns + 1])]
                     ):
-                        omega << FunctionCall([1, v_lim], "sphere_lim_rng")
+                        omega << FunctionCall([1, 0], "sphere_lim_rng")
 
                     cosz[i] << FunctionCall(
                         [FunctionCall([omega], "omega_to_zenith")], "cos"
