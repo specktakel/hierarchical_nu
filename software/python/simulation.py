@@ -196,9 +196,10 @@ class Simulation:
         Esrc = self._sim_output.stan_variable("Esrc").values[0]
         E = self._sim_output.stan_variable("E").values[0]
         Edet = self.events.energies.value
+        Emin_det = self._get_min_det_energy().to(u.GeV).value
 
         bins = np.logspace(
-            np.log10(Parameter.get_parameter("Emin_det").value.to(u.GeV).value),
+            np.log10(Emin_det),
             np.log10(Parameter.get_parameter("Emax").value.to(u.GeV).value),
             20,
             base=10,
@@ -384,9 +385,36 @@ class Simulation:
         sim_inputs["alpha"] = Parameter.get_parameter("index").value
         sim_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         sim_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
-        sim_inputs["Edet_min"] = (
-            Parameter.get_parameter("Emin_det").value.to(u.GeV).value
-        )
+
+        if self._detector_model_type == IceCubeDetectorModel:
+
+            # Here, we must provide tracks and cascade Emin_det case
+            # even if they are equal.
+            try:
+
+                sim_inputs["Emin_det_tracks"] = (
+                    Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+                )
+                sim_inputs["Emin_det_cascades"] = (
+                    Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+                )
+
+            except ValueError:
+
+                sim_inputs["Emin_det_tracks"] = (
+                    Parameter.get_parameter("Emin_det_tracks").value.to(u.GeV).value
+                )
+
+                sim_inputs["Emin_det_cascades"] = (
+                    Parameter.get_parameter("Emin_det_cascades").value.to(u.GeV).value
+                )
+
+        else:
+
+            # Otherwise, just use Emin_det, as no ambiguity
+            sim_inputs["Emin_det"] = (
+                Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+            )
 
         # Set maximum based on Emax to speed up rejection sampling
         Emax = sim_inputs["Esrc_max"]
@@ -517,6 +545,30 @@ class Simulation:
                 self._atmospheric_comp,
             )
 
+    def _get_min_det_energy(event_type=None):
+        """
+        Check for different definitions of minimum detected
+        energy in parameter settings and return relevant
+        value.
+
+        This is necessary as it is possible to specify Emin_det
+        or (Emin_det_tracks, Emin_det_cascades).
+        """
+
+        try:
+
+            Emin_det = Parameter.get_parameter("Emin_det").value
+
+        except ValueError:
+
+            Emin_det_t = Parameter.get_parameter("Emin_det_tracks").value
+
+            Emin_det_c = Parameter.get_parameter("Emin_det_cascades").value
+
+            Emin_det = min(Emin_det_t, Emin_det_c)
+
+        return Emin_det
+
 
 class SimInfo:
     def __init__(self, truths, inputs, outputs):
@@ -524,7 +576,7 @@ class SimInfo:
         To store and reference simulation inputs/info.
 
         TODO: instead work on Simualtion.from_file() method
-        to fully load simulation from outptu file.
+        to fully load simulation from output file.
         """
 
         self.truths = truths

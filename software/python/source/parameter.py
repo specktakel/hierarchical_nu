@@ -22,15 +22,17 @@ class Parameter:
         scale: ParScale
             Parameter scale
     """
+
     __par_registry = {}
 
     def __init__(
-            self,
-            value: Any,
-            name: str,
-            fixed: bool = False,
-            par_range=(-np.inf, np.inf),
-            scale=ParScale.lin):
+        self,
+        value: Any,
+        name: str,
+        fixed: bool = False,
+        par_range=(-np.inf, np.inf),
+        scale=ParScale.lin,
+    ):
 
         # If name is registered, copy internal state
         if name in Parameter.__par_registry:
@@ -47,7 +49,7 @@ class Parameter:
     @classmethod
     def get_parameter(cls, par_name):
         if par_name not in cls.__par_registry:
-            print(cls.__par_registry)
+            # print(cls.__par_registry)
             raise ValueError("Parameter {} not found".format(par_name))
         return cls.__par_registry[par_name]
 
@@ -103,7 +105,7 @@ class Parameter:
 
     def __repr__(self):
         return "Parameter {} = {}".format(self.name, self.value)
-    
+
     def reset(self):
         """Reset value to initial val"""
         self.value = self._initial_val

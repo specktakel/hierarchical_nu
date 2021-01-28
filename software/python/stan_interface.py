@@ -54,7 +54,7 @@ def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):
             cosz_max = ForwardVariableDef("cosz_max", "real")
 
         with ParametersContext():
-            # Simulate from Edet_min and cosz bounds for efficiency
+            # Simulate from Emin and cosz bounds for efficiency
             energy = ParameterDef("energy", "real", Esrc_min, Esrc_max)
             coszen = ParameterDef("coszen", "real", cosz_min, cosz_max)
             phi = ParameterDef("phi", "real", 0, 2 * np.pi)
@@ -116,7 +116,7 @@ def generate_main_sim_code_(
 
             # Energies
             alpha = ForwardVariableDef("alpha", "real")
-            Edet_min = ForwardVariableDef("Edet_min", "real")
+            Emin_det = ForwardVariableDef("Emin_det", "real")
             Esrc_min = ForwardVariableDef("Esrc_min", "real")
             Esrc_max = ForwardVariableDef("Esrc_max", "real")
 
@@ -319,7 +319,7 @@ def generate_main_sim_code_(
                                         "(",
                                         Edet[i],
                                         " >= ",
-                                        Edet_min,
+                                        Emin_det,
                                         ") && (",
                                         detected == 1,
                                         ")",
@@ -382,7 +382,8 @@ def generate_main_sim_code_hybrid_(
 
             # Energies
             alpha = ForwardVariableDef("alpha", "real")
-            Edet_min = ForwardVariableDef("Edet_min", "real")
+            Emin_det_tracks = ForwardVariableDef("Emin_det_tracks", "real")
+            Emin_det_cascades = ForwardVariableDef("Emin_det_cascades", "real")
             Esrc_min = ForwardVariableDef("Esrc_min", "real")
             Esrc_max = ForwardVariableDef("Esrc_max", "real")
 
@@ -631,7 +632,7 @@ def generate_main_sim_code_hybrid_(
                                         "(",
                                         Edet[i],
                                         " >= ",
-                                        Edet_min,
+                                        Emin_det_tracks,
                                         ") && (",
                                         detected == 1,
                                         ")",
@@ -699,7 +700,7 @@ def generate_main_sim_code_hybrid_(
                                         "(",
                                         Edet[i],
                                         " >= ",
-                                        Edet_min,
+                                        Emin_det_cascades,
                                         ") && (",
                                         detected == 1,
                                         ")",
@@ -821,7 +822,7 @@ def generate_stan_fit_code_hybrid_(
             F_diff = ParameterDef("F_diff", "real", 0.0, 1e-6)
 
             if atmospheric_comp:
-                F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-7)
+                F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-6)
 
             alpha = ParameterDef("alpha", "real", alphamin, alphamax)
 
@@ -1161,7 +1162,7 @@ def generate_stan_fit_code_(
             L = ParameterDef("L", "real", Lmin, Lmax)
             F_diff = ParameterDef("F_diff", "real", 0.0, 1e-6)
             if atmospheric_comp:
-                F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-7)
+                F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-6)
 
             alpha = ParameterDef("alpha", "real", alphamin, alphamax)
 

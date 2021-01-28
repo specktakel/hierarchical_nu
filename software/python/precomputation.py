@@ -41,10 +41,30 @@ class ExposureIntegral:
         """
 
         self._sources = sources
-        self._min_det_energy = Parameter.get_parameter("Emin_det").value
         self._min_src_energy = Parameter.get_parameter("Emin").value
         self._max_src_energy = Parameter.get_parameter("Emax").value
         self._n_grid_points = n_grid_points
+
+        # Use Emin_det if available, otherwise use per event_type
+        try:
+
+            self._min_det_energy = Parameter.get_parameter("Emin_det").value
+
+        except ValueError:
+
+            if event_type == "tracks":
+
+                self._min_det_energy = Parameter.get_parameter("Emin_det_tracks").value
+
+            elif event_type == "cascades":
+
+                self._min_det_energy = Parameter.get_parameter(
+                    "Emin_det_cascades"
+                ).value
+
+            else:
+
+                raise ValueError("event_type not recognised")
 
         # Silence log output
         logger = logging.getLogger("python.backend.code_generator")

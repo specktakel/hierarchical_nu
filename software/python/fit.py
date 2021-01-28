@@ -219,6 +219,7 @@ class StanFit:
                     print("P(atmo) = %.6f" % prob_each_src[i][Ns + 1])
 
                 print("The correct component is", source_labels[int(event_labels[i])])
+                print()
 
         if not wrong:
             print("All events are correctly classified")
@@ -296,9 +297,6 @@ class StanFit:
 
         fit_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         fit_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
-        fit_inputs["Edet_min"] = (
-            Parameter.get_parameter("Emin_det").value.to(u.GeV).value
-        )
 
         event_type = self._detector_model_type.event_types[0]
         fit_inputs["Ngrid"] = len(
