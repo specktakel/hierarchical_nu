@@ -12,7 +12,11 @@ from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.flux_model import PowerLawSpectrum
 from .source.parameter import Parameter
 from .source.source import PointSource, Sources
-from .detector_model import NorthernTracksDetectorModel
+
+from .detector.northern_tracks import NorthernTracksDetectorModel
+from .detector.cascades import CascadesDetectorModel
+from .detector.icecube import IceCubeDetectorModel
+
 from .simulation import generate_atmospheric_sim_code_, generate_main_sim_code_
 from .fit import generate_stan_fit_code_
 from .config import FileConfig, ParameterConfig
@@ -238,10 +242,28 @@ class ModelCheck:
         Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
         Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
         Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
-        Emin_det = Parameter(
-            parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
-        )
 
+        # FixMe: update to option of multiple Emin_det
+        if parameter_config["Emin_det_eq"]:
+
+            Emin_det = Parameter(
+                parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
+            )
+
+        else:
+
+            Emin_det_tracks = Parameter(
+                parameter_config["Emin_det_tracks"] * u.GeV,
+                "Emin_det_tracks",
+                fixed=True,
+            )
+            Emin_det_cascades = Parameter(
+                parameter_config["Emin_det_cascades"] * u.GeV,
+                "Emin_det_cascades",
+                fixed=True,
+            )
+
+        # Simple point source for testing
         point_source = PointSource.make_powerlaw_source(
             "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, index, 0.43, Emin, Emax
         )
@@ -263,6 +285,10 @@ class ModelCheck:
         file_config = FileConfig()
         parameter_config = ParameterConfig()
 
+        detector_model_type = self._get_dm_from_config(
+            parameter_config["detector_model_type"]
+        )
+
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
         start_time = time.time()
@@ -280,7 +306,7 @@ class ModelCheck:
 
             # Simulation
             obs_time = parameter_config["obs_time"] * u.year
-            sim = Simulation(self._sources, NorthernTracksDetectorModel, obs_time)
+            sim = Simulation(self._sources, detector_model_type, obs_time)
             sim.precomputation()
             sim.set_stan_filenames(
                 file_config["atmo_sim_filename"], file_config["main_sim_filename"]
@@ -296,9 +322,7 @@ class ModelCheck:
             self.events = sim.events
 
             # Fit
-            fit = StanFit(
-                self._sources, NorthernTracksDetectorModel, sim.events, obs_time
-            )
+            fit = StanFit(self._sources, detector_model_type, sim.events, obs_time)
             fit.precomputation(exposure_integral=sim._exposure_integral)
             fit.set_stan_filename(file_config["fit_filename"])
             fit.compile_stan_code(include_paths=file_config["include_paths"])
@@ -322,3 +346,23 @@ class ModelCheck:
             sys.stderr.write("time: %.5f\n" % (time.time() - start_time))
 
         return outputs
+
+    def _get_dm_from_config(self, dm_key):
+
+        if dm_key == "northern_tracks":
+
+            dm = NorthernTracksDetectorModel
+
+        elif dm_key == "cascades":
+
+            dm = CascadesDetectorModel
+
+        elif dm_key == "icecube":
+
+            dm = IceCubeDetectorModel
+
+        else:
+
+            raise ValueError("Detector model key in config not recognised")
+
+        return dm
