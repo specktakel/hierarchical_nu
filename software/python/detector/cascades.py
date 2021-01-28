@@ -348,7 +348,7 @@ class CascadesAngularResolution(AngularResolution):
                 "vector",
             )
 
-        self._kappa: np.ndarray = None
+        self._kappa_grid: np.ndarray = None
         self._Egrid: np.ndarray = None
         self._poly_params: Sequence = []
         self._Emin: float = float("nan")
@@ -377,6 +377,18 @@ class CascadesAngularResolution(AngularResolution):
 
             ReturnStatement([vmf])
 
+    def kappa(self):
+
+        clipped_e = TruncatedParameterization("E[i]", self._Emin, self._Emax)
+
+        clipped_log_e = LogParameterization(clipped_e)
+
+        kappa = PolynomialParameterization(
+            clipped_log_e, self._poly_params, "CascadesAngularResolutionPolyCoeffs"
+        )
+
+        return kappa
+
     def setup(self) -> None:
         """
         Load angular resolution and fit or
@@ -389,7 +401,7 @@ class CascadesAngularResolution(AngularResolution):
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
 
                 data = np.load(fr)
-                self._kappa = data["kappa"]
+                self._kappa = data["kappa_grid"]
                 self._Egrid = data["Egrid"]
                 self._poly_params = data["poly_params"]
                 self._Emin = float(data["Emin"])
@@ -412,7 +424,7 @@ class CascadesAngularResolution(AngularResolution):
             # Kappa parameter of VMF distribution
             data["kappa"] = 1.38 / np.radians(data.resolution) ** 2
 
-            self._kappa = data.kappa.values
+            self._kappa_grid = data.kappa.values
             self._Egrid = 10 ** data.log10energy.values
             self._poly_params = np.polyfit(
                 data.log10energy.values, data.kappa.values, 5
@@ -424,7 +436,7 @@ class CascadesAngularResolution(AngularResolution):
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
                 np.savez(
                     fr,
-                    kappa=self._kappa,
+                    kappa_grid=self._kappa_grid,
                     Egrid=self._Egrid,
                     poly_params=self._poly_params,
                     Emin=self._Emin,

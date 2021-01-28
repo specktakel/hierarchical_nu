@@ -506,13 +506,13 @@ class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
         pass
 
     @property
-    def kappa(self):
+    def kappa_grid(self):
         """
         1D array of kappa values with changing energy. Here,
         kappa is the scale parameter of the vMF distribution.
         """
 
-        return self._kappa
+        return self._kappa_grid
 
     @property
     def Egrid(self):
@@ -539,6 +539,16 @@ class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
         """
 
         return self._poly_limits
+
+    @abstractmethod
+    def kappa(self):
+        """
+        Get kappa in stan sim.
+
+        Meant to be used inside stan code generator.
+        """
+
+        pass
 
 
 class DetectorModel(metaclass=ABCMeta):

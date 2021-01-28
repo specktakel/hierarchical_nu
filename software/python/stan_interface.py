@@ -224,7 +224,7 @@ def generate_main_sim_code_(
             StringExpression(["print(", N, ")"])
 
         with GeneratedQuantitiesContext():
-            # Make generic interface for both
+
             dm_rng = detector_model_type(mode=DistributionMode.RNG)
             dm_pdf = detector_model_type(mode=DistributionMode.PDF)
 
@@ -249,7 +249,8 @@ def generate_main_sim_code_(
             Nex_sim = ForwardVariableDef("Nex_sim", "real")
 
             event_type = ForwardVariableDef("event_type", "vector[N]")
-
+            kappa = ForwardVariableDef("kappa", "vector[N]")
+            
             Nex_sim << Nex
 
             with ForLoopContext(1, N, "i") as i:
@@ -336,7 +337,8 @@ def generate_main_sim_code_(
 
                 # Detection effects
                 event[i] << dm_rng.angular_resolution(E[i], omega)
-
+                kappa[i] << dm_rng.angular_resolution.kappa()
+              
                 if detector_model_type == NorthernTracksDetectorModel:
                     event_type[i] << track_type
                 if detector_model_type == CascadesDetectorModel:
@@ -553,6 +555,7 @@ def generate_main_sim_code_hybrid_(
             Nex_c_sim = ForwardVariableDef("Nex_c_sim", "real")
 
             event_type = ForwardVariableDef("event_type", "vector[N]")
+            kappa = ForwardVariableDef("kappa", "vector[N]")
 
             Nex_t_sim << Nex_t
             Nex_c_sim << Nex_c
@@ -649,7 +652,8 @@ def generate_main_sim_code_hybrid_(
 
                 # Detection effects
                 event[i] << dm_rng["tracks"].angular_resolution(E[i], omega)
-
+                kappa[i] << dm_rng["tracks"].angular_resolution.kappa()
+                
             # Cascades
             with ForLoopContext("N_t+1", N, "i") as i:
 
@@ -717,7 +721,8 @@ def generate_main_sim_code_hybrid_(
 
                 # Detection effects
                 event[i] << dm_rng["cascades"].angular_resolution(E[i], omega)
-
+                kappa[i] << dm_rng["cascades"].angular_resolution.kappa()
+                                
     sim_gen.generate_single_file()
 
     return sim_gen.filename
@@ -764,6 +769,7 @@ def generate_stan_fit_code_hybrid_(
             omega_det = ForwardArrayDef("omega_det", "unit_vector[3]", N_str)
             Edet = ForwardVariableDef("Edet", "vector[N]")
             event_type = ForwardVariableDef("event_type", "vector[N]")
+            kappa = ForwardVariableDef("kappa", "vector[N]")
             Esrc_min = ForwardVariableDef("Esrc_min", "real")
             Esrc_max = ForwardVariableDef("Esrc_max", "real")
 
@@ -899,13 +905,15 @@ def generate_stan_fit_code_hybrid_(
                                 ]
                             )
                             E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
-                            StringExpression(
-                                [
-                                    lp[i][k],
-                                    " += ",
-                                    dm["tracks"].angular_resolution(E[i], varpi[k], omega_det[i]),
-                                ]
-                            )
+                            # StringExpression(
+                            #     [
+                            #         lp[i][k],
+                            #         " += ",
+                            #         dm["tracks"].angular_resolution(E[i], varpi[k], omega_det[i]),
+                            #     ]
+                            # )
+                            StringExpression([lp[i][k], " += vMF_lpdf(", omega_det[i], " | ", varpi[k], ", ", kappa[i], ")"])
+                            
 
                         if diffuse_bg_comp:
                             # Diffuse component
@@ -975,13 +983,14 @@ def generate_stan_fit_code_hybrid_(
                                 ]
                             )
                             E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
-                            StringExpression(
-                                [
-                                    lp[i][k],
-                                    " += ",
-                                    dm["cascades"].angular_resolution(E[i], varpi[k], omega_det[i]),
-                                ]
-                            )
+                            # StringExpression(
+                            #    [
+                            #        lp[i][k],
+                            #        " += ",
+                            #        dm["cascades"].angular_resolution(E[i], varpi[k], omega_det[i]),
+                            #    ]
+                            # )
+                            StringExpression([lp[i][k], " += vMF_lpdf(", omega_det[i], " | ", varpi[k], ", ", kappa[i], ")"])
 
                         if diffuse_bg_comp:
                             # Diffuse component
@@ -1118,6 +1127,7 @@ def generate_stan_fit_code_(
             N_str = ["[", N, "]"]
             omega_det = ForwardArrayDef("omega_det", "unit_vector[3]", N_str)
             Edet = ForwardVariableDef("Edet", "vector[N]")
+            kappa = ForwardVariableDef("kappa", "vector[N]")
             Esrc_min = ForwardVariableDef("Esrc_min", "real")
             Esrc_max = ForwardVariableDef("Esrc_max", "real")
 
@@ -1232,13 +1242,14 @@ def generate_stan_fit_code_(
                             ]
                         )
                         E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
-                        StringExpression(
-                            [
-                                lp[i][k],
-                                " += ",
-                                dm.angular_resolution(E[i], varpi[k], omega_det[i]),
-                            ]
-                        )
+                        # StringExpression(
+                        #     [
+                        #         lp[i][k],
+                        #         " += ",
+                        #         dm.angular_resolution(E[i], varpi[k], omega_det[i]),
+                        #     ]
+                        # )
+                        StringExpression([lp[i][k], " += vMF_lpdf(", omega_det[i], " | ", varpi[k], ", ", kappa[i], ")"])
 
                     if diffuse_bg_comp:
                         # Diffuse component

@@ -75,87 +75,92 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1323, column 0 to column 15)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1324, column 0 to column 15)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1325, column 0 to column 21)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1326, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1326, column 0 to column 16)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1327, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1330, column 0 to column 27)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1331, column 0 to column 42)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1332, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1333, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1334, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1347, column 0 to column 43)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1348, column 0 to column 36)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1346, column 0 to line 1349, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1345, column 5 to line 1349, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1343, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1342, column 0 to line 1344, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1341, column 5 to line 1349, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1339, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1338, column 0 to line 1340, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1337, column 0 to line 1349, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1350, column 0 to column 38)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1358, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1357, column 0 to line 1359, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1356, column 5 to line 1359, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1353, column 0 to column 50)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1354, column 0 to column 34)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1352, column 0 to line 1355, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1351, column 0 to line 1359, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1360, column 0 to column 64)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1361, column 0 to column 56)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1362, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1363, column 0 to column 22)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1364, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1375, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1376, column 0 to column 40)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1377, column 0 to column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1374, column 0 to line 1378, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1367, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1370, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1369, column 0 to line 1371, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1368, column 0 to line 1371, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1366, column 0 to line 1372, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1365, column 0 to line 1378, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1336, column 0 to line 1379, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1335, column 0 to line 1379, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1380, column 0 to column 60)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1329, column 0 to line 1381, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1328, column 0 to line 1381, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1384, column 0 to column 29)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1385, column 0 to column 42)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1386, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1387, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1388, column 0 to column 12)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1397, column 0 to column 29)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1396, column 0 to line 1398, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1395, column 5 to line 1398, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1393, column 0 to column 25)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1392, column 0 to line 1394, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1391, column 0 to line 1398, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1399, column 0 to column 38)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1402, column 0 to column 50)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1403, column 0 to column 34)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1401, column 0 to line 1404, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1400, column 0 to line 1404, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1405, column 0 to column 58)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1406, column 0 to column 49)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1407, column 0 to column 18)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1408, column 0 to column 22)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1409, column 0 to column 13)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1420, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1421, column 0 to column 40)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1422, column 0 to column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1419, column 0 to line 1423, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1412, column 0 to column 33)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1415, column 0 to column 11)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1414, column 0 to line 1416, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1413, column 0 to line 1416, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1411, column 0 to line 1417, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1410, column 0 to line 1423, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1390, column 0 to line 1424, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1389, column 0 to line 1424, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1425, column 0 to column 54)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1383, column 0 to line 1426, column 1)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1382, column 0 to line 1426, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1328, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1331, column 0 to line 1332, column 35)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1333, column 0 to column 27)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1334, column 0 to column 42)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1335, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1336, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1337, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1350, column 0 to column 43)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1351, column 0 to column 36)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1349, column 0 to line 1352, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1348, column 5 to line 1352, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1346, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1345, column 0 to line 1347, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1344, column 5 to line 1352, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1342, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1341, column 0 to line 1343, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1340, column 0 to line 1352, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1353, column 0 to column 38)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1361, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1360, column 0 to line 1362, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1359, column 5 to line 1362, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1356, column 0 to column 50)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1357, column 0 to column 34)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1355, column 0 to line 1358, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1354, column 0 to line 1362, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1363, column 0 to column 64)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1364, column 0 to column 56)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1365, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1366, column 0 to column 22)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1367, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1378, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1379, column 0 to column 40)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1380, column 0 to column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1377, column 0 to line 1381, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1370, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1373, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1372, column 0 to line 1374, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1371, column 0 to line 1374, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1369, column 0 to line 1375, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1368, column 0 to line 1381, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1339, column 0 to line 1382, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1338, column 0 to line 1382, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1383, column 0 to column 60)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1384, column 0 to column 132)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1330, column 0 to line 1385, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1329, column 0 to line 1385, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1388, column 0 to line 1389, column 35)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1390, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1391, column 0 to column 42)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1392, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1393, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1394, column 0 to column 12)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1403, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1402, column 0 to line 1404, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1401, column 5 to line 1404, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1399, column 0 to column 25)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1398, column 0 to line 1400, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1397, column 0 to line 1404, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1405, column 0 to column 38)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1408, column 0 to column 50)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1409, column 0 to column 34)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1407, column 0 to line 1410, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1406, column 0 to line 1410, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1411, column 0 to column 58)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1412, column 0 to column 49)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1413, column 0 to column 18)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1414, column 0 to column 22)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1415, column 0 to column 13)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1426, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1427, column 0 to column 40)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1428, column 0 to column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1425, column 0 to line 1429, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1418, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1421, column 0 to column 11)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1420, column 0 to line 1422, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1419, column 0 to line 1422, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1417, column 0 to line 1423, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1416, column 0 to line 1429, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1396, column 0 to line 1430, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1395, column 0 to line 1430, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1431, column 0 to column 54)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1432, column 0 to column 108)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1387, column 0 to line 1433, column 1)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1386, column 0 to line 1433, column 1)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1240, column 0 to column 7)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1241, column 21 to column 23)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1241, column 0 to column 25)",
@@ -243,6 +248,7 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1317, column 10 to column 11)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1322, column 21 to column 22)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1325, column 7 to column 8)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 1326, column 7 to column 8)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 13, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 3, column 0)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 14, column 2, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 3, column 0)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/utils.stan', line 18, column 4, included from\n'/Users/fran/projects/hierarchical_nu/software/stan_files/sim_code.stan', line 3, column 0)",
@@ -598,20 +604,20 @@ trapz(const T0__& x_values_arg__, const T1__& y_values_arg__,
     int N;
     N = std::numeric_limits<int>::min();
     
-    current_statement__ = 185;
+    current_statement__ = 191;
     N = num_elements(x_values);
     local_scalar_t__ I;
     I = DUMMY_VAR__;
     
-    current_statement__ = 186;
+    current_statement__ = 192;
     I = 0;
-    current_statement__ = 189;
+    current_statement__ = 195;
     for (int i = 1; i <= (N - 1); ++i) {
-      current_statement__ = 187;
+      current_statement__ = 193;
       I = (I +
             ((0.5 * (x_values[((i + 1) - 1)] - x_values[(i - 1)])) *
               (y_values[(i - 1)] + y_values[((i + 1) - 1)])));}
-    current_statement__ = 190;
+    current_statement__ = 196;
     return I;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -643,7 +649,7 @@ linspace(const T0__& A, const T1__& B, const int& N, std::ostream* pstream__) {
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    current_statement__ = 192;
+    current_statement__ = 198;
     validate_non_negative_index("output", "N", N);
     Eigen::Matrix<local_scalar_t__, -1, 1> output;
     output = Eigen::Matrix<local_scalar_t__, -1, 1>(N);
@@ -652,14 +658,14 @@ linspace(const T0__& A, const T1__& B, const int& N, std::ostream* pstream__) {
     local_scalar_t__ dx;
     dx = DUMMY_VAR__;
     
-    current_statement__ = 194;
+    current_statement__ = 200;
     dx = ((B - A) / (N - 1));
-    current_statement__ = 197;
+    current_statement__ = 203;
     for (int i = 1; i <= N; ++i) {
-      current_statement__ = 195;
+      current_statement__ = 201;
       assign(output, cons_list(index_uni(i), nil_index_list()),
         (A + ((i - 1) * dx)), "assigning variable output");}
-    current_statement__ = 198;
+    current_statement__ = 204;
     return output;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -696,18 +702,18 @@ eval_poly1d(const T0__& x, const T1__& coeffs_arg__, std::ostream* pstream__) {
     int N;
     N = std::numeric_limits<int>::min();
     
-    current_statement__ = 200;
+    current_statement__ = 206;
     N = num_elements(coeffs);
     local_scalar_t__ res;
     res = DUMMY_VAR__;
     
-    current_statement__ = 201;
+    current_statement__ = 207;
     res = 0;
-    current_statement__ = 204;
+    current_statement__ = 210;
     for (int i = 1; i <= N; ++i) {
-      current_statement__ = 202;
+      current_statement__ = 208;
       res = (res + (coeffs[(i - 1)] * pow(x, (N - i))));}
-    current_statement__ = 205;
+    current_statement__ = 211;
     return res;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -739,18 +745,18 @@ truncate_value(const T0__& x, const T1__& min_val, const T2__& max_val,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    current_statement__ = 212;
+    current_statement__ = 218;
     if (logical_lt(x, min_val)) {
-      current_statement__ = 210;
+      current_statement__ = 216;
       return min_val;
     } else {
-      current_statement__ = 209;
+      current_statement__ = 215;
       if (logical_gt(x, max_val)) {
-        current_statement__ = 207;
+        current_statement__ = 213;
         return max_val;
       } 
     }
-    current_statement__ = 213;
+    current_statement__ = 219;
     return x;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -783,7 +789,7 @@ generate_bin_edges(const T0__& lower_edge, const T1__& upper_edge,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    current_statement__ = 215;
+    current_statement__ = 221;
     validate_non_negative_index("binedges", "nbins + 1", (nbins + 1));
     std::vector<local_scalar_t__> binedges;
     binedges = std::vector<local_scalar_t__>((nbins + 1), DUMMY_VAR__);
@@ -791,14 +797,14 @@ generate_bin_edges(const T0__& lower_edge, const T1__& upper_edge,
     local_scalar_t__ binwidth;
     binwidth = DUMMY_VAR__;
     
-    current_statement__ = 217;
+    current_statement__ = 223;
     binwidth = ((upper_edge - lower_edge) / nbins);
-    current_statement__ = 220;
+    current_statement__ = 226;
     for (int i = 1; i <= (nbins + 1); ++i) {
-      current_statement__ = 218;
+      current_statement__ = 224;
       assign(binedges, cons_list(index_uni(i), nil_index_list()),
         (lower_edge + ((i - 1) * binwidth)), "assigning variable binedges");}
-    current_statement__ = 221;
+    current_statement__ = 227;
     return binedges;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -833,48 +839,48 @@ binary_search(const T0__& value, const std::vector<T1__>& binedges,
     int L;
     L = std::numeric_limits<int>::min();
     
-    current_statement__ = 223;
+    current_statement__ = 229;
     L = 1;
     int R;
     R = std::numeric_limits<int>::min();
     
-    current_statement__ = 224;
+    current_statement__ = 230;
     R = size(binedges);
     int m;
     m = std::numeric_limits<int>::min();
     
-    current_statement__ = 238;
+    current_statement__ = 244;
     if (logical_lt(value, binedges[(1 - 1)])) {
-      current_statement__ = 237;
+      current_statement__ = 243;
       return 0;
     } else {
-      current_statement__ = 236;
+      current_statement__ = 242;
       if (logical_gt(value, binedges[(R - 1)])) {
-        current_statement__ = 235;
+        current_statement__ = 241;
         return (R + 1);
       } else {
-        current_statement__ = 233;
+        current_statement__ = 239;
         while (logical_lt(L, (R - 1))) {
-          current_statement__ = 226;
+          current_statement__ = 232;
           m = ((L + R) / 2);
-          current_statement__ = 231;
+          current_statement__ = 237;
           if (logical_lt(binedges[(m - 1)], value)) {
-            current_statement__ = 230;
+            current_statement__ = 236;
             L = m;
           } else {
-            current_statement__ = 229;
+            current_statement__ = 235;
             if (logical_gt(binedges[(m - 1)], value)) {
-              current_statement__ = 228;
+              current_statement__ = 234;
               R = m;
             } else {
-              current_statement__ = 227;
+              current_statement__ = 233;
               return m;
             }
           }
         }
       }
     }
-    current_statement__ = 239;
+    current_statement__ = 245;
     return L;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -911,21 +917,21 @@ abs_val(const T0__& input_vector_arg__, std::ostream* pstream__) {
     int n;
     n = std::numeric_limits<int>::min();
     
-    current_statement__ = 242;
+    current_statement__ = 248;
     n = num_elements(input_vector);
     local_scalar_t__ sum_squares;
     sum_squares = DUMMY_VAR__;
     
-    current_statement__ = 243;
+    current_statement__ = 249;
     sum_squares = 0;
-    current_statement__ = 246;
+    current_statement__ = 252;
     for (int i = 1; i <= n; ++i) {
-      current_statement__ = 244;
+      current_statement__ = 250;
       sum_squares = (sum_squares +
                       (input_vector[(i - 1)] * input_vector[(i - 1)]));}
-    current_statement__ = 247;
+    current_statement__ = 253;
     av = stan::math::sqrt(sum_squares);
-    current_statement__ = 248;
+    current_statement__ = 254;
     return av;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -959,39 +965,39 @@ sample_orthonormal_to_rng(const T0__& mu_arg__, RNG& base_rng__,
     int dim;
     dim = std::numeric_limits<int>::min();
     
-    current_statement__ = 250;
+    current_statement__ = 256;
     dim = num_elements(mu);
-    current_statement__ = 251;
+    current_statement__ = 257;
     validate_non_negative_index("v", "dim", dim);
     Eigen::Matrix<local_scalar_t__, -1, 1> v;
     v = Eigen::Matrix<local_scalar_t__, -1, 1>(dim);
     stan::math::fill(v, DUMMY_VAR__);
     
-    current_statement__ = 253;
+    current_statement__ = 259;
     validate_non_negative_index("proj_mu_v", "dim", dim);
     Eigen::Matrix<local_scalar_t__, -1, 1> proj_mu_v;
     proj_mu_v = Eigen::Matrix<local_scalar_t__, -1, 1>(dim);
     stan::math::fill(proj_mu_v, DUMMY_VAR__);
     
-    current_statement__ = 255;
+    current_statement__ = 261;
     validate_non_negative_index("orthto", "dim", dim);
     Eigen::Matrix<local_scalar_t__, -1, 1> orthto;
     orthto = Eigen::Matrix<local_scalar_t__, -1, 1>(dim);
     stan::math::fill(orthto, DUMMY_VAR__);
     
-    current_statement__ = 259;
+    current_statement__ = 265;
     for (int i = 1; i <= dim; ++i) {
-      current_statement__ = 257;
+      current_statement__ = 263;
       assign(v, cons_list(index_uni(i), nil_index_list()),
         normal_rng(0, 1, base_rng__), "assigning variable v");}
-    current_statement__ = 260;
+    current_statement__ = 266;
     assign(proj_mu_v, nil_index_list(),
       divide(multiply(mu, dot_product(mu, v)), abs_val(mu, pstream__)),
       "assigning variable proj_mu_v");
-    current_statement__ = 261;
+    current_statement__ = 267;
     assign(orthto, nil_index_list(), subtract(v, proj_mu_v),
       "assigning variable orthto");
-    current_statement__ = 262;
+    current_statement__ = 268;
     return divide(orthto, abs_val(orthto, pstream__));
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1024,29 +1030,29 @@ sample_weight_rng(const T0__& kappa, const int& dim, RNG& base_rng__,
     local_scalar_t__ sdim;
     sdim = DUMMY_VAR__;
     
-    current_statement__ = 264;
+    current_statement__ = 270;
     sdim = (dim - 1);
     local_scalar_t__ b;
     b = DUMMY_VAR__;
     
-    current_statement__ = 265;
+    current_statement__ = 271;
     b = (sdim /
           (stan::math::sqrt(((4. * pow(kappa, 2)) + pow(sdim, 2))) +
             (2 * kappa)));
     local_scalar_t__ x;
     x = DUMMY_VAR__;
     
-    current_statement__ = 266;
+    current_statement__ = 272;
     x = ((1 - b) / (1 + b));
     local_scalar_t__ c;
     c = DUMMY_VAR__;
     
-    current_statement__ = 267;
+    current_statement__ = 273;
     c = ((kappa * x) + (sdim * stan::math::log((1 - pow(x, 2)))));
     int i;
     i = std::numeric_limits<int>::min();
     
-    current_statement__ = 268;
+    current_statement__ = 274;
     i = 0;
     local_scalar_t__ z;
     z = DUMMY_VAR__;
@@ -1057,23 +1063,23 @@ sample_weight_rng(const T0__& kappa, const int& dim, RNG& base_rng__,
     local_scalar_t__ u;
     u = DUMMY_VAR__;
     
-    current_statement__ = 279;
+    current_statement__ = 285;
     while (logical_eq(i, 0)) {
-      current_statement__ = 272;
+      current_statement__ = 278;
       z = beta_rng((sdim / 2), (sdim / 2), base_rng__);
-      current_statement__ = 273;
+      current_statement__ = 279;
       w = ((1 - ((1 + b) * z)) / (1 - ((1 - b) * z)));
-      current_statement__ = 274;
+      current_statement__ = 280;
       u = uniform_rng(0, 1, base_rng__);
-      current_statement__ = 277;
+      current_statement__ = 283;
       if (logical_gte(
             (((kappa * w) + (sdim * stan::math::log((1 - (x * w))))) - c),
             stan::math::log(u))) {
-        current_statement__ = 275;
+        current_statement__ = 281;
         i = 1;
       } 
     }
-    current_statement__ = 280;
+    current_statement__ = 286;
     return w;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1110,9 +1116,9 @@ vMF_rng(const T0__& mu_arg__, const T1__& kappa, RNG& base_rng__,
     int dim;
     dim = std::numeric_limits<int>::min();
     
-    current_statement__ = 282;
+    current_statement__ = 288;
     dim = num_elements(mu);
-    current_statement__ = 283;
+    current_statement__ = 289;
     validate_non_negative_index("result", "dim", dim);
     Eigen::Matrix<local_scalar_t__, -1, 1> result;
     result = Eigen::Matrix<local_scalar_t__, -1, 1>(dim);
@@ -1121,23 +1127,23 @@ vMF_rng(const T0__& mu_arg__, const T1__& kappa, RNG& base_rng__,
     local_scalar_t__ w;
     w = DUMMY_VAR__;
     
-    current_statement__ = 285;
+    current_statement__ = 291;
     w = sample_weight_rng(kappa, dim, base_rng__, pstream__);
-    current_statement__ = 286;
+    current_statement__ = 292;
     validate_non_negative_index("v", "dim", dim);
     Eigen::Matrix<local_scalar_t__, -1, 1> v;
     v = Eigen::Matrix<local_scalar_t__, -1, 1>(dim);
     stan::math::fill(v, DUMMY_VAR__);
     
-    current_statement__ = 287;
+    current_statement__ = 293;
     assign(v, nil_index_list(),
       sample_orthonormal_to_rng(mu, base_rng__, pstream__),
       "assigning variable v");
-    current_statement__ = 288;
+    current_statement__ = 294;
     assign(result, nil_index_list(),
       add(multiply(v, stan::math::sqrt((1 - pow(w, 2)))), multiply(w, mu)),
       "assigning variable result");
-    current_statement__ = 289;
+    current_statement__ = 295;
     return result;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1175,35 +1181,35 @@ sphere_rng(const T0__& radius, RNG& base_rng__, std::ostream* pstream__) {
     local_scalar_t__ u;
     u = DUMMY_VAR__;
     
-    current_statement__ = 292;
+    current_statement__ = 298;
     u = uniform_rng(0, 1, base_rng__);
     local_scalar_t__ v;
     v = DUMMY_VAR__;
     
-    current_statement__ = 293;
+    current_statement__ = 299;
     v = uniform_rng(0, 1, base_rng__);
     local_scalar_t__ phi;
     phi = DUMMY_VAR__;
     
-    current_statement__ = 294;
+    current_statement__ = 300;
     phi = ((2 * stan::math::pi()) * u);
     local_scalar_t__ theta;
     theta = DUMMY_VAR__;
     
-    current_statement__ = 295;
+    current_statement__ = 301;
     theta = stan::math::acos(((2 * v) - 1));
-    current_statement__ = 296;
+    current_statement__ = 302;
     assign(result, cons_list(index_uni(1), nil_index_list()),
       ((radius * stan::math::sin(theta)) * stan::math::cos(phi)),
       "assigning variable result");
-    current_statement__ = 297;
+    current_statement__ = 303;
     assign(result, cons_list(index_uni(2), nil_index_list()),
       ((radius * stan::math::sin(theta)) * stan::math::sin(phi)),
       "assigning variable result");
-    current_statement__ = 298;
+    current_statement__ = 304;
     assign(result, cons_list(index_uni(3), nil_index_list()),
       (radius * stan::math::cos(theta)), "assigning variable result");
-    current_statement__ = 299;
+    current_statement__ = 305;
     return result;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1241,35 +1247,35 @@ sphere_lim_rng(const T0__& radius, const T1__& v_lim, RNG& base_rng__,
     local_scalar_t__ u;
     u = DUMMY_VAR__;
     
-    current_statement__ = 302;
+    current_statement__ = 308;
     u = uniform_rng(0, 1, base_rng__);
     local_scalar_t__ v;
     v = DUMMY_VAR__;
     
-    current_statement__ = 303;
+    current_statement__ = 309;
     v = uniform_rng(v_lim, 1, base_rng__);
     local_scalar_t__ phi;
     phi = DUMMY_VAR__;
     
-    current_statement__ = 304;
+    current_statement__ = 310;
     phi = ((2 * stan::math::pi()) * u);
     local_scalar_t__ theta;
     theta = DUMMY_VAR__;
     
-    current_statement__ = 305;
+    current_statement__ = 311;
     theta = stan::math::acos(((2 * v) - 1));
-    current_statement__ = 306;
+    current_statement__ = 312;
     assign(result, cons_list(index_uni(1), nil_index_list()),
       ((radius * stan::math::sin(theta)) * stan::math::cos(phi)),
       "assigning variable result");
-    current_statement__ = 307;
+    current_statement__ = 313;
     assign(result, cons_list(index_uni(2), nil_index_list()),
       ((radius * stan::math::sin(theta)) * stan::math::sin(phi)),
       "assigning variable result");
-    current_statement__ = 308;
+    current_statement__ = 314;
     assign(result, cons_list(index_uni(3), nil_index_list()),
       (radius * stan::math::cos(theta)), "assigning variable result");
-    current_statement__ = 309;
+    current_statement__ = 315;
     return result;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1307,19 +1313,19 @@ vMF_lpdf(const T0__& v_arg__, const T1__& mu_arg__, const T2__& kappa,
     local_scalar_t__ lprob;
     lprob = DUMMY_VAR__;
     
-    current_statement__ = 316;
+    current_statement__ = 322;
     if (logical_gt(kappa, 100)) {
-      current_statement__ = 314;
+      current_statement__ = 320;
       lprob = (((((kappa * dot_product(v, mu)) + stan::math::log(kappa)) -
                   stan::math::log((4 * stan::math::pi()))) - kappa) +
                 stan::math::log(2));
     } else {
-      current_statement__ = 312;
+      current_statement__ = 318;
       lprob = (((kappa * dot_product(v, mu)) + stan::math::log(kappa)) -
                 stan::math::log(
                   ((4 * stan::math::pi()) * stan::math::sinh(kappa))));
     }
-    current_statement__ = 317;
+    current_statement__ = 323;
     return lprob;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1374,60 +1380,60 @@ interpolate(const T0__& x_values_arg__, const T1__& y_values_arg__,
     int Nx;
     Nx = std::numeric_limits<int>::min();
     
-    current_statement__ = 324;
+    current_statement__ = 330;
     Nx = num_elements(x_values);
     local_scalar_t__ xmin;
     xmin = DUMMY_VAR__;
     
-    current_statement__ = 325;
+    current_statement__ = 331;
     xmin = x_values[(1 - 1)];
     local_scalar_t__ xmax;
     xmax = DUMMY_VAR__;
     
-    current_statement__ = 326;
+    current_statement__ = 332;
     xmax = x_values[(Nx - 1)];
     int i;
     i = std::numeric_limits<int>::min();
     
-    current_statement__ = 327;
+    current_statement__ = 333;
     i = 1;
-    current_statement__ = 335;
+    current_statement__ = 341;
     if ((primitive_value(logical_gt(x, xmax)) || primitive_value(
         logical_lt(x, xmin)))) {
-      current_statement__ = 333;
+      current_statement__ = 339;
       if (logical_gt(x, xmax)) {
-        current_statement__ = 331;
+        current_statement__ = 337;
         return y_values[(Nx - 1)];
       } else {
-        current_statement__ = 330;
+        current_statement__ = 336;
         if (logical_lt(x, xmin)) {
-          current_statement__ = 328;
+          current_statement__ = 334;
           return y_values[(1 - 1)];
         } 
       }
     } 
-    current_statement__ = 342;
+    current_statement__ = 348;
     if (logical_gte(x, x_values[((Nx - 1) - 1)])) {
-      current_statement__ = 340;
+      current_statement__ = 346;
       i = (Nx - 1);
     } else {
-      current_statement__ = 338;
+      current_statement__ = 344;
       while (logical_gt(x, x_values[((i + 1) - 1)])) {
-        current_statement__ = 336;
+        current_statement__ = 342;
         i = (i + 1);
       }
     }
-    current_statement__ = 343;
+    current_statement__ = 349;
     x_left = x_values[(i - 1)];
-    current_statement__ = 344;
+    current_statement__ = 350;
     y_left = y_values[(i - 1)];
-    current_statement__ = 345;
+    current_statement__ = 351;
     x_right = x_values[((i + 1) - 1)];
-    current_statement__ = 346;
+    current_statement__ = 352;
     y_right = y_values[((i + 1) - 1)];
-    current_statement__ = 347;
+    current_statement__ = 353;
     dydx = ((y_right - y_left) / (x_right - x_left));
-    current_statement__ = 348;
+    current_statement__ = 354;
     return (y_left + (dydx * (x - x_left)));
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1471,24 +1477,24 @@ get_exposure_factor_atmo(const T0__& alpha, const T1__& alpha_grid_arg__,
     int K;
     K = std::numeric_limits<int>::min();
     
-    current_statement__ = 350;
+    current_statement__ = 356;
     K = (Ns + 2);
-    current_statement__ = 351;
+    current_statement__ = 357;
     validate_non_negative_index("eps", "K", K);
     Eigen::Matrix<local_scalar_t__, -1, 1> eps;
     eps = Eigen::Matrix<local_scalar_t__, -1, 1>(K);
     stan::math::fill(eps, DUMMY_VAR__);
     
-    current_statement__ = 355;
+    current_statement__ = 361;
     for (int k = 1; k <= (K - 1); ++k) {
-      current_statement__ = 353;
+      current_statement__ = 359;
       assign(eps, cons_list(index_uni(k), nil_index_list()),
         interpolate(alpha_grid, integral_grid[(k - 1)], alpha, pstream__),
         "assigning variable eps");}
-    current_statement__ = 356;
+    current_statement__ = 362;
     assign(eps, cons_list(index_uni(K), nil_index_list()), atmo_integ_val,
       "assigning variable eps");
-    current_statement__ = 357;
+    current_statement__ = 363;
     return multiply(eps, T);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1533,21 +1539,21 @@ get_exposure_factor(const T0__& alpha, const T1__& alpha_grid_arg__,
     int K;
     K = std::numeric_limits<int>::min();
     
-    current_statement__ = 359;
+    current_statement__ = 365;
     K = (Ns + 1);
-    current_statement__ = 360;
+    current_statement__ = 366;
     validate_non_negative_index("eps", "K", K);
     Eigen::Matrix<local_scalar_t__, -1, 1> eps;
     eps = Eigen::Matrix<local_scalar_t__, -1, 1>(K);
     stan::math::fill(eps, DUMMY_VAR__);
     
-    current_statement__ = 364;
+    current_statement__ = 370;
     for (int k = 1; k <= K; ++k) {
-      current_statement__ = 362;
+      current_statement__ = 368;
       assign(eps, cons_list(index_uni(k), nil_index_list()),
         (interpolate(alpha_grid, integral_grid[(k - 1)], alpha, pstream__) *
           T), "assigning variable eps");}
-    current_statement__ = 365;
+    current_statement__ = 371;
     return eps;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1592,9 +1598,9 @@ get_eps_simple(const T0__& alpha, const T1__& alpha_grid_arg__,
     local_scalar_t__ eps;
     eps = DUMMY_VAR__;
     
-    current_statement__ = 368;
+    current_statement__ = 374;
     eps = (interpolate(alpha_grid, integral_grid, alpha, pstream__) * T);
-    current_statement__ = 369;
+    current_statement__ = 375;
     return eps;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1634,9 +1640,9 @@ get_exposure_weights(const T0__& F_arg__, const T1__& eps_arg__,
     int K;
     K = std::numeric_limits<int>::min();
     
-    current_statement__ = 371;
+    current_statement__ = 377;
     K = num_elements(eps);
-    current_statement__ = 372;
+    current_statement__ = 378;
     validate_non_negative_index("weights", "K", K);
     Eigen::Matrix<local_scalar_t__, -1, 1> weights;
     weights = Eigen::Matrix<local_scalar_t__, -1, 1>(K);
@@ -1645,19 +1651,19 @@ get_exposure_weights(const T0__& F_arg__, const T1__& eps_arg__,
     local_scalar_t__ normalisation;
     normalisation = DUMMY_VAR__;
     
-    current_statement__ = 374;
-    normalisation = 0;
-    current_statement__ = 377;
-    for (int k = 1; k <= K; ++k) {
-      current_statement__ = 375;
-      normalisation = (normalisation + (F[(k - 1)] * eps[(k - 1)]));}
     current_statement__ = 380;
+    normalisation = 0;
+    current_statement__ = 383;
     for (int k = 1; k <= K; ++k) {
-      current_statement__ = 378;
+      current_statement__ = 381;
+      normalisation = (normalisation + (F[(k - 1)] * eps[(k - 1)]));}
+    current_statement__ = 386;
+    for (int k = 1; k <= K; ++k) {
+      current_statement__ = 384;
       assign(weights, cons_list(index_uni(k), nil_index_list()),
         ((F[(k - 1)] * eps[(k - 1)]) / normalisation),
         "assigning variable weights");}
-    current_statement__ = 381;
+    current_statement__ = 387;
     return weights;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1694,19 +1700,19 @@ omega_to_zenith(const T0__& omega_arg__, std::ostream* pstream__) {
     int N;
     N = std::numeric_limits<int>::min();
     
-    current_statement__ = 384;
+    current_statement__ = 390;
     N = num_elements(omega);
-    current_statement__ = 387;
+    current_statement__ = 393;
     if (logical_neq(N, 3)) {
-      current_statement__ = 385;
+      current_statement__ = 391;
       if (pstream__) {
         stan_print(pstream__, "Error: input vector omega must be of 3 dimensions");
         stan_print(pstream__, "\n");
       }
     } 
-    current_statement__ = 388;
+    current_statement__ = 394;
     zenith = (stan::math::pi() - stan::math::acos(omega[(3 - 1)]));
-    current_statement__ = 389;
+    current_statement__ = 395;
     return zenith;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1742,18 +1748,18 @@ get_Nex(const T0__& F_arg__, const T1__& eps_arg__, std::ostream* pstream__) {
     int K;
     K = std::numeric_limits<int>::min();
     
-    current_statement__ = 391;
+    current_statement__ = 397;
     K = num_elements(eps);
     local_scalar_t__ Nex;
     Nex = DUMMY_VAR__;
     
-    current_statement__ = 392;
+    current_statement__ = 398;
     Nex = 0;
-    current_statement__ = 395;
+    current_statement__ = 401;
     for (int k = 1; k <= K; ++k) {
-      current_statement__ = 393;
+      current_statement__ = 399;
       Nex = (Nex + (F[(k - 1)] * eps[(k - 1)]));}
-    current_statement__ = 396;
+    current_statement__ = 402;
     return Nex;
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -1788,7 +1794,7 @@ CascadesEffAreaHist(const T0__& value_0, const T1__& value_1,
     std::vector<std::vector<local_scalar_t__>> hist_array;
     hist_array = std::vector<std::vector<local_scalar_t__>>(50, std::vector<local_scalar_t__>(10, DUMMY_VAR__));
     
-    current_statement__ = 398;
+    current_statement__ = 404;
     assign(hist_array, nil_index_list(), std::vector<std::vector<double>>{
       std::vector<double>{0.63933587, 0.74699076, 0.84415315, 0.91115512,
       0.9434195, 0.9526226, 0.94245776, 0.92420666, 0.91262234, 0.90292905},
@@ -1879,7 +1885,7 @@ CascadesEffAreaHist(const T0__& value_0, const T1__& value_1,
     std::vector<local_scalar_t__> hist_edge_0;
     hist_edge_0 = std::vector<local_scalar_t__>(51, DUMMY_VAR__);
     
-    current_statement__ = 399;
+    current_statement__ = 405;
     assign(hist_edge_0, nil_index_list(), std::vector<double>{3.00000000e+04,
       3.61059544e+04, 4.34546648e+04, 5.22990716e+04, 6.29435965e+04,
       7.57546209e+04, 9.11730963e+04, 1.09729722e+05, 1.32063211e+05,
@@ -1897,11 +1903,11 @@ CascadesEffAreaHist(const T0__& value_0, const T1__& value_1,
     std::vector<local_scalar_t__> hist_edge_1;
     hist_edge_1 = std::vector<local_scalar_t__>(11, DUMMY_VAR__);
     
-    current_statement__ = 400;
+    current_statement__ = 406;
     assign(hist_edge_1, nil_index_list(), std::vector<double>{-1., -0.8,
       -0.6, -0.4, -0.2, 0., 0.2, 0.4, 0.6, 0.8, 1.},
       "assigning variable hist_edge_1");
-    current_statement__ = 401;
+    current_statement__ = 407;
     return hist_array[(binary_search(value_0, hist_edge_0, pstream__) - 1)][
         (binary_search(value_1, hist_edge_1, pstream__) - 1)];
   } catch (const std::exception& e) {
@@ -1937,7 +1943,7 @@ NorthernTracksEffAreaHist(const T0__& value_0, const T1__& value_1,
     std::vector<std::vector<local_scalar_t__>> hist_array;
     hist_array = std::vector<std::vector<local_scalar_t__>>(280, std::vector<local_scalar_t__>(11, DUMMY_VAR__));
     
-    current_statement__ = 403;
+    current_statement__ = 409;
     assign(hist_array, nil_index_list(), std::vector<std::vector<double>>{
       std::vector<double>{0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
       0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
@@ -2783,7 +2789,7 @@ NorthernTracksEffAreaHist(const T0__& value_0, const T1__& value_1,
     std::vector<local_scalar_t__> hist_edge_0;
     hist_edge_0 = std::vector<local_scalar_t__>(281, DUMMY_VAR__);
     
-    current_statement__ = 404;
+    current_statement__ = 410;
     assign(hist_edge_0, nil_index_list(), std::vector<double>{1.00000000e+02,
       1.05925373e+02, 1.12201845e+02, 1.18850223e+02, 1.25892541e+02,
       1.33352143e+02, 1.41253754e+02, 1.49623566e+02, 1.58489319e+02,
@@ -2859,11 +2865,11 @@ NorthernTracksEffAreaHist(const T0__& value_0, const T1__& value_1,
     std::vector<local_scalar_t__> hist_edge_1;
     hist_edge_1 = std::vector<local_scalar_t__>(12, DUMMY_VAR__);
     
-    current_statement__ = 405;
+    current_statement__ = 411;
     assign(hist_edge_1, nil_index_list(), std::vector<double>{-1., -0.9,
       -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1},
       "assigning variable hist_edge_1");
-    current_statement__ = 406;
+    current_statement__ = 412;
     return hist_array[(binary_search(value_0, hist_edge_0, pstream__) - 1)][
         (binary_search(value_1, hist_edge_1, pstream__) - 1)];
   } catch (const std::exception& e) {
@@ -2902,11 +2908,11 @@ spectrum_rng(const T0__& alpha, const T1__& e_low, const T2__& e_up,
     local_scalar_t__ norm;
     norm = DUMMY_VAR__;
     
-    current_statement__ = 410;
+    current_statement__ = 416;
     norm = ((1 - alpha) / (pow(e_up, (1 - alpha)) - pow(e_low, (1 - alpha))));
-    current_statement__ = 411;
+    current_statement__ = 417;
     uni_sample = uniform_rng(0, 1, base_rng__);
-    current_statement__ = 412;
+    current_statement__ = 418;
     return pow(
              (((uni_sample * (1 - alpha)) / norm) + pow(e_low, (1 - alpha))),
              (1 / (1 - alpha)));
@@ -2947,25 +2953,25 @@ flux_conv(const T0__& alpha, const T1__& e_low, const T2__& e_up,
     local_scalar_t__ f2;
     f2 = DUMMY_VAR__;
     
-    current_statement__ = 420;
+    current_statement__ = 426;
     if (logical_eq(alpha, 1.0)) {
-      current_statement__ = 418;
+      current_statement__ = 424;
       f1 = (stan::math::log(e_up) - stan::math::log(e_low));
     } else {
-      current_statement__ = 416;
+      current_statement__ = 422;
       f1 = ((1 / (1 - alpha)) *
              (pow(e_up, (1 - alpha)) - pow(e_low, (1 - alpha))));
     }
-    current_statement__ = 425;
+    current_statement__ = 431;
     if (logical_eq(alpha, 2.0)) {
-      current_statement__ = 423;
+      current_statement__ = 429;
       f2 = (stan::math::log(e_up) - stan::math::log(e_low));
     } else {
-      current_statement__ = 421;
+      current_statement__ = 427;
       f2 = ((1 / (2 - alpha)) *
              (pow(e_up, (2 - alpha)) - pow(e_low, (2 - alpha))));
     }
-    current_statement__ = 426;
+    current_statement__ = 432;
     return (f1 / f2);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -3005,13 +3011,13 @@ NorthernTracksAngularResolution_rng(const T0__& true_energy,
     NorthernTracksAngularResolutionPolyCoeffs = Eigen::Matrix<local_scalar_t__, -1, 1>(6);
     stan::math::fill(NorthernTracksAngularResolutionPolyCoeffs, DUMMY_VAR__);
     
-    current_statement__ = 428;
+    current_statement__ = 434;
     assign(NorthernTracksAngularResolutionPolyCoeffs, nil_index_list(),
       (Eigen::Matrix<double,-1,1>(6) << 3.11287843e+01, -8.72542968e+02,
       8.74576241e+03, -3.72847494e+04, 7.46309205e+04,
       -5.73160697e+04).finished(),
       "assigning variable NorthernTracksAngularResolutionPolyCoeffs");
-    current_statement__ = 429;
+    current_statement__ = 435;
     return vMF_rng(true_dir,
              eval_poly1d(
                stan::math::log10(
@@ -3059,9 +3065,9 @@ nt_energy_res_mix_rng(const T0__& means_arg__, const T1__& sigmas_arg__,
     int index;
     index = std::numeric_limits<int>::min();
     
-    current_statement__ = 432;
+    current_statement__ = 438;
     index = categorical_rng(weights, base_rng__);
-    current_statement__ = 433;
+    current_statement__ = 439;
     return lognormal_rng(means[(index - 1)], sigmas[(index - 1)], base_rng__);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -3096,7 +3102,7 @@ NorthernTracksEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
     std::vector<std::vector<local_scalar_t__>> NorthernTracksEnergyResolutionMuPolyCoeffs;
     NorthernTracksEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(6, DUMMY_VAR__));
     
-    current_statement__ = 435;
+    current_statement__ = 441;
     assign(NorthernTracksEnergyResolutionMuPolyCoeffs, nil_index_list(),
       std::vector<std::vector<double>>{std::vector<double>{1.08685003e-03,
       -2.53648066e-02, 2.24501632e-01, -9.06537500e-01, 1.79134801e+00,
@@ -3108,7 +3114,7 @@ NorthernTracksEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
     std::vector<std::vector<local_scalar_t__>> NorthernTracksEnergyResolutionSdPolyCoeffs;
     NorthernTracksEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(6, DUMMY_VAR__));
     
-    current_statement__ = 436;
+    current_statement__ = 442;
     assign(NorthernTracksEnergyResolutionSdPolyCoeffs, nil_index_list(),
       std::vector<std::vector<double>>{std::vector<double>{-2.43665255e-04,
       5.54317551e-03, -4.99986849e-02, 2.25353690e-01, -4.84908813e-01,
@@ -3127,14 +3133,14 @@ NorthernTracksEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
     weights = Eigen::Matrix<local_scalar_t__, -1, 1>(3);
     stan::math::fill(weights, DUMMY_VAR__);
     
-    current_statement__ = 442;
+    current_statement__ = 448;
     for (int i = 1; i <= 3; ++i) {
-      current_statement__ = 440;
+      current_statement__ = 446;
       assign(weights, cons_list(index_uni(i), nil_index_list()), (1.0 / 3),
         "assigning variable weights");}
-    current_statement__ = 446;
+    current_statement__ = 452;
     for (int i = 1; i <= 3; ++i) {
-      current_statement__ = 443;
+      current_statement__ = 449;
       assign(mu_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
@@ -3142,7 +3148,7 @@ NorthernTracksEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
               77339084.25215183, pstream__)),
           to_vector(NorthernTracksEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable mu_e_res");
-      current_statement__ = 444;
+      current_statement__ = 450;
       assign(sigma_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
@@ -3150,7 +3156,7 @@ NorthernTracksEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
               77339084.25215183, pstream__)),
           to_vector(NorthernTracksEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable sigma_e_res");}
-    current_statement__ = 447;
+    current_statement__ = 453;
     return nt_energy_res_mix_rng(to_vector(stan::math::log(mu_e_res)),
              to_vector(sigma_e_res), weights, base_rng__, pstream__);
   } catch (const std::exception& e) {
@@ -3192,13 +3198,13 @@ NorthernTracksAngularResolution(const T0__& true_energy,
     NorthernTracksAngularResolutionPolyCoeffs = Eigen::Matrix<local_scalar_t__, -1, 1>(6);
     stan::math::fill(NorthernTracksAngularResolutionPolyCoeffs, DUMMY_VAR__);
     
-    current_statement__ = 449;
+    current_statement__ = 455;
     assign(NorthernTracksAngularResolutionPolyCoeffs, nil_index_list(),
       (Eigen::Matrix<double,-1,1>(6) << 3.11287843e+01, -8.72542968e+02,
       8.74576241e+03, -3.72847494e+04, 7.46309205e+04,
       -5.73160697e+04).finished(),
       "assigning variable NorthernTracksAngularResolutionPolyCoeffs");
-    current_statement__ = 450;
+    current_statement__ = 456;
     return vMF_lpdf<false>(reco_dir, true_dir,
              eval_poly1d(
                stan::math::log10(
@@ -3249,14 +3255,14 @@ nt_energy_res_mix(const T0__& x, const T1__& means_arg__,
     result = Eigen::Matrix<local_scalar_t__, -1, 1>(3);
     stan::math::fill(result, DUMMY_VAR__);
     
-    current_statement__ = 455;
+    current_statement__ = 461;
     for (int i = 1; i <= 3; ++i) {
-      current_statement__ = 453;
+      current_statement__ = 459;
       assign(result, cons_list(index_uni(i), nil_index_list()),
         (stan::math::log(weights)[(i - 1)] +
           lognormal_lpdf<false>(x, means[(i - 1)], sigmas[(i - 1)])),
         "assigning variable result");}
-    current_statement__ = 456;
+    current_statement__ = 462;
     return log_sum_exp(result);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -3294,7 +3300,7 @@ NorthernTracksEnergyResolution(const T0__& true_energy,
     std::vector<std::vector<local_scalar_t__>> NorthernTracksEnergyResolutionMuPolyCoeffs;
     NorthernTracksEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(6, DUMMY_VAR__));
     
-    current_statement__ = 458;
+    current_statement__ = 464;
     assign(NorthernTracksEnergyResolutionMuPolyCoeffs, nil_index_list(),
       std::vector<std::vector<double>>{std::vector<double>{1.08685003e-03,
       -2.53648066e-02, 2.24501632e-01, -9.06537500e-01, 1.79134801e+00,
@@ -3306,7 +3312,7 @@ NorthernTracksEnergyResolution(const T0__& true_energy,
     std::vector<std::vector<local_scalar_t__>> NorthernTracksEnergyResolutionSdPolyCoeffs;
     NorthernTracksEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(3, std::vector<local_scalar_t__>(6, DUMMY_VAR__));
     
-    current_statement__ = 459;
+    current_statement__ = 465;
     assign(NorthernTracksEnergyResolutionSdPolyCoeffs, nil_index_list(),
       std::vector<std::vector<double>>{std::vector<double>{-2.43665255e-04,
       5.54317551e-03, -4.99986849e-02, 2.25353690e-01, -4.84908813e-01,
@@ -3325,14 +3331,14 @@ NorthernTracksEnergyResolution(const T0__& true_energy,
     weights = Eigen::Matrix<local_scalar_t__, -1, 1>(3);
     stan::math::fill(weights, DUMMY_VAR__);
     
-    current_statement__ = 465;
+    current_statement__ = 471;
     for (int i = 1; i <= 3; ++i) {
-      current_statement__ = 463;
+      current_statement__ = 469;
       assign(weights, cons_list(index_uni(i), nil_index_list()), (1.0 / 3),
         "assigning variable weights");}
-    current_statement__ = 469;
+    current_statement__ = 475;
     for (int i = 1; i <= 3; ++i) {
-      current_statement__ = 466;
+      current_statement__ = 472;
       assign(mu_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
@@ -3340,7 +3346,7 @@ NorthernTracksEnergyResolution(const T0__& true_energy,
               77339084.25215183, pstream__)),
           to_vector(NorthernTracksEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable mu_e_res");
-      current_statement__ = 467;
+      current_statement__ = 473;
       assign(sigma_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
@@ -3348,7 +3354,7 @@ NorthernTracksEnergyResolution(const T0__& true_energy,
               77339084.25215183, pstream__)),
           to_vector(NorthernTracksEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable sigma_e_res");}
-    current_statement__ = 470;
+    current_statement__ = 476;
     return nt_energy_res_mix(stan::math::log10(reco_energy),
              to_vector(stan::math::log(mu_e_res)), to_vector(sigma_e_res),
              weights, pstream__);
@@ -3386,7 +3392,7 @@ NorthernTracksEffectiveArea(const T0__& true_energy,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    current_statement__ = 472;
+    current_statement__ = 478;
     return NorthernTracksEffAreaHist(true_energy,
              stan::math::cos(
                (stan::math::pi() - stan::math::acos(true_dir[(3 - 1)]))), pstream__);
@@ -3428,13 +3434,13 @@ CascadesAngularResolution_rng(const T0__& true_energy,
     CascadesAngularResolutionPolyCoeffs = Eigen::Matrix<local_scalar_t__, -1, 1>(6);
     stan::math::fill(CascadesAngularResolutionPolyCoeffs, DUMMY_VAR__);
     
-    current_statement__ = 474;
+    current_statement__ = 480;
     assign(CascadesAngularResolutionPolyCoeffs, nil_index_list(),
       (Eigen::Matrix<double,-1,1>(6) << -4.84839608e-01, 3.59082699e+00,
       4.39765349e+01, -4.86964043e+02, 1.50499694e+03,
       -1.48474342e+03).finished(),
       "assigning variable CascadesAngularResolutionPolyCoeffs");
-    current_statement__ = 475;
+    current_statement__ = 481;
     return vMF_rng(true_dir,
              eval_poly1d(
                stan::math::log10(
@@ -3481,9 +3487,9 @@ c_energy_res_mix_rng(const T0__& means_arg__, const T1__& sigmas_arg__,
     int index;
     index = std::numeric_limits<int>::min();
     
-    current_statement__ = 478;
+    current_statement__ = 484;
     index = categorical_rng(weights, base_rng__);
-    current_statement__ = 479;
+    current_statement__ = 485;
     return lognormal_rng(means[(index - 1)], sigmas[(index - 1)], base_rng__);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -3518,7 +3524,7 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
     std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionMuPolyCoeffs;
     CascadesEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(4, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
     
-    current_statement__ = 481;
+    current_statement__ = 487;
     assign(CascadesEnergyResolutionMuPolyCoeffs, nil_index_list(),
       std::vector<std::vector<double>>{std::vector<double>{6.76407765e-02,
       -1.12716962e+00, 6.89131295e+00, -1.02474116e+01}, std::vector<double>{
@@ -3530,7 +3536,7 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
     std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionSdPolyCoeffs;
     CascadesEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(4, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
     
-    current_statement__ = 482;
+    current_statement__ = 488;
     assign(CascadesEnergyResolutionSdPolyCoeffs, nil_index_list(),
       std::vector<std::vector<double>>{std::vector<double>{-6.26109056e-03,
       1.12494521e-01, -6.46590841e-01, 1.25275718e+00}, std::vector<double>{
@@ -3549,14 +3555,14 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
     weights = Eigen::Matrix<local_scalar_t__, -1, 1>(4);
     stan::math::fill(weights, DUMMY_VAR__);
     
-    current_statement__ = 488;
+    current_statement__ = 494;
     for (int i = 1; i <= 4; ++i) {
-      current_statement__ = 486;
+      current_statement__ = 492;
       assign(weights, cons_list(index_uni(i), nil_index_list()), (1.0 / 4),
         "assigning variable weights");}
-    current_statement__ = 492;
+    current_statement__ = 498;
     for (int i = 1; i <= 4; ++i) {
-      current_statement__ = 489;
+      current_statement__ = 495;
       assign(mu_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
@@ -3564,7 +3570,7 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
               10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable mu_e_res");
-      current_statement__ = 490;
+      current_statement__ = 496;
       assign(sigma_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
@@ -3572,7 +3578,7 @@ CascadeEnergyResolution_rng(const T0__& true_energy, RNG& base_rng__,
               10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable sigma_e_res");}
-    current_statement__ = 493;
+    current_statement__ = 499;
     return c_energy_res_mix_rng(to_vector(stan::math::log(mu_e_res)),
              to_vector(sigma_e_res), weights, base_rng__, pstream__);
   } catch (const std::exception& e) {
@@ -3613,13 +3619,13 @@ CascadesAngularResolution(const T0__& true_energy,
     CascadesAngularResolutionPolyCoeffs = Eigen::Matrix<local_scalar_t__, -1, 1>(6);
     stan::math::fill(CascadesAngularResolutionPolyCoeffs, DUMMY_VAR__);
     
-    current_statement__ = 495;
+    current_statement__ = 501;
     assign(CascadesAngularResolutionPolyCoeffs, nil_index_list(),
       (Eigen::Matrix<double,-1,1>(6) << -4.84839608e-01, 3.59082699e+00,
       4.39765349e+01, -4.86964043e+02, 1.50499694e+03,
       -1.48474342e+03).finished(),
       "assigning variable CascadesAngularResolutionPolyCoeffs");
-    current_statement__ = 496;
+    current_statement__ = 502;
     return vMF_lpdf<false>(reco_dir, true_dir,
              eval_poly1d(
                stan::math::log10(
@@ -3668,14 +3674,14 @@ c_energy_res_mix(const T0__& x, const T1__& means_arg__,
     result = Eigen::Matrix<local_scalar_t__, -1, 1>(4);
     stan::math::fill(result, DUMMY_VAR__);
     
-    current_statement__ = 501;
+    current_statement__ = 507;
     for (int i = 1; i <= 4; ++i) {
-      current_statement__ = 499;
+      current_statement__ = 505;
       assign(result, cons_list(index_uni(i), nil_index_list()),
         (stan::math::log(weights)[(i - 1)] +
           lognormal_lpdf<false>(x, means[(i - 1)], sigmas[(i - 1)])),
         "assigning variable result");}
-    current_statement__ = 502;
+    current_statement__ = 508;
     return log_sum_exp(result);
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -3712,7 +3718,7 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
     std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionMuPolyCoeffs;
     CascadesEnergyResolutionMuPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(4, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
     
-    current_statement__ = 504;
+    current_statement__ = 510;
     assign(CascadesEnergyResolutionMuPolyCoeffs, nil_index_list(),
       std::vector<std::vector<double>>{std::vector<double>{6.76407765e-02,
       -1.12716962e+00, 6.89131295e+00, -1.02474116e+01}, std::vector<double>{
@@ -3724,7 +3730,7 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
     std::vector<std::vector<local_scalar_t__>> CascadesEnergyResolutionSdPolyCoeffs;
     CascadesEnergyResolutionSdPolyCoeffs = std::vector<std::vector<local_scalar_t__>>(4, std::vector<local_scalar_t__>(4, DUMMY_VAR__));
     
-    current_statement__ = 505;
+    current_statement__ = 511;
     assign(CascadesEnergyResolutionSdPolyCoeffs, nil_index_list(),
       std::vector<std::vector<double>>{std::vector<double>{-6.26109056e-03,
       1.12494521e-01, -6.46590841e-01, 1.25275718e+00}, std::vector<double>{
@@ -3743,14 +3749,14 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
     weights = Eigen::Matrix<local_scalar_t__, -1, 1>(4);
     stan::math::fill(weights, DUMMY_VAR__);
     
-    current_statement__ = 511;
+    current_statement__ = 517;
     for (int i = 1; i <= 4; ++i) {
-      current_statement__ = 509;
+      current_statement__ = 515;
       assign(weights, cons_list(index_uni(i), nil_index_list()), (1.0 / 4),
         "assigning variable weights");}
-    current_statement__ = 515;
+    current_statement__ = 521;
     for (int i = 1; i <= 4; ++i) {
-      current_statement__ = 512;
+      current_statement__ = 518;
       assign(mu_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
@@ -3758,7 +3764,7 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
               10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionMuPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable mu_e_res");
-      current_statement__ = 513;
+      current_statement__ = 519;
       assign(sigma_e_res, cons_list(index_uni(i), nil_index_list()),
         eval_poly1d(
           stan::math::log10(
@@ -3766,7 +3772,7 @@ CascadeEnergyResolution(const T0__& true_energy, const T1__& reco_energy,
               10000000.0, pstream__)),
           to_vector(CascadesEnergyResolutionSdPolyCoeffs[(i - 1)]), pstream__),
         "assigning variable sigma_e_res");}
-    current_statement__ = 516;
+    current_statement__ = 522;
     return c_energy_res_mix(stan::math::log10(reco_energy),
              to_vector(stan::math::log(mu_e_res)), to_vector(sigma_e_res),
              weights, pstream__);
@@ -3803,7 +3809,7 @@ CascadesEffectiveArea(const T0__& true_energy, const T1__& true_dir_arg__,
   (void) DUMMY_VAR__;  // suppress unused var warning
   
   try {
-    current_statement__ = 518;
+    current_statement__ = 524;
     return CascadesEffAreaHist(true_energy,
              stan::math::cos(
                (stan::math::pi() - stan::math::acos(true_dir[(3 - 1)]))), pstream__);
@@ -3897,16 +3903,16 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       pos__ = std::numeric_limits<int>::min();
       
       pos__ = 1;
-      current_statement__ = 98;
+      current_statement__ = 103;
       context__.validate_dims("data initialization","Ns","int",
           context__.to_vec());
       Ns = std::numeric_limits<int>::min();
       
-      current_statement__ = 98;
+      current_statement__ = 103;
       Ns = context__.vals_i("Ns")[(1 - 1)];
-      current_statement__ = 99;
+      current_statement__ = 104;
       validate_non_negative_index("varpi", "Ns", Ns);
-      current_statement__ = 100;
+      current_statement__ = 105;
       context__.validate_dims("data initialization","varpi","double",
           context__.to_vec(Ns, 3));
       varpi = std::vector<Eigen::Matrix<double, -1, 1>>(Ns, Eigen::Matrix<double, -1, 1>(3));
@@ -3914,31 +3920,31 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> varpi_flat__;
-        current_statement__ = 100;
+        current_statement__ = 105;
         assign(varpi_flat__, nil_index_list(), context__.vals_r("varpi"),
           "assigning variable varpi_flat__");
-        current_statement__ = 100;
+        current_statement__ = 105;
         pos__ = 1;
-        current_statement__ = 100;
+        current_statement__ = 105;
         for (int sym1__ = 1; sym1__ <= 3; ++sym1__) {
-          current_statement__ = 100;
+          current_statement__ = 105;
           for (int sym2__ = 1; sym2__ <= Ns; ++sym2__) {
-            current_statement__ = 100;
+            current_statement__ = 105;
             assign(varpi,
               cons_list(index_uni(sym2__),
                 cons_list(index_uni(sym1__), nil_index_list())),
               varpi_flat__[(pos__ - 1)], "assigning variable varpi");
-            current_statement__ = 100;
+            current_statement__ = 105;
             pos__ = (pos__ + 1);}}
       }
-      current_statement__ = 100;
+      current_statement__ = 105;
       for (int sym1__ = 1; sym1__ <= Ns; ++sym1__) {
-        current_statement__ = 100;
-        current_statement__ = 100;
+        current_statement__ = 105;
+        current_statement__ = 105;
         check_unit_vector(function__, "varpi[sym1__]", varpi[(sym1__ - 1)]);}
-      current_statement__ = 101;
+      current_statement__ = 106;
       validate_non_negative_index("D", "Ns", Ns);
-      current_statement__ = 102;
+      current_statement__ = 107;
       context__.validate_dims("data initialization","D","double",
           context__.to_vec(Ns));
       D = Eigen::Matrix<double, -1, 1>(Ns);
@@ -3946,22 +3952,22 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> D_flat__;
-        current_statement__ = 102;
+        current_statement__ = 107;
         assign(D_flat__, nil_index_list(), context__.vals_r("D"),
           "assigning variable D_flat__");
-        current_statement__ = 102;
+        current_statement__ = 107;
         pos__ = 1;
-        current_statement__ = 102;
+        current_statement__ = 107;
         for (int sym1__ = 1; sym1__ <= Ns; ++sym1__) {
-          current_statement__ = 102;
+          current_statement__ = 107;
           assign(D, cons_list(index_uni(sym1__), nil_index_list()),
             D_flat__[(pos__ - 1)], "assigning variable D");
-          current_statement__ = 102;
+          current_statement__ = 107;
           pos__ = (pos__ + 1);}
       }
-      current_statement__ = 103;
+      current_statement__ = 108;
       validate_non_negative_index("z", "Ns + 1", (Ns + 1));
-      current_statement__ = 104;
+      current_statement__ = 109;
       context__.validate_dims("data initialization","z","double",
           context__.to_vec((Ns + 1)));
       z = Eigen::Matrix<double, -1, 1>((Ns + 1));
@@ -3969,78 +3975,78 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> z_flat__;
-        current_statement__ = 104;
+        current_statement__ = 109;
         assign(z_flat__, nil_index_list(), context__.vals_r("z"),
           "assigning variable z_flat__");
-        current_statement__ = 104;
+        current_statement__ = 109;
         pos__ = 1;
-        current_statement__ = 104;
+        current_statement__ = 109;
         for (int sym1__ = 1; sym1__ <= (Ns + 1); ++sym1__) {
-          current_statement__ = 104;
+          current_statement__ = 109;
           assign(z, cons_list(index_uni(sym1__), nil_index_list()),
             z_flat__[(pos__ - 1)], "assigning variable z");
-          current_statement__ = 104;
+          current_statement__ = 109;
           pos__ = (pos__ + 1);}
       }
-      current_statement__ = 105;
+      current_statement__ = 110;
       context__.validate_dims("data initialization","alpha","double",
           context__.to_vec());
       alpha = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 105;
+      current_statement__ = 110;
       alpha = context__.vals_r("alpha")[(1 - 1)];
-      current_statement__ = 106;
+      current_statement__ = 111;
       context__.validate_dims("data initialization","Emin_det_tracks",
           "double",context__.to_vec());
       Emin_det_tracks = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 106;
+      current_statement__ = 111;
       Emin_det_tracks = context__.vals_r("Emin_det_tracks")[(1 - 1)];
-      current_statement__ = 107;
+      current_statement__ = 112;
       context__.validate_dims("data initialization","Emin_det_cascades",
           "double",context__.to_vec());
       Emin_det_cascades = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 107;
+      current_statement__ = 112;
       Emin_det_cascades = context__.vals_r("Emin_det_cascades")[(1 - 1)];
-      current_statement__ = 108;
+      current_statement__ = 113;
       context__.validate_dims("data initialization","Esrc_min","double",
           context__.to_vec());
       Esrc_min = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 108;
+      current_statement__ = 113;
       Esrc_min = context__.vals_r("Esrc_min")[(1 - 1)];
-      current_statement__ = 109;
+      current_statement__ = 114;
       context__.validate_dims("data initialization","Esrc_max","double",
           context__.to_vec());
       Esrc_max = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 109;
+      current_statement__ = 114;
       Esrc_max = context__.vals_r("Esrc_max")[(1 - 1)];
-      current_statement__ = 110;
+      current_statement__ = 115;
       context__.validate_dims("data initialization","L","double",
           context__.to_vec());
       L = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 110;
+      current_statement__ = 115;
       L = context__.vals_r("L")[(1 - 1)];
-      current_statement__ = 111;
+      current_statement__ = 116;
       context__.validate_dims("data initialization","F_diff","double",
           context__.to_vec());
       F_diff = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 111;
+      current_statement__ = 116;
       F_diff = context__.vals_r("F_diff")[(1 - 1)];
-      current_statement__ = 112;
+      current_statement__ = 117;
       context__.validate_dims("data initialization","Ngrid","int",
           context__.to_vec());
       Ngrid = std::numeric_limits<int>::min();
       
-      current_statement__ = 112;
+      current_statement__ = 117;
       Ngrid = context__.vals_i("Ngrid")[(1 - 1)];
-      current_statement__ = 113;
+      current_statement__ = 118;
       validate_non_negative_index("alpha_grid", "Ngrid", Ngrid);
-      current_statement__ = 114;
+      current_statement__ = 119;
       context__.validate_dims("data initialization","alpha_grid","double",
           context__.to_vec(Ngrid));
       alpha_grid = Eigen::Matrix<double, -1, 1>(Ngrid);
@@ -4048,25 +4054,25 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> alpha_grid_flat__;
-        current_statement__ = 114;
+        current_statement__ = 119;
         assign(alpha_grid_flat__, nil_index_list(),
           context__.vals_r("alpha_grid"),
           "assigning variable alpha_grid_flat__");
-        current_statement__ = 114;
+        current_statement__ = 119;
         pos__ = 1;
-        current_statement__ = 114;
+        current_statement__ = 119;
         for (int sym1__ = 1; sym1__ <= Ngrid; ++sym1__) {
-          current_statement__ = 114;
+          current_statement__ = 119;
           assign(alpha_grid, cons_list(index_uni(sym1__), nil_index_list()),
             alpha_grid_flat__[(pos__ - 1)], "assigning variable alpha_grid");
-          current_statement__ = 114;
+          current_statement__ = 119;
           pos__ = (pos__ + 1);}
       }
-      current_statement__ = 115;
+      current_statement__ = 120;
       validate_non_negative_index("integral_grid_t", "Ns + 1", (Ns + 1));
-      current_statement__ = 116;
+      current_statement__ = 121;
       validate_non_negative_index("integral_grid_t", "Ngrid", Ngrid);
-      current_statement__ = 117;
+      current_statement__ = 122;
       context__.validate_dims("data initialization","integral_grid_t",
           "double",context__.to_vec((Ns + 1), Ngrid));
       integral_grid_t = std::vector<Eigen::Matrix<double, -1, 1>>((Ns + 1), Eigen::Matrix<double, -1, 1>(Ngrid));
@@ -4074,30 +4080,30 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> integral_grid_t_flat__;
-        current_statement__ = 117;
+        current_statement__ = 122;
         assign(integral_grid_t_flat__, nil_index_list(),
           context__.vals_r("integral_grid_t"),
           "assigning variable integral_grid_t_flat__");
-        current_statement__ = 117;
+        current_statement__ = 122;
         pos__ = 1;
-        current_statement__ = 117;
+        current_statement__ = 122;
         for (int sym1__ = 1; sym1__ <= Ngrid; ++sym1__) {
-          current_statement__ = 117;
+          current_statement__ = 122;
           for (int sym2__ = 1; sym2__ <= (Ns + 1); ++sym2__) {
-            current_statement__ = 117;
+            current_statement__ = 122;
             assign(integral_grid_t,
               cons_list(index_uni(sym2__),
                 cons_list(index_uni(sym1__), nil_index_list())),
               integral_grid_t_flat__[(pos__ - 1)],
               "assigning variable integral_grid_t");
-            current_statement__ = 117;
+            current_statement__ = 122;
             pos__ = (pos__ + 1);}}
       }
-      current_statement__ = 118;
+      current_statement__ = 123;
       validate_non_negative_index("integral_grid_c", "Ns + 1", (Ns + 1));
-      current_statement__ = 119;
+      current_statement__ = 124;
       validate_non_negative_index("integral_grid_c", "Ngrid", Ngrid);
-      current_statement__ = 120;
+      current_statement__ = 125;
       context__.validate_dims("data initialization","integral_grid_c",
           "double",context__.to_vec((Ns + 1), Ngrid));
       integral_grid_c = std::vector<Eigen::Matrix<double, -1, 1>>((Ns + 1), Eigen::Matrix<double, -1, 1>(Ngrid));
@@ -4105,77 +4111,77 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> integral_grid_c_flat__;
-        current_statement__ = 120;
+        current_statement__ = 125;
         assign(integral_grid_c_flat__, nil_index_list(),
           context__.vals_r("integral_grid_c"),
           "assigning variable integral_grid_c_flat__");
-        current_statement__ = 120;
+        current_statement__ = 125;
         pos__ = 1;
-        current_statement__ = 120;
+        current_statement__ = 125;
         for (int sym1__ = 1; sym1__ <= Ngrid; ++sym1__) {
-          current_statement__ = 120;
+          current_statement__ = 125;
           for (int sym2__ = 1; sym2__ <= (Ns + 1); ++sym2__) {
-            current_statement__ = 120;
+            current_statement__ = 125;
             assign(integral_grid_c,
               cons_list(index_uni(sym2__),
                 cons_list(index_uni(sym1__), nil_index_list())),
               integral_grid_c_flat__[(pos__ - 1)],
               "assigning variable integral_grid_c");
-            current_statement__ = 120;
+            current_statement__ = 125;
             pos__ = (pos__ + 1);}}
       }
-      current_statement__ = 121;
+      current_statement__ = 126;
       context__.validate_dims("data initialization","aeff_t_max","double",
           context__.to_vec());
       aeff_t_max = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 121;
+      current_statement__ = 126;
       aeff_t_max = context__.vals_r("aeff_t_max")[(1 - 1)];
-      current_statement__ = 122;
+      current_statement__ = 127;
       context__.validate_dims("data initialization","aeff_c_max","double",
           context__.to_vec());
       aeff_c_max = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 122;
+      current_statement__ = 127;
       aeff_c_max = context__.vals_r("aeff_c_max")[(1 - 1)];
-      current_statement__ = 123;
+      current_statement__ = 128;
       context__.validate_dims("data initialization","v_lim","double",
           context__.to_vec());
       v_lim = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 123;
+      current_statement__ = 128;
       v_lim = context__.vals_r("v_lim")[(1 - 1)];
-      current_statement__ = 124;
+      current_statement__ = 129;
       context__.validate_dims("data initialization","T","double",
           context__.to_vec());
       T = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 124;
+      current_statement__ = 129;
       T = context__.vals_r("T")[(1 - 1)];
-      current_statement__ = 125;
+      current_statement__ = 130;
       context__.validate_dims("data initialization","F_atmo","double",
           context__.to_vec());
       F_atmo = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 125;
+      current_statement__ = 130;
       F_atmo = context__.vals_r("F_atmo")[(1 - 1)];
-      current_statement__ = 126;
+      current_statement__ = 131;
       context__.validate_dims("data initialization","atmo_integ_val",
           "double",context__.to_vec());
       atmo_integ_val = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 126;
+      current_statement__ = 131;
       atmo_integ_val = context__.vals_r("atmo_integ_val")[(1 - 1)];
-      current_statement__ = 127;
+      current_statement__ = 132;
       context__.validate_dims("data initialization","N_atmo","int",
           context__.to_vec());
       N_atmo = std::numeric_limits<int>::min();
       
-      current_statement__ = 127;
+      current_statement__ = 132;
       N_atmo = context__.vals_i("N_atmo")[(1 - 1)];
-      current_statement__ = 128;
+      current_statement__ = 133;
       validate_non_negative_index("atmo_directions", "N_atmo", N_atmo);
-      current_statement__ = 129;
+      current_statement__ = 134;
       context__.validate_dims("data initialization","atmo_directions",
           "double",context__.to_vec(N_atmo, 3));
       atmo_directions = std::vector<Eigen::Matrix<double, -1, 1>>(N_atmo, Eigen::Matrix<double, -1, 1>(3));
@@ -4183,34 +4189,34 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> atmo_directions_flat__;
-        current_statement__ = 129;
+        current_statement__ = 134;
         assign(atmo_directions_flat__, nil_index_list(),
           context__.vals_r("atmo_directions"),
           "assigning variable atmo_directions_flat__");
-        current_statement__ = 129;
+        current_statement__ = 134;
         pos__ = 1;
-        current_statement__ = 129;
+        current_statement__ = 134;
         for (int sym1__ = 1; sym1__ <= 3; ++sym1__) {
-          current_statement__ = 129;
+          current_statement__ = 134;
           for (int sym2__ = 1; sym2__ <= N_atmo; ++sym2__) {
-            current_statement__ = 129;
+            current_statement__ = 134;
             assign(atmo_directions,
               cons_list(index_uni(sym2__),
                 cons_list(index_uni(sym1__), nil_index_list())),
               atmo_directions_flat__[(pos__ - 1)],
               "assigning variable atmo_directions");
-            current_statement__ = 129;
+            current_statement__ = 134;
             pos__ = (pos__ + 1);}}
       }
-      current_statement__ = 129;
+      current_statement__ = 134;
       for (int sym1__ = 1; sym1__ <= N_atmo; ++sym1__) {
-        current_statement__ = 129;
-        current_statement__ = 129;
+        current_statement__ = 134;
+        current_statement__ = 134;
         check_unit_vector(function__, "atmo_directions[sym1__]",
                           atmo_directions[(sym1__ - 1)]);}
-      current_statement__ = 130;
+      current_statement__ = 135;
       validate_non_negative_index("atmo_energies", "N_atmo", N_atmo);
-      current_statement__ = 131;
+      current_statement__ = 136;
       context__.validate_dims("data initialization","atmo_energies","double",
           context__.to_vec(N_atmo));
       atmo_energies = Eigen::Matrix<double, -1, 1>(N_atmo);
@@ -4218,25 +4224,25 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> atmo_energies_flat__;
-        current_statement__ = 131;
+        current_statement__ = 136;
         assign(atmo_energies_flat__, nil_index_list(),
           context__.vals_r("atmo_energies"),
           "assigning variable atmo_energies_flat__");
-        current_statement__ = 131;
+        current_statement__ = 136;
         pos__ = 1;
-        current_statement__ = 131;
+        current_statement__ = 136;
         for (int sym1__ = 1; sym1__ <= N_atmo; ++sym1__) {
-          current_statement__ = 131;
+          current_statement__ = 136;
           assign(atmo_energies,
             cons_list(index_uni(sym1__), nil_index_list()),
             atmo_energies_flat__[(pos__ - 1)],
             "assigning variable atmo_energies");
-          current_statement__ = 131;
+          current_statement__ = 136;
           pos__ = (pos__ + 1);}
       }
-      current_statement__ = 132;
+      current_statement__ = 137;
       validate_non_negative_index("atmo_weights", "N_atmo", N_atmo);
-      current_statement__ = 133;
+      current_statement__ = 138;
       context__.validate_dims("data initialization","atmo_weights","double",
           context__.to_vec(N_atmo));
       atmo_weights = Eigen::Matrix<double, -1, 1>(N_atmo);
@@ -4244,173 +4250,175 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       
       {
         std::vector<local_scalar_t__> atmo_weights_flat__;
-        current_statement__ = 133;
+        current_statement__ = 138;
         assign(atmo_weights_flat__, nil_index_list(),
           context__.vals_r("atmo_weights"),
           "assigning variable atmo_weights_flat__");
-        current_statement__ = 133;
+        current_statement__ = 138;
         pos__ = 1;
-        current_statement__ = 133;
+        current_statement__ = 138;
         for (int sym1__ = 1; sym1__ <= N_atmo; ++sym1__) {
-          current_statement__ = 133;
+          current_statement__ = 138;
           assign(atmo_weights,
             cons_list(index_uni(sym1__), nil_index_list()),
             atmo_weights_flat__[(pos__ - 1)],
             "assigning variable atmo_weights");
-          current_statement__ = 133;
+          current_statement__ = 138;
           pos__ = (pos__ + 1);}
       }
-      current_statement__ = 133;
-      current_statement__ = 133;
+      current_statement__ = 138;
+      current_statement__ = 138;
       check_simplex(function__, "atmo_weights", atmo_weights);
-      current_statement__ = 134;
+      current_statement__ = 139;
       validate_non_negative_index("F", "Ns + 2", (Ns + 2));
-      current_statement__ = 135;
+      current_statement__ = 140;
       F = Eigen::Matrix<double, -1, 1>((Ns + 2));
       stan::math::fill(F, std::numeric_limits<double>::quiet_NaN());
       
-      current_statement__ = 136;
+      current_statement__ = 141;
       validate_non_negative_index("w_exposure_t", "Ns + 2", (Ns + 2));
-      current_statement__ = 137;
+      current_statement__ = 142;
       w_exposure_t = Eigen::Matrix<double, -1, 1>((Ns + 2));
       stan::math::fill(w_exposure_t, std::numeric_limits<double>::quiet_NaN());
       
-      current_statement__ = 138;
+      current_statement__ = 143;
       validate_non_negative_index("w_exposure_c", "Ns + 1", (Ns + 1));
-      current_statement__ = 139;
+      current_statement__ = 144;
       w_exposure_c = Eigen::Matrix<double, -1, 1>((Ns + 1));
       stan::math::fill(w_exposure_c, std::numeric_limits<double>::quiet_NaN());
       
-      current_statement__ = 140;
+      current_statement__ = 145;
       validate_non_negative_index("eps_t", "Ns + 2", (Ns + 2));
-      current_statement__ = 141;
+      current_statement__ = 146;
       eps_t = Eigen::Matrix<double, -1, 1>((Ns + 2));
       stan::math::fill(eps_t, std::numeric_limits<double>::quiet_NaN());
       
-      current_statement__ = 142;
+      current_statement__ = 147;
       validate_non_negative_index("eps_c", "Ns + 1", (Ns + 1));
-      current_statement__ = 143;
+      current_statement__ = 148;
       eps_c = Eigen::Matrix<double, -1, 1>((Ns + 1));
       stan::math::fill(eps_c, std::numeric_limits<double>::quiet_NaN());
       
-      current_statement__ = 144;
+      current_statement__ = 149;
       track_type = std::numeric_limits<int>::min();
       
-      current_statement__ = 145;
+      current_statement__ = 150;
       cascade_type = std::numeric_limits<int>::min();
       
-      current_statement__ = 146;
+      current_statement__ = 151;
       Ftot = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 147;
+      current_statement__ = 152;
       Fs = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 148;
+      current_statement__ = 153;
       f = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 149;
+      current_statement__ = 154;
       Nex_t = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 150;
+      current_statement__ = 155;
       Nex_c = std::numeric_limits<double>::quiet_NaN();
       
-      current_statement__ = 151;
+      current_statement__ = 156;
       N_t = std::numeric_limits<int>::min();
       
-      current_statement__ = 152;
+      current_statement__ = 157;
       N_c = std::numeric_limits<int>::min();
       
-      current_statement__ = 153;
+      current_statement__ = 158;
       N = std::numeric_limits<int>::min();
       
-      current_statement__ = 154;
+      current_statement__ = 159;
       track_type = 0;
-      current_statement__ = 155;
+      current_statement__ = 160;
       cascade_type = 1;
-      current_statement__ = 156;
-      Fs = 0.0;
       current_statement__ = 161;
+      Fs = 0.0;
+      current_statement__ = 166;
       for (int k = 1; k <= Ns; ++k) {
-        current_statement__ = 157;
+        current_statement__ = 162;
         assign(F, cons_list(index_uni(k), nil_index_list()),
           (L / ((4 * stan::math::pi()) * pow((D[(k - 1)] * 3.086e+22), 2))),
           "assigning variable F");
-        current_statement__ = 158;
+        current_statement__ = 163;
         assign(F, cons_list(index_uni(k), nil_index_list()),
           (F[(k - 1)] * flux_conv(alpha, Esrc_min, Esrc_max, pstream__)),
           "assigning variable F");
-        current_statement__ = 159;
+        current_statement__ = 164;
         Fs = (Fs + F[(k - 1)]);}
-      current_statement__ = 162;
+      current_statement__ = 167;
       assign(F, cons_list(index_uni((Ns + 1)), nil_index_list()), F_diff,
         "assigning variable F");
-      current_statement__ = 163;
+      current_statement__ = 168;
       assign(F, cons_list(index_uni((Ns + 2)), nil_index_list()), F_atmo,
         "assigning variable F");
-      current_statement__ = 164;
+      current_statement__ = 169;
       Ftot = ((Fs + F_diff) + F_atmo);
-      current_statement__ = 165;
+      current_statement__ = 170;
       f = (Fs / Ftot);
-      current_statement__ = 166;
+      current_statement__ = 171;
       if (pstream__) {
         stan_print(pstream__, "f: ");
         stan_print(pstream__, f);
         stan_print(pstream__, "\n");
       }
-      current_statement__ = 167;
+      current_statement__ = 172;
       assign(eps_t, nil_index_list(),
         get_exposure_factor_atmo(alpha, alpha_grid, integral_grid_t,
           atmo_integ_val, T, Ns, pstream__), "assigning variable eps_t");
-      current_statement__ = 168;
+      current_statement__ = 173;
       assign(eps_c, nil_index_list(),
         get_exposure_factor(alpha, alpha_grid, integral_grid_c, T,
           Ns, pstream__), "assigning variable eps_c");
-      current_statement__ = 169;
+      current_statement__ = 174;
       Nex_t = get_Nex(F, eps_t, pstream__);
-      current_statement__ = 170;
+      current_statement__ = 175;
       assign(w_exposure_t, nil_index_list(),
         get_exposure_weights(F, eps_t, pstream__),
         "assigning variable w_exposure_t");
-      current_statement__ = 171;
+      current_statement__ = 176;
       Nex_c = get_Nex(F, eps_c, pstream__);
-      current_statement__ = 172;
+      current_statement__ = 177;
       assign(w_exposure_c, nil_index_list(),
         get_exposure_weights(F, eps_c, pstream__),
         "assigning variable w_exposure_c");
-      current_statement__ = 173;
+      current_statement__ = 178;
       N_t = poisson_rng(Nex_t, base_rng__);
-      current_statement__ = 174;
+      current_statement__ = 179;
       N_c = poisson_rng(Nex_c, base_rng__);
-      current_statement__ = 175;
+      current_statement__ = 180;
       N = (N_t + N_c);
-      current_statement__ = 176;
+      current_statement__ = 181;
       if (pstream__) {
         stan_print(pstream__, "Ngrid: ");
         stan_print(pstream__, Ngrid);
         stan_print(pstream__, "\n");
       }
-      current_statement__ = 137;
-      current_statement__ = 137;
+      current_statement__ = 142;
+      current_statement__ = 142;
       check_simplex(function__, "w_exposure_t", w_exposure_t);
-      current_statement__ = 139;
-      current_statement__ = 139;
+      current_statement__ = 144;
+      current_statement__ = 144;
       check_simplex(function__, "w_exposure_c", w_exposure_c);
-      current_statement__ = 177;
-      validate_non_negative_index("Lambda", "N", N);
-      current_statement__ = 178;
-      validate_non_negative_index("Esrc", "N", N);
-      current_statement__ = 179;
-      validate_non_negative_index("E", "N", N);
-      current_statement__ = 180;
-      validate_non_negative_index("Edet", "N", N);
-      current_statement__ = 181;
-      validate_non_negative_index("cosz", "N", N);
       current_statement__ = 182;
-      validate_non_negative_index("Pdet", "N", N);
+      validate_non_negative_index("Lambda", "N", N);
       current_statement__ = 183;
-      validate_non_negative_index("event", "N", N);
+      validate_non_negative_index("Esrc", "N", N);
       current_statement__ = 184;
+      validate_non_negative_index("E", "N", N);
+      current_statement__ = 185;
+      validate_non_negative_index("Edet", "N", N);
+      current_statement__ = 186;
+      validate_non_negative_index("cosz", "N", N);
+      current_statement__ = 187;
+      validate_non_negative_index("Pdet", "N", N);
+      current_statement__ = 188;
+      validate_non_negative_index("event", "N", N);
+      current_statement__ = 189;
       validate_non_negative_index("event_type", "N", N);
+      current_statement__ = 190;
+      validate_non_negative_index("kappa", "N", N);
     } catch (const std::exception& e) {
       stan::lang::rethrow_located(e, locations_array__[current_statement__]);
       // Next line prevents compiler griping about no return
@@ -4537,105 +4545,119 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       event_type = Eigen::Matrix<double, -1, 1>(N);
       stan::math::fill(event_type, std::numeric_limits<double>::quiet_NaN());
       
-      current_statement__ = 17;
-      Nex_t_sim = Nex_t;
+      Eigen::Matrix<double, -1, 1> kappa;
+      kappa = Eigen::Matrix<double, -1, 1>(N);
+      stan::math::fill(kappa, std::numeric_limits<double>::quiet_NaN());
+      
       current_statement__ = 18;
+      Nex_t_sim = Nex_t;
+      current_statement__ = 19;
       Nex_c_sim = Nex_c;
-      current_statement__ = 61;
+      current_statement__ = 64;
       for (int i = 1; i <= N_t; ++i) {
-        current_statement__ = 19;
+        Eigen::Matrix<double, -1, 1> NorthernTracksAngularResolutionPolyCoeffs;
+        NorthernTracksAngularResolutionPolyCoeffs = Eigen::Matrix<double, -1, 1>(6);
+        stan::math::fill(NorthernTracksAngularResolutionPolyCoeffs, std::numeric_limits<double>::quiet_NaN());
+        
+        current_statement__ = 20;
+        assign(NorthernTracksAngularResolutionPolyCoeffs, nil_index_list(),
+          (Eigen::Matrix<double,-1,1>(6) << 3.11287843e+01, -8.72542968e+02,
+          8.74576241e+03, -3.72847494e+04, 7.46309205e+04,
+          -5.73160697e+04).finished(),
+          "assigning variable NorthernTracksAngularResolutionPolyCoeffs");
+        current_statement__ = 21;
         assign(event_type, cons_list(index_uni(i), nil_index_list()),
           track_type, "assigning variable event_type");
-        current_statement__ = 20;
+        current_statement__ = 22;
         assign(Lambda, cons_list(index_uni(i), nil_index_list()),
           categorical_rng(w_exposure_t, base_rng__),
           "assigning variable Lambda");
-        current_statement__ = 21;
-        accept = 0;
-        current_statement__ = 22;
-        detected = 0;
         current_statement__ = 23;
+        accept = 0;
+        current_statement__ = 24;
+        detected = 0;
+        current_statement__ = 25;
         ntrials = 0;
-        current_statement__ = 58;
+        current_statement__ = 60;
         while (logical_neq(accept, 1)) {
-          current_statement__ = 33;
+          current_statement__ = 35;
           if (logical_lte(Lambda[(i - 1)], Ns)) {
-            current_statement__ = 31;
+            current_statement__ = 33;
             assign(omega, nil_index_list(), varpi[(Lambda[(i - 1)] - 1)],
               "assigning variable omega");
           } else {
-            current_statement__ = 30;
+            current_statement__ = 32;
             if (logical_eq(Lambda[(i - 1)], (Ns + 1))) {
-              current_statement__ = 28;
+              current_statement__ = 30;
               assign(omega, nil_index_list(),
                 sphere_lim_rng(1, v_lim, base_rng__, pstream__),
                 "assigning variable omega");
             } else {
-              current_statement__ = 27;
+              current_statement__ = 29;
               if (logical_eq(Lambda[(i - 1)], (Ns + 2))) {
-                current_statement__ = 24;
+                current_statement__ = 26;
                 atmo_index = categorical_rng(atmo_weights, base_rng__);
-                current_statement__ = 25;
+                current_statement__ = 27;
                 assign(omega, nil_index_list(),
                   atmo_directions[(atmo_index - 1)],
                   "assigning variable omega");
               } 
             }
           }
-          current_statement__ = 34;
+          current_statement__ = 36;
           assign(cosz, cons_list(index_uni(i), nil_index_list()),
             stan::math::cos(omega_to_zenith(omega, pstream__)),
             "assigning variable cosz");
-          current_statement__ = 41;
+          current_statement__ = 43;
           if (logical_lte(Lambda[(i - 1)], (Ns + 1))) {
-            current_statement__ = 38;
+            current_statement__ = 40;
             assign(Esrc, cons_list(index_uni(i), nil_index_list()),
               spectrum_rng(alpha, Esrc_min, Esrc_max, base_rng__, pstream__),
               "assigning variable Esrc");
-            current_statement__ = 39;
+            current_statement__ = 41;
             assign(E, cons_list(index_uni(i), nil_index_list()),
               (Esrc[(i - 1)] / (1 + z[(Lambda[(i - 1)] - 1)])),
               "assigning variable E");
           } else {
-            current_statement__ = 37;
+            current_statement__ = 39;
             if (logical_eq(Lambda[(i - 1)], (Ns + 2))) {
-              current_statement__ = 35;
+              current_statement__ = 37;
               assign(E, cons_list(index_uni(i), nil_index_list()),
                 atmo_energies[(atmo_index - 1)], "assigning variable E");
             } 
           }
-          current_statement__ = 42;
+          current_statement__ = 44;
           assign(Pdet, cons_list(index_uni(i), nil_index_list()),
             (NorthernTracksEffectiveArea(E[(i - 1)], omega, pstream__) /
               aeff_t_max), "assigning variable Pdet");
-          current_statement__ = 43;
+          current_statement__ = 45;
           assign(Edet, cons_list(index_uni(i), nil_index_list()),
             pow(10,
               NorthernTracksEnergyResolution_rng(
                 E[(i - 1)], base_rng__, pstream__)),
             "assigning variable Edet");
-          current_statement__ = 44;
+          current_statement__ = 46;
           assign(prob, cons_list(index_uni(1), nil_index_list()),
             Pdet[(i - 1)], "assigning variable prob");
-          current_statement__ = 45;
+          current_statement__ = 47;
           assign(prob, cons_list(index_uni(2), nil_index_list()),
             (1 - Pdet[(i - 1)]), "assigning variable prob");
-          current_statement__ = 46;
+          current_statement__ = 48;
           ntrials = (ntrials + 1);
-          current_statement__ = 56;
+          current_statement__ = 58;
           if (logical_lt(ntrials, 1000000)) {
-            current_statement__ = 51;
+            current_statement__ = 53;
             detected = categorical_rng(prob, base_rng__);
-            current_statement__ = 54;
+            current_statement__ = 56;
             if ((primitive_value(logical_gte(Edet[(i - 1)], Emin_det_tracks))
                 && primitive_value(logical_eq(detected, 1)))) {
-              current_statement__ = 52;
+              current_statement__ = 54;
               accept = 1;
             } 
           } else {
-            current_statement__ = 47;
+            current_statement__ = 49;
             accept = 1;
-            current_statement__ = 48;
+            current_statement__ = 50;
             if (pstream__) {
               stan_print(pstream__, "problem component: ");
               stan_print(pstream__, Lambda[(i - 1)]);
@@ -4644,88 +4666,106 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
             ;
           }
         }
-        current_statement__ = 59;
+        current_statement__ = 61;
         assign(event, cons_list(index_uni(i), nil_index_list()),
           NorthernTracksAngularResolution_rng(E[(i - 1)],
-            omega, base_rng__, pstream__), "assigning variable event");}
-      current_statement__ = 97;
-      for (int i = (N_t + 1); i <= N; ++i) {
+            omega, base_rng__, pstream__), "assigning variable event");
         current_statement__ = 62;
+        assign(kappa, cons_list(index_uni(i), nil_index_list()),
+          eval_poly1d(
+            stan::math::log10(
+              truncate_value(E[(i - 1)], 133.9845723819148,
+                772161836.8251529, pstream__)),
+            NorthernTracksAngularResolutionPolyCoeffs, pstream__),
+          "assigning variable kappa");}
+      current_statement__ = 102;
+      for (int i = (N_t + 1); i <= N; ++i) {
+        Eigen::Matrix<double, -1, 1> CascadesAngularResolutionPolyCoeffs;
+        CascadesAngularResolutionPolyCoeffs = Eigen::Matrix<double, -1, 1>(6);
+        stan::math::fill(CascadesAngularResolutionPolyCoeffs, std::numeric_limits<double>::quiet_NaN());
+        
+        current_statement__ = 65;
+        assign(CascadesAngularResolutionPolyCoeffs, nil_index_list(),
+          (Eigen::Matrix<double,-1,1>(6) << -4.84839608e-01, 3.59082699e+00,
+          4.39765349e+01, -4.86964043e+02, 1.50499694e+03,
+          -1.48474342e+03).finished(),
+          "assigning variable CascadesAngularResolutionPolyCoeffs");
+        current_statement__ = 66;
         assign(event_type, cons_list(index_uni(i), nil_index_list()),
           cascade_type, "assigning variable event_type");
-        current_statement__ = 63;
+        current_statement__ = 67;
         assign(Lambda, cons_list(index_uni(i), nil_index_list()),
           categorical_rng(w_exposure_c, base_rng__),
           "assigning variable Lambda");
-        current_statement__ = 64;
+        current_statement__ = 68;
         accept = 0;
-        current_statement__ = 65;
+        current_statement__ = 69;
         detected = 0;
-        current_statement__ = 66;
+        current_statement__ = 70;
         ntrials = 0;
-        current_statement__ = 94;
+        current_statement__ = 98;
         while (logical_neq(accept, 1)) {
-          current_statement__ = 72;
+          current_statement__ = 76;
           if (logical_lte(Lambda[(i - 1)], Ns)) {
-            current_statement__ = 70;
+            current_statement__ = 74;
             assign(omega, nil_index_list(), varpi[(Lambda[(i - 1)] - 1)],
               "assigning variable omega");
           } else {
-            current_statement__ = 69;
+            current_statement__ = 73;
             if (logical_eq(Lambda[(i - 1)], (Ns + 1))) {
-              current_statement__ = 67;
+              current_statement__ = 71;
               assign(omega, nil_index_list(),
                 sphere_lim_rng(1, 0, base_rng__, pstream__),
                 "assigning variable omega");
             } 
           }
-          current_statement__ = 73;
+          current_statement__ = 77;
           assign(cosz, cons_list(index_uni(i), nil_index_list()),
             stan::math::cos(omega_to_zenith(omega, pstream__)),
             "assigning variable cosz");
-          current_statement__ = 77;
+          current_statement__ = 81;
           if (logical_lte(Lambda[(i - 1)], (Ns + 1))) {
-            current_statement__ = 74;
+            current_statement__ = 78;
             assign(Esrc, cons_list(index_uni(i), nil_index_list()),
               spectrum_rng(alpha, Esrc_min, Esrc_max, base_rng__, pstream__),
               "assigning variable Esrc");
-            current_statement__ = 75;
+            current_statement__ = 79;
             assign(E, cons_list(index_uni(i), nil_index_list()),
               (Esrc[(i - 1)] / (1 + z[(Lambda[(i - 1)] - 1)])),
               "assigning variable E");
           } 
-          current_statement__ = 78;
+          current_statement__ = 82;
           assign(Pdet, cons_list(index_uni(i), nil_index_list()),
             (CascadesEffectiveArea(E[(i - 1)], omega, pstream__) /
               aeff_c_max), "assigning variable Pdet");
-          current_statement__ = 79;
+          current_statement__ = 83;
           assign(Edet, cons_list(index_uni(i), nil_index_list()),
             pow(10,
               CascadeEnergyResolution_rng(E[(i - 1)], base_rng__, pstream__)),
             "assigning variable Edet");
-          current_statement__ = 80;
+          current_statement__ = 84;
           assign(prob, cons_list(index_uni(1), nil_index_list()),
             Pdet[(i - 1)], "assigning variable prob");
-          current_statement__ = 81;
+          current_statement__ = 85;
           assign(prob, cons_list(index_uni(2), nil_index_list()),
             (1 - Pdet[(i - 1)]), "assigning variable prob");
-          current_statement__ = 82;
+          current_statement__ = 86;
           ntrials = (ntrials + 1);
-          current_statement__ = 92;
+          current_statement__ = 96;
           if (logical_lt(ntrials, 1000000)) {
-            current_statement__ = 87;
+            current_statement__ = 91;
             detected = categorical_rng(prob, base_rng__);
-            current_statement__ = 90;
+            current_statement__ = 94;
             if ((primitive_value(
                 logical_gte(Edet[(i - 1)], Emin_det_cascades)) &&
                 primitive_value(logical_eq(detected, 1)))) {
-              current_statement__ = 88;
+              current_statement__ = 92;
               accept = 1;
             } 
           } else {
-            current_statement__ = 83;
+            current_statement__ = 87;
             accept = 1;
-            current_statement__ = 84;
+            current_statement__ = 88;
             if (pstream__) {
               stan_print(pstream__, "problem component: ");
               stan_print(pstream__, Lambda[(i - 1)]);
@@ -4734,10 +4774,17 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
             ;
           }
         }
-        current_statement__ = 95;
+        current_statement__ = 99;
         assign(event, cons_list(index_uni(i), nil_index_list()),
           CascadesAngularResolution_rng(E[(i - 1)],
-            omega, base_rng__, pstream__), "assigning variable event");}
+            omega, base_rng__, pstream__), "assigning variable event");
+        current_statement__ = 100;
+        assign(kappa, cons_list(index_uni(i), nil_index_list()),
+          eval_poly1d(
+            stan::math::log10(
+              truncate_value(E[(i - 1)], 100.0, 100000000.0, pstream__)),
+            CascadesAngularResolutionPolyCoeffs, pstream__),
+          "assigning variable kappa");}
       current_statement__ = 2;
       current_statement__ = 2;
       check_unit_vector(function__, "omega", omega);
@@ -4776,6 +4823,8 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
       vars__.emplace_back(Nex_c_sim);
       for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
         vars__.emplace_back(event_type[(sym1__ - 1)]);}
+      for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
+        vars__.emplace_back(kappa[(sym1__ - 1)]);}
     } catch (const std::exception& e) {
       stan::lang::rethrow_located(e, locations_array__[current_statement__]);
       // Next line prevents compiler griping about no return
@@ -4822,6 +4871,7 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
     names__.emplace_back("Nex_t_sim");
     names__.emplace_back("Nex_c_sim");
     names__.emplace_back("event_type");
+    names__.emplace_back("kappa");
     } // get_param_names() 
     
   inline void get_dims(std::vector<std::vector<size_t>>& dimss__) const {
@@ -4856,6 +4906,8 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
     dimss__.emplace_back(std::vector<size_t>{});
     
     dimss__.emplace_back(std::vector<size_t>{});
+    
+    dimss__.emplace_back(std::vector<size_t>{static_cast<size_t>(N)});
     
     dimss__.emplace_back(std::vector<size_t>{static_cast<size_t>(N)});
     
@@ -4922,6 +4974,10 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
         {
           param_names__.emplace_back(std::string() + "event_type" + '.' + std::to_string(sym1__));
         }}
+      for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
+        {
+          param_names__.emplace_back(std::string() + "kappa" + '.' + std::to_string(sym1__));
+        }}
     }
     
     } // constrained_param_names() 
@@ -4987,19 +5043,23 @@ class sim_code_model final : public model_base_crtp<sim_code_model> {
         {
           param_names__.emplace_back(std::string() + "event_type" + '.' + std::to_string(sym1__));
         }}
+      for (int sym1__ = 1; sym1__ <= N; ++sym1__) {
+        {
+          param_names__.emplace_back(std::string() + "kappa" + '.' + std::to_string(sym1__));
+        }}
     }
     
     } // unconstrained_param_names() 
     
   inline std::string get_constrained_sizedtypes() const {
     stringstream s__;
-    s__ << "[{\"name\":\"Lambda\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"int\"}},\"block\":\"generated_quantities\"},{\"name\":\"omega\",\"type\":{\"name\":\"vector\",\"length\":" << 3 << "},\"block\":\"generated_quantities\"},{\"name\":\"Esrc\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"E\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"Edet\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"atmo_index\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"cosz\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"Pdet\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"accept\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"detected\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"ntrials\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"prob\",\"type\":{\"name\":\"vector\",\"length\":" << 2 << "},\"block\":\"generated_quantities\"},{\"name\":\"event\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"vector\",\"length\":" << 3 << "}},\"block\":\"generated_quantities\"},{\"name\":\"Nex_t_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"Nex_c_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"event_type\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"}]";
+    s__ << "[{\"name\":\"Lambda\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"int\"}},\"block\":\"generated_quantities\"},{\"name\":\"omega\",\"type\":{\"name\":\"vector\",\"length\":" << 3 << "},\"block\":\"generated_quantities\"},{\"name\":\"Esrc\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"E\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"Edet\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"atmo_index\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"cosz\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"Pdet\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"accept\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"detected\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"ntrials\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"prob\",\"type\":{\"name\":\"vector\",\"length\":" << 2 << "},\"block\":\"generated_quantities\"},{\"name\":\"event\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"vector\",\"length\":" << 3 << "}},\"block\":\"generated_quantities\"},{\"name\":\"Nex_t_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"Nex_c_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"event_type\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"kappa\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"}]";
     return s__.str();
     } // get_constrained_sizedtypes() 
     
   inline std::string get_unconstrained_sizedtypes() const {
     stringstream s__;
-    s__ << "[{\"name\":\"Lambda\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"int\"}},\"block\":\"generated_quantities\"},{\"name\":\"omega\",\"type\":{\"name\":\"vector\",\"length\":" << 3 << "},\"block\":\"generated_quantities\"},{\"name\":\"Esrc\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"E\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"Edet\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"atmo_index\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"cosz\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"Pdet\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"accept\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"detected\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"ntrials\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"prob\",\"type\":{\"name\":\"vector\",\"length\":" << (2 - 1) << "},\"block\":\"generated_quantities\"},{\"name\":\"event\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"vector\",\"length\":" << 3 << "}},\"block\":\"generated_quantities\"},{\"name\":\"Nex_t_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"Nex_c_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"event_type\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"}]";
+    s__ << "[{\"name\":\"Lambda\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"int\"}},\"block\":\"generated_quantities\"},{\"name\":\"omega\",\"type\":{\"name\":\"vector\",\"length\":" << 3 << "},\"block\":\"generated_quantities\"},{\"name\":\"Esrc\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"E\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"Edet\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"atmo_index\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"cosz\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"Pdet\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"real\"}},\"block\":\"generated_quantities\"},{\"name\":\"accept\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"detected\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"ntrials\",\"type\":{\"name\":\"int\"},\"block\":\"generated_quantities\"},{\"name\":\"prob\",\"type\":{\"name\":\"vector\",\"length\":" << (2 - 1) << "},\"block\":\"generated_quantities\"},{\"name\":\"event\",\"type\":{\"name\":\"array\",\"length\":" << N << ",\"element_type\":{\"name\":\"vector\",\"length\":" << 3 << "}},\"block\":\"generated_quantities\"},{\"name\":\"Nex_t_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"Nex_c_sim\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"event_type\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"},{\"name\":\"kappa\",\"type\":{\"name\":\"vector\",\"length\":" << N << "},\"block\":\"generated_quantities\"}]";
     return s__.str();
     } // get_unconstrained_sizedtypes() 
     

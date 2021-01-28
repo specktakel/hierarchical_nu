@@ -1323,10 +1323,13 @@ unit_vector[3] event[N];
 real Nex_t_sim;
 real Nex_c_sim;
 vector[N] event_type;
+vector[N] kappa;
 Nex_t_sim = Nex_t;
 Nex_c_sim = Nex_c;
 for (i in 1:N_t)
 {
+vector[6] NorthernTracksAngularResolutionPolyCoeffs = [ 3.11287843e+01,-8.72542968e+02, 8.74576241e+03,-3.72847494e+04,
+  7.46309205e+04,-5.73160697e+04]';
 event_type[i] = track_type;
 Lambda[i] = categorical_rng(w_exposure_t);
 accept = 0;
@@ -1378,9 +1381,12 @@ print("problem component: ", Lambda[i]);
 }
 }
 event[i] = NorthernTracksAngularResolution_rng(E[i], omega);
+kappa[i] = eval_poly1d(log10(truncate_value(E[i], 133.9845723819148, 772161836.8251529)),NorthernTracksAngularResolutionPolyCoeffs);
 }
 for (i in N_t+1:N)
 {
+vector[6] CascadesAngularResolutionPolyCoeffs = [-4.84839608e-01, 3.59082699e+00, 4.39765349e+01,-4.86964043e+02,
+  1.50499694e+03,-1.48474342e+03]';
 event_type[i] = cascade_type;
 Lambda[i] = categorical_rng(w_exposure_c);
 accept = 0;
@@ -1423,5 +1429,6 @@ print("problem component: ", Lambda[i]);
 }
 }
 event[i] = CascadesAngularResolution_rng(E[i], omega);
+kappa[i] = eval_poly1d(log10(truncate_value(E[i], 100.0, 100000000.0)),CascadesAngularResolutionPolyCoeffs);
 }
 }

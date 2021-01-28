@@ -22,7 +22,7 @@ from .source.parameter import Parameter
 from .source.flux_model import IsotropicDiffuseBG, flux_conv_
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.cosmology import luminosity_distance
-from .events import Events
+from .events import Events, TRACKS
 
 from .stan_interface import (
     generate_atmospheric_sim_code_,
@@ -139,8 +139,6 @@ class Simulation:
 
         self._sim_output = sim_output
 
-        energies, coords, event_types = self._extract_sim_output()
-
         self.events = Events(*self._extract_sim_output())
 
     def _extract_sim_output(self):
@@ -159,7 +157,12 @@ class Simulation:
         event_types = self._sim_output.stan_variable("event_type").values[0]
         event_types = [int(_) for _ in event_types]
 
-        return energies, coords, event_types
+        # Kappa parameter of VMF distribution
+        kappa = self._sim_output.stan_variable("kappa").values[0]
+        # Equivalent 1 sigma errors in deg
+        ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
+
+        return energies, coords, event_types, ang_errs
 
     def save(self, filename):
 
@@ -223,29 +226,30 @@ class Simulation:
         )  # avoid Stan-style indexing
         event_type = self._sim_output.stan_variable("event_type").values[0]
         Ns = self._sim_inputs["Ns"]
-        label_cmap = plt.cm.get_cmap("plasma", self._sources.N)
-
+        label_cmap = plt.cm.Set1(list(range(self._sources.N)))
         N_src_ev = sum([lam.count(_) for _ in range(Ns)])
         N_bg_ev = lam.count(Ns)
         N_atmo_ev = lam.count(Ns + 1)
-
-        # Something simple just to differentiate
-        event_size = [2.0, 6.0]
 
         fig, ax = plt.subplots(subplot_kw={"projection": "astro degrees mollweide"})
         fig.set_size_inches((7, 5))
 
         self.events.coords.representation_type = "spherical"
-        for r, d, l, e in zip(
+        for r, d, l, e, t in zip(
             self.events.coords.icrs.ra,
             self.events.coords.icrs.dec,
             lam,
-            event_type,
+            self.events.ang_errs,
+            self.events.types,
         ):
-            color = label_cmap.colors[int(l)]
+            color = label_cmap[int(l)]
+
+            if t == TRACKS:
+                e = e * 5
+
             circle = SphericalCircle(
                 (r, d),
-                event_size[int(e)] * u.deg,
+                e,  # to make tracks visible
                 color=color,
                 alpha=0.5,
                 transform=ax.get_transform("icrs"),

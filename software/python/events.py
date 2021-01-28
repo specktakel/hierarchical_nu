@@ -15,7 +15,13 @@ class Events:
     """
 
     @u.quantity_input
-    def __init__(self, energies: u.GeV, coords: SkyCoord, types):
+    def __init__(
+        self,
+        energies: u.GeV,
+        coords: SkyCoord,
+        types,
+        ang_errs: u.deg = None,
+    ):
         """
         Events class for the storage of event observables
         """
@@ -38,12 +44,15 @@ class Events:
         else:
             raise ValueError("Event types not recognised")
 
+        self._ang_errs = ang_errs
+
     def remove(self, i):
 
         self._energies.pop(i)
         self._coords.pop(i)
         self._unit_vectors.pop(i)
         self._types.pop(i)
+        self._ang_errs.pop(i)
         self.N -= 1
 
     @property
@@ -66,6 +75,16 @@ class Events:
 
         return self._types
 
+    @property
+    def ang_errs(self):
+
+        return self._ang_errs
+
+    @property
+    def kappas(self):
+
+        return 1.38 / self._ang_errs.to(u.rad).value ** 2
+
     @classmethod
     def from_file(cls, filename):
 
@@ -76,20 +95,22 @@ class Events:
             energies = events_folder["energies"][()] * u.GeV
             uvs = events_folder["unit_vectors"][()]
             types = events_folder["event_types"][()]
+            ang_errs = events_folder["ang_errs"][()] * u.deg
 
         coords = SkyCoord(
             uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
         )
 
-        return cls(energies, coords, types)
+        return cls(energies, coords, types, ang_errs)
 
     def to_file(self, filename, append=False):
 
-        self._file_keys = ["energies", "unit_vectors", "event_types"]
+        self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs"]
         self._file_values = [
             self.energies.to(u.GeV).value,
             self.unit_vectors,
             self.types,
+            self.ang_errs.to(u.deg).value,
         ]
 
         if append:

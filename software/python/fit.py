@@ -270,6 +270,7 @@ class StanFit:
             (_ / np.linalg.norm(_)).tolist() for _ in fit_inputs["omega_det"]
         ]
         fit_inputs["event_type"] = self._events.types
+        fit_inputs["kappa"] = self._events.kappas
         fit_inputs["Ns"] = len(
             [s for s in self._sources.sources if isinstance(s, PointSource)]
         )

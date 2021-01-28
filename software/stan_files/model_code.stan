@@ -1804,6 +1804,7 @@ int N;
 unit_vector[3] omega_det[N];
 vector[N] Edet;
 vector[N] event_type;
+vector[N] kappa;
 real Esrc_min;
 real Esrc_max;
 int Ns;
@@ -1876,7 +1877,7 @@ if(k < (Ns+1))
 {
 lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
 E[i] = Esrc[i] / ((1+z[k]));
-lp[i][k] += NorthernTracksAngularResolution(E[i], varpi[k], omega_det[i]);
+lp[i][k] += vMF_lpdf(omega_det[i] | varpi[k], kappa[i]);
 }
 else if(k == (Ns+1))
 {
@@ -1901,7 +1902,7 @@ if(k < (Ns+1))
 {
 lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
 E[i] = Esrc[i] / ((1+z[k]));
-lp[i][k] += CascadesAngularResolution(E[i], varpi[k], omega_det[i]);
+lp[i][k] += vMF_lpdf(omega_det[i] | varpi[k], kappa[i]);
 }
 else if(k == (Ns+1))
 {
