@@ -780,16 +780,17 @@ def generate_stan_fit_code_hybrid_(
             Ngrid = ForwardVariableDef("Ngrid", "int")
             alpha_grid = ForwardVariableDef("alpha_grid", "vector[Ngrid]")
 
-            integral_grid_t = ForwardArrayDef("intgeral_grid_t", "vector[Ngrid]", Ns_1p_str)
-            integral_grid_c = ForwardArrayDef("intgeral_grid_c", "vector[Ngrid]", Ns_1p_str)
+            integral_grid_t = ForwardArrayDef("integral_grid_t", "vector[Ngrid]", Ns_1p_str)
+            integral_grid_c = ForwardArrayDef("integral_grid_c", "vector[Ngrid]", Ns_1p_str)
 
             Eg = ForwardVariableDef("E_grid", "vector[Ngrid]")
 
             if atmospheric_comp:
                 Pg_t = ForwardArrayDef("Pdet_grid_t", "vector[Ngrid]", Ns_2p_str)
+                Pg_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", Ns_2p_str)
             else:
-                Pg_t = ForwardArrayDef("Pdet_grid", "vector[Ngrid]", Ns_1p_str)
-            Pg_c = ForwardArrayDef("Pdet_grid_t", "vector[Ngrid]", Ns_1p_str)
+                Pg_t = ForwardArrayDef("Pdet_grid_t", "vector[Ngrid]", Ns_1p_str)
+                Pg_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", Ns_1p_str)
 
             # Inputs
             T = ForwardVariableDef("T", "real")

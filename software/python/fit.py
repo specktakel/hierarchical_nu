@@ -12,6 +12,7 @@ from .source.parameter import Parameter
 from .source.flux_model import IsotropicDiffuseBG
 from .source.cosmology import luminosity_distance
 from .detector.detector_model import DetectorModel
+from .detector.icecube import IceCubeDetectorModel
 from .precomputation import ExposureIntegral
 from .events import Events
 
@@ -267,6 +268,7 @@ class StanFit:
         fit_inputs["omega_det"] = [
             (_ / np.linalg.norm(_)).tolist() for _ in fit_inputs["omega_det"]
         ]
+        fit_inputs["event_type"] = self._events.types
         fit_inputs["Ns"] = len(
             [s for s in self._sources.sources if isinstance(s, PointSource)]
         )
@@ -298,18 +300,50 @@ class StanFit:
             Parameter.get_parameter("Emin_det").value.to(u.GeV).value
         )
 
-        fit_inputs["Ngrid"] = len(self._exposure_integral.par_grids["index"])
-        fit_inputs["alpha_grid"] = self._exposure_integral.par_grids["index"]
-        fit_inputs["integral_grid"] = [
-            _.value.tolist() for _ in self._exposure_integral.integral_grid
+        event_type = self._detector_model_type.event_types[0]
+        fit_inputs["Ngrid"] = len(
+            self._exposure_integral[event_type].par_grids["index"]
+        )
+        fit_inputs["alpha_grid"] = self._exposure_integral[event_type].par_grids[
+            "index"
         ]
+
+        if self._detector_model_type == IceCubeDetectorModel:
+
+            fit_inputs["integral_grid_t"] = [
+                _.value.tolist()
+                for _ in self._exposure_integral["tracks"].integral_grid
+            ]
+            fit_inputs["integral_grid_c"] = [
+                _.value.tolist()
+                for _ in self._exposure_integral["cascades"].integral_grid
+            ]
+
+        else:
+
+            fit_inputs["integral_grid"] = [
+                _.value.tolist()
+                for _ in self._exposure_integral[event_type].integral_grid
+            ]
 
         fit_inputs["T"] = self._observation_time.to(u.s).value
 
-        fit_inputs["E_grid"] = self._exposure_integral.energy_grid.value
-        fit_inputs["Pdet_grid"] = (
-            np.array(self._exposure_integral.pdet_grid) + 1e-10
-        )  # avoid log(0)
+        fit_inputs["E_grid"] = self._exposure_integral[event_type].energy_grid.value
+
+        if self._detector_model_type == IceCubeDetectorModel:
+
+            fit_inputs["Pdet_grid_t"] = (
+                np.array(self._exposure_integral["tracks"].pdet_grid) + 1e-10
+            )  # avoid log(0)
+            fit_inputs["Pdet_grid_c"] = (
+                np.array(self._exposure_integral["cascades"].pdet_grid) + 1e-10
+            )  # avoid log(0)
+
+        else:
+
+            fit_inputs["Pdet_grid_"] = (
+                np.array(self._exposure_integral[event_type].pdet_grid) + 1e-10
+            )  # avoid log(0)
 
         fit_inputs["L_scale"] = (
             Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
@@ -319,9 +353,9 @@ class StanFit:
         fit_inputs["F_diff_scale"] = diffuse_bg.flux_model.total_flux_int.value
 
         if self._sources.atmo_component():
-            fit_inputs["atmo_integ_val"] = self._exposure_integral.integral_fixed_vals[
-                0
-            ].value
+            fit_inputs["atmo_integ_val"] = (
+                self._exposure_integral["tracks"].integral_fixed_vals[0].value
+            )
 
             atmo_bg = self._sources.atmo_component()
             fit_inputs["F_atmo_scale"] = atmo_bg.flux_model.total_flux_int.value
@@ -338,8 +372,6 @@ class StanFit:
 
     def _generate_stan_fit_code(self):
 
-        # TODO: make more flexible to different specified components?
-
         ps_spec_shape = self._sources.sources[0].flux_model.spectral_shape
 
         if self._sources.atmo_component():
@@ -349,14 +381,30 @@ class StanFit:
 
         filename = self.output_dir + "/model_code"
 
-        self._fit_filename = generate_stan_fit_code_(
-            filename,
-            self._detector_model_type,
-            ps_spec_shape,
-            atmo_flux_model=atmo_flux_model,
-            diffuse_bg_comp=self._sources.diffuse_component(),
-            atmospheric_comp=self._sources.atmo_component(),
-            theta_points=30,
-            lumi_par_range=Parameter.get_parameter("luminosity").par_range,
-            alpha_par_range=Parameter.get_parameter("index").par_range,
-        )
+        if self._detector_model_type == IceCubeDetectorModel:
+
+            self._fit_filename = generate_stan_fit_code_hybrid_(
+                filename,
+                self._detector_model_type,
+                ps_spec_shape,
+                atmo_flux_model=atmo_flux_model,
+                diffuse_bg_comp=self._sources.diffuse_component(),
+                atmospheric_comp=self._sources.atmo_component(),
+                theta_points=30,
+                lumi_par_range=Parameter.get_parameter("luminosity").par_range,
+                alpha_par_range=Parameter.get_parameter("index").par_range,
+            )
+
+        else:
+
+            self._fit_filename = generate_stan_fit_code_(
+                filename,
+                self._detector_model_type,
+                ps_spec_shape,
+                atmo_flux_model=atmo_flux_model,
+                diffuse_bg_comp=self._sources.diffuse_component(),
+                atmospheric_comp=self._sources.atmo_component(),
+                theta_points=30,
+                lumi_par_range=Parameter.get_parameter("luminosity").par_range,
+                alpha_par_range=Parameter.get_parameter("index").par_range,
+            )
