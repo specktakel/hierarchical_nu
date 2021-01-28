@@ -332,18 +332,17 @@ class StanFit:
 
         if self._detector_model_type == IceCubeDetectorModel:
 
-            fit_inputs["Pdet_grid_t"] = (
-                np.array(self._exposure_integral["tracks"].pdet_grid) + 1e-10
-            )  # avoid log(0)
-            fit_inputs["Pdet_grid_c"] = (
-                np.array(self._exposure_integral["cascades"].pdet_grid) + 1e-10
-            )  # avoid log(0)
-
+            fit_inputs["Pdet_grid_t"] = np.array(
+                self._exposure_integral["tracks"].pdet_grid
+            )
+            fit_inputs["Pdet_grid_c"] = np.array(
+                self._exposure_integral["cascades"].pdet_grid
+            )
         else:
 
-            fit_inputs["Pdet_grid_"] = (
-                np.array(self._exposure_integral[event_type].pdet_grid) + 1e-10
-            )  # avoid log(0)
+            fit_inputs["Pdet_grid"] = np.array(
+                self._exposure_integral[event_type].pdet_grid
+            )
 
         fit_inputs["L_scale"] = (
             Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value

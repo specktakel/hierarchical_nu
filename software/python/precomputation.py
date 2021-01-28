@@ -277,6 +277,8 @@ class ExposureIntegral:
 
             self.pdet_grid.append(p_Edet * pg)
 
+        self.pdet_grid = np.array(self.pdet_grid) + 1e-10  # avoid log(0)
+
     def __call__(self):
         """
         Compute the exposure integrals.
