@@ -2,6 +2,7 @@ import numpy as np
 import os
 import h5py
 import logging
+import collections
 from astropy import units as u
 
 from cmdstanpy import CmdStanModel
@@ -14,7 +15,10 @@ from .detector.detector_model import DetectorModel
 from .precomputation import ExposureIntegral
 from .events import Events
 
-from .stan_interface import generate_stan_fit_code_
+from .stan_interface import (
+    generate_stan_fit_code_,
+    generate_stan_fit_code_hybrid_,
+)
 
 
 class StanFit:
@@ -53,13 +57,25 @@ class StanFit:
         else:
             self._def_var_names = ["L", "F_diff", "f", "alpha"]
 
-    def precomputation(self, exposure_integral=None):
+        self._exposure_integral = collections.OrderedDict()
+
+    def precomputation(
+        self,
+        exposure_integral: collections.OrderedDict = None,
+    ):
 
         if not exposure_integral:
-            self._exposure_integral = ExposureIntegral(
-                self._sources, self._detector_model_type
-            )
+
+            for event_type in self._detector_model_type.event_types:
+
+                self._exposure_integral[event_type] = ExposureIntegral(
+                    self._sources,
+                    self._detector_model_type,
+                    event_type=event_type,
+                )
+
         else:
+
             self._exposure_integral = exposure_integral
 
     def generate_stan_code(self):
