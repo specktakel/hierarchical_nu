@@ -749,6 +749,7 @@ def generate_stan_fit_code_hybrid_(
             _ = Include("sim_functions.stan")
 
             dm = collections.OrderedDict()
+
             for event_type in detector_model_type.event_types:
                 dm[event_type] = detector_model_type(event_type=event_type)
 

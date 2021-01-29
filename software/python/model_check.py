@@ -17,8 +17,15 @@ from .detector.northern_tracks import NorthernTracksDetectorModel
 from .detector.cascades import CascadesDetectorModel
 from .detector.icecube import IceCubeDetectorModel
 
-from .simulation import generate_atmospheric_sim_code_, generate_main_sim_code_
-from .fit import generate_stan_fit_code_
+from .simulation import (
+    generate_atmospheric_sim_code_,
+    generate_main_sim_code_,
+    generate_main_sim_code_hybrid_,
+)
+from .fit import (
+    generate_stan_fit_code_,
+    generate_stan_fit_code_hybrid_,
+)
 from .config import FileConfig, ParameterConfig
 
 from python.simulation import Simulation
@@ -59,7 +66,6 @@ class ModelCheck:
         ]
 
     @classmethod
-    @u.quantity_input
     def initialise_env(
         cls,
         output_dir,
@@ -90,21 +96,50 @@ class ModelCheck:
         print("Generated atmo_sim Stan file at:", file_config["atmo_sim_filename"])
 
         ps_spec_shape = PowerLawSpectrum
-        detector_model_type = NorthernTracksDetectorModel
+        detector_model_type = ModelCheck._get_dm_from_config(
+            cls, parameter_config["detector_model_type"]
+        )
+
         main_sim_name = file_config["main_sim_filename"][:-5]
-        _ = generate_main_sim_code_(main_sim_name, ps_spec_shape, detector_model_type)
+        if detector_model_type == IceCubeDetectorModel:
+
+            _ = generate_main_sim_code_hybrid_(
+                main_sim_name, ps_spec_shape, detector_model_type
+            )
+
+        else:
+
+            _ = generate_main_sim_code_(
+                main_sim_name, ps_spec_shape, detector_model_type
+            )
+
         print("Generated main_sim Stan file at:", file_config["main_sim_filename"])
 
         fit_name = file_config["fit_filename"][:-5]
-        _ = generate_stan_fit_code_(
-            fit_name,
-            ps_spec_shape,
-            atmo_flux_model,
-            detector_model_type,
-            diffuse_bg_comp=True,
-            atmospheric_comp=True,
-            theta_points=30,
-        )
+        if detector_model_type == IceCubeDetectorModel:
+
+            _ = generate_stan_fit_code_hybrid_(
+                fit_name,
+                detector_model_type,
+                ps_spec_shape,
+                atmo_flux_model,
+                diffuse_bg_comp=True,
+                atmospheric_comp=True,
+                theta_points=30,
+            )
+
+        else:
+
+            _ = generate_stan_fit_code_(
+                fit_name,
+                detector_model_type,
+                ps_spec_shape,
+                atmo_flux_model,
+                diffuse_bg_comp=True,
+                atmospheric_comp=True,
+                theta_points=30,
+            )
+
         print("Generated fit Stan file at:", file_config["fit_filename"])
 
         print("Compile Stan models")
@@ -285,7 +320,7 @@ class ModelCheck:
         file_config = FileConfig()
         parameter_config = ParameterConfig()
 
-        detector_model_type = self._get_dm_from_config(
+        detector_model_type = ModelCheck._get_dm_from_config(
             parameter_config["detector_model_type"]
         )
 
@@ -347,7 +382,8 @@ class ModelCheck:
 
         return outputs
 
-    def _get_dm_from_config(self, dm_key):
+    @staticmethod
+    def _get_dm_from_config(dm_key):
 
         if dm_key == "northern_tracks":
 

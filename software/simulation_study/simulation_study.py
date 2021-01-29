@@ -17,7 +17,7 @@ n_subjobs = int(sys.argv[2])
 seed = int(sys.argv[3])
 
 cwd = os.getcwd()
-output_file = os.path.join(cwd, f"output/fit_sim_numu_{seed}_test.h5")
+output_file = os.path.join(cwd, f"output/fit_sim_{seed}_test.h5")
 
 model_check = ModelCheck()
 model_check.parallel_run(n_jobs=n_jobs, n_subjobs=n_subjobs, seed=seed)
