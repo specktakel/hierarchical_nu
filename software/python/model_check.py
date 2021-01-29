@@ -97,7 +97,7 @@ class ModelCheck:
 
         ps_spec_shape = PowerLawSpectrum
         detector_model_type = ModelCheck._get_dm_from_config(
-            cls, parameter_config["detector_model_type"]
+            parameter_config["detector_model_type"]
         )
 
         main_sim_name = file_config["main_sim_filename"][:-5]
@@ -278,7 +278,6 @@ class ModelCheck:
         Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
         Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
 
-        # FixMe: update to option of multiple Emin_det
         if parameter_config["Emin_det_eq"]:
 
             Emin_det = Parameter(
