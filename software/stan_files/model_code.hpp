@@ -62,7 +62,7 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1837, column 0 to column 29)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1838, column 0 to column 36)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1839, column 0 to column 36)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1840, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1840, column 0 to column 31)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1841, column 0 to column 48)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1845, column 0 to column 10)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1846, column 0 to column 15)",
@@ -4761,10 +4761,10 @@ class model_code_model final : public model_base_crtp<model_code_model> {
       current_statement__ = 4;
       if (jacobian__) {
         current_statement__ = 4;
-        alpha = stan::math::lub_constrain(alpha, 1.0, 4.0, lp__);
+        alpha = stan::math::lub_constrain(alpha, 1.0, 4, lp__);
       } else {
         current_statement__ = 4;
-        alpha = stan::math::lub_constrain(alpha, 1.0, 4.0);
+        alpha = stan::math::lub_constrain(alpha, 1.0, 4);
       }
       Eigen::Matrix<local_scalar_t__, -1, 1> Esrc;
       Esrc = Eigen::Matrix<local_scalar_t__, -1, 1>(N);
@@ -5113,7 +5113,7 @@ class model_code_model final : public model_base_crtp<model_code_model> {
       current_statement__ = 4;
       alpha = in__.scalar();
       current_statement__ = 4;
-      alpha = stan::math::lub_constrain(alpha, 1.0, 4.0);
+      alpha = stan::math::lub_constrain(alpha, 1.0, 4);
       Eigen::Matrix<double, -1, 1> Esrc;
       Esrc = Eigen::Matrix<double, -1, 1>(N);
       stan::math::fill(Esrc, std::numeric_limits<double>::quiet_NaN());
@@ -5468,7 +5468,7 @@ class model_code_model final : public model_base_crtp<model_code_model> {
       alpha_free__ = std::numeric_limits<double>::quiet_NaN();
       
       current_statement__ = 4;
-      alpha_free__ = stan::math::lub_free(alpha, 1.0, 4.0);
+      alpha_free__ = stan::math::lub_free(alpha, 1.0, 4);
       Eigen::Matrix<double, -1, 1> Esrc;
       Esrc = Eigen::Matrix<double, -1, 1>(N);
       stan::math::fill(Esrc, std::numeric_limits<double>::quiet_NaN());
