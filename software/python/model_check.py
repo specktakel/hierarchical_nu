@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from joblib import Parallel, delayed
 from astropy import units as u
 from cmdstanpy import CmdStanModel
+from scipy.stats import lognorm, norm, uniform
 
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.flux_model import PowerLawSpectrum
@@ -219,7 +220,7 @@ class ModelCheck:
                     self.results["alpha"].extend(job_folder["alpha"][()])
                     self.results["f"].extend(job_folder["f"][()])
 
-    def compare(self, var_names=None, var_labels=None):
+    def compare(self, var_names=None, var_labels=None, show_prior=False):
 
         if not var_names:
             var_names = self._default_var_names
@@ -239,11 +240,32 @@ class ModelCheck:
                 ax[v].hist(
                     self.results[var_name][i],
                     color="#017B76",
-                    alpha=0.1,
+                    alpha=0.05,
                     histtype="step",
                     bins=bins,
-                    lw=1.5,
+                    lw=1.0,
+                    density=True,
                 )
+
+            if show_prior:
+
+                prior_func = self._get_prior_func(var_name)
+                xmin, xmax = ax[v].get_xlim()
+                x = np.linspace(xmin, xmax)
+                ax[v].plot(x, prior_func(x), lw=1, color="k", alpha=0.5)
+
+                """
+                prior_samples = self._get_prior_samples(var_name)
+                ax[v].hist(
+                    prior_samples,
+                    color="k",
+                    alpha=0.5,
+                    histtype="step",
+                    bins=bins,
+                    lw=1.0,
+                    density=True,
+                )
+                """
 
             ax[v].axvline(self.truths[var_name], color="k", linestyle="-")
             ax[v].set_xlabel(var_labels[v], labelpad=10)
@@ -401,3 +423,92 @@ class ModelCheck:
             raise ValueError("Detector model key in config not recognised")
 
         return dm
+
+    def _get_prior_samples(self, var_name):
+        """
+        Return prior samples for the parameter "var_name".
+        """
+
+        N = len(self.results[var_name][0])
+
+        if var_name == "F_diff":
+
+            F_diff_scale = self.truths["F_diff"]
+
+            return lognorm(5, 0, F_diff_scale).rvs(N)
+
+        elif var_name == "L":
+
+            L_scale = self.truths["L"]
+
+            return lognorm(5, 0, L_scale).rvs(N)
+
+        elif var_name == "F_atmo":
+
+            F_atmo_scale = self.truths["F_atmo"]
+
+            return norm(F_atmo_scale, 0.1 * F_atmo_scale).rvs(N)
+
+        elif var_name == "f":
+
+            return uniform(0, 1).rvs(N)
+
+        elif var_name == "alpha":
+
+            return norm(2, 2).rvs(N)
+
+        elif var_name == "F_tot":
+
+            F_tot_scale = self.truths["F_tot"]
+
+            return norm(F_tot_scale, 0.5 * F_tot_scale).rvs(N)
+
+        else:
+
+            raise ValueError("var_name not recognised")
+
+    def _get_prior_func(self, var_name):
+        """
+        Return function of param "var_name" that
+        describes its prior.
+        """
+
+        if var_name == "F_diff":
+
+            def prior_func(F_diff):
+                F_diff_scale = self.truths["F_diff"]
+                return norm(F_diff_scale, 2 * F_diff_scale).pdf(F_diff)
+
+        elif var_name == "L":
+
+            def prior_func(L):
+                L_scale = self.truths["L"]
+                return norm(L_scale, 2 * L_scale).pdf(L)
+
+        elif var_name == "F_atmo":
+
+            def prior_func(F_atmo):
+                F_atmo_scale = self.truths["F_atmo"]
+                return norm(F_atmo_scale, 0.1 * F_atmo_scale).pdf(F_atmo)
+
+        elif var_name == "f":
+
+            def prior_func(f):
+                return uniform(0, 1).pdf(f)
+
+        elif var_name == "F_tot":
+
+            def prior_func(F_tot):
+                F_tot_scale = self.truths["F_tot"]
+                return norm(F_tot_scale, 0.5 * F_tot_scale)
+
+        elif var_name == "alpha":
+
+            def prior_func(alpha):
+                return norm(2, 2).pdf(alpha)
+
+        else:
+
+            raise ValueError("var_name not recognised")
+
+        return prior_func

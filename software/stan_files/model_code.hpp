@@ -139,8 +139,8 @@ static const std::vector<string> locations_array__ = {" (found before start of p
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1932, column 0 to line 1934, column 1)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1931, column 0 to line 1934, column 1)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1935, column 0 to column 15)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1936, column 0 to column 23)",
-                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1937, column 0 to column 33)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1936, column 0 to column 29)",
+                                                      " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1937, column 0 to column 44)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1938, column 0 to column 50)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1939, column 0 to column 46)",
                                                       " (in '/Users/fran/projects/hierarchical_nu/software/stan_files/model_code.stan', line 1940, column 0 to column 25)",
@@ -5043,9 +5043,10 @@ class model_code_model final : public model_base_crtp<model_code_model> {
         current_statement__ = 80;
         lp_accum__.add(-Nex);
         current_statement__ = 81;
-        lp_accum__.add(normal_lpdf<propto__>(L, 0, L_scale));
+        lp_accum__.add(normal_lpdf<propto__>(L, L_scale, L_scale));
         current_statement__ = 82;
-        lp_accum__.add(normal_lpdf<propto__>(F_diff, 0, F_diff_scale));
+        lp_accum__.add(
+          normal_lpdf<propto__>(F_diff, F_diff_scale, F_diff_scale));
         current_statement__ = 83;
         lp_accum__.add(
           normal_lpdf<propto__>(F_atmo, F_atmo_scale, (0.1 * F_atmo_scale)));

@@ -1933,8 +1933,8 @@ for (i in 1:N)
 target += log_sum_exp(lp[i]);
 }
 target += -Nex;
-L ~ normal(0, L_scale);
-F_diff ~ normal(0, F_diff_scale);
+L ~ normal(L_scale, L_scale);
+F_diff ~ normal(F_diff_scale, F_diff_scale);
 F_atmo ~ normal(F_atmo_scale, (0.1*F_atmo_scale));
 Ftot ~ normal(F_tot_scale, (0.5*F_tot_scale));
 alpha ~ normal(2.0, 2.0);

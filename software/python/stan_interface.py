@@ -1066,9 +1066,24 @@ def generate_stan_fit_code_hybrid_(
                 StringExpression(["target += log_sum_exp(", lp[i], ")"])
             StringExpression(["target += -", Nex])
 
-            StringExpression([L, " ~ normal(0, ", L_scale, ")"])
-            StringExpression([F_diff, " ~ normal(0, ", F_diff_scale, ")"])
+            #StringExpression([L, " ~ normal(", L_scale, "), 5)"])
+            #StringExpression([F_diff, " ~ lognormal(log(", F_diff_scale, "), 5)"])
 
+            StringExpression(
+                [
+                    L,
+                    " ~ ",
+                    FunctionCall([L_scale, 2*L_scale], "normal"),
+                ]
+            )
+            StringExpression(
+                [
+                    F_diff,
+                    " ~ ",
+                    FunctionCall([F_diff_scale, 2*F_diff_scale], "normal"),
+                ]
+            )
+            
             if atmospheric_comp:
                 StringExpression(
                     [
