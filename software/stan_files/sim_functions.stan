@@ -54,7 +54,7 @@ real get_eps_simple(real alpha, vector alpha_grid, vector integral_grid, real T)
  */
 vector get_exposure_weights(vector F, vector eps) {
 
-  int K = num_elements(F);
+  int K = num_elements(eps);
   vector[K] weights;
     
   real normalisation = 0;
@@ -95,7 +95,7 @@ real omega_to_zenith(vector omega) {
  */
 real get_Nex(vector F, vector eps) {
   
-  int K = num_elements(F);
+  int K = num_elements(eps);
   real Nex = 0;
   
   for (k in 1:K) {

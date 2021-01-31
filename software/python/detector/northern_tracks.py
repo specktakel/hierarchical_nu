@@ -371,7 +371,7 @@ class NorthernTracksAngularResolution(AngularResolution):
                 "vector",
             )
 
-        self._kappa: np.ndarray = None
+        self._kappa_grid: np.ndarray = None
         self._Egrid: np.ndarray = None
         self._poly_params: Sequence = []
         self._Emin: float = float("nan")
@@ -402,6 +402,20 @@ class NorthernTracksAngularResolution(AngularResolution):
 
             ReturnStatement([vmf])
 
+    def kappa(self):
+
+        clipped_e = TruncatedParameterization("E[i]", self._Emin, self._Emax)
+
+        clipped_log_e = LogParameterization(clipped_e)
+
+        kappa = PolynomialParameterization(
+            clipped_log_e,
+            self._poly_params,
+            "NorthernTracksAngularResolutionPolyCoeffs",
+        )
+
+        return kappa
+
     def setup(self) -> None:
 
         # Check cache
@@ -409,7 +423,7 @@ class NorthernTracksAngularResolution(AngularResolution):
 
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
                 data = np.load(fr)
-                self._kappa = data["kappa"]
+                self._kappa_grid = data["kappa_grid"]
                 self._Egrid = data["Egrid"]
                 self._poly_params = data["poly_params"]
                 self._Emin = float(data["Emin"])
@@ -434,7 +448,7 @@ class NorthernTracksAngularResolution(AngularResolution):
             # Kappa parameter of VMF distribution
             data["kappa"] = 1.38 / np.radians(data.resolution) ** 2
 
-            self._kappa = data.kappa.values
+            self._kappa_grid = data.kappa.values
             self._Egrid = 10 ** data.log10energy.values
             self._poly_params = np.polyfit(
                 data.log10energy.values, data.kappa.values, 5
@@ -447,7 +461,7 @@ class NorthernTracksAngularResolution(AngularResolution):
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
                 np.savez(
                     fr,
-                    kappa=self._kappa,
+                    kappa_grid=self._kappa_grid,
                     Egrid=self._Egrid,
                     poly_params=self._poly_params,
                     Emin=self._Emin,
@@ -465,9 +479,15 @@ class NorthernTracksDetectorModel(DetectorModel):
 
     """
 
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF):
+    event_types = ["tracks"]
 
-        super().__init__(mode)
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        event_type=None,
+    ):
+
+        super().__init__(mode, event_type="tracks")
 
         ang_res = NorthernTracksAngularResolution(mode)
         self._angular_resolution = ang_res

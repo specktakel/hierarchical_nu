@@ -395,7 +395,8 @@ TSWLatexianTemp*
 *.npz
 *.npy
 
-
+# output files
+software/simulation_study/output/
 
 
 

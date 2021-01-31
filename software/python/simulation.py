@@ -6,8 +6,15 @@ import h5py
 from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
 import logging
+import collections
+
+import ligo.skymap.plot
+from matplotlib import pyplot as plt
+from matplotlib.patches import Circle
+from pyipn.io.plotting.spherical_circle import SphericalCircle
 
 from .detector.detector_model import DetectorModel
+from .detector.icecube import IceCubeDetectorModel
 from .detector.northern_tracks import NorthernTracksDetectorModel
 from .precomputation import ExposureIntegral
 from .source.source import Sources, PointSource, icrs_to_uv
@@ -15,9 +22,13 @@ from .source.parameter import Parameter
 from .source.flux_model import IsotropicDiffuseBG, flux_conv_
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.cosmology import luminosity_distance
-from .events import Events
+from .events import Events, TRACKS
 
-from .stan_interface import generate_atmospheric_sim_code_, generate_main_sim_code_
+from .stan_interface import (
+    generate_atmospheric_sim_code_,
+    generate_main_sim_code_,
+    generate_main_sim_code_hybrid_,
+)
 
 
 class Simulation:
@@ -54,6 +65,8 @@ class Simulation:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
+        self._exposure_integral = collections.OrderedDict()
+
         # Silence log output
         logger = logging.getLogger("python.backend.code_generator")
         logger.propagate = False
@@ -63,9 +76,13 @@ class Simulation:
         Run the necessary precomputation
         """
 
-        self._exposure_integral = ExposureIntegral(
-            self._sources, self._detector_model_type
-        )
+        for event_type in self._detector_model_type.event_types:
+
+            self._exposure_integral[event_type] = ExposureIntegral(
+                self._sources,
+                self._detector_model_type,
+                event_type=event_type,
+            )
 
     def generate_stan_code(self):
 
@@ -122,8 +139,6 @@ class Simulation:
 
         self._sim_output = sim_output
 
-        energies, coords, event_types = self._extract_sim_output()
-
         self.events = Events(*self._extract_sim_output())
 
     def _extract_sim_output(self):
@@ -142,7 +157,12 @@ class Simulation:
         event_types = self._sim_output.stan_variable("event_type").values[0]
         event_types = [int(_) for _ in event_types]
 
-        return energies, coords, event_types
+        # Kappa parameter of VMF distribution
+        kappa = self._sim_output.stan_variable("kappa").values[0]
+        # Equivalent 1 sigma errors in deg
+        ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
+
+        return energies, coords, event_types, ang_errs
 
     def save(self, filename):
 
@@ -179,9 +199,10 @@ class Simulation:
         Esrc = self._sim_output.stan_variable("Esrc").values[0]
         E = self._sim_output.stan_variable("E").values[0]
         Edet = self.events.energies.value
+        Emin_det = self._get_min_det_energy().to(u.GeV).value
 
         bins = np.logspace(
-            np.log10(Parameter.get_parameter("Emin_det").value.to(u.GeV).value),
+            np.log10(Emin_det),
             np.log10(Parameter.get_parameter("Emax").value.to(u.GeV).value),
             20,
             base=10,
@@ -200,38 +221,48 @@ class Simulation:
 
     def show_skymap(self):
 
-        import matplotlib.patches as mpatches
-        from matplotlib.collections import PatchCollection
-
         lam = list(
             self._sim_output.stan_variable("Lambda").values[0] - 1
         )  # avoid Stan-style indexing
+        event_type = self._sim_output.stan_variable("event_type").values[0]
         Ns = self._sim_inputs["Ns"]
-        label_cmap = plt.cm.get_cmap("plasma", self._sources.N)
-
+        label_cmap = plt.cm.Set1(list(range(self._sources.N)))
         N_src_ev = sum([lam.count(_) for _ in range(Ns)])
-        N_bg_ev = lam.count(Ns) + lam.count(Ns + 1)
+        N_bg_ev = lam.count(Ns)
+        N_atmo_ev = lam.count(Ns + 1)
 
-        fig = plt.figure()
-        fig.set_size_inches((10, 8))
-        ax = fig.add_subplot(111, projection="hammer")
+        fig, ax = plt.subplots(subplot_kw={"projection": "astro degrees mollweide"})
+        fig.set_size_inches((7, 5))
 
-        circles = []
         self.events.coords.representation_type = "spherical"
-        for r, d, l in zip(
-            self.events.coords.icrs.ra.rad, self.events.coords.icrs.dec.rad, lam
+        for r, d, l, e, t in zip(
+            self.events.coords.icrs.ra,
+            self.events.coords.icrs.dec,
+            lam,
+            self.events.ang_errs,
+            self.events.types,
         ):
-            color = label_cmap.colors[int(l)]
-            circles.append(
-                mpatches.Circle((r - np.pi, d), 0.05, color=color, alpha=0.7)
-            )  # TODO: Fix this so x-axis labels are correct
+            color = label_cmap[int(l)]
 
-        collection = PatchCollection(circles, match_original=True)
-        ax.add_collection(collection)
+            if t == TRACKS:
+                e = e * 5
 
-        ax.set_title(
-            "N_src_events = %i, N_bg_events = %i" % (N_src_ev, N_bg_ev), pad=30
+            circle = SphericalCircle(
+                (r, d),
+                e,  # to make tracks visible
+                color=color,
+                alpha=0.5,
+                transform=ax.get_transform("icrs"),
+            )
+
+            ax.add_patch(circle)
+
+        fig.suptitle(
+            "N_src_events = %i, N_bg_events = %i, N_atmo_events = %i"
+            % (N_src_ev, N_bg_ev, N_atmo_ev),
+            y=0.85,
         )
+        fig.tight_layout()
 
         return fig, ax
 
@@ -250,8 +281,18 @@ class Simulation:
         atmo_inputs = {}
         sim_inputs = {}
 
-        cz_min = min(self._exposure_integral.effective_area._cosz_bin_edges)
-        cz_max = max(self._exposure_integral.effective_area._cosz_bin_edges)
+        cz_min = min(
+            [
+                min(e.effective_area._cosz_bin_edges)
+                for _, e in self._exposure_integral.items()
+            ]
+        )
+        cz_max = max(
+            [
+                max(e.effective_area._cosz_bin_edges)
+                for _, e in self._exposure_integral.items()
+            ]
+        )
 
         if self._atmospheric_comp:
 
@@ -302,15 +343,39 @@ class Simulation:
         sim_inputs["D"] = D
         sim_inputs["varpi"] = src_pos
 
-        sim_inputs["Ngrid"] = len(self._exposure_integral.par_grids["index"])
-        sim_inputs["alpha_grid"] = self._exposure_integral.par_grids["index"]
-        sim_inputs["integral_grid"] = [
-            _.value.tolist() for _ in self._exposure_integral.integral_grid
-        ]
+        for event_type in self._detector_model_type.event_types:
+            sim_inputs["Ngrid"] = len(
+                self._exposure_integral[event_type].par_grids["index"]
+            )
+            sim_inputs["alpha_grid"] = self._exposure_integral[event_type].par_grids[
+                "index"
+            ]
+            if (
+                event_type == "tracks"
+                and len(self._detector_model_type.event_types) > 1
+            ):
+                sim_inputs["integral_grid_t"] = [
+                    _.value.tolist()
+                    for _ in self._exposure_integral["tracks"].integral_grid
+                ]
+            elif (
+                event_type == "cascades"
+                and len(self._detector_model_type.event_types) > 1
+            ):
+                sim_inputs["integral_grid_c"] = [
+                    _.value.tolist()
+                    for _ in self._exposure_integral["cascades"].integral_grid
+                ]
+            else:
+                sim_inputs["integral_grid"] = [
+                    _.value.tolist()
+                    for _ in self._exposure_integral[event_type].integral_grid
+                ]
+
         if self._atmospheric_comp:
-            sim_inputs["atmo_integ_val"] = self._exposure_integral.integral_fixed_vals[
-                0
-            ].value
+            sim_inputs["atmo_integ_val"] = (
+                self._exposure_integral["tracks"].integral_fixed_vals[0].value
+            )
         sim_inputs["T"] = self._observation_time.to(u.s).value
 
         if self._atmospheric_comp:
@@ -324,20 +389,73 @@ class Simulation:
         sim_inputs["alpha"] = Parameter.get_parameter("index").value
         sim_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         sim_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
-        sim_inputs["Edet_min"] = (
-            Parameter.get_parameter("Emin_det").value.to(u.GeV).value
-        )
+
+        if self._detector_model_type == IceCubeDetectorModel:
+
+            # Here, we must provide tracks and cascade Emin_det case
+            # even if they are equal.
+            try:
+
+                sim_inputs["Emin_det_tracks"] = (
+                    Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+                )
+                sim_inputs["Emin_det_cascades"] = (
+                    Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+                )
+
+            except ValueError:
+
+                sim_inputs["Emin_det_tracks"] = (
+                    Parameter.get_parameter("Emin_det_tracks").value.to(u.GeV).value
+                )
+
+                sim_inputs["Emin_det_cascades"] = (
+                    Parameter.get_parameter("Emin_det_cascades").value.to(u.GeV).value
+                )
+
+        else:
+
+            # Otherwise, just use Emin_det, as no ambiguity
+            sim_inputs["Emin_det"] = (
+                Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+            )
 
         # Set maximum based on Emax to speed up rejection sampling
-        lbe = self._exposure_integral.effective_area._tE_bin_edges[:-1]
         Emax = sim_inputs["Esrc_max"]
-        aeff_max = np.max(
-            self._exposure_integral.effective_area._eff_area[lbe < Emax][:]
-        )
-        sim_inputs["aeff_max"] = aeff_max + 0.01 * aeff_max
+        if self._detector_model_type == IceCubeDetectorModel:
 
-        if self._detector_model_type == NorthernTracksDetectorModel:
+            for event_type in self._detector_model_type.event_types:
+                lbe = self._exposure_integral[event_type].effective_area._tE_bin_edges[
+                    :-1
+                ]
+                aeff_max = np.max(
+                    self._exposure_integral[event_type].effective_area._eff_area[
+                        lbe < Emax
+                    ][:]
+                )
+                if event_type == "tracks":
+                    sim_inputs["aeff_t_max"] = aeff_max + 0.01 * aeff_max
+                if event_type == "cascades":
+                    sim_inputs["aeff_c_max"] = aeff_max + 0.01 * aeff_max
+
+        else:
+            event_type = self._detector_model_type.event_types[0]
+            lbe = self._exposure_integral[event_type].effective_area._tE_bin_edges[:-1]
+            aeff_max = np.max(
+                self._exposure_integral[event_type].effective_area._eff_area[
+                    lbe < Emax
+                ][:]
+            )
+            sim_inputs["aeff_max"] = aeff_max + 0.01 * aeff_max
+
+        if (
+            self._detector_model_type == NorthernTracksDetectorModel
+            or self._detector_model_type == IceCubeDetectorModel
+        ):
             # Only sample from Northern hemisphere
+            cz_max = max(
+                self._exposure_integral["tracks"].effective_area._cosz_bin_edges
+            )
             sim_inputs["v_lim"] = (np.cos(np.pi - np.arccos(cz_max)) + 1) / 2
         else:
             sim_inputs["v_lim"] = 0.0
@@ -364,37 +482,31 @@ class Simulation:
     def _get_expected_Nnu(self, sim_inputs):
         """
         Calculates expected number of neutrinos to be simulated.
-        Uses same approach as in the Stan code.
+        Uses same approach as in the Stan code for cross-checks.
         """
 
-        alpha = sim_inputs["alpha"]
-        alpha_grid = sim_inputs["alpha_grid"]
-        integral_grid = sim_inputs["integral_grid"]
+        if self._detector_model_type == IceCubeDetectorModel:
 
-        eps = []
-        for igrid in integral_grid:
-            eps.append(np.interp(alpha, alpha_grid, igrid))
-
-        if self._atmospheric_comp:
-            eps.append(sim_inputs["atmo_integ_val"])
-
-        eps = np.array(eps) * sim_inputs["T"]
-
-        F = []
-        for d in sim_inputs["D"]:
-            flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
-            flux = flux * flux_conv_(
-                alpha, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
+            integral_grid_t = sim_inputs["integral_grid_t"]
+            Nex_t = _get_expected_Nnu_(
+                sim_inputs, integral_grid_t, self._atmospheric_comp
             )
-            F.append(flux)
-        F.append(sim_inputs["F_diff"])
 
-        if self._atmospheric_comp:
-            F.append(sim_inputs["F_atmo"])
+            integral_grid_c = sim_inputs["integral_grid_c"]
+            Nex_c = _get_expected_Nnu_(
+                sim_inputs, integral_grid_c, self._atmospheric_comp
+            )
 
-        self._expected_Nnu_per_comp = eps * F
+            Nex = Nex_t + Nex_c
 
-        return sum(eps * F)
+        else:
+
+            integral_grid = sim_inputs["integral_grid"]
+            Nex = _get_expected_Nnu_(sim_inputs, integral_grid, self._atmospheric_comp)
+
+        self._expected_Nnu_per_comp = Nex
+
+        return sum(Nex)
 
     @classmethod
     def from_file(cls, filename):
@@ -417,13 +529,49 @@ class Simulation:
 
         filename = self.output_dir + "/sim_code"
 
-        self._main_sim_filename = generate_main_sim_code_(
-            filename,
-            ps_spec_shape,
-            self._detector_model_type,
-            self._diffuse_bg_comp,
-            self._atmospheric_comp,
-        )
+        if len(self._detector_model_type.event_types) > 1:
+
+            self._main_sim_filename = generate_main_sim_code_hybrid_(
+                filename,
+                ps_spec_shape,
+                self._detector_model_type,
+                self._diffuse_bg_comp,
+                self._atmospheric_comp,
+            )
+
+        else:
+
+            self._main_sim_filename = generate_main_sim_code_(
+                filename,
+                ps_spec_shape,
+                self._detector_model_type,
+                self._diffuse_bg_comp,
+                self._atmospheric_comp,
+            )
+
+    def _get_min_det_energy(event_type=None):
+        """
+        Check for different definitions of minimum detected
+        energy in parameter settings and return relevant
+        value.
+
+        This is necessary as it is possible to specify Emin_det
+        or (Emin_det_tracks, Emin_det_cascades).
+        """
+
+        try:
+
+            Emin_det = Parameter.get_parameter("Emin_det").value
+
+        except ValueError:
+
+            Emin_det_t = Parameter.get_parameter("Emin_det_tracks").value
+
+            Emin_det_c = Parameter.get_parameter("Emin_det_cascades").value
+
+            Emin_det = min(Emin_det_t, Emin_det_c)
+
+        return Emin_det
 
 
 class SimInfo:
@@ -432,7 +580,7 @@ class SimInfo:
         To store and reference simulation inputs/info.
 
         TODO: instead work on Simualtion.from_file() method
-        to fully load simulation from outptu file.
+        to fully load simulation from output file.
         """
 
         self.truths = truths
@@ -475,3 +623,34 @@ class SimInfo:
             truths["F_atmo"] = inputs["F_atmo"]
 
         return cls(truths, inputs, outputs)
+
+
+def _get_expected_Nnu_(sim_inputs, integral_grid, atmospheric_comp=False):
+    """
+    Helper function for calculating expected Nnu
+    using stan sim_inputs.
+    """
+
+    alpha = sim_inputs["alpha"]
+    alpha_grid = sim_inputs["alpha_grid"]
+
+    eps = []
+    for igrid in integral_grid:
+        eps.append(np.interp(alpha, alpha_grid, igrid))
+
+    if atmospheric_comp:
+        eps.append(sim_inputs["atmo_integ_val"])
+
+    eps = np.array(eps) * sim_inputs["T"]
+
+    F = []
+    for d in sim_inputs["D"]:
+        flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
+        flux = flux * flux_conv_(alpha, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"])
+        F.append(flux)
+    F.append(sim_inputs["F_diff"])
+
+    if atmospheric_comp:
+        F.append(sim_inputs["F_atmo"])
+
+    return eps * F

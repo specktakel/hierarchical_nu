@@ -7,14 +7,26 @@ from matplotlib import pyplot as plt
 from joblib import Parallel, delayed
 from astropy import units as u
 from cmdstanpy import CmdStanModel
+from scipy.stats import lognorm, norm, uniform
 
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.flux_model import PowerLawSpectrum
 from .source.parameter import Parameter
 from .source.source import PointSource, Sources
-from .detector_model import NorthernTracksDetectorModel
-from .simulation import generate_atmospheric_sim_code_, generate_main_sim_code_
-from .fit import generate_stan_fit_code_
+
+from .detector.northern_tracks import NorthernTracksDetectorModel
+from .detector.cascades import CascadesDetectorModel
+from .detector.icecube import IceCubeDetectorModel
+
+from .simulation import (
+    generate_atmospheric_sim_code_,
+    generate_main_sim_code_,
+    generate_main_sim_code_hybrid_,
+)
+from .fit import (
+    generate_stan_fit_code_,
+    generate_stan_fit_code_hybrid_,
+)
 from .config import FileConfig, ParameterConfig
 
 from python.simulation import Simulation
@@ -55,7 +67,6 @@ class ModelCheck:
         ]
 
     @classmethod
-    @u.quantity_input
     def initialise_env(
         cls,
         output_dir,
@@ -86,21 +97,50 @@ class ModelCheck:
         print("Generated atmo_sim Stan file at:", file_config["atmo_sim_filename"])
 
         ps_spec_shape = PowerLawSpectrum
-        detector_model_type = NorthernTracksDetectorModel
+        detector_model_type = ModelCheck._get_dm_from_config(
+            parameter_config["detector_model_type"]
+        )
+
         main_sim_name = file_config["main_sim_filename"][:-5]
-        _ = generate_main_sim_code_(main_sim_name, ps_spec_shape, detector_model_type)
+        if detector_model_type == IceCubeDetectorModel:
+
+            _ = generate_main_sim_code_hybrid_(
+                main_sim_name, ps_spec_shape, detector_model_type
+            )
+
+        else:
+
+            _ = generate_main_sim_code_(
+                main_sim_name, ps_spec_shape, detector_model_type
+            )
+
         print("Generated main_sim Stan file at:", file_config["main_sim_filename"])
 
         fit_name = file_config["fit_filename"][:-5]
-        _ = generate_stan_fit_code_(
-            fit_name,
-            ps_spec_shape,
-            atmo_flux_model,
-            detector_model_type,
-            diffuse_bg_comp=True,
-            atmospheric_comp=True,
-            theta_points=30,
-        )
+        if detector_model_type == IceCubeDetectorModel:
+
+            _ = generate_stan_fit_code_hybrid_(
+                fit_name,
+                detector_model_type,
+                ps_spec_shape,
+                atmo_flux_model,
+                diffuse_bg_comp=True,
+                atmospheric_comp=True,
+                theta_points=30,
+            )
+
+        else:
+
+            _ = generate_stan_fit_code_(
+                fit_name,
+                detector_model_type,
+                ps_spec_shape,
+                atmo_flux_model,
+                diffuse_bg_comp=True,
+                atmospheric_comp=True,
+                theta_points=30,
+            )
+
         print("Generated fit Stan file at:", file_config["fit_filename"])
 
         print("Compile Stan models")
@@ -180,7 +220,7 @@ class ModelCheck:
                     self.results["alpha"].extend(job_folder["alpha"][()])
                     self.results["f"].extend(job_folder["f"][()])
 
-    def compare(self, var_names=None, var_labels=None):
+    def compare(self, var_names=None, var_labels=None, show_prior=False):
 
         if not var_names:
             var_names = self._default_var_names
@@ -200,11 +240,32 @@ class ModelCheck:
                 ax[v].hist(
                     self.results[var_name][i],
                     color="#017B76",
-                    alpha=0.1,
+                    alpha=0.05,
                     histtype="step",
                     bins=bins,
-                    lw=1.5,
+                    lw=1.0,
+                    density=True,
                 )
+
+            if show_prior:
+
+                prior_func = self._get_prior_func(var_name)
+                xmin, xmax = ax[v].get_xlim()
+                x = np.linspace(xmin, xmax)
+                ax[v].plot(x, prior_func(x), lw=1, color="k", alpha=0.5)
+
+                """
+                prior_samples = self._get_prior_samples(var_name)
+                ax[v].hist(
+                    prior_samples,
+                    color="k",
+                    alpha=0.5,
+                    histtype="step",
+                    bins=bins,
+                    lw=1.0,
+                    density=True,
+                )
+                """
 
             ax[v].axvline(self.truths[var_name], color="k", linestyle="-")
             ax[v].set_xlabel(var_labels[v], labelpad=10)
@@ -238,10 +299,27 @@ class ModelCheck:
         Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
         Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
         Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
-        Emin_det = Parameter(
-            parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
-        )
 
+        if parameter_config["Emin_det_eq"]:
+
+            Emin_det = Parameter(
+                parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
+            )
+
+        else:
+
+            Emin_det_tracks = Parameter(
+                parameter_config["Emin_det_tracks"] * u.GeV,
+                "Emin_det_tracks",
+                fixed=True,
+            )
+            Emin_det_cascades = Parameter(
+                parameter_config["Emin_det_cascades"] * u.GeV,
+                "Emin_det_cascades",
+                fixed=True,
+            )
+
+        # Simple point source for testing
         point_source = PointSource.make_powerlaw_source(
             "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, index, 0.43, Emin, Emax
         )
@@ -263,6 +341,10 @@ class ModelCheck:
         file_config = FileConfig()
         parameter_config = ParameterConfig()
 
+        detector_model_type = ModelCheck._get_dm_from_config(
+            parameter_config["detector_model_type"]
+        )
+
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
         start_time = time.time()
@@ -280,7 +362,7 @@ class ModelCheck:
 
             # Simulation
             obs_time = parameter_config["obs_time"] * u.year
-            sim = Simulation(self._sources, NorthernTracksDetectorModel, obs_time)
+            sim = Simulation(self._sources, detector_model_type, obs_time)
             sim.precomputation()
             sim.set_stan_filenames(
                 file_config["atmo_sim_filename"], file_config["main_sim_filename"]
@@ -296,9 +378,7 @@ class ModelCheck:
             self.events = sim.events
 
             # Fit
-            fit = StanFit(
-                self._sources, NorthernTracksDetectorModel, sim.events, obs_time
-            )
+            fit = StanFit(self._sources, detector_model_type, sim.events, obs_time)
             fit.precomputation(exposure_integral=sim._exposure_integral)
             fit.set_stan_filename(file_config["fit_filename"])
             fit.compile_stan_code(include_paths=file_config["include_paths"])
@@ -322,3 +402,113 @@ class ModelCheck:
             sys.stderr.write("time: %.5f\n" % (time.time() - start_time))
 
         return outputs
+
+    @staticmethod
+    def _get_dm_from_config(dm_key):
+
+        if dm_key == "northern_tracks":
+
+            dm = NorthernTracksDetectorModel
+
+        elif dm_key == "cascades":
+
+            dm = CascadesDetectorModel
+
+        elif dm_key == "icecube":
+
+            dm = IceCubeDetectorModel
+
+        else:
+
+            raise ValueError("Detector model key in config not recognised")
+
+        return dm
+
+    def _get_prior_samples(self, var_name):
+        """
+        Return prior samples for the parameter "var_name".
+        """
+
+        N = len(self.results[var_name][0])
+
+        if var_name == "F_diff":
+
+            F_diff_scale = self.truths["F_diff"]
+
+            return lognorm(5, 0, F_diff_scale).rvs(N)
+
+        elif var_name == "L":
+
+            L_scale = self.truths["L"]
+
+            return lognorm(5, 0, L_scale).rvs(N)
+
+        elif var_name == "F_atmo":
+
+            F_atmo_scale = self.truths["F_atmo"]
+
+            return norm(F_atmo_scale, 0.1 * F_atmo_scale).rvs(N)
+
+        elif var_name == "f":
+
+            return uniform(0, 1).rvs(N)
+
+        elif var_name == "alpha":
+
+            return norm(2, 2).rvs(N)
+
+        elif var_name == "F_tot":
+
+            F_tot_scale = self.truths["F_tot"]
+
+            return norm(F_tot_scale, 0.5 * F_tot_scale).rvs(N)
+
+        else:
+
+            raise ValueError("var_name not recognised")
+
+    def _get_prior_func(self, var_name):
+        """
+        Return function of param "var_name" that
+        describes its prior.
+        """
+
+        if var_name == "F_diff":
+
+            def prior_func(F_diff):
+                F_diff_scale = self.truths["F_diff"]
+                return norm(F_diff_scale, 2 * F_diff_scale).pdf(F_diff)
+
+        elif var_name == "L":
+
+            def prior_func(L):
+                L_scale = self.truths["L"]
+                return norm(L_scale, 2 * L_scale).pdf(L)
+
+        elif var_name == "F_atmo":
+
+            def prior_func(F_atmo):
+                F_atmo_scale = self.truths["F_atmo"]
+                return norm(F_atmo_scale, 0.1 * F_atmo_scale).pdf(F_atmo)
+
+        elif var_name == "f":
+
+            def prior_func(f):
+                return uniform(0, 1).pdf(f)
+
+        elif var_name == "F_tot":
+
+            def prior_func(F_tot):
+                F_tot_scale = self.truths["F_tot"]
+                return norm(F_tot_scale, 0.5 * F_tot_scale)
+
+        elif var_name == "alpha":
+
+            def prior_func(alpha):
+                return norm(2, 2).pdf(alpha)
+
+        else:
+
+            raise ValueError("var_name not recognised")
+
+        return prior_func

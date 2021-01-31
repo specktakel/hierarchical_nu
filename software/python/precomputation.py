@@ -29,6 +29,7 @@ class ExposureIntegral:
         sources: Sources,
         detector_model,
         n_grid_points: int = 50,
+        event_type=None,
     ):
         """
         Handles calculation of the exposure integral.
@@ -40,10 +41,30 @@ class ExposureIntegral:
         """
 
         self._sources = sources
-        self._min_det_energy = Parameter.get_parameter("Emin_det").value
         self._min_src_energy = Parameter.get_parameter("Emin").value
         self._max_src_energy = Parameter.get_parameter("Emax").value
         self._n_grid_points = n_grid_points
+
+        # Use Emin_det if available, otherwise use per event_type
+        try:
+
+            self._min_det_energy = Parameter.get_parameter("Emin_det").value
+
+        except ValueError:
+
+            if event_type == "tracks":
+
+                self._min_det_energy = Parameter.get_parameter("Emin_det_tracks").value
+
+            elif event_type == "cascades":
+
+                self._min_det_energy = Parameter.get_parameter(
+                    "Emin_det_cascades"
+                ).value
+
+            else:
+
+                raise ValueError("event_type not recognised")
 
         # Silence log output
         logger = logging.getLogger("python.backend.code_generator")
@@ -51,7 +72,7 @@ class ExposureIntegral:
 
         # Instantiate the given Detector class to access values
         with StanGenerator():
-            dm = detector_model()
+            dm = detector_model(event_type=event_type)
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
 
@@ -275,6 +296,8 @@ class ExposureIntegral:
             )
 
             self.pdet_grid.append(p_Edet * pg)
+
+        self.pdet_grid = np.array(self.pdet_grid) + 1e-10  # avoid log(0)
 
     def __call__(self):
         """
