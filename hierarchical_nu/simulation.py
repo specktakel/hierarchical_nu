@@ -9,8 +9,6 @@ import logging
 import collections
 
 import ligo.skymap.plot
-from matplotlib import pyplot as plt
-from matplotlib.patches import Circle
 from pyipn.io.plotting.spherical_circle import SphericalCircle
 
 from .detector.detector_model import DetectorModel
@@ -68,7 +66,7 @@ class Simulation:
         self._exposure_integral = collections.OrderedDict()
 
         # Silence log output
-        logger = logging.getLogger("python.backend.code_generator")
+        logger = logging.getLogger("hierarchical_nu.backend.code_generator")
         logger.propagate = False
 
     def precomputation(self):

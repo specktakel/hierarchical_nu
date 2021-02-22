@@ -49,7 +49,7 @@ class StanFit:
         self._sources.organise()
 
         # Silence log output
-        logger = logging.getLogger("python.backend.code_generator")
+        logger = logging.getLogger("hierarchical_nu.backend.code_generator")
         logger.propagate = False
 
         # For use with plot methods

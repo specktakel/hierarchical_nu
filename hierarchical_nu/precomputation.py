@@ -67,7 +67,7 @@ class ExposureIntegral:
                 raise ValueError("event_type not recognised")
 
         # Silence log output
-        logger = logging.getLogger("python.backend.code_generator")
+        logger = logging.getLogger("hierarchical_nu.backend.code_generator")
         logger.propagate = False
 
         # Instantiate the given Detector class to access values
