@@ -1,0 +1,6082 @@
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.215235
+P(atmo) = 0.784765
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.450119
+P(atmo) = 0.549881
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.323545
+P(atmo) = 0.676455
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.200856
+P(atmo) = 0.799144
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.480444
+P(atmo) = 0.519556
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.413224
+P(atmo) = 0.586776
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.464780
+P(atmo) = 0.535220
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.248845
+P(atmo) = 0.751155
+The correct component is diff
+A total of 8 events out of 27 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.257166
+P(atmo) = 0.742834
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.189824
+P(atmo) = 0.810176
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.341022
+P(atmo) = 0.658978
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.292516
+P(atmo) = 0.707484
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.228324
+P(atmo) = 0.771676
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.328050
+P(atmo) = 0.671950
+The correct component is diff
+A total of 6 events out of 21 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.265394
+P(atmo) = 0.734606
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.498196
+P(atmo) = 0.501804
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.300719
+P(atmo) = 0.699281
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.358771
+P(atmo) = 0.641229
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.393104
+P(atmo) = 0.606896
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.371316
+P(atmo) = 0.628684
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.858753
+P(atmo) = 0.141247
+The correct component is atmo
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.311087
+P(atmo) = 0.688913
+The correct component is diff
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.299527
+P(atmo) = 0.700473
+The correct component is diff
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.311582
+P(atmo) = 0.688418
+The correct component is diff
+A total of 10 events out of 36 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.354297
+P(atmo) = 0.645703
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.240744
+P(atmo) = 0.759256
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.174767
+P(atmo) = 0.825233
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.209884
+P(atmo) = 0.790116
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.208577
+P(atmo) = 0.791423
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.436967
+P(atmo) = 0.563033
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.514234
+P(atmo) = 0.485766
+The correct component is atmo
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.397178
+P(atmo) = 0.602822
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.409194
+P(atmo) = 0.590806
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.362278
+P(atmo) = 0.637722
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.455751
+P(atmo) = 0.544249
+The correct component is diff
+A total of 11 events out of 30 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.350903
+P(atmo) = 0.649097
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.234348
+P(atmo) = 0.765652
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.408173
+P(atmo) = 0.591827
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.209371
+P(atmo) = 0.790629
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.199403
+P(atmo) = 0.800597
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.198781
+P(atmo) = 0.801219
+The correct component is diff
+A total of 6 events out of 26 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.481148
+P(atmo) = 0.518852
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.203303
+P(atmo) = 0.796697
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.173763
+P(atmo) = 0.826237
+The correct component is diff
+A total of 3 events out of 21 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.442771
+P(atmo) = 0.557229
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.340797
+P(atmo) = 0.659203
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.272795
+P(atmo) = 0.727205
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.345160
+P(atmo) = 0.654840
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.331308
+P(atmo) = 0.668692
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.757293
+P(atmo) = 0.242707
+The correct component is atmo
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.609859
+P(atmo) = 0.390141
+The correct component is atmo
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.347207
+P(atmo) = 0.652793
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.711847
+P(atmo) = 0.288153
+The correct component is atmo
+A total of 9 events out of 35 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.512397
+P(atmo) = 0.487603
+The correct component is atmo
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.327761
+P(atmo) = 0.672239
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.257313
+P(atmo) = 0.742687
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.354388
+P(atmo) = 0.645612
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.399928
+P(atmo) = 0.600072
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.231017
+P(atmo) = 0.768983
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.356166
+P(atmo) = 0.643834
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.601105
+P(atmo) = 0.398895
+The correct component is atmo
+A total of 8 events out of 30 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.207168
+P(atmo) = 0.792832
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.444911
+P(atmo) = 0.555089
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.458792
+P(atmo) = 0.541208
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.473294
+P(atmo) = 0.526706
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.215011
+P(atmo) = 0.784989
+The correct component is diff
+A total of 5 events out of 26 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.272649
+P(atmo) = 0.727351
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.357008
+P(atmo) = 0.642992
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.179435
+P(atmo) = 0.820565
+The correct component is diff
+A total of 3 events out of 20 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmpa2fmwwmb
+done
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.284985
+P(atmo) = 0.715015
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.563533
+P(atmo) = 0.436467
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.480724
+P(atmo) = 0.519276
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.458398
+P(atmo) = 0.541602
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.342226
+P(atmo) = 0.657774
+The correct component is diff
+A total of 5 events out of 26 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.333624
+P(atmo) = 0.666376
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.240971
+P(atmo) = 0.759029
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.067851
+P(atmo) = 0.932149
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.265813
+P(atmo) = 0.734187
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.438365
+P(atmo) = 0.561635
+The correct component is diff
+A total of 5 events out of 20 are misclassified
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.357355
+P(atmo) = 0.642645
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.545853
+P(atmo) = 0.454147
+The correct component is atmo
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.244184
+P(atmo) = 0.755816
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.196384
+P(atmo) = 0.803616
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.271251
+P(atmo) = 0.728749
+The correct component is diff
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.195987
+P(atmo) = 0.804013
+The correct component is diff
+Event 32 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.254405
+P(atmo) = 0.745595
+The correct component is diff
+A total of 7 events out of 35 are misclassified
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.155599
+P(atmo) = 0.844401
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.413926
+P(atmo) = 0.586074
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.177130
+P(atmo) = 0.822870
+The correct component is diff
+A total of 3 events out of 30 are misclassified
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.445744
+P(atmo) = 0.554256
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.499586
+P(atmo) = 0.500414
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.251909
+P(atmo) = 0.748091
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.434519
+P(atmo) = 0.565481
+The correct component is diff
+A total of 4 events out of 26 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.169955
+P(atmo) = 0.830045
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.427010
+P(atmo) = 0.572990
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.194039
+P(atmo) = 0.805961
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.398955
+P(atmo) = 0.601045
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.478966
+P(atmo) = 0.521034
+The correct component is diff
+A total of 5 events out of 19 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.381181
+P(atmo) = 0.618819
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.579111
+P(atmo) = 0.420889
+The correct component is atmo
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.479691
+P(atmo) = 0.520309
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.672932
+P(atmo) = 0.327068
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.315642
+P(atmo) = 0.684358
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.681119
+P(atmo) = 0.318881
+The correct component is atmo
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.634590
+P(atmo) = 0.365410
+The correct component is atmo
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.407444
+P(atmo) = 0.592556
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.671358
+P(atmo) = 0.328642
+The correct component is atmo
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.387750
+P(atmo) = 0.612250
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.308384
+P(atmo) = 0.691616
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.308225
+P(atmo) = 0.691775
+The correct component is diff
+A total of 12 events out of 34 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.340827
+P(atmo) = 0.659173
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.300943
+P(atmo) = 0.699057
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.252306
+P(atmo) = 0.747694
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.144776
+P(atmo) = 0.855224
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.371310
+P(atmo) = 0.628690
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.355035
+P(atmo) = 0.644965
+The correct component is diff
+A total of 6 events out of 30 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.303726
+P(atmo) = 0.696274
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.473821
+P(atmo) = 0.526179
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.182045
+P(atmo) = 0.817955
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.317769
+P(atmo) = 0.682231
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.442652
+P(atmo) = 0.557348
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.270889
+P(atmo) = 0.729111
+The correct component is diff
+A total of 6 events out of 25 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.502869
+P(atmo) = 0.497131
+The correct component is atmo
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.269121
+P(atmo) = 0.730879
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.439845
+P(atmo) = 0.560155
+The correct component is diff
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.319335
+P(atmo) = 0.680665
+The correct component is diff
+A total of 4 events out of 35 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmppihuy5z6
+done
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.399280
+P(atmo) = 0.600720
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.359582
+P(atmo) = 0.640418
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.256860
+P(atmo) = 0.743140
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.142520
+P(atmo) = 0.857480
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.218062
+P(atmo) = 0.781938
+The correct component is diff
+A total of 5 events out of 24 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.611948
+P(atmo) = 0.388052
+The correct component is atmo
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.350952
+P(atmo) = 0.649048
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.684122
+P(atmo) = 0.315878
+The correct component is atmo
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.392137
+P(atmo) = 0.607863
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.789808
+P(atmo) = 0.210192
+The correct component is atmo
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.494208
+P(atmo) = 0.505792
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.421392
+P(atmo) = 0.578608
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.307804
+P(atmo) = 0.692196
+The correct component is diff
+A total of 8 events out of 27 are misclassified
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.294067
+P(atmo) = 0.705933
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.841331
+P(atmo) = 0.158669
+The correct component is atmo
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.251846
+P(atmo) = 0.748154
+The correct component is diff
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.448810
+P(atmo) = 0.551190
+The correct component is diff
+A total of 4 events out of 33 are misclassified
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.431951
+P(atmo) = 0.568049
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.391449
+P(atmo) = 0.608551
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.192573
+P(atmo) = 0.807427
+The correct component is diff
+A total of 3 events out of 28 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.416051
+P(atmo) = 0.583949
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.712437
+P(atmo) = 0.287563
+The correct component is atmo
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.199276
+P(atmo) = 0.800724
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.217151
+P(atmo) = 0.782849
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.302793
+P(atmo) = 0.697207
+The correct component is diff
+A total of 5 events out of 24 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.407316
+P(atmo) = 0.592684
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.468443
+P(atmo) = 0.531557
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.273779
+P(atmo) = 0.726221
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.376759
+P(atmo) = 0.623241
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.294376
+P(atmo) = 0.705624
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.247894
+P(atmo) = 0.752106
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.241975
+P(atmo) = 0.758025
+The correct component is diff
+A total of 7 events out of 24 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.193068
+P(atmo) = 0.806932
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.161334
+P(atmo) = 0.838666
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.164736
+P(atmo) = 0.835264
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.211814
+P(atmo) = 0.788186
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.201362
+P(atmo) = 0.798638
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.173413
+P(atmo) = 0.826587
+The correct component is diff
+A total of 6 events out of 32 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.219954
+P(atmo) = 0.780046
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.193808
+P(atmo) = 0.806192
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.228639
+P(atmo) = 0.771361
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.485018
+P(atmo) = 0.514982
+The correct component is diff
+A total of 4 events out of 28 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.392467
+P(atmo) = 0.607533
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.163888
+P(atmo) = 0.836112
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.207664
+P(atmo) = 0.792336
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.232536
+P(atmo) = 0.767464
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.557316
+P(atmo) = 0.442684
+The correct component is atmo
+A total of 5 events out of 24 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.072842
+P(atmo) = 0.927158
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.083290
+P(atmo) = 0.916710
+The correct component is diff
+A total of 2 events out of 19 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmp9eshy6w6
+done
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.240904
+P(atmo) = 0.759096
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.438993
+P(atmo) = 0.561007
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.200763
+P(atmo) = 0.799237
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.468822
+P(atmo) = 0.531178
+The correct component is diff
+A total of 4 events out of 25 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.237185
+P(atmo) = 0.762815
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.631087
+P(atmo) = 0.368913
+The correct component is atmo
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.875048
+P(atmo) = 0.124952
+The correct component is atmo
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.865706
+P(atmo) = 0.134294
+The correct component is atmo
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.336708
+P(atmo) = 0.663292
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.471966
+P(atmo) = 0.528034
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.422882
+P(atmo) = 0.577118
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.571081
+P(atmo) = 0.428919
+The correct component is atmo
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.592006
+P(atmo) = 0.407994
+The correct component is atmo
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.791125
+P(atmo) = 0.208875
+The correct component is atmo
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.451190
+P(atmo) = 0.548810
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.480308
+P(atmo) = 0.519692
+The correct component is diff
+A total of 12 events out of 31 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.304185
+P(atmo) = 0.695815
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.369974
+P(atmo) = 0.630026
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.470913
+P(atmo) = 0.529087
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.290532
+P(atmo) = 0.709468
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.291217
+P(atmo) = 0.708783
+The correct component is diff
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.300831
+P(atmo) = 0.699169
+The correct component is diff
+A total of 6 events out of 33 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.161355
+P(atmo) = 0.838645
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.086976
+P(atmo) = 0.913024
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.097994
+P(atmo) = 0.902006
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.110869
+P(atmo) = 0.889131
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.262607
+P(atmo) = 0.737393
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.074092
+P(atmo) = 0.925908
+The correct component is diff
+A total of 6 events out of 29 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.174980
+P(atmo) = 0.825020
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.403824
+P(atmo) = 0.596176
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.368532
+P(atmo) = 0.631468
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.132228
+P(atmo) = 0.867772
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.399112
+P(atmo) = 0.600888
+The correct component is diff
+A total of 5 events out of 25 are misclassified
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.591322
+P(atmo) = 0.408678
+The correct component is atmo
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.622355
+P(atmo) = 0.377645
+The correct component is atmo
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.332493
+P(atmo) = 0.667507
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.583850
+P(atmo) = 0.416150
+The correct component is atmo
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.557576
+P(atmo) = 0.442424
+The correct component is atmo
+A total of 5 events out of 29 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.464324
+P(atmo) = 0.535676
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.437020
+P(atmo) = 0.562980
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.269671
+P(atmo) = 0.730329
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.435582
+P(atmo) = 0.564418
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.351570
+P(atmo) = 0.648430
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.647142
+P(atmo) = 0.352858
+The correct component is atmo
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.389207
+P(atmo) = 0.610793
+The correct component is diff
+Event 32 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.293321
+P(atmo) = 0.706679
+The correct component is diff
+A total of 8 events out of 33 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.641506
+P(atmo) = 0.358494
+The correct component is atmo
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.217229
+P(atmo) = 0.782771
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.288348
+P(atmo) = 0.711652
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.548540
+P(atmo) = 0.451460
+The correct component is atmo
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.464770
+P(atmo) = 0.535230
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.141063
+P(atmo) = 0.858937
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.473433
+P(atmo) = 0.526567
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.336900
+P(atmo) = 0.663100
+The correct component is diff
+A total of 8 events out of 28 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.520034
+P(atmo) = 0.479966
+The correct component is atmo
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.312949
+P(atmo) = 0.687051
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.326368
+P(atmo) = 0.673632
+The correct component is diff
+A total of 3 events out of 24 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.247027
+P(atmo) = 0.752973
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.448902
+P(atmo) = 0.551098
+The correct component is diff
+A total of 2 events out of 25 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmpsd5d5hn5
+done
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.619226
+P(atmo) = 0.380774
+The correct component is atmo
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.761413
+P(atmo) = 0.238587
+The correct component is atmo
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.489750
+P(atmo) = 0.510250
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.453303
+P(atmo) = 0.546697
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.587236
+P(atmo) = 0.412764
+The correct component is atmo
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.181688
+P(atmo) = 0.818312
+The correct component is diff
+A total of 6 events out of 30 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.569078
+P(atmo) = 0.430922
+The correct component is atmo
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.211305
+P(atmo) = 0.788695
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.233264
+P(atmo) = 0.766736
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.295165
+P(atmo) = 0.704835
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.436364
+P(atmo) = 0.563636
+The correct component is diff
+A total of 5 events out of 26 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.234719
+P(atmo) = 0.765281
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.217086
+P(atmo) = 0.782914
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.493409
+P(atmo) = 0.506591
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.209797
+P(atmo) = 0.790203
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.318565
+P(atmo) = 0.681435
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.351607
+P(atmo) = 0.648393
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.323345
+P(atmo) = 0.676655
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.160831
+P(atmo) = 0.839169
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.397213
+P(atmo) = 0.602787
+The correct component is diff
+A total of 9 events out of 20 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.372212
+P(atmo) = 0.627788
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.566207
+P(atmo) = 0.433793
+The correct component is atmo
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.478302
+P(atmo) = 0.521698
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.658169
+P(atmo) = 0.341831
+The correct component is atmo
+A total of 4 events out of 35 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.330559
+P(atmo) = 0.669441
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.369641
+P(atmo) = 0.630359
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.223873
+P(atmo) = 0.776127
+The correct component is diff
+A total of 3 events out of 30 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.414166
+P(atmo) = 0.585834
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.131685
+P(atmo) = 0.868315
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.368808
+P(atmo) = 0.631192
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.340482
+P(atmo) = 0.659518
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.315002
+P(atmo) = 0.684998
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.231174
+P(atmo) = 0.768826
+The correct component is diff
+A total of 6 events out of 26 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.450828
+P(atmo) = 0.549172
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.446017
+P(atmo) = 0.553983
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.417787
+P(atmo) = 0.582213
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.555400
+P(atmo) = 0.444600
+The correct component is atmo
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.137812
+P(atmo) = 0.862188
+The correct component is diff
+A total of 5 events out of 19 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.392077
+P(atmo) = 0.607923
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.365797
+P(atmo) = 0.634203
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.376782
+P(atmo) = 0.623218
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.505567
+P(atmo) = 0.494433
+The correct component is atmo
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.374742
+P(atmo) = 0.625258
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.462650
+P(atmo) = 0.537350
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.262521
+P(atmo) = 0.737479
+The correct component is diff
+Event 32 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.548041
+P(atmo) = 0.451959
+The correct component is atmo
+A total of 8 events out of 34 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.307613
+P(atmo) = 0.692387
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.206512
+P(atmo) = 0.793488
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.495474
+P(atmo) = 0.504526
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.257322
+P(atmo) = 0.742678
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.343685
+P(atmo) = 0.656315
+The correct component is diff
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.275397
+P(atmo) = 0.724603
+The correct component is diff
+A total of 6 events out of 30 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.408254
+P(atmo) = 0.591746
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.318005
+P(atmo) = 0.681995
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.270450
+P(atmo) = 0.729550
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.404122
+P(atmo) = 0.595878
+The correct component is diff
+A total of 4 events out of 25 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmp6c7tdmfj
+done
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.231060
+P(atmo) = 0.768940
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.633536
+P(atmo) = 0.366464
+The correct component is atmo
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.267178
+P(atmo) = 0.732822
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.499391
+P(atmo) = 0.500609
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.351632
+P(atmo) = 0.648368
+The correct component is diff
+A total of 5 events out of 29 are misclassified
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.116567
+P(atmo) = 0.883433
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.241662
+P(atmo) = 0.758338
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.219952
+P(atmo) = 0.780048
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.226859
+P(atmo) = 0.773141
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.478050
+P(atmo) = 0.521950
+The correct component is diff
+A total of 5 events out of 25 are misclassified
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.370924
+P(atmo) = 0.629076
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.364132
+P(atmo) = 0.635868
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.243588
+P(atmo) = 0.756412
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.554865
+P(atmo) = 0.445135
+The correct component is atmo
+A total of 4 events out of 26 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.715639
+P(atmo) = 0.284361
+The correct component is atmo
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.212207
+P(atmo) = 0.787793
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.392170
+P(atmo) = 0.607830
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.392688
+P(atmo) = 0.607312
+The correct component is diff
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.250252
+P(atmo) = 0.749748
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.513334
+P(atmo) = 0.486666
+The correct component is atmo
+A total of 6 events out of 33 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.226451
+P(atmo) = 0.773549
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.458292
+P(atmo) = 0.541708
+The correct component is diff
+A total of 2 events out of 29 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.384190
+P(atmo) = 0.615810
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.456442
+P(atmo) = 0.543558
+The correct component is diff
+A total of 2 events out of 25 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.468129
+P(atmo) = 0.531871
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.441320
+P(atmo) = 0.558680
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.249025
+P(atmo) = 0.750975
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.114732
+P(atmo) = 0.885268
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.182177
+P(atmo) = 0.817823
+The correct component is diff
+A total of 5 events out of 23 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.457016
+P(atmo) = 0.542984
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.842884
+P(atmo) = 0.157116
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.597563
+P(atmo) = 0.402437
+The correct component is atmo
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.217135
+P(atmo) = 0.782865
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.622758
+P(atmo) = 0.377242
+The correct component is atmo
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.753862
+P(atmo) = 0.246138
+The correct component is atmo
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.370985
+P(atmo) = 0.629015
+The correct component is diff
+A total of 7 events out of 33 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.598457
+P(atmo) = 0.401543
+The correct component is atmo
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.335760
+P(atmo) = 0.664240
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.443098
+P(atmo) = 0.556902
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.453339
+P(atmo) = 0.546661
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.375537
+P(atmo) = 0.624463
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.680458
+P(atmo) = 0.319542
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.252994
+P(atmo) = 0.747006
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.630457
+P(atmo) = 0.369543
+The correct component is atmo
+A total of 8 events out of 29 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.772776
+P(atmo) = 0.227224
+The correct component is atmo
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.333805
+P(atmo) = 0.666195
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.343530
+P(atmo) = 0.656470
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.369041
+P(atmo) = 0.630959
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.453333
+P(atmo) = 0.546667
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.280665
+P(atmo) = 0.719335
+The correct component is diff
+A total of 6 events out of 24 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmp1xaauxpa
+done
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.298841
+P(atmo) = 0.701159
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.443594
+P(atmo) = 0.556406
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.537686
+P(atmo) = 0.462314
+The correct component is atmo
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.594118
+P(atmo) = 0.405882
+The correct component is atmo
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.695426
+P(atmo) = 0.304574
+The correct component is atmo
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.538567
+P(atmo) = 0.461433
+The correct component is atmo
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.606930
+P(atmo) = 0.393070
+The correct component is atmo
+A total of 7 events out of 31 are misclassified
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.206544
+P(atmo) = 0.793456
+The correct component is diff
+A total of 1 events out of 27 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.354717
+P(atmo) = 0.645283
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.246532
+P(atmo) = 0.753468
+The correct component is diff
+A total of 2 events out of 21 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.723137
+P(atmo) = 0.276863
+The correct component is atmo
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.381054
+P(atmo) = 0.618946
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.629048
+P(atmo) = 0.370952
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.674002
+P(atmo) = 0.325998
+The correct component is atmo
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.367468
+P(atmo) = 0.632532
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.779086
+P(atmo) = 0.220914
+The correct component is atmo
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.332403
+P(atmo) = 0.667597
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.577652
+P(atmo) = 0.422348
+The correct component is atmo
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.394351
+P(atmo) = 0.605649
+The correct component is diff
+A total of 9 events out of 36 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.576295
+P(atmo) = 0.423705
+The correct component is atmo
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.578776
+P(atmo) = 0.421224
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.549947
+P(atmo) = 0.450053
+The correct component is atmo
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.281140
+P(atmo) = 0.718860
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.658253
+P(atmo) = 0.341747
+The correct component is atmo
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.465499
+P(atmo) = 0.534501
+The correct component is diff
+A total of 6 events out of 30 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.440743
+P(atmo) = 0.559257
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.694210
+P(atmo) = 0.305790
+The correct component is atmo
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.565035
+P(atmo) = 0.434965
+The correct component is atmo
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.644181
+P(atmo) = 0.355819
+The correct component is atmo
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.428534
+P(atmo) = 0.571466
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.322687
+P(atmo) = 0.677313
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.267697
+P(atmo) = 0.732303
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.365140
+P(atmo) = 0.634860
+The correct component is diff
+A total of 8 events out of 26 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.112812
+P(atmo) = 0.887188
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.195952
+P(atmo) = 0.804048
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.144805
+P(atmo) = 0.855195
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.227531
+P(atmo) = 0.772469
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.117471
+P(atmo) = 0.882529
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.091136
+P(atmo) = 0.908864
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.145164
+P(atmo) = 0.854836
+The correct component is diff
+A total of 7 events out of 21 are misclassified
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.480011
+P(atmo) = 0.519989
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.469288
+P(atmo) = 0.530712
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.618424
+P(atmo) = 0.381576
+The correct component is atmo
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.579869
+P(atmo) = 0.420131
+The correct component is atmo
+A total of 4 events out of 35 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.673611
+P(atmo) = 0.326389
+The correct component is atmo
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.433509
+P(atmo) = 0.566491
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.390997
+P(atmo) = 0.609003
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.318287
+P(atmo) = 0.681713
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.323221
+P(atmo) = 0.676779
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.725727
+P(atmo) = 0.274273
+The correct component is atmo
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.197891
+P(atmo) = 0.802109
+The correct component is diff
+A total of 7 events out of 30 are misclassified
+Event 2 is misclassified
+P(src0) = 0.273004
+P(diff) = 0.129086
+P(atmo) = 0.597910
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.201871
+P(atmo) = 0.798129
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.313960
+P(atmo) = 0.686040
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.487656
+P(atmo) = 0.512344
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.335259
+P(atmo) = 0.664741
+The correct component is diff
+A total of 5 events out of 26 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmpb5lcwhhb
+done
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.388496
+P(atmo) = 0.611504
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.353096
+P(atmo) = 0.646904
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.345103
+P(atmo) = 0.654897
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.362426
+P(atmo) = 0.637574
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.317966
+P(atmo) = 0.682034
+The correct component is diff
+A total of 5 events out of 29 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.570114
+P(atmo) = 0.429886
+The correct component is atmo
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.414249
+P(atmo) = 0.585751
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.386670
+P(atmo) = 0.613330
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.289577
+P(atmo) = 0.710423
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.529435
+P(atmo) = 0.470565
+The correct component is atmo
+A total of 5 events out of 24 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.520605
+P(atmo) = 0.479395
+The correct component is atmo
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.564724
+P(atmo) = 0.435276
+The correct component is atmo
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.257958
+P(atmo) = 0.742042
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.224024
+P(atmo) = 0.775976
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.470690
+P(atmo) = 0.529310
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.383049
+P(atmo) = 0.616951
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.301525
+P(atmo) = 0.698475
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.693588
+P(atmo) = 0.306412
+The correct component is atmo
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.428725
+P(atmo) = 0.571275
+The correct component is diff
+A total of 9 events out of 32 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.420005
+P(atmo) = 0.579995
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.477189
+P(atmo) = 0.522811
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.482489
+P(atmo) = 0.517511
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.529450
+P(atmo) = 0.470550
+The correct component is atmo
+A total of 4 events out of 33 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.531580
+P(atmo) = 0.468420
+The correct component is atmo
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.204446
+P(atmo) = 0.795554
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.331849
+P(atmo) = 0.668151
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.382449
+P(atmo) = 0.617551
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.471913
+P(atmo) = 0.528087
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.232359
+P(atmo) = 0.767641
+The correct component is diff
+A total of 6 events out of 28 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.561318
+P(atmo) = 0.438682
+The correct component is atmo
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.163159
+P(atmo) = 0.836841
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.495223
+P(atmo) = 0.504777
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.334319
+P(atmo) = 0.665681
+The correct component is diff
+A total of 4 events out of 24 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.166658
+P(atmo) = 0.833342
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.206934
+P(atmo) = 0.793066
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.572422
+P(atmo) = 0.427578
+The correct component is atmo
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.203800
+P(atmo) = 0.796200
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.166870
+P(atmo) = 0.833130
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.549300
+P(atmo) = 0.450700
+The correct component is atmo
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.167950
+P(atmo) = 0.832050
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.205271
+P(atmo) = 0.794729
+The correct component is diff
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.215477
+P(atmo) = 0.784523
+The correct component is diff
+A total of 9 events out of 30 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.455858
+P(atmo) = 0.544142
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.485653
+P(atmo) = 0.514347
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.407729
+P(atmo) = 0.592271
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.461532
+P(atmo) = 0.538468
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.416032
+P(atmo) = 0.583968
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.493180
+P(atmo) = 0.506820
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.587256
+P(atmo) = 0.412744
+The correct component is atmo
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.323888
+P(atmo) = 0.676112
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.654598
+P(atmo) = 0.345402
+The correct component is atmo
+A total of 9 events out of 32 are misclassified
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.350362
+P(atmo) = 0.649638
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.219258
+P(atmo) = 0.780742
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.422024
+P(atmo) = 0.577976
+The correct component is diff
+A total of 3 events out of 28 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.450497
+P(atmo) = 0.549503
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.218981
+P(atmo) = 0.781019
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.317506
+P(atmo) = 0.682494
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.455201
+P(atmo) = 0.544799
+The correct component is diff
+A total of 4 events out of 24 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmpxdydhdv0
+done
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.078504
+P(atmo) = 0.921496
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.246387
+P(atmo) = 0.753613
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.133802
+P(atmo) = 0.866198
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.211921
+P(atmo) = 0.788079
+The correct component is diff
+A total of 4 events out of 20 are misclassified
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.394171
+P(atmo) = 0.605829
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.479685
+P(atmo) = 0.520315
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.322482
+P(atmo) = 0.677518
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.628512
+P(atmo) = 0.371488
+The correct component is atmo
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.303331
+P(atmo) = 0.696669
+The correct component is diff
+A total of 5 events out of 35 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.335110
+P(atmo) = 0.664890
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.350063
+P(atmo) = 0.649937
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.294302
+P(atmo) = 0.705698
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.294967
+P(atmo) = 0.705033
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.385852
+P(atmo) = 0.614148
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.358401
+P(atmo) = 0.641599
+The correct component is diff
+A total of 6 events out of 30 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.691939
+P(atmo) = 0.308061
+The correct component is atmo
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.878117
+P(atmo) = 0.121883
+The correct component is atmo
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.194959
+P(atmo) = 0.805041
+The correct component is diff
+A total of 3 events out of 26 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.437474
+P(atmo) = 0.562526
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.186417
+P(atmo) = 0.813583
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.129987
+P(atmo) = 0.870013
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.400815
+P(atmo) = 0.599185
+The correct component is diff
+A total of 4 events out of 19 are misclassified
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.635400
+P(atmo) = 0.364600
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.471243
+P(atmo) = 0.528757
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.272146
+P(atmo) = 0.727854
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.463647
+P(atmo) = 0.536353
+The correct component is diff
+A total of 4 events out of 34 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.387752
+P(atmo) = 0.612248
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.882612
+P(atmo) = 0.117388
+The correct component is atmo
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.523278
+P(atmo) = 0.476722
+The correct component is atmo
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.223268
+P(atmo) = 0.776732
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.698127
+P(atmo) = 0.301873
+The correct component is atmo
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.359297
+P(atmo) = 0.640703
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.313663
+P(atmo) = 0.686337
+The correct component is diff
+A total of 7 events out of 29 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.200295
+P(atmo) = 0.799705
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.215285
+P(atmo) = 0.784715
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.368447
+P(atmo) = 0.631553
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.245998
+P(atmo) = 0.754002
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.419445
+P(atmo) = 0.580555
+The correct component is diff
+A total of 5 events out of 25 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.433823
+P(atmo) = 0.566177
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.354244
+P(atmo) = 0.645756
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.305146
+P(atmo) = 0.694854
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.483222
+P(atmo) = 0.516778
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.668000
+P(atmo) = 0.332000
+The correct component is atmo
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.597430
+P(atmo) = 0.402570
+The correct component is atmo
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.506577
+P(atmo) = 0.493423
+The correct component is atmo
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.635024
+P(atmo) = 0.364976
+The correct component is atmo
+A total of 8 events out of 29 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.450200
+P(atmo) = 0.549800
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.549784
+P(atmo) = 0.450216
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.493485
+P(atmo) = 0.506515
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.304914
+P(atmo) = 0.695086
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.332832
+P(atmo) = 0.667168
+The correct component is diff
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.755101
+P(atmo) = 0.244899
+The correct component is atmo
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.632120
+P(atmo) = 0.367880
+The correct component is atmo
+A total of 7 events out of 34 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmpsd854oup
+done
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.571060
+P(atmo) = 0.428940
+The correct component is atmo
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.704787
+P(atmo) = 0.295213
+The correct component is atmo
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.733818
+P(atmo) = 0.266182
+The correct component is atmo
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.652767
+P(atmo) = 0.347233
+The correct component is atmo
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.724195
+P(atmo) = 0.275805
+The correct component is atmo
+A total of 5 events out of 32 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.196465
+P(atmo) = 0.803535
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.552870
+P(atmo) = 0.447130
+The correct component is atmo
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.256085
+P(atmo) = 0.743915
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.637092
+P(atmo) = 0.362908
+The correct component is atmo
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.401475
+P(atmo) = 0.598525
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.204610
+P(atmo) = 0.795390
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.453389
+P(atmo) = 0.546611
+The correct component is diff
+A total of 7 events out of 28 are misclassified
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.241723
+P(atmo) = 0.758277
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.118399
+P(atmo) = 0.881601
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.147791
+P(atmo) = 0.852209
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.227645
+P(atmo) = 0.772355
+The correct component is diff
+A total of 4 events out of 24 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.365019
+P(atmo) = 0.634981
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.491451
+P(atmo) = 0.508549
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.175220
+P(atmo) = 0.824780
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.307304
+P(atmo) = 0.692696
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.507165
+P(atmo) = 0.492835
+The correct component is atmo
+A total of 5 events out of 30 are misclassified
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.595997
+P(atmo) = 0.404003
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.416637
+P(atmo) = 0.583363
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.313563
+P(atmo) = 0.686437
+The correct component is diff
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.398713
+P(atmo) = 0.601287
+The correct component is diff
+A total of 4 events out of 32 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.311066
+P(atmo) = 0.688934
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.259127
+P(atmo) = 0.740873
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.671834
+P(atmo) = 0.328166
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.390064
+P(atmo) = 0.609936
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.207763
+P(atmo) = 0.792237
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.202409
+P(atmo) = 0.797591
+The correct component is diff
+A total of 6 events out of 28 are misclassified
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.267354
+P(atmo) = 0.732646
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.237384
+P(atmo) = 0.762616
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.256896
+P(atmo) = 0.743104
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.500333
+P(atmo) = 0.499667
+The correct component is atmo
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.448879
+P(atmo) = 0.551121
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.414554
+P(atmo) = 0.585446
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.291233
+P(atmo) = 0.708767
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.227126
+P(atmo) = 0.772874
+The correct component is diff
+A total of 8 events out of 23 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.431616
+P(atmo) = 0.568384
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.673103
+P(atmo) = 0.326897
+The correct component is atmo
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.184469
+P(atmo) = 0.815531
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.339169
+P(atmo) = 0.660831
+The correct component is diff
+A total of 4 events out of 29 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.372140
+P(atmo) = 0.627860
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.084708
+P(atmo) = 0.915292
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.113126
+P(atmo) = 0.886874
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.087350
+P(atmo) = 0.912650
+The correct component is diff
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.278556
+P(atmo) = 0.721444
+The correct component is diff
+A total of 5 events out of 32 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.270774
+P(atmo) = 0.729226
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.190839
+P(atmo) = 0.809161
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.218572
+P(atmo) = 0.781428
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.149482
+P(atmo) = 0.850518
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.123755
+P(atmo) = 0.876245
+The correct component is diff
+A total of 5 events out of 28 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmp2uki6b3x
+done
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.308606
+P(atmo) = 0.691394
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.267877
+P(atmo) = 0.732123
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.388687
+P(atmo) = 0.611313
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.401129
+P(atmo) = 0.598871
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.608028
+P(atmo) = 0.391972
+The correct component is atmo
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.412637
+P(atmo) = 0.587363
+The correct component is diff
+A total of 6 events out of 34 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.222659
+P(atmo) = 0.777341
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.508987
+P(atmo) = 0.491013
+The correct component is atmo
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.454322
+P(atmo) = 0.545678
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.412850
+P(atmo) = 0.587150
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.552290
+P(atmo) = 0.447710
+The correct component is atmo
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.120608
+P(atmo) = 0.879392
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.486017
+P(atmo) = 0.513983
+The correct component is diff
+A total of 7 events out of 29 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.268181
+P(atmo) = 0.731819
+The correct component is diff
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.594025
+P(atmo) = 0.405975
+The correct component is atmo
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.377699
+P(atmo) = 0.622301
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.782698
+P(atmo) = 0.217302
+The correct component is atmo
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.702564
+P(atmo) = 0.297436
+The correct component is atmo
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.375434
+P(atmo) = 0.624566
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.376819
+P(atmo) = 0.623181
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.394661
+P(atmo) = 0.605339
+The correct component is diff
+A total of 8 events out of 25 are misclassified
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.412689
+P(atmo) = 0.587311
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.335234
+P(atmo) = 0.664766
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.332962
+P(atmo) = 0.667038
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.290101
+P(atmo) = 0.709899
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.415616
+P(atmo) = 0.584384
+The correct component is diff
+A total of 5 events out of 32 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.274708
+P(atmo) = 0.725292
+The correct component is diff
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.204433
+P(atmo) = 0.795567
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.372541
+P(atmo) = 0.627459
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.451692
+P(atmo) = 0.548308
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.511658
+P(atmo) = 0.488342
+The correct component is atmo
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.229236
+P(atmo) = 0.770764
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.432048
+P(atmo) = 0.567952
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.429799
+P(atmo) = 0.570201
+The correct component is diff
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.445673
+P(atmo) = 0.554327
+The correct component is diff
+A total of 9 events out of 33 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.613311
+P(atmo) = 0.386689
+The correct component is atmo
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.671018
+P(atmo) = 0.328982
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.341333
+P(atmo) = 0.658667
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.678170
+P(atmo) = 0.321830
+The correct component is atmo
+A total of 4 events out of 29 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.472340
+P(atmo) = 0.527660
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.433785
+P(atmo) = 0.566215
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.377467
+P(atmo) = 0.622533
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.400294
+P(atmo) = 0.599706
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.182147
+P(atmo) = 0.817853
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.372325
+P(atmo) = 0.627675
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.246575
+P(atmo) = 0.753425
+The correct component is diff
+A total of 7 events out of 25 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.428129
+P(atmo) = 0.571871
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.394903
+P(atmo) = 0.605097
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.229738
+P(atmo) = 0.770262
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.410446
+P(atmo) = 0.589554
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.805858
+P(atmo) = 0.194142
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.362365
+P(atmo) = 0.637635
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.383393
+P(atmo) = 0.616607
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.458945
+P(atmo) = 0.541055
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.606812
+P(atmo) = 0.393188
+The correct component is atmo
+A total of 9 events out of 29 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.434151
+P(atmo) = 0.565849
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.702179
+P(atmo) = 0.297821
+The correct component is atmo
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.378950
+P(atmo) = 0.621050
+The correct component is diff
+A total of 3 events out of 33 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.218083
+P(atmo) = 0.781917
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.497073
+P(atmo) = 0.502927
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.575515
+P(atmo) = 0.424485
+The correct component is atmo
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.500569
+P(atmo) = 0.499431
+The correct component is atmo
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.485411
+P(atmo) = 0.514589
+The correct component is diff
+A total of 5 events out of 29 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmphz6hy2m8
+done
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.488339
+P(atmo) = 0.511661
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.420582
+P(atmo) = 0.579418
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.249145
+P(atmo) = 0.750855
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.328663
+P(atmo) = 0.671337
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.526980
+P(atmo) = 0.473020
+The correct component is atmo
+A total of 5 events out of 28 are misclassified
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.218687
+P(atmo) = 0.781313
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.525467
+P(atmo) = 0.474533
+The correct component is atmo
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.394603
+P(atmo) = 0.605397
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.138741
+P(atmo) = 0.861259
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.329865
+P(atmo) = 0.670135
+The correct component is diff
+A total of 5 events out of 23 are misclassified
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.621107
+P(atmo) = 0.378893
+The correct component is atmo
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.249461
+P(atmo) = 0.750539
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.403027
+P(atmo) = 0.596973
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.242388
+P(atmo) = 0.757612
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.434659
+P(atmo) = 0.565341
+The correct component is diff
+A total of 5 events out of 39 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.265455
+P(atmo) = 0.734545
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.445141
+P(atmo) = 0.554859
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.583659
+P(atmo) = 0.416341
+The correct component is atmo
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.227019
+P(atmo) = 0.772981
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.282214
+P(atmo) = 0.717786
+The correct component is diff
+A total of 5 events out of 31 are misclassified
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.615624
+P(atmo) = 0.384376
+The correct component is atmo
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.217999
+P(atmo) = 0.782001
+The correct component is diff
+A total of 2 events out of 27 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.420279
+P(atmo) = 0.579721
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.405923
+P(atmo) = 0.594077
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.468492
+P(atmo) = 0.531508
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.339040
+P(atmo) = 0.660960
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.122797
+P(atmo) = 0.877203
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.207628
+P(atmo) = 0.792372
+The correct component is diff
+A total of 6 events out of 23 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.311633
+P(atmo) = 0.688367
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.410904
+P(atmo) = 0.589096
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.318172
+P(atmo) = 0.681828
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.431968
+P(atmo) = 0.568032
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.622089
+P(atmo) = 0.377911
+The correct component is atmo
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.285484
+P(atmo) = 0.714516
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.292701
+P(atmo) = 0.707299
+The correct component is diff
+A total of 7 events out of 38 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.329544
+P(atmo) = 0.670456
+The correct component is diff
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.489233
+P(atmo) = 0.510767
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.455051
+P(atmo) = 0.544949
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.381258
+P(atmo) = 0.618742
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.369822
+P(atmo) = 0.630178
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.256649
+P(atmo) = 0.743351
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.338779
+P(atmo) = 0.661221
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.446236
+P(atmo) = 0.553764
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.377302
+P(atmo) = 0.622698
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.340963
+P(atmo) = 0.659037
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.314865
+P(atmo) = 0.685135
+The correct component is diff
+A total of 11 events out of 31 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.330981
+P(atmo) = 0.669019
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.313122
+P(atmo) = 0.686878
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.179845
+P(atmo) = 0.820155
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.299896
+P(atmo) = 0.700104
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.398783
+P(atmo) = 0.601217
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.230717
+P(atmo) = 0.769283
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.400355
+P(atmo) = 0.599645
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.191865
+P(atmo) = 0.808135
+The correct component is diff
+A total of 8 events out of 27 are misclassified
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.519103
+P(atmo) = 0.480897
+The correct component is atmo
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.424887
+P(atmo) = 0.575113
+The correct component is diff
+A total of 2 events out of 22 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmpr7w2dcnu
+done
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.282964
+P(atmo) = 0.717036
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.251017
+P(atmo) = 0.748983
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.174054
+P(atmo) = 0.825946
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.272355
+P(atmo) = 0.727645
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.431458
+P(atmo) = 0.568542
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.187625
+P(atmo) = 0.812375
+The correct component is diff
+A total of 6 events out of 23 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.467521
+P(atmo) = 0.532479
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.334822
+P(atmo) = 0.665178
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.488719
+P(atmo) = 0.511281
+The correct component is diff
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.716656
+P(atmo) = 0.283344
+The correct component is atmo
+Event 32 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.420812
+P(atmo) = 0.579188
+The correct component is diff
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.662362
+P(atmo) = 0.337638
+The correct component is atmo
+Event 36 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.422008
+P(atmo) = 0.577992
+The correct component is diff
+A total of 7 events out of 39 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.339329
+P(atmo) = 0.660671
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.749431
+P(atmo) = 0.250569
+The correct component is atmo
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.194040
+P(atmo) = 0.805960
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.592052
+P(atmo) = 0.407948
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.568776
+P(atmo) = 0.431224
+The correct component is atmo
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.548250
+P(atmo) = 0.451750
+The correct component is atmo
+A total of 6 events out of 31 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.357484
+P(atmo) = 0.642516
+The correct component is diff
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.755794
+P(atmo) = 0.244206
+The correct component is atmo
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.304933
+P(atmo) = 0.695067
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.214121
+P(atmo) = 0.785879
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.465805
+P(atmo) = 0.534195
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.415994
+P(atmo) = 0.584006
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.351502
+P(atmo) = 0.648498
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.751582
+P(atmo) = 0.248418
+The correct component is atmo
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.219308
+P(atmo) = 0.780692
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.367714
+P(atmo) = 0.632286
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.255509
+P(atmo) = 0.744491
+The correct component is diff
+A total of 11 events out of 27 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.343178
+P(atmo) = 0.656822
+The correct component is diff
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.243409
+P(atmo) = 0.756591
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.290726
+P(atmo) = 0.709274
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.154241
+P(atmo) = 0.845759
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.349080
+P(atmo) = 0.650920
+The correct component is diff
+A total of 5 events out of 22 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.394106
+P(atmo) = 0.605894
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.285454
+P(atmo) = 0.714546
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.446245
+P(atmo) = 0.553755
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.723235
+P(atmo) = 0.276765
+The correct component is atmo
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.571395
+P(atmo) = 0.428605
+The correct component is atmo
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.230780
+P(atmo) = 0.769220
+The correct component is diff
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.383282
+P(atmo) = 0.616718
+The correct component is diff
+A total of 7 events out of 37 are misclassified
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.470991
+P(atmo) = 0.529009
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.524984
+P(atmo) = 0.475016
+The correct component is atmo
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.617113
+P(atmo) = 0.382887
+The correct component is atmo
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.827662
+P(atmo) = 0.172338
+The correct component is atmo
+A total of 4 events out of 31 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.424621
+P(atmo) = 0.575379
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.203906
+P(atmo) = 0.796094
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.311011
+P(atmo) = 0.688989
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.276522
+P(atmo) = 0.723478
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.273633
+P(atmo) = 0.726367
+The correct component is diff
+A total of 5 events out of 27 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.484937
+P(atmo) = 0.515063
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.370947
+P(atmo) = 0.629053
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.135429
+P(atmo) = 0.864571
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.186622
+P(atmo) = 0.813378
+The correct component is diff
+A total of 4 events out of 22 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.465883
+P(atmo) = 0.534117
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.441589
+P(atmo) = 0.558411
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.312258
+P(atmo) = 0.687742
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.308054
+P(atmo) = 0.691946
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.403798
+P(atmo) = 0.596202
+The correct component is diff
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.296178
+P(atmo) = 0.703822
+The correct component is diff
+Event 34 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.344184
+P(atmo) = 0.655816
+The correct component is diff
+A total of 7 events out of 36 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmp5vuypu47
+done
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.374920
+P(atmo) = 0.625080
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.709439
+P(atmo) = 0.290561
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.469938
+P(atmo) = 0.530062
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.488065
+P(atmo) = 0.511935
+The correct component is diff
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.219777
+P(atmo) = 0.780223
+The correct component is diff
+A total of 5 events out of 34 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.484176
+P(atmo) = 0.515824
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.411171
+P(atmo) = 0.588829
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.246413
+P(atmo) = 0.753587
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.289692
+P(atmo) = 0.710308
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.174557
+P(atmo) = 0.825443
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.391506
+P(atmo) = 0.608494
+The correct component is diff
+A total of 6 events out of 30 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.202233
+P(atmo) = 0.797767
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.359903
+P(atmo) = 0.640097
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.431387
+P(atmo) = 0.568613
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.172024
+P(atmo) = 0.827976
+The correct component is diff
+A total of 4 events out of 26 are misclassified
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.255239
+P(atmo) = 0.744761
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.431839
+P(atmo) = 0.568161
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.188103
+P(atmo) = 0.811897
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.492595
+P(atmo) = 0.507405
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.367160
+P(atmo) = 0.632840
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.248036
+P(atmo) = 0.751964
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.289047
+P(atmo) = 0.710953
+The correct component is diff
+A total of 7 events out of 26 are misclassified
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.636271
+P(atmo) = 0.363729
+The correct component is atmo
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.365678
+P(atmo) = 0.634322
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.651800
+P(atmo) = 0.348200
+The correct component is atmo
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.797948
+P(atmo) = 0.202052
+The correct component is atmo
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.833465
+P(atmo) = 0.166535
+The correct component is atmo
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.271413
+P(atmo) = 0.728587
+The correct component is diff
+A total of 6 events out of 34 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.197762
+P(atmo) = 0.802238
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.303036
+P(atmo) = 0.696964
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.428006
+P(atmo) = 0.571994
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.333180
+P(atmo) = 0.666820
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.269887
+P(atmo) = 0.730113
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.153782
+P(atmo) = 0.846218
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.324182
+P(atmo) = 0.675818
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.153178
+P(atmo) = 0.846822
+The correct component is diff
+A total of 8 events out of 29 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.357170
+P(atmo) = 0.642830
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.397596
+P(atmo) = 0.602404
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.383618
+P(atmo) = 0.616382
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.410527
+P(atmo) = 0.589473
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.609991
+P(atmo) = 0.390009
+The correct component is atmo
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.200064
+P(atmo) = 0.799936
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.236977
+P(atmo) = 0.763023
+The correct component is diff
+A total of 7 events out of 25 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.349340
+P(atmo) = 0.650660
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.646275
+P(atmo) = 0.353725
+The correct component is atmo
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.330606
+P(atmo) = 0.669394
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.164054
+P(atmo) = 0.835946
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.444589
+P(atmo) = 0.555411
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.265724
+P(atmo) = 0.734276
+The correct component is diff
+A total of 6 events out of 23 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.408690
+P(atmo) = 0.591310
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.270781
+P(atmo) = 0.729219
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.212321
+P(atmo) = 0.787679
+The correct component is diff
+A total of 3 events out of 34 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.278458
+P(atmo) = 0.721542
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.225911
+P(atmo) = 0.774089
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.317211
+P(atmo) = 0.682789
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.383880
+P(atmo) = 0.616120
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.288757
+P(atmo) = 0.711243
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.276949
+P(atmo) = 0.723051
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.268012
+P(atmo) = 0.731988
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.173036
+P(atmo) = 0.826964
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.429152
+P(atmo) = 0.570848
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.468751
+P(atmo) = 0.531249
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.293848
+P(atmo) = 0.706152
+The correct component is diff
+A total of 11 events out of 29 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmpbmir1vgz
+done
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.307923
+P(atmo) = 0.692077
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.382907
+P(atmo) = 0.617093
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.538001
+P(atmo) = 0.461999
+The correct component is atmo
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.611285
+P(atmo) = 0.388715
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.275294
+P(atmo) = 0.724706
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.234763
+P(atmo) = 0.765237
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.441440
+P(atmo) = 0.558560
+The correct component is diff
+A total of 7 events out of 22 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.282018
+P(atmo) = 0.717982
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.695280
+P(atmo) = 0.304720
+The correct component is atmo
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.617203
+P(atmo) = 0.382797
+The correct component is atmo
+Event 32 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.738810
+P(atmo) = 0.261190
+The correct component is atmo
+A total of 4 events out of 37 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.202576
+P(atmo) = 0.797424
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.320753
+P(atmo) = 0.679247
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.470077
+P(atmo) = 0.529923
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.487612
+P(atmo) = 0.512388
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.150830
+P(atmo) = 0.849170
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.489169
+P(atmo) = 0.510831
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.144338
+P(atmo) = 0.855662
+The correct component is diff
+A total of 7 events out of 31 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.385285
+P(atmo) = 0.614715
+The correct component is diff
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.275675
+P(atmo) = 0.724325
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.244096
+P(atmo) = 0.755904
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.492452
+P(atmo) = 0.507548
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.665859
+P(atmo) = 0.334141
+The correct component is atmo
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.255894
+P(atmo) = 0.744106
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.595296
+P(atmo) = 0.404704
+The correct component is atmo
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.514912
+P(atmo) = 0.485088
+The correct component is atmo
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.407829
+P(atmo) = 0.592171
+The correct component is diff
+A total of 9 events out of 27 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.499160
+P(atmo) = 0.500840
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.207666
+P(atmo) = 0.792334
+The correct component is diff
+A total of 2 events out of 22 are misclassified
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.780475
+P(atmo) = 0.219525
+The correct component is atmo
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.313679
+P(atmo) = 0.686321
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.674996
+P(atmo) = 0.325004
+The correct component is atmo
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.659041
+P(atmo) = 0.340959
+The correct component is atmo
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.558635
+P(atmo) = 0.441365
+The correct component is atmo
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.499904
+P(atmo) = 0.500096
+The correct component is diff
+Event 35 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.582998
+P(atmo) = 0.417002
+The correct component is atmo
+A total of 7 events out of 36 are misclassified
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.119489
+P(atmo) = 0.880511
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.223181
+P(atmo) = 0.776819
+The correct component is diff
+A total of 2 events out of 31 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.476073
+P(atmo) = 0.523927
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.467277
+P(atmo) = 0.532723
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.154034
+P(atmo) = 0.845966
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.132032
+P(atmo) = 0.867968
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.202186
+P(atmo) = 0.797814
+The correct component is diff
+A total of 5 events out of 26 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.327824
+P(atmo) = 0.672176
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.215792
+P(atmo) = 0.784208
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.201304
+P(atmo) = 0.798696
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.112424
+P(atmo) = 0.887576
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.385634
+P(atmo) = 0.614366
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.153057
+P(atmo) = 0.846943
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.125711
+P(atmo) = 0.874289
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.246954
+P(atmo) = 0.753046
+The correct component is diff
+A total of 8 events out of 21 are misclassified
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.379271
+P(atmo) = 0.620729
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.339549
+P(atmo) = 0.660451
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.367635
+P(atmo) = 0.632365
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.192551
+P(atmo) = 0.807449
+The correct component is diff
+A total of 4 events out of 35 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmp_2qilsd_
+done
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.443278
+P(atmo) = 0.556722
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.547219
+P(atmo) = 0.452781
+The correct component is atmo
+A total of 2 events out of 27 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.297516
+P(atmo) = 0.702484
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.607101
+P(atmo) = 0.392899
+The correct component is atmo
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.778188
+P(atmo) = 0.221812
+The correct component is atmo
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.440542
+P(atmo) = 0.559458
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.434657
+P(atmo) = 0.565343
+The correct component is diff
+A total of 5 events out of 32 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.481653
+P(atmo) = 0.518347
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.429061
+P(atmo) = 0.570939
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.473625
+P(atmo) = 0.526375
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.256502
+P(atmo) = 0.743498
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.363633
+P(atmo) = 0.636367
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.305540
+P(atmo) = 0.694460
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.647219
+P(atmo) = 0.352781
+The correct component is atmo
+A total of 7 events out of 28 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.511633
+P(atmo) = 0.488367
+The correct component is atmo
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.323109
+P(atmo) = 0.676891
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.379924
+P(atmo) = 0.620076
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.190091
+P(atmo) = 0.809909
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.370766
+P(atmo) = 0.629234
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.224595
+P(atmo) = 0.775405
+The correct component is diff
+A total of 6 events out of 23 are misclassified
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.657252
+P(atmo) = 0.342748
+The correct component is atmo
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.534273
+P(atmo) = 0.465727
+The correct component is atmo
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.279793
+P(atmo) = 0.720207
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.458031
+P(atmo) = 0.541969
+The correct component is diff
+Event 36 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.314075
+P(atmo) = 0.685925
+The correct component is diff
+Event 39 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.507043
+P(atmo) = 0.492957
+The correct component is atmo
+A total of 6 events out of 40 are misclassified
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.284574
+P(atmo) = 0.715426
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.639219
+P(atmo) = 0.360781
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.321151
+P(atmo) = 0.678849
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.553778
+P(atmo) = 0.446222
+The correct component is atmo
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.635877
+P(atmo) = 0.364123
+The correct component is atmo
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.632057
+P(atmo) = 0.367943
+The correct component is atmo
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.265777
+P(atmo) = 0.734223
+The correct component is diff
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.271625
+P(atmo) = 0.728375
+The correct component is diff
+A total of 8 events out of 32 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.290156
+P(atmo) = 0.709844
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.377057
+P(atmo) = 0.622943
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.461351
+P(atmo) = 0.538649
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.398006
+P(atmo) = 0.601994
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.427167
+P(atmo) = 0.572833
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.616323
+P(atmo) = 0.383677
+The correct component is atmo
+A total of 6 events out of 27 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.199348
+P(atmo) = 0.800652
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.392432
+P(atmo) = 0.607568
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.370750
+P(atmo) = 0.629250
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.428531
+P(atmo) = 0.571469
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.213248
+P(atmo) = 0.786752
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.358843
+P(atmo) = 0.641157
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.428673
+P(atmo) = 0.571327
+The correct component is diff
+A total of 7 events out of 23 are misclassified
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.406240
+P(atmo) = 0.593760
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.311060
+P(atmo) = 0.688940
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.330019
+P(atmo) = 0.669981
+The correct component is diff
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.319152
+P(atmo) = 0.680848
+The correct component is diff
+Event 37 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.576213
+P(atmo) = 0.423787
+The correct component is atmo
+A total of 5 events out of 38 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.184961
+P(atmo) = 0.815039
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.264595
+P(atmo) = 0.735405
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.208080
+P(atmo) = 0.791920
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.401491
+P(atmo) = 0.598509
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.320073
+P(atmo) = 0.679927
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.337357
+P(atmo) = 0.662643
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.346676
+P(atmo) = 0.653324
+The correct component is diff
+A total of 7 events out of 31 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmp7jqqp_v7
+done
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.402413
+P(atmo) = 0.597587
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.360491
+P(atmo) = 0.639509
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.384549
+P(atmo) = 0.615451
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.303301
+P(atmo) = 0.696699
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.537489
+P(atmo) = 0.462511
+The correct component is atmo
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.661233
+P(atmo) = 0.338767
+The correct component is atmo
+A total of 6 events out of 37 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.326950
+P(atmo) = 0.673050
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.666668
+P(atmo) = 0.333332
+The correct component is atmo
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.458427
+P(atmo) = 0.541573
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.432645
+P(atmo) = 0.567355
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.544346
+P(atmo) = 0.455654
+The correct component is atmo
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.826735
+P(atmo) = 0.173265
+The correct component is atmo
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.406630
+P(atmo) = 0.593370
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.828513
+P(atmo) = 0.171487
+The correct component is atmo
+A total of 8 events out of 31 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.269523
+P(atmo) = 0.730477
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.206240
+P(atmo) = 0.793760
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.211577
+P(atmo) = 0.788423
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.465845
+P(atmo) = 0.534155
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.325501
+P(atmo) = 0.674499
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.363114
+P(atmo) = 0.636886
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.494284
+P(atmo) = 0.505716
+The correct component is diff
+A total of 7 events out of 27 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.812920
+P(atmo) = 0.187080
+The correct component is atmo
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.149025
+P(atmo) = 0.850975
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.432496
+P(atmo) = 0.567504
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.526196
+P(atmo) = 0.473804
+The correct component is atmo
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.495834
+P(atmo) = 0.504166
+The correct component is diff
+A total of 5 events out of 22 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.337029
+P(atmo) = 0.662971
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.170775
+P(atmo) = 0.829225
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.461212
+P(atmo) = 0.538788
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.242344
+P(atmo) = 0.757656
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.342114
+P(atmo) = 0.657886
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.554846
+P(atmo) = 0.445154
+The correct component is atmo
+Event 34 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.575405
+P(atmo) = 0.424595
+The correct component is atmo
+A total of 7 events out of 36 are misclassified
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.323912
+P(atmo) = 0.676088
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.484642
+P(atmo) = 0.515358
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.697642
+P(atmo) = 0.302358
+The correct component is atmo
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.782276
+P(atmo) = 0.217724
+The correct component is atmo
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.543789
+P(atmo) = 0.456211
+The correct component is atmo
+A total of 5 events out of 30 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.317088
+P(atmo) = 0.682912
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.380582
+P(atmo) = 0.619418
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.254571
+P(atmo) = 0.745429
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.345805
+P(atmo) = 0.654195
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.324278
+P(atmo) = 0.675722
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.263327
+P(atmo) = 0.736673
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.628149
+P(atmo) = 0.371851
+The correct component is atmo
+A total of 7 events out of 26 are misclassified
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.220708
+P(atmo) = 0.779292
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.438310
+P(atmo) = 0.561690
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.423246
+P(atmo) = 0.576754
+The correct component is diff
+A total of 3 events out of 21 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.253894
+P(atmo) = 0.746106
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.548936
+P(atmo) = 0.451064
+The correct component is atmo
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.400578
+P(atmo) = 0.599422
+The correct component is diff
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.359399
+P(atmo) = 0.640601
+The correct component is diff
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.206463
+P(atmo) = 0.793537
+The correct component is diff
+A total of 5 events out of 35 are misclassified
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.571009
+P(atmo) = 0.428991
+The correct component is atmo
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.549911
+P(atmo) = 0.450089
+The correct component is atmo
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.202843
+P(atmo) = 0.797157
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.556383
+P(atmo) = 0.443617
+The correct component is atmo
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.271586
+P(atmo) = 0.728414
+The correct component is diff
+A total of 5 events out of 30 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmpte347mj7
+done
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.402127
+P(atmo) = 0.597873
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.485022
+P(atmo) = 0.514978
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.555984
+P(atmo) = 0.444016
+The correct component is atmo
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.283164
+P(atmo) = 0.716836
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.407832
+P(atmo) = 0.592168
+The correct component is diff
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.438993
+P(atmo) = 0.561007
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.539349
+P(atmo) = 0.460651
+The correct component is atmo
+A total of 7 events out of 32 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.225293
+P(atmo) = 0.774707
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.323554
+P(atmo) = 0.676446
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.379093
+P(atmo) = 0.620907
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.175419
+P(atmo) = 0.824581
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.180160
+P(atmo) = 0.819840
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.563934
+P(atmo) = 0.436066
+The correct component is atmo
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.364056
+P(atmo) = 0.635944
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.313168
+P(atmo) = 0.686832
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.571936
+P(atmo) = 0.428064
+The correct component is atmo
+A total of 9 events out of 28 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.209662
+P(atmo) = 0.790338
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.211622
+P(atmo) = 0.788378
+The correct component is diff
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.181833
+P(atmo) = 0.818167
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.174265
+P(atmo) = 0.825735
+The correct component is diff
+A total of 4 events out of 23 are misclassified
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.200119
+P(atmo) = 0.799881
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.676568
+P(atmo) = 0.323432
+The correct component is atmo
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.270300
+P(atmo) = 0.729700
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.218554
+P(atmo) = 0.781446
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.267028
+P(atmo) = 0.732972
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.292877
+P(atmo) = 0.707123
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.451064
+P(atmo) = 0.548936
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.467729
+P(atmo) = 0.532271
+The correct component is diff
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.343197
+P(atmo) = 0.656803
+The correct component is diff
+A total of 9 events out of 39 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.239768
+P(atmo) = 0.760232
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.642767
+P(atmo) = 0.357233
+The correct component is atmo
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.468377
+P(atmo) = 0.531623
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.499684
+P(atmo) = 0.500316
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.619163
+P(atmo) = 0.380837
+The correct component is atmo
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.775546
+P(atmo) = 0.224454
+The correct component is atmo
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.501591
+P(atmo) = 0.498409
+The correct component is atmo
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.252079
+P(atmo) = 0.747921
+The correct component is diff
+A total of 8 events out of 32 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.334081
+P(atmo) = 0.665919
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.452993
+P(atmo) = 0.547007
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.207404
+P(atmo) = 0.792596
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.170048
+P(atmo) = 0.829952
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.186875
+P(atmo) = 0.813125
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.115262
+P(atmo) = 0.884738
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.201982
+P(atmo) = 0.798018
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.338561
+P(atmo) = 0.661439
+The correct component is diff
+A total of 8 events out of 27 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.481441
+P(atmo) = 0.518559
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.361745
+P(atmo) = 0.638255
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.610971
+P(atmo) = 0.389029
+The correct component is atmo
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.213493
+P(atmo) = 0.786507
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.612316
+P(atmo) = 0.387684
+The correct component is atmo
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.309021
+P(atmo) = 0.690979
+The correct component is diff
+A total of 6 events out of 23 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.462593
+P(atmo) = 0.537407
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.428999
+P(atmo) = 0.571001
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.678051
+P(atmo) = 0.321949
+The correct component is atmo
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.251828
+P(atmo) = 0.748172
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.222613
+P(atmo) = 0.777387
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.487186
+P(atmo) = 0.512814
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.322833
+P(atmo) = 0.677167
+The correct component is diff
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.289705
+P(atmo) = 0.710295
+The correct component is diff
+A total of 8 events out of 38 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.359090
+P(atmo) = 0.640910
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.370360
+P(atmo) = 0.629640
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.667267
+P(atmo) = 0.332733
+The correct component is atmo
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.450086
+P(atmo) = 0.549914
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.561132
+P(atmo) = 0.438868
+The correct component is atmo
+A total of 5 events out of 31 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.321590
+P(atmo) = 0.678410
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.308666
+P(atmo) = 0.691334
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.420061
+P(atmo) = 0.579939
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.396339
+P(atmo) = 0.603661
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.237604
+P(atmo) = 0.762396
+The correct component isEvent 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.139463
+P(atmo) = 0.860537
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.456119
+P(atmo) = 0.543881
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.267842
+P(atmo) = 0.732158
+The correct component is diff
+A total of 3 events out of 18 are misclassified
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.254567
+P(atmo) = 0.745433
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.508314
+P(atmo) = 0.491686
+The correct component is atmo
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.656035
+P(atmo) = 0.343965
+The correct component is atmo
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.495387
+P(atmo) = 0.504613
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.671639
+P(atmo) = 0.328361
+The correct component is atmo
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.284660
+P(atmo) = 0.715340
+The correct component is diff
+Event 29 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.662980
+P(atmo) = 0.337020
+The correct component is atmo
+A total of 7 events out of 34 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.441814
+P(atmo) = 0.558186
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.813317
+P(atmo) = 0.186683
+The correct component is atmo
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.529606
+P(atmo) = 0.470394
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.300990
+P(atmo) = 0.699010
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.434887
+P(atmo) = 0.565113
+The correct component is diff
+A total of 5 events out of 29 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.380756
+P(atmo) = 0.619244
+The correct component is diff
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.658095
+P(atmo) = 0.341905
+The correct component is atmo
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.565804
+P(atmo) = 0.434196
+The correct component is atmo
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.451808
+P(atmo) = 0.548192
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.612781
+P(atmo) = 0.387219
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.395729
+P(atmo) = 0.604271
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.355131
+P(atmo) = 0.644869
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.670610
+P(atmo) = 0.329390
+The correct component is atmo
+Event 24 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.601663
+P(atmo) = 0.398337
+The correct component is atmo
+A total of 9 events out of 25 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.346295
+P(atmo) = 0.653705
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.467305
+P(atmo) = 0.532695
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.537107
+P(atmo) = 0.462893
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.707318
+P(atmo) = 0.292682
+The correct component is atmo
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.631964
+P(atmo) = 0.368036
+The correct component is atmo
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.671382
+P(atmo) = 0.328618
+The correct component is atmo
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.499091
+P(atmo) = 0.500909
+The correct component is diff
+Event 38 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.521688
+P(atmo) = 0.478312
+The correct component is atmo
+A total of 8 events out of 40 are misclassified
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.425218
+P(atmo) = 0.574782
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.227045
+P(atmo) = 0.772955
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.163781
+P(atmo) = 0.836219
+The correct component is diff
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.171694
+P(atmo) = 0.828306
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.564296
+P(atmo) = 0.435704
+The correct component is atmo
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.425284
+P(atmo) = 0.574716
+The correct component is diff
+A total of 6 events out of 33 are misclassified
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.464882
+P(atmo) = 0.535118
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.289319
+P(atmo) = 0.710681
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.255688
+P(atmo) = 0.744312
+The correct component is diff
+A total of 3 events out of 29 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.467226
+P(atmo) = 0.532774
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.237615
+P(atmo) = 0.762385
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.156418
+P(atmo) = 0.843582
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.275582
+P(atmo) = 0.724418
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.309884
+P(atmo) = 0.690116
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.484790
+P(atmo) = 0.515210
+The correct component is diff
+A total of 6 events out of 25 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.448617
+P(atmo) = 0.551383
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.317541
+P(atmo) = 0.682459
+The correct component is diff
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.416729
+P(atmo) = 0.583271
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.719607
+P(atmo) = 0.280393
+The correct component is atmo
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.957928
+P(atmo) = 0.042072
+The correct component is atmo
+Event 34 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.566006
+P(atmo) = 0.433994
+The correct component is atmo
+Event 35 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.565900
+P(atmo) = 0.434100
+The correct component is atmo
+A total of 7 events out of 36 are misclassified
+Event 0 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.298865
+P(atmo) = 0.701135
+The correct component is diff
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.306639
+P(atmo) = 0.693361
+The correct component is diff
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.269365
+P(atmo) = 0.730635
+The correct component is diff
+Event 13 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.454217
+P(atmo) = 0.545783
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.495455
+P(atmo) = 0.504545
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.604254
+P(atmo) = 0.395746
+The correct component is atmo
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.253261
+P(atmo) = 0.746739
+The correct component is diff
+A total of 7 events out of 33 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmpjn3q_5i2
+done
+ diff
+A total of 5 events out of 27 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.716528
+P(atmo) = 0.283472
+The correct component is atmo
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.285085
+P(atmo) = 0.714915
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.619349
+P(atmo) = 0.380651
+The correct component is atmo
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.257813
+P(atmo) = 0.742187
+The correct component is diff
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.376794
+P(atmo) = 0.623206
+The correct component is diff
+Event 34 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.389780
+P(atmo) = 0.610220
+The correct component is diff
+Event 38 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.698224
+P(atmo) = 0.301776
+The correct component is atmo
+A total of 7 events out of 39 are misclassified
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.490138
+P(atmo) = 0.509862
+The correct component is diff
+Event 25 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.703187
+P(atmo) = 0.296813
+The correct component is atmo
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.477646
+P(atmo) = 0.522354
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.453116
+P(atmo) = 0.546884
+The correct component is diff
+A total of 4 events out of 33 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.535569
+P(atmo) = 0.464431
+The correct component is atmo
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.389118
+P(atmo) = 0.610882
+The correct component is diff
+Event 8 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.587377
+P(atmo) = 0.412623
+The correct component is atmo
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.393794
+P(atmo) = 0.606206
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.482475
+P(atmo) = 0.517525
+The correct component is diff
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.213612
+P(atmo) = 0.786388
+The correct component is diff
+A total of 6 events out of 28 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.139231
+P(atmo) = 0.860769
+The correct component is diff
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.122836
+P(atmo) = 0.877164
+The correct component is diff
+Event 6 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.163373
+P(atmo) = 0.836627
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.471056
+P(atmo) = 0.528944
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.421252
+P(atmo) = 0.578748
+The correct component is diff
+A total of 5 events out of 24 are misclassified
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.309610
+P(atmo) = 0.690390
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.341989
+P(atmo) = 0.658011
+The correct component is diff
+Event 12 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.462594
+P(atmo) = 0.537406
+The correct component is diff
+Event 15 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.490862
+P(atmo) = 0.509138
+The correct component is diff
+Event 17 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.602923
+P(atmo) = 0.397077
+The correct component is atmo
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.619819
+P(atmo) = 0.380181
+The correct component is atmo
+Event 26 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.268422
+P(atmo) = 0.731578
+The correct component is diff
+A total of 7 events out of 28 are misclassified
+Event 4 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.378243
+P(atmo) = 0.621757
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.191246
+P(atmo) = 0.808754
+The correct component is diff
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.447973
+P(atmo) = 0.552027
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.469473
+P(atmo) = 0.530527
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.345288
+P(atmo) = 0.654712
+The correct component is diff
+Event 27 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.213665
+P(atmo) = 0.786335
+The correct component is diff
+A total of 6 events out of 32 are misclassified
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.567182
+P(atmo) = 0.432818
+The correct component is atmo
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.601549
+P(atmo) = 0.398451
+The correct component is atmo
+Event 14 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.898975
+P(atmo) = 0.101025
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.259495
+P(atmo) = 0.740505
+The correct component is diff
+Event 18 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.690835
+P(atmo) = 0.309165
+The correct component is atmo
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.346605
+P(atmo) = 0.653395
+The correct component is diff
+Event 21 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.854168
+P(atmo) = 0.145832
+The correct component is atmo
+Event 23 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.426525
+P(atmo) = 0.573475
+The correct component is diff
+A total of 8 events out of 28 are misclassified
+Event 2 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.257026
+P(atmo) = 0.742974
+The correct component is diff
+Event 3 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.155212
+P(atmo) = 0.844788
+The correct component is diff
+Event 7 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.532423
+P(atmo) = 0.467577
+The correct component is atmo
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.303625
+P(atmo) = 0.696375
+The correct component is diff
+A total of 4 events out of 23 are misclassified
+Event 1 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.563485
+P(atmo) = 0.436515
+The correct component is atmo
+Event 5 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.459971
+P(atmo) = 0.540029
+The correct component is diff
+Event 9 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.249005
+P(atmo) = 0.750995
+The correct component is diff
+Event 10 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.308724
+P(atmo) = 0.691276
+The correct component is diff
+Event 22 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.254502
+P(atmo) = 0.745498
+The correct component is diff
+Event 28 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.297299
+P(atmo) = 0.702701
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.641380
+P(atmo) = 0.358620
+The correct component is atmo
+Event 31 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.507919
+P(atmo) = 0.492081
+The correct component is atmo
+Event 33 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.327156
+P(atmo) = 0.672844
+The correct component is diff
+Event 38 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.244677
+P(atmo) = 0.755323
+The correct component is diff
+A total of 10 events out of 41 are misclassified
+Event 11 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.229350
+P(atmo) = 0.770650
+The correct component is diff
+Event 16 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.604096
+P(atmo) = 0.395904
+The correct component is atmo
+Event 19 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.207660
+P(atmo) = 0.792340
+The correct component is diff
+Event 20 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.172202
+P(atmo) = 0.827798
+The correct component is diff
+Event 30 is misclassified
+P(src0) = 0.000000
+P(diff) = 0.608991
+P(atmo) = 0.391009
+The correct component is atmo
+A total of 5 events out of 32 are misclassified
+deleting tmpfiles dir: /ptmp/fran/tmp_ujby0qs
+done
+deleting tmpfiles dir: /ptmp/fran/tmpplh4dhoz
+done
+deleting tmpfiles dir: /ptmp/fran/tmp621k20h_
+done
