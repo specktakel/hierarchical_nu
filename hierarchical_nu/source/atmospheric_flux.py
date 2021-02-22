@@ -10,7 +10,7 @@ import crflux.models as crf
 
 
 from .flux_model import FluxModel
-from ..cache import Cache
+from ..utils.cache import Cache
 from ..backend import (
     UserDefinedFunction,
     StanArray,

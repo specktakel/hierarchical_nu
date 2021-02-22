@@ -1,15 +1,14 @@
 import sys
 import os
 
-sys.path.append("../")
-from python.model_check import ModelCheck
+from hierarchical_nu.model_check import ModelCheck
 
 """
 Script to run fits to simulations for 
 a selection of known input parameters.
 
 The configuration is specified in the YAMLConfig 
-files as detailed in python.config 
+files as detailed in hierarchical_nu.utils.config 
 """
 
 n_jobs = int(sys.argv[1])

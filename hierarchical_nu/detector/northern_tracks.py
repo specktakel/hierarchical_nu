@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 
-from ..cache import Cache
+from ..utils.cache import Cache
 from ..backend import (
     VMFParameterization,
     PolynomialParameterization,

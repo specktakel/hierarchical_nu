@@ -27,10 +27,10 @@ from .fit import (
     generate_stan_fit_code_,
     generate_stan_fit_code_hybrid_,
 )
-from .config import FileConfig, ParameterConfig
+from .utils.config import FileConfig, ParameterConfig
 
-from python.simulation import Simulation
-from python.fit import StanFit
+from .simulation import Simulation
+from .fit import StanFit
 
 
 class ModelCheck:

@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from typing import Sequence, Tuple
 
-from ..cache import Cache
+from ..utils.cache import Cache
 from ..backend import (
     VMFParameterization,
     PolynomialParameterization,

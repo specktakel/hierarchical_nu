@@ -8,13 +8,13 @@ from scipy import stats
 from typing import List
 from astropy import units as u
 
-from ..cache import Cache
+from ..utils.cache import Cache
 from ..backend import (
     UserDefinedFunction,
     DistributionMode,
 )
 
-from ..fitting_tools import Residuals
+from ..utils.fitting_tools import Residuals
 
 import logging
 

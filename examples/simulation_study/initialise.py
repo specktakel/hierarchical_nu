@@ -1,9 +1,7 @@
 import numpy as np
 import sys
 
-sys.path.append("../")
-
-from python.model_check import ModelCheck
+from hierarchical_nu.model_check import ModelCheck
 
 ModelCheck.initialise_env(output_dir="output")
 
