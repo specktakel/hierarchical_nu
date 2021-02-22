@@ -1,3 +1,8 @@
+## All files without extensions
+*
+!/**/
+!*.*
+
 ## Python
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -144,6 +149,10 @@ software/simulation_study/output/
 
 # Notebooks, as using jupytext
 *.ipynb
+
+## Stan-related
+*.hpp
+
 
 
 
