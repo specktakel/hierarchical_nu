@@ -19,6 +19,7 @@ from .events import Events
 from .stan_interface import (
     generate_stan_fit_code_,
     generate_stan_fit_code_hybrid_,
+    STAN_PATH,
 )
 
 
@@ -34,7 +35,6 @@ class StanFit:
         detector_model: DetectorModel,
         events: Events,
         observation_time: u.year,
-        output_dir="stan_files",
     ):
         """
         To set up and run fits in Stan.
@@ -44,7 +44,7 @@ class StanFit:
         self._detector_model_type = detector_model
         self._events = events
         self._observation_time = observation_time
-        self.output_dir = output_dir
+        self._stan_path = STAN_PATH
 
         self._sources.organise()
 
@@ -90,8 +90,7 @@ class StanFit:
     def compile_stan_code(self, include_paths=None):
 
         if not include_paths:
-            this_dir = os.path.abspath("")
-            include_paths = [os.path.join(this_dir, self.output_dir)]
+            include_paths = [self._stan_path]
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename, stanc_options={"include_paths": include_paths}
@@ -377,7 +376,7 @@ class StanFit:
         else:
             atmo_flux_model = None
 
-        filename = self.output_dir + "/model_code"
+        filename = os.path.join(self._stan_path, "model_code")
 
         if self._detector_model_type == IceCubeDetectorModel:
 

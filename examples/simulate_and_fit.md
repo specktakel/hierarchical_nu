@@ -44,10 +44,10 @@ diffuse_norm = Parameter(2e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True,
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
-#Emin_det = Parameter(1E5 * u.GeV, "Emin_det", fixed=True)
+Emin_det = Parameter(1E5 * u.GeV, "Emin_det", fixed=True)
 
-Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
-Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
+#Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
+#Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
 
 # Single PS for testing and usual components
 point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
@@ -84,8 +84,8 @@ from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 ```python
 obs_time = 10 * u.year
 #sim = Simulation(my_sources, CascadesDetectorModel, obs_time)
-#sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
-sim = Simulation(my_sources, IceCubeDetectorModel, obs_time)
+sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
+#sim = Simulation(my_sources, IceCubeDetectorModel, obs_time)
 ```
 
 ```python
@@ -121,8 +121,8 @@ obs_time = 10 * u.year
 
 ```python
 #fit = StanFit(my_sources, CascadesDetectorModel, events, obs_time)
-#fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
-fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time)
+fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
+#fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time)
 ```
 
 ```python

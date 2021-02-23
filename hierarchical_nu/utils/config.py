@@ -1,6 +1,6 @@
 import os
 from configya import YAMLConfig
-from .detector.icecube import IceCubeDetectorModel
+from ..detector.icecube import IceCubeDetectorModel
 
 cwd = os.getcwd()
 

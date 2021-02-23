@@ -1,7 +1,7 @@
 functions
 {
-#include utils.stan
 #include interpolation.stan
+#include utils.stan
 real AtmopshericNumuFlux(real true_energy,vector true_dir)
 {
 real AtmosphericFluxPolyCoeffs[30,100] = {{ -1.98015639, -2.06990581, -2.28102841, -2.5048243 , -2.73832406,
