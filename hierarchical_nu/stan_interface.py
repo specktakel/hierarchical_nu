@@ -1,5 +1,6 @@
 import numpy as np
 import collections
+import os
 
 from .events import TRACKS, CASCADES
 
@@ -34,13 +35,16 @@ from .detector.northern_tracks import NorthernTracksDetectorModel
 from .detector.cascades import CascadesDetectorModel
 
 
+STAN_PATH = os.path.join(os.path.dirname(__file__), "stan")
+
+
 def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):
 
     with StanFileGenerator(filename) as atmo_gen:
 
         with FunctionsContext():
-            _ = Include("utils.stan")
             _ = Include("interpolation.stan")
+            _ = Include("utils.stan")
 
             # Increasing theta points too much makes compilation very slow
             # Could switch to passing array as data if problematic
@@ -92,10 +96,9 @@ def generate_main_sim_code_(
     with StanFileGenerator(filename) as sim_gen:
 
         with FunctionsContext():
+            _ = Include("interpolation.stan")
             _ = Include("utils.stan")
             _ = Include("vMF.stan")
-            _ = Include("interpolation.stan")
-            _ = Include("sim_functions.stan")
 
             spectrum_rng = ps_spec_shape.make_stan_sampling_func("spectrum_rng")
             flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
@@ -360,10 +363,9 @@ def generate_main_sim_code_hybrid_(
     with StanFileGenerator(filename) as sim_gen:
 
         with FunctionsContext():
+            _ = Include("interpolation.stan")
             _ = Include("utils.stan")
             _ = Include("vMF.stan")
-            _ = Include("interpolation.stan")
-            _ = Include("sim_functions.stan")
 
             spectrum_rng = ps_spec_shape.make_stan_sampling_func("spectrum_rng")
             flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
@@ -743,10 +745,9 @@ def generate_stan_fit_code_hybrid_(
     with StanFileGenerator(filename) as fit_gen:
 
         with FunctionsContext():
+            _ = Include("interpolation.stan")
             _ = Include("utils.stan")
             _ = Include("vMF.stan")
-            _ = Include("interpolation.stan")
-            _ = Include("sim_functions.stan")
 
             dm = collections.OrderedDict()
 
@@ -1121,10 +1122,9 @@ def generate_stan_fit_code_(
     with StanFileGenerator(filename) as fit_gen:
 
         with FunctionsContext():
+            _ = Include("interpolation.stan")
             _ = Include("utils.stan")
             _ = Include("vMF.stan")
-            _ = Include("interpolation.stan")
-            _ = Include("sim_functions.stan")
             dm = detector_model_type()
 
             spectrum_lpdf = ps_spec_shape.make_stan_lpdf_func("spectrum_logpdf")

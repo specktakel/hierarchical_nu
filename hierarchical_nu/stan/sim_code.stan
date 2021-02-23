@@ -1,9 +1,8 @@
 functions
 {
+#include interpolation.stan
 #include utils.stan
 #include vMF.stan
-#include interpolation.stan
-#include sim_functions.stan
 real NorthernTracksEffAreaHist(real value_0,real value_1)
 {
 real hist_array[280,11] = {{0.00000000e+00,0.00000000e+00,0.00000000e+00,0.00000000e+00,

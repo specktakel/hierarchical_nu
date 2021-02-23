@@ -26,6 +26,7 @@ from .stan_interface import (
     generate_atmospheric_sim_code_,
     generate_main_sim_code_,
     generate_main_sim_code_hybrid_,
+    STAN_PATH,
 )
 
 
@@ -40,7 +41,6 @@ class Simulation:
         sources: Sources,
         detector_model: DetectorModel,
         observation_time: u.year,
-        output_dir="stan_files",
     ):
         """
         To set up and run simulations.
@@ -58,10 +58,7 @@ class Simulation:
         self._diffuse_bg_comp = IsotropicDiffuseBG in flux_types
         self._atmospheric_comp = AtmosphericNuMuFlux in flux_types
 
-        self.output_dir = output_dir
-
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
+        self._stan_path = STAN_PATH
 
         self._exposure_integral = collections.OrderedDict()
 
@@ -98,8 +95,7 @@ class Simulation:
     def compile_stan_code(self, include_paths=None):
 
         if not include_paths:
-            this_dir = os.path.abspath("")
-            include_paths = [os.path.join(this_dir, self.output_dir)]
+            include_paths = [self._stan_path]
 
         stanc_options = {"include_paths": include_paths}
 
@@ -515,7 +511,7 @@ class Simulation:
 
         atmo_flux_model = self._sources.atmo_component().flux_model
 
-        filename = self.output_dir + "/atmo_gen"
+        filename = os.path.join(self._stan_path, "atmo_gen")
 
         self._atmo_sim_filename = generate_atmospheric_sim_code_(
             filename, atmo_flux_model, theta_points=30
@@ -525,7 +521,7 @@ class Simulation:
 
         ps_spec_shape = self._sources.sources[0].flux_model.spectral_shape
 
-        filename = self.output_dir + "/sim_code"
+        filename = os.path.join(self._stan_path, "sim_code")
 
         if len(self._detector_model_type.event_types) > 1:
 
