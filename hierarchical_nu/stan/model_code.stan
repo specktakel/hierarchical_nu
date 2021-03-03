@@ -1836,7 +1836,7 @@ parameters
 real<lower=0, upper=1e+60> L;
 real<lower=0.0, upper=1e-06> F_diff;
 real<lower=0.0, upper=1e-06> F_atmo;
-real<lower=1.0, upper=4.0> alpha;
+real<lower=1.0, upper=4> alpha;
 vector<lower=Esrc_min, upper=Esrc_max> [N] Esrc;
 }
 transformed parameters
