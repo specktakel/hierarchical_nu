@@ -72,7 +72,7 @@ class ModelCheck:
         output_dir,
     ):
         """
-        Script to setup enviroment for parallel
+        Script to set up enviroment for parallel
         model checking runs.
 
         * Runs MCEq for atmo flux if needed
