@@ -121,8 +121,8 @@ obs_time = 10 * u.year
 
 ```python
 #fit = StanFit(my_sources, CascadesDetectorModel, events, obs_time)
-fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
-#fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time)
+#fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
+fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time)
 ```
 
 ```python
@@ -137,7 +137,7 @@ fit.plot_trace()
 ```
 
 ```python
-fit.save("output/northern_tracks_test.h5")
+fit.save("output/test.h5")
 ```
 
 We can check the results of the fit against the known true values from the above simulation.
