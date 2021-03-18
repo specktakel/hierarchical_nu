@@ -137,10 +137,8 @@ class Simulation:
 
     def _extract_sim_output(self):
 
-        energies = self._sim_output.stan_variable("Edet").values[0] * u.GeV
-        dirs = (
-            self._sim_output.stan_variable("event").values.reshape(3, len(energies)).T
-        )
+        energies = self._sim_output.stan_variable("Edet")[0] * u.GeV
+        dirs = self._sim_output.stan_variable("event")[0].reshape((3, len(energies))).T
         coords = SkyCoord(
             dirs.T[0],
             dirs.T[1],
@@ -148,11 +146,11 @@ class Simulation:
             representation_type="cartesian",
             frame="icrs",
         )
-        event_types = self._sim_output.stan_variable("event_type").values[0]
+        event_types = self._sim_output.stan_variable("event_type")[0]
         event_types = [int(_) for _ in event_types]
 
         # Kappa parameter of VMF distribution
-        kappa = self._sim_output.stan_variable("kappa").values[0]
+        kappa = self._sim_output.stan_variable("kappa")[0]
         # Equivalent 1 sigma errors in deg
         ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
 
@@ -169,14 +167,15 @@ class Simulation:
                 inputs_folder.create_dataset(key, data=value)
 
             outputs_folder = sim_folder.create_group("outputs")
-            N = len(self._sim_output.stan_variable("Edet").values[0])
+            N = len(self._sim_output.stan_variable("Edet")[0])
             for key, value in self._sim_output.stan_variables().items():
+
                 if key == "event":
-                    outputs_folder.create_dataset(
-                        key, data=value.values.reshape(3, N).T
-                    )
+                    reshaped_events = value[0].reshape((3, N)).T
+                    outputs_folder.create_dataset(key, data=reshaped_events)
+
                 else:
-                    outputs_folder.create_dataset(key, data=value.values[0])
+                    outputs_folder.create_dataset(key, data=value[0])
 
             source_folder = sim_folder.create_group("source")
             source_folder.create_dataset(
@@ -190,8 +189,8 @@ class Simulation:
 
     def show_spectrum(self):
 
-        Esrc = self._sim_output.stan_variable("Esrc").values[0]
-        E = self._sim_output.stan_variable("E").values[0]
+        Esrc = self._sim_output.stan_variable("Esrc")[0]
+        E = self._sim_output.stan_variable("E")[0]
         Edet = self.events.energies.value
         Emin_det = self._get_min_det_energy().to(u.GeV).value
 
@@ -216,9 +215,9 @@ class Simulation:
     def show_skymap(self):
 
         lam = list(
-            self._sim_output.stan_variable("Lambda").values[0] - 1
+            self._sim_output.stan_variable("Lambda")[0] - 1
         )  # avoid Stan-style indexing
-        event_type = self._sim_output.stan_variable("event_type").values[0]
+        event_type = self._sim_output.stan_variable("event_type")[0]
         Ns = self._sim_inputs["Ns"]
         label_cmap = plt.cm.Set1(list(range(self._sources.N)))
         N_src_ev = sum([lam.count(_) for _ in range(Ns)])
@@ -303,10 +302,8 @@ class Simulation:
                 seed=seed,
             )
 
-            atmo_energies = atmo_sim.stan_variable("energy").values
-            atmo_energies = atmo_energies.reshape(len(atmo_energies))
-
-            atmo_directions = atmo_sim.stan_variable("omega").values
+            atmo_energies = atmo_sim.stan_variable("energy")
+            atmo_directions = atmo_sim.stan_variable("omega")
 
             # Somehow precision of unit_vector gets lost from Stan to here - check
             atmo_directions = [

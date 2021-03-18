@@ -160,7 +160,7 @@ fit.plot_trace()
 ```
 
 ```python
-fit.save("output/northern_tracks_test.h5")
+fit.save("output/test.h5")
 ```
 
 We can check the results of the fit against the known true values from the above simulation. The `SimInfo` class pulls the interesting information out of our saved simulation for this purpose. 

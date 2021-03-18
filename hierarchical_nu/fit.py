@@ -155,7 +155,7 @@ class StanFit:
 
         chain = self._fit_output.stan_variables()
 
-        samples_list = [chain[key].values.T[0] for key in var_names]
+        samples_list = [chain[key] for key in var_names]
 
         if truths:
             truths_list = [truths[key] for key in var_names]
@@ -180,7 +180,7 @@ class StanFit:
                 inputs_folder.create_dataset(key, data=value)
 
             for key, value in self._fit_output.stan_variables().items():
-                outputs_folder.create_dataset(key, data=value.values.T[0])
+                outputs_folder.create_dataset(key, data=value)
 
     def check_classification(self, sim_outputs):
         """
@@ -230,13 +230,7 @@ class StanFit:
 
     def _get_event_classifications(self):
 
-        N = self._fit_inputs["N"]
-        Nsc = self._sources.N
-        Nsamp = self._fit_output.chains * self._fit_output.num_draws
-
-        logprob = self._fit_output.stan_variable("lp").values.reshape(Nsamp, Nsc, N)
-
-        logprob = logprob.transpose(2, 1, 0)
+        logprob = self._fit_output.stan_variable("lp").transpose(1, 2, 0)
 
         n_comps = np.shape(logprob)[1]
         if self._sources.atmo_component:
