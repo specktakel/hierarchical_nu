@@ -44,11 +44,21 @@ diffuse_norm = Parameter(2e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True,
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
+```
+
+When setting the minimum detected energy, there are a few options. If fitting one event type (ie. tracks or cascades), just use `Emin_det`. This is also fine if you are fitting both event types, but want to set the same minimum detected energy. `Emin_det_tracks` and `Emin_det_cascades` are to be used when fitting both event types, but setting different minimum detected energies. 
+
+
+```python
 #Emin_det = Parameter(1E5 * u.GeV, "Emin_det", fixed=True)
 
 Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
 Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
+```
 
+Next, we use these high-level parameters to define sources. This can be done for either individual sources, or a list loaded from a file. For now we just work with a single point source. There are functions to add the different background components.
+
+```python
 # Single PS for testing and usual components
 point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
                                                 np.pi*u.rad, 
