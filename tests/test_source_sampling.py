@@ -203,3 +203,33 @@ def test_source_sampling(output_directory, random_seed):
     assert np.mean(atmo_energy) == pytest.approx(186.838111)
 
     assert np.mean(atmo_coszen) == pytest.approx(-0.012845337)
+
+    # Compare atmo with true spectrum
+    atmo_bg_flux = AtmosphericNuMuFlux(1e2 * u.GeV, 1e9 * u.GeV)
+
+    energies = np.logspace(2, 9, 100) << u.GeV
+
+    log_bins = np.linspace(2, 4, 50)
+
+    integrate_per_log = (
+        atmo_bg_flux.integral(
+            10 ** log_bins[:-1] * u.GeV,
+            10 ** log_bins[1:] * u.GeV,
+            (-np.pi / 2) * u.rad,
+            (np.pi / 2) * u.rad,
+            0 * u.rad,
+            2 * np.pi * u.rad,
+        )
+        / np.diff(log_bins)
+        / atmo_bg_flux.total_flux_int
+    )
+
+    fluxes = atmo_bg_flux.total_flux(energies) / atmo_bg_flux.total_flux_int
+
+    E_hist, _ = np.histogram(
+        np.log10(atmo_energy),
+        bins=np.log10(energies.value),
+        density=True,
+    )
+
+    assert max(E_hist) == pytest.approx(max(integrate_per_log.value), 0.1)
