@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from cmdstanpy import CmdStanModel
+import pytest
 
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.backend.stan_generator import (
@@ -143,6 +144,176 @@ def test_distributions_northern_tracks(output_directory, random_seed):
 
     ang_res = output.stan_variable("ang_res")
 
+    eff_area = output.stan_variable("eff_area")
+
     assert np.mean(e_res) == -13.9071762520618
 
     assert np.mean(ang_res) == -43.526770393359996
+
+    assert np.max(eff_area) == 28718.9
+
+    assert np.min(eff_area) == 0.0
+
+
+def generate_rv_test_code(output_directory):
+
+    rng_file_name = os.path.join(output_directory, "nt_rng")
+    pdf_file_name = os.path.join(output_directory, "nt_pdf")
+
+    with StanFileGenerator(rng_file_name) as code_gen_rng:
+
+        with FunctionsContext():
+
+            Include("interpolation.stan")
+            Include("utils.stan")
+            Include("vMF.stan")
+
+            with DataContext():
+
+                true_energy = ForwardVariableDef("true_energy", "real")
+                true_dir = ForwardVariableDef("true_dir", "vector[3]")
+
+            with GeneratedQuantitiesContext():
+
+                ntd_rng = NorthernTracksDetectorModel(mode=DistributionMode.RNG)
+                ntd_pdf = NorthernTracksDetectorModel(mode=DistributionMode.PDF)
+                rec_energy = ForwardVariableDef("rec_energy", "real")
+                rec_dir = ForwardVariableDef("rec_dir", "vector[3]")
+                # rec_energy_lh = ForwardVariableDef("rec_energy_lh", "real")
+                # rec_dir_lh = ForwardVariableDef("rec_dir_lh", "real")
+
+                rec_energy << ntd_rng.energy_resolution(true_energy)
+                rec_dir << ntd_rng.angular_resolution(true_energy, true_dir)
+                # rec_energy_lh << ntd_pdf.energy_resolution(true_energy, 10**rec_energy)
+                # rec_dir_lh << ntd_pdf.angular_resolution(true_energy, true_dir, rec_dir)
+
+        code_gen_rng.generate_single_file()
+
+    with StanFileGenerator(pdf_file_name) as code_gen_pdf:
+
+        with FunctionsContext():
+
+            Include("interpolation.stan")
+            Include("utils.stan")
+            Include("vMF.stan")
+
+        with DataContext():
+
+            true_energy = ForwardVariableDef("true_energy", "real")
+            e_recos = ForwardArrayDef("e_recos", "real", ["[100]"])
+
+        with GeneratedQuantitiesContext():
+
+            e_res_result = ForwardArrayDef("e_res", "real", ["[100]"])
+            ntd_pdf = NorthernTracksDetectorModel(mode=DistributionMode.PDF)
+
+            with ForLoopContext(1, 100, "i") as i:
+                e_res_result[i] << ntd_pdf.energy_resolution(true_energy, e_recos[i])
+
+        code_gen_pdf.generate_single_file()
+
+    return code_gen_rng.filename, code_gen_pdf.filename
+
+
+def test_rv_generation(output_directory, random_seed):
+
+    # Get Stan files
+    rng_file_name, pdf_file_name = generate_rv_test_code(output_directory)
+
+    # Compile Stan code
+    stanc_options = {"include_paths": [STAN_PATH]}
+
+    rng_stan_model = CmdStanModel(
+        stan_file=rng_file_name,
+        stanc_options=stanc_options,
+    )
+
+    pdf_stan_model = CmdStanModel(
+        stan_file=pdf_file_name,
+        stanc_options=stanc_options,
+    )
+
+    zenith = np.pi / 2
+
+    # Check rng matches pdf for true energy of 1e4 GeV
+    data = {
+        "true_energy": 1e4,
+        "true_dir": [np.sin(zenith), 0, np.cos(zenith)],
+        "e_recos": np.logspace(2, 8, 100),
+    }
+
+    output_rng = rng_stan_model.sample(
+        data=data,
+        iter_sampling=10000,
+        chains=1,
+        fixed_param=True,
+        seed=random_seed,
+    )
+    output_pdf = pdf_stan_model.sample(
+        data=data,
+        iter_sampling=1,
+        chains=1,
+        fixed_param=True,
+        seed=random_seed,
+    )
+
+    reco_energy_samples = output_rng.stan_variable("rec_energy")
+    reco_dir_samples = output_rng.stan_variable("rec_dir")
+
+    reco_energy_pdf = np.exp(output_pdf.stan_variable("e_res")[0])
+
+    E_bins = np.log10(data["e_recos"])
+
+    E_hist, _ = np.histogram(
+        reco_energy_samples,
+        bins=E_bins,
+        density=True,
+    )
+
+    reco_zenith = np.degrees(np.arccos(reco_dir_samples[:, 2]))
+
+    assert max(E_hist) == pytest.approx(max(reco_energy_pdf), 0.1)
+
+    assert np.mean(reco_zenith) == pytest.approx(90, 0.1)
+
+    # Check rng matches pdf for true energy of 1e6 GeV
+    data = {
+        "true_energy": 1e6,
+        "true_dir": np.asarray([np.sin(zenith), 0, np.cos(zenith)]).T,
+        "e_recos": np.logspace(2, 8, 100),
+    }
+
+    output_rng = rng_stan_model.sample(
+        data=data,
+        iter_sampling=10000,
+        chains=1,
+        fixed_param=True,
+        seed=random_seed,
+    )
+
+    output_pdf = pdf_stan_model.sample(
+        data=data,
+        iter_sampling=1,
+        chains=1,
+        fixed_param=True,
+        seed=random_seed,
+    )
+
+    reco_energy_samples = output_rng.stan_variable("rec_energy")
+    reco_dir_samples = output_rng.stan_variable("rec_dir")
+
+    reco_energy_pdf = np.exp(output_pdf.stan_variable("e_res")[0])
+
+    E_bins = np.log10(data["e_recos"])
+
+    E_hist, _ = np.histogram(
+        reco_energy_samples,
+        bins=E_bins,
+        density=True,
+    )
+
+    reco_zenith = np.degrees(np.arccos(reco_dir_samples[:, 2]))
+
+    assert max(E_hist) == pytest.approx(max(reco_energy_pdf), 0.1)
+
+    assert np.mean(reco_zenith) == pytest.approx(90, 0.1)
