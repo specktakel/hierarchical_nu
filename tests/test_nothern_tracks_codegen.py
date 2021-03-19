@@ -5,22 +5,17 @@ import pytest
 
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.backend.stan_generator import (
-    StanGenerator,
     GeneratedQuantitiesContext,
     DataContext,
     FunctionsContext,
     Include,
     ForLoopContext,
     StanFileGenerator,
-    WhileLoopContext,
-    TransformedDataContext,
 )
-from hierarchical_nu.backend.operations import FunctionCall
 from hierarchical_nu.backend.variable_definitions import (
     ForwardVariableDef,
     ForwardArrayDef,
 )
-from hierarchical_nu.backend.parameterizations import LogParameterization
 from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
 
@@ -179,13 +174,9 @@ def generate_rv_test_code(output_directory):
                 ntd_pdf = NorthernTracksDetectorModel(mode=DistributionMode.PDF)
                 rec_energy = ForwardVariableDef("rec_energy", "real")
                 rec_dir = ForwardVariableDef("rec_dir", "vector[3]")
-                # rec_energy_lh = ForwardVariableDef("rec_energy_lh", "real")
-                # rec_dir_lh = ForwardVariableDef("rec_dir_lh", "real")
 
                 rec_energy << ntd_rng.energy_resolution(true_energy)
                 rec_dir << ntd_rng.angular_resolution(true_energy, true_dir)
-                # rec_energy_lh << ntd_pdf.energy_resolution(true_energy, 10**rec_energy)
-                # rec_dir_lh << ntd_pdf.angular_resolution(true_energy, true_dir, rec_dir)
 
         code_gen_rng.generate_single_file()
 
