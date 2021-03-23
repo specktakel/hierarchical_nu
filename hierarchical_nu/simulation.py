@@ -9,7 +9,7 @@ import logging
 import collections
 
 import ligo.skymap.plot
-from pyipn.io.plotting.spherical_circle import SphericalCircle
+from .utils.plotting import SphericalCircle
 
 from .detector.detector_model import DetectorModel
 from .detector.icecube import IceCubeDetectorModel
