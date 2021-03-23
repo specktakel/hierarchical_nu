@@ -16,7 +16,7 @@ The above command will go ahead and install any dependencies that you may be mis
 
 ### Setting up Stan
 
-The hierarchical model is implemented in [Stan](https://mc-stan.org), using the [CmdStan](https://github.com/stan-dev/cmdstan) and [CmdStanPy](https://github.com/stan-dev/cmdstanpy) interfaces. `cmdstanpy` will be installed as needed using pip if you follow the above instructions. However if you have not set up and compiled CmdStan before, the extra step detailed below is needed. See the CmdStanPy [installation docs](https://mc-stan.org/cmdstanpy/installation.html) for more information.
+The hierarchical model is implemented in [Stan](https://mc-stan.org), using the [CmdStan](https://github.com/stan-dev/cmdstan) and [CmdStanPy](https://github.com/stan-dev/cmdstanpy) interfaces. CmdStanPy will be installed as needed using pip if you follow the above instructions. However if you have not set up and compiled CmdStan before, the extra step detailed below is needed. See the CmdStanPy [installation docs](https://mc-stan.org/cmdstanpy/installation.html) for more information.
 
 
 You can set up CmdStan by running the following python code:
