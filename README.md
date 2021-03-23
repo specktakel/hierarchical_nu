@@ -34,3 +34,10 @@ install_cmdstan
 
 This will make and install CmdStan in the `~/.cmdstan` directory.
 
+## Examples
+
+You can find some example notebooks stored as markdown files in the `examples/` directory. To run these notebooks, use the [jupytext](https://github.com/mwouts/jupytext) package to open the markdown files.
+
+The first time that you use hierarchical_nu, some longer calculations will be run and cached locally. This is a one-time cost, so please be patient. 
+
+More documentation coming soon!
