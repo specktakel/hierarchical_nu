@@ -141,11 +141,11 @@ def test_distributions_northern_tracks(output_directory, random_seed):
 
     eff_area = output.stan_variable("eff_area")
 
-    assert np.mean(e_res) == -13.9071762520618
+    assert np.mean(e_res) == pytest.approx(-13.9071762520618, 0.1)
 
-    assert np.mean(ang_res) == -43.526770393359996
+    assert np.mean(ang_res) == pytest.approx(-43.526770393359996, 0.1)
 
-    assert np.max(eff_area) == 28718.9
+    assert np.max(eff_area) == pytest.approx(28718.9)
 
     assert np.min(eff_area) == 0.0
 
