@@ -8,9 +8,14 @@ eval `ssh-agent`
 ssh-add ~/.ssh/my_key
 ```
 
-Finally, to build the container, run:
+To build the container, run:
 
 ```
 docker build --ssh default=$SSH_AUTH_SOCK . -t hierarchical-nu
 ```
 
+To convert from docker hub to a singularity image:
+
+```
+singularity pull docker://cescalara/hierarchical-nu:latest
+```
