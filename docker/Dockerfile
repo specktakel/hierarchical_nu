@@ -17,13 +17,13 @@ RUN apt-get update && apt-get install -y git \
 RUN mkdir -p -m 0600 /root/.ssh && ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 # Install hierarchical_nu and dependencies
-RUN --mount=type=ssh pip install --user git+ssh://git@github.com/cescalara/hierarchical_nu.git
+RUN --mount=type=ssh pip install git+ssh://git@github.com/cescalara/hierarchical_nu.git
 
 # Install CmdStan
 RUN install_cmdstan
 
 # Install jupyter 
-RUN pip install --user jupyter notebook jupyterthemes
+RUN pip install jupyter notebook jupyterthemes
 
 # Set decent notebook theme
 RUN jt -t grade3 -T -N -kl
