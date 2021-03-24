@@ -6,6 +6,8 @@ In order to verify the implementation of the statistical model, we can fit simul
 
 The configuration of the simulation study is handled via the `FileConfig` and `ParameterConfig` classes in the `hierarchical_nu.utils.config` module. Running `initialise.py 1` will generate the default YAML config files, as specified in the `config` module. These will be placed in `~/.hierarchical_nu` and can be editied later to change the input parameter values. See the comments in `hierarchical_nu.utils.config` for units and explanations.
 
+Make sure that your choice of parameters makes sense and doesn't lead to a ridiculous number (>1000) of neutrino events which could result in very slow simulations and fits. Ideally, first check the choice is sensible by running a notebook similar to the `simulate_and_fit` example. 
+
 ### How to run
 
 Once you have set up the parameters for your simulation in the configuration file, first run the initialisation script. This will make sure that all heavy computations are run and cached locally, output folders are created, and Stan code is precompiled. Configuration files will also be generated if they do not exist.
