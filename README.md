@@ -45,6 +45,11 @@ More documentation coming soon!
 
 ## Running on the ODSL server
 
+Once you have an MPI account set up, access through 
+
+```
+ssh user@odslserv01.mpp.mpg.de
+```
 
 ### Local install
 
