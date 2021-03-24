@@ -41,3 +41,15 @@ You can find some example notebooks stored as markdown files in the `examples/` 
 The first time that you use hierarchical_nu, some longer calculations will be run and cached locally. This is a one-time cost, so please be patient. 
 
 More documentation coming soon!
+
+
+## Running on the ODSL server
+
+For easy use, there is a docker container provided in `docker/`. Instructions on how to re-build the docker image are also provided there, but there is a public version available [here](https://hub.docker.com/repository/docker/cescalara/hierarchical-nu) on Docker Hub. This can be used on the ODSL server through singularity. First, use singularity to grab the docker container from Docker Hub and covert it to the correct format:
+
+```
+singularity pull docker://cescalara/hierarchical-nu:latest
+```
+
+After this, you should find a `.sif` file in the same directory in which you issued the above command. 
+
