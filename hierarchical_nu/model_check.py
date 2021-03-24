@@ -371,7 +371,7 @@ class ModelCheck:
             sim.run(seed=s)
             self.sim = sim
 
-            lam = sim._sim_output.stan_variable("Lambda").values[0]
+            lam = sim._sim_output.stan_variable("Lambda")[0]
             sim_output = {}
             sim_output["Lambda"] = lam
 
@@ -387,15 +387,11 @@ class ModelCheck:
             self.fit = fit
 
             # Store output
-            outputs["F_diff"].append(
-                fit._fit_output.stan_variable("F_diff").values.T[0]
-            )
-            outputs["F_atmo"].append(
-                fit._fit_output.stan_variable("F_atmo").values.T[0]
-            )
-            outputs["L"].append(fit._fit_output.stan_variable("L").values.T[0])
-            outputs["f"].append(fit._fit_output.stan_variable("f").values.T[0])
-            outputs["alpha"].append(fit._fit_output.stan_variable("alpha").values.T[0])
+            outputs["F_diff"].append(fit._fit_output.stan_variable("F_diff"))
+            outputs["F_atmo"].append(fit._fit_output.stan_variable("F_atmo"))
+            outputs["L"].append(fit._fit_output.stan_variable("L"))
+            outputs["f"].append(fit._fit_output.stan_variable("f"))
+            outputs["alpha"].append(fit._fit_output.stan_variable("alpha"))
 
             fit.check_classification(sim_output)
 
