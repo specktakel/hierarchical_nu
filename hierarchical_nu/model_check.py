@@ -371,7 +371,7 @@ class ModelCheck:
             sim.run(seed=s)
             self.sim = sim
 
-            lam = sim._sim_output.stan_variable("Lambda")[0] - 1
+            lam = sim._sim_output.stan_variable("Lambda")[0]
             sim_output = {}
             sim_output["Lambda"] = lam
 
