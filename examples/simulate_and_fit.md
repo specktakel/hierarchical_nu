@@ -5,11 +5,11 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.10.2
+      jupytext_version: 1.11.0
   kernelspec:
-    display_name: bayes
+    display_name: hierarchical_nu
     language: python
-    name: bayes
+    name: hierarchical_nu
 ---
 
 # Demonstrate simulation and fit
@@ -20,11 +20,6 @@ from matplotlib import pyplot as plt
 import h5py
 import corner
 import astropy.units as u
-```
-
-```python
-import sys
-sys.path.append("../")
 ```
 
 ## Sources
