@@ -27,7 +27,7 @@ from .fit import (
     generate_stan_fit_code_,
     generate_stan_fit_code_hybrid_,
 )
-from .utils.config import FileConfig, ParameterConfig
+from .utils.config import hnu_config
 
 from .simulation import Simulation
 from .fit import StanFit
@@ -80,7 +80,7 @@ class ModelCheck:
         Only need to run once before calling ModelCheck(...).run()
         """
 
-        parameter_config = ParameterConfig()
+        parameter_config = hnu_config["parameter_config"]
 
         # Run MCEq computation
         print("Setting up MCEq run for AtmopshericNumuFlux")
@@ -88,7 +88,7 @@ class ModelCheck:
         Emax = parameter_config["Emax"] * u.GeV
         atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
 
-        file_config = FileConfig()
+        file_config = hnu_config["file_config"]
 
         atmo_sim_name = file_config["atmo_sim_filename"][:-5]
         _ = generate_atmospheric_sim_code_(
@@ -338,8 +338,8 @@ class ModelCheck:
 
         self._initialise_sources()
 
-        file_config = FileConfig()
-        parameter_config = ParameterConfig()
+        file_config = hnu_config["file_config"]
+        parameter_config = hnu_config["parameter_config"]
 
         detector_model_type = ModelCheck._get_dm_from_config(
             parameter_config["detector_model_type"]
