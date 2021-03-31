@@ -64,7 +64,7 @@ You can now launch the container with `venv odsl`. This will mount the container
 
 You can now proceed as you would with a local install, as described below.
 
-**NB: There are still some issues with the compilation of Stan, so a simple local install is recommend for now (see below)**
+**NB: There are still some issues with the compilation of Stan in the container, so a simple local install is recommend for now (see below)**
 
 ### Local install
 
