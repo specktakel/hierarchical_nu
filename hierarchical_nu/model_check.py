@@ -144,7 +144,7 @@ class ModelCheck:
         print("Generated fit Stan file at:", file_config["fit_filename"])
 
         print("Compile Stan models")
-        stanc_options = {"include_paths": file_config["include_paths"]}
+        stanc_options = {"include_paths": list(file_config["include_paths"])}
 
         _ = CmdStanModel(
             stan_file=file_config["atmo_sim_filename"],
@@ -367,7 +367,7 @@ class ModelCheck:
             sim.set_stan_filenames(
                 file_config["atmo_sim_filename"], file_config["main_sim_filename"]
             )
-            sim.compile_stan_code(include_paths=file_config["include_paths"])
+            sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
             sim.run(seed=s)
             self.sim = sim
 
@@ -381,7 +381,7 @@ class ModelCheck:
             fit = StanFit(self._sources, detector_model_type, sim.events, obs_time)
             fit.precomputation(exposure_integral=sim._exposure_integral)
             fit.set_stan_filename(file_config["fit_filename"])
-            fit.compile_stan_code(include_paths=file_config["include_paths"])
+            fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
             fit.run(seed=s)
 
             self.fit = fit

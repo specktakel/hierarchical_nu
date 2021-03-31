@@ -52,12 +52,12 @@ def test_user_config_merge():
 
         loaded_config = OmegaConf.load(path)
 
-        popsynth_config = OmegaConf.merge(hnu_config, loaded_config)
+        hnu_config = OmegaConf.merge(hnu_config, loaded_config)
 
         path.unlink()
 
     assert hnu_config["file_config"]["atmo_sim_filename"] == "my_new_name.stan"
 
-    assert popsynth_config["parameter_config"]["alpha"] == 2.6
+    assert hnu_config["parameter_config"]["alpha"] == 2.6
 
-    assert popsynth_config["parameter_config"]["L"] == 1e47
+    assert hnu_config["parameter_config"]["L"] == 1e47

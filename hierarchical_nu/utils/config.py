@@ -1,16 +1,17 @@
 import os
 from pathlib import Path
-from dataclasses import dataclass
+from typing import List
+from dataclasses import dataclass, field
 from omegaconf import OmegaConf
 
 
 from ..stan_interface import STAN_PATH
 
-_config_path = "~/.config/hierarchical_nu"
+_config_path = Path("~/.config/hierarchical_nu/").expanduser()
 
-_config_name = "hnu_config.yml"
+_config_name = Path("hnu_config.yml")
 
-_config_file = Path(os.path.join(_config_path, _config_name))
+_config_file = _config_path / _config_name
 
 
 @dataclass
@@ -19,9 +20,11 @@ class FileConfig:
     atmo_sim_filename: str = os.path.join(STAN_PATH, "atmo_gen.stan")
     main_sim_filename: str = os.path.join(STAN_PATH, "sim_code.stan")
     fit_filename: str = os.path.join(STAN_PATH, "model_code.stan")
-    include_paths: list = [
-        STAN_PATH,
-    ]
+    include_paths: List[str] = field(default_factory=list)
+
+    def __post_init__(self):
+
+        self.include_paths = [STAN_PATH]
 
 
 @dataclass
@@ -56,7 +59,7 @@ class HierarchicalNuConfig:
 
 
 # Load default config
-hnu_config: HierarchicalNuConfig = HierarchicalNuConfig()
+hnu_config: HierarchicalNuConfig = OmegaConf.structured(HierarchicalNuConfig)
 
 # Merge user config
 if _config_file.is_file():
@@ -67,3 +70,13 @@ if _config_file.is_file():
         hnu_config,
         _local_config,
     )
+
+# Write defaults
+else:
+
+    # Make directory if needed
+    _config_path.mkdir(parents=True, exist_ok=True)
+
+    with _config_file.open("w") as f:
+
+        OmegaConf.save(config=hnu_config, f=f.name)
