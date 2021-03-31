@@ -4,7 +4,7 @@ In order to verify the implementation of the statistical model, we can fit simul
 
 ### The configuration files
 
-The configuration of the simulation study is handled via the `FileConfig` and `ParameterConfig` classes in the `hierarchical_nu.utils.config` module. Running `initialise.py 1` will generate the default YAML config files, as specified in the `config` module. These will be placed in `~/.hierarchical_nu` and can be editied later to change the input parameter values. See the comments in `hierarchical_nu.utils.config` for units and explanations.
+The configuration of the simulation study is handled via the `HierarchicalNuConfig` class and `OmegaConf` in the `hierarchical_nu.utils.config` module. Running `initialise.py 1` will generate the default YAML config, as specified in the `config` module. These will be placed in `~/.config/hierarchical_nu` and can be editied later to change the input parameter values. See the comments in `hierarchical_nu.utils.config` for units and explanations.
 
 Make sure that your choice of parameters makes sense and doesn't lead to a ridiculous number (>1000) of neutrino events which could result in very slow simulations and fits. Ideally, first check the choice is sensible by running a notebook similar to the `simulate_and_fit` example. 
 
