@@ -1,8 +1,6 @@
 import sys
 import os
 
-sys.path.append("../../")
-
 from hierarchical_nu.model_check import ModelCheck
 
 """
