@@ -48,12 +48,27 @@ More documentation coming soon!
 Once you have an MPI account set up, access through 
 
 ```
-ssh user@odslserv01.mpp.mpg.de
+ssh <user>@odslserv01.mpp.mpg.de
 ```
+
+where `<user>` is your username.
+
+### Using the ODSL singularity container
+
+Our sysadmin maintains a singularity container for us to run on. To set it up, follow these steps.
+* Add `export PATH="/.hb/raidg01/sw/venv/noarch/current/bin:$PATH"` to your `~/.bashrc`, this will let you access the useful `venv` executable
+* Make a folder in your home directory with the name of the venv e.g. `~/.venv/odsl`
+* Symlink the singularity image to this directory with `ln -s /remote/ceph2/group/odsl/vm/singularity/images/mppmu_odsl-ml_latest.sif ~/.venv/odsl/rootfs.sif`
+
+You can now launch the container with `venv odsl`. This will mount the container `user` directory to `/user/` and your home directory to `/homedir/`. 
+
+You can now proceed as you would with a local install, as described below.
+
+**NB: There are still some issues with the compilation of Stan, so a simple local install is recommend for now (see below)**
 
 ### Local install
 
-Start by installing your favourite python virtualenv interface.
+Start by installing your favourite python virtualenv interface. For example...
 
 ```
 pip install --user virtualenvwrapper
@@ -61,41 +76,18 @@ pip install --user virtualenvwrapper
 
 Make sure you also set any necessary paths in your shell profile. Make a new virtualenv and then follow the above installation steps.
 
-
-### Running through a singularity container - coming soon!
-
-For easy use, there is a docker container provided in `docker/`. Instructions on how to re-build the docker image and convert to singularity format are also provided there, but there is a public version available [here](https://hub.docker.com/repository/docker/cescalara/hierarchical-nu) on Docker Hub. This can be used on the ODSL server through [singularity](https://sylabs.io/guides/3.7/user-guide/index.html). The image is located at `/remote/ceph2/user/f/fran/containers/hierarchical-nu_latest.sif`. You can make a symlink to access it locally with
-
-```
-ln -s /remote/ceph2/user/f/fran/containers/hierarchical-nu_latest.sif local/path
-```
-
-You can launch a shell within this image using:
-
-```
-singularity shell hierarchical-nu_latest.sif
-```
-
-Or simply execute a single command within the container using:
-
-```
-singularity exec hierarchical-nu_latest.sif command
-```
-
-When inside the container, you have the same username as on the machine, and singularity mounts `/home/$USER`, `/tmp`, and `$PWD` into your container by default. You can add additional directories via the `--bind` command. Please see the [singularity docs](https://sylabs.io/guides/3.7/user-guide/index.html) for more information.
-
 ### Remote jupyter notebook
 
 As a "hello world" example, you can try to run the `simulate_and_fit` notebook in `examples`. Clone this repo to the server and run
 
 ```
-jupyter-notebook --no-browser --port=8080
+jupyter-notebook --no-browser --port=<remote_port>
 ```
 
-Then, on your local machine run
+Where `<remote_port> is something like 8080`. Then, on your local machine run
 
 ```
-ssh -N -f -L localhost:8888:localhost:8080 user@odslserv01.mpp.mpg.de
+ssh -N -f -L localhost:<local_port>:localhost:<remote_port> <user>@odslserv01.mpp.mpg.de
 ```
 
-and navigate to `localhost:8888` in your browser. From here, find the `simulate_and_fit` example to check things are running.
+and navigate to `localhost:<local_port>` in your browser. You should have make sure that `<local_port>` is free and. different from `<remote_port>`. From here, find the `simulate_and_fit` example to check things are running.
