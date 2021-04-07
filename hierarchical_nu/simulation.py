@@ -138,7 +138,7 @@ class Simulation:
     def _extract_sim_output(self):
 
         energies = self._sim_output.stan_variable("Edet")[0] * u.GeV
-        dirs = self._sim_output.stan_variable("event")[0].reshape((3, len(energies))).T
+        dirs = self._sim_output.stan_variable("event")[0]
         coords = SkyCoord(
             dirs.T[0],
             dirs.T[1],
