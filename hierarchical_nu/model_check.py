@@ -275,7 +275,7 @@ class ModelCheck:
 
     def _initialise_sources(self):
 
-        parameter_config = ParameterConfig()
+        parameter_config = hnu_config["parameter_config"]
 
         Parameter.clear_registry()
         index = Parameter(
