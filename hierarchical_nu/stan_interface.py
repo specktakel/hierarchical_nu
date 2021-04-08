@@ -488,7 +488,7 @@ def generate_main_sim_code_hybrid_(
                 F[k] << StringExpression(
                     [L, "/ (4 * pi() * pow(", D[k], " * ", 3.086e22, ", 2))"]
                 )
-                StringExpression([F[k], "*=", flux_fac(alpha, Esrc_min, Esrc_max)])
+                StringExpression([F[k], "*=", flux_fac(src_index, Esrc_min, Esrc_max)])
                 StringExpression([Fsrc, " += ", F[k]])
 
             if diffuse_bg_comp:

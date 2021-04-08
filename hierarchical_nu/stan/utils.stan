@@ -13,7 +13,7 @@
 vector get_exposure_factor_atmo(real src_index, real diff_index, vector src_index_grid, vector diff_index_grid,
 				vector[] integral_grid, real atmo_integ_val, real T, int Ns) {
 
-  vector[K] eps;
+  vector[Ns+2] eps;
 
   /* Point sources */
   for (k in 1:Ns) {
@@ -38,8 +38,7 @@ vector get_exposure_factor_atmo(real src_index, real diff_index, vector src_inde
 vector get_exposure_factor(real src_index, real diff_index, vector src_index_grid, vector diff_index_grid,
 			   vector[] integral_grid, real T, int Ns) {
 
-  int K = Ns+1;
-  vector[K] eps;
+  vector[Ns+1] eps;
 
   /* Point sources */
   for (k in 1:Ns) {
@@ -48,7 +47,7 @@ vector get_exposure_factor(real src_index, real diff_index, vector src_index_gri
       
   }
 
-  eps[Ns+1] = interpolate(diff_index_grid, integral_grid[Ns+1], diff_index)
+  eps[Ns+1] = interpolate(diff_index_grid, integral_grid[Ns+1], diff_index);
 
   return eps * T;
 }

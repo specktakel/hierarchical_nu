@@ -1037,7 +1037,15 @@ real hist_edge_0[281] = {1.00000000e+02,1.05925373e+02,1.12201845e+02,1.18850223
 real hist_edge_1[12] = {-1. ,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0. , 0.1};
 return hist_array[binary_search(value_0, hist_edge_0)][binary_search(value_1, hist_edge_1)];
 }
-real spectrum_rng(real alpha,real e_low,real e_up)
+real src_spectrum_rng(real alpha,real e_low,real e_up)
+{
+real uni_sample;
+real norm;
+norm = ((1-alpha)/((e_up^(1-alpha))-(e_low^(1-alpha))));
+uni_sample = uniform_rng(0, 1);
+return ((((uni_sample*(1-alpha))/norm)+(e_low^(1-alpha)))^(1/(1-alpha)));
+}
+real diff_spectrum_rng(real alpha,real e_low,real e_up)
 {
 real uni_sample;
 real norm;
@@ -1240,7 +1248,8 @@ int Ns;
 unit_vector[3] varpi[Ns];
 vector[Ns] D;
 vector[Ns+1] z;
-real alpha;
+real src_index;
+real diff_index;
 real Emin_det_tracks;
 real Emin_det_cascades;
 real Esrc_min;
@@ -1248,7 +1257,8 @@ real Esrc_max;
 real L;
 real F_diff;
 int Ngrid;
-vector[Ngrid] alpha_grid;
+vector[Ngrid] src_index_grid;
+vector[Ngrid] diff_index_grid;
 vector[Ngrid] integral_grid_t[Ns+1];
 vector[Ngrid] integral_grid_c[Ns+1];
 real aeff_t_max;
@@ -1285,7 +1295,7 @@ Fs = 0.0;
 for (k in 1:Ns)
 {
 F[k] = L/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
-F[k]*=flux_conv(alpha, Esrc_min, Esrc_max);
+F[k]*=flux_conv(src_index, Esrc_min, Esrc_max);
 Fs += F[k];
 }
 F[Ns+1] = F_diff;
@@ -1293,8 +1303,8 @@ F[Ns+2] = F_atmo;
 Ftot = ((Fs+F_diff)+F_atmo);
 f = Fs/Ftot;
 print("f: ", f);
-eps_t = get_exposure_factor_atmo(alpha, alpha_grid, integral_grid_t, atmo_integ_val, T, Ns);
-eps_c = get_exposure_factor(alpha, alpha_grid, integral_grid_c, T, Ns);
+eps_t = get_exposure_factor_atmo(src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, atmo_integ_val, T, Ns);
+eps_c = get_exposure_factor(src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_c, T, Ns);
 Nex_t = get_Nex(F, eps_t);
 w_exposure_t = get_exposure_weights(F, eps_t);
 Nex_c = get_Nex(F, eps_c);
@@ -1350,9 +1360,14 @@ atmo_index = categorical_rng(atmo_weights);
 omega = atmo_directions[atmo_index];
 }
 cosz[i] = cos(omega_to_zenith(omega));
-if(Lambda[i] <= (Ns+1))
+if(Lambda[i] <= Ns)
 {
-Esrc[i] = spectrum_rng(alpha, Esrc_min, Esrc_max);
+Esrc[i] = src_spectrum_rng(src_index, Esrc_min, Esrc_max);
+E[i] = (Esrc[i]/(1+z[Lambda[i]]));
+}
+else if(Lambda[i] == (Ns+1))
+{
+Esrc[i] = diff_spectrum_rng(diff_index, Esrc_min, Esrc_max);
 E[i] = (Esrc[i]/(1+z[Lambda[i]]));
 }
 else if(Lambda[i] == (Ns+2))
@@ -1402,9 +1417,14 @@ else if(Lambda[i] == (Ns+1))
 omega = sphere_lim_rng(1, 0);
 }
 cosz[i] = cos(omega_to_zenith(omega));
-if(Lambda[i] <= (Ns+1))
+if(Lambda[i] <= Ns)
 {
-Esrc[i] = spectrum_rng(alpha, Esrc_min, Esrc_max);
+Esrc[i] = src_spectrum_rng(src_index, Esrc_min, Esrc_max);
+E[i] = (Esrc[i]/(1+z[Lambda[i]]));
+}
+else if(Lambda[i] == (Ns+1))
+{
+Esrc[i] = diff_spectrum_rng(diff_index, Esrc_min, Esrc_max);
 E[i] = (Esrc[i]/(1+z[Lambda[i]]));
 }
 Pdet[i] = (CascadesEffectiveArea(E[i], omega)/aeff_c_max);

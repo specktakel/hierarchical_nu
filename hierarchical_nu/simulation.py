@@ -337,12 +337,12 @@ class Simulation:
         for event_type in self._detector_model_type.event_types:
 
             sim_inputs["Ngrid"] = len(
-                self._exposure_integral[event_type].par_grids["index"]
+                self._exposure_integral[event_type].par_grids["src_index"]
             )
 
-            sim_inputs["index_grid"] = self._exposure_integral[event_type].par_grids[
-                "index"
-            ]
+            sim_inputs["src_index_grid"] = self._exposure_integral[
+                event_type
+            ].par_grids["src_index"]
 
             sim_inputs["diff_index_grid"] = self._exposure_integral[
                 event_type
@@ -384,7 +384,8 @@ class Simulation:
                 1.0 / len(atmo_energies), len(atmo_energies)
             )
 
-        sim_inputs["alpha"] = Parameter.get_parameter("index").value
+        sim_inputs["src_index"] = Parameter.get_parameter("src_index").value
+        sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
         sim_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         sim_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
 
@@ -525,6 +526,8 @@ class Simulation:
 
         ps_spec_shape = self._sources.sources[0].flux_model.spectral_shape
 
+        diff_spec_shape = self._sources.diffuse_component().flux_model.spectral_shape
+
         filename = os.path.join(self._stan_path, "sim_code")
 
         if len(self._detector_model_type.event_types) > 1:
@@ -532,6 +535,7 @@ class Simulation:
             self._main_sim_filename = generate_main_sim_code_hybrid_(
                 filename,
                 ps_spec_shape,
+                diff_spec_shape,
                 self._detector_model_type,
                 self._diffuse_bg_comp,
                 self._atmospheric_comp,
@@ -542,6 +546,7 @@ class Simulation:
             self._main_sim_filename = generate_main_sim_code_(
                 filename,
                 ps_spec_shape,
+                diff_spec_shape,
                 self._detector_model_type,
                 self._diffuse_bg_comp,
                 self._atmospheric_comp,
@@ -629,12 +634,20 @@ def _get_expected_Nnu_(sim_inputs, integral_grid, atmospheric_comp=False):
     using stan sim_inputs.
     """
 
-    alpha = sim_inputs["alpha"]
-    alpha_grid = sim_inputs["alpha_grid"]
+    src_index = sim_inputs["src_index"]
+    src_index_grid = sim_inputs["src_index_grid"]
+
+    diff_index = sim_inputs["diff_index"]
+    diff_index_grid = sim_inputs["diff_index_grid"]
+
+    Ns = sim_inputs["Ns"]
 
     eps = []
-    for igrid in integral_grid:
-        eps.append(np.interp(alpha, alpha_grid, igrid))
+
+    for i in range(Ns):
+        eps.append(np.interp(src_index, src_index_grid, integral_grid[i]))
+
+    eps.append(np.interp(diff_index, diff_index_grid, integral_grid[Ns]))
 
     if atmospheric_comp:
         eps.append(sim_inputs["atmo_integ_val"])
@@ -644,7 +657,9 @@ def _get_expected_Nnu_(sim_inputs, integral_grid, atmospheric_comp=False):
     F = []
     for d in sim_inputs["D"]:
         flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
-        flux = flux * flux_conv_(alpha, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"])
+        flux = flux * flux_conv_(
+            src_index, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
+        )
         F.append(flux)
     F.append(sim_inputs["F_diff"])
 

@@ -306,7 +306,7 @@ class Sources:
         self,
         flux_norm: Parameter,
         norm_energy: u.GeV,
-        diff_index: Parameter = None,
+        diff_index: Parameter,
     ):
         """
         Add diffuse component based on point
@@ -315,11 +315,6 @@ class Sources:
         :param flux_norm: The flux normalization for this component
         :param norm_energy: The energy at which the flux norm is defined
         """
-
-        if not diff_index:
-
-            # grab index from point sources
-            diff_index = Parameter.get_parameter("index")
 
         Emin = Parameter.get_parameter("Emin")
         Emax = Parameter.get_parameter("Emax")
