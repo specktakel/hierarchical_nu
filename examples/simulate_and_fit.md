@@ -29,12 +29,13 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 ```
 
-First set up the high-level parameters.
+First set up the high-level parameters. The parameters defined here are singletons that can be accessed throught the program. The `src_index` and `diff_index` refer to the power law spectral index of the point sources and diffuse background. Currently, all sources share the same index, and the background can also be the same or defined separately. `L` and `F_diff` are used to set the normalisation of the point source and diffuse background spectra, defined at `Enorm`. `Emin` and `Emax` bound the source power law spectra for all sources, and define the energy band over which `L` is calculated. 
 
 ```python
 # define high-level parameters
 Parameter.clear_registry()
-index = Parameter(2.0, "index", fixed=False, par_range=(1.0, 4))
+src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
+diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
 L = Parameter(3E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
 diffuse_norm = Parameter(2e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
@@ -43,7 +44,7 @@ Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 ```
 
-When setting the minimum detected energy, there are a few options. If fitting one event type (ie. tracks or cascades), just use `Emin_det`. This is also fine if you are fitting both event types, but want to set the same minimum detected energy. `Emin_det_tracks` and `Emin_det_cascades` are to be used when fitting both event types, but setting different minimum detected energies. 
+When setting the minimum detected (i.e. reconstructed) energy, there are a few options. If fitting one event type (ie. tracks or cascades), just use `Emin_det`. This is also fine if you are fitting both event types, but want to set the same minimum detected energy. `Emin_det_tracks` and `Emin_det_cascades` are to be used when fitting both event types, but setting different minimum detected energies. 
 
 ```python
 #Emin_det = Parameter(1E5 * u.GeV, "Emin_det", fixed=True)
@@ -58,7 +59,7 @@ Next, we use these high-level parameters to define sources. This can be done for
 # Single PS for testing and usual components
 point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
                                                 np.pi*u.rad, 
-                                                L, index, 0.43, Emin, Emax)
+                                                L, src_index, 0.43, Emin, Emax)
 
 # Multiple sources from file
 #source_file = "my_source_file.h5"
@@ -70,7 +71,8 @@ my_sources = Sources()
 #my_sources.select_below_redshift(0.8)
 my_sources.add(point_source)
 
-my_sources.add_diffuse_component(diffuse_norm, Enorm.value) # auto diffuse component 
+# auto diffuse component 
+my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
 my_sources.add_atmospheric_component() # auto atmo component
 ```
 
