@@ -88,6 +88,7 @@ def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):
 def generate_main_sim_code_(
     filename,
     ps_spec_shape,
+    diff_spec_shape,
     detector_model_type,
     diffuse_bg_comp=True,
     atmospheric_comp=True,
@@ -100,7 +101,8 @@ def generate_main_sim_code_(
             _ = Include("utils.stan")
             _ = Include("vMF.stan")
 
-            spectrum_rng = ps_spec_shape.make_stan_sampling_func("spectrum_rng")
+            src_spectrum_rng = ps_spec_shape.make_stan_sampling_func("src_spectrum_rng")
+            diff_spectrum_rng = diff_spec_shape.make_stan_sampling_func("diff_spectrum_rng")
             flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
 
         with DataContext():
@@ -118,7 +120,8 @@ def generate_main_sim_code_(
                 z = ForwardVariableDef("z", "vector[Ns]")
 
             # Energies
-            alpha = ForwardVariableDef("alpha", "real")
+            src_index = ForwardVariableDef("src_index", "real")
+            diff_index = ForwardVariableDef("diff_index", "real")
             Emin_det = ForwardVariableDef("Emin_det", "real")
             Esrc_min = ForwardVariableDef("Esrc_min", "real")
             Esrc_max = ForwardVariableDef("Esrc_max", "real")
@@ -129,7 +132,8 @@ def generate_main_sim_code_(
 
             # Precomputed quantities
             Ngrid = ForwardVariableDef("Ngrid", "int")
-            index_grid = ForwardVariableDef("index_grid", "vector[Ngrid]")
+            src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
+            diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
             
             if diffuse_bg_comp:
                 integral_grid = ForwardArrayDef(
@@ -190,7 +194,7 @@ def generate_main_sim_code_(
                 F[k] << StringExpression(
                     [L, "/ (4 * pi() * pow(", D[k], " * ", 3.086e22, ", 2))"]
                 )
-                StringExpression([F[k], "*=", flux_fac(alpha, Esrc_min, Esrc_max)])
+                StringExpression([F[k], "*=", flux_fac(src_index, Esrc_min, Esrc_max)])
                 StringExpression([Fsrc, " += ", F[k]])
 
             if diffuse_bg_comp:
@@ -211,12 +215,12 @@ def generate_main_sim_code_(
 
             if atmospheric_comp:
                 eps << FunctionCall(
-                    [alpha, index_grid, integral_grid, atmo_integ_val, T, Ns],
+                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid, atmo_integ_val, T, Ns],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps << FunctionCall(
-                    [alpha, index_grid, integral_grid, T, Ns], "get_exposure_factor"
+                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid, T, Ns], "get_exposure_factor"
                 )
 
             Nex << StringExpression(["get_Nex(", F, ", ", eps, ")"])
@@ -287,9 +291,14 @@ def generate_main_sim_code_(
                         [FunctionCall([omega], "omega_to_zenith")], "cos"
                     )
                     # Sample energy
-                    with IfBlockContext([StringExpression([lam[i], " <= ", Ns + 1])]):
-                        Esrc[i] << spectrum_rng(alpha, Esrc_min, Esrc_max)
+                    with IfBlockContext([StringExpression([lam[i], " <= ", Ns])]):
+                        Esrc[i] << src_spectrum_rng(src_index, Esrc_min, Esrc_max)
                         E[i] << Esrc[i] / (1 + z[lam[i]])
+
+                    if diffuse_bg_comp:
+                        with ElseIfBlockContext([StringExpression([lam[i], " == ", Ns + 1])]):
+                            E[i] << diff_spectrum_rng(diff_index, Esrc_min, Esrc_max)
+                            E[i] << Esrc[i] / (1 + z[lam[i]])
 
                     if atmospheric_comp:
                         with ElseIfBlockContext(
@@ -356,6 +365,7 @@ def generate_main_sim_code_(
 def generate_main_sim_code_hybrid_(
     filename,
     ps_spec_shape,
+    diff_spec_shape,
     detector_model_type,
     diffuse_bg_comp=True,
     atmospheric_comp=True,
@@ -368,7 +378,8 @@ def generate_main_sim_code_hybrid_(
             _ = Include("utils.stan")
             _ = Include("vMF.stan")
 
-            spectrum_rng = ps_spec_shape.make_stan_sampling_func("spectrum_rng")
+            src_spectrum_rng = ps_spec_shape.make_stan_sampling_func("src_spectrum_rng")
+            diff_spectrum_rng = diff_spec_shape.make_stan_sampling_func("diff_spectrum_rng")
             flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
 
         with DataContext():
@@ -386,7 +397,8 @@ def generate_main_sim_code_hybrid_(
                 z = ForwardVariableDef("z", "vector[Ns]")
 
             # Energies
-            alpha = ForwardVariableDef("alpha", "real")
+            src_index = ForwardVariableDef("src_index", "real")
+            diff_index = ForwardVariableDef("diff_index", "real")
             Emin_det_tracks = ForwardVariableDef("Emin_det_tracks", "real")
             Emin_det_cascades = ForwardVariableDef("Emin_det_cascades", "real")
             Esrc_min = ForwardVariableDef("Esrc_min", "real")
@@ -398,7 +410,9 @@ def generate_main_sim_code_hybrid_(
 
             # Precomputed quantities
             Ngrid = ForwardVariableDef("Ngrid", "int")
-            index_grid = ForwardVariableDef("index_grid", "vector[Ngrid]")
+            src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
+            diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
+            
             if diffuse_bg_comp:
                 integral_grid_t = ForwardArrayDef(
                     "integral_grid_t", "vector[Ngrid]", Ns_1p_str
@@ -495,16 +509,16 @@ def generate_main_sim_code_hybrid_(
 
             if atmospheric_comp:
                 eps_t << FunctionCall(
-                    [alpha, index_grid, integral_grid_t, atmo_integ_val, T, Ns],
+                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, atmo_integ_val, T, Ns],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps_t << FunctionCall(
-                    [alpha, index_grid, integral_grid_t, T, Ns],
+                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, T, Ns],
                     "get_exposure_factor",
                 )
             eps_c << FunctionCall(
-                [alpha, index_grid, integral_grid_c, T, Ns],
+                [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_c, T, Ns],
                 "get_exposure_factor",
             )
 
@@ -597,9 +611,14 @@ def generate_main_sim_code_hybrid_(
                     )
 
                     # Sample energy
-                    with IfBlockContext([StringExpression([lam[i], " <= ", Ns + 1])]):
-                        Esrc[i] << spectrum_rng(alpha, Esrc_min, Esrc_max)
+                    with IfBlockContext([StringExpression([lam[i], " <= ", Ns])]):
+                        Esrc[i] << src_spectrum_rng(src_index, Esrc_min, Esrc_max)
                         E[i] << Esrc[i] / (1 + z[lam[i]])
+
+                    if diffuse_bg_comp:
+                        with ElseIfBlockContext([StringExpression([lam[i], " == ", Ns + 1])]):
+                            Esrc[i] << diff_spectrum_rng(diff_index, Esrc_min, Esrc_max)
+                            E[i] << Esrc[i] / (1 + z[lam[i]])
 
                     if atmospheric_comp:
                         with ElseIfBlockContext(
@@ -683,9 +702,14 @@ def generate_main_sim_code_hybrid_(
                     )
 
                     # Sample energy
-                    with IfBlockContext([StringExpression([lam[i], " <= ", Ns + 1])]):
-                        Esrc[i] << spectrum_rng(alpha, Esrc_min, Esrc_max)
+                    with IfBlockContext([StringExpression([lam[i], " <= ", Ns])]):
+                        Esrc[i] << src_spectrum_rng(src_index, Esrc_min, Esrc_max)
                         E[i] << Esrc[i] / (1 + z[lam[i]])
+
+                    if diffuse_bg_comp:
+                        with ElseIfBlockContext([StringExpression([lam[i], " == ", Ns + 1])]):
+                            Esrc[i] << diff_spectrum_rng(diff_index, Esrc_min, Esrc_max)
+                            E[i] << Esrc[i] / (1 + z[lam[i]])
 
                     # Test against Aeff
                     Pdet[i] << dm_pdf["cascades"].effective_area(
@@ -725,7 +749,7 @@ def generate_main_sim_code_hybrid_(
                 # Detection effects
                 event[i] << dm_rng["cascades"].angular_resolution(E[i], omega)
                 kappa[i] << dm_rng["cascades"].angular_resolution.kappa()
-                                
+                
     sim_gen.generate_single_file()
 
     return sim_gen.filename

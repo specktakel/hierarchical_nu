@@ -10,7 +10,7 @@
  * Get exposure factor from integral grids and source info.
  * Includes atmospheric component with known index. Units of [m^2 s].
  */
-vector get_exposure_factor_atmo(real index, real diff_index, vector index_grid, vector diff_index_grid,
+vector get_exposure_factor_atmo(real src_index, real diff_index, vector src_index_grid, vector diff_index_grid,
 				vector[] integral_grid, real atmo_integ_val, real T, int Ns) {
 
   vector[K] eps;
@@ -18,7 +18,7 @@ vector get_exposure_factor_atmo(real index, real diff_index, vector index_grid, 
   /* Point sources */
   for (k in 1:Ns) {
 
-    eps[k] = interpolate(index_grid, integral_grid[k], index);
+    eps[k] = interpolate(src_index_grid, integral_grid[k], src_index);
       
   }
 
@@ -35,7 +35,7 @@ vector get_exposure_factor_atmo(real index, real diff_index, vector index_grid, 
  * Get exposure factor from integral grids and source info.
  * Units of [m^2 s].
  */
-vector get_exposure_factor(real index, real diff_index, vector index_grid, vector diff_index_grid,
+vector get_exposure_factor(real src_index, real diff_index, vector src_index_grid, vector diff_index_grid,
 			   vector[] integral_grid, real T, int Ns) {
 
   int K = Ns+1;
@@ -44,7 +44,7 @@ vector get_exposure_factor(real index, real diff_index, vector index_grid, vecto
   /* Point sources */
   for (k in 1:Ns) {
 
-    eps[k] = interpolate(index_grid, integral_grid[k], index);
+    eps[k] = interpolate(src_index_grid, integral_grid[k], src_index);
       
   }
 
