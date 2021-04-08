@@ -30,8 +30,10 @@ class FileConfig:
 @dataclass
 class ParameterConfig:
 
-    alpha: float = 2.3
-    alpha_range: tuple = (1.0, 4.0)
+    src_index: float = 2.3
+    src_index__range: tuple = (1.0, 4.0)
+    diff_index: float = 2.5
+    diff_index_range: tuple = (1.0, 4.0)
     L: float = 5e46  # u.erg / u.s
     L_range: tuple = (0, 1e60)
     Enorm: float = 1e5  # u.GeV
