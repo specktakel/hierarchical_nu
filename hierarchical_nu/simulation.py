@@ -620,7 +620,8 @@ class SimInfo:
         truths["L"] = inputs["L"]
         truths["Ftot"] = inputs["total_flux_int"]
         truths["f"] = inputs["f"]
-        truths["alpha"] = inputs["alpha"]
+        truths["src_index"] = inputs["src_index"]
+        truths["diff_index"] = inputs["diff_index"]
 
         if atmo_comp:
             truths["F_atmo"] = inputs["F_atmo"]

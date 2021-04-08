@@ -54,9 +54,16 @@ class StanFit:
 
         # For use with plot methods
         if self._sources.atmo_component():
-            self._def_var_names = ["L", "F_diff", "F_atmo", "f", "alpha"]
+            self._def_var_names = [
+                "L",
+                "F_diff",
+                "F_atmo",
+                "f",
+                "src_index",
+                "diff_index",
+            ]
         else:
-            self._def_var_names = ["L", "F_diff", "f", "alpha"]
+            self._def_var_names = ["L", "F_diff", "f", "src_index", "diff_index"]
 
         self._exposure_integral = collections.OrderedDict()
 
