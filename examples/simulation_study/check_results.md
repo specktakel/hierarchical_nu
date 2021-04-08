@@ -14,6 +14,11 @@ jupyter:
 ---
 
 ```python
+import sys
+sys.path.append("../../")
+```
+
+```python
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -25,11 +30,8 @@ model_check = ModelCheck()
 ```
 
 ```python
-file_stem = "output/icecube_tests/"
-file_list = [file_stem+"fit_sim_icecube_1000_singlesource_newprior.h5",
-             file_stem+"fit_sim_icecube_9900_singlesource_newprior.h5"]
-#file_stem = "output/"
-#file_list = [file_stem+"fit_sim_1234_test.h5"]
+file_stem = "output/"
+file_list = [file_stem+"fit_sim_1234_test.h5"]
 
 model_check.load(file_list)
 ```

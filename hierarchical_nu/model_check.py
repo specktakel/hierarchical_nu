@@ -64,7 +64,8 @@ class ModelCheck:
             "$F_\mathrm{atmo}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
             "$L$ / $\mathrm{GeV}~\mathrm{s}^{-1}$",
             "$f$",
-            "$\\alpha$",
+            "src_index",
+            "diff_index",
         ]
 
     @classmethod
