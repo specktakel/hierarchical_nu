@@ -52,6 +52,8 @@ class ParameterConfig:
     # Can be "icecube", "northern_tracks" or "cascades"
     detector_model_type: str = "icecube"
 
+    obs_time: float = 10  # years
+
 
 @dataclass
 class HierarchicalNuConfig:
