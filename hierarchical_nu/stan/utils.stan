@@ -7,53 +7,62 @@
 
 
 /**
- * Get exposure factor from spline information and source positions.
- * Units of [m^2 s]
+ * Get exposure factor from integral grids and source info.
+ * Includes atmospheric component with known index. Units of [m^2 s].
  */
-vector get_exposure_factor_atmo(real alpha, vector alpha_grid, vector[] integral_grid, real atmo_integ_val, real T, int Ns) {
+vector get_exposure_factor_atmo(real src_index, real diff_index, vector src_index_grid, vector diff_index_grid,
+				vector[] integral_grid, real atmo_integ_val, real T, int Ns) {
 
-  int K = Ns+2;
-  vector[K] eps;
-    
-  for (k in 1:K-1) {
+  vector[Ns+2] eps;
 
-    eps[k] = interpolate(alpha_grid, integral_grid[k], alpha);
+  /* Point sources */
+  for (k in 1:Ns) {
+
+    eps[k] = interpolate(src_index_grid, integral_grid[k], src_index);
       
   }
-  eps[K] = atmo_integ_val;
+
+  /* Diffuse component */
+  eps[Ns+1] = interpolate(diff_index_grid, integral_grid[Ns+1], diff_index);
+
+  /* Atmospheric component */
+  eps[Ns+2] = atmo_integ_val;
 
   return eps * T;
 }
 
 /**
- * Get exposure factor from spline information and source positions.
- * Units of [m^2 s]
+ * Get exposure factor from integral grids and source info.
+ * Units of [m^2 s].
  */
-vector get_exposure_factor(real alpha, vector alpha_grid, vector[] integral_grid, real T, int Ns) {
+vector get_exposure_factor(real src_index, real diff_index, vector src_index_grid, vector diff_index_grid,
+			   vector[] integral_grid, real T, int Ns) {
 
-  int K = Ns+1;
-  vector[K] eps;
-    
-  for (k in 1:K) {
+  vector[Ns+1] eps;
 
-    eps[k] = interpolate(alpha_grid, integral_grid[k], alpha) * T;
+  /* Point sources */
+  for (k in 1:Ns) {
+
+    eps[k] = interpolate(src_index_grid, integral_grid[k], src_index);
       
   }
 
-  return eps;
+  eps[Ns+1] = interpolate(diff_index_grid, integral_grid[Ns+1], diff_index);
+
+  return eps * T;
 }
 
 
 /**
  * For use in simple one-component sims
  */
-real get_eps_simple(real alpha, vector alpha_grid, vector integral_grid, real T) {
+real get_eps_simple(real index, vector index_grid, vector integral_grid, real T) {
 
   real eps;
 
-  eps = interpolate(alpha_grid, integral_grid, alpha) * T;
+  eps = interpolate(index_grid, integral_grid, index);
 
-  return eps;
+  return eps * T;
 
 }
 

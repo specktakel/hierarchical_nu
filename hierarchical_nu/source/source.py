@@ -302,7 +302,12 @@ class Sources:
             )
 
     @u.quantity_input
-    def add_diffuse_component(self, flux_norm: Parameter, norm_energy: u.GeV):
+    def add_diffuse_component(
+        self,
+        flux_norm: Parameter,
+        norm_energy: u.GeV,
+        diff_index: Parameter,
+    ):
         """
         Add diffuse component based on point
         source component definition.
@@ -311,8 +316,6 @@ class Sources:
         :param norm_energy: The energy at which the flux norm is defined
         """
 
-        # grab parameters from point sources
-        index = Parameter.get_parameter("index")
         Emin = Parameter.get_parameter("Emin")
         Emax = Parameter.get_parameter("Emax")
 
@@ -322,7 +325,7 @@ class Sources:
         # define flux model
         spectral_type = self._get_ps_spectral_type()
         spectral_shape = spectral_type(
-            flux_norm, norm_energy, index, Emin.value, Emax.value
+            flux_norm, norm_energy, diff_index, Emin.value, Emax.value
         )
         flux_model = IsotropicDiffuseBG(spectral_shape)
 

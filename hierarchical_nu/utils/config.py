@@ -30,14 +30,16 @@ class FileConfig:
 @dataclass
 class ParameterConfig:
 
-    alpha: float = 2.3
-    alpha_range: tuple = (1.0, 4.0)
+    src_index: float = 2.3
+    src_index_range: tuple = (1.0, 4.0)
+    diff_index: float = 2.5
+    diff_index_range: tuple = (1.0, 4.0)
     L: float = 5e46  # u.erg / u.s
     L_range: tuple = (0, 1e60)
     Enorm: float = 1e5  # u.GeV
     Emin: float = 5e4  # u.GeV
     Emax: float = 1e8  # u.GeV
-    diff_norm: float = 5e14  # 1 / (u.GeV * u.m**2 * u.s)
+    diff_norm: float = 5e-14  # 1 / (u.GeV * u.m**2 * u.s)
 
     # If True, use same Emin_det for all
     # If False, use separate for tracks and cascades
@@ -49,6 +51,8 @@ class ParameterConfig:
 
     # Can be "icecube", "northern_tracks" or "cascades"
     detector_model_type: str = "icecube"
+
+    obs_time: float = 10  # years
 
 
 @dataclass

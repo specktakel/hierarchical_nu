@@ -1127,7 +1127,22 @@ real CascadesEffectiveArea(real true_energy,vector true_dir)
 {
 return CascadesEffAreaHist(true_energy, cos(pi() - acos(true_dir[3])));
 }
-real spectrum_logpdf(real E,real alpha,real e_low,real e_up)
+real src_spectrum_logpdf(real E,real alpha,real e_low,real e_up)
+{
+real N;
+real p;
+if(alpha == 1.0)
+{
+N = (1.0/(log(e_up)-log(e_low)));
+}
+else
+{
+N = ((1.0-alpha)/((e_up^(1.0-alpha))-(e_low^(1.0-alpha))));
+}
+p = (N*pow(E, (alpha*-1)));
+return log(p);
+}
+real diff_spectrum_logpdf(real E,real alpha,real e_low,real e_up)
 {
 real N;
 real p;
@@ -1811,7 +1826,8 @@ unit_vector[3] varpi[Ns];
 vector[Ns] D;
 vector[Ns+1] z;
 int Ngrid;
-vector[Ngrid] alpha_grid;
+vector[Ngrid] src_index_grid;
+vector[Ngrid] diff_index_grid;
 vector[Ngrid] integral_grid_t[Ns+1];
 vector[Ngrid] integral_grid_c[Ns+1];
 vector[Ngrid] E_grid;
@@ -1836,7 +1852,8 @@ parameters
 real<lower=0, upper=1e+60> L;
 real<lower=0.0, upper=1e-06> F_diff;
 real<lower=0.0, upper=1e-06> F_atmo;
-real<lower=1.0, upper=4> alpha;
+real<lower=1, upper=4> src_index;
+real<lower=1, upper=4> diff_index;
 vector<lower=Esrc_min, upper=Esrc_max> [N] Esrc;
 }
 transformed parameters
@@ -1857,7 +1874,7 @@ Fsrc = 0.0;
 for (k in 1:Ns)
 {
 F[k] = L/ (4 * pi() * pow(D[k] * 3.086e+22, 2));
-F[k]*=flux_conv(alpha, Esrc_min, Esrc_max);
+F[k]*=flux_conv(src_index, Esrc_min, Esrc_max);
 Fsrc+=F[k];
 }
 F[Ns+1] = F_diff;
@@ -1874,13 +1891,13 @@ for (k in 1:Ns+2)
 {
 if(k < (Ns+1))
 {
-lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
+lp[i][k] += src_spectrum_logpdf(Esrc[i], src_index, Esrc_min, Esrc_max);
 E[i] = Esrc[i] / ((1+z[k]));
 lp[i][k] += vMF_lpdf(omega_det[i] | varpi[k], kappa[i]);
 }
 else if(k == (Ns+1))
 {
-lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
+lp[i][k] += diff_spectrum_logpdf(Esrc[i], diff_index, Esrc_min, Esrc_max);
 E[i] = Esrc[i] / ((1+z[k]));
 lp[i][k] += -2.5310242469692907;
 }
@@ -1899,13 +1916,13 @@ for (k in 1:Ns+2)
 {
 if(k < (Ns+1))
 {
-lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
+lp[i][k] += src_spectrum_logpdf(Esrc[i], src_index, Esrc_min, Esrc_max);
 E[i] = Esrc[i] / ((1+z[k]));
 lp[i][k] += vMF_lpdf(omega_det[i] | varpi[k], kappa[i]);
 }
 else if(k == (Ns+1))
 {
-lp[i][k] += spectrum_logpdf(Esrc[i], alpha, Esrc_min, Esrc_max);
+lp[i][k] += diff_spectrum_logpdf(Esrc[i], diff_index, Esrc_min, Esrc_max);
 E[i] = Esrc[i] / ((1+z[k]));
 lp[i][k] += -2.5310242469692907;
 }
@@ -1919,8 +1936,8 @@ lp[i][k] += log(interpolate(E_grid, Pdet_grid_c[k], E[i]));
 }
 }
 }
-eps_t = get_exposure_factor_atmo(alpha, alpha_grid, integral_grid_t, atmo_integ_val, T, Ns);
-eps_c = get_exposure_factor(alpha, alpha_grid, integral_grid_c, T, Ns);
+eps_t = get_exposure_factor_atmo(src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, atmo_integ_val, T, Ns);
+eps_c = get_exposure_factor(src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_c, T, Ns);
 Nex_t = get_Nex(F, eps_t);
 Nex_c = get_Nex(F, eps_c);
 Nex = (Nex_c+Nex_t);
@@ -1936,5 +1953,6 @@ L ~ normal(L_scale, (2*L_scale));
 F_diff ~ normal(F_diff_scale, (2*F_diff_scale));
 F_atmo ~ normal(F_atmo_scale, (0.1*F_atmo_scale));
 Ftot ~ normal(F_tot_scale, (0.5*F_tot_scale));
-alpha ~ normal(2.0, 2.0);
+src_index ~ normal(2.0, 2.0);
+diff_index ~ normal(2.0, 2.0);
 }

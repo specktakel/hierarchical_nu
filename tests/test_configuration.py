@@ -39,7 +39,7 @@ def test_user_config_merge():
 
     user_configs = [
         {"file_config": {"atmo_sim_filename": "my_new_name.stan"}},
-        {"parameter_config": {"alpha": 2.6, "L": 1e47}},
+        {"parameter_config": {"src_index": 2.6, "L": 1e47}},
     ]
 
     for i, config in enumerate(user_configs):
@@ -58,6 +58,6 @@ def test_user_config_merge():
 
     assert hnu_config["file_config"]["atmo_sim_filename"] == "my_new_name.stan"
 
-    assert hnu_config["parameter_config"]["alpha"] == 2.6
+    assert hnu_config["parameter_config"]["src_index"] == 2.6
 
     assert hnu_config["parameter_config"]["L"] == 1e47

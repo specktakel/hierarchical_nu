@@ -54,7 +54,8 @@ class ModelCheck:
             Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
         )
         self.truths["f"] = f
-        self.truths["alpha"] = Parameter.get_parameter("index").value
+        self.truths["src_index"] = Parameter.get_parameter("src_index").value
+        self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
 
         self._default_var_names = [key for key in self.truths]
 
@@ -63,7 +64,8 @@ class ModelCheck:
             "$F_\mathrm{atmo}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
             "$L$ / $\mathrm{GeV}~\mathrm{s}^{-1}$",
             "$f$",
-            "$\\alpha$",
+            "src_index",
+            "diff_index",
         ]
 
     @classmethod
@@ -97,6 +99,8 @@ class ModelCheck:
         print("Generated atmo_sim Stan file at:", file_config["atmo_sim_filename"])
 
         ps_spec_shape = PowerLawSpectrum
+        diff_spec_shape = PowerLawSpectrum
+
         detector_model_type = ModelCheck._get_dm_from_config(
             parameter_config["detector_model_type"]
         )
@@ -105,13 +109,19 @@ class ModelCheck:
         if detector_model_type == IceCubeDetectorModel:
 
             _ = generate_main_sim_code_hybrid_(
-                main_sim_name, ps_spec_shape, detector_model_type
+                main_sim_name,
+                ps_spec_shape,
+                diff_spec_shape,
+                detector_model_type,
             )
 
         else:
 
             _ = generate_main_sim_code_(
-                main_sim_name, ps_spec_shape, detector_model_type
+                main_sim_name,
+                ps_spec_shape,
+                diff_spec_shape,
+                detector_model_type,
             )
 
         print("Generated main_sim Stan file at:", file_config["main_sim_filename"])
@@ -123,6 +133,7 @@ class ModelCheck:
                 fit_name,
                 detector_model_type,
                 ps_spec_shape,
+                diff_spec_shape,
                 atmo_flux_model,
                 diffuse_bg_comp=True,
                 atmospheric_comp=True,
@@ -135,6 +146,7 @@ class ModelCheck:
                 fit_name,
                 detector_model_type,
                 ps_spec_shape,
+                diff_spec_shape,
                 atmo_flux_model,
                 diffuse_bg_comp=True,
                 atmospheric_comp=True,
@@ -192,7 +204,8 @@ class ModelCheck:
         self.results["F_atmo"] = []
         self.results["F_diff"] = []
         self.results["L"] = []
-        self.results["alpha"] = []
+        self.results["src_index"] = []
+        self.results["diff_index"] = []
         self.results["f"] = []
 
         file_truths = {}
@@ -217,7 +230,8 @@ class ModelCheck:
                     self.results["F_atmo"].extend(job_folder["F_atmo"][()])
                     self.results["F_diff"].extend(job_folder["F_diff"][()])
                     self.results["L"].extend(job_folder["L"][()])
-                    self.results["alpha"].extend(job_folder["alpha"][()])
+                    self.results["src_index"].extend(job_folder["src_index"][()])
+                    self.results["diff_index"].extend(job_folder["diff_index"][()])
                     self.results["f"].extend(job_folder["f"][()])
 
     def compare(self, var_names=None, var_labels=None, show_prior=False):
@@ -254,19 +268,6 @@ class ModelCheck:
                 x = np.linspace(xmin, xmax)
                 ax[v].plot(x, prior_func(x), lw=1, color="k", alpha=0.5)
 
-                """
-                prior_samples = self._get_prior_samples(var_name)
-                ax[v].hist(
-                    prior_samples,
-                    color="k",
-                    alpha=0.5,
-                    histtype="step",
-                    bins=bins,
-                    lw=1.0,
-                    density=True,
-                )
-                """
-
             ax[v].axvline(self.truths[var_name], color="k", linestyle="-")
             ax[v].set_xlabel(var_labels[v], labelpad=10)
 
@@ -278,11 +279,17 @@ class ModelCheck:
         parameter_config = hnu_config["parameter_config"]
 
         Parameter.clear_registry()
-        index = Parameter(
-            parameter_config["alpha"],
-            "index",
+        src_index = Parameter(
+            parameter_config["src_index"],
+            "src_index",
             fixed=False,
-            par_range=parameter_config["alpha_range"],
+            par_range=parameter_config["src_index_range"],
+        )
+        diff_index = Parameter(
+            parameter_config["diff_index"],
+            "diff_index",
+            fixed=False,
+            par_range=parameter_config["diff_index_range"],
         )
         L = Parameter(
             parameter_config["L"] * u.erg / u.s,
@@ -321,12 +328,12 @@ class ModelCheck:
 
         # Simple point source for testing
         point_source = PointSource.make_powerlaw_source(
-            "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, index, 0.43, Emin, Emax
+            "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, 0.43, Emin, Emax
         )
 
         self._sources = Sources()
         self._sources.add(point_source)
-        self._sources.add_diffuse_component(diffuse_norm, Enorm.value)
+        self._sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
         self._sources.add_atmospheric_component()
 
     def _single_run(self, n_subjobs, seed):
@@ -354,7 +361,8 @@ class ModelCheck:
         outputs["F_atmo"] = []
         outputs["L"] = []
         outputs["f"] = []
-        outputs["alpha"] = []
+        outputs["src_index"] = []
+        outputs["diff_index"] = []
 
         for i, s in enumerate(subjob_seeds):
 
@@ -391,7 +399,8 @@ class ModelCheck:
             outputs["F_atmo"].append(fit._fit_output.stan_variable("F_atmo"))
             outputs["L"].append(fit._fit_output.stan_variable("L"))
             outputs["f"].append(fit._fit_output.stan_variable("f"))
-            outputs["alpha"].append(fit._fit_output.stan_variable("alpha"))
+            outputs["src_index"].append(fit._fit_output.stan_variable("src_index"))
+            outputs["diff_index"].append(fit._fit_output.stan_variable("diff_index"))
 
             fit.check_classification(sim_output)
 
@@ -449,7 +458,11 @@ class ModelCheck:
 
             return uniform(0, 1).rvs(N)
 
-        elif var_name == "alpha":
+        elif var_name == "src_index":
+
+            return norm(2, 2).rvs(N)
+
+        elif var_name == "diff_index":
 
             return norm(2, 2).rvs(N)
 
@@ -498,10 +511,15 @@ class ModelCheck:
                 F_tot_scale = self.truths["F_tot"]
                 return norm(F_tot_scale, 0.5 * F_tot_scale)
 
-        elif var_name == "alpha":
+        elif var_name == "src_index":
 
-            def prior_func(alpha):
-                return norm(2, 2).pdf(alpha)
+            def prior_func(src_index):
+                return norm(2, 2).pdf(src_index)
+
+        elif var_name == "diff_index":
+
+            def prior_func(diff_index):
+                return norm(2, 2).pdf(diff_index)
 
         else:
 

@@ -238,7 +238,12 @@ class ExposureIntegral:
             # Reset free parameters to original values
             for par_name in this_free_pars:
                 par = Parameter.get_parameter(par_name)
-                par.value = self._original_param_values[par_name][k]
+                original_values = self._original_param_values[par_name]
+
+                if len(original_values) > 1:
+                    par.value = original_values[k]
+                else:
+                    par.value = original_values[0]
 
     def _compute_energy_detection_factor(self):
         """
