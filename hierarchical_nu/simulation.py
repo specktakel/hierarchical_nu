@@ -335,12 +335,19 @@ class Simulation:
         sim_inputs["varpi"] = src_pos
 
         for event_type in self._detector_model_type.event_types:
+
             sim_inputs["Ngrid"] = len(
                 self._exposure_integral[event_type].par_grids["index"]
             )
-            sim_inputs["alpha_grid"] = self._exposure_integral[event_type].par_grids[
+
+            sim_inputs["index_grid"] = self._exposure_integral[event_type].par_grids[
                 "index"
             ]
+
+            sim_inputs["diff_index_grid"] = self._exposure_integral[
+                event_type
+            ].par_grids["diff_index"]
+
             if (
                 event_type == "tracks"
                 and len(self._detector_model_type.event_types) > 1

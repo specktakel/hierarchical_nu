@@ -129,7 +129,8 @@ def generate_main_sim_code_(
 
             # Precomputed quantities
             Ngrid = ForwardVariableDef("Ngrid", "int")
-            alpha_grid = ForwardVariableDef("alpha_grid", "vector[Ngrid]")
+            index_grid = ForwardVariableDef("index_grid", "vector[Ngrid]")
+            
             if diffuse_bg_comp:
                 integral_grid = ForwardArrayDef(
                     "integral_grid", "vector[Ngrid]", Ns_1p_str
@@ -210,12 +211,12 @@ def generate_main_sim_code_(
 
             if atmospheric_comp:
                 eps << FunctionCall(
-                    [alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns],
+                    [alpha, index_grid, integral_grid, atmo_integ_val, T, Ns],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps << FunctionCall(
-                    [alpha, alpha_grid, integral_grid, T, Ns], "get_exposure_factor"
+                    [alpha, index_grid, integral_grid, T, Ns], "get_exposure_factor"
                 )
 
             Nex << StringExpression(["get_Nex(", F, ", ", eps, ")"])
@@ -397,7 +398,7 @@ def generate_main_sim_code_hybrid_(
 
             # Precomputed quantities
             Ngrid = ForwardVariableDef("Ngrid", "int")
-            alpha_grid = ForwardVariableDef("alpha_grid", "vector[Ngrid]")
+            index_grid = ForwardVariableDef("index_grid", "vector[Ngrid]")
             if diffuse_bg_comp:
                 integral_grid_t = ForwardArrayDef(
                     "integral_grid_t", "vector[Ngrid]", Ns_1p_str
@@ -494,16 +495,16 @@ def generate_main_sim_code_hybrid_(
 
             if atmospheric_comp:
                 eps_t << FunctionCall(
-                    [alpha, alpha_grid, integral_grid_t, atmo_integ_val, T, Ns],
+                    [alpha, index_grid, integral_grid_t, atmo_integ_val, T, Ns],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps_t << FunctionCall(
-                    [alpha, alpha_grid, integral_grid_t, T, Ns],
+                    [alpha, index_grid, integral_grid_t, T, Ns],
                     "get_exposure_factor",
                 )
             eps_c << FunctionCall(
-                [alpha, alpha_grid, integral_grid_c, T, Ns],
+                [alpha, index_grid, integral_grid_c, T, Ns],
                 "get_exposure_factor",
             )
 
@@ -787,7 +788,7 @@ def generate_stan_fit_code_hybrid_(
 
             # Precomputed quantities
             Ngrid = ForwardVariableDef("Ngrid", "int")
-            alpha_grid = ForwardVariableDef("alpha_grid", "vector[Ngrid]")
+            index_grid = ForwardVariableDef("index_grid", "vector[Ngrid]")
 
             integral_grid_t = ForwardArrayDef("integral_grid_t", "vector[Ngrid]", Ns_1p_str)
             integral_grid_c = ForwardArrayDef("integral_grid_c", "vector[Ngrid]", Ns_1p_str)
@@ -1043,16 +1044,16 @@ def generate_stan_fit_code_hybrid_(
 
             if atmospheric_comp:
                 eps_t << FunctionCall(
-                    [alpha, alpha_grid, integral_grid_t, atmo_integ_val, T, Ns],
+                    [alpha, index_grid, integral_grid_t, atmo_integ_val, T, Ns],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps_t << FunctionCall(
-                    [alpha, alpha_grid, integral_grid_t, T, Ns],
+                    [alpha, index_grid, integral_grid_t, T, Ns],
                     "get_exposure_factor",
                 )
             eps_c << FunctionCall(
-                    [alpha, alpha_grid, integral_grid_c, T, Ns],
+                    [alpha, index_grid, integral_grid_c, T, Ns],
                     "get_exposure_factor",
                 )
 
@@ -1159,7 +1160,7 @@ def generate_stan_fit_code_(
 
             # Precomputed quantities
             Ngrid = ForwardVariableDef("Ngrid", "int")
-            alpha_grid = ForwardVariableDef("alpha_grid", "vector[Ngrid]")
+            index_grid = ForwardVariableDef("index_grid", "vector[Ngrid]")
             integral_grid = ForwardArrayDef("integral_grid", "vector[Ngrid]", Ns_1p_str)
             Eg = ForwardVariableDef("E_grid", "vector[Ngrid]")
 
@@ -1323,12 +1324,12 @@ def generate_stan_fit_code_(
 
             if atmospheric_comp:
                 eps << FunctionCall(
-                    [alpha, alpha_grid, integral_grid, atmo_integ_val, T, Ns],
+                    [alpha, index_grid, integral_grid, atmo_integ_val, T, Ns],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps << FunctionCall(
-                    [alpha, alpha_grid, integral_grid, T, Ns],
+                    [alpha, index_grid, integral_grid, T, Ns],
                     "get_exposure_factor",
                 )
             Nex << FunctionCall([F, eps], "get_Nex")
