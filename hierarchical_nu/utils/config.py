@@ -31,7 +31,7 @@ class FileConfig:
 class ParameterConfig:
 
     src_index: float = 2.3
-    src_index__range: tuple = (1.0, 4.0)
+    src_index_range: tuple = (1.0, 4.0)
     diff_index: float = 2.5
     diff_index_range: tuple = (1.0, 4.0)
     L: float = 5e46  # u.erg / u.s
