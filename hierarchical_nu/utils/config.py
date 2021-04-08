@@ -39,7 +39,7 @@ class ParameterConfig:
     Enorm: float = 1e5  # u.GeV
     Emin: float = 5e4  # u.GeV
     Emax: float = 1e8  # u.GeV
-    diff_norm: float = 5e14  # 1 / (u.GeV * u.m**2 * u.s)
+    diff_norm: float = 5e-14  # 1 / (u.GeV * u.m**2 * u.s)
 
     # If True, use same Emin_det for all
     # If False, use separate for tracks and cascades
