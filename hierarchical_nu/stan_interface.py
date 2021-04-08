@@ -759,12 +759,14 @@ def generate_stan_fit_code_hybrid_(
     filename,
     detector_model_type,
     ps_spec_shape,
+    diff_spec_shape,
     atmo_flux_model=None,
     diffuse_bg_comp=True,
     atmospheric_comp=True,
     theta_points=30,
     lumi_par_range=(0, 1e60),
-    alpha_par_range=(1.0, 4.0),
+    src_index_par_range=(1.0, 4.0),
+    diff_index_par_range=(1.0, 4.0),
 ):
 
     with StanFileGenerator(filename) as fit_gen:
@@ -779,7 +781,8 @@ def generate_stan_fit_code_hybrid_(
             for event_type in detector_model_type.event_types:
                 dm[event_type] = detector_model_type(event_type=event_type)
 
-            spectrum_lpdf = ps_spec_shape.make_stan_lpdf_func("spectrum_logpdf")
+            src_spectrum_lpdf = ps_spec_shape.make_stan_lpdf_func("src_spectrum_logpdf")
+            diff_spectrum_lpdf = diff_spec_shape.make_stan_lpdf_func("diff_spectrum_logpdf")
             flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
 
             if atmospheric_comp:
@@ -812,7 +815,8 @@ def generate_stan_fit_code_hybrid_(
 
             # Precomputed quantities
             Ngrid = ForwardVariableDef("Ngrid", "int")
-            index_grid = ForwardVariableDef("index_grid", "vector[Ngrid]")
+            src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
+            diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
 
             integral_grid_t = ForwardArrayDef("integral_grid_t", "vector[Ngrid]", Ns_1p_str)
             integral_grid_c = ForwardArrayDef("integral_grid_c", "vector[Ngrid]", Ns_1p_str)
@@ -849,15 +853,17 @@ def generate_stan_fit_code_hybrid_(
         with ParametersContext():
 
             Lmin, Lmax = lumi_par_range
-            alphamin, alphamax = alpha_par_range
-
+            src_index_min, src_index_max = src_index_par_range
+            diff_index_min, diff_index_max = diff_index_par_range
+            
             L = ParameterDef("L", "real", Lmin, Lmax)
             F_diff = ParameterDef("F_diff", "real", 0.0, 1e-6)
 
             if atmospheric_comp:
                 F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-6)
 
-            alpha = ParameterDef("alpha", "real", alphamin, alphamax)
+            src_index = ParameterDef("src_index", "real", src_index_min, src_index_max)
+            diff_index = ParameterDef("diff_index", "real", diff_index_min, diff_index_max)
 
             Esrc = ParameterVectorDef("Esrc", "vector", N_str, Esrc_min, Esrc_max)
 
@@ -900,7 +906,7 @@ def generate_stan_fit_code_hybrid_(
                 F[k] << StringExpression(
                     [L, "/ (4 * pi() * pow(", D[k], " * ", 3.086e22, ", 2))"]
                 )
-                StringExpression([F[k], "*=", flux_fac(alpha, Esrc_min, Esrc_max)])
+                StringExpression([F[k], "*=", flux_fac(src_index, Esrc_min, Esrc_max)])
                 StringExpression([Fsrc, "+=", F[k]])
             StringExpression("F[Ns+1]") << F_diff
 
@@ -928,17 +934,11 @@ def generate_stan_fit_code_hybrid_(
                                 [
                                     lp[i][k],
                                     " += ",
-                                    spectrum_lpdf(Esrc[i], alpha, Esrc_min, Esrc_max),
+                                    src_spectrum_lpdf(Esrc[i], src_index, Esrc_min, Esrc_max),
                                 ]
                             )
                             E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
-                            # StringExpression(
-                            #     [
-                            #         lp[i][k],
-                            #         " += ",
-                            #         dm["tracks"].angular_resolution(E[i], varpi[k], omega_det[i]),
-                            #     ]
-                            # )
+                        
                             StringExpression([lp[i][k], " += vMF_lpdf(", omega_det[i], " | ", varpi[k], ", ", kappa[i], ")"])
                             
 
@@ -951,7 +951,7 @@ def generate_stan_fit_code_hybrid_(
                                     [
                                         lp[i][k],
                                         " += ",
-                                        spectrum_lpdf(Esrc[i], alpha, Esrc_min, Esrc_max),
+                                        diff_spectrum_lpdf(Esrc[i], diff_index, Esrc_min, Esrc_max),
                                     ]
                                 )
                                 E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
@@ -1006,17 +1006,11 @@ def generate_stan_fit_code_hybrid_(
                                 [
                                     lp[i][k],
                                     " += ",
-                                    spectrum_lpdf(Esrc[i], alpha, Esrc_min, Esrc_max),
+                                    src_spectrum_lpdf(Esrc[i], src_index, Esrc_min, Esrc_max),
                                 ]
                             )
                             E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
-                            # StringExpression(
-                            #    [
-                            #        lp[i][k],
-                            #        " += ",
-                            #        dm["cascades"].angular_resolution(E[i], varpi[k], omega_det[i]),
-                            #    ]
-                            # )
+
                             StringExpression([lp[i][k], " += vMF_lpdf(", omega_det[i], " | ", varpi[k], ", ", kappa[i], ")"])
 
                         if diffuse_bg_comp:
@@ -1028,7 +1022,7 @@ def generate_stan_fit_code_hybrid_(
                                     [
                                         lp[i][k],
                                         " += ",
-                                        spectrum_lpdf(Esrc[i], alpha, Esrc_min, Esrc_max),
+                                        diff_spectrum_lpdf(Esrc[i], diff_index, Esrc_min, Esrc_max),
                                     ]
                                 )
                                 E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
@@ -1068,16 +1062,16 @@ def generate_stan_fit_code_hybrid_(
 
             if atmospheric_comp:
                 eps_t << FunctionCall(
-                    [alpha, index_grid, integral_grid_t, atmo_integ_val, T, Ns],
+                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, atmo_integ_val, T, Ns],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps_t << FunctionCall(
-                    [alpha, index_grid, integral_grid_t, T, Ns],
+                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, T, Ns],
                     "get_exposure_factor",
                 )
             eps_c << FunctionCall(
-                    [alpha, index_grid, integral_grid_c, T, Ns],
+                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_c, T, Ns],
                     "get_exposure_factor",
                 )
 
@@ -1126,7 +1120,8 @@ def generate_stan_fit_code_hybrid_(
                     FunctionCall([F_tot_scale, 0.5 * F_tot_scale], "normal"),
                 ]
             )
-            StringExpression([alpha, " ~ normal(2.0, 2.0)"])
+            StringExpression([src_index, " ~ normal(2.0, 2.0)"])
+            StringExpression([diff_index, " ~ normal(2.0, 2.0)"])
 
     fit_gen.generate_single_file()
 
@@ -1136,12 +1131,14 @@ def generate_stan_fit_code_(
     filename,
     detector_model_type,
     ps_spec_shape,
+    diff_spec_shape,
     atmo_flux_model=None,
     diffuse_bg_comp=True,
     atmospheric_comp=True,
     theta_points=30,
     lumi_par_range=(0, 1e60),
-    alpha_par_range=(1.0, 4.0),
+    src_index_par_range=(1.0, 4.0),
+    diff_index_par_range=(1.0, 4.0),
 ):
 
     with StanFileGenerator(filename) as fit_gen:
@@ -1152,7 +1149,9 @@ def generate_stan_fit_code_(
             _ = Include("vMF.stan")
             dm = detector_model_type()
 
-            spectrum_lpdf = ps_spec_shape.make_stan_lpdf_func("spectrum_logpdf")
+            src_spectrum_lpdf = ps_spec_shape.make_stan_lpdf_func("src_spectrum_logpdf")
+            diff_spectrum_lpdf = diff_spec_shape.make_stan_lpdf_func("diff_spectrum_logpdf")
+            
             flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
 
             if atmospheric_comp:
@@ -1184,7 +1183,8 @@ def generate_stan_fit_code_(
 
             # Precomputed quantities
             Ngrid = ForwardVariableDef("Ngrid", "int")
-            index_grid = ForwardVariableDef("index_grid", "vector[Ngrid]")
+            src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
+            diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
             integral_grid = ForwardArrayDef("integral_grid", "vector[Ngrid]", Ns_1p_str)
             Eg = ForwardVariableDef("E_grid", "vector[Ngrid]")
 
@@ -1208,14 +1208,17 @@ def generate_stan_fit_code_(
         with ParametersContext():
 
             Lmin, Lmax = lumi_par_range
-            alphamin, alphamax = alpha_par_range
-
+            src_index_min, src_index_max = src_index_par_range
+            diff_index_min, diff_index_max = diff_index_par_range
+            
             L = ParameterDef("L", "real", Lmin, Lmax)
             F_diff = ParameterDef("F_diff", "real", 0.0, 1e-6)
             if atmospheric_comp:
                 F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-6)
 
-            alpha = ParameterDef("alpha", "real", alphamin, alphamax)
+            src_index = ParameterDef("src_index", "real", src_index_min, src_index_max)
+
+            diff_index = ParameterDef("diff_index", "real", diff_index_min, diff_index_max)
 
             Esrc = ParameterVectorDef("Esrc", "vector", N_str, Esrc_min, Esrc_max)
 
@@ -1253,7 +1256,7 @@ def generate_stan_fit_code_(
                 F[k] << StringExpression(
                     [L, "/ (4 * pi() * pow(", D[k], " * ", 3.086e22, ", 2))"]
                 )
-                StringExpression([F[k], "*=", flux_fac(alpha, Esrc_min, Esrc_max)])
+                StringExpression([F[k], "*=", flux_fac(src_index, Esrc_min, Esrc_max)])
                 StringExpression([Fsrc, "+=", F[k]])
             StringExpression("F[Ns+1]") << F_diff
 
@@ -1279,17 +1282,11 @@ def generate_stan_fit_code_(
                             [
                                 lp[i][k],
                                 " += ",
-                                spectrum_lpdf(Esrc[i], alpha, Esrc_min, Esrc_max),
+                                src_spectrum_lpdf(Esrc[i], src_index, Esrc_min, Esrc_max),
                             ]
                         )
                         E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
-                        # StringExpression(
-                        #     [
-                        #         lp[i][k],
-                        #         " += ",
-                        #         dm.angular_resolution(E[i], varpi[k], omega_det[i]),
-                        #     ]
-                        # )
+                     
                         StringExpression([lp[i][k], " += vMF_lpdf(", omega_det[i], " | ", varpi[k], ", ", kappa[i], ")"])
 
                     if diffuse_bg_comp:
@@ -1301,7 +1298,7 @@ def generate_stan_fit_code_(
                                 [
                                     lp[i][k],
                                     " += ",
-                                    spectrum_lpdf(Esrc[i], alpha, Esrc_min, Esrc_max),
+                                    diff_spectrum_lpdf(Esrc[i], diff_index, Esrc_min, Esrc_max),
                                 ]
                             )
                             E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
@@ -1348,12 +1345,12 @@ def generate_stan_fit_code_(
 
             if atmospheric_comp:
                 eps << FunctionCall(
-                    [alpha, index_grid, integral_grid, atmo_integ_val, T, Ns],
+                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid, atmo_integ_val, T, Ns],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps << FunctionCall(
-                    [alpha, index_grid, integral_grid, T, Ns],
+                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid, T, Ns],
                     "get_exposure_factor",
                 )
             Nex << FunctionCall([F, eps], "get_Nex")
@@ -1383,7 +1380,8 @@ def generate_stan_fit_code_(
                     FunctionCall([F_tot_scale, 0.5 * F_tot_scale], "normal"),
                 ]
             )
-            StringExpression([alpha, " ~ normal(2.0, 2.0)"])
+            StringExpression([src_index, " ~ normal(2.0, 2.0)"])
+            StringExpression([diff_index], " ~ normal(2.0, 2.0)")
 
     fit_gen.generate_single_file()
 

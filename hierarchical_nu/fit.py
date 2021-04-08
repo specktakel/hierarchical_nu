@@ -294,10 +294,13 @@ class StanFit:
 
         event_type = self._detector_model_type.event_types[0]
         fit_inputs["Ngrid"] = len(
-            self._exposure_integral[event_type].par_grids["index"]
+            self._exposure_integral[event_type].par_grids["src_index"]
         )
-        fit_inputs["alpha_grid"] = self._exposure_integral[event_type].par_grids[
-            "index"
+        fit_inputs["src_index_grid"] = self._exposure_integral[event_type].par_grids[
+            "src_index"
+        ]
+        fit_inputs["diff_index_grid"] = self._exposure_integral[event_type].par_grids[
+            "diff_index"
         ]
 
         if self._detector_model_type == IceCubeDetectorModel:
@@ -364,6 +367,7 @@ class StanFit:
     def _generate_stan_fit_code(self):
 
         ps_spec_shape = self._sources.sources[0].flux_model.spectral_shape
+        diff_spec_shape = self._sources.diffuse_component().flux_model.spectral_shape
 
         if self._sources.atmo_component():
             atmo_flux_model = self._sources.atmo_component().flux_model
@@ -378,12 +382,14 @@ class StanFit:
                 filename,
                 self._detector_model_type,
                 ps_spec_shape,
+                diff_spec_shape,
                 atmo_flux_model=atmo_flux_model,
                 diffuse_bg_comp=self._sources.diffuse_component(),
                 atmospheric_comp=self._sources.atmo_component(),
                 theta_points=30,
                 lumi_par_range=Parameter.get_parameter("luminosity").par_range,
-                alpha_par_range=Parameter.get_parameter("index").par_range,
+                src_index_par_range=Parameter.get_parameter("src_index").par_range,
+                diff_index_par_range=Parameter.get_parameter("diff_index").par_range,
             )
 
         else:
@@ -397,5 +403,6 @@ class StanFit:
                 atmospheric_comp=self._sources.atmo_component(),
                 theta_points=30,
                 lumi_par_range=Parameter.get_parameter("luminosity").par_range,
-                alpha_par_range=Parameter.get_parameter("index").par_range,
+                src_index_par_range=Parameter.get_parameter("src_index").par_range,
+                diff_index_par_range=Parameter.get_parameter("diff_index").par_range,
             )
