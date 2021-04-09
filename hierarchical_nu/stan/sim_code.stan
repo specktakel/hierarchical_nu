@@ -1157,7 +1157,7 @@ E[i] = (Esrc[i]/(1+z[Lambda[i]]));
 }
 else if(Lambda[i] == (Ns+1))
 {
-E[i] = diff_spectrum_rng(diff_index, Esrc_min, Esrc_max);
+Esrc[i] = diff_spectrum_rng(diff_index, Esrc_min, Esrc_max);
 E[i] = (Esrc[i]/(1+z[Lambda[i]]));
 }
 else if(Lambda[i] == (Ns+2))

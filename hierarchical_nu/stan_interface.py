@@ -297,7 +297,7 @@ def generate_main_sim_code_(
 
                     if diffuse_bg_comp:
                         with ElseIfBlockContext([StringExpression([lam[i], " == ", Ns + 1])]):
-                            E[i] << diff_spectrum_rng(diff_index, Esrc_min, Esrc_max)
+                            Esrc[i] << diff_spectrum_rng(diff_index, Esrc_min, Esrc_max)
                             E[i] << Esrc[i] / (1 + z[lam[i]])
 
                     if atmospheric_comp:
