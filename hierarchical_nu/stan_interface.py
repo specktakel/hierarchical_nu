@@ -1381,7 +1381,7 @@ def generate_stan_fit_code_(
                 ]
             )
             StringExpression([src_index, " ~ normal(2.0, 2.0)"])
-            StringExpression([diff_index], " ~ normal(2.0, 2.0)")
+            StringExpression([diff_index, " ~ normal(2.0, 2.0)"])
 
     fit_gen.generate_single_file()
 
