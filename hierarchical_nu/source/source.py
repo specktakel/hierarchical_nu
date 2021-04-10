@@ -307,20 +307,23 @@ class Sources:
         flux_norm: Parameter,
         norm_energy: u.GeV,
         diff_index: Parameter,
+        z: float = 0,
     ):
         """
         Add diffuse component based on point
-        source component definition.
+        source component definition. By default, the diffuse background is
+        defined at the Earth (z=0) and so the associated background parameters
+        are *observed* background properties and not *source population*
+        properties.
 
         :param flux_norm: The flux normalization for this component
         :param norm_energy: The energy at which the flux norm is defined
+        :param diff_index: The index of the power law spectrum
+        :param z: The redshift of the background shell
         """
 
         Emin = Parameter.get_parameter("Emin")
         Emax = Parameter.get_parameter("Emax")
-
-        # Check maximum redshift of supplied sources
-        zth = self._get_max_ps_redshift()
 
         # define flux model
         spectral_type = self._get_ps_spectral_type()
@@ -330,13 +333,13 @@ class Sources:
         flux_model = IsotropicDiffuseBG(spectral_shape)
 
         # define component
-        diffuse_component = DiffuseSource("diffuse_bg", zth, flux_model=flux_model)
+        diffuse_component = DiffuseSource("diffuse_bg", z, flux_model=flux_model)
 
         self.add(diffuse_component)
 
     def _get_max_ps_redshift(self):
         """
-        Check maximum redshift of exisiting point sources.
+        Check maximum redshift of exsiting point sources.
         """
 
         z = []
