@@ -25,6 +25,11 @@ import astropy.units as u
 ## Sources
 
 ```python
+import sys
+sys.path.append("../")
+```
+
+```python
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 ```
@@ -98,7 +103,7 @@ obs_time = 10 * u.year
 sim = Simulation(my_sources, IceCubeDetectorModel, obs_time)
 ```
 
-Below are shown all the necessary steps to set up and run a simulation for clarity. There is also the handy sim.setup_and_run() option which calls everythin.
+Below are shown all the necessary steps to set up and run a simulation for clarity. There is also the handy sim.setup_and_run() option which calls everything.
 
 ```python
 sim.precomputation()
@@ -108,7 +113,7 @@ sim.run(verbose=True, seed=42)
 sim.save("output/test_sim_file.h5")
 ```
 
-We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~90 simulated events with a clear source in the centre of the sky.
+We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~ simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
 
 ```python
 fig, ax = sim.show_spectrum()
