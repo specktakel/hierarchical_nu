@@ -1212,9 +1212,9 @@ def generate_stan_fit_code_(
             diff_index_min, diff_index_max = diff_index_par_range
             
             L = ParameterDef("L", "real", Lmin, Lmax)
-            F_diff = ParameterDef("F_diff", "real", 0.0, 1e-6)
+            F_diff = ParameterDef("F_diff", "real", 0.0, 1e-4)
             if atmospheric_comp:
-                F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-6)
+                F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-4)
 
             src_index = ParameterDef("src_index", "real", src_index_min, src_index_max)
 

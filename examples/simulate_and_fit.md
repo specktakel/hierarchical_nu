@@ -169,10 +169,6 @@ fit.save("output/test.h5")
 We can check the results of the fit against the known true values from the above simulation. The `SimInfo` class pulls the interesting information out of our saved simulation for this purpose. 
 
 ```python
-from hierarchical_nu.simulation import SimInfo
-```
-
-```python
 sim_info = SimInfo.from_file("output/test_sim_file.h5")
 fig = fit.corner_plot(truths=sim_info.truths)
 ```
