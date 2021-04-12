@@ -442,8 +442,8 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
 
         for comp in range(self.n_components):
 
-            mu = np.poly1d(self.poly_params_mu[comp])(np.log10(true_energy.value))
-            sigma = np.poly1d(self.poly_params_sd[comp])(np.log10(true_energy.value))
+            mu = np.poly1d(self.poly_params_mu[comp])(np.log10(true_energy.to(u.GeV).value))
+            sigma = np.poly1d(self.poly_params_sd[comp])(np.log10(true_energy.to(u.GeV).value))
             model_params += [mu, sigma]
 
         prob = 1 - model(np.log10(threshold_energy.value), model_params)

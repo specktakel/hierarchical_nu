@@ -2,6 +2,7 @@ from typing import Sequence, Tuple
 import os
 import pandas as pd
 import numpy as np
+from astropy import units as u
 
 from ..utils.cache import Cache
 from ..backend import (
@@ -130,7 +131,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         self._mode = mode
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
-        self._poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
+        self._poly_limits: Tuple[float, float] = (1E2, 1E8)
 
         self._n_components = 3
         self.setup()
@@ -329,6 +330,20 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         self._poly_params_mu = poly_params_mu
         self._poly_params_sd = poly_params_sd
         self._poly_limits = poly_limits
+        
+        
+    @u.quantity_input
+    def prob_Edet_above_threshold(self, true_energy: u.GeV, threshold_energy: u.GeV):
+        """
+        P(Edet > Edet_min | E) for use in precomputation.
+        """
+        
+        # Truncate input energies to safe range
+        energy_trunc = true_energy.to(u.GeV).value
+        energy_trunc[energy_trunc < self._poly_limits[0]] = self._poly_limits[0]
+        energy_trunc[energy_trunc > self._poly_limits[1]] = self._poly_limits[1]
+        
+        return super().prob_Edet_above_threshold(energy_trunc << u.GeV, threshold_energy)
 
 
 class NorthernTracksAngularResolution(AngularResolution):
