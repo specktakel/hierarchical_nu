@@ -76,10 +76,12 @@ class ExposureIntegral:
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
 
+        """
         # Setup effective area to match Emin/Emax
         self._effective_area.set_energy_range(
             self._min_src_energy, self._max_src_energy
         )
+        """
 
         self._parameter_source_map = defaultdict(list)
         self._source_parameter_map = defaultdict(list)
@@ -151,6 +153,7 @@ class ExposureIntegral:
             integral = source.flux_model.spectral_shape.integral(
                 lower_e_edges, upper_e_edges
             )
+            print(integral.sum())
 
             if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
                 self.effective_area.cosz_bin_edges
