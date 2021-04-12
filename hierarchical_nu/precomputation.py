@@ -153,7 +153,6 @@ class ExposureIntegral:
             integral = source.flux_model.spectral_shape.integral(
                 lower_e_edges, upper_e_edges
             )
-            print(integral.sum())
 
             if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
                 self.effective_area.cosz_bin_edges
