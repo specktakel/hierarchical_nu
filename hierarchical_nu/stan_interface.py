@@ -297,7 +297,7 @@ def generate_main_sim_code_(
 
                     if diffuse_bg_comp:
                         with ElseIfBlockContext([StringExpression([lam[i], " == ", Ns + 1])]):
-                            E[i] << diff_spectrum_rng(diff_index, Esrc_min, Esrc_max)
+                            Esrc[i] << diff_spectrum_rng(diff_index, Esrc_min, Esrc_max)
                             E[i] << Esrc[i] / (1 + z[lam[i]])
 
                     if atmospheric_comp:
@@ -1212,9 +1212,9 @@ def generate_stan_fit_code_(
             diff_index_min, diff_index_max = diff_index_par_range
             
             L = ParameterDef("L", "real", Lmin, Lmax)
-            F_diff = ParameterDef("F_diff", "real", 0.0, 1e-6)
+            F_diff = ParameterDef("F_diff", "real", 0.0, 1e-4)
             if atmospheric_comp:
-                F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-6)
+                F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-4)
 
             src_index = ParameterDef("src_index", "real", src_index_min, src_index_max)
 
@@ -1381,7 +1381,7 @@ def generate_stan_fit_code_(
                 ]
             )
             StringExpression([src_index, " ~ normal(2.0, 2.0)"])
-            StringExpression([diff_index], " ~ normal(2.0, 2.0)")
+            StringExpression([diff_index, " ~ normal(2.0, 2.0)"])
 
     fit_gen.generate_single_file()
 

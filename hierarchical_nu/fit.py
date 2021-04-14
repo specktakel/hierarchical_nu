@@ -405,6 +405,7 @@ class StanFit:
                 filename,
                 self._detector_model_type,
                 ps_spec_shape,
+                diff_spec_shape,
                 atmo_flux_model=atmo_flux_model,
                 diffuse_bg_comp=self._sources.diffuse_component(),
                 atmospheric_comp=self._sources.atmo_component(),

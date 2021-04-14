@@ -1250,8 +1250,7 @@ vector[Ns] D;
 vector[Ns+1] z;
 real src_index;
 real diff_index;
-real Emin_det_tracks;
-real Emin_det_cascades;
+real Emin_det;
 real Esrc_min;
 real Esrc_max;
 real L;
@@ -1259,35 +1258,22 @@ real F_diff;
 int Ngrid;
 vector[Ngrid] src_index_grid;
 vector[Ngrid] diff_index_grid;
-vector[Ngrid] integral_grid_t[Ns+1];
-vector[Ngrid] integral_grid_c[Ns+1];
-real aeff_t_max;
-real aeff_c_max;
+vector[Ngrid] integral_grid[Ns+1];
+real aeff_max;
 real v_lim;
 real T;
-real F_atmo;
-real atmo_integ_val;
-int N_atmo;
-unit_vector[3] atmo_directions[N_atmo];
-vector[N_atmo] atmo_energies;
-simplex[N_atmo] atmo_weights;
 }
 transformed data
 {
-vector[Ns+2] F;
-simplex[Ns+2] w_exposure_t;
-simplex[Ns+1] w_exposure_c;
-vector[Ns+2] eps_t;
-vector[Ns+1] eps_c;
+vector[Ns+1] F;
+simplex[Ns+1] w_exposure;
+vector[Ns+1] eps;
 int track_type;
 int cascade_type;
 real Ftot;
 real Fs;
 real f;
-real Nex_t;
-real Nex_c;
-int N_t;
-int N_c;
+real Nex;
 int N;
 track_type = 0;
 cascade_type = 1;
@@ -1299,20 +1285,17 @@ F[k]*=flux_conv(src_index, Esrc_min, Esrc_max);
 Fs += F[k];
 }
 F[Ns+1] = F_diff;
-F[Ns+2] = F_atmo;
-Ftot = ((Fs+F_diff)+F_atmo);
+Ftot = (Fs+F_diff);
 f = Fs/Ftot;
 print("f: ", f);
-eps_t = get_exposure_factor_atmo(src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, atmo_integ_val, T, Ns);
-eps_c = get_exposure_factor(src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_c, T, Ns);
-Nex_t = get_Nex(F, eps_t);
-w_exposure_t = get_exposure_weights(F, eps_t);
-Nex_c = get_Nex(F, eps_c);
-w_exposure_c = get_exposure_weights(F, eps_c);
-N_t = poisson_rng(Nex_t);
-N_c = poisson_rng(Nex_c);
-N = (N_t+N_c);
-print("Ngrid: ", Ngrid);
+eps = get_exposure_factor(src_index, diff_index, src_index_grid, diff_index_grid, integral_grid, T, Ns);
+Nex = get_Nex(F, eps);
+w_exposure = get_exposure_weights(F, eps);
+N = poisson_rng(Nex);
+print(w_exposure);
+print(Ngrid);
+print(Nex);
+print(N);
 }
 generated quantities
 {
@@ -1321,7 +1304,6 @@ unit_vector[3] omega;
 vector[N] Esrc;
 vector[N] E;
 vector[N] Edet;
-int atmo_index;
 real cosz[N];
 real Pdet[N];
 int accept;
@@ -1329,18 +1311,15 @@ int detected;
 int ntrials;
 simplex[2] prob;
 unit_vector[3] event[N];
-real Nex_t_sim;
-real Nex_c_sim;
+real Nex_sim;
 vector[N] event_type;
 vector[N] kappa;
-Nex_t_sim = Nex_t;
-Nex_c_sim = Nex_c;
-for (i in 1:N_t)
+Nex_sim = Nex;
+for (i in 1:N)
 {
 vector[6] NorthernTracksAngularResolutionPolyCoeffs = [ 3.11287843e+01,-8.72542968e+02, 8.74576241e+03,-3.72847494e+04,
   7.46309205e+04,-5.73160697e+04]';
-event_type[i] = track_type;
-Lambda[i] = categorical_rng(w_exposure_t);
+Lambda[i] = categorical_rng(w_exposure);
 accept = 0;
 detected = 0;
 ntrials = 0;
@@ -1354,11 +1333,6 @@ else if(Lambda[i] == (Ns+1))
 {
 omega = sphere_lim_rng(1, v_lim);
 }
-else if(Lambda[i] == (Ns+2))
-{
-atmo_index = categorical_rng(atmo_weights);
-omega = atmo_directions[atmo_index];
-}
 cosz[i] = cos(omega_to_zenith(omega));
 if(Lambda[i] <= Ns)
 {
@@ -1370,11 +1344,14 @@ else if(Lambda[i] == (Ns+1))
 Esrc[i] = diff_spectrum_rng(diff_index, Esrc_min, Esrc_max);
 E[i] = (Esrc[i]/(1+z[Lambda[i]]));
 }
-else if(Lambda[i] == (Ns+2))
+if(cosz[i]>= 0.1)
 {
-E[i] = atmo_energies[atmo_index];
+Pdet[i] = 0;
 }
-Pdet[i] = (NorthernTracksEffectiveArea(E[i], omega)/aeff_t_max);
+else
+{
+Pdet[i] = (NorthernTracksEffectiveArea(E[i], omega)/aeff_max);
+}
 Edet[i] = (10^NorthernTracksEnergyResolution_rng(E[i]));
 prob[1] = Pdet[i];
 prob[2] = (1-Pdet[i]);
@@ -1382,7 +1359,7 @@ ntrials += 1;
 if(ntrials< 1000000)
 {
 detected = categorical_rng(prob);
-if((Edet[i] >= Emin_det_tracks) && ((detected==1)))
+if((Edet[i] >= Emin_det) && ((detected==1)))
 {
 accept = 1;
 }
@@ -1396,58 +1373,6 @@ print("problem component: ", Lambda[i]);
 }
 event[i] = NorthernTracksAngularResolution_rng(E[i], omega);
 kappa[i] = eval_poly1d(log10(truncate_value(E[i], 133.9845723819148, 772161836.8251529)),NorthernTracksAngularResolutionPolyCoeffs);
-}
-for (i in N_t+1:N)
-{
-vector[6] CascadesAngularResolutionPolyCoeffs = [-4.84839608e-01, 3.59082699e+00, 4.39765349e+01,-4.86964043e+02,
-  1.50499694e+03,-1.48474342e+03]';
-event_type[i] = cascade_type;
-Lambda[i] = categorical_rng(w_exposure_c);
-accept = 0;
-detected = 0;
-ntrials = 0;
-while((accept!=1))
-{
-if(Lambda[i] <= Ns)
-{
-omega = varpi[Lambda[i]];
-}
-else if(Lambda[i] == (Ns+1))
-{
-omega = sphere_lim_rng(1, 0);
-}
-cosz[i] = cos(omega_to_zenith(omega));
-if(Lambda[i] <= Ns)
-{
-Esrc[i] = src_spectrum_rng(src_index, Esrc_min, Esrc_max);
-E[i] = (Esrc[i]/(1+z[Lambda[i]]));
-}
-else if(Lambda[i] == (Ns+1))
-{
-Esrc[i] = diff_spectrum_rng(diff_index, Esrc_min, Esrc_max);
-E[i] = (Esrc[i]/(1+z[Lambda[i]]));
-}
-Pdet[i] = (CascadesEffectiveArea(E[i], omega)/aeff_c_max);
-Edet[i] = (10^CascadeEnergyResolution_rng(E[i]));
-prob[1] = Pdet[i];
-prob[2] = (1-Pdet[i]);
-ntrials += 1;
-if(ntrials< 1000000)
-{
-detected = categorical_rng(prob);
-if((Edet[i] >= Emin_det_cascades) && ((detected==1)))
-{
-accept = 1;
-}
-}
-else
-{
-accept = 1;
-print("problem component: ", Lambda[i]);
-;
-}
-}
-event[i] = CascadesAngularResolution_rng(E[i], omega);
-kappa[i] = eval_poly1d(log10(truncate_value(E[i], 100.0, 100000000.0)),CascadesAngularResolutionPolyCoeffs);
+event_type[i] = track_type;
 }
 }

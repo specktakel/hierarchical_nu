@@ -1,6 +1,7 @@
 ---
 jupyter:
   jupytext:
+    formats: ipynb,md
     text_representation:
       extension: .md
       format_name: markdown
@@ -23,6 +24,11 @@ import astropy.units as u
 ```
 
 ## Sources
+
+```python
+import sys
+sys.path.append("../")
+```
 
 ```python
 from hierarchical_nu.source.parameter import Parameter
@@ -161,10 +167,6 @@ fit.save("output/test.h5")
 ```
 
 We can check the results of the fit against the known true values from the above simulation. The `SimInfo` class pulls the interesting information out of our saved simulation for this purpose. 
-
-```python
-from hierarchical_nu.simulation import SimInfo
-```
 
 ```python
 sim_info = SimInfo.from_file("output/test_sim_file.h5")
