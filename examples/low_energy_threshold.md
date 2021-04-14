@@ -150,15 +150,15 @@ ax.hist(np.log10(src_Edets))
 ```
 
 ```python
+data["Esrc_min"]
+```
+
+```python
 stanc_options = {"include_paths": ["/Users/fran/projects/hierarchical_nu/hierarchical_nu/stan"]}
 stan_model = CmdStanModel(
     stan_file="../hierarchical_nu/stan/energy_only.stan",
     stanc_options=stanc_options,
 )
-```
-
-```python
-
 ```
 
 ```python
