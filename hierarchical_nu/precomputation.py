@@ -230,12 +230,6 @@ class ExposureIntegral:
 
                 integral_grids_tmp[indices] += self.calculate_rate(source)
 
-            # To make units compatible with Stan model parametrisation
-            self._integral_grid.append(
-                integral_grids_tmp
-                / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
-            )
-
             # Reset free parameters to original values
             for par_name in this_free_pars:
                 par = Parameter.get_parameter(par_name)
@@ -245,6 +239,12 @@ class ExposureIntegral:
                     par.value = original_values[k]
                 else:
                     par.value = original_values[0]
+
+            # To make units compatible with Stan model parametrisation
+            self._integral_grid.append(
+                integral_grids_tmp
+                / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
+            )
 
     def _compute_energy_detection_factor(self):
         """
