@@ -43,7 +43,7 @@ with StanGenerator():
 
 ```python
 Egrid = 10**np.linspace(2.0, 9, 100) * u.GeV
-Eth = 1e5
+Eth = 6e3
 P = eres.prob_Edet_above_threshold(Egrid, Eth * u.GeV)
 fig, ax = plt.subplots()
 ax.plot(np.log10(Egrid.value), P)
