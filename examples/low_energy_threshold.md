@@ -38,7 +38,7 @@ from hierarchical_nu.source.source import Sources, PointSource
 Parameter.clear_registry()
 src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1, 4))
 diff_index = Parameter(2.6, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(3E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
+L = Parameter(5E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
 diffuse_norm = Parameter(2e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
@@ -47,7 +47,7 @@ Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 ```
 
 ```python
-Emin_det = Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
+Emin_det = Parameter(6e4 * u.GeV, "Emin_det", fixed=True)
 
 #Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
 #Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
@@ -82,20 +82,9 @@ from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 
 ```python
 obs_time = 10 * u.year
-#sim = Simulation(my_sources, CascadesDetectorModel, obs_time)
-sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
+sim = Simulation(my_sources, CascadesDetectorModel, obs_time)
+#sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
 #sim = Simulation(my_sources, IceCubeDetectorModel, obs_time)
-```
-
-```python
-sim.precomputation()
-```
-
-```python
-# Expected from rate calc
-Nex_ps = sim._exposure_integral['tracks'].calculate_rate(point_source) * obs_time.to(u.s)
-Nex_bg = sim._exposure_integral['tracks'].calculate_rate(my_sources.sources[1]) * obs_time.to(u.s)
-Nex_bg + Nex_ps
 ```
 
 ```python
@@ -119,72 +108,6 @@ fig, ax = sim.show_spectrum()
 fig, ax = sim.show_skymap()
 ```
 
-## Fit only source energy spectrum
-
-```python
-from cmdstanpy import CmdStanModel
-```
-
-```python
-exp_int = sim._exposure_integral["tracks"]
-```
-
-```python
-# extract source energies
-sel = sim._sim_output.stan_variable("Lambda") == 1
-src_Edets = sim._sim_output.stan_variable("Edet")[sel]
-
-data = {}
-data["N"] = len(src_Edets)
-data["Edet"] = src_Edets
-data["Esrc_min"] = Emin.value.value
-data["Esrc_max"] = Emax.value.value
-data["Ngrid"] = 50
-data["E_grid"] = exp_int.energy_grid.value
-data["Pdet_grid"] = exp_int.pdet_grid[0] 
-```
-
-```python
-fig, ax = plt.subplots()
-ax.hist(np.log10(src_Edets))
-```
-
-```python
-data["Esrc_min"]
-```
-
-```python
-stanc_options = {"include_paths": ["/Users/fran/projects/hierarchical_nu/hierarchical_nu/stan"]}
-stan_model = CmdStanModel(
-    stan_file="../hierarchical_nu/stan/energy_only.stan",
-    stanc_options=stanc_options,
-)
-```
-
-```python
-fit = stan_model.sample(data=data, chains=1, iter_sampling=1000)
-```
-
-```python
-fig, ax = plt.subplots()
-ax.hist(fit.stan_variable("src_index"));
-```
-
-```python
-ig = fit.stan_variable("index_grid")
-lp = fit.stan_variable("lp_grid")
-```
-
-```python
-fig, ax = plt.subplots()
-for _ in lp:
-    ax.plot(ig[0], _)
-```
-
-```python
-lp[2]
-```
-
 ## Fit
 
 ```python
@@ -202,8 +125,8 @@ obs_time = 10 * u.year
 ```
 
 ```python
-#fit = StanFit(my_sources, CascadesDetectorModel, events, obs_time)
-fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
+fit = StanFit(my_sources, CascadesDetectorModel, events, obs_time)
+#fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
 #fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time)
 ```
 
@@ -214,7 +137,7 @@ fit.generate_stan_code()
 
 ```python
 fit.compile_stan_code()
-fit.run(show_progress=False, seed=np.random.randint(1, 100000), chains=2)
+fit.run(show_progress=True, seed=42, chains=1)
 ```
 
 ```python
@@ -234,6 +157,8 @@ fig = fit.corner_plot(truths=sim_info.truths)
 fit.check_classification(sim_info.outputs)
 ```
 
+## Debugging
+
 ```python
 lp = fit._fit_output.sampler_variables()["lp__"]
 ```
@@ -241,15 +166,6 @@ lp = fit._fit_output.sampler_variables()["lp__"]
 ```python
 fig, ax = plt.subplots()
 ax.hist(lp);
-#ax.hist(lp_broken)
-```
-
-```python
-lp_broken = lp
-```
-
-```python
-sim_info.truths
 ```
 
 ```python
@@ -267,10 +183,6 @@ ax.set_yscale("log")
 ```
 
 ```python
-fit_inputs["z"]
-```
-
-```python
 fig, ax = plt.subplots()
 ax.hist(fit._fit_output.stan_variable("Nex"));
 ```
@@ -279,22 +191,6 @@ ax.hist(fit._fit_output.stan_variable("Nex"));
 fig, ax = plt.subplots()
 ax.hist(np.log10(fit._fit_output.stan_variable("Fsrc")));
 ax.axvline(np.log10(point_source.flux_model.total_flux_int.value), color='k')
-```
-
-```python
-fit_inputs["Esrc_max"]
-```
-
-```python
-fit_inputs["diff_index_grid"] == sim._sim_inputs["diff_index_grid"]
-```
-
-```python
-fit_inputs["T"] == sim._sim_inputs["T"]
-```
-
-```python
-np.mean(fit._fit_output.stan_variable("Fsrc"))
 ```
 
 ```python
@@ -317,7 +213,7 @@ ax.plot(index_grid, [flux_conv_(_, 1e4, 1e8) for _ in index_grid])
 ax.set_yscale("log")
 ```
 
-## Debug
+## Check energy resolution
 
 ```python
 from cmdstanpy import CmdStanModel
@@ -404,14 +300,6 @@ output = stan_model.sample(
 )
 
 e_res = output.stan_variable("e_res")
-```
-
-```python
-e_true
-```
-
-```python
-np.shape(output.stan_variable("e_res").squeeze())
 ```
 
 ```python
