@@ -134,6 +134,9 @@ class CascadesEnergyResolution(EnergyResolution):
         self._poly_params_sd: Sequence = []
         self._poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
 
+        # For prob_Edet_above_threshold
+        self._pdet_limits = (5e2, 1e8)
+
         # Mixture of 3 lognormals
         self._n_components = 4
 
