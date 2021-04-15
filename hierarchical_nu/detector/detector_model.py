@@ -435,15 +435,25 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         P(Edet > Edet_min | E) for use in precomputation.
         """
 
+        # Truncate input energies to safe range
+        energy_trunc = true_energy.to(u.GeV).value
+        energy_trunc[energy_trunc < self._pdet_limits[0]] = self._pdet_limits[0]
+        energy_trunc[energy_trunc > self._pdet_limits[1]] = self._pdet_limits[1]
+        energy_trunc = energy_trunc * u.GeV
+
         model = self.make_cumulative_model(self.n_components)
 
-        prob = np.zeros_like(true_energy)
+        prob = np.zeros_like(energy_trunc)
         model_params: List[float] = []
 
         for comp in range(self.n_components):
 
-            mu = np.poly1d(self.poly_params_mu[comp])(np.log10(true_energy.to(u.GeV).value))
-            sigma = np.poly1d(self.poly_params_sd[comp])(np.log10(true_energy.to(u.GeV).value))
+            mu = np.poly1d(self.poly_params_mu[comp])(
+                np.log10(energy_trunc.to(u.GeV).value)
+            )
+            sigma = np.poly1d(self.poly_params_sd[comp])(
+                np.log10(energy_trunc.to(u.GeV).value)
+            )
             model_params += [mu, sigma]
 
         prob = 1 - model(np.log10(threshold_energy.value), model_params)

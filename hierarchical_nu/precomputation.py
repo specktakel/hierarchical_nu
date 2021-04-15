@@ -255,7 +255,11 @@ class ExposureIntegral:
         Emin = min(self.effective_area.tE_bin_edges)
         Emax = max(self.effective_area.tE_bin_edges)
         self.energy_grid = (
-            10 ** np.linspace(np.log10(Emin), np.log10(Emax - epsilon)) << u.GeV
+            10
+            ** np.linspace(
+                np.log10(Emin), np.log10(Emax - epsilon), self._n_grid_points
+            )
+            << u.GeV
         )
 
         self.pdet_grid = []
