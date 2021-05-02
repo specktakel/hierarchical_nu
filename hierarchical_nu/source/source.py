@@ -413,46 +413,74 @@ class Sources:
 
     def organise(self):
         """
-        Make sure diffuse and atmo components are second-to-last
+        Check what sources are in list and make
+        sure diffuse and atmo components are second-to-last
         and last respectively (if they exist).
 
-        NB: assumes only one diff/atmo component.
+        NB: assumes only one of each diff and atmo component.
         """
 
-        ps = []
-        self._diffuse_component = None
-        self._atmo_component = None
+        self._point_source = []
+        self._diffuse = None
+        self._atmospheric = None
 
         for source in self.sources:
+
             if isinstance(source, PointSource):
-                ps.append(source)
+
+                self._point_source.append(source)
 
             elif isinstance(source, DiffuseSource):
+
                 if isinstance(source.flux_model, IsotropicDiffuseBG):
-                    self._diffuse_component = source
+
+                    self._diffuse = source
+
                 elif isinstance(source.flux_model, AtmosphericNuMuFlux):
-                    self._atmo_component = source
-        new_list = ps
-        if self._diffuse_component:
-            new_list.append(self._diffuse_component)
-        if self._atmo_component:
-            new_list.append(self._atmo_component)
+
+                    self._atmospheric = source
+
+        new_list = self._point_source.copy()
+
+        if self._diffuse:
+
+            new_list.append(self._diffuse)
+
+        if self._atmospheric:
+
+            new_list.append(self._atmospheric)
 
         self.sources = new_list
 
-    def diffuse_component(self):
-        self.organise()
-        return self._diffuse_component
+    @property
+    def point_source(self):
 
-    def atmo_component(self):
         self.organise()
-        return self._atmo_component
+
+        return self._point_source
+
+    @property
+    def diffuse(self):
+
+        self.organise()
+
+        return self._diffuse
+
+    @property
+    def atmospheric(self):
+
+        self.organise()
+
+        return self._atmospheric
 
     def __iter__(self):
+
         for source in self._sources:
+
             yield source
 
     def __getitem__(self, key):
+
         return self._sources[key]
 
 
