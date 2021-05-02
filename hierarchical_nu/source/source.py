@@ -484,7 +484,7 @@ class Sources:
     @property
     def diffuse_spectrum(self):
 
-        self._organise()
+        self.organise()
 
         if self._diffuse:
 
