@@ -1,6 +1,7 @@
 import numpy as np
 import collections
 import os
+from abc import ABCMeta, abstractmethod
 
 from .events import TRACKS, CASCADES
 
@@ -36,6 +37,209 @@ from .detector.cascades import CascadesDetectorModel
 
 
 STAN_PATH = os.path.join(os.path.dirname(__file__), "stan")
+
+
+class StanInterface(object, metaclass=ABCMeta):
+    """
+    Abstract base class for fleixble interface to
+    Stan code generation.
+    """
+
+    def __init__(
+        self,
+        output_file,
+        sources,
+        includes=["interpolation.stan", "utils.stan"],
+    ):
+        """
+        :param output_file: Name of output Stan file
+        :param sources: Sources object
+        """
+
+        self._includes = includes
+
+        self._output_file = output_file
+
+        self._sources = sources
+
+        self._get_source_info()
+
+        self._code_gen = StanFileGenerator(output_file)
+
+    def _get_source_info(self):
+        """
+        Store some useful source info.
+        """
+
+        self._ps_spectrum = None
+
+        self._diff_spectrum = None
+
+        if self._sources.point_source:
+
+            self._ps_spectrum = self.sources.point_source_spectrum
+
+        if self._sources.diffuse:
+
+            self._diff_spectrum = self.sources.diffuse_spectrum
+
+    @abstractmethod
+    def _functions(self):
+
+        pass
+
+    @abstractmethod
+    def _data(self):
+
+        pass
+
+    def _transformed_data(self):
+
+        pass
+
+    def _parameters(self):
+
+        pass
+
+    def _transformed_parameters(self):
+
+        pass
+
+    def _model(self):
+
+        pass
+
+    def _generated_quantities(self):
+
+        pass
+
+    def generate(self):
+
+        with self._code_gen:
+
+            self._functions()
+
+            self._data()
+
+            self._transformed_data()
+
+            self._parameters()
+
+            self._transformed_parameters()
+
+            self._model()
+
+            self._generated_quantities()
+
+        self._code_gen.generate_single_file()
+
+        return self._code_gen.filename
+
+    @property
+    def includes(self):
+
+        return self._includes
+
+    @property
+    def output_file(self):
+
+        return self._output_file
+
+    @property
+    def sources(self):
+
+        return self._sources
+
+
+class StanSimInterface(StanInterface):
+    """
+    For generating Stan sim code.
+    """
+
+    def __init__(
+        self,
+        output_file,
+        sources,
+        includes=["interpolation.stan", "utils.stan", "vMF.stan"],
+    ):
+
+        super().__init__(
+            output_file=output_file,
+            sources=sources,
+            includes=includes,
+        )
+
+    def functions(self):
+
+        with FunctionsContext():
+
+            for include_file in self._includes:
+                _ = Include(include_file)
+
+            if self.sources.point_source:
+
+                self._src_spectrum_rng = self._ps_spectrum.make_stan_sampling_func(
+                    "src_spectrum_rng"
+                )
+
+                self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
+                    "flux_conv"
+                )
+
+            if self.sources.diffuse:
+
+                self._diff_spectrum_rng = self._diff_spectrum.make_stan_sampling_func(
+                    "diff_spectrum_rng"
+                )
+
+    def data(self):
+
+        with DataContext():
+
+            self._Ns = ForwardVariableDef("Ns", "int")
+            self._Ns_str = ["[", self._Ns, "]"]
+            self._Ns_1p_str = ["[", self._Ns, "+1]"]
+
+            self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
+            self._D = ForwardVariableDef("D", "vector[Ns]")
+
+            if self.sources.diffuse:
+
+                self._z = ForwardVariableDef("z", "vector[Ns+1]")
+
+            else:
+
+                self._z = ForwardVariableDef("z", "vector[Ns]")
+
+            # Energies
+            self._src_index = ForwardVariableDef("src_index", "real")
+            self._diff_index = ForwardVariableDef("diff_index", "real")
+            self._Emin_det = ForwardVariableDef("Emin_det", "real")
+            self._Esrc_min = ForwardVariableDef("Esrc_min", "real")
+            self._Esrc_max = ForwardVariableDef("Esrc_max", "real")
+
+            # Luminosity/diffuse fluxes
+            if self.sources.point_source:
+
+                self._L = ForwardVariableDef("L", "real")
+
+            if self.sources.diffuse:
+
+                self._F_diff = ForwardVariableDef("F_diff", "real")
+
+            if self.sources.atmospheric:
+
+                self._F_atmo = ForwardVariableDef("F_atmo", "real")
+
+
+class StanFitInterface(StanInterface):
+    """
+    For generating Stan fit code.
+    """
+
+    def __init__(self, output_file):
+
+        super().__init__(output_file=output_file)
 
 
 def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):
@@ -85,283 +289,6 @@ def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):
         return atmo_gen.filename
 
 
-def generate_main_sim_code_(
-    filename,
-    ps_spec_shape,
-    diff_spec_shape,
-    detector_model_type,
-    diffuse_bg_comp=True,
-    atmospheric_comp=True,
-):
-
-    with StanFileGenerator(filename) as sim_gen:
-
-        with FunctionsContext():
-            _ = Include("interpolation.stan")
-            _ = Include("utils.stan")
-            _ = Include("vMF.stan")
-
-            src_spectrum_rng = ps_spec_shape.make_stan_sampling_func("src_spectrum_rng")
-            diff_spectrum_rng = diff_spec_shape.make_stan_sampling_func("diff_spectrum_rng")
-            flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
-
-        with DataContext():
-
-            # Sources
-            Ns = ForwardVariableDef("Ns", "int")
-            Ns_str = ["[", Ns, "]"]
-            Ns_1p_str = ["[", Ns, "+1]"]
-
-            varpi = ForwardArrayDef("varpi", "unit_vector[3]", Ns_str)
-            D = ForwardVariableDef("D", "vector[Ns]")
-            if diffuse_bg_comp:
-                z = ForwardVariableDef("z", "vector[Ns+1]")
-            else:
-                z = ForwardVariableDef("z", "vector[Ns]")
-
-            # Energies
-            src_index = ForwardVariableDef("src_index", "real")
-            diff_index = ForwardVariableDef("diff_index", "real")
-            Emin_det = ForwardVariableDef("Emin_det", "real")
-            Esrc_min = ForwardVariableDef("Esrc_min", "real")
-            Esrc_max = ForwardVariableDef("Esrc_max", "real")
-
-            # Luminosity/ diffuse flux
-            L = ForwardVariableDef("L", "real")
-            F_diff = ForwardVariableDef("F_diff", "real")
-
-            # Precomputed quantities
-            Ngrid = ForwardVariableDef("Ngrid", "int")
-            src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
-            diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
-            
-            if diffuse_bg_comp:
-                integral_grid = ForwardArrayDef(
-                    "integral_grid", "vector[Ngrid]", Ns_1p_str
-                )
-            else:
-                integral_grid = ForwardArrayDef(
-                    "integral_grid", "vector[Ngrid]", Ns_str
-                )
-
-            aeff_max = ForwardVariableDef("aeff_max", "real")
-
-            v_lim = ForwardVariableDef("v_lim", "real")
-            T = ForwardVariableDef("T", "real")
-
-            if atmospheric_comp:
-                F_atmo = ForwardVariableDef("F_atmo", "real")
-                atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
-
-                # Atmo samples
-                N_atmo = ForwardVariableDef("N_atmo", "int")
-                N_atmo_str = ["[", N_atmo, "]"]
-                atmo_directions = ForwardArrayDef(
-                    "atmo_directions", "unit_vector[3]", N_atmo_str
-                )
-                atmo_energies = ForwardVariableDef("atmo_energies", "vector[N_atmo]")
-                atmo_weights = ForwardVariableDef("atmo_weights", "simplex[N_atmo]")
-
-        with TransformedDataContext():
-
-            if diffuse_bg_comp and atmospheric_comp:
-                F = ForwardVariableDef("F", "vector[Ns+2]")
-                w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns+2]")
-                eps = ForwardVariableDef("eps", "vector[Ns+2]")
-            elif diffuse_bg_comp or atmospheric_comp:
-                F = ForwardVariableDef("F", "vector[Ns+1]")
-                w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns+1]")
-                eps = ForwardVariableDef("eps", "vector[Ns+1]")
-            else:
-                F = ForwardVariableDef("F", "vector[Ns]")
-                w_exposure = ForwardVariableDef("w_exposure", "simplex[Ns]")
-                eps = ForwardVariableDef("eps", "vector[Ns]")
-
-            track_type = ForwardVariableDef("track_type", "int")
-            cascade_type = ForwardVariableDef("cascade_type", "int")
-
-            track_type << TRACKS
-            cascade_type << CASCADES
-
-            Ftot = ForwardVariableDef("Ftot", "real")
-            Fsrc = ForwardVariableDef("Fs", "real")
-            f = ForwardVariableDef("f", "real")
-            Nex = ForwardVariableDef("Nex", "real")
-            N = ForwardVariableDef("N", "int")
-
-            Fsrc << 0.0
-            with ForLoopContext(1, Ns, "k") as k:
-                F[k] << StringExpression(
-                    [L, "/ (4 * pi() * pow(", D[k], " * ", 3.086e22, ", 2))"]
-                )
-                StringExpression([F[k], "*=", flux_fac(src_index, Esrc_min, Esrc_max)])
-                StringExpression([Fsrc, " += ", F[k]])
-
-            if diffuse_bg_comp:
-                StringExpression("F[Ns+1]") << F_diff
-
-            if atmospheric_comp:
-                StringExpression("F[Ns+2]") << F_atmo
-
-            if diffuse_bg_comp and atmospheric_comp:
-                Ftot << Fsrc + F_diff + F_atmo
-            elif diffuse_bg_comp:
-                Ftot << Fsrc + F_diff
-            else:
-                Ftot << Fsrc
-
-            f << StringExpression([Fsrc, "/", Ftot])
-            StringExpression(['print("f: ", ', f, ")"])
-
-            if atmospheric_comp:
-                eps << FunctionCall(
-                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid, atmo_integ_val, T, Ns],
-                    "get_exposure_factor_atmo",
-                )
-            else:
-                eps << FunctionCall(
-                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid, T, Ns], "get_exposure_factor"
-                )
-
-            Nex << StringExpression(["get_Nex(", F, ", ", eps, ")"])
-            w_exposure << StringExpression(["get_exposure_weights(", F, ", ", eps, ")"])
-            N << StringExpression(["poisson_rng(", Nex, ")"])
-            StringExpression(["print(", w_exposure, ")"])
-            StringExpression(["print(", Ngrid, ")"])
-            StringExpression(["print(", Nex, ")"])
-            StringExpression(["print(", N, ")"])
-
-        with GeneratedQuantitiesContext():
-
-            dm_rng = detector_model_type(mode=DistributionMode.RNG)
-            dm_pdf = detector_model_type(mode=DistributionMode.PDF)
-
-            N_str = ["[", N, "]"]
-            lam = ForwardArrayDef("Lambda", "int", N_str)
-            omega = ForwardVariableDef("omega", "unit_vector[3]")
-
-            Esrc = ForwardVariableDef("Esrc", "vector[N]")
-            E = ForwardVariableDef("E", "vector[N]")
-            Edet = ForwardVariableDef("Edet", "vector[N]")
-
-            if atmospheric_comp:
-                atmo_index = ForwardVariableDef("atmo_index", "int")
-            cosz = ForwardArrayDef("cosz", "real", N_str)
-            Pdet = ForwardArrayDef("Pdet", "real", N_str)
-            accept = ForwardVariableDef("accept", "int")
-            detected = ForwardVariableDef("detected", "int")
-            ntrials = ForwardVariableDef("ntrials", "int")
-            prob = ForwardVariableDef("prob", "simplex[2]")
-
-            event = ForwardArrayDef("event", "unit_vector[3]", N_str)
-            Nex_sim = ForwardVariableDef("Nex_sim", "real")
-
-            event_type = ForwardVariableDef("event_type", "vector[N]")
-            kappa = ForwardVariableDef("kappa", "vector[N]")
-            
-            Nex_sim << Nex
-
-            with ForLoopContext(1, N, "i") as i:
-
-                lam[i] << FunctionCall([w_exposure], "categorical_rng")
-
-                accept << 0
-                detected << 0
-                ntrials << 0
-
-                with WhileLoopContext([StringExpression([accept != 1])]):
-
-                    # Sample position
-                    with IfBlockContext([StringExpression([lam[i], " <= ", Ns])]):
-                        omega << varpi[lam[i]]
-                    with ElseIfBlockContext(
-                        [StringExpression([lam[i], " == ", Ns + 1])]
-                    ):
-                        omega << FunctionCall([1, v_lim], "sphere_lim_rng")
-                    if atmospheric_comp:
-                        with ElseIfBlockContext(
-                            [StringExpression([lam[i], " == ", Ns + 2])]
-                        ):
-                            atmo_index << FunctionCall(
-                                [atmo_weights], "categorical_rng"
-                            )
-                            omega << atmo_directions[atmo_index]
-
-                    cosz[i] << FunctionCall(
-                        [FunctionCall([omega], "omega_to_zenith")], "cos"
-                    )
-                    # Sample energy
-                    with IfBlockContext([StringExpression([lam[i], " <= ", Ns])]):
-                        Esrc[i] << src_spectrum_rng(src_index, Esrc_min, Esrc_max)
-                        E[i] << Esrc[i] / (1 + z[lam[i]])
-
-                    if diffuse_bg_comp:
-                        with ElseIfBlockContext([StringExpression([lam[i], " == ", Ns + 1])]):
-                            Esrc[i] << diff_spectrum_rng(diff_index, Esrc_min, Esrc_max)
-                            E[i] << Esrc[i] / (1 + z[lam[i]])
-
-                    if atmospheric_comp:
-                        with ElseIfBlockContext(
-                            [StringExpression([lam[i], " == ", Ns + 2])]
-                        ):
-                            E[i] << atmo_energies[atmo_index]
-
-                    # Test against Aeff
-                    if detector_model_type == NorthernTracksDetectorModel:
-
-                        with IfBlockContext([StringExpression([cosz[i], ">= 0.1"])]):
-                            Pdet[i] << 0
-                        with ElseBlockContext():
-                            Pdet[i] << dm_pdf.effective_area(E[i], omega) / aeff_max
-
-                    if detector_model_type == CascadesDetectorModel:
-
-                        Pdet[i] << dm_pdf.effective_area(E[i], omega) / aeff_max
-
-                    Edet[i] << 10 ** dm_rng.energy_resolution(E[i])
-
-                    prob[1] << Pdet[i]
-                    prob[2] << 1 - Pdet[i]
-                    StringExpression([ntrials, " += ", 1])
-
-                    with IfBlockContext([StringExpression([ntrials, "< 1000000"])]):
-                        detected << FunctionCall([prob], "categorical_rng")
-                        with IfBlockContext(
-                            [
-                                StringExpression(
-                                    [
-                                        "(",
-                                        Edet[i],
-                                        " >= ",
-                                        Emin_det,
-                                        ") && (",
-                                        detected == 1,
-                                        ")",
-                                    ]
-                                )
-                            ]
-                        ):
-                            accept << 1
-                    with ElseBlockContext():
-                        accept << 1
-                        StringExpression(
-                            ['print("problem component: ", ', lam[i], ");\n"]
-                        )
-
-                # Detection effects
-                event[i] << dm_rng.angular_resolution(E[i], omega)
-                kappa[i] << dm_rng.angular_resolution.kappa()
-              
-                if detector_model_type == NorthernTracksDetectorModel:
-                    event_type[i] << track_type
-                if detector_model_type == CascadesDetectorModel:
-                    event_type[i] << cascade_type
-
-    sim_gen.generate_single_file()
-
-    return sim_gen.filename
-
-
 def generate_main_sim_code_hybrid_(
     filename,
     ps_spec_shape,
@@ -379,7 +306,9 @@ def generate_main_sim_code_hybrid_(
             _ = Include("vMF.stan")
 
             src_spectrum_rng = ps_spec_shape.make_stan_sampling_func("src_spectrum_rng")
-            diff_spectrum_rng = diff_spec_shape.make_stan_sampling_func("diff_spectrum_rng")
+            diff_spectrum_rng = diff_spec_shape.make_stan_sampling_func(
+                "diff_spectrum_rng"
+            )
             flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
 
         with DataContext():
@@ -412,7 +341,7 @@ def generate_main_sim_code_hybrid_(
             Ngrid = ForwardVariableDef("Ngrid", "int")
             src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
             diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
-            
+
             if diffuse_bg_comp:
                 integral_grid_t = ForwardArrayDef(
                     "integral_grid_t", "vector[Ngrid]", Ns_1p_str
@@ -509,16 +438,41 @@ def generate_main_sim_code_hybrid_(
 
             if atmospheric_comp:
                 eps_t << FunctionCall(
-                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, atmo_integ_val, T, Ns],
+                    [
+                        src_index,
+                        diff_index,
+                        src_index_grid,
+                        diff_index_grid,
+                        integral_grid_t,
+                        atmo_integ_val,
+                        T,
+                        Ns,
+                    ],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps_t << FunctionCall(
-                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, T, Ns],
+                    [
+                        src_index,
+                        diff_index,
+                        src_index_grid,
+                        diff_index_grid,
+                        integral_grid_t,
+                        T,
+                        Ns,
+                    ],
                     "get_exposure_factor",
                 )
             eps_c << FunctionCall(
-                [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_c, T, Ns],
+                [
+                    src_index,
+                    diff_index,
+                    src_index_grid,
+                    diff_index_grid,
+                    integral_grid_c,
+                    T,
+                    Ns,
+                ],
                 "get_exposure_factor",
             )
 
@@ -616,7 +570,9 @@ def generate_main_sim_code_hybrid_(
                         E[i] << Esrc[i] / (1 + z[lam[i]])
 
                     if diffuse_bg_comp:
-                        with ElseIfBlockContext([StringExpression([lam[i], " == ", Ns + 1])]):
+                        with ElseIfBlockContext(
+                            [StringExpression([lam[i], " == ", Ns + 1])]
+                        ):
                             Esrc[i] << diff_spectrum_rng(diff_index, Esrc_min, Esrc_max)
                             E[i] << Esrc[i] / (1 + z[lam[i]])
 
@@ -675,7 +631,7 @@ def generate_main_sim_code_hybrid_(
                 # Detection effects
                 event[i] << dm_rng["tracks"].angular_resolution(E[i], omega)
                 kappa[i] << dm_rng["tracks"].angular_resolution.kappa()
-                
+
             # Cascades
             with ForLoopContext("N_t+1", N, "i") as i:
 
@@ -707,7 +663,9 @@ def generate_main_sim_code_hybrid_(
                         E[i] << Esrc[i] / (1 + z[lam[i]])
 
                     if diffuse_bg_comp:
-                        with ElseIfBlockContext([StringExpression([lam[i], " == ", Ns + 1])]):
+                        with ElseIfBlockContext(
+                            [StringExpression([lam[i], " == ", Ns + 1])]
+                        ):
                             Esrc[i] << diff_spectrum_rng(diff_index, Esrc_min, Esrc_max)
                             E[i] << Esrc[i] / (1 + z[lam[i]])
 
@@ -749,7 +707,7 @@ def generate_main_sim_code_hybrid_(
                 # Detection effects
                 event[i] << dm_rng["cascades"].angular_resolution(E[i], omega)
                 kappa[i] << dm_rng["cascades"].angular_resolution.kappa()
-                
+
     sim_gen.generate_single_file()
 
     return sim_gen.filename
@@ -782,7 +740,9 @@ def generate_stan_fit_code_hybrid_(
                 dm[event_type] = detector_model_type(event_type=event_type)
 
             src_spectrum_lpdf = ps_spec_shape.make_stan_lpdf_func("src_spectrum_logpdf")
-            diff_spectrum_lpdf = diff_spec_shape.make_stan_lpdf_func("diff_spectrum_logpdf")
+            diff_spectrum_lpdf = diff_spec_shape.make_stan_lpdf_func(
+                "diff_spectrum_logpdf"
+            )
             flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
 
             if atmospheric_comp:
@@ -818,8 +778,12 @@ def generate_stan_fit_code_hybrid_(
             src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
             diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
 
-            integral_grid_t = ForwardArrayDef("integral_grid_t", "vector[Ngrid]", Ns_1p_str)
-            integral_grid_c = ForwardArrayDef("integral_grid_c", "vector[Ngrid]", Ns_1p_str)
+            integral_grid_t = ForwardArrayDef(
+                "integral_grid_t", "vector[Ngrid]", Ns_1p_str
+            )
+            integral_grid_c = ForwardArrayDef(
+                "integral_grid_c", "vector[Ngrid]", Ns_1p_str
+            )
 
             Eg = ForwardVariableDef("E_grid", "vector[Ngrid]")
 
@@ -855,7 +819,7 @@ def generate_stan_fit_code_hybrid_(
             Lmin, Lmax = lumi_par_range
             src_index_min, src_index_max = src_index_par_range
             diff_index_min, diff_index_max = diff_index_par_range
-            
+
             L = ParameterDef("L", "real", Lmin, Lmax)
             F_diff = ParameterDef("F_diff", "real", 0.0, 1e-6)
 
@@ -863,7 +827,9 @@ def generate_stan_fit_code_hybrid_(
                 F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-6)
 
             src_index = ParameterDef("src_index", "real", src_index_min, src_index_max)
-            diff_index = ParameterDef("diff_index", "real", diff_index_min, diff_index_max)
+            diff_index = ParameterDef(
+                "diff_index", "real", diff_index_min, diff_index_max
+            )
 
             Esrc = ParameterVectorDef("Esrc", "vector", N_str, Esrc_min, Esrc_max)
 
@@ -924,7 +890,9 @@ def generate_stan_fit_code_hybrid_(
             with ForLoopContext(1, N, "i") as i:
                 lp[i] << logF
 
-                with IfBlockContext([StringExpression([event_type[i], " == ", track_type])]):
+                with IfBlockContext(
+                    [StringExpression([event_type[i], " == ", track_type])]
+                ):
 
                     with ForLoopContext(1, n_comps_max, "k") as k:
 
@@ -934,13 +902,25 @@ def generate_stan_fit_code_hybrid_(
                                 [
                                     lp[i][k],
                                     " += ",
-                                    src_spectrum_lpdf(Esrc[i], src_index, Esrc_min, Esrc_max),
+                                    src_spectrum_lpdf(
+                                        Esrc[i], src_index, Esrc_min, Esrc_max
+                                    ),
                                 ]
                             )
                             E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
-                        
-                            StringExpression([lp[i][k], " += vMF_lpdf(", omega_det[i], " | ", varpi[k], ", ", kappa[i], ")"])
-                            
+
+                            StringExpression(
+                                [
+                                    lp[i][k],
+                                    " += vMF_lpdf(",
+                                    omega_det[i],
+                                    " | ",
+                                    varpi[k],
+                                    ", ",
+                                    kappa[i],
+                                    ")",
+                                ]
+                            )
 
                         if diffuse_bg_comp:
                             # Diffuse component
@@ -951,10 +931,14 @@ def generate_stan_fit_code_hybrid_(
                                     [
                                         lp[i][k],
                                         " += ",
-                                        diff_spectrum_lpdf(Esrc[i], diff_index, Esrc_min, Esrc_max),
+                                        diff_spectrum_lpdf(
+                                            Esrc[i], diff_index, Esrc_min, Esrc_max
+                                        ),
                                     ]
                                 )
-                                E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
+                                E[i] << StringExpression(
+                                    [Esrc[i], " / (", 1 + z[k], ")"]
+                                )
                                 StringExpression(
                                     [lp[i][k], " += ", np.log(1 / (4 * np.pi))]
                                 )
@@ -981,7 +965,11 @@ def generate_stan_fit_code_hybrid_(
 
                         # Detection effects
                         StringExpression(
-                            [lp[i][k], " += ", dm["tracks"].energy_resolution(E[i], Edet[i])]
+                            [
+                                lp[i][k],
+                                " += ",
+                                dm["tracks"].energy_resolution(E[i], Edet[i]),
+                            ]
                         )
                         StringExpression(
                             [
@@ -996,7 +984,9 @@ def generate_stan_fit_code_hybrid_(
                             ]
                         )
 
-                with ElseIfBlockContext([StringExpression([event_type[i], " == ", cascade_type])]):
+                with ElseIfBlockContext(
+                    [StringExpression([event_type[i], " == ", cascade_type])]
+                ):
 
                     with ForLoopContext(1, n_comps_max, "k") as k:
 
@@ -1006,12 +996,25 @@ def generate_stan_fit_code_hybrid_(
                                 [
                                     lp[i][k],
                                     " += ",
-                                    src_spectrum_lpdf(Esrc[i], src_index, Esrc_min, Esrc_max),
+                                    src_spectrum_lpdf(
+                                        Esrc[i], src_index, Esrc_min, Esrc_max
+                                    ),
                                 ]
                             )
                             E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
 
-                            StringExpression([lp[i][k], " += vMF_lpdf(", omega_det[i], " | ", varpi[k], ", ", kappa[i], ")"])
+                            StringExpression(
+                                [
+                                    lp[i][k],
+                                    " += vMF_lpdf(",
+                                    omega_det[i],
+                                    " | ",
+                                    varpi[k],
+                                    ", ",
+                                    kappa[i],
+                                    ")",
+                                ]
+                            )
 
                         if diffuse_bg_comp:
                             # Diffuse component
@@ -1022,10 +1025,14 @@ def generate_stan_fit_code_hybrid_(
                                     [
                                         lp[i][k],
                                         " += ",
-                                        diff_spectrum_lpdf(Esrc[i], diff_index, Esrc_min, Esrc_max),
+                                        diff_spectrum_lpdf(
+                                            Esrc[i], diff_index, Esrc_min, Esrc_max
+                                        ),
                                     ]
                                 )
-                                E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
+                                E[i] << StringExpression(
+                                    [Esrc[i], " / (", 1 + z[k], ")"]
+                                )
                                 StringExpression(
                                     [lp[i][k], " += ", np.log(1 / (4 * np.pi))]
                                 )
@@ -1045,7 +1052,11 @@ def generate_stan_fit_code_hybrid_(
 
                         # Detection effects
                         StringExpression(
-                            [lp[i][k], " += ", dm["cascades"].energy_resolution(E[i], Edet[i])]
+                            [
+                                lp[i][k],
+                                " += ",
+                                dm["cascades"].energy_resolution(E[i], Edet[i]),
+                            ]
                         )
                         StringExpression(
                             [
@@ -1062,18 +1073,43 @@ def generate_stan_fit_code_hybrid_(
 
             if atmospheric_comp:
                 eps_t << FunctionCall(
-                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, atmo_integ_val, T, Ns],
+                    [
+                        src_index,
+                        diff_index,
+                        src_index_grid,
+                        diff_index_grid,
+                        integral_grid_t,
+                        atmo_integ_val,
+                        T,
+                        Ns,
+                    ],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps_t << FunctionCall(
-                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_t, T, Ns],
+                    [
+                        src_index,
+                        diff_index,
+                        src_index_grid,
+                        diff_index_grid,
+                        integral_grid_t,
+                        T,
+                        Ns,
+                    ],
                     "get_exposure_factor",
                 )
             eps_c << FunctionCall(
-                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid_c, T, Ns],
-                    "get_exposure_factor",
-                )
+                [
+                    src_index,
+                    diff_index,
+                    src_index_grid,
+                    diff_index_grid,
+                    integral_grid_c,
+                    T,
+                    Ns,
+                ],
+                "get_exposure_factor",
+            )
 
             Nex_t << FunctionCall([F, eps_t], "get_Nex")
             Nex_c << FunctionCall([F, eps_c], "get_Nex")
@@ -1086,24 +1122,24 @@ def generate_stan_fit_code_hybrid_(
                 StringExpression(["target += log_sum_exp(", lp[i], ")"])
             StringExpression(["target += -", Nex])
 
-            #StringExpression([L, " ~ normal(", L_scale, "), 5)"])
-            #StringExpression([F_diff, " ~ lognormal(log(", F_diff_scale, "), 5)"])
+            # StringExpression([L, " ~ normal(", L_scale, "), 5)"])
+            # StringExpression([F_diff, " ~ lognormal(log(", F_diff_scale, "), 5)"])
 
             StringExpression(
                 [
                     L,
                     " ~ ",
-                    FunctionCall([L_scale, 2*L_scale], "normal"),
+                    FunctionCall([L_scale, 2 * L_scale], "normal"),
                 ]
             )
             StringExpression(
                 [
                     F_diff,
                     " ~ ",
-                    FunctionCall([F_diff_scale, 2*F_diff_scale], "normal"),
+                    FunctionCall([F_diff_scale, 2 * F_diff_scale], "normal"),
                 ]
             )
-            
+
             if atmospheric_comp:
                 StringExpression(
                     [
@@ -1126,6 +1162,7 @@ def generate_stan_fit_code_hybrid_(
     fit_gen.generate_single_file()
 
     return fit_gen.filename
+
 
 def generate_stan_fit_code_(
     filename,
@@ -1150,8 +1187,10 @@ def generate_stan_fit_code_(
             dm = detector_model_type()
 
             src_spectrum_lpdf = ps_spec_shape.make_stan_lpdf_func("src_spectrum_logpdf")
-            diff_spectrum_lpdf = diff_spec_shape.make_stan_lpdf_func("diff_spectrum_logpdf")
-            
+            diff_spectrum_lpdf = diff_spec_shape.make_stan_lpdf_func(
+                "diff_spectrum_logpdf"
+            )
+
             flux_fac = ps_spec_shape.make_stan_flux_conv_func("flux_conv")
 
             if atmospheric_comp:
@@ -1210,7 +1249,7 @@ def generate_stan_fit_code_(
             Lmin, Lmax = lumi_par_range
             src_index_min, src_index_max = src_index_par_range
             diff_index_min, diff_index_max = diff_index_par_range
-            
+
             L = ParameterDef("L", "real", Lmin, Lmax)
             F_diff = ParameterDef("F_diff", "real", 0.0, 1e-4)
             if atmospheric_comp:
@@ -1218,7 +1257,9 @@ def generate_stan_fit_code_(
 
             src_index = ParameterDef("src_index", "real", src_index_min, src_index_max)
 
-            diff_index = ParameterDef("diff_index", "real", diff_index_min, diff_index_max)
+            diff_index = ParameterDef(
+                "diff_index", "real", diff_index_min, diff_index_max
+            )
 
             Esrc = ParameterVectorDef("Esrc", "vector", N_str, Esrc_min, Esrc_max)
 
@@ -1282,12 +1323,25 @@ def generate_stan_fit_code_(
                             [
                                 lp[i][k],
                                 " += ",
-                                src_spectrum_lpdf(Esrc[i], src_index, Esrc_min, Esrc_max),
+                                src_spectrum_lpdf(
+                                    Esrc[i], src_index, Esrc_min, Esrc_max
+                                ),
                             ]
                         )
                         E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
-                     
-                        StringExpression([lp[i][k], " += vMF_lpdf(", omega_det[i], " | ", varpi[k], ", ", kappa[i], ")"])
+
+                        StringExpression(
+                            [
+                                lp[i][k],
+                                " += vMF_lpdf(",
+                                omega_det[i],
+                                " | ",
+                                varpi[k],
+                                ", ",
+                                kappa[i],
+                                ")",
+                            ]
+                        )
 
                     if diffuse_bg_comp:
                         # Diffuse component
@@ -1298,7 +1352,9 @@ def generate_stan_fit_code_(
                                 [
                                     lp[i][k],
                                     " += ",
-                                    diff_spectrum_lpdf(Esrc[i], diff_index, Esrc_min, Esrc_max),
+                                    diff_spectrum_lpdf(
+                                        Esrc[i], diff_index, Esrc_min, Esrc_max
+                                    ),
                                 ]
                             )
                             E[i] << StringExpression([Esrc[i], " / (", 1 + z[k], ")"])
@@ -1345,12 +1401,29 @@ def generate_stan_fit_code_(
 
             if atmospheric_comp:
                 eps << FunctionCall(
-                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid, atmo_integ_val, T, Ns],
+                    [
+                        src_index,
+                        diff_index,
+                        src_index_grid,
+                        diff_index_grid,
+                        integral_grid,
+                        atmo_integ_val,
+                        T,
+                        Ns,
+                    ],
                     "get_exposure_factor_atmo",
                 )
             else:
                 eps << FunctionCall(
-                    [src_index, diff_index, src_index_grid, diff_index_grid, integral_grid, T, Ns],
+                    [
+                        src_index,
+                        diff_index,
+                        src_index_grid,
+                        diff_index_grid,
+                        integral_grid,
+                        T,
+                        Ns,
+                    ],
                     "get_exposure_factor",
                 )
             Nex << FunctionCall([F, eps], "get_Nex")
