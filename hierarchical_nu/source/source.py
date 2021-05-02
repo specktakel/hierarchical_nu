@@ -325,9 +325,7 @@ class Sources:
         Emin = Parameter.get_parameter("Emin")
         Emax = Parameter.get_parameter("Emax")
 
-        # define flux model
-        spectral_type = self._get_ps_spectral_type()
-        spectral_shape = spectral_type(
+        spectral_shape = PowerLawSpectrum(
             flux_norm, norm_energy, diff_index, Emin.value, Emax.value
         )
         flux_model = IsotropicDiffuseBG(spectral_shape)
@@ -403,11 +401,11 @@ class Sources:
 
         point_source_ints = sum(
             [
-                s.flux_model.total_flux_int
+                s.flux_model.total_flux_int.value
                 for s in self.sources
                 if isinstance(s, PointSource)
             ]
-        )
+        ) * (1 / (u.m ** 2 * u.s))
 
         return point_source_ints / self.total_flux_int()
 
