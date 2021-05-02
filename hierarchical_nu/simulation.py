@@ -51,12 +51,6 @@ class Simulation:
         self._observation_time = observation_time
 
         self._sources.organise()
-        # Check source components
-        source_types = [type(s) for s in self._sources.sources]
-        flux_types = [type(s.flux_model) for s in self._sources.sources]
-        self._point_source_comp = PointSource in source_types
-        self._diffuse_bg_comp = IsotropicDiffuseBG in flux_types
-        self._atmospheric_comp = AtmosphericNuMuFlux in flux_types
 
         self._stan_path = STAN_PATH
 
@@ -287,7 +281,7 @@ class Simulation:
             ]
         )
 
-        if self._atmospheric_comp:
+        if self._sources.atmospheric:
 
             atmo_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.value
             atmo_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.value
@@ -370,13 +364,13 @@ class Simulation:
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
 
-        if self._atmospheric_comp:
+        if self._sources.atmospheric:
             sim_inputs["atmo_integ_val"] = (
                 self._exposure_integral["tracks"].integral_fixed_vals[0].value
             )
         sim_inputs["T"] = self._observation_time.to(u.s).value
 
-        if self._atmospheric_comp:
+        if self._sources.atmospheric:
             sim_inputs["N_atmo"] = len(atmo_energies)
             sim_inputs["atmo_energies"] = atmo_energies
             sim_inputs["atmo_directions"] = atmo_directions
@@ -462,7 +456,7 @@ class Simulation:
         diffuse_bg = self._sources.diffuse_component()
         sim_inputs["F_diff"] = diffuse_bg.flux_model.total_flux_int.value
 
-        if self._atmospheric_comp:
+        if self._sources.atmospheric:
             atmo_bg = self._sources.atmo_component()
             sim_inputs["F_atmo"] = atmo_bg.flux_model.total_flux_int.value
 
@@ -488,12 +482,12 @@ class Simulation:
 
             integral_grid_t = sim_inputs["integral_grid_t"]
             Nex_t = _get_expected_Nnu_(
-                sim_inputs, integral_grid_t, self._atmospheric_comp
+                sim_inputs, integral_grid_t, self._sources.atmospheric
             )
 
             integral_grid_c = sim_inputs["integral_grid_c"]
             Nex_c = _get_expected_Nnu_(
-                sim_inputs, integral_grid_c, self._atmospheric_comp
+                sim_inputs, integral_grid_c, self._sources.atmospheric
             )
 
             Nex = Nex_t + Nex_c
@@ -501,7 +495,9 @@ class Simulation:
         else:
 
             integral_grid = sim_inputs["integral_grid"]
-            Nex = _get_expected_Nnu_(sim_inputs, integral_grid, self._atmospheric_comp)
+            Nex = _get_expected_Nnu_(
+                sim_inputs, integral_grid, self._sources.atmospheric
+            )
 
         self._expected_Nnu_per_comp = Nex
 
@@ -537,8 +533,8 @@ class Simulation:
                 ps_spec_shape,
                 diff_spec_shape,
                 self._detector_model_type,
-                self._diffuse_bg_comp,
-                self._atmospheric_comp,
+                self._sources.diffuse,
+                self._sources.atmospheric,
             )
 
         else:
@@ -548,8 +544,8 @@ class Simulation:
                 ps_spec_shape,
                 diff_spec_shape,
                 self._detector_model_type,
-                self._diffuse_bg_comp,
-                self._atmospheric_comp,
+                self._sources.diffuse,
+                self._sources.atmospheric,
             )
 
     def _get_min_det_energy(event_type=None):
