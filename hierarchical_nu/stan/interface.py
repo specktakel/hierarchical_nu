@@ -21,11 +21,14 @@ class StanInterface(object, metaclass=ABCMeta):
         self,
         output_file,
         sources,
+        event_types=[TRACKS, CASCADES],
         includes=["interpolation.stan", "utils.stan"],
     ):
         """
         :param output_file: Name of output Stan file
         :param sources: Sources object
+        :param event_types: Types of event to simulate
+        :includes: Stan includes
         """
 
         self._includes = includes
@@ -35,6 +38,8 @@ class StanInterface(object, metaclass=ABCMeta):
         self._sources = sources
 
         self._get_source_info()
+
+        self._event_types = event_types
 
         self._code_gen = StanFileGenerator(output_file)
 
