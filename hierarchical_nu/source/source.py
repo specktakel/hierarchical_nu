@@ -348,7 +348,7 @@ class Sources:
 
         return max(z)
 
-    def _get_ps_spectral_type(self):
+    def _get_point_source_spectrum(self):
         """
         Check the spectral type of point sources in the list.
         """
@@ -364,7 +364,7 @@ class Sources:
 
             raise ValueError("Not all point sources have the same spectral_shape")
 
-        return types[0]
+        self._point_source_spectrum = types[0]
 
     def add_atmospheric_component(self):
         """
@@ -438,6 +438,10 @@ class Sources:
 
                     self._atmospheric = source
 
+        if self._point_source:
+
+            self._get_point_source_spectrum()
+
         new_list = self._point_source.copy()
 
         if self._diffuse:
@@ -458,11 +462,37 @@ class Sources:
         return self._point_source
 
     @property
+    def point_source_spectrum(self):
+
+        self.organise()
+
+        if self._point_source:
+
+            return self._point_source_spectrum
+
+        else:
+
+            raise ValueError("No point sources in  source list")
+
+    @property
     def diffuse(self):
 
         self.organise()
 
         return self._diffuse
+
+    @property
+    def diffuse_spectrum(self):
+
+        self._organise()
+
+        if self._diffuse:
+
+            return self._diffuse.flux_model.spectral_shape
+
+        else:
+
+            raise ValueError("No diffuse background in source list")
 
     @property
     def atmospheric(self):
