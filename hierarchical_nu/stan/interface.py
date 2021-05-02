@@ -8,7 +8,7 @@ from hierarchical_nu.detector.cascades import CascadesDetectorModel
 from hierarchical_nu.events import TRACKS, CASCADES
 
 
-STAN_PATH = os.path.join(os.path.dirname(__file__), "stan")
+STAN_PATH = os.path.dirname(__file__)
 
 
 class StanInterface(object, metaclass=ABCMeta):
@@ -21,7 +21,7 @@ class StanInterface(object, metaclass=ABCMeta):
         self,
         output_file,
         sources,
-        event_types=[TRACKS, CASCADES],
+        detector_model_type,
         includes=["interpolation.stan", "utils.stan"],
     ):
         """
@@ -39,7 +39,9 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._get_source_info()
 
-        self._event_types = event_types
+        self._detector_model_type = detector_model_type
+
+        self._event_types = self._detector_model_type.event_types
 
         self._code_gen = StanFileGenerator(output_file)
 
@@ -126,3 +128,8 @@ class StanInterface(object, metaclass=ABCMeta):
     def sources(self):
 
         return self._sources
+
+    @property
+    def detector_model_type(self):
+
+        return self._detector_model_type
