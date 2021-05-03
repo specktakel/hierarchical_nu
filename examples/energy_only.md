@@ -37,7 +37,7 @@ from hierarchical_nu.source.source import Sources, PointSource
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 #diff_index = Parameter(2.0, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
+L = Parameter(2E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
 #diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
 #                         par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
@@ -88,7 +88,7 @@ sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
 sim.precomputation()
 sim.generate_stan_code()
 sim.compile_stan_code()
-sim.run(verbose=True, seed=42)
+sim.run(verbose=True, seed=100)
 sim.save("output/test_sim_file.h5")
 ```
 
