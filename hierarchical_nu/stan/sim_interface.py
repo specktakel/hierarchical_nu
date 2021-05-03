@@ -1,3 +1,5 @@
+import numpy as np
+import os
 from collections import OrderedDict
 
 from hierarchical_nu.stan.interface import StanInterface
@@ -34,6 +36,8 @@ from hierarchical_nu.events import TRACKS, CASCADES
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
 
+from hierarchical_nu.stan.interface import STAN_PATH
+
 
 class StanSimInterface(StanInterface):
     """
@@ -53,6 +57,16 @@ class StanSimInterface(StanInterface):
             sources=sources,
             detector_model_type=detector_model_type,
             includes=includes,
+        )
+
+    def generate_atmo(self):
+
+        atmo_flux_model = self.sources.atmospheric.flux_model
+
+        filename = os.path.join(STAN_PATH, "atmo_gen")
+
+        return generate_atmospheric_sim_code_(
+            filename, atmo_flux_model, theta_points=30
         )
 
     def _functions(self):
@@ -98,10 +112,17 @@ class StanSimInterface(StanInterface):
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
             self._D = ForwardVariableDef("D", "vector[Ns]")
 
+            if self.sources.diffuse or self.sources.point_source:
+
+                self._Ngrid = ForwardVariableDef("Ngrid", "int")
+
             if self.sources.diffuse:
 
                 self._z = ForwardVariableDef("z", "vector[Ns+1]")
                 self._diff_index = ForwardVariableDef("diff_index", "real")
+                self._diff_index_grid = ForwardVariableDef(
+                    "diff_index_grid", "vector[Ngrid]"
+                )
 
             else:
 
@@ -110,31 +131,32 @@ class StanSimInterface(StanInterface):
             if self.sources.point_source:
 
                 self._src_index = ForwardVariableDef("src_index", "real")
+                self._src_index_grid = ForwardVariableDef(
+                    "src_index_grid", "vector[Ngrid]"
+                )
 
             self._Esrc_min = ForwardVariableDef("Esrc_min", "real")
             self._Esrc_max = ForwardVariableDef("Esrc_max", "real")
-
-            self._Ngrid = ForwardVariableDef("Ngrid", "int")
-            self._src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
-            self._diff_index_grid = ForwardVariableDef(
-                "diff_index_grid", "vector[Ngrid]"
-            )
 
             if "tracks" in self._event_types:
 
                 self._Emin_det_t = ForwardVariableDef("Emin_det_t", "real")
                 self._aeff_t_max = ForwardVariableDef("aeff_t_max", "real")
-                self._integral_grid_t = ForwardArrayDef(
-                    "integral_grid_t", "vector[Ngrid]", N_int_str
-                )
+
+                if self.sources.diffuse or self.sources.point_source:
+                    self._integral_grid_t = ForwardArrayDef(
+                        "integral_grid_t", "vector[Ngrid]", N_int_str
+                    )
 
             if "cascades" in self._event_types:
 
                 self._Emin_det_c = ForwardVariableDef("Emin_det_c", "real")
                 self._aeff_c_max = ForwardVariableDef("aeff_c_max", "real")
-                self._integral_grid_c = ForwardArrayDef(
-                    "integral_grid_c", "vector[Ngrid]", N_int_str
-                )
+
+                if self.sources.diffuse or self.sources.point_source:
+                    self._integral_grid_c = ForwardArrayDef(
+                        "integral_grid_c", "vector[Ngrid]", N_int_str
+                    )
 
             if self.sources.point_source:
 
@@ -249,7 +271,10 @@ class StanSimInterface(StanInterface):
             if self.sources.diffuse:
                 StringExpression("F[Ns+1]") << self._F_diff
 
-            if self.sources.atmospheric:
+            if self.sources.atmospheric and not self.sources.diffuse:
+                StringExpression("F[Ns+1]") << self._F_atmo
+
+            if self.sources.atmospheric and self.sources.diffuse:
                 StringExpression("F[Ns+2]") << self._F_atmo
 
             if self.sources.diffuse and self.sources.atmospheric:
@@ -280,7 +305,7 @@ class StanSimInterface(StanInterface):
                                 self._src_index,
                             ],
                             "interpolate",
-                        )
+                        ) * self._T
 
                     if "cascades" in self._event_types:
 
@@ -291,7 +316,7 @@ class StanSimInterface(StanInterface):
                                 self._src_index,
                             ],
                             "interpolate",
-                        )
+                        ) * self._T
 
             if self.sources.diffuse and self.sources.atmospheric:
 
@@ -304,9 +329,9 @@ class StanSimInterface(StanInterface):
                             self._diff_index,
                         ],
                         "interpolate",
-                    )
+                    ) * self._T
 
-                    self._eps_t[self._Ns + 2] << self._atmo_integ_val
+                    self._eps_t[self._Ns + 2] << self._atmo_integ_val * self._T
 
                 if "cascades" in self._event_types:
 
@@ -317,7 +342,7 @@ class StanSimInterface(StanInterface):
                             self._diff_index,
                         ],
                         "interpolate",
-                    )
+                    ) * self._T
 
             elif self.sources.diffuse:
 
@@ -330,7 +355,7 @@ class StanSimInterface(StanInterface):
                             self._diff_index,
                         ],
                         "interpolate",
-                    )
+                    ) * self._T
 
                 if "cascades" in self._event_types:
 
@@ -341,11 +366,15 @@ class StanSimInterface(StanInterface):
                             self._diff_index,
                         ],
                         "interpolate",
-                    )
+                    ) * self._T
 
             elif self.sources.atmospheric and "tracks" in self._event_types:
 
-                self._eps_t[self._Ns + 1] << self._atmo_integ_val
+                self._eps_t[self._Ns + 1] << self._atmo_integ_val * self._T
+
+            if self.sources.atmospheric and not self.sources.diffuse:
+
+                self._eps_c[self._Ns + 1] << 0.0
 
             if "tracks" in self._event_types:
 
@@ -371,11 +400,9 @@ class StanSimInterface(StanInterface):
 
                 self._N << self._N_t
 
-            elif "tracks" in self._event_types:
+            elif "cascades" in self._event_types:
 
                 self._N << self._N_c
-
-            # StringExpression(['print("Ngrid: ", ', Ngrid, ")"])
 
     def _generated_quantities(self):
 
@@ -427,6 +454,17 @@ class StanSimInterface(StanInterface):
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
             self._kappa = ForwardVariableDef("kappa", "vector[N]")
 
+            if self.sources.atmospheric:
+                self._atmo_weights_p = ForwardVariableDef(
+                    "atmo_weights_p", "simplex[N_atmo]"
+                )
+                self._atmo_weights_v = ForwardVariableDef(
+                    "atmo_weights_v", "vector[N_atmo]"
+                )
+
+                self._atmo_weights_p << self._atmo_weights
+                self._atmo_weights_v << self._atmo_weights
+
             if "tracks" in self._event_types:
 
                 with ForLoopContext(1, self._N_t, "i") as i:
@@ -456,7 +494,7 @@ class StanSimInterface(StanInterface):
                             ):
 
                                 self._atmo_index << FunctionCall(
-                                    [self._atmo_weights], "categorical_rng"
+                                    [self._atmo_weights_p], "categorical_rng"
                                 )
                                 self._omega << self._atmo_directions[self._atmo_index]
 
@@ -582,6 +620,17 @@ class StanSimInterface(StanInterface):
                             ):
                                 self._accept << 1
 
+                                # Stop same atmo events being sampled
+                                # multiple times
+                                if self.sources.atmospheric:
+
+                                    self._atmo_weights_v << self._atmo_weights_p
+                                    self._atmo_weights_v[self._atmo_index] << 0.0
+                                    self._atmo_weights_v << self._atmo_weights_v / FunctionCall(
+                                        [self._atmo_weights_v], "sum"
+                                    )
+                                    self._atmo_weights_p << self._atmo_weights_v
+
                         with ElseBlockContext():
 
                             self._accept << 1
@@ -600,7 +649,7 @@ class StanSimInterface(StanInterface):
 
                 if "tracks" in self._event_types:
 
-                    N_start = "Ns+1"
+                    N_start = "N_t+1"
 
                 else:
 
