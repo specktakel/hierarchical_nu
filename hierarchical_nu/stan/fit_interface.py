@@ -620,7 +620,7 @@ class StanFitInterface(StanInterface):
                 # Cascades
                 if "cascades" in self._event_types:
 
-                    with ElseIfBlockContext(
+                    with IfBlockContext(
                         [
                             StringExpression(
                                 [self._event_type[i], " == ", self._cascade_type]
