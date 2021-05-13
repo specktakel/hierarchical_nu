@@ -19,11 +19,10 @@ from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, flux_conv_
-from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.events import Events, TRACKS
 
-from hierarchical_nu.stan.interface import STAN_PATH
+from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 
 
@@ -49,11 +48,9 @@ class Simulation:
 
         self._sources.organise()
 
-        self._stan_path = STAN_PATH
-
         self._exposure_integral = collections.OrderedDict()
 
-        stan_file_name = os.path.join(self._stan_path, "sim_code")
+        stan_file_name = os.path.join(STAN_GEN_PATH, "sim_code")
 
         self._stan_interface = StanSimInterface(
             stan_file_name, self._sources, self._detector_model_type
@@ -114,7 +111,7 @@ class Simulation:
     def compile_stan_code(self, include_paths=None):
 
         if not include_paths:
-            include_paths = [self._stan_path]
+            include_paths = [STAN_PATH]
 
         stanc_options = {"include_paths": include_paths}
 

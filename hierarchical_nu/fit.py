@@ -12,11 +12,10 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.detector_model import DetectorModel
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 
-from hierarchical_nu.stan.interface import STAN_PATH
+from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 
 
@@ -41,11 +40,10 @@ class StanFit:
         self._detector_model_type = detector_model
         self._events = events
         self._observation_time = observation_time
-        self._stan_path = STAN_PATH
 
         self._sources.organise()
 
-        stan_file_name = os.path.join(self._stan_path, "model_code")
+        stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
 
         self._stan_interface = StanFitInterface(
             stan_file_name,
@@ -133,7 +131,7 @@ class StanFit:
     def compile_stan_code(self, include_paths=None):
 
         if not include_paths:
-            include_paths = [self._stan_path]
+            include_paths = [STAN_PATH]
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename, stanc_options={"include_paths": include_paths}
@@ -359,16 +357,16 @@ class StanFit:
         event_type = self._detector_model_type.event_types[0]
         fit_inputs["E_grid"] = self._exposure_integral[event_type].energy_grid.value
 
+        fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
+
         if self._sources.point_source:
 
-            fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
             fit_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
             ].par_grids["src_index"]
 
         if self._sources.diffuse:
 
-            fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
             fit_inputs["diff_index_grid"] = self._exposure_integral[
                 event_type
             ].par_grids["diff_index"]

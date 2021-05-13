@@ -26,7 +26,6 @@ from hierarchical_nu.backend.variable_definitions import (
     ForwardVariableDef,
     ForwardArrayDef,
     ParameterDef,
-    ParameterVectorDef,
 )
 
 from hierarchical_nu.backend.expression import StringExpression
@@ -34,9 +33,8 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.events import TRACKS, CASCADES
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
-from hierarchical_nu.detector.cascades import CascadesDetectorModel
 
-from hierarchical_nu.stan.interface import STAN_PATH
+from hierarchical_nu.stan.interface import STAN_GEN_PATH
 
 
 class StanSimInterface(StanInterface):
@@ -63,7 +61,7 @@ class StanSimInterface(StanInterface):
 
         atmo_flux_model = self.sources.atmospheric.flux_model
 
-        filename = os.path.join(STAN_PATH, "atmo_gen")
+        filename = os.path.join(STAN_GEN_PATH, "atmo_gen")
 
         return generate_atmospheric_sim_code_(
             filename, atmo_flux_model, theta_points=30

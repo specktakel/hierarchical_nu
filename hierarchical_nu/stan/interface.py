@@ -3,11 +3,11 @@ from abc import ABCMeta, abstractmethod
 
 from hierarchical_nu.backend.stan_generator import StanFileGenerator
 
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
-from hierarchical_nu.detector.cascades import CascadesDetectorModel
-
-
+# To includes
 STAN_PATH = os.path.dirname(__file__)
+
+# To generated files
+STAN_GEN_PATH = os.path.join(os.getcwd(), ".stan_files")
 
 
 class StanInterface(object, metaclass=ABCMeta):
@@ -44,6 +44,8 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._code_gen = StanFileGenerator(output_file)
 
+        self._check_output_dir()
+
     def _get_source_info(self):
         """
         Store some useful source info.
@@ -64,6 +66,15 @@ class StanInterface(object, metaclass=ABCMeta):
         if self.sources.atmospheric:
 
             self._atmo_flux = self.sources.atmospheric_flux
+
+    def _check_output_dir(self):
+        """
+        Creat Stan code dir if not existing.
+        """
+
+        if not os.path.isdir(STAN_GEN_PATH):
+
+            os.makedirs(STAN_GEN_PATH)
 
     @abstractmethod
     def _functions(self):
