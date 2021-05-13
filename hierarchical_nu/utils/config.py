@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from omegaconf import OmegaConf
 
 
-from ..stan_interface import STAN_PATH
+from hierarchical_nu.stan.interface import STAN_PATH
 
 _config_path = Path("~/.config/hierarchical_nu/").expanduser()
 
