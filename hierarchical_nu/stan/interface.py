@@ -5,7 +5,6 @@ from hierarchical_nu.backend.stan_generator import StanFileGenerator
 
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
-from hierarchical_nu.events import TRACKS, CASCADES
 
 
 STAN_PATH = os.path.dirname(__file__)
