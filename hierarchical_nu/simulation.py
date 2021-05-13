@@ -24,10 +24,7 @@ from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.events import Events, TRACKS
 
 from hierarchical_nu.stan.interface import STAN_PATH
-from hierarchical_nu.stan.sim_interface import (
-    StanSimInterface,
-    generate_atmospheric_sim_code_,
-)
+from hierarchical_nu.stan.sim_interface import StanSimInterface
 
 
 class Simulation:

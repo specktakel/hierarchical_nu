@@ -479,6 +479,9 @@ class StanSimInterface(StanInterface):
                     self._detected << 0
                     self._ntrials << 0
 
+                    if self._sources.atmospheric:
+                        self._atmo_index << 1
+
                     with WhileLoopContext([StringExpression([self._accept != 1])]):
 
                         with IfBlockContext(
