@@ -59,6 +59,8 @@ class StanFitInterface(StanInterface):
 
         self._theta_points = theta_points
 
+        self._get_par_ranges()
+
     def _get_par_ranges(self):
 
         if self.sources.point_source:
@@ -277,7 +279,7 @@ class StanFitInterface(StanInterface):
                 self._F = ForwardVariableDef("F", "vector[Ns+2]")
                 self._logF = ForwardVariableDef("logF", "vector[Ns+2]")
 
-                self._lp = ForwardVariableDef("lp", "vecor[Ns+2]", self._N_str)
+                self._lp = ForwardArrayDef("lp", "vector[Ns+2]", self._N_str)
 
                 n_comps_max = "Ns+2"
                 N_tot_t = "[Ns+2]"
@@ -288,7 +290,7 @@ class StanFitInterface(StanInterface):
                 self._F = ForwardVariableDef("F", "vector[Ns+1]")
                 self._logF = ForwardVariableDef("logF", "vector[Ns+1]")
 
-                self._lp = ForwardVariableDef("lp", "vector[Ns+1]", self._N_str)
+                self._lp = ForwardArrayDef("lp", "vector[Ns+1]", self._N_str)
 
                 n_comps_max = "Ns+1"
                 N_tot_t = N_tot_c = "[Ns+1]"
@@ -298,7 +300,7 @@ class StanFitInterface(StanInterface):
                 self._F = ForwardVariableDef("F", "vector[Ns]")
                 self._logF = ForwardVariableDef("logF", "vector[Ns]")
 
-                self._lp = ForwardVariableDef("lp", "vector[Ns]", self._N_str)
+                self._lp = ForwardArrayDef("lp", "vector[Ns]", self._N_str)
 
                 n_comps_max = "Ns"
                 N_tot_t = N_tot_c = "[Ns]"
@@ -443,7 +445,7 @@ class StanFitInterface(StanInterface):
 
                 self._eps_t[self._Ns + 1] << self._atmo_integ_val * self._T
 
-            if self.sources.atmospheric and not self.sources.diffuse:
+            elif self.sources.atmospheric and "cascades" in self._event_types:
 
                 self._eps_c[self._Ns + 1] << 0.0
 
@@ -488,231 +490,248 @@ class StanFitInterface(StanInterface):
                 self._lp[i] << self._logF
 
                 # Tracks
-                with IfBlockContext(
-                    [StringExpression([self._event_type[i], " == ", self._track_type])]
-                ):
+                if "tracks" in self._event_types:
 
-                    with ForLoopContext(1, n_comps_max, "k") as k:
+                    with IfBlockContext(
+                        [
+                            StringExpression(
+                                [self._event_type[i], " == ", self._track_type]
+                            )
+                        ]
+                    ):
 
-                        # Point source components
-                        if self.sources.point_source:
+                        with ForLoopContext(1, n_comps_max, "k") as k:
 
-                            with IfBlockContext(
-                                [StringExpression([k, " < ", self._Ns + 1])]
-                            ):
+                            # Point source components
+                            if self.sources.point_source:
 
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += ",
-                                        self._src_spectrum_lpdf(
-                                            self._Esrc[i],
-                                            self._src_index,
-                                            self._Esrc_min,
-                                            self._Esrc_max,
-                                        ),
-                                    ]
-                                )
-                                self._E[i] << StringExpression(
-                                    [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                )
+                                with IfBlockContext(
+                                    [StringExpression([k, " < ", self._Ns + 1])]
+                                ):
 
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += vMF_lpdf(",
-                                        self._omega_det[i],
-                                        " | ",
-                                        self._varpi[k],
-                                        ", ",
-                                        self._kappa[i],
-                                        ")",
-                                    ]
-                                )
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            self._src_spectrum_lpdf(
+                                                self._Esrc[i],
+                                                self._src_index,
+                                                self._Esrc_min,
+                                                self._Esrc_max,
+                                            ),
+                                        ]
+                                    )
+                                    self._E[i] << StringExpression(
+                                        [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                    )
 
-                        # Diffuse component
-                        if self.sources.diffuse:
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += vMF_lpdf(",
+                                            self._omega_det[i],
+                                            " | ",
+                                            self._varpi[k],
+                                            ", ",
+                                            self._kappa[i],
+                                            ")",
+                                        ]
+                                    )
 
-                            with ElseIfBlockContext(
-                                [StringExpression([k, " == ", k_diff])]
-                            ):
+                            # Diffuse component
+                            if self.sources.diffuse:
 
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += ",
-                                        self._diff_spectrum_lpdf(
-                                            self._Esrc[i],
-                                            self._diff_index,
-                                            self._Esrc_min,
-                                            self._Esrc_max,
-                                        ),
-                                    ]
-                                )
-                                self._E[i] << StringExpression(
-                                    [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                )
+                                with IfBlockContext(
+                                    [StringExpression([k, " == ", k_diff])]
+                                ):
 
-                                StringExpression(
-                                    [self._lp[i][k], " += ", np.log(1 / (4 * np.pi))]
-                                )
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            self._diff_spectrum_lpdf(
+                                                self._Esrc[i],
+                                                self._diff_index,
+                                                self._Esrc_min,
+                                                self._Esrc_max,
+                                            ),
+                                        ]
+                                    )
+                                    self._E[i] << StringExpression(
+                                        [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                    )
 
-                        # Atmospheric component
-                        if self.sources.atmospheric:
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            np.log(1 / (4 * np.pi)),
+                                        ]
+                                    )
 
-                            with ElseIfBlockContext(
-                                [StringExpression([k, " == ", k_atmo])]
-                            ):
+                            # Atmospheric component
+                            if self.sources.atmospheric:
 
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += ",
-                                        FunctionCall(
-                                            [
-                                                self._atmo_flux_func(
-                                                    self._Esrc[i], self._omega_det[i]
-                                                )
-                                                / self._atmo_flux_integral
-                                            ],
-                                            "log",
-                                        ),
-                                    ]
-                                )
-                                self._E[i] << self._Esrc[i]
+                                with IfBlockContext(
+                                    [StringExpression([k, " == ", k_atmo])]
+                                ):
 
-                        # Detection effects
-                        StringExpression(
-                            [
-                                self._lp[i][k],
-                                " += ",
-                                self._dm["tracks"].energy_resolution(
-                                    self._E[i], self._Edet[i]
-                                ),
-                            ]
-                        )
-                        StringExpression(
-                            [
-                                self._lp[i][k],
-                                " += log(interpolate(",
-                                self._Eg,
-                                ", ",
-                                self._Pg_t[k],
-                                ", ",
-                                self._E[i],
-                                "))",
-                            ]
-                        )
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            FunctionCall(
+                                                [
+                                                    self._atmo_flux_func(
+                                                        self._Esrc[i],
+                                                        self._omega_det[i],
+                                                    )
+                                                    / self._atmo_flux_integral
+                                                ],
+                                                "log",
+                                            ),
+                                        ]
+                                    )
+                                    self._E[i] << self._Esrc[i]
+
+                            # Detection effects
+                            StringExpression(
+                                [
+                                    self._lp[i][k],
+                                    " += ",
+                                    self._dm["tracks"].energy_resolution(
+                                        self._E[i], self._Edet[i]
+                                    ),
+                                ]
+                            )
+                            StringExpression(
+                                [
+                                    self._lp[i][k],
+                                    " += log(interpolate(",
+                                    self._Eg,
+                                    ", ",
+                                    self._Pg_t[k],
+                                    ", ",
+                                    self._E[i],
+                                    "))",
+                                ]
+                            )
 
                 # Cascades
-                with ElseIfBlockContext(
-                    [
-                        StringExpression(
-                            [self._event_type[i], " == ", self._cascade_type]
-                        )
-                    ]
-                ):
+                if "cascades" in self._event_types:
 
-                    with ForLoopContext(1, n_comps_max, "k") as k:
+                    with ElseIfBlockContext(
+                        [
+                            StringExpression(
+                                [self._event_type[i], " == ", self._cascade_type]
+                            )
+                        ]
+                    ):
 
-                        # Point source components
-                        if self.sources.point_source:
+                        with ForLoopContext(1, n_comps_max, "k") as k:
 
-                            with IfBlockContext(
-                                [StringExpression([k, " < ", self._Ns + 1])]
-                            ):
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += ",
-                                        self._src_spectrum_lpdf(
-                                            self._Esrc[i],
-                                            self._src_index,
-                                            self._Esrc_min,
-                                            self._Esrc_max,
-                                        ),
-                                    ]
-                                )
-                                self._E[i] << StringExpression(
-                                    [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                )
+                            # Point source components
+                            if self.sources.point_source:
 
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += vMF_lpdf(",
-                                        self._omega_det[i],
-                                        " | ",
-                                        self._varpi[k],
-                                        ", ",
-                                        self._kappa[i],
-                                        ")",
-                                    ]
-                                )
+                                with IfBlockContext(
+                                    [StringExpression([k, " < ", self._Ns + 1])]
+                                ):
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            self._src_spectrum_lpdf(
+                                                self._Esrc[i],
+                                                self._src_index,
+                                                self._Esrc_min,
+                                                self._Esrc_max,
+                                            ),
+                                        ]
+                                    )
+                                    self._E[i] << StringExpression(
+                                        [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                    )
 
-                        # Diffuse component
-                        if self.sources.diffuse:
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += vMF_lpdf(",
+                                            self._omega_det[i],
+                                            " | ",
+                                            self._varpi[k],
+                                            ", ",
+                                            self._kappa[i],
+                                            ")",
+                                        ]
+                                    )
 
-                            with ElseIfBlockContext(
-                                [StringExpression([k, " == ", self._Ns + 1])]
-                            ):
+                            # Diffuse component
+                            if self.sources.diffuse:
 
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += ",
-                                        self._diff_spectrum_lpdf(
-                                            self._Esrc[i],
-                                            self._diff_index,
-                                            self._Esrc_min,
-                                            self._Esrc_max,
-                                        ),
-                                    ]
-                                )
-                                self._E[i] << StringExpression(
-                                    [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                )
-                                StringExpression(
-                                    [self._lp[i][k], " += ", np.log(1 / (4 * np.pi))]
-                                )
+                                with IfBlockContext(
+                                    [StringExpression([k, " == ", self._Ns + 1])]
+                                ):
 
-                        # Atmospheric component
-                        if self.sources.atmospheric:
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            self._diff_spectrum_lpdf(
+                                                self._Esrc[i],
+                                                self._diff_index,
+                                                self._Esrc_min,
+                                                self._Esrc_max,
+                                            ),
+                                        ]
+                                    )
+                                    self._E[i] << StringExpression(
+                                        [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                    )
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            np.log(1 / (4 * np.pi)),
+                                        ]
+                                    )
 
-                            with ElseIfBlockContext(
-                                [StringExpression([k, " == ", self._Ns + 2])]
-                            ):
+                            # Atmospheric component
+                            if self.sources.atmospheric:
 
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += negative_infinity()",
-                                    ]
-                                )
-                                self._E[i] << self._Esrc[i]
+                                with IfBlockContext(
+                                    [StringExpression([k, " == ", self._Ns + 2])]
+                                ):
 
-                        # Detection effects
-                        StringExpression(
-                            [
-                                self._lp[i][k],
-                                " += ",
-                                self._dm["cascades"].energy_resolution(
-                                    self._E[i], self._Edet[i]
-                                ),
-                            ]
-                        )
-                        StringExpression(
-                            [
-                                self._lp[i][k],
-                                " += log(interpolate(",
-                                self._Eg,
-                                ", ",
-                                self._Pg_c[k],
-                                ", ",
-                                self._E[i],
-                                "))",
-                            ]
-                        )
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += negative_infinity()",
+                                        ]
+                                    )
+                                    self._E[i] << self._Esrc[i]
+
+                            # Detection effects
+                            StringExpression(
+                                [
+                                    self._lp[i][k],
+                                    " += ",
+                                    self._dm["cascades"].energy_resolution(
+                                        self._E[i], self._Edet[i]
+                                    ),
+                                ]
+                            )
+                            StringExpression(
+                                [
+                                    self._lp[i][k],
+                                    " += log(interpolate(",
+                                    self._Eg,
+                                    ", ",
+                                    self._Pg_c[k],
+                                    ", ",
+                                    self._E[i],
+                                    "))",
+                                ]
+                            )
 
     def _model(self):
 
@@ -724,7 +743,7 @@ class StanFitInterface(StanInterface):
 
             StringExpression(["target += -", self._Nex])
 
-            if self.sources.point_Source:
+            if self.sources.point_source:
 
                 StringExpression(
                     [
