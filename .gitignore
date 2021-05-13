@@ -152,6 +152,7 @@ software/simulation_study/output/
 
 ## Stan-related
 *.hpp
+.stan_files
 
 
 

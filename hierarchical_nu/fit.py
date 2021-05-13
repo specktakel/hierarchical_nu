@@ -7,20 +7,16 @@ from astropy import units as u
 
 from cmdstanpy import CmdStanModel
 
-from .source.source import Sources, PointSource, icrs_to_uv
-from .source.parameter import Parameter
-from .source.flux_model import IsotropicDiffuseBG
-from .source.cosmology import luminosity_distance
-from .detector.detector_model import DetectorModel
-from .detector.icecube import IceCubeDetectorModel
-from .precomputation import ExposureIntegral
-from .events import Events
+from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
+from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
+from hierarchical_nu.source.cosmology import luminosity_distance
+from hierarchical_nu.detector.detector_model import DetectorModel
+from hierarchical_nu.precomputation import ExposureIntegral
+from hierarchical_nu.events import Events
 
-from .stan_interface import (
-    generate_stan_fit_code_,
-    generate_stan_fit_code_hybrid_,
-    STAN_PATH,
-)
+from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
+from hierarchical_nu.stan.fit_interface import StanFitInterface
 
 
 class StanFit:
@@ -44,26 +40,64 @@ class StanFit:
         self._detector_model_type = detector_model
         self._events = events
         self._observation_time = observation_time
-        self._stan_path = STAN_PATH
 
         self._sources.organise()
+
+        stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
+
+        self._stan_interface = StanFitInterface(
+            stan_file_name,
+            self._sources,
+            self._detector_model_type,
+        )
+
+        # Check for unsupported combinations
+        if sources.atmospheric and detector_model.event_types == ["cascades"]:
+
+            raise NotImplementedError(
+                "AtmosphericNuMuFlux currently only implemented "
+                + "for use with NorthernTracksDetectorModel or "
+                + "IceCubeDetectorModel"
+            )
+
+        if (
+            sources.atmospheric
+            and sources.N == 1
+            and "cascades" in detector_model.event_types
+        ):
+
+            raise NotImplementedError(
+                "AtmosphericNuMuFlux as the only source component "
+                + "for IceCubeDetectorModel is not implemented. Just use "
+                + "NorthernTracksDetectorModel instead."
+            )
 
         # Silence log output
         logger = logging.getLogger("hierarchical_nu.backend.code_generator")
         logger.propagate = False
 
         # For use with plot methods
-        if self._sources.atmo_component():
-            self._def_var_names = [
-                "L",
-                "F_diff",
-                "F_atmo",
-                "f",
-                "src_index",
-                "diff_index",
-            ]
-        else:
-            self._def_var_names = ["L", "F_diff", "f", "src_index", "diff_index"]
+        self._def_var_names = []
+
+        if self._sources.point_source:
+
+            self._def_var_names.append("L")
+            self._def_var_names.append("src_index")
+
+        if self._sources.diffuse:
+
+            self._def_var_names.append("F_diff")
+            self._def_var_names.append("diff_index")
+
+        if self._sources.atmospheric:
+
+            self._def_var_names.append("F_atmo")
+
+        if self._sources._point_source and (
+            self._sources.atmospheric or self._sources.diffuse
+        ):
+
+            self._def_var_names.append("f")
 
         self._exposure_integral = collections.OrderedDict()
 
@@ -88,7 +122,7 @@ class StanFit:
 
     def generate_stan_code(self):
 
-        self._generate_stan_fit_code()
+        self._fit_filename = self._stan_interface.generate()
 
     def set_stan_filename(self, fit_filename):
 
@@ -97,7 +131,7 @@ class StanFit:
     def compile_stan_code(self, include_paths=None):
 
         if not include_paths:
-            include_paths = [self._stan_path]
+            include_paths = [STAN_PATH]
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename, stanc_options={"include_paths": include_paths}
@@ -203,26 +237,49 @@ class StanFit:
         prob_each_src = self._get_event_classifications()
 
         source_labels = ["src%i" % src for src in range(Ns)]
-        source_labels.append("diff")
 
-        if self._sources.atmo_component():
+        if self._sources.atmospheric and self._sources.diffuse:
+
+            source_labels.append("diff")
+            source_labels.append("atmo")
+
+        elif self._sources.diffuse:
+
+            source_labels.append("diff")
+
+        elif self._sources.atmospheric:
+
             source_labels.append("atmo")
 
         wrong = []
         for i in range(len(prob_each_src)):
+
             classified = np.where(prob_each_src[i] == np.max(prob_each_src[i]))[0][
                 0
             ] == int(event_labels[i])
+
             if not classified:
+
                 wrong.append(i)
 
                 print("Event %i is misclassified" % i)
-                for src in range(Ns):
-                    print("P(src%i) = %.6f" % (src, prob_each_src[i][src]))
-                print("P(diff) = %.6f" % prob_each_src[i][Ns])
 
-                if self._sources.atmo_component():
+                for src in range(Ns):
+
+                    print("P(src%i) = %.6f" % (src, prob_each_src[i][src]))
+
+                if self._sources.atmospheric and self._sources.diffuse:
+
+                    print("P(diff) = %.6f" % prob_each_src[i][Ns])
                     print("P(atmo) = %.6f" % prob_each_src[i][Ns + 1])
+
+                elif self._sources.diffuse:
+
+                    print("P(diff) = %.6f" % prob_each_src[i][Ns])
+
+                elif self._sources.atmospheric:
+
+                    print("P(atmo) = %.6f" % prob_each_src[i][Ns])
 
                 print("The correct component is", source_labels[int(event_labels[i])])
                 print()
@@ -240,10 +297,6 @@ class StanFit:
         logprob = self._fit_output.stan_variable("lp").transpose(1, 2, 0)
 
         n_comps = np.shape(logprob)[1]
-        if self._sources.atmo_component:
-            Ns = n_comps - 2
-        else:
-            Ns = n_comps - 1
 
         prob_each_src = []
         for lp in logprob:
@@ -299,67 +352,70 @@ class StanFit:
         fit_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         fit_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
 
-        event_type = self._detector_model_type.event_types[0]
-        fit_inputs["Ngrid"] = len(
-            self._exposure_integral[event_type].par_grids["src_index"]
-        )
-        fit_inputs["src_index_grid"] = self._exposure_integral[event_type].par_grids[
-            "src_index"
-        ]
-        fit_inputs["diff_index_grid"] = self._exposure_integral[event_type].par_grids[
-            "diff_index"
-        ]
+        fit_inputs["T"] = self._observation_time.to(u.s).value
 
-        if self._detector_model_type == IceCubeDetectorModel:
+        event_type = self._detector_model_type.event_types[0]
+        fit_inputs["E_grid"] = self._exposure_integral[event_type].energy_grid.value
+
+        fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
+
+        if self._sources.point_source:
+
+            fit_inputs["src_index_grid"] = self._exposure_integral[
+                event_type
+            ].par_grids["src_index"]
+
+        if self._sources.diffuse:
+
+            fit_inputs["diff_index_grid"] = self._exposure_integral[
+                event_type
+            ].par_grids["diff_index"]
+
+        if "tracks" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_t"] = [
                 _.value.tolist()
                 for _ in self._exposure_integral["tracks"].integral_grid
             ]
+
+            fit_inputs["Pdet_grid_t"] = np.array(
+                self._exposure_integral["tracks"].pdet_grid
+            )
+
+        if "cascades" in self._stan_interface._event_types:
+
             fit_inputs["integral_grid_c"] = [
                 _.value.tolist()
                 for _ in self._exposure_integral["cascades"].integral_grid
             ]
 
-        else:
-
-            fit_inputs["integral_grid"] = [
-                _.value.tolist()
-                for _ in self._exposure_integral[event_type].integral_grid
-            ]
-
-        fit_inputs["T"] = self._observation_time.to(u.s).value
-
-        fit_inputs["E_grid"] = self._exposure_integral[event_type].energy_grid.value
-
-        if self._detector_model_type == IceCubeDetectorModel:
-
-            fit_inputs["Pdet_grid_t"] = np.array(
-                self._exposure_integral["tracks"].pdet_grid
-            )
             fit_inputs["Pdet_grid_c"] = np.array(
                 self._exposure_integral["cascades"].pdet_grid
             )
-        else:
 
-            fit_inputs["Pdet_grid"] = np.array(
-                self._exposure_integral[event_type].pdet_grid
+        if self._sources.point_source:
+
+            fit_inputs["L_scale"] = (
+                Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
             )
 
-        fit_inputs["L_scale"] = (
-            Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
-        )
+        if self._sources.diffuse:
 
-        diffuse_bg = self._sources.diffuse_component()
-        fit_inputs["F_diff_scale"] = diffuse_bg.flux_model.total_flux_int.value
+            bg = self._sources.diffuse
+            fit_inputs["F_diff_scale"] = bg.flux_model.total_flux_int.to(
+                1 / (u.m ** 2 * u.s)
+            ).value
 
-        if self._sources.atmo_component():
+        if self._sources.atmospheric:
+
             fit_inputs["atmo_integ_val"] = (
                 self._exposure_integral["tracks"].integral_fixed_vals[0].value
             )
 
-            atmo_bg = self._sources.atmo_component()
-            fit_inputs["F_atmo_scale"] = atmo_bg.flux_model.total_flux_int.value
+            bg = self._sources.atmospheric
+            fit_inputs["F_atmo_scale"] = bg.flux_model.total_flux_int.to(
+                1 / (u.m ** 2 * u.s)
+            ).value
 
         fit_inputs["F_tot_scale"] = self._sources.total_flux_int().value
 
@@ -370,47 +426,3 @@ class StanFit:
         }
 
         return fit_inputs
-
-    def _generate_stan_fit_code(self):
-
-        ps_spec_shape = self._sources.sources[0].flux_model.spectral_shape
-        diff_spec_shape = self._sources.diffuse_component().flux_model.spectral_shape
-
-        if self._sources.atmo_component():
-            atmo_flux_model = self._sources.atmo_component().flux_model
-        else:
-            atmo_flux_model = None
-
-        filename = os.path.join(self._stan_path, "model_code")
-
-        if self._detector_model_type == IceCubeDetectorModel:
-
-            self._fit_filename = generate_stan_fit_code_hybrid_(
-                filename,
-                self._detector_model_type,
-                ps_spec_shape,
-                diff_spec_shape,
-                atmo_flux_model=atmo_flux_model,
-                diffuse_bg_comp=self._sources.diffuse_component(),
-                atmospheric_comp=self._sources.atmo_component(),
-                theta_points=30,
-                lumi_par_range=Parameter.get_parameter("luminosity").par_range,
-                src_index_par_range=Parameter.get_parameter("src_index").par_range,
-                diff_index_par_range=Parameter.get_parameter("diff_index").par_range,
-            )
-
-        else:
-
-            self._fit_filename = generate_stan_fit_code_(
-                filename,
-                self._detector_model_type,
-                ps_spec_shape,
-                diff_spec_shape,
-                atmo_flux_model=atmo_flux_model,
-                diffuse_bg_comp=self._sources.diffuse_component(),
-                atmospheric_comp=self._sources.atmo_component(),
-                theta_points=30,
-                lumi_par_range=Parameter.get_parameter("luminosity").par_range,
-                src_index_par_range=Parameter.get_parameter("src_index").par_range,
-                diff_index_par_range=Parameter.get_parameter("diff_index").par_range,
-            )
