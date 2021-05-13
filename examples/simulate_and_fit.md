@@ -6,7 +6,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.11.0
+      jupytext_version: 1.11.2
   kernelspec:
     display_name: hierarchical_nu
     language: python
@@ -114,7 +114,7 @@ sim.run(verbose=True, seed=42)
 sim.save("output/test_sim_file.h5")
 ```
 
-We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~67 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
+We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~89 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
 
 ```python
 fig, ax = sim.show_spectrum()
@@ -167,6 +167,10 @@ fit.save("output/test.h5")
 ```
 
 We can check the results of the fit against the known true values from the above simulation. The `SimInfo` class pulls the interesting information out of our saved simulation for this purpose. 
+
+```python
+from hierarchical_nu.simulation import SimInfo
+```
 
 ```python
 sim_info = SimInfo.from_file("output/test_sim_file.h5")

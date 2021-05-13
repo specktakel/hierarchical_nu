@@ -36,10 +36,10 @@ from hierarchical_nu.source.source import Sources, PointSource
 # define high-level parameters
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
-#diff_index = Parameter(2.0, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(2E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
-#diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
-#                         par_range=(0, np.inf))
+diff_index = Parameter(2.0, "diff_index", fixed=False, par_range=(1, 4))
+L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
+diffuse_norm = Parameter(5e-14 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+                         par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
@@ -81,14 +81,14 @@ from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 
 ```python
 obs_time = 10 * u.year
-sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
+sim = Simulation(my_sources, NortherntracksDetectorModel, obs_time)
 ```
 
 ```python
 sim.precomputation()
 sim.generate_stan_code()
 sim.compile_stan_code()
-sim.run(verbose=True, seed=100)
+sim.run(verbose=True, seed=42)
 sim.save("output/test_sim_file.h5")
 ```
 
@@ -104,12 +104,14 @@ fig, ax = sim.show_spectrum()
 fig, ax = sim.show_skymap()
 ```
 
-## Fit - still needs updated interface
+## Fit 
 
 ```python
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
+from hierarchical_nu.detector.cascades import CascadesDetectorModel
+from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 from hierarchical_nu.simulation import SimInfo
 ```
 
@@ -119,7 +121,7 @@ obs_time = 10 * u.year
 ```
 
 ```python
-fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
+fit = StanFit(my_sources, NorthenTracksDetectorModel, events, obs_time)
 ```
 
 ```python
@@ -148,38 +150,6 @@ fig = fit.corner_plot(truths=sim_info.truths)
 
 ```python
 fit.check_classification(sim_info.outputs)
-```
-
-## New Stan interface
-
-```python
-from cmdstanpy import CmdStanModel
-
-from hierarchical_nu.stan.interface import STAN_PATH
-from hierarchical_nu.stan.sim_interface import StanSimInterface
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
-from hierarchical_nu.detector.cascades import CascadesDetectorModel
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
-```
-
-```python
-interface = StanSimInterface("output/test_file", my_sources, 
-                             NorthernTracksDetectorModel)
-```
-
-```python
-stan_file = interface.generate()
-```
-
-```python
-stanc_options = {"include_paths": ["/Users/fran/projects/hierarchical_nu/hierarchical_nu/stan/"]}
-sim = CmdStanModel(stan_file=stan_file, stanc_options=stanc_options)
-```
-
-## Debugging
-
-```python
-from hierarchical_nu.stan.sim_interface import StanSimInterface
 ```
 
 ```python

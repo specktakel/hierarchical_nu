@@ -370,9 +370,9 @@ class StanSimInterface(StanInterface):
 
                 self._eps_t[self._Ns + 1] << self._atmo_integ_val * self._T
 
-            elif self.sources.atmospheric and "cascades" in self._event_types:
+                if "cascades" in self._event_types:
 
-                self._eps_c[self._Ns + 1] << 0.0
+                    self._eps_c[self._Ns + 1] << 0.0
 
             if "tracks" in self._event_types:
 
