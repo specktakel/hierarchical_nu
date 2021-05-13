@@ -501,6 +501,13 @@ class Sources:
 
         return self._atmospheric
 
+    @property
+    def atmospheric_flux(self):
+
+        self.organise()
+
+        return self._atmospheric.flux_model
+
     def __iter__(self):
 
         for source in self._sources:

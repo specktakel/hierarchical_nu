@@ -54,13 +54,17 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._diff_spectrum = None
 
-        if self._sources.point_source:
+        if self.sources.point_source:
 
             self._ps_spectrum = self.sources.point_source_spectrum
 
-        if self._sources.diffuse:
+        if self.sources.diffuse:
 
             self._diff_spectrum = self.sources.diffuse_spectrum
+
+        if self.sources.atmospheric:
+
+            self._atmo_flux = self.sources.atmospheric_flux
 
     @abstractmethod
     def _functions(self):
