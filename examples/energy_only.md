@@ -41,7 +41,7 @@ L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60
 diffuse_norm = Parameter(5e-14 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
-Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
+Emin = Parameter(1E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 ```
 
@@ -81,7 +81,7 @@ from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 
 ```python
 obs_time = 10 * u.year
-sim = Simulation(my_sources, NortherntracksDetectorModel, obs_time)
+sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
 ```
 
 ```python
@@ -121,13 +121,13 @@ obs_time = 10 * u.year
 ```
 
 ```python
-fit = StanFit(my_sources, NorthenTracksDetectorModel, events, obs_time)
+fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
 ```
 
 ```python
 fit.precomputation()
-fit.generate_stan_code()
-#fit.set_stan_filename("../hierarchical_nu/stan/model_test.stan")
+#fit.generate_stan_code()
+fit.set_stan_filename(".stan_files/test_model_code.stan")
 ```
 
 ```python
