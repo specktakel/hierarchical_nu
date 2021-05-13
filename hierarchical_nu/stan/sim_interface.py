@@ -372,7 +372,7 @@ class StanSimInterface(StanInterface):
 
                 self._eps_t[self._Ns + 1] << self._atmo_integ_val * self._T
 
-            if self.sources.atmospheric and not self.sources.diffuse:
+            elif self.sources.atmospheric and "cascades" in self._event_types:
 
                 self._eps_c[self._Ns + 1] << 0.0
 

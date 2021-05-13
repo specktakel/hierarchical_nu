@@ -601,11 +601,24 @@ class SimInfo:
             source_folder = f["sim/source"]
             outputs_folder = f["sim/outputs"]
 
-            atmo_comp = False
+            atmo = False
+            diff = False
+            ps = False
             for key in inputs_folder:
+
                 inputs[key] = inputs_folder[key][()]
+
                 if key == "F_atmo":
-                    atmo_comp = True
+
+                    atmo = True
+
+                if key == "F_diff":
+
+                    diff = True
+
+                if key == "L":
+
+                    ps = True
 
             for key in source_folder:
                 inputs[key] = source_folder[key][()]
@@ -614,15 +627,23 @@ class SimInfo:
                 outputs[key] = outputs_folder[key][()]
 
         truths = {}
-        truths["F_diff"] = inputs["F_diff"]
-        truths["L"] = inputs["L"]
+
+        if ps:
+
+            truths["L"] = inputs["L"]
+            truths["src_index"] = inputs["src_index"]
+
+        if diff:
+
+            truths["F_diff"] = inputs["F_diff"]
+            truths["diff_index"] = inputs["diff_index"]
+
+        if atmo:
+
+            truths["F_atmo"] = inputs["F_atmo"]
+
         truths["Ftot"] = inputs["total_flux_int"]
         truths["f"] = inputs["f"]
-        truths["src_index"] = inputs["src_index"]
-        truths["diff_index"] = inputs["diff_index"]
-
-        if atmo_comp:
-            truths["F_atmo"] = inputs["F_atmo"]
 
         return cls(truths, inputs, outputs)
 
