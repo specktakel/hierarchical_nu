@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.11.0
+      jupytext_version: 1.11.2
   kernelspec:
     display_name: hierarchical_nu
     language: python
@@ -37,11 +37,11 @@ from hierarchical_nu.source.source import Sources, PointSource
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 diff_index = Parameter(2.0, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
+L = Parameter(1E48 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
 diffuse_norm = Parameter(5e-14 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
-Emin = Parameter(1E4 * u.GeV, "Emin", fixed=True)
+Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 ```
 
@@ -86,9 +86,10 @@ sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
 
 ```python
 sim.precomputation()
-sim.generate_stan_code()
+#sim.generate_stan_code()
+sim.set_stan_filenames(".stan_files/atmo_gen.stan", ".stan_files/test_sim_code.stan")
 sim.compile_stan_code()
-sim.run(verbose=True, seed=42)
+sim.run(verbose=True, seed=np.random.randint(10000))
 sim.save("output/test_sim_file.h5")
 ```
 
@@ -132,7 +133,7 @@ fit.set_stan_filename(".stan_files/test_model_code.stan")
 
 ```python
 fit.compile_stan_code()
-fit.run(show_progress=True, seed=42, chains=1)
+fit.run(show_progress=True, seed=986, chains=1)
 ```
 
 ```python
@@ -146,6 +147,10 @@ fit.save("output/test.h5")
 ```python
 sim_info = SimInfo.from_file("output/test_sim_file.h5")
 fig = fit.corner_plot(truths=sim_info.truths)
+```
+
+```python
+sim_info.truths["L"]
 ```
 
 ```python

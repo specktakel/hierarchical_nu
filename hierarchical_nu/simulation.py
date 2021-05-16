@@ -211,7 +211,7 @@ class Simulation:
         Emin_det = self._get_min_det_energy().to(u.GeV).value
 
         bins = np.logspace(
-            np.log10(Emin_det),
+            np.log10(1e4),  # debug
             np.log10(Parameter.get_parameter("Emax").value.to(u.GeV).value),
             20,
             base=10,
