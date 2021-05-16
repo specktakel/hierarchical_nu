@@ -37,11 +37,11 @@ from hierarchical_nu.source.source import Sources, PointSource
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 diff_index = Parameter(2.0, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(1E48 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
+L = Parameter(2.5E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
 diffuse_norm = Parameter(5e-14 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
-Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
+Emin = Parameter(1E5 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 ```
 
@@ -105,6 +105,10 @@ fig, ax = sim.show_spectrum()
 fig, ax = sim.show_skymap()
 ```
 
+```python
+sim._exposure_integral["tracks"].integral_grid
+```
+
 ## Fit 
 
 ```python
@@ -133,7 +137,7 @@ fit.set_stan_filename(".stan_files/test_model_code.stan")
 
 ```python
 fit.compile_stan_code()
-fit.run(show_progress=True, seed=986, chains=1)
+fit.run(show_progress=True, seed=np.random.randint(10000), chains=1)
 ```
 
 ```python
@@ -155,6 +159,40 @@ sim_info.truths["L"]
 
 ```python
 fit.check_classification(sim_info.outputs)
+```
+
+## Debug
+
+```python
+from itertools import product
+exp_int = sim._exposure_integral["tracks"]
+
+integral_grid = []
+for k, source in enumerate(exp_int._sources):
+    if not exp_int._source_parameter_map[source]:
+        print("no param map")
+    this_free_pars = exp_int._source_parameter_map[source]
+    this_par_grids = [exp_int._par_grids[par_name] for par_name in this_free_pars]
+    integral_grids_tmp = np.zeros(
+        [exp_int._n_grid_points] * len(this_par_grids)
+    ) << (u.m**2)
+    
+    for i, grid_points in enumerate(product(*this_par_grids)):
+        
+        indices = np.unravel_index(i, integral_grids_tmp.shape)
+        #print(indices)
+        for par_name, par_value in zip(this_free_pars, grid_points):
+            par = Parameter.get_parameter(par_name)
+            par.value = par_value
+            
+            #print(source.flux_model.total_flux_int)
+        F_int = source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
+        integral_grids_tmp[indices] += exp_int.calculate_rate(source) / F_int
+        #print(exp_int.calculate_rate(source))
+        #print(source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s)))
+
+
+    print(integral_grids_tmp)
 ```
 
 ```python
