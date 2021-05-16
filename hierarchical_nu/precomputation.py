@@ -191,9 +191,6 @@ class ExposureIntegral:
             e_cen, self._min_det_energy
         )
 
-        # aeff = 1 * u.m ** 2
-        # return (integral * aeff * source.redshift_factor(z)).sum()
-
         return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
 
     def _compute_exposure_integral(self):
@@ -218,7 +215,7 @@ class ExposureIntegral:
             this_par_grids = [self._par_grids[par_name] for par_name in this_free_pars]
             integral_grids_tmp = np.zeros(
                 [self._n_grid_points] * len(this_par_grids)
-            ) << (1 / u.s)
+            ) << (u.m ** 2)
 
             for i, grid_points in enumerate(product(*this_par_grids)):
 
@@ -228,7 +225,9 @@ class ExposureIntegral:
                     par = Parameter.get_parameter(par_name)
                     par.value = par_value
 
-                integral_grids_tmp[indices] += self.calculate_rate(source)
+                integral_grids_tmp[indices] += self.calculate_rate(
+                    source
+                ) / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
 
             # Reset free parameters to original values
             for par_name in this_free_pars:
@@ -241,10 +240,7 @@ class ExposureIntegral:
                     par.value = original_values[0]
 
             # To make units compatible with Stan model parametrisation
-            self._integral_grid.append(
-                integral_grids_tmp
-                / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
-            )
+            self._integral_grid.append(integral_grids_tmp)
 
     def _compute_energy_detection_factor(self):
         """

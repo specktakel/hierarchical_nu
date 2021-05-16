@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.11.0
+      jupytext_version: 1.11.2
   kernelspec:
     display_name: hierarchical_nu
     language: python
@@ -21,11 +21,6 @@ import astropy.units as u
 ```
 
 ```python
-import sys
-sys.path.append("../")
-```
-
-```python
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 ```
@@ -36,17 +31,17 @@ from hierarchical_nu.source.source import Sources, PointSource
 # define high-level parameters
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
-diff_index = Parameter(2.0, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
-diffuse_norm = Parameter(5e-14 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+diff_index = Parameter(2.7, "diff_index", fixed=False, par_range=(1, 4))
+L = Parameter(5E46 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
+diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
-Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
+Emin = Parameter(1E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 ```
 
 ```python
-Emin_det = Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
+Emin_det = Parameter(5e4 * u.GeV, "Emin_det", fixed=True)
 
 #Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
 #Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
@@ -62,7 +57,7 @@ my_sources = Sources()
 my_sources.add(point_source)
 
 # auto diffuse component 
-#my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
+my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
 #my_sources.add_atmospheric_component() # auto atmo component
 ```
 
@@ -81,14 +76,14 @@ from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 
 ```python
 obs_time = 10 * u.year
-sim = Simulation(my_sources, NortherntracksDetectorModel, obs_time)
+sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
 ```
 
 ```python
 sim.precomputation()
 sim.generate_stan_code()
 sim.compile_stan_code()
-sim.run(verbose=True, seed=42)
+sim.run(verbose=True, seed=np.random.randint(10000))
 sim.save("output/test_sim_file.h5")
 ```
 
@@ -121,18 +116,14 @@ obs_time = 10 * u.year
 ```
 
 ```python
-fit = StanFit(my_sources, NorthenTracksDetectorModel, events, obs_time)
+fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
 ```
 
 ```python
 fit.precomputation()
 fit.generate_stan_code()
-#fit.set_stan_filename("../hierarchical_nu/stan/model_test.stan")
-```
-
-```python
 fit.compile_stan_code()
-fit.run(show_progress=True, seed=42, chains=1)
+fit.run(show_progress=True, seed=np.random.randint(10000), chains=1)
 ```
 
 ```python

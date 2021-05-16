@@ -358,7 +358,6 @@ class StanFitInterface(StanInterface):
                 self._Ftot << self._Fsrc
 
             self._f << StringExpression([self._Fsrc, "/", self._Ftot])
-            StringExpression(['print("f: ", ', self._f, ")"])
 
             if self.sources.point_source:
 
