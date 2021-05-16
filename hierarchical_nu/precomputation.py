@@ -191,13 +191,7 @@ class ExposureIntegral:
             e_cen, self._min_det_energy
         )
 
-        # debug
-        aeff = 10 * u.m ** 2
-        return (integral * aeff).sum()
-
-        # return (integral * aeff * source.redshift_factor(z)).sum()
-
-        # return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
+        return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
 
     def _compute_exposure_integral(self):
         """

@@ -21,11 +21,6 @@ import astropy.units as u
 ```
 
 ```python
-import sys
-sys.path.append("../")
-```
-
-```python
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 ```
@@ -36,17 +31,17 @@ from hierarchical_nu.source.source import Sources, PointSource
 # define high-level parameters
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
-diff_index = Parameter(2.0, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(2.5E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
-diffuse_norm = Parameter(5e-14 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+diff_index = Parameter(2.7, "diff_index", fixed=False, par_range=(1, 4))
+L = Parameter(5E46 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
+diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
-Emin = Parameter(1E5 * u.GeV, "Emin", fixed=True)
+Emin = Parameter(1E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 ```
 
 ```python
-Emin_det = Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
+Emin_det = Parameter(5e4 * u.GeV, "Emin_det", fixed=True)
 
 #Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
 #Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
@@ -62,7 +57,7 @@ my_sources = Sources()
 my_sources.add(point_source)
 
 # auto diffuse component 
-#my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
+my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
 #my_sources.add_atmospheric_component() # auto atmo component
 ```
 
@@ -86,8 +81,7 @@ sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
 
 ```python
 sim.precomputation()
-#sim.generate_stan_code()
-sim.set_stan_filenames(".stan_files/atmo_gen.stan", ".stan_files/test_sim_code.stan")
+sim.generate_stan_code()
 sim.compile_stan_code()
 sim.run(verbose=True, seed=np.random.randint(10000))
 sim.save("output/test_sim_file.h5")
@@ -103,10 +97,6 @@ fig, ax = sim.show_spectrum()
 
 ```python
 fig, ax = sim.show_skymap()
-```
-
-```python
-sim._exposure_integral["tracks"].integral_grid
 ```
 
 ## Fit 
@@ -131,11 +121,7 @@ fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
 
 ```python
 fit.precomputation()
-#fit.generate_stan_code()
-fit.set_stan_filename(".stan_files/test_model_code.stan")
-```
-
-```python
+fit.generate_stan_code()
 fit.compile_stan_code()
 fit.run(show_progress=True, seed=np.random.randint(10000), chains=1)
 ```
@@ -154,45 +140,7 @@ fig = fit.corner_plot(truths=sim_info.truths)
 ```
 
 ```python
-sim_info.truths["L"]
-```
-
-```python
 fit.check_classification(sim_info.outputs)
-```
-
-## Debug
-
-```python
-from itertools import product
-exp_int = sim._exposure_integral["tracks"]
-
-integral_grid = []
-for k, source in enumerate(exp_int._sources):
-    if not exp_int._source_parameter_map[source]:
-        print("no param map")
-    this_free_pars = exp_int._source_parameter_map[source]
-    this_par_grids = [exp_int._par_grids[par_name] for par_name in this_free_pars]
-    integral_grids_tmp = np.zeros(
-        [exp_int._n_grid_points] * len(this_par_grids)
-    ) << (u.m**2)
-    
-    for i, grid_points in enumerate(product(*this_par_grids)):
-        
-        indices = np.unravel_index(i, integral_grids_tmp.shape)
-        #print(indices)
-        for par_name, par_value in zip(this_free_pars, grid_points):
-            par = Parameter.get_parameter(par_name)
-            par.value = par_value
-            
-            #print(source.flux_model.total_flux_int)
-        F_int = source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
-        integral_grids_tmp[indices] += exp_int.calculate_rate(source) / F_int
-        #print(exp_int.calculate_rate(source))
-        #print(source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s)))
-
-
-    print(integral_grids_tmp)
 ```
 
 ```python
