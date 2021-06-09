@@ -105,20 +105,48 @@ new_population.display_fluxes();
 ## Using a popsynth population to define a Sources object
 
 ```python
+import sys
+sys.path.append("../../hierarchical_nu/")
+```
+
+```python
 import h5py
+from astropy import units as u
+from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.source.source import PointSource, Sources
 ```
 
 ```python
-with h5py.File("output/test_population.h5", "r") as f:
-    for key in f:
-        print(key)
-    L = f["luminosities"][()]
+# Dfine some high-level params
+Parameter.clear_registry()
+
+# Define the bounds used to define the luminosity
+Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
+Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
+
+# NB: if you set the L and index here, they will override vals from file
+#src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
+#L = Parameter(3E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
 ```
 
 ```python
-L
+# Make a list of point sources from the population file
+point_src = PointSource.make_powerlaw_sources_from_file("output/test_population.h5",
+                                                        lower_energy=Emin,
+                                                        upper_energy=Emax)
 ```
 
 ```python
+# Add on to Sources object 
+my_sources = Sources()
+my_sources.add(point_src)
+my_sources.add_atmospheric_component() # auto atmo component
+```
 
+```python
+my_sources.associated_fraction()
+```
+
+```python
+# Continue as before...
 ```

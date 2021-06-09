@@ -148,11 +148,10 @@ class PointSource(Source):
     @classmethod
     def make_powerlaw_sources_from_file(
         cls,
-        filename: str,
-        luminosity: Parameter,
-        index: Parameter,
+        file_name: str,
         lower_energy: Parameter,
         upper_energy: Parameter,
+        include_undetected: bool = False,
     ):
         """
         Factory for power law sources defined in
@@ -160,28 +159,69 @@ class PointSource(Source):
 
         :param lower_energy: Lower energy bound in definition of the luminosity.
         :param upper_energy: Upper energy bound in definition of the luminosity.
+        :param include_undetected: Include sources that are not detected in population.
         """
 
-        with h5py.File(filename, "r") as f:
+        # Load values
+        with h5py.File(file_name, "r") as f:
 
-            redshift = f["output/redshift"][()]
-            position = f["output/position"][()]
+            luminosities = f["luminosities"][()]
 
-        unit_vector = position / np.linalg.norm(position, axis=1)[:, np.newaxis]
-        ra, dec = uv_to_icrs(unit_vector)
+            redshifts = f["distances"][()]
 
+            ras = f["phi"][()]
+
+            decs = f["theta"][()]
+
+            selection = f["selection"][()]
+
+        # Apply selection
+        if not include_undetected:
+
+            luminosities = luminosities[selection]
+
+            redshifts = redshifts[selection]
+
+            ras = ras[selection] * u.rad
+
+            decs = decs[selection] * u.rad
+
+        # Define necessary parameters
+
+        # Luminosity
+        try:
+            luminosity = Parameter.get_parameter("luminosity")
+        except ValueError:
+            luminosity = Parameter(
+                luminosities[0] * (u.erg / u.s),
+                "luminosity",
+                fixed=True,
+                par_range=(0, 1e60),
+            )
+
+        # Spectral index
+        try:
+            src_index = Parameter.get_parameter("src_index")
+        except ValueError:
+            # TODO: update to read from pop
+            src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
+
+        # Make list of point sources
         source_list = []
-        for i, (r, d, z) in enumerate(zip(ra, dec, redshift)):
+
+        for i, (ra, dec, z) in enumerate(zip(ras, decs, redshifts)):
+
             source = PointSource.make_powerlaw_source(
                 str(i),
-                d,
-                r,
+                dec,
+                ra,
                 luminosity,
-                index,
+                src_index,
                 z,
                 lower_energy,
                 upper_energy,
             )
+
             source_list.append(source)
 
         return source_list
