@@ -162,16 +162,19 @@ class PointSource(Source):
         :param include_undetected: Include sources that are not detected in population.
         """
 
+        # Sensible bounds on luminosity
+        lumi_range = (0, 1e60) * (u.erg / u.s)
+
         # Load values
         with h5py.File(file_name, "r") as f:
 
-            luminosities = f["luminosities"][()]
+            luminosities = f["luminosities"][()] * (u.erg / u.s)
 
             redshifts = f["distances"][()]
 
-            ras = f["phi"][()]
+            ras = f["phi"][()] * u.rad
 
-            decs = f["theta"][()]
+            decs = f["theta"][()] * u.rad
 
             selection = f["selection"][()]
 
@@ -182,37 +185,39 @@ class PointSource(Source):
 
             redshifts = redshifts[selection]
 
-            ras = ras[selection] * u.rad
+            ras = ras[selection]
 
-            decs = decs[selection] * u.rad
-
-        # Define necessary parameters
-
-        # Luminosity
-        try:
-            luminosity = Parameter.get_parameter("luminosity")
-        except ValueError:
-            luminosity = Parameter(
-                luminosities[0] * (u.erg / u.s),
-                "luminosity",
-                fixed=True,
-                par_range=(0, 1e60),
-            )
-
-        # Spectral index
-        try:
-            src_index = Parameter.get_parameter("src_index")
-        except ValueError:
-            # TODO: update to read from pop
-            src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
+            decs = decs[selection]
 
         # Make list of point sources
         source_list = []
 
-        for i, (ra, dec, z) in enumerate(zip(ras, decs, redshifts)):
+        for i, (L, ra, dec, z) in enumerate(
+            zip(
+                luminosities,
+                ras,
+                decs,
+                redshifts,
+            )
+        ):
+
+            luminosity = Parameter(
+                L,
+                "ps_%i_luminosity" % i,
+                fixed=True,
+                par_range=lumi_range,
+            )
+
+            # TODO: set from pop
+            src_index = Parameter(
+                2.0,
+                "ps_%i_src_index" % i,
+                fixed=False,
+                par_range=(1, 4),
+            )
 
             source = PointSource.make_powerlaw_source(
-                str(i),
+                "ps_%i" % i,
                 dec,
                 ra,
                 luminosity,

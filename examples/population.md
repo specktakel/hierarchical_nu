@@ -37,7 +37,7 @@ First, choose a luminosity function and cosmological evolution.
 ```python
 # All same luminosity
 lf = DeltaDistribution()
-lf.Lp = 1e48 # erg s^-1
+lf.Lp = 1e47 # erg s^-1
 
 # SFR-like distribution
 sd = SFRDistribution()
@@ -61,7 +61,7 @@ pop_synth = PopulationSynth(sd, lf)
 
 # Add a selection on the detected fluxes
 flux_select = HardFluxSelection()
-flux_select.boundary = 1e-9 # erg s^-1 cm^-2
+flux_select.boundary = 1e-10 # erg s^-1 cm^-2
 pop_synth.set_flux_selection(flux_select)
 
 # Add an auxiliary sampler to sample the spectral indices of each source
@@ -80,9 +80,6 @@ population.display_fluxes();
 ```python
 population.display_distances()
 ```
-
-
-
 
 ## Saving the population
 
@@ -124,6 +121,10 @@ Parameter.clear_registry()
 Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 
+# Detection thresholds
+Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
+Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
+
 # NB: if you set the L and index here, they will override vals from file
 #src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 #L = Parameter(3E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
@@ -147,6 +148,42 @@ my_sources.add_atmospheric_component() # auto atmo component
 my_sources.associated_fraction()
 ```
 
+## Simulation
+
 ```python
-# Continue as before...
+from hierarchical_nu.simulation import Simulation
+from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+```
+
+```python
+obs_time = 10 * u.year
+sim = Simulation(my_sources, IceCubeDetectorModel, obs_time)
+```
+
+```python
+sim.precomputation()
+sim.generate_stan_code()
+sim.compile_stan_code()
+```
+
+```python
+sim._get_expected_Nnu(sim._get_sim_inputs())
+sim._expected_Nnu_per_comp
+```
+
+```python
+sim.run(verbose=True, seed=42)
+sim.save("output/test_pop_sim_file.h5")
+```
+
+```python
+sim.show_skymap()
+```
+
+```python
+sim.show_spectrum()
+```
+
+```python
+
 ```

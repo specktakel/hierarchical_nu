@@ -363,12 +363,12 @@ class Simulation:
             if self._sources.point_source:
 
                 sim_inputs["Ngrid"] = len(
-                    self._exposure_integral[event_type].par_grids["src_index"]
+                    self._exposure_integral[event_type].par_grids["ps_0_src_index"]
                 )
 
                 sim_inputs["src_index_grid"] = self._exposure_integral[
                     event_type
-                ].par_grids["src_index"]
+                ].par_grids["ps_0_src_index"]
 
             if self._sources.diffuse:
 
@@ -412,7 +412,10 @@ class Simulation:
             )
 
         if self._sources.point_source:
-            sim_inputs["src_index"] = Parameter.get_parameter("src_index").value
+            sim_inputs["src_index"] = [
+                Parameter.get_parameter("ps_%i_src_index" % i).value
+                for i in range(sim_inputs["Ns"])
+            ]
 
         if self._sources.diffuse:
             sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
@@ -492,9 +495,13 @@ class Simulation:
             sim_inputs["F_atmo"] = atmo_bg.flux_model.total_flux_int.value
 
         if self._sources.point_source:
-            sim_inputs["L"] = (
-                Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
-            )
+
+            sim_inputs["L"] = [
+                Parameter.get_parameter("ps_%i_luminosity" % i)
+                .value.to(u.GeV / u.s)
+                .value
+                for i in range(sim_inputs["Ns"])
+            ]
 
         # Remove np.ndarrays for use with cmdstanpy
         sim_inputs = {
@@ -658,7 +665,7 @@ def _get_expected_Nnu_(
     """
 
     if point_source:
-        src_index = sim_inputs["src_index"]
+        src_index_list = sim_inputs["src_index"]
         src_index_grid = sim_inputs["src_index_grid"]
 
     if diffuse:
@@ -671,7 +678,7 @@ def _get_expected_Nnu_(
 
     if point_source:
         for i in range(Ns):
-            eps.append(np.interp(src_index, src_index_grid, integral_grid[i]))
+            eps.append(np.interp(src_index_list[i], src_index_grid, integral_grid[i]))
 
     if diffuse:
         eps.append(np.interp(diff_index, diff_index_grid, integral_grid[Ns]))
@@ -684,10 +691,10 @@ def _get_expected_Nnu_(
     F = []
 
     if point_source:
-        for d in sim_inputs["D"]:
-            flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
+        for d, l in zip(sim_inputs["D"], sim_inputs["L"]):
+            flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
             flux = flux * flux_conv_(
-                src_index, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
+                src_index_list[i], sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
             )
             F.append(flux)
 
