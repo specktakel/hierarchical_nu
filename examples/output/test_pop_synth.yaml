@@ -1,0 +1,17 @@
+auxiliary samplers: {}
+flux selection:
+  HardFluxSelection:
+    boundary: 1.0e-09
+luminosity distribution:
+  DeltaDistribution:
+    Lp: 1.0e+48
+seed: 1234
+spatial distribution:
+  SFRDistribution:
+    a: 0.0
+    decay: 3.0
+    peak: 1.0
+    r0: 10
+    r_max: 10
+    rise: 1.0
+  is_rate: true

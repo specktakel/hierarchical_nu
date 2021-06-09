@@ -18,7 +18,7 @@ from matplotlib import pyplot as plt
 import h5py
 ```
 
-## Simulate a simple population of objects
+## Simulate a simple source population
 
 Using the popsynth package, it is easy to simulate realistic cosmological populations. We can then use this as a starting point for our usual simulation of neutrinos via Stan.
 
@@ -65,7 +65,7 @@ flux_select.boundary = 1e-9 # erg s^-1 cm^-2
 pop_synth.set_flux_selection(flux_select)
 
 # Add an auxiliary sampler to sample the spectral indices of each source
-
+# Coming soon 
 
 pop_synth.display()
 ```
@@ -77,7 +77,47 @@ population = pop_synth.draw_survey(flux_sigma=0.1)
 population.display_fluxes();
 ```
 
+```python
+population.display_distances()
+```
 
+
+
+
+## Saving the population
+
+We can save and load both the population synthesis and the sampled population as required.
+
+```python
+# Population synthesis
+pop_synth.write_to("output/test_pop_synth.yaml")
+new_pop_synth = pop_synth.from_file("output/test_pop_synth.yaml")
+new_pop_synth.display()
+```
+
+```python
+# Population
+population.writeto("output/test_population.h5")
+new_population = population.from_file("output/test_population.h5")
+new_population.display_fluxes();
+```
+
+## Using a popsynth population to define a Sources object
+
+```python
+import h5py
+```
+
+```python
+with h5py.File("output/test_population.h5", "r") as f:
+    for key in f:
+        print(key)
+    L = f["luminosities"][()]
+```
+
+```python
+L
+```
 
 ```python
 
