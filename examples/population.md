@@ -126,6 +126,12 @@ Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
 Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
 
+# For diffuse comp
+diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+                         par_range=(0, np.inf))
+Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
+diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
+
 # NB: No longer set L and src_index here, they come from popsynth now.
 ```
 
@@ -140,6 +146,7 @@ point_src = PointSource.make_powerlaw_sources_from_file("output/test_population.
 # Add on to Sources object 
 my_sources = Sources()
 my_sources.add(point_src)
+my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
 #my_sources.add_atmospheric_component() # auto atmo component
 ```
 
@@ -228,6 +235,10 @@ sim_info = SimInfo.from_file("output/test_pop_sim_file.h5")
 
 ```python
 fig = fit.corner_plot(truths=sim_info.truths)
+```
+
+```python
+fit.check_classification(sim_info.outputs)
 ```
 
 ```python
