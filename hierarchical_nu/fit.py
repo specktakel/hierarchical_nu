@@ -4,6 +4,7 @@ import h5py
 import logging
 import collections
 from astropy import units as u
+import corner
 
 from cmdstanpy import CmdStanModel
 
@@ -189,23 +190,54 @@ class StanFit:
         true values if working with simulated data.
         """
 
-        import corner
-
         if not var_names:
             var_names = self._def_var_names
 
         chain = self._fit_output.stan_variables()
 
-        samples_list = [chain[key] for key in var_names]
+        # Organise samples
+        samples_list = []
+        label_list = []
 
+        for key in var_names:
+
+            if len(np.shape(chain[key])) > 1:
+
+                for i, s in enumerate(chain[key].T):
+                    samples_list.append(s)
+
+                    if key == "L" or key == "src_index":
+                        label = "ps_%i_" % i + key
+                    else:
+                        label = key
+
+                    label_list.append(label)
+
+            else:
+                samples_list.append(chain[key])
+                label_list.append(key)
+
+        # Organise truths
         if truths:
-            truths_list = [truths[key] for key in var_names]
+
+            truths_list = []
+
+            for key in var_names:
+
+                if truths[key].size > 1:
+
+                    for t in truths[key]:
+                        truths_list.append(t)
+
+                else:
+                    truths_list.append(truths[key])
+
         else:
             truths_list = None
 
         samples = np.column_stack(samples_list)
 
-        return corner.corner(samples, labels=var_names, truths=truths_list)
+        return corner.corner(samples, labels=label_list, truths=truths_list)
 
     def save(self, filename):
         """
@@ -213,6 +245,7 @@ class StanFit:
         """
 
         with h5py.File(filename, "w") as f:
+
             fit_folder = f.create_group("fit")
             inputs_folder = fit_folder.create_group("inputs")
             outputs_folder = fit_folder.create_group("outputs")
@@ -222,6 +255,15 @@ class StanFit:
 
             for key, value in self._fit_output.stan_variables().items():
                 outputs_folder.create_dataset(key, data=value)
+
+    @classmethod
+    def from_file(cls, filename):
+        """
+        Load fit output from file. Allows to
+        make plots and run classification check.
+        """
+
+        raise NotImplementedError()
 
     def check_classification(self, sim_outputs):
         """

@@ -1,10 +1,10 @@
 auxiliary samplers: {}
 flux selection:
   HardFluxSelection:
-    boundary: 1.0e-10
+    boundary: 4.0e-10
 luminosity distribution:
   DeltaDistribution:
-    Lp: 1.0e+47
+    Lp: 2.0e+47
 seed: 1234
 spatial distribution:
   SFRDistribution:

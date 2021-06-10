@@ -599,7 +599,7 @@ class SimInfo:
 
         inputs = {}
         outputs = {}
-        with h5py.File("output/test_sim_file.h5", "r") as f:
+        with h5py.File(filename, "r") as f:
 
             inputs_folder = f["sim/inputs"]
             source_folder = f["sim/source"]

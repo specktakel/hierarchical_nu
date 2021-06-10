@@ -38,7 +38,7 @@ First, choose a luminosity function and cosmological evolution.
 ```python
 # All same luminosity
 lf = DeltaDistribution()
-lf.Lp = 1e47 # erg s^-1
+lf.Lp = 2e47 # erg s^-1
 
 # SFR-like distribution
 sd = SFRDistribution()
@@ -62,7 +62,7 @@ pop_synth = PopulationSynth(sd, lf)
 
 # Add a selection on the detected fluxes
 flux_select = HardFluxSelection()
-flux_select.boundary = 1e-10 # erg s^-1 cm^-2
+flux_select.boundary = 4e-10 # erg s^-1 cm^-2
 pop_synth.set_flux_selection(flux_select)
 
 # Add an auxiliary sampler to sample the spectral indices of each source
@@ -126,9 +126,7 @@ Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
 Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
 
-# NB: if you set the L and index here, they will override vals from file
-#src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
-#L = Parameter(3E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
+# NB: No longer set L and src_index here, they come from popsynth now.
 ```
 
 ```python
@@ -142,7 +140,7 @@ point_src = PointSource.make_powerlaw_sources_from_file("output/test_population.
 # Add on to Sources object 
 my_sources = Sources()
 my_sources.add(point_src)
-my_sources.add_atmospheric_component() # auto atmo component
+#my_sources.add_atmospheric_component() # auto atmo component
 ```
 
 ```python
@@ -197,6 +195,7 @@ sys.path.append("../../hierarchical_nu/")
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.simulation import SimInfo
 ```
 
 ```python
@@ -207,18 +206,28 @@ fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time)
 
 ```python
 fit.precomputation()
-```
-
-```python
 fit.generate_stan_code()
-```
-
-```python
 fit.compile_stan_code()
 ```
 
 ```python
 fit.run(show_progress=True, seed=42)
+```
+
+```python
+fit.save("output/test_pop_fit_file.h5")
+```
+
+```python
+fit.plot_trace()
+```
+
+```python
+sim_info = SimInfo.from_file("output/test_pop_sim_file.h5")
+```
+
+```python
+fig = fit.corner_plot(truths=sim_info.truths)
 ```
 
 ```python
