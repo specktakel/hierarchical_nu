@@ -60,12 +60,20 @@ class StanFitInterface(StanInterface):
 
         if self.sources.point_source:
 
-            self._lumi_par_range = Parameter.get_parameter("ps_0_luminosity").par_range
+            if self._shared_luminosity:
+                key = "luminosity"
+            else:
+                key = "ps_0_luminosity"
+
+            self._lumi_par_range = Parameter.get_parameter(key).par_range
             self._lumi_par_range = self._lumi_par_range.to(u.GeV / u.s).value
 
-            self._src_index_par_range = Parameter.get_parameter(
-                "ps_0_src_index"
-            ).par_range
+            if self._shared_src_index:
+                key = "src_index"
+            else:
+                key = "ps_0_src_index"
+
+            self._src_index_par_range = Parameter.get_parameter(key).par_range
 
         if self.sources.diffuse:
 
@@ -235,20 +243,38 @@ class StanFitInterface(StanInterface):
                 Lmin, Lmax = self._lumi_par_range
                 src_index_min, src_index_max = self._src_index_par_range
 
-                self._L = ParameterVectorDef(
-                    "L",
-                    "vector",
-                    self._Ns_str,
-                    Lmin,
-                    Lmax,
-                )
-                self._src_index = ParameterVectorDef(
-                    "src_index",
-                    "vector",
-                    self._Ns_str,
-                    src_index_min,
-                    src_index_max,
-                )
+                if self._shared_luminosity:
+
+                    self._L = ParameterDef("L", "real", Lmin, Lmax)
+
+                else:
+
+                    self._L = ParameterVectorDef(
+                        "L",
+                        "vector",
+                        self._Ns_str,
+                        Lmin,
+                        Lmax,
+                    )
+
+                if self._shared_src_index:
+
+                    self._src_index = ParameterDef(
+                        "src_index",
+                        "real",
+                        src_index_min,
+                        src_index_max,
+                    )
+
+                else:
+
+                    self._src_index = ParameterVectorDef(
+                        "src_index",
+                        "vector",
+                        self._Ns_str,
+                        src_index_min,
+                        src_index_max,
+                    )
 
             if self.sources.diffuse:
 
@@ -323,9 +349,20 @@ class StanFitInterface(StanInterface):
             if self.sources.point_source:
 
                 with ForLoopContext(1, self._Ns, "k") as k:
+
+                    if self._shared_luminosity:
+                        L_ref = self._L
+                    else:
+                        L_ref = self._L[k]
+
+                    if self._shared_src_index:
+                        src_index_ref = self._src_index
+                    else:
+                        src_index_ref = self._src_index[k]
+
                     self._F[k] << StringExpression(
                         [
-                            self._L[k],
+                            L_ref,
                             "/ (4 * pi() * pow(",
                             self._D[k],
                             " * ",
@@ -338,7 +375,7 @@ class StanFitInterface(StanInterface):
                             self._F[k],
                             "*=",
                             self._flux_conv(
-                                self._src_index[k], self._Esrc_min, self._Esrc_max
+                                src_index_ref, self._Esrc_min, self._Esrc_max
                             ),
                         ]
                     )
@@ -371,13 +408,18 @@ class StanFitInterface(StanInterface):
 
                 with ForLoopContext(1, self._Ns, "k") as k:
 
+                    if self._shared_src_index:
+                        src_index_ref = self._src_index
+                    else:
+                        src_index_ref = self._src_index[k]
+
                     if "tracks" in self._event_types:
 
                         self._eps_t[k] << FunctionCall(
                             [
                                 self._src_index_grid,
                                 self._integral_grid_t[k],
-                                self._src_index[k],
+                                src_index_ref,
                             ],
                             "interpolate",
                         ) * self._T
@@ -388,7 +430,7 @@ class StanFitInterface(StanInterface):
                             [
                                 self._src_index_grid,
                                 self._integral_grid_c[k],
-                                self._src_index[k],
+                                src_index_ref,
                             ],
                             "interpolate",
                         ) * self._T
@@ -511,13 +553,18 @@ class StanFitInterface(StanInterface):
                                     [StringExpression([k, " < ", self._Ns + 1])]
                                 ):
 
+                                    if self._shared_src_index:
+                                        src_index_ref = self._src_index
+                                    else:
+                                        src_index_ref = self._src_index[k]
+
                                     StringExpression(
                                         [
                                             self._lp[i][k],
                                             " += ",
                                             self._src_spectrum_lpdf(
                                                 self._Esrc[i],
-                                                self._src_index[k],
+                                                src_index_ref,
                                                 self._Esrc_min,
                                                 self._Esrc_max,
                                             ),
@@ -638,13 +685,19 @@ class StanFitInterface(StanInterface):
                                 with IfBlockContext(
                                     [StringExpression([k, " < ", self._Ns + 1])]
                                 ):
+
+                                    if self._shared_src_index:
+                                        src_index_ref = self._src_index
+                                    else:
+                                        src_index_ref = self._src_index[k]
+
                                     StringExpression(
                                         [
                                             self._lp[i][k],
                                             " += ",
                                             self._src_spectrum_lpdf(
                                                 self._Esrc[i],
-                                                self._src_index[k],
+                                                src_index_ref,
                                                 self._Esrc_min,
                                                 self._Esrc_max,
                                             ),

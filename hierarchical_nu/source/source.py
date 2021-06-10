@@ -201,21 +201,38 @@ class PointSource(Source):
             )
         ):
 
-            luminosity = Parameter(
-                L,
-                "ps_%i_luminosity" % i,
-                fixed=True,
-                par_range=lumi_range,
-            )
+            # Check for shared luminosity parameter
+            try:
 
-            # TODO: set from pop
-            src_index = Parameter(
-                2.0,
-                "ps_%i_src_index" % i,
-                fixed=False,
-                par_range=(1, 4),
-            )
+                luminosity = Parameter.get_parameter("luminosity")
 
+            # Else, create individual ps_%i_luminosity parameters
+            except ValueError:
+
+                luminosity = Parameter(
+                    L,
+                    "ps_%i_luminosity" % i,
+                    fixed=True,
+                    par_range=lumi_range,
+                )
+
+            # Check for shared src_index parameter
+            try:
+
+                src_index = Parameter.get_parameter("src_index")
+
+            # Else, create individual ps_%i_src_index parameters
+            except ValueError:
+
+                # TODO: set from pop
+                src_index = Parameter(
+                    2.0,
+                    "ps_%i_src_index" % i,
+                    fixed=False,
+                    par_range=(1, 4),
+                )
+
+            # Create source
             source = PointSource.make_powerlaw_source(
                 "ps_%i" % i,
                 dec,

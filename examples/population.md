@@ -65,9 +65,6 @@ flux_select = HardFluxSelection()
 flux_select.boundary = 4e-10 # erg s^-1 cm^-2
 pop_synth.set_flux_selection(flux_select)
 
-# Add an auxiliary sampler to sample the spectral indices of each source
-# Coming soon 
-
 pop_synth.display()
 ```
 
@@ -132,7 +129,9 @@ diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True,
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
 
-# NB: No longer set L and src_index here, they come from popsynth now.
+# NB: if you set L and src_index here, it will overwrite whatever is in the file
+#src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1, 4))
+#L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60)*(u.erg/u.s))
 ```
 
 ```python
@@ -152,6 +151,10 @@ my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
 
 ```python
 my_sources.associated_fraction()
+```
+
+```python
+my_sources.sources[0].parameters
 ```
 
 ## Simulation

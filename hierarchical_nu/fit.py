@@ -403,9 +403,15 @@ class StanFit:
 
         if self._sources.point_source:
 
+            try:
+                Parameter.get_parameter("src_index")
+                key = "src_index"
+            except ValueError:
+                key = "ps_0_src_index"
+
             fit_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
-            ].par_grids["ps_0_src_index"]
+            ].par_grids[key]
 
         if self._sources.diffuse:
 
@@ -437,8 +443,14 @@ class StanFit:
 
         if self._sources.point_source:
 
+            try:
+                Parameter.get_parameter("luminosity")
+                key = "luminosity"
+            except ValueError:
+                key = "ps_0_luminosity"
+
             fit_inputs["L_scale"] = (
-                Parameter.get_parameter("ps_0_luminosity").value.to(u.GeV / u.s).value
+                Parameter.get_parameter(key).value.to(u.GeV / u.s).value
             )
 
         if self._sources.diffuse:
