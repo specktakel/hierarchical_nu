@@ -60,14 +60,12 @@ class StanFitInterface(StanInterface):
 
         if self.sources.point_source:
 
-            L_unit = Parameter.get_parameter("luminosity").value.unit
-
-            self._lumi_par_range = (
-                Parameter.get_parameter("luminosity").par_range * L_unit
-            )
+            self._lumi_par_range = Parameter.get_parameter("ps_0_luminosity").par_range
             self._lumi_par_range = self._lumi_par_range.to(u.GeV / u.s).value
 
-            self._src_index_par_range = Parameter.get_parameter("src_index").par_range
+            self._src_index_par_range = Parameter.get_parameter(
+                "ps_0_src_index"
+            ).par_range
 
         if self.sources.diffuse:
 
@@ -237,9 +235,19 @@ class StanFitInterface(StanInterface):
                 Lmin, Lmax = self._lumi_par_range
                 src_index_min, src_index_max = self._src_index_par_range
 
-                self._L = ParameterDef("L", "real", Lmin, Lmax)
-                self._src_index = ParameterDef(
-                    "src_index", "real", src_index_min, src_index_max
+                self._L = ParameterVectorDef(
+                    "L",
+                    "vector",
+                    self._Ns_str,
+                    Lmin,
+                    Lmax,
+                )
+                self._src_index = ParameterVectorDef(
+                    "src_index",
+                    "vector",
+                    self._Ns_str,
+                    src_index_min,
+                    src_index_max,
                 )
 
             if self.sources.diffuse:
@@ -317,7 +325,7 @@ class StanFitInterface(StanInterface):
                 with ForLoopContext(1, self._Ns, "k") as k:
                     self._F[k] << StringExpression(
                         [
-                            self._L,
+                            self._L[k],
                             "/ (4 * pi() * pow(",
                             self._D[k],
                             " * ",
@@ -330,7 +338,7 @@ class StanFitInterface(StanInterface):
                             self._F[k],
                             "*=",
                             self._flux_conv(
-                                self._src_index, self._Esrc_min, self._Esrc_max
+                                self._src_index[k], self._Esrc_min, self._Esrc_max
                             ),
                         ]
                     )
@@ -369,7 +377,7 @@ class StanFitInterface(StanInterface):
                             [
                                 self._src_index_grid,
                                 self._integral_grid_t[k],
-                                self._src_index,
+                                self._src_index[k],
                             ],
                             "interpolate",
                         ) * self._T
@@ -380,7 +388,7 @@ class StanFitInterface(StanInterface):
                             [
                                 self._src_index_grid,
                                 self._integral_grid_c[k],
-                                self._src_index,
+                                self._src_index[k],
                             ],
                             "interpolate",
                         ) * self._T
@@ -509,7 +517,7 @@ class StanFitInterface(StanInterface):
                                             " += ",
                                             self._src_spectrum_lpdf(
                                                 self._Esrc[i],
-                                                self._src_index,
+                                                self._src_index[k],
                                                 self._Esrc_min,
                                                 self._Esrc_max,
                                             ),
@@ -636,7 +644,7 @@ class StanFitInterface(StanInterface):
                                             " += ",
                                             self._src_spectrum_lpdf(
                                                 self._Esrc[i],
-                                                self._src_index,
+                                                self._src_index[k],
                                                 self._Esrc_min,
                                                 self._Esrc_max,
                                             ),

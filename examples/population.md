@@ -16,6 +16,7 @@ jupyter:
 import numpy as np
 from matplotlib import pyplot as plt
 import h5py
+from astropy import units as u
 ```
 
 ## Simulate a simple source population
@@ -182,6 +183,42 @@ sim.show_skymap()
 
 ```python
 sim.show_spectrum()
+```
+
+
+## Fit
+
+```python
+import sys
+sys.path.append("../../hierarchical_nu/")
+```
+
+```python
+from hierarchical_nu.events import Events
+from hierarchical_nu.fit import StanFit
+from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+```
+
+```python
+events = Events.from_file("output/test_pop_sim_file.h5")
+obs_time = 10 * u.year
+fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time)
+```
+
+```python
+fit.precomputation()
+```
+
+```python
+fit.generate_stan_code()
+```
+
+```python
+fit.compile_stan_code()
+```
+
+```python
+fit.run(show_progress=True, seed=42)
 ```
 
 ```python
