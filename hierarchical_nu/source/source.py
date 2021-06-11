@@ -170,7 +170,7 @@ class PointSource(Source):
 
             luminosities = f["luminosities"][()] * (u.erg / u.s)
 
-            spectral_indices = f["auxiliary_quantities/spectral_index"][()]
+            spectral_indices = f["auxiliary_quantities/spectral_index/obs_values"][()]
 
             redshifts = f["distances"][()]
 

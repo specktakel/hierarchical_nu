@@ -28,9 +28,11 @@ import sys
 sys.path.append("../../popsynth/")
 import popsynth
 from popsynth.distributions.delta_distribution import DeltaDistribution
+from popsynth.distributions.pareto_distribution import ParetoDistribution
 from popsynth.distributions.cosmological_distribution import SFRDistribution
 from popsynth.selection_probability.flux_selectors import HardFluxSelection
 from popsynth.aux_samplers.delta_aux_sampler import DeltaAuxSampler
+from popsynth.aux_samplers.normal_aux_sampler import NormalAuxSampler
 from popsynth.population_synth import PopulationSynth
 ```
 
@@ -38,8 +40,13 @@ First, choose a luminosity function and cosmological evolution.
 
 ```python
 # All same luminosity
-lf = DeltaDistribution()
-lf.Lp = 2e47 # erg s^-1
+#lf = DeltaDistribution()
+#lf.Lp = 2e47 # erg s^-1
+
+# Power-law LF
+lf = ParetoDistribution()
+lf.Lmin = 3e46 # erg s^-1
+lf.alpha = 1
 
 # SFR-like distribution
 sd = SFRDistribution()
@@ -49,12 +56,19 @@ sd.rise = 1.0
 sd.decay = 3.0
 sd.peak = 1.0
 
-# Plot the SFR-like distribution
+# Plot the LF and SFR-like distribution
 z = np.linspace(0, 5)
-fig, ax = plt.subplots()
-ax.plot(z, sd.dNdV(z))
-ax.set_xlabel("z")
-ax.set_ylabel("dN/dV [Gpc^-3]")
+L = np.geomspace(lf.Lmin, 1e50)
+fig, ax = plt.subplots(1, 2)
+fig.set_size_inches((15, 5))
+ax[0].plot(L, lf.phi(L))
+ax[0].set_xscale("log")
+ax[0].set_yscale("log")
+ax[0].set_xlabel("L [erg s^-1]")
+ax[0].set_ylabel("phi(L)")
+ax[1].plot(z, sd.dNdV(z))
+ax[1].set_xlabel("z")
+ax[1].set_ylabel("dN/dV [Gpc^-3]")
 ```
 
 ```python
@@ -63,12 +77,16 @@ pop_synth = PopulationSynth(sd, lf)
 
 # Add a selection on the detected fluxes
 flux_select = HardFluxSelection()
-flux_select.boundary = 4e-10 # erg s^-1 cm^-2
+flux_select.boundary = 1e-10 # erg s^-1 cm^-2
 pop_synth.set_flux_selection(flux_select)
 
 # Add auxiliary sampler for spectral index
-index = DeltaAuxSampler(name="spectral_index", observed=False)
-index.xp = 2.0
+#index = DeltaAuxSampler(name="spectral_index", observed=False)
+#index.xp = 2.0
+
+index = NormalAuxSampler(name="spectral_index", observed=False)
+index.mu = 2.0
+index.tau = 0.1
 
 pop_synth.add_observed_quantity(index)
 
@@ -83,7 +101,9 @@ population.display_fluxes();
 ```
 
 ```python
-population.spectral_index
+fig, ax = plt.subplots()
+ax.hist(population.spectral_index)
+ax.set_xlabel("spectral_index")
 ```
 
 ```python
@@ -106,12 +126,6 @@ new_pop_synth.display()
 population.writeto("output/test_population.h5")
 new_population = population.from_file("output/test_population.h5")
 new_population.display_fluxes();
-```
-
-```python
-with h5py.File("output/test_population.h5", "r") as f:
-    for ky in f["auxiliary_quantities"]:
-        print(ky)
 ```
 
 ## Using a popsynth population to define a Sources object
@@ -163,7 +177,7 @@ point_src = PointSource.make_powerlaw_sources_from_file("output/test_population.
 my_sources = Sources()
 my_sources.add(point_src)
 my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
-#my_sources.add_atmospheric_component() # auto atmo component
+my_sources.add_atmospheric_component() # auto atmo component
 ```
 
 ```python
@@ -172,6 +186,10 @@ my_sources.associated_fraction()
 
 ```python
 my_sources.sources[0].parameters
+```
+
+```python
+my_sources.sources[-1].flux_model.total_flux_int
 ```
 
 ## Simulation
@@ -262,7 +280,19 @@ fit.check_classification(sim_info.outputs)
 ```
 
 ```python
-np.repeat(1, repeats=100)
+fig, ax = plt.subplots()
+bins = np.geomspace(1e-12, 1e-4)
+ax.hist(np.random.lognormal(np.log(1e-8), 3.0, 10000), bins=bins)
+ax.set_xscale("log")
+```
+
+```python
+fig, ax = plt.subplots()
+ax.hist(np.random.normal(2, 1.5, 10000))
+```
+
+```python
+fit._fit_inputs["F_atmo_scale"]
 ```
 
 ```python

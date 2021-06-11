@@ -1,17 +1,19 @@
 auxiliary samplers:
   spectral_index:
+    mu: 2.0
     observed: false
     secondary: []
     selection:
       UnitySelection: {}
-    type: DeltaAuxSampler
-    xp: 2.0
+    tau: 0.1
+    type: NormalAuxSampler
 flux selection:
   HardFluxSelection:
-    boundary: 4.0e-10
+    boundary: 1.0e-10
 luminosity distribution:
-  DeltaDistribution:
-    Lp: 2.0e+47
+  ParetoDistribution:
+    Lmin: 3.0e+46
+    alpha: 1
 seed: 1234
 spatial distribution:
   SFRDistribution:
