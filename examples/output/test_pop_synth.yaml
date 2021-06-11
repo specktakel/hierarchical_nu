@@ -1,4 +1,11 @@
-auxiliary samplers: {}
+auxiliary samplers:
+  spectral_index:
+    observed: false
+    secondary: []
+    selection:
+      UnitySelection: {}
+    type: DeltaAuxSampler
+    xp: 2.0
 flux selection:
   HardFluxSelection:
     boundary: 4.0e-10

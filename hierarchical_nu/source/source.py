@@ -170,6 +170,8 @@ class PointSource(Source):
 
             luminosities = f["luminosities"][()] * (u.erg / u.s)
 
+            spectral_indices = f["auxiliary_quantities/spectral_index"][()]
+
             redshifts = f["distances"][()]
 
             ras = f["phi"][()] * u.rad
@@ -183,6 +185,8 @@ class PointSource(Source):
 
             luminosities = luminosities[selection]
 
+            spectral_indices = spectral_indices[selection]
+
             redshifts = redshifts[selection]
 
             ras = ras[selection]
@@ -192,9 +196,10 @@ class PointSource(Source):
         # Make list of point sources
         source_list = []
 
-        for i, (L, ra, dec, z) in enumerate(
+        for i, (L, index, ra, dec, z) in enumerate(
             zip(
                 luminosities,
+                spectral_indices,
                 ras,
                 decs,
                 redshifts,
@@ -224,9 +229,8 @@ class PointSource(Source):
             # Else, create individual ps_%i_src_index parameters
             except ValueError:
 
-                # TODO: set from pop
                 src_index = Parameter(
-                    2.0,
+                    index,
                     "ps_%i_src_index" % i,
                     fixed=False,
                     par_range=(1, 4),

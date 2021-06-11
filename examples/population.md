@@ -30,6 +30,7 @@ import popsynth
 from popsynth.distributions.delta_distribution import DeltaDistribution
 from popsynth.distributions.cosmological_distribution import SFRDistribution
 from popsynth.selection_probability.flux_selectors import HardFluxSelection
+from popsynth.aux_samplers.delta_aux_sampler import DeltaAuxSampler
 from popsynth.population_synth import PopulationSynth
 ```
 
@@ -65,6 +66,12 @@ flux_select = HardFluxSelection()
 flux_select.boundary = 4e-10 # erg s^-1 cm^-2
 pop_synth.set_flux_selection(flux_select)
 
+# Add auxiliary sampler for spectral index
+index = DeltaAuxSampler(name="spectral_index", observed=False)
+index.xp = 2.0
+
+pop_synth.add_observed_quantity(index)
+
 pop_synth.display()
 ```
 
@@ -73,6 +80,10 @@ pop_synth.display()
 popsynth.update_logging_level("INFO")
 population = pop_synth.draw_survey(flux_sigma=0.1)
 population.display_fluxes();
+```
+
+```python
+population.spectral_index
 ```
 
 ```python
@@ -95,6 +106,12 @@ new_pop_synth.display()
 population.writeto("output/test_population.h5")
 new_population = population.from_file("output/test_population.h5")
 new_population.display_fluxes();
+```
+
+```python
+with h5py.File("output/test_population.h5", "r") as f:
+    for ky in f["auxiliary_quantities"]:
+        print(ky)
 ```
 
 ## Using a popsynth population to define a Sources object
@@ -242,6 +259,10 @@ fig = fit.corner_plot(truths=sim_info.truths)
 
 ```python
 fit.check_classification(sim_info.outputs)
+```
+
+```python
+np.repeat(1, repeats=100)
 ```
 
 ```python
