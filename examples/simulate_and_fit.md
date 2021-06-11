@@ -26,11 +26,6 @@ import astropy.units as u
 ## Sources
 
 ```python
-import sys
-sys.path.append("../")
-```
-
-```python
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 ```
@@ -42,7 +37,8 @@ First set up the high-level parameters. The parameters defined here are singleto
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(3E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
+L = Parameter(3E47 * (u.erg / u.s), "luminosity", fixed=True, 
+              par_range=(0, 1E60)*(u.erg/u.s))
 diffuse_norm = Parameter(2e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
@@ -66,11 +62,6 @@ Next, we use these high-level parameters to define sources. This can be done for
 point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
                                                 np.pi*u.rad, 
                                                 L, src_index, 0.43, Emin, Emax)
-
-# Multiple sources from file
-#source_file = "my_source_file.h5"
-#point_sources = PointSource.make_powerlaw_sources_from_file(source_file, L, 
-#                                                            index, Emin, Emax)
 
 my_sources = Sources()
 #my_sources.add(point_sources)
@@ -132,6 +123,7 @@ from hierarchical_nu.fit import StanFit
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.priors import Priors, NormalPrior
 ```
 
 We can start setting up the fit by loading the events from the output of our simulation. This file only contains the information we would have in a realistic data scenario (energies, directions, uncertainties, event types). We also need to specify the observation time and detector model for the fit, as for the simulation. Please make sure you are using the same ones in both for sensible results!
@@ -141,10 +133,19 @@ events = Events.from_file("output/test_sim_file.h5")
 obs_time = 10 * u.year
 ```
 
+We can also define priors using the `Priors` interface. Here, we use the default uninformative priors, except for on the atmospheric flux, which we assume to be well known.
+
 ```python
-#fit = StanFit(my_sources, CascadesDetectorModel, events, obs_time)
-#fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time)
-fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time)
+priors = Priors()
+#atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.value
+#priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.1*atmo_flux)
+```
+
+```python
+#fit = StanFit(my_sources, CascadesDetectorModel, events, obs_time, priors=priors)
+#fit = StanFit(my_sources, NorthernTracksDetectorModel, events, 
+#obs_time, priors=priors)
+fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time, priors=priors)
 ```
 
 Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes around 15 min on one core.

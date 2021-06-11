@@ -56,7 +56,7 @@ sd.peak = 1.0
 
 # Plot the LF and SFR-like distribution
 z = np.linspace(0, 5)
-L = np.geomspace(1e40, 1e50)
+L = np.geomspace(lf.Lmin, 1e50)
 fig, ax = plt.subplots(1, 2)
 fig.set_size_inches((15, 5))
 ax[0].plot(L, lf.phi(L))
@@ -130,11 +130,6 @@ new_population.display_fluxes();
 ```
 
 ## Using a popsynth population to define a Sources object
-
-```python
-import sys
-sys.path.append("../../hierarchical_nu/")
-```
 
 ```python
 import h5py
