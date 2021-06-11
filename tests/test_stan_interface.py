@@ -20,7 +20,12 @@ src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 
 diff_index = Parameter(2.0, "diff_index", fixed=False, par_range=(1, 4))
 
-L = Parameter(2e47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1e60))
+L = Parameter(
+    2e47 * (u.erg / u.s),
+    "luminosity",
+    fixed=True,
+    par_range=(0, 1e60) * (u.erg / u.s),
+)
 
 diffuse_norm = Parameter(
     1e-13 / u.GeV / u.m ** 2 / u.s,
