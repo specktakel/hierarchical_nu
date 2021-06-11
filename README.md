@@ -12,7 +12,11 @@ pip install git+https://github.com/cescalara/hierarchical_nu.git
 
 In future, hierachical_nu will also be available on PyPI!
 
-The above command will go ahead and install any dependencies that you may be missing to run the core code. 
+The above command will go ahead and install any dependencies that you may be missing to run the core code. If you want to use the optional popsynth interface to simulate populations, then you can also run:
+
+```
+pip install git+https://github.com/cescalara/popsynth.git
+```
 
 ### Setting up Stan
 
