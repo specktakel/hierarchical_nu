@@ -9,7 +9,7 @@ auxiliary samplers:
     type: NormalAuxSampler
 flux selection:
   HardFluxSelection:
-    boundary: 1.0e-10
+    boundary: 2.0e-10
 luminosity distribution:
   ParetoDistribution:
     Lmin: 3.0e+46

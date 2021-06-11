@@ -15,6 +15,7 @@ from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.detector_model import DetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
+from hierarchical_nu.priors import Priors
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -32,6 +33,7 @@ class StanFit:
         detector_model: DetectorModel,
         events: Events,
         observation_time: u.year,
+        priors: Priors = Priors(),
     ):
         """
         To set up and run fits in Stan.
@@ -50,6 +52,7 @@ class StanFit:
             stan_file_name,
             self._sources,
             self._detector_model_type,
+            priors=priors,
         )
 
         # Check for unsupported combinations
@@ -441,37 +444,11 @@ class StanFit:
                 self._exposure_integral["cascades"].pdet_grid
             )
 
-        if self._sources.point_source:
-
-            try:
-                Parameter.get_parameter("luminosity")
-                key = "luminosity"
-            except ValueError:
-                key = "ps_0_luminosity"
-
-            fit_inputs["L_scale"] = (
-                Parameter.get_parameter(key).value.to(u.GeV / u.s).value
-            )
-
-        if self._sources.diffuse:
-
-            bg = self._sources.diffuse
-            fit_inputs["F_diff_scale"] = bg.flux_model.total_flux_int.to(
-                1 / (u.m ** 2 * u.s)
-            ).value
-
         if self._sources.atmospheric:
 
             fit_inputs["atmo_integ_val"] = (
                 self._exposure_integral["tracks"].integral_fixed_vals[0].value
             )
-
-            bg = self._sources.atmospheric
-            fit_inputs["F_atmo_scale"] = bg.flux_model.total_flux_int.to(
-                1 / (u.m ** 2 * u.s)
-            ).value
-
-        fit_inputs["F_tot_scale"] = self._sources.total_flux_int().value
 
         # To work with cmdstanpy serialization
         fit_inputs = {

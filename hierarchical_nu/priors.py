@@ -46,7 +46,7 @@ class LogNormalPrior(NormalPrior):
 class ParetoPrior(PriorDistribution):
     def __init__(self, name="pareto", xmin=1.0, alpha=1.0):
 
-        super().__init__(self, name=name)
+        super().__init__(name=name)
 
         self._xmin = xmin
         self._alpha = alpha
@@ -72,9 +72,9 @@ class Priors(object):
 
     def __init__(self):
 
-        self._luminosity = LogNormalPrior(mu=np.log(1e45), sigma=10.0)
+        self._luminosity = NormalPrior(mu=0.0, sigma=1e55)
 
-        self._diffuse_flux = LogNormalPrior(mu=np.log(1e-8), sigma=5.0)
+        self._diffuse_flux = NormalPrior(mu=0.0, sigma=1e-6)
 
         self._src_index = NormalPrior(mu=2.0, sigma=1.5)
 
@@ -131,17 +131,3 @@ class Priors(object):
     def atmospheric_flux(self, prior: PriorDistribution):
 
         self._atmospheric_flux = prior
-
-
-class InformativePriors(Priors):
-    """
-    Standard informative priors
-    """
-
-    def __init__(self):
-
-        super().__init__()
-
-        self._luminosity = ParetoPrior(xmin=1e46, alpha=1.0)
-
-        self._src_index = NormalPrior(mu=2.0, sigma=0.5)
