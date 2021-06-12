@@ -2,6 +2,7 @@ import numpy as np
 from astropy import units as u
 from collections import OrderedDict
 
+from hierarchical_nu.priors import Priors
 from hierarchical_nu.stan.interface import StanInterface
 
 from hierarchical_nu.backend.stan_generator import (
@@ -41,6 +42,7 @@ class StanFitInterface(StanInterface):
         output_file,
         sources,
         detector_model_type,
+        priors=Priors(),
         includes=["interpolation.stan", "utils.stan", "vMF.stan"],
         theta_points=30,
     ):
@@ -52,6 +54,8 @@ class StanFitInterface(StanInterface):
             includes=includes,
         )
 
+        self._priors = priors
+
         self._theta_points = theta_points
 
         self._get_par_ranges()
@@ -60,14 +64,20 @@ class StanFitInterface(StanInterface):
 
         if self.sources.point_source:
 
-            L_unit = Parameter.get_parameter("luminosity").value.unit
+            if self._shared_luminosity:
+                key = "luminosity"
+            else:
+                key = "ps_0_luminosity"
 
-            self._lumi_par_range = (
-                Parameter.get_parameter("luminosity").par_range * L_unit
-            )
+            self._lumi_par_range = Parameter.get_parameter(key).par_range
             self._lumi_par_range = self._lumi_par_range.to(u.GeV / u.s).value
 
-            self._src_index_par_range = Parameter.get_parameter("src_index").par_range
+            if self._shared_src_index:
+                key = "src_index"
+            else:
+                key = "ps_0_src_index"
+
+            self._src_index_par_range = Parameter.get_parameter(key).par_range
 
         if self.sources.diffuse:
 
@@ -199,20 +209,9 @@ class StanFitInterface(StanInterface):
 
                 self._Pg_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", N_pdet_str)
 
-            if self.sources.point_source:
-
-                self._L_scale = ForwardVariableDef("L_scale", "real")
-
-            if self.sources.diffuse:
-
-                self._F_diff_scale = ForwardVariableDef("F_diff_scale", "real")
-
             if self.sources.atmospheric:
 
                 self._atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
-                self._F_atmo_scale = ForwardVariableDef("F_atmo_scale", "real")
-
-            self._F_tot_scale = ForwardVariableDef("F_tot_scale", "real")
 
     def _transformed_data(self):
 
@@ -237,10 +236,38 @@ class StanFitInterface(StanInterface):
                 Lmin, Lmax = self._lumi_par_range
                 src_index_min, src_index_max = self._src_index_par_range
 
-                self._L = ParameterDef("L", "real", Lmin, Lmax)
-                self._src_index = ParameterDef(
-                    "src_index", "real", src_index_min, src_index_max
-                )
+                if self._shared_luminosity:
+
+                    self._L = ParameterDef("L", "real", Lmin, Lmax)
+
+                else:
+
+                    self._L = ParameterVectorDef(
+                        "L",
+                        "vector",
+                        self._Ns_str,
+                        Lmin,
+                        Lmax,
+                    )
+
+                if self._shared_src_index:
+
+                    self._src_index = ParameterDef(
+                        "src_index",
+                        "real",
+                        src_index_min,
+                        src_index_max,
+                    )
+
+                else:
+
+                    self._src_index = ParameterVectorDef(
+                        "src_index",
+                        "vector",
+                        self._Ns_str,
+                        src_index_min,
+                        src_index_max,
+                    )
 
             if self.sources.diffuse:
 
@@ -315,9 +342,20 @@ class StanFitInterface(StanInterface):
             if self.sources.point_source:
 
                 with ForLoopContext(1, self._Ns, "k") as k:
+
+                    if self._shared_luminosity:
+                        L_ref = self._L
+                    else:
+                        L_ref = self._L[k]
+
+                    if self._shared_src_index:
+                        src_index_ref = self._src_index
+                    else:
+                        src_index_ref = self._src_index[k]
+
                     self._F[k] << StringExpression(
                         [
-                            self._L,
+                            L_ref,
                             "/ (4 * pi() * pow(",
                             self._D[k],
                             " * ",
@@ -330,7 +368,7 @@ class StanFitInterface(StanInterface):
                             self._F[k],
                             "*=",
                             self._flux_conv(
-                                self._src_index, self._Esrc_min, self._Esrc_max
+                                src_index_ref, self._Esrc_min, self._Esrc_max
                             ),
                         ]
                     )
@@ -363,13 +401,18 @@ class StanFitInterface(StanInterface):
 
                 with ForLoopContext(1, self._Ns, "k") as k:
 
+                    if self._shared_src_index:
+                        src_index_ref = self._src_index
+                    else:
+                        src_index_ref = self._src_index[k]
+
                     if "tracks" in self._event_types:
 
                         self._eps_t[k] << FunctionCall(
                             [
                                 self._src_index_grid,
                                 self._integral_grid_t[k],
-                                self._src_index,
+                                src_index_ref,
                             ],
                             "interpolate",
                         ) * self._T
@@ -380,7 +423,7 @@ class StanFitInterface(StanInterface):
                             [
                                 self._src_index_grid,
                                 self._integral_grid_c[k],
-                                self._src_index,
+                                src_index_ref,
                             ],
                             "interpolate",
                         ) * self._T
@@ -503,13 +546,18 @@ class StanFitInterface(StanInterface):
                                     [StringExpression([k, " < ", self._Ns + 1])]
                                 ):
 
+                                    if self._shared_src_index:
+                                        src_index_ref = self._src_index
+                                    else:
+                                        src_index_ref = self._src_index[k]
+
                                     StringExpression(
                                         [
                                             self._lp[i][k],
                                             " += ",
                                             self._src_spectrum_lpdf(
                                                 self._Esrc[i],
-                                                self._src_index,
+                                                src_index_ref,
                                                 self._Esrc_min,
                                                 self._Esrc_max,
                                             ),
@@ -630,13 +678,19 @@ class StanFitInterface(StanInterface):
                                 with IfBlockContext(
                                     [StringExpression([k, " < ", self._Ns + 1])]
                                 ):
+
+                                    if self._shared_src_index:
+                                        src_index_ref = self._src_index
+                                    else:
+                                        src_index_ref = self._src_index[k]
+
                                     StringExpression(
                                         [
                                             self._lp[i][k],
                                             " += ",
                                             self._src_spectrum_lpdf(
                                                 self._Esrc[i],
-                                                self._src_index,
+                                                src_index_ref,
                                                 self._Esrc_min,
                                                 self._Esrc_max,
                                             ),
@@ -731,22 +785,64 @@ class StanFitInterface(StanInterface):
 
         with ModelContext():
 
+            # Likelihood
             with ForLoopContext(1, self._N, "i") as i:
 
                 StringExpression(["target += log_sum_exp(", self._lp[i], ")"])
 
             StringExpression(["target += -", self._Nex])
 
+            # Priors
             if self.sources.point_source:
+
+                if self._priors.luminosity.name in ["normal", "lognormal"]:
+
+                    StringExpression(
+                        [
+                            self._L,
+                            " ~ ",
+                            FunctionCall(
+                                [
+                                    self._priors.luminosity.mu,
+                                    self._priors.luminosity.sigma,
+                                ],
+                                self._priors.luminosity.name,
+                            ),
+                        ]
+                    )
+
+                elif self._priors.luminosity.name == "pareto":
+
+                    StringExpression(
+                        [
+                            self._L,
+                            " ~ ",
+                            FunctionCall(
+                                [
+                                    self._priors.luminosity.xmin,
+                                    self._priors.luminosity.alpha,
+                                ],
+                                self._priors.luminosity.name,
+                            ),
+                        ]
+                    )
+
+                else:
+
+                    raise NotImplementedError(
+                        "Luminosity prior distribution not recognised."
+                    )
 
                 StringExpression(
                     [
-                        self._L,
+                        self._src_index,
                         " ~ ",
-                        FunctionCall([self._L_scale, 2 * self._L_scale], "normal"),
+                        FunctionCall(
+                            [self._priors.src_index.mu, self._priors.src_index.sigma],
+                            self._priors.src_index.name,
+                        ),
                     ]
                 )
-                StringExpression([self._src_index, " ~ normal(2.0, 2.0)"])
 
             if self.sources.diffuse:
 
@@ -755,11 +851,25 @@ class StanFitInterface(StanInterface):
                         self._F_diff,
                         " ~ ",
                         FunctionCall(
-                            [self._F_diff_scale, 2 * self._F_diff_scale], "normal"
+                            [
+                                self._priors.diffuse_flux.mu,
+                                self._priors.diffuse_flux.sigma,
+                            ],
+                            self._priors.diffuse_flux.name,
                         ),
                     ]
                 )
-                StringExpression([self._diff_index, " ~ normal(2.0, 2.0)"])
+
+                StringExpression(
+                    [
+                        self._diff_index,
+                        " ~ ",
+                        FunctionCall(
+                            [self._priors.diff_index.mu, self._priors.diff_index.sigma],
+                            self._priors.diff_index.name,
+                        ),
+                    ]
+                )
 
             if self.sources.atmospheric:
 
@@ -768,17 +878,11 @@ class StanFitInterface(StanInterface):
                         self._F_atmo,
                         " ~ ",
                         FunctionCall(
-                            [self._F_atmo_scale, 0.1 * self._F_atmo_scale], "normal"
+                            [
+                                self._priors.atmospheric_flux.mu,
+                                self._priors.atmospheric_flux.sigma,
+                            ],
+                            self._priors.atmospheric_flux.name,
                         ),
                     ]
                 )
-
-            StringExpression(
-                [
-                    self._Ftot,
-                    " ~ ",
-                    FunctionCall(
-                        [self._F_tot_scale, 0.5 * self._F_tot_scale], "normal"
-                    ),
-                ]
-            )

@@ -76,13 +76,6 @@ class ExposureIntegral:
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
 
-        """
-        # Setup effective area to match Emin/Emax
-        self._effective_area.set_energy_range(
-            self._min_src_energy, self._max_src_energy
-        )
-        """
-
         self._parameter_source_map = defaultdict(list)
         self._source_parameter_map = defaultdict(list)
         self._original_param_values = defaultdict(list)
@@ -225,6 +218,7 @@ class ExposureIntegral:
                     par = Parameter.get_parameter(par_name)
                     par.value = par_value
 
+                # To make units compatible with Stan model parametrisation
                 integral_grids_tmp[indices] += self.calculate_rate(
                     source
                 ) / source.flux_model.total_flux_int.to(1 / (u.m ** 2 * u.s))
@@ -239,7 +233,6 @@ class ExposureIntegral:
                 else:
                     par.value = original_values[0]
 
-            # To make units compatible with Stan model parametrisation
             self._integral_grid.append(integral_grids_tmp)
 
     def _compute_energy_detection_factor(self):

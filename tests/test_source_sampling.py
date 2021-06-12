@@ -4,7 +4,7 @@ import pytest
 import os
 from cmdstanpy import CmdStanModel
 
-from hierarchical_nu.source.source import PointSource, DiffuseSource, TestSourceList
+from hierarchical_nu.source.source import PointSource, DiffuseSource
 from hierarchical_nu.source.flux_model import PowerLawSpectrum, IsotropicDiffuseBG
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux

@@ -81,6 +81,19 @@ class Simulation:
                 + "NorthernTracksDetectorModel instead."
             )
 
+        # Check for shared luminosity and src_index params
+        try:
+            Parameter.get_parameter("luminosity")
+            self._shared_luminosity = True
+        except ValueError:
+            self._shared_luminosity = False
+
+        try:
+            Parameter.get_parameter("src_index")
+            self._shared_src_index = True
+        except ValueError:
+            self._shared_src_index = False
+
     def precomputation(self):
         """
         Run the necessary precomputation
@@ -362,13 +375,18 @@ class Simulation:
 
             if self._sources.point_source:
 
+                if self._shared_src_index:
+                    key = "src_index"
+                else:
+                    key = "ps_0_src_index"
+
                 sim_inputs["Ngrid"] = len(
-                    self._exposure_integral[event_type].par_grids["src_index"]
+                    self._exposure_integral[event_type].par_grids[key]
                 )
 
                 sim_inputs["src_index_grid"] = self._exposure_integral[
                     event_type
-                ].par_grids["src_index"]
+                ].par_grids[key]
 
             if self._sources.diffuse:
 
@@ -412,7 +430,19 @@ class Simulation:
             )
 
         if self._sources.point_source:
-            sim_inputs["src_index"] = Parameter.get_parameter("src_index").value
+
+            # Check for shared src_index parameter
+            if self._shared_src_index:
+
+                sim_inputs["src_index"] = Parameter.get_parameter("src_index").value
+
+            # Otherwise look for individual ps_%i_src_index parameters
+            else:
+
+                sim_inputs["src_index"] = [
+                    Parameter.get_parameter("ps_%i_src_index" % i).value
+                    for i in range(sim_inputs["Ns"])
+                ]
 
         if self._sources.diffuse:
             sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
@@ -492,9 +522,23 @@ class Simulation:
             sim_inputs["F_atmo"] = atmo_bg.flux_model.total_flux_int.value
 
         if self._sources.point_source:
-            sim_inputs["L"] = (
-                Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
-            )
+
+            # Check for shared luminosity parameter
+            if self._shared_luminosity:
+
+                sim_inputs["L"] = (
+                    Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
+                )
+
+            # Otherwise, look for individual ps_%i_luminsoity parameters
+            else:
+
+                sim_inputs["L"] = [
+                    Parameter.get_parameter("ps_%i_luminosity" % i)
+                    .value.to(u.GeV / u.s)
+                    .value
+                    for i in range(sim_inputs["Ns"])
+                ]
 
         # Remove np.ndarrays for use with cmdstanpy
         sim_inputs = {
@@ -523,6 +567,8 @@ class Simulation:
                     self._sources.point_source,
                     self._sources.diffuse,
                     self._sources.atmospheric,
+                    self._shared_luminosity,
+                    self._shared_src_index,
                 )
 
             if event_type == "cascades":
@@ -534,6 +580,8 @@ class Simulation:
                     self._sources.point_source,
                     self._sources.diffuse,
                     self._sources.atmospheric,
+                    self._shared_luminosity,
+                    self._shared_src_index,
                 )
 
         Nex = Nex_t + Nex_c
@@ -592,7 +640,7 @@ class SimInfo:
 
         inputs = {}
         outputs = {}
-        with h5py.File("output/test_sim_file.h5", "r") as f:
+        with h5py.File(filename, "r") as f:
 
             inputs_folder = f["sim/inputs"]
             source_folder = f["sim/source"]
@@ -651,6 +699,8 @@ def _get_expected_Nnu_(
     point_source=False,
     diffuse=False,
     atmospheric=False,
+    shared_luminosity=True,
+    shared_src_index=True,
 ):
     """
     Helper function for calculating expected Nnu
@@ -658,7 +708,10 @@ def _get_expected_Nnu_(
     """
 
     if point_source:
-        src_index = sim_inputs["src_index"]
+        if shared_src_index:
+            src_index = sim_inputs["src_index"]
+        else:
+            src_index_list = sim_inputs["src_index"]
         src_index_grid = sim_inputs["src_index_grid"]
 
     if diffuse:
@@ -671,7 +724,12 @@ def _get_expected_Nnu_(
 
     if point_source:
         for i in range(Ns):
-            eps.append(np.interp(src_index, src_index_grid, integral_grid[i]))
+            if shared_src_index:
+                eps.append(np.interp(src_index, src_index_grid, integral_grid[i]))
+            else:
+                eps.append(
+                    np.interp(src_index_list[i], src_index_grid, integral_grid[i])
+                )
 
     if diffuse:
         eps.append(np.interp(diff_index, diff_index_grid, integral_grid[Ns]))
@@ -684,12 +742,38 @@ def _get_expected_Nnu_(
     F = []
 
     if point_source:
-        for d in sim_inputs["D"]:
-            flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
-            flux = flux * flux_conv_(
-                src_index, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
-            )
-            F.append(flux)
+
+        if shared_luminosity:
+
+            for i, d in enumerate(sim_inputs["D"]):
+                flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
+                if shared_src_index:
+                    flux = flux * flux_conv_(
+                        src_index, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
+                    )
+                else:
+                    flux = flux * flux_conv_(
+                        src_index_list[i],
+                        sim_inputs["Esrc_min"],
+                        sim_inputs["Esrc_max"],
+                    )
+                F.append(flux)
+
+        else:
+
+            for i, (d, l) in enumerate(zip(sim_inputs["D"], sim_inputs["L"])):
+                flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
+                if shared_src_index:
+                    flux = flux * flux_conv_(
+                        src_index, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
+                    )
+                else:
+                    flux = flux * flux_conv_(
+                        src_index_list[i],
+                        sim_inputs["Esrc_min"],
+                        sim_inputs["Esrc_max"],
+                    )
+                F.append(flux)
 
     if diffuse:
         F.append(sim_inputs["F_diff"])

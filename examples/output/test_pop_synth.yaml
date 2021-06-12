@@ -1,0 +1,26 @@
+auxiliary samplers:
+  spectral_index:
+    mu: 2.0
+    observed: false
+    secondary: []
+    selection:
+      UnitySelection: {}
+    tau: 0.1
+    type: NormalAuxSampler
+flux selection:
+  HardFluxSelection:
+    boundary: 2.0e-10
+luminosity distribution:
+  ParetoDistribution:
+    Lmin: 3.0e+46
+    alpha: 1
+seed: 1234
+spatial distribution:
+  SFRDistribution:
+    a: 0.0
+    decay: 3.0
+    peak: 1.0
+    r0: 10
+    r_max: 10
+    rise: 1.0
+  is_rate: true

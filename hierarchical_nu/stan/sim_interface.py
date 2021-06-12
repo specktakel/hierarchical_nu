@@ -128,7 +128,11 @@ class StanSimInterface(StanInterface):
 
             if self.sources.point_source:
 
-                self._src_index = ForwardVariableDef("src_index", "real")
+                if self._shared_src_index:
+                    self._src_index = ForwardVariableDef("src_index", "real")
+                else:
+                    self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
+
                 self._src_index_grid = ForwardVariableDef(
                     "src_index_grid", "vector[Ngrid]"
                 )
@@ -158,7 +162,10 @@ class StanSimInterface(StanInterface):
 
             if self.sources.point_source:
 
-                self._L = ForwardVariableDef("L", "real")
+                if self._shared_luminosity:
+                    self._L = ForwardVariableDef("L", "real")
+                else:
+                    self._L = ForwardVariableDef("L", "vector[Ns]")
 
             if self.sources.diffuse:
 
@@ -245,9 +252,20 @@ class StanSimInterface(StanInterface):
             if self.sources.point_source:
 
                 with ForLoopContext(1, self._Ns, "k") as k:
+
+                    if self._shared_luminosity:
+                        L_ref = self._L
+                    else:
+                        L_ref = self._L[k]
+
+                    if self._shared_src_index:
+                        src_index_ref = self._src_index
+                    else:
+                        src_index_ref = self._src_index[k]
+
                     self._F[k] << StringExpression(
                         [
-                            self._L,
+                            L_ref,
                             "/ (4 * pi() * pow(",
                             self._D[k],
                             " * ",
@@ -260,7 +278,7 @@ class StanSimInterface(StanInterface):
                             self._F[k],
                             "*=",
                             self._flux_conv(
-                                self._src_index, self._Esrc_min, self._Esrc_max
+                                src_index_ref, self._Esrc_min, self._Esrc_max
                             ),
                         ]
                     )
@@ -294,13 +312,18 @@ class StanSimInterface(StanInterface):
 
                 with ForLoopContext(1, self._Ns, "k") as k:
 
+                    if self._shared_src_index:
+                        src_index_ref = self._src_index
+                    else:
+                        src_index_ref = self._src_index[k]
+
                     if "tracks" in self._event_types:
 
                         self._eps_t[k] << FunctionCall(
                             [
                                 self._src_index_grid,
                                 self._integral_grid_t[k],
-                                self._src_index,
+                                src_index_ref,
                             ],
                             "interpolate",
                         ) * self._T
@@ -311,7 +334,7 @@ class StanSimInterface(StanInterface):
                             [
                                 self._src_index_grid,
                                 self._integral_grid_c[k],
-                                self._src_index,
+                                src_index_ref,
                             ],
                             "interpolate",
                         ) * self._T
@@ -529,8 +552,16 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
+
+                                if self._shared_src_index:
+                                    src_index_ref = self._src_index
+                                else:
+                                    src_index_ref = self._src_index[self._lam[i]]
+
                                 self._Esrc[i] << self._src_spectrum_rng(
-                                    self._src_index, self._Esrc_min, self._Esrc_max
+                                    src_index_ref,
+                                    self._Esrc_min,
+                                    self._Esrc_max,
                                 )
                                 self._E[i] << self._Esrc[i] / (
                                     1 + self._z[self._lam[i]]
@@ -693,8 +724,15 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
 
+                                if self._shared_src_index:
+                                    src_index_ref = self._src_index
+                                else:
+                                    src_index_ref = self._src_index[self._lam[i]]
+
                                 self._Esrc[i] << self._src_spectrum_rng(
-                                    self._src_index, self._Esrc_min, self._Esrc_max
+                                    src_index_ref,
+                                    self._Esrc_min,
+                                    self._Esrc_max,
                                 )
                                 self._E[i] << self._Esrc[i] / (
                                     1 + self._z[self._lam[i]]

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Callable
-
+import h5py
 from astropy import units as u
 import numpy as np
 
@@ -148,38 +148,106 @@ class PointSource(Source):
     @classmethod
     def make_powerlaw_sources_from_file(
         cls,
-        filename: str,
-        luminosity: Parameter,
-        index: Parameter,
+        file_name: str,
         lower_energy: Parameter,
         upper_energy: Parameter,
+        include_undetected: bool = False,
     ):
         """
-        Factory for power law sources defined in HDF5 files
-        with shared luminosity and spectral index.
+        Factory for power law sources defined in
+        HDF5 files ( update: output from popsynth).
+
+        :param lower_energy: Lower energy bound in definition of the luminosity.
+        :param upper_energy: Upper energy bound in definition of the luminosity.
+        :param include_undetected: Include sources that are not detected in population.
         """
 
-        import h5py
+        # Sensible bounds on luminosity
+        lumi_range = (0, 1e60) * (u.erg / u.s)
 
-        with h5py.File(filename, "r") as f:
-            redshift = f["output/redshift"][()]
-            position = f["output/position"][()]
+        # Load values
+        with h5py.File(file_name, "r") as f:
 
-        unit_vector = position / np.linalg.norm(position, axis=1)[:, np.newaxis]
-        ra, dec = uv_to_icrs(unit_vector)
+            luminosities = f["luminosities"][()] * (u.erg / u.s)
 
+            spectral_indices = f["auxiliary_quantities/spectral_index/obs_values"][()]
+
+            redshifts = f["distances"][()]
+
+            ras = f["phi"][()] * u.rad
+
+            decs = f["theta"][()] * u.rad
+
+            selection = f["selection"][()]
+
+        # Apply selection
+        if not include_undetected:
+
+            luminosities = luminosities[selection]
+
+            spectral_indices = spectral_indices[selection]
+
+            redshifts = redshifts[selection]
+
+            ras = ras[selection]
+
+            decs = decs[selection]
+
+        # Make list of point sources
         source_list = []
-        for i, (r, d, z) in enumerate(zip(ra, dec, redshift)):
+
+        for i, (L, index, ra, dec, z) in enumerate(
+            zip(
+                luminosities,
+                spectral_indices,
+                ras,
+                decs,
+                redshifts,
+            )
+        ):
+
+            # Check for shared luminosity parameter
+            try:
+
+                luminosity = Parameter.get_parameter("luminosity")
+
+            # Else, create individual ps_%i_luminosity parameters
+            except ValueError:
+
+                luminosity = Parameter(
+                    L,
+                    "ps_%i_luminosity" % i,
+                    fixed=True,
+                    par_range=lumi_range,
+                )
+
+            # Check for shared src_index parameter
+            try:
+
+                src_index = Parameter.get_parameter("src_index")
+
+            # Else, create individual ps_%i_src_index parameters
+            except ValueError:
+
+                src_index = Parameter(
+                    index,
+                    "ps_%i_src_index" % i,
+                    fixed=False,
+                    par_range=(1, 4),
+                )
+
+            # Create source
             source = PointSource.make_powerlaw_source(
-                str(i),
-                d,
-                r,
+                "ps_%i" % i,
+                dec,
+                ra,
                 luminosity,
-                index,
+                src_index,
                 z,
                 lower_energy,
                 upper_energy,
             )
+
             source_list.append(source)
 
         return source_list
@@ -518,116 +586,21 @@ class Sources:
 
         return self._sources[key]
 
-
-class SourceList(ABC):
-    """
-    Abstract base class for container of a list of sources.
-    """
-
-    def __init__(self):
-
-        super().__init__()
-        self.N = 0
-        self._sources = []
-
-    @property
-    def sources(self):
-        return self._sources
-
-    @sources.setter
-    def sources(self, value):
-        if not isinstance(value, list):
-            raise ValueError(str(value) + " is not a list")
-
-        if not isinstance(value[0], Source):
-            raise ValueError(str(value) + " is not a recognised source list")
-
-        else:
-            self._sources = value
-            self.N = len(self._sources)
-
-    def add(self, value):
-        if not isinstance(value, Source):
-            raise ValueError(str(value) + " is not a recognised source")
-        else:
-            self._sources.append(value)
-            self.N += 1
-
-    def remove(self, i):
-        self._sources.pop(i)
-        self.N -= 1
-
-    def total_flux_int(self):
-        tot = 0
-        for source in self:
-            tot += source.flux_model.total_flux_int
-        return tot
-
-    def __iter__(self):
-        for source in self._sources:
-            yield source
-
-    def __getitem__(self, key):
-        return self._sources[key]
-
-
-@u.quantity_input
-class TestSourceList(SourceList):
-    def __init__(
-        self,
-        filename,
-        luminosity: Parameter,
-        index: Parameter,
-        lower_energy: Parameter,
-        upper_energy: Parameter,
-    ):
+    def save(self, file_name):
         """
-        Simple source list from test file used in
-        development. Can be adapted to different
-        catalogs.
-
-        :param filename: File to read from.
-        :param luminosity: Luminosity shared by all sources
-        :param index: Spectral index of power law
-        :param lower_energy: Lower energy for L definition
-        :param upper_energy: Upper energy for L definition
+        Write the Sources to an HDF5 file.
         """
 
-        super().__init__()
-        self._filename = filename
-        self._luminosity = luminosity
-        self._index = index
-        self._lower_energy = lower_energy
-        self._upper_energy = upper_energy
-        self._read_from_file()
+        raise NotImplementedError()
 
-    def _read_from_file(self):
+    @classmethod
+    def from_file(cls, file_name):
+        """
+        Load Sources from the HDF5 file output
+        by the save() method.
+        """
 
-        import h5py
-
-        with h5py.File(self._filename, "r") as f:
-            redshift = f["output/redshift"][()]
-            position = f["output/position"][()]
-
-        unit_vector = position / np.linalg.norm(position, axis=1)[:, np.newaxis]
-        ra, dec = uv_to_icrs(unit_vector)
-
-        for i, (r, d, z) in enumerate(zip(ra, dec, redshift)):
-            source = PointSource.make_powerlaw_source(
-                str(i),
-                d,
-                r,
-                self._luminosity,
-                self._index,
-                z,
-                self._lower_energy,
-                self._upper_energy,
-            )
-            self.add(source)
-
-    def select_below_redshift(self, zth):
-        self._zth = zth
-        self.sources = [s for s in self.sources if s.redshift <= zth]
+        raise NotImplementedError()
 
 
 def uv_to_icrs(unit_vector):

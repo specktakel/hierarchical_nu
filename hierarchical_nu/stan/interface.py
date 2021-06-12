@@ -2,6 +2,7 @@ import os
 from abc import ABCMeta, abstractmethod
 
 from hierarchical_nu.backend.stan_generator import StanFileGenerator
+from hierarchical_nu.source.parameter import Parameter
 
 # To includes
 STAN_PATH = os.path.dirname(__file__)
@@ -55,9 +56,25 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._diff_spectrum = None
 
+        self._shared_luminosity = True
+
+        self._shared_src_index = True
+
         if self.sources.point_source:
 
             self._ps_spectrum = self.sources.point_source_spectrum
+
+            try:
+                Parameter.get_parameter("luminosity")
+                self._shared_luminosity = True
+            except ValueError:
+                self._shared_luminosity = False
+
+            try:
+                Parameter.get_parameter("src_index")
+                self._shared_src_index = True
+            except ValueError:
+                self._shared_src_index = False
 
         if self.sources.diffuse:
 

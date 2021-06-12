@@ -4,6 +4,7 @@ import h5py
 import logging
 import collections
 from astropy import units as u
+import corner
 
 from cmdstanpy import CmdStanModel
 
@@ -14,6 +15,7 @@ from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.detector_model import DetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
+from hierarchical_nu.priors import Priors
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -31,6 +33,7 @@ class StanFit:
         detector_model: DetectorModel,
         events: Events,
         observation_time: u.year,
+        priors: Priors = Priors(),
     ):
         """
         To set up and run fits in Stan.
@@ -49,6 +52,7 @@ class StanFit:
             stan_file_name,
             self._sources,
             self._detector_model_type,
+            priors=priors,
         )
 
         # Check for unsupported combinations
@@ -189,23 +193,54 @@ class StanFit:
         true values if working with simulated data.
         """
 
-        import corner
-
         if not var_names:
             var_names = self._def_var_names
 
         chain = self._fit_output.stan_variables()
 
-        samples_list = [chain[key] for key in var_names]
+        # Organise samples
+        samples_list = []
+        label_list = []
 
+        for key in var_names:
+
+            if len(np.shape(chain[key])) > 1:
+
+                for i, s in enumerate(chain[key].T):
+                    samples_list.append(s)
+
+                    if key == "L" or key == "src_index":
+                        label = "ps_%i_" % i + key
+                    else:
+                        label = key
+
+                    label_list.append(label)
+
+            else:
+                samples_list.append(chain[key])
+                label_list.append(key)
+
+        # Organise truths
         if truths:
-            truths_list = [truths[key] for key in var_names]
+
+            truths_list = []
+
+            for key in var_names:
+
+                if truths[key].size > 1:
+
+                    for t in truths[key]:
+                        truths_list.append(t)
+
+                else:
+                    truths_list.append(truths[key])
+
         else:
             truths_list = None
 
         samples = np.column_stack(samples_list)
 
-        return corner.corner(samples, labels=var_names, truths=truths_list)
+        return corner.corner(samples, labels=label_list, truths=truths_list)
 
     def save(self, filename):
         """
@@ -213,6 +248,7 @@ class StanFit:
         """
 
         with h5py.File(filename, "w") as f:
+
             fit_folder = f.create_group("fit")
             inputs_folder = fit_folder.create_group("inputs")
             outputs_folder = fit_folder.create_group("outputs")
@@ -222,6 +258,15 @@ class StanFit:
 
             for key, value in self._fit_output.stan_variables().items():
                 outputs_folder.create_dataset(key, data=value)
+
+    @classmethod
+    def from_file(cls, filename):
+        """
+        Load fit output from file. Allows to
+        make plots and run classification check.
+        """
+
+        raise NotImplementedError()
 
     def check_classification(self, sim_outputs):
         """
@@ -361,9 +406,15 @@ class StanFit:
 
         if self._sources.point_source:
 
+            try:
+                Parameter.get_parameter("src_index")
+                key = "src_index"
+            except ValueError:
+                key = "ps_0_src_index"
+
             fit_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
-            ].par_grids["src_index"]
+            ].par_grids[key]
 
         if self._sources.diffuse:
 
@@ -393,31 +444,11 @@ class StanFit:
                 self._exposure_integral["cascades"].pdet_grid
             )
 
-        if self._sources.point_source:
-
-            fit_inputs["L_scale"] = (
-                Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
-            )
-
-        if self._sources.diffuse:
-
-            bg = self._sources.diffuse
-            fit_inputs["F_diff_scale"] = bg.flux_model.total_flux_int.to(
-                1 / (u.m ** 2 * u.s)
-            ).value
-
         if self._sources.atmospheric:
 
             fit_inputs["atmo_integ_val"] = (
                 self._exposure_integral["tracks"].integral_fixed_vals[0].value
             )
-
-            bg = self._sources.atmospheric
-            fit_inputs["F_atmo_scale"] = bg.flux_model.total_flux_int.to(
-                1 / (u.m ** 2 * u.s)
-            ).value
-
-        fit_inputs["F_tot_scale"] = self._sources.total_flux_int().value
 
         # To work with cmdstanpy serialization
         fit_inputs = {
