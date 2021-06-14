@@ -212,7 +212,7 @@ sim._expected_Nnu_per_comp
 ```
 
 ```python
-sim.run(verbose=True, seed=678)
+sim.run(verbose=True, seed=42) 
 sim.save("output/test_pop_sim_file.h5")
 ```
 
@@ -226,11 +226,6 @@ sim.show_spectrum()
 
 
 ## Fit
-
-```python
-import sys
-sys.path.append("../../hierarchical_nu/")
-```
 
 ```python
 from hierarchical_nu.events import Events

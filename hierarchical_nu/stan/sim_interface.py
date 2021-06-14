@@ -33,6 +33,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.events import TRACKS, CASCADES
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
+from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 
@@ -599,7 +600,10 @@ class StanSimInterface(StanInterface):
                                 self._E[i] << self._Esrc[i]
 
                         # Test against Aeff
-                        if self.detector_model_type == NorthernTracksDetectorModel:
+                        if (
+                            self.detector_model_type == NorthernTracksDetectorModel
+                            or self.detector_model_type == IceCubeDetectorModel
+                        ):
 
                             with IfBlockContext(
                                 [StringExpression([self._cosz[i], ">= 0.1"])]
