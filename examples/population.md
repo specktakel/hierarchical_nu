@@ -132,11 +132,6 @@ new_population.display_fluxes();
 ## Using a popsynth population to define a Sources object
 
 ```python
-import sys
-sys.path.append("../../hierarchical_nu/")
-```
-
-```python
 import h5py
 from astropy import units as u
 from hierarchical_nu.source.parameter import Parameter
