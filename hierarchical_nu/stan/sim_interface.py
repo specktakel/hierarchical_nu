@@ -539,7 +539,7 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
                                 self._atmo_index << FunctionCall(
-                                    [self._atmo_weights], "categorical_rng"
+                                    [self._atmo_weights_p], "categorical_rng"
                                 )
                                 self._omega << self._atmo_directions[self._atmo_index]
 
