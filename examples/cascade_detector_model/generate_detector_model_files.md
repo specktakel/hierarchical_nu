@@ -5,11 +5,11 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.10.2
+      jupytext_version: 1.11.2
   kernelspec:
-    display_name: bayes
+    display_name: hierarchical_nu
     language: python
-    name: bayes
+    name: hierarchical_nu
 ---
 
 ## Generate files for detector model from simulation files
@@ -26,7 +26,7 @@ import os
 #### Aeff 
 
 ```python
-e_bins = np.linspace(np.log10(3e4), 8.5, 51)
+e_bins = np.linspace(2, 8.5, 51)
 cosz_bins = np.linspace(-1, 1, 11)
 
 path = "simulation_files"
@@ -65,7 +65,7 @@ cf = ax.contourf(e_bins[:-1], cosz_bins[:-1], aeff_tot.T, levels=20)
 cbar = fig.colorbar(cf)
 ax.set_xlabel("log10(Etrue [GeV])")
 ax.set_ylabel("cosz")
-ax.set_xlim(4.5, 7.0)
+#ax.set_xlim(4.5, 7.0)
 cbar.set_label("Effective Area [m^2]", labelpad=10)
 ```
 
@@ -143,10 +143,8 @@ Deciding whether to include an atmospheric component for cascade events above Er
 
 ```python
 from astropy import units as u
-import sys
-sys.path.append("../../software/")
-from python.source.parameter import Parameter
-from python.source.source import Sources
+from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.source.source import Sources
 ```
 
 ```python
