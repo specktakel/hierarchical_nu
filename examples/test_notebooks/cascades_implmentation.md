@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.10.2
+      jupytext_version: 1.11.2
   kernelspec:
     display_name: bayes
     language: python
@@ -31,22 +31,22 @@ from hierarchical_nu.backend.stan_generator import StanGenerator
 
 ```python
 with StanGenerator():
-    #aeff = CascadesEffectiveArea()
-    aeff = NorthernTracksEffectiveArea()
+    aeff = CascadesEffectiveArea()
+    #aeff = NorthernTracksEffectiveArea()
     
-    #eres = CascadesEnergyResolution()
-    eres = NorthernTracksEnergyResolution()
+    eres = CascadesEnergyResolution()
+    #eres = NorthernTracksEnergyResolution()
     
-    #ares = CascadesAngularResolution()
-    ares = NorthernTracksAngularResolution()
+    ares = CascadesAngularResolution()
+    #ares = NorthernTracksAngularResolution()
 ```
 
 ```python
-aeff.set_energy_range(3e4*u.GeV, 1e8*u.GeV)
+#aeff.set_energy_range(3e4*u.GeV, 1e8*u.GeV)
 ```
 
 ```python
-aeff.set_cosz_range(-0.8, 0.0)
+#aeff.set_cosz_range(-0.8, 0.0)
 ```
 
 ```python
