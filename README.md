@@ -38,6 +38,10 @@ install_cmdstan
 
 This will make and install CmdStan in the `~/.cmdstan` directory.
 
+### A note on updating existing code
+
+For a clean install, be aware that some calculations are cached in your local working directory when your run the code. Please delete any files in `.cache/` and the necessary calculations will be re-run as you go along.
+
 ## Examples
 
 You can find some example notebooks stored as markdown files in the `examples/` directory. To run these notebooks, use the [jupytext](https://github.com/mwouts/jupytext) package to open the markdown files.
