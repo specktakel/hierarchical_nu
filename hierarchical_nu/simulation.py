@@ -210,9 +210,6 @@ class Simulation:
             source_folder.create_dataset(
                 "total_flux_int", data=self._sources.total_flux_int().value
             )
-            source_folder.create_dataset(
-                "f", data=self._sources.associated_fraction().value
-            )
 
         self.events.to_file(filename, append=True)
 
