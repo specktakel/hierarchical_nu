@@ -244,7 +244,7 @@ class StanSimInterface(StanInterface):
                 self._N_c = ForwardVariableDef("N_c", "int")
 
             self._Ftot = ForwardVariableDef("Ftot", "real")
-            self._Fsrc = ForwardVariableDef("Fs", "real")
+            self._F_src = ForwardVariableDef("Fs", "real")
 
             self._f_arr_ = ForwardVariableDef("f_arr_", "real")
             self._f_arr_astro_ = ForwardVariableDef("f_arr_astro_", "real")
@@ -260,7 +260,7 @@ class StanSimInterface(StanInterface):
             self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
             self._N = ForwardVariableDef("N", "int")
 
-            self._Fsrc << 0.0
+            self._F_src << 0.0
             self._Nex_src_t << 0.0
             self._Nex_src_c << 0.0
             self._Nex_src << 0.0
@@ -298,7 +298,7 @@ class StanSimInterface(StanInterface):
                             ),
                         ]
                     )
-                    StringExpression([self._Fsrc, " += ", self._F[k]])
+                    StringExpression([self._F_src, " += ", self._F[k]])
 
             if self.sources.diffuse:
                 StringExpression("F[Ns+1]") << self._F_diff
@@ -462,9 +462,9 @@ class StanSimInterface(StanInterface):
                 self._N << self._N_c
 
             if self.sources.diffuse and self.sources.atmospheric:
-                self._Ftot << self._Fsrc + self._F_diff + self._F_atmo
+                self._Ftot << self._F_src + self._F_diff + self._F_atmo
                 self._f_arr_astro_ << StringExpression(
-                    [self._Fsrc, "/", self._Fsrc + self._F_diff]
+                    [self._F_src, "/", self._F_src + self._F_diff]
                 )
                 self._f_det_ << self._Nex_src / (
                     self._Nex_src + self._Nex_diff + self._Nex_atmo
@@ -472,26 +472,26 @@ class StanSimInterface(StanInterface):
                 self._f_det_astro_ << self._Nex_src / (self._Nex_src + self._Nex_diff)
 
             elif self.sources.diffuse:
-                self._Ftot << self._Fsrc + self._F_diff
+                self._Ftot << self._F_src + self._F_diff
                 self._f_arr_astro_ << StringExpression(
-                    [self._Fsrc, "/", self._Fsrc + self._F_diff]
+                    [self._F_src, "/", self._F_src + self._F_diff]
                 )
                 self._f_det_ << self._Nex_src / (self._Nex_src + self._Nex_diff)
                 self._f_det_astro_ << self._f_det_
 
             elif self.sources.atmospheric:
-                self._Ftot << self._Fsrc + self._F_atmo
+                self._Ftot << self._F_src + self._F_atmo
                 self._f_arr_astro_ << 1.0
                 self._f_det_ << self._Nex_src / (self._Nex_src + self._Nex_atmo)
                 self._f_det_astro_ << 1.0
 
             else:
-                self._Ftot << self._Fsrc
+                self._Ftot << self._F_src
                 self._f_arr_astro_ << 1.0
                 self._f_det_ << 1.0
                 self._f_det_astro << 1.0
 
-            self._f_arr_ << StringExpression([self._Fsrc, "/", self._Ftot])
+            self._f_arr_ << StringExpression([self._F_src, "/", self._Ftot])
 
             # StringExpression(['print("f_arr: ", ', self._f_arr_, ")"])
 

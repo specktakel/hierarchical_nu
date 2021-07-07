@@ -101,7 +101,8 @@ class StanFit:
             self._sources.atmospheric or self._sources.diffuse
         ):
 
-            self._def_var_names.append("f")
+            self._def_var_names.append("f_arr")
+            self._def_var_names.append("f_det")
 
         self._exposure_integral = collections.OrderedDict()
 

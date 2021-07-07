@@ -685,7 +685,10 @@ class SimInfo:
             truths["F_atmo"] = inputs["F_atmo"]
 
         truths["Ftot"] = inputs["total_flux_int"]
-        truths["f"] = inputs["f"]
+        truths["f_arr"] = outputs["f_arr"]
+        truths["f_arr_astro"] = outputs["f_arr_astro"]
+        truths["f_det"] = outputs["f_det"]
+        truths["f_det_astro"] = outputs["f_det_astro"]
 
         return cls(truths, inputs, outputs)
 
