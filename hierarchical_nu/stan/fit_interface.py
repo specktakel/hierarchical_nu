@@ -339,6 +339,7 @@ class StanFitInterface(StanInterface):
                 self._Nex_src_t = ForwardVariableDef("Nex_src_t", "real")
                 self._Nex_diff_t = ForwardVariableDef("Nex_diff_t", "real")
                 self._Nex_t = ForwardVariableDef("Nex_t", "real")
+                self._Nex_src_t << 0.0
 
             if "cascades" in self._event_types:
 
@@ -346,10 +347,9 @@ class StanFitInterface(StanInterface):
                 self._Nex_src_c = ForwardVariableDef("Nex_src_c", "real")
                 self._Nex_diff_c = ForwardVariableDef("Nex_diff_c", "real")
                 self._Nex_c = ForwardVariableDef("Nex_c", "real")
+                self._Nex_src_c << 0.0
 
             self._F_src << 0.0
-            self._Nex_src_t << 0.0
-            self._Nex_src_c << 0.0
             self._Nex_src << 0.0
             self._Nex_atmo << 0.0
 
