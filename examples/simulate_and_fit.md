@@ -26,11 +26,6 @@ import astropy.units as u
 ## Sources
 
 ```python
-import sys
-sys.path.append("../")
-```
-
-```python
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 ```
@@ -42,9 +37,9 @@ First set up the high-level parameters. The parameters defined here are singleto
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(3E47 * (u.erg / u.s), "luminosity", fixed=True, 
+L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, 
               par_range=(0, 1E60)*(u.erg/u.s))
-diffuse_norm = Parameter(2e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
@@ -110,7 +105,7 @@ Below are shown all the necessary steps to set up and run a simulation for clari
 sim.precomputation()
 sim.generate_stan_code()
 sim.compile_stan_code()
-sim.run(verbose=True, seed=9873)
+sim.run(verbose=True, seed=42)
 sim.save("output/test_sim_file.h5")
 ```
 
@@ -118,7 +113,7 @@ sim.save("output/test_sim_file.h5")
 sim._expected_Nnu_per_comp
 ```
 
-We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~89 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
+We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~45 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
 
 ```python
 fig, ax = sim.show_spectrum()
@@ -158,8 +153,8 @@ We can also define priors using the `Priors` interface. Here, we use the default
 
 ```python
 priors = Priors()
-atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.value
-priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.1*atmo_flux)
+#atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.value
+#priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.1*atmo_flux)
 ```
 
 ```python
