@@ -26,6 +26,11 @@ import astropy.units as u
 ## Sources
 
 ```python
+import sys
+sys.path.append("../")
+```
+
+```python
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 ```
@@ -61,7 +66,7 @@ Next, we use these high-level parameters to define sources. This can be done for
 # Single PS for testing and usual components
 point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
                                                 np.pi*u.rad, 
-                                                L, src_index, 0.43, Emin, Emax)
+                                                L, src_index, 0.4, Emin, Emax)
 
 my_sources = Sources()
 #my_sources.add(point_sources)
@@ -74,7 +79,11 @@ my_sources.add_atmospheric_component() # auto atmo component
 ```
 
 ```python
-my_sources.associated_fraction()
+my_sources.f_arr() # Associated fraction of arrival flux
+```
+
+```python
+my_sources.f_arr_astro() # As above, excluding atmo
 ```
 
 ## Simulation
@@ -101,8 +110,12 @@ Below are shown all the necessary steps to set up and run a simulation for clari
 sim.precomputation()
 sim.generate_stan_code()
 sim.compile_stan_code()
-sim.run(verbose=True, seed=42)
+sim.run(verbose=True, seed=9873)
 sim.save("output/test_sim_file.h5")
+```
+
+```python
+sim._expected_Nnu_per_comp
 ```
 
 We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~89 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
@@ -113,6 +126,14 @@ fig, ax = sim.show_spectrum()
 
 ```python
 fig, ax = sim.show_skymap()
+```
+
+```python
+sim._sim_output.stan_variable("f_det")
+```
+
+```python
+sim._sim_output.stan_variable("f_arr")
 ```
 
 ## Fit 
@@ -137,8 +158,8 @@ We can also define priors using the `Priors` interface. Here, we use the default
 
 ```python
 priors = Priors()
-#atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.value
-#priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.1*atmo_flux)
+atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.value
+priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.1*atmo_flux)
 ```
 
 ```python
@@ -148,7 +169,7 @@ priors = Priors()
 fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time, priors=priors)
 ```
 
-Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes around 15 min on one core.
+Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes around 10 min on one core.
 
 ```python
 fit.precomputation()

@@ -80,7 +80,7 @@ class Priors(object):
 
         self._diff_index = NormalPrior(mu=2.0, sigma=1.5)
 
-        self._atmospheric_flux = LogNormalPrior(mu=np.log(1e-8), sigma=3.0)
+        self._atmospheric_flux = NormalPrior(mu=0.0, sigma=1.5e-7)
 
     @property
     def luminosity(self):
