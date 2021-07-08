@@ -465,7 +465,11 @@ class Sources:
             tot += source.flux_model.total_flux_int
         return tot
 
-    def associated_fraction(self):
+    def f_arr(self):
+        """
+        Associated fraction of arrival flux at Earth
+        from sources.
+        """
 
         point_source_ints = sum(
             [
@@ -476,6 +480,30 @@ class Sources:
         ) * (1 / (u.m ** 2 * u.s))
 
         return point_source_ints / self.total_flux_int()
+
+    def f_arr_astro(self):
+        """
+        Same as `f_arr`, but ignoring any atmospheric
+        contribution.
+        """
+
+        point_source_ints = sum(
+            [
+                s.flux_model.total_flux_int.value
+                for s in self.sources
+                if isinstance(s, PointSource)
+            ]
+        ) * (1 / (u.m ** 2 * u.s))
+
+        if self.diffuse:
+
+            diff_ints = self.diffuse.flux_model.total_flux_int
+
+        else:
+
+            diff_ints = 0 * (1 / (u.m ** 2 * u.s))
+
+        return point_source_ints / (point_source_ints + diff_ints)
 
     def organise(self):
         """

@@ -291,9 +291,15 @@ class StanFitInterface(StanInterface):
         with TransformedParametersContext():
 
             self._Nex = ForwardVariableDef("Nex", "real")
+            self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
+            self._Nex_src = ForwardVariableDef("Nex_src", "real")
+            self._Nex_diff = ForwardVariableDef("Nex_diff", "real")
             self._Ftot = ForwardVariableDef("Ftot", "real")
-            self._Fsrc = ForwardVariableDef("Fs", "real")
-            self._f = ForwardVariableDef("f", "real")
+            self._F_src = ForwardVariableDef("Fs", "real")
+            self._f_arr = ForwardVariableDef("f_arr", "real")
+            self._f_det = ForwardVariableDef("f_det", "real")
+            self._f_arr_astro = ForwardVariableDef("f_arr_astro", "real")
+            self._f_det_astro = ForwardVariableDef("f_det_astro", "real")
             self._E = ForwardVariableDef("E", "vector[N]")
 
             if self.sources.diffuse and self.sources.atmospheric:
@@ -330,14 +336,22 @@ class StanFitInterface(StanInterface):
             if "tracks" in self._event_types:
 
                 self._eps_t = ForwardVariableDef("eps_t", "vector" + N_tot_t)
+                self._Nex_src_t = ForwardVariableDef("Nex_src_t", "real")
+                self._Nex_diff_t = ForwardVariableDef("Nex_diff_t", "real")
                 self._Nex_t = ForwardVariableDef("Nex_t", "real")
+                self._Nex_src_t << 0.0
 
             if "cascades" in self._event_types:
 
                 self._eps_c = ForwardVariableDef("eps_c", "vector" + N_tot_c)
+                self._Nex_src_c = ForwardVariableDef("Nex_src_c", "real")
+                self._Nex_diff_c = ForwardVariableDef("Nex_diff_c", "real")
                 self._Nex_c = ForwardVariableDef("Nex_c", "real")
+                self._Nex_src_c << 0.0
 
-            self._Fsrc << 0.0
+            self._F_src << 0.0
+            self._Nex_src << 0.0
+            self._Nex_atmo << 0.0
 
             if self.sources.point_source:
 
@@ -372,7 +386,7 @@ class StanFitInterface(StanInterface):
                             ),
                         ]
                     )
-                    StringExpression([self._Fsrc, " += ", self._F[k]])
+                    StringExpression([self._F_src, " += ", self._F[k]])
 
             if self.sources.diffuse:
                 StringExpression("F[Ns+1]") << self._F_diff
@@ -382,20 +396,6 @@ class StanFitInterface(StanInterface):
 
             if self.sources.atmospheric and self.sources.diffuse:
                 StringExpression("F[Ns+2]") << self._F_atmo
-
-            if self.sources.diffuse and self.sources.atmospheric:
-                self._Ftot << self._Fsrc + self._F_diff + self._F_atmo
-
-            elif self.sources.diffuse:
-                self._Ftot << self._Fsrc + self._F_diff
-
-            elif self.sources.atmospheric:
-                self._Ftot << self._Fsrc + self._F_atmo
-
-            else:
-                self._Ftot << self._Fsrc
-
-            self._f << StringExpression([self._Fsrc, "/", self._Ftot])
 
             if self.sources.point_source:
 
@@ -417,6 +417,10 @@ class StanFitInterface(StanInterface):
                             "interpolate",
                         ) * self._T
 
+                        StringExpression(
+                            [self._Nex_src_t, "+=", self._F[k] * self._eps_t[k]]
+                        )
+
                     if "cascades" in self._event_types:
 
                         self._eps_c[k] << FunctionCall(
@@ -427,6 +431,10 @@ class StanFitInterface(StanInterface):
                             ],
                             "interpolate",
                         ) * self._T
+
+                        StringExpression(
+                            [self._Nex_src_c, "+=", self._F[k] * self._eps_c[k]]
+                        )
 
             if self.sources.diffuse and self.sources.atmospheric:
 
@@ -441,7 +449,13 @@ class StanFitInterface(StanInterface):
                         "interpolate",
                     ) * self._T
 
+                    self._Nex_diff_t << self._F[self._Ns + 1] * self._eps_t[
+                        self._Ns + 1
+                    ]
+
                     self._eps_t[self._Ns + 2] << self._atmo_integ_val * self._T
+
+                    self._Nex_atmo << self._F[self._Ns + 2] * self._eps_t[self._Ns + 2]
 
                 if "cascades" in self._event_types:
 
@@ -453,6 +467,10 @@ class StanFitInterface(StanInterface):
                         ],
                         "interpolate",
                     ) * self._T
+
+                    self._Nex_diff_c << self._F[self._Ns + 1] * self._eps_c[
+                        self._Ns + 1
+                    ]
 
             elif self.sources.diffuse:
 
@@ -467,6 +485,10 @@ class StanFitInterface(StanInterface):
                         "interpolate",
                     ) * self._T
 
+                    self._Nex_diff_t << self._F[self._Ns + 1] * self._eps_t[
+                        self._Ns + 1
+                    ]
+
                 if "cascades" in self._event_types:
 
                     self._eps_c[self._Ns + 1] << FunctionCall(
@@ -478,9 +500,15 @@ class StanFitInterface(StanInterface):
                         "interpolate",
                     ) * self._T
 
+                    self._Nex_diff_c << self._F[self._Ns + 1] * self._eps_c[
+                        self._Ns + 1
+                    ]
+
             elif self.sources.atmospheric and "tracks" in self._event_types:
 
                 self._eps_t[self._Ns + 1] << self._atmo_integ_val * self._T
+
+                self._Nex_atmo << self._F[self._Ns + 1] * self._eps_t[self._Ns + 1]
 
                 if "cascades" in self._event_types:
 
@@ -496,15 +524,47 @@ class StanFitInterface(StanInterface):
 
             if "tracks" in self._event_types and "cascades" in self._event_types:
 
+                self._Nex_src << self._Nex_src_t + self._Nex_src_c
+                self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
                 self._Nex << self._Nex_t + self._Nex_c
 
             elif "tracks" in self._event_types:
 
+                self._Nex_src << self._Nex_src_t
+                self._Nex_diff << self._Nex_diff_t
                 self._Nex << self._Nex_t
 
             elif "cascades" in self._event_types:
 
+                self._Nex_src << self._Nex_src_c
+                self._Nex_diff << self._Nex_diff_c
                 self._Nex << self._Nex_c
+
+            if self.sources.diffuse and self.sources.atmospheric:
+                self._Ftot << self._F_src + self._F_diff + self._F_atmo
+                self._f_arr_astro << self._F_src / (self._F_src + self._F_diff)
+                self._f_det << self._Nex_src / self._Nex
+                self._f_det_astro << self._Nex_src / (self._Nex_src + self._Nex_diff)
+
+            elif self.sources.diffuse:
+                self._Ftot << self._F_src + self._F_diff
+                self._f_arr_astro << self._F_src / (self._F_src + self._F_diff)
+                self._f_det << self._Nex_src / self._Nex
+                self._f_det_astro << self._f_det
+
+            elif self.sources.atmospheric:
+                self._Ftot << self._F_src + self._F_atmo
+                self._f_arr_astro << 1.0
+                self._f_det << self._Nex_src / (self._Nex_src + self._Nex_atmo)
+                self._f_det_astro << 1.0
+
+            else:
+                self._Ftot << self._F_src
+                self._f_arr_astro << 1.0
+                self._f_det << 1.0
+                self._f_det_astro << 1.0
+
+            self._f_arr << StringExpression([self._F_src, "/", self._Ftot])
 
             if self.sources.diffuse and self.sources.atmospheric:
 

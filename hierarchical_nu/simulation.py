@@ -210,9 +210,6 @@ class Simulation:
             source_folder.create_dataset(
                 "total_flux_int", data=self._sources.total_flux_int().value
             )
-            source_folder.create_dataset(
-                "f", data=self._sources.associated_fraction().value
-            )
 
         self.events.to_file(filename, append=True)
 
@@ -688,7 +685,10 @@ class SimInfo:
             truths["F_atmo"] = inputs["F_atmo"]
 
         truths["Ftot"] = inputs["total_flux_int"]
-        truths["f"] = inputs["f"]
+        truths["f_arr"] = outputs["f_arr"]
+        truths["f_arr_astro"] = outputs["f_arr_astro"]
+        truths["f_det"] = outputs["f_det"]
+        truths["f_det_astro"] = outputs["f_det_astro"]
 
         return cls(truths, inputs, outputs)
 

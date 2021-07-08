@@ -178,7 +178,7 @@ my_sources.add_atmospheric_component() # auto atmo component
 ```
 
 ```python
-my_sources.associated_fraction()
+my_sources.f_arr()
 ```
 
 ```python

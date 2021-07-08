@@ -244,11 +244,26 @@ class StanSimInterface(StanInterface):
                 self._N_c = ForwardVariableDef("N_c", "int")
 
             self._Ftot = ForwardVariableDef("Ftot", "real")
-            self._Fsrc = ForwardVariableDef("Fs", "real")
-            self._f = ForwardVariableDef("f", "real")
+            self._F_src = ForwardVariableDef("Fs", "real")
+
+            self._f_arr_ = ForwardVariableDef("f_arr_", "real")
+            self._f_arr_astro_ = ForwardVariableDef("f_arr_astro_", "real")
+            self._f_det_ = ForwardVariableDef("f_det_", "real")
+            self._f_det_astro_ = ForwardVariableDef("f_det_astro_", "real")
+
+            self._Nex_src_t = ForwardVariableDef("Nex_src_t", "real")
+            self._Nex_src_c = ForwardVariableDef("Nex_src_c", "real")
+            self._Nex_src = ForwardVariableDef("Nex_src", "real")
+            self._Nex_diff_t = ForwardVariableDef("Nex_diff_t", "real")
+            self._Nex_diff_c = ForwardVariableDef("Nex_diff_c", "real")
+            self._Nex_diff = ForwardVariableDef("Nex_diff", "real")
+            self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
             self._N = ForwardVariableDef("N", "int")
 
-            self._Fsrc << 0.0
+            self._F_src << 0.0
+            self._Nex_src_t << 0.0
+            self._Nex_src_c << 0.0
+            self._Nex_src << 0.0
 
             if self.sources.point_source:
 
@@ -283,7 +298,7 @@ class StanSimInterface(StanInterface):
                             ),
                         ]
                     )
-                    StringExpression([self._Fsrc, " += ", self._F[k]])
+                    StringExpression([self._F_src, " += ", self._F[k]])
 
             if self.sources.diffuse:
                 StringExpression("F[Ns+1]") << self._F_diff
@@ -293,21 +308,6 @@ class StanSimInterface(StanInterface):
 
             if self.sources.atmospheric and self.sources.diffuse:
                 StringExpression("F[Ns+2]") << self._F_atmo
-
-            if self.sources.diffuse and self.sources.atmospheric:
-                self._Ftot << self._Fsrc + self._F_diff + self._F_atmo
-
-            elif self.sources.diffuse:
-                self._Ftot << self._Fsrc + self._F_diff
-
-            elif self.sources.atmospheric:
-                self._Ftot << self._Fsrc + self._F_atmo
-
-            else:
-                self._Ftot << self._Fsrc
-
-            self._f << StringExpression([self._Fsrc, "/", self._Ftot])
-            StringExpression(['print("f: ", ', self._f, ")"])
 
             if self.sources.point_source:
 
@@ -329,6 +329,10 @@ class StanSimInterface(StanInterface):
                             "interpolate",
                         ) * self._T
 
+                        StringExpression(
+                            [self._Nex_src_t, "+=", self._F[k] * self._eps_t[k]]
+                        )
+
                     if "cascades" in self._event_types:
 
                         self._eps_c[k] << FunctionCall(
@@ -339,6 +343,10 @@ class StanSimInterface(StanInterface):
                             ],
                             "interpolate",
                         ) * self._T
+
+                        StringExpression(
+                            [self._Nex_src_c, "+=", self._F[k] * self._eps_c[k]]
+                        )
 
             if self.sources.diffuse and self.sources.atmospheric:
 
@@ -353,7 +361,13 @@ class StanSimInterface(StanInterface):
                         "interpolate",
                     ) * self._T
 
+                    self._Nex_diff_t << self._F[self._Ns + 1] * self._eps_t[
+                        self._Ns + 1
+                    ]
+
                     self._eps_t[self._Ns + 2] << self._atmo_integ_val * self._T
+
+                    self._Nex_atmo << self._F[self._Ns + 2] * self._eps_t[self._Ns + 2]
 
                 if "cascades" in self._event_types:
 
@@ -365,6 +379,10 @@ class StanSimInterface(StanInterface):
                         ],
                         "interpolate",
                     ) * self._T
+
+                    self._Nex_diff_c << self._F[self._Ns + 1] * self._eps_c[
+                        self._Ns + 1
+                    ]
 
             elif self.sources.diffuse:
 
@@ -379,6 +397,10 @@ class StanSimInterface(StanInterface):
                         "interpolate",
                     ) * self._T
 
+                    self._Nex_diff_t << self._F[self._Ns + 1] * self._eps_t[
+                        self._Ns + 1
+                    ]
+
                 if "cascades" in self._event_types:
 
                     self._eps_c[self._Ns + 1] << FunctionCall(
@@ -390,9 +412,15 @@ class StanSimInterface(StanInterface):
                         "interpolate",
                     ) * self._T
 
+                    self._Nex_diff_c << self._F[self._Ns + 1] * self._eps_c[
+                        self._Ns + 1
+                    ]
+
             elif self.sources.atmospheric and "tracks" in self._event_types:
 
                 self._eps_t[self._Ns + 1] << self._atmo_integ_val * self._T
+
+                self._Nex_atmo << self._F[self._Ns + 1] * self._eps_t[self._Ns + 1]
 
                 if "cascades" in self._event_types:
 
@@ -416,15 +444,56 @@ class StanSimInterface(StanInterface):
 
             if "tracks" in self._event_types and "cascades" in self._event_types:
 
+                self._Nex_src << self._Nex_src_t + self._Nex_src_c
+                self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
                 self._N << self._N_t + self._N_c
 
             elif "tracks" in self._event_types:
 
+                self._Nex_src << self._Nex_src_t
+                self._Nex_diff << self._Nex_diff_t
                 self._N << self._N_t
 
             elif "cascades" in self._event_types:
 
+                self._Nex_src << self._Nex_src_c
+                self._Nex_diff << self._Nex_diff_c
+                self._Nex_atmo << 0.0
                 self._N << self._N_c
+
+            if self.sources.diffuse and self.sources.atmospheric:
+                self._Ftot << self._F_src + self._F_diff + self._F_atmo
+                self._f_arr_astro_ << StringExpression(
+                    [self._F_src, "/", self._F_src + self._F_diff]
+                )
+                self._f_det_ << self._Nex_src / (
+                    self._Nex_src + self._Nex_diff + self._Nex_atmo
+                )
+                self._f_det_astro_ << self._Nex_src / (self._Nex_src + self._Nex_diff)
+
+            elif self.sources.diffuse:
+                self._Ftot << self._F_src + self._F_diff
+                self._f_arr_astro_ << StringExpression(
+                    [self._F_src, "/", self._F_src + self._F_diff]
+                )
+                self._f_det_ << self._Nex_src / (self._Nex_src + self._Nex_diff)
+                self._f_det_astro_ << self._f_det_
+
+            elif self.sources.atmospheric:
+                self._Ftot << self._F_src + self._F_atmo
+                self._f_arr_astro_ << 1.0
+                self._f_det_ << self._Nex_src / (self._Nex_src + self._Nex_atmo)
+                self._f_det_astro_ << 1.0
+
+            else:
+                self._Ftot << self._F_src
+                self._f_arr_astro_ << 1.0
+                self._f_det_ << 1.0
+                self._f_det_astro << 1.0
+
+            self._f_arr_ << StringExpression([self._F_src, "/", self._Ftot])
+
+            # StringExpression(['print("f_arr: ", ', self._f_arr_, ")"])
 
     def _generated_quantities(self):
 
@@ -443,6 +512,15 @@ class StanSimInterface(StanInterface):
                     mode=DistributionMode.PDF,
                     event_type=event_type,
                 )
+
+            self._f_arr = ForwardVariableDef("f_arr", "real")
+            self._f_arr_astro = ForwardVariableDef("f_arr_astro", "real")
+            self._f_det = ForwardVariableDef("f_det", "real")
+            self._f_det_astro = ForwardVariableDef("f_det_astro", "real")
+            self._f_arr << self._f_arr_
+            self._f_arr_astro << self._f_arr_astro_
+            self._f_det << self._f_det_
+            self._f_det_astro << self._f_det_astro_
 
             self._N_str = ["[", self._N, "]"]
             self._lam = ForwardArrayDef("Lambda", "int", self._N_str)
