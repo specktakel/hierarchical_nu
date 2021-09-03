@@ -14,6 +14,7 @@ from hierarchical_nu.backend.stan_generator import (
     TransformedParametersContext,
     ForLoopContext,
     IfBlockContext,
+    ElseBlockContext,
     ModelContext,
     FunctionCall,
 )
@@ -228,24 +229,24 @@ class StanFitInterface(StanInterface):
                 self._cascade_type << CASCADES
 
             if "cascades" in self._event_types and "tracks" in self._event_types:
-				self._N_c = ForwardVariableDef("N_c", "int")
-				self._Nex_src_c << 0.0
-				self._N_t = ForwardVariableDef("N_t", "int")
-				self._Nex_src_t << 0.0
+                self._N_c = ForwardVariableDef("N_c", "int")
+                self._N_c << 0.0
+                self._N_t = ForwardVariableDef("N_t", "int")
+                self._N_t << 0.0
 
-				with ForLoopContext(1, self._N, "k") as k:
+                with ForLoopContext(1, self._N, "k") as k:
 
                     with IfBlockContext(
                         [
                             StringExpression(
-                                [self._event_type[i], " == ", self._cascade_type]
+                                [self._event_type[k], " == ", self._cascade_type]
                             )
                         ]
                     ):
-						self._N_c << self._N_c + 1
+                        self._N_c << self._N_c + 1
 
-					with ElseBlockContext():
-						self._N_t << self._N_t + 1
+                    with ElseBlockContext():
+                        self._N_t << self._N_t + 1
 
 
     def _parameters(self):
@@ -554,10 +555,10 @@ class StanFitInterface(StanInterface):
                 self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
                 self._Nex << self._Nex_t + self._Nex_c
 
-				self._logp_c << self._Nex_c / self._Nex
-				self._logp_c << StringExpression(["log(", self._logp_c, ")"])
-				self._logp_t << self._Nex_t / self._Nex
-				self._logp_t << StringExpression(["log(", self._logp_t, ")"])
+                self._logp_c << self._Nex_c / self._Nex
+                self._logp_c << StringExpression(["log(", self._logp_c, ")"])
+                self._logp_t << self._Nex_t / self._Nex
+                self._logp_t << StringExpression(["log(", self._logp_t, ")"])
 
             elif "tracks" in self._event_types:
 
@@ -881,9 +882,9 @@ class StanFitInterface(StanInterface):
 
                 StringExpression(["target += log_sum_exp(", self._lp[i], ")"])
 
-			if "tracks" in self._event_types and "cascades" in self._event_types:
-				StringExpression(["target += ", self._N_c, " * ", self._logp_c])
-				StringExpression(["target += ", self._N_p, " * ", self._logp_t])
+            if "tracks" in self._event_types and "cascades" in self._event_types:
+                StringExpression(["target += ", self._N_c, " * ", self._logp_c])
+                StringExpression(["target += ", self._N_t, " * ", self._logp_t])
 
             StringExpression(["target += -", self._Nex])
 
