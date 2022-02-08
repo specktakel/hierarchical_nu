@@ -54,7 +54,7 @@ detector_models = [
     IceCubeDetectorModel,
 ]
 
-stanc_options = {"include_paths": [STAN_PATH]}
+stanc_options = {"include-paths": [STAN_PATH]}
 
 
 def test_stan_sim_interface(output_directory):

@@ -139,7 +139,7 @@ class StanFit:
             include_paths = [STAN_PATH]
 
         self._fit = CmdStanModel(
-            stan_file=self._fit_filename, stanc_options={"include_paths": include_paths}
+            stan_file=self._fit_filename, stanc_options={"include-paths": include_paths}
         )
 
     def run(self, iterations=1000, chains=1, seed=None, show_progress=False, **kwargs):
