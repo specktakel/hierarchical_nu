@@ -1,5 +1,4 @@
 import numpy as np
-import os
 import h5py
 
 from astropy import units as u

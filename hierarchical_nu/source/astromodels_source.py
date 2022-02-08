@@ -197,8 +197,8 @@ class SourceList(ABC):
 class TestSourceList(SourceList):
     def __init__(self, filename, spectral_shape=None):
         """
-        Simple source list from test file used in 
-        development. Can be adapted to different 
+        Simple source list from test file used in
+        development. Can be adapted to different
         catalogs.
 
         :param filename: File to read from.

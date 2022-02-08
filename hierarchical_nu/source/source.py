@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Callable
 import h5py
 from astropy import units as u
 import numpy as np
