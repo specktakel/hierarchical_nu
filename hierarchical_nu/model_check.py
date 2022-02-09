@@ -156,7 +156,7 @@ class ModelCheck:
         print("Generated fit Stan file at:", file_config["fit_filename"])
 
         print("Compile Stan models")
-        stanc_options = {"include_paths": list(file_config["include_paths"])}
+        stanc_options = {"include-paths": list(file_config["include_paths"])}
 
         _ = CmdStanModel(
             stan_file=file_config["atmo_sim_filename"],

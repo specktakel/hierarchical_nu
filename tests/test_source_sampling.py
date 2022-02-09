@@ -174,7 +174,7 @@ def test_source_sampling(output_directory, random_seed):
 
     stan_file = generate_source_test_code(output_directory)
 
-    stanc_options = {"include_paths": [STAN_PATH]}
+    stanc_options = {"include-paths": [STAN_PATH]}
 
     stan_model = CmdStanModel(
         stan_file=stan_file,

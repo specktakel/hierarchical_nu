@@ -204,7 +204,7 @@ int binary_search(real value, real[] binedges)
     else{
         while (L < R-1)
         {
-            m = (L + R) / 2;
+            m = (L + R) %/% 2;
             if (binedges[m] < value)
                 L = m;
             else if (binedges[m] > value)

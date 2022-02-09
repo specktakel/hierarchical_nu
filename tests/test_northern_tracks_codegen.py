@@ -99,7 +99,7 @@ def test_distributions_northern_tracks(output_directory, random_seed):
 
     model_file = generate_distribution_test_code(output_directory)
 
-    stanc_options = {"include_paths": [STAN_PATH]}
+    stanc_options = {"include-paths": [STAN_PATH]}
 
     # Compile model
     stan_model = CmdStanModel(
@@ -212,7 +212,7 @@ def test_rv_generation(output_directory, random_seed):
     rng_file_name, pdf_file_name = generate_rv_test_code(output_directory)
 
     # Compile Stan code
-    stanc_options = {"include_paths": [STAN_PATH]}
+    stanc_options = {"include-paths": [STAN_PATH]}
 
     rng_stan_model = CmdStanModel(
         stan_file=rng_file_name,

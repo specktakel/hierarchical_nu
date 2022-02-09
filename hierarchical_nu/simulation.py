@@ -126,7 +126,7 @@ class Simulation:
         if not include_paths:
             include_paths = [STAN_PATH]
 
-        stanc_options = {"include_paths": include_paths}
+        stanc_options = {"include-paths": include_paths}
 
         if self._sources.atmospheric:
 

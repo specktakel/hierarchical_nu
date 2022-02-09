@@ -43,8 +43,6 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._event_types = self._detector_model_type.event_types
 
-        self._code_gen = StanFileGenerator(output_file)
-
         self._check_output_dir()
 
     def _get_source_info(self):
@@ -124,6 +122,8 @@ class StanInterface(object, metaclass=ABCMeta):
         pass
 
     def generate(self):
+
+        self._code_gen = StanFileGenerator(self._output_file)
 
         with self._code_gen:
 
