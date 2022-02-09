@@ -7,8 +7,14 @@ from .baseclasses import NamedObject
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["Expression", "ReturnStatement", "StringExpression",
-           "NamedExpression", "TExpression", "TListTExpression"]
+__all__ = [
+    "Expression",
+    "ReturnStatement",
+    "StringExpression",
+    "NamedExpression",
+    "TExpression",
+    "TListTExpression",
+]
 
 
 class _BaseExpression(Contextable, metaclass=ABCMeta):
@@ -20,7 +26,9 @@ class _BaseExpression(Contextable, metaclass=ABCMeta):
     Comes with converters to PyMC3 and Stan Code.
     """
 
-    def __init__(self, inputs: Sequence["TExpression"], block_output: bool, end_delim=";\n"):
+    def __init__(
+        self, inputs: Sequence["TExpression"], block_output: bool, end_delim=";\n"
+    ):
         Contextable.__init__(self)
         self._end_delim = end_delim
         logger.debug("Input is of type: {}".format(type(inputs)))
@@ -35,7 +43,9 @@ class _BaseExpression(Contextable, metaclass=ABCMeta):
             if isinstance(input, Expression):
                 input.add_output(self)
             else:
-                logger.debug("Found non Expression of type: {} in input.".format(input))  # noqa: E501
+                logger.debug(
+                    "Found non Expression of type: {} in input.".format(input)
+                )  # noqa: E501
         self._output: List["TExpression"] = []
         self._block_output = block_output
 
@@ -88,10 +98,11 @@ TListTExpression = List[TExpression]
 
 class Expression(_BaseExpression):
     def __init__(
-            self,
-            inputs: Sequence["TExpression"],
-            stan_code: TListTExpression,
-            block_output=False):
+        self,
+        inputs: Sequence["TExpression"],
+        stan_code: TListTExpression,
+        block_output=False,
+    ):
         _BaseExpression.__init__(self, inputs, block_output, end_delim=";\n")
         self._stan_code = stan_code
 
@@ -105,9 +116,7 @@ class Expression(_BaseExpression):
 
         return Expression([self, key], stan_code)
 
-    def __lshift__(
-            self: _BaseExpression,
-            other: Union[TExpression, TListTExpression]):
+    def __lshift__(self: _BaseExpression, other: Union[TExpression, TListTExpression]):
         logger.debug("Assigning {} to {}".format(other, self))  # noqa: E501
         logger.debug("My code: {}".format(self.stan_code))  # noqa: E501
         if not isinstance(other, list):
@@ -123,11 +132,7 @@ class Expression(_BaseExpression):
         inputs += other
         return Expression(inputs, stan_code)
 
-    def _make_operator_expression(
-            self,
-            other: TExpression,
-            op_code,
-            invert=False):
+    def _make_operator_expression(self, other: TExpression, op_code, invert=False):
         stan_code: TListTExpression = []
         if invert:
             stan_code += ["(", other, op_code, self, ")"]
@@ -205,20 +210,17 @@ class Expression(_BaseExpression):
         return self._make_operator_expression(other, ">=", True)
     """
 
+
 class StringExpression(Expression):
-    def __init__(
-            self,
-            inputs: Sequence["TExpression"]):
+    def __init__(self, inputs: Sequence["TExpression"]):
         stan_code = list(inputs)
         Expression.__init__(self, inputs, stan_code)
 
 
 class NamedExpression(Expression, NamedObject):
     def __init__(
-            self,
-            inputs: Sequence[TExpression],
-            stan_code: TListTExpression,
-            name: str):
+        self, inputs: Sequence[TExpression], stan_code: TListTExpression, name: str
+    ):
         Expression.__init__(self, inputs, stan_code)
         self._name = name
 

@@ -503,7 +503,6 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.DEBUG)
     import pystan  # type: ignore
-    import numpy as np
 
     with StanGenerator() as cg:
 

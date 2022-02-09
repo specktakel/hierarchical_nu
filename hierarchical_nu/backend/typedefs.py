@@ -1,8 +1,7 @@
-from typing import Iterable, Union,  Dict, Tuple, TYPE_CHECKING
+from typing import Iterable, Union, Dict, Tuple, TYPE_CHECKING
 import numpy as np  # type: ignore
 
 if TYPE_CHECKING:
-    from .stan_code import TListStrStanCodeBit
     from .expression import StanFunction, StanDefCode
 __all__ = ["TArrayOrNumericIterable", "TStanHookDict"]
 

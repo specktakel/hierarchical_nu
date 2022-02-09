@@ -26,7 +26,6 @@ class VariableDef(NamedExpression):
         code = self._gen_def_code()
         with DefinitionContext() as _:
             Expression([], code)
-        
 
     @abstractmethod
     def _gen_def_code(self) -> TListTExpression:
