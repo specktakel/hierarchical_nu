@@ -1,5 +1,7 @@
 # hierarchical_nu
 
+![CI](https://github.com/cescalara/hierarchical_nu/actions/workflows/tests.yml/badge.svg)
+
 A Bayesian hierarchical model for source-nu associations.
 
 ## Installation

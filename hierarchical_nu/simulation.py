@@ -243,7 +243,6 @@ class Simulation:
         lam = list(
             self._sim_output.stan_variable("Lambda")[0] - 1
         )  # avoid Stan-style indexing
-        event_type = self._sim_output.stan_variable("event_type")[0]
         Ns = self._sim_inputs["Ns"]
         label_cmap = plt.cm.Set1(list(range(self._sources.N)))
         N_src_ev = sum([lam.count(_) for _ in range(Ns)])

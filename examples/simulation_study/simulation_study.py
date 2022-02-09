@@ -1,14 +1,15 @@
 import sys
 import os
 
+
 from hierarchical_nu.model_check import ModelCheck
 
 """
-Script to run fits to simulations for 
+Script to run fits to simulations for
 a selection of known input parameters.
 
-The configuration is specified in the YAMLConfig 
-files as detailed in hierarchical_nu.utils.config 
+The configuration is specified in the YAMLConfig
+files as detailed in hierarchical_nu.utils.config
 """
 
 n_jobs = int(sys.argv[1])
