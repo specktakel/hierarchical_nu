@@ -9,28 +9,19 @@ from astropy import units as u
 from cmdstanpy import CmdStanModel
 from scipy.stats import lognorm, norm, uniform
 
-from .source.atmospheric_flux import AtmosphericNuMuFlux
-from .source.flux_model import PowerLawSpectrum
-from .source.parameter import Parameter
-from .source.source import PointSource, Sources
+from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
+from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.source.source import PointSource, Sources
 
-from .detector.northern_tracks import NorthernTracksDetectorModel
-from .detector.cascades import CascadesDetectorModel
-from .detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
+from hierarchical_nu.detector.cascades import CascadesDetectorModel
+from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 
-from .simulation import (
-    generate_atmospheric_sim_code_,
-    generate_main_sim_code_,
-    generate_main_sim_code_hybrid_,
-)
-from .fit import (
-    generate_stan_fit_code_,
-    generate_stan_fit_code_hybrid_,
-)
-from .utils.config import hnu_config
-
-from .simulation import Simulation
-from .fit import StanFit
+from hierarchical_nu.simulation import Simulation
+from hierarchical_nu.fit import StanFit
+from hierarchical_nu.stan.sim_interface import StanSimInterface
+from hierarchical_nu.stan.fit_interface import StanFitInterface
+from hierarchical_nu.utils.config import hnu_config
 
 
 class ModelCheck:
@@ -41,29 +32,33 @@ class ModelCheck:
 
     def __init__(self):
 
-        self._initialise_sources()
+        self._sources = _initialise_sources()
 
-        f = self._sources.associated_fraction().value
+        f_arr = self._sources.f_arr().value
+
+        f_arr_astro = self._sources.f_arr_astro().value
 
         self.truths = {}
-        diffuse_bg = self._sources.diffuse_component()
+        diffuse_bg = self._sources.diffuse
         self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.value
-        atmo_bg = self._sources.atmo_component()
+        atmo_bg = self._sources.atmospheric
         self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.value
         self.truths["L"] = (
             Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
         )
-        self.truths["f"] = f
+        self.truths["f_arr"] = f_arr
+        self.truths["f_arr_astro"] = f_arr_astro
         self.truths["src_index"] = Parameter.get_parameter("src_index").value
         self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
 
         self._default_var_names = [key for key in self.truths]
 
         self._default_var_labels = [
-            "$F_\mathrm{diff}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
-            "$F_\mathrm{atmo}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
-            "$L$ / $\mathrm{GeV}~\mathrm{s}^{-1}$",
-            "$f$",
+            r"$F_\mathrm{diff}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
+            r"$F_\mathrm{atmo}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
+            r"$L$ / $\mathrm{GeV}~\mathrm{s}^{-1}$",
+            r"$f_\mathrm{arr}$",
+            r"$f_\mathrm{arr}^\mathrm{astro}",
             "src_index",
             "diff_index",
         ]
@@ -82,7 +77,9 @@ class ModelCheck:
         Only need to run once before calling ModelCheck(...).run()
         """
 
+        # Config
         parameter_config = hnu_config["parameter_config"]
+        file_config = hnu_config["file_config"]
 
         # Run MCEq computation
         print("Setting up MCEq run for AtmopshericNumuFlux")
@@ -90,71 +87,40 @@ class ModelCheck:
         Emax = parameter_config["Emax"] * u.GeV
         atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
 
-        file_config = hnu_config["file_config"]
-
-        atmo_sim_name = file_config["atmo_sim_filename"][:-5]
-        _ = generate_atmospheric_sim_code_(
-            atmo_sim_name, atmo_flux_model, theta_points=30
-        )
-        print("Generated atmo_sim Stan file at:", file_config["atmo_sim_filename"])
-
-        ps_spec_shape = PowerLawSpectrum
-        diff_spec_shape = PowerLawSpectrum
-
+        # Build necessary details to define simulation and fit code
+        sources = _initialise_sources()
         detector_model_type = ModelCheck._get_dm_from_config(
             parameter_config["detector_model_type"]
         )
 
+        # Generate atmo and main sim Stan files
         main_sim_name = file_config["main_sim_filename"][:-5]
-        if detector_model_type == IceCubeDetectorModel:
+        atmo_sim_name = file_config["atmo_sim_filename"][:-5]
+        stan_sim_interface = StanSimInterface(
+            main_sim_name,
+            sources,
+            detector_model_type,
+            atmo_output_file=atmo_sim_name,
+        )
 
-            _ = generate_main_sim_code_hybrid_(
-                main_sim_name,
-                ps_spec_shape,
-                diff_spec_shape,
-                detector_model_type,
-            )
+        stan_sim_interface.generate_atmo()
+        print("Generated atmo_sim Stan file at:", atmo_sim_name)
 
-        else:
+        stan_sim_interface.generate()
+        print("Generated sim_code Stan file at:", main_sim_name)
 
-            _ = generate_main_sim_code_(
-                main_sim_name,
-                ps_spec_shape,
-                diff_spec_shape,
-                detector_model_type,
-            )
-
-        print("Generated main_sim Stan file at:", file_config["main_sim_filename"])
-
+        # Generate fit Stan file
         fit_name = file_config["fit_filename"][:-5]
-        if detector_model_type == IceCubeDetectorModel:
+        stan_fit_interface = StanFitInterface(
+            fit_name,
+            sources,
+            detector_model_type,
+        )
 
-            _ = generate_stan_fit_code_hybrid_(
-                fit_name,
-                detector_model_type,
-                ps_spec_shape,
-                diff_spec_shape,
-                atmo_flux_model,
-                diffuse_bg_comp=True,
-                atmospheric_comp=True,
-                theta_points=30,
-            )
+        stan_fit_interface.generate()
+        print("Generated fit Stan file at:", fit_name)
 
-        else:
-
-            _ = generate_stan_fit_code_(
-                fit_name,
-                detector_model_type,
-                ps_spec_shape,
-                diff_spec_shape,
-                atmo_flux_model,
-                diffuse_bg_comp=True,
-                atmospheric_comp=True,
-                theta_points=30,
-            )
-
-        print("Generated fit Stan file at:", file_config["fit_filename"])
-
+        # Comilation of Stan models
         print("Compile Stan models")
         stanc_options = {"include-paths": list(file_config["include_paths"])}
 
@@ -206,7 +172,8 @@ class ModelCheck:
         self.results["L"] = []
         self.results["src_index"] = []
         self.results["diff_index"] = []
-        self.results["f"] = []
+        self.results["f_arr"] = []
+        self.results["f_arr_astro"] = []
 
         file_truths = {}
         for filename in filename_list:
@@ -232,7 +199,8 @@ class ModelCheck:
                     self.results["L"].extend(job_folder["L"][()])
                     self.results["src_index"].extend(job_folder["src_index"][()])
                     self.results["diff_index"].extend(job_folder["diff_index"][()])
-                    self.results["f"].extend(job_folder["f"][()])
+                    self.results["f_arr"].extend(job_folder["f_arr"][()])
+                    self.results["f_arr_astro"].extend(job_folder["f_arr_astro"][()])
 
     def compare(self, var_names=None, var_labels=None, show_prior=False):
 
@@ -274,68 +242,6 @@ class ModelCheck:
         fig.tight_layout()
         return fig, ax
 
-    def _initialise_sources(self):
-
-        parameter_config = hnu_config["parameter_config"]
-
-        Parameter.clear_registry()
-        src_index = Parameter(
-            parameter_config["src_index"],
-            "src_index",
-            fixed=False,
-            par_range=parameter_config["src_index_range"],
-        )
-        diff_index = Parameter(
-            parameter_config["diff_index"],
-            "diff_index",
-            fixed=False,
-            par_range=parameter_config["diff_index_range"],
-        )
-        L = Parameter(
-            parameter_config["L"] * u.erg / u.s,
-            "luminosity",
-            fixed=True,
-            par_range=parameter_config["L_range"],
-        )
-        diffuse_norm = Parameter(
-            parameter_config["diff_norm"] * 1 / (u.GeV * u.m ** 2 * u.s),
-            "diffuse_norm",
-            fixed=True,
-            par_range=(0, np.inf),
-        )
-        Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
-        Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
-        Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
-
-        if parameter_config["Emin_det_eq"]:
-
-            Emin_det = Parameter(
-                parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
-            )
-
-        else:
-
-            Emin_det_tracks = Parameter(
-                parameter_config["Emin_det_tracks"] * u.GeV,
-                "Emin_det_tracks",
-                fixed=True,
-            )
-            Emin_det_cascades = Parameter(
-                parameter_config["Emin_det_cascades"] * u.GeV,
-                "Emin_det_cascades",
-                fixed=True,
-            )
-
-        # Simple point source for testing
-        point_source = PointSource.make_powerlaw_source(
-            "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, 0.43, Emin, Emax
-        )
-
-        self._sources = Sources()
-        self._sources.add(point_source)
-        self._sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
-        self._sources.add_atmospheric_component()
-
     def _single_run(self, n_subjobs, seed):
         """
         Single run to be called using Parallel.
@@ -343,7 +249,7 @@ class ModelCheck:
 
         sys.stderr.write("Random seed: %i\n" % seed)
 
-        self._initialise_sources()
+        self._sources = _initialise_sources()
 
         file_config = hnu_config["file_config"]
         parameter_config = hnu_config["parameter_config"]
@@ -360,7 +266,8 @@ class ModelCheck:
         outputs["F_diff"] = []
         outputs["F_atmo"] = []
         outputs["L"] = []
-        outputs["f"] = []
+        outputs["f_arr"] = []
+        outputs["f_arr_astro"] = []
         outputs["src_index"] = []
         outputs["diff_index"] = []
 
@@ -398,7 +305,8 @@ class ModelCheck:
             outputs["F_diff"].append(fit._fit_output.stan_variable("F_diff"))
             outputs["F_atmo"].append(fit._fit_output.stan_variable("F_atmo"))
             outputs["L"].append(fit._fit_output.stan_variable("L"))
-            outputs["f"].append(fit._fit_output.stan_variable("f"))
+            outputs["f_arr"].append(fit._fit_output.stan_variable("f_arr"))
+            outputs["f_arr_astro"].append(fit._fit_output.stan_variable("f_arr_astro"))
             outputs["src_index"].append(fit._fit_output.stan_variable("src_index"))
             outputs["diff_index"].append(fit._fit_output.stan_variable("diff_index"))
 
@@ -454,7 +362,7 @@ class ModelCheck:
 
             return norm(F_atmo_scale, 0.1 * F_atmo_scale).rvs(N)
 
-        elif var_name == "f":
+        elif var_name == "f_arr" or var_name == "f_arr_astro":
 
             return uniform(0, 1).rvs(N)
 
@@ -500,7 +408,7 @@ class ModelCheck:
                 F_atmo_scale = self.truths["F_atmo"]
                 return norm(F_atmo_scale, 0.1 * F_atmo_scale).pdf(F_atmo)
 
-        elif var_name == "f":
+        elif var_name == "f_arr" or var_name == "f_arr_astro":
 
             def prior_func(f):
                 return uniform(0, 1).pdf(f)
@@ -526,3 +434,68 @@ class ModelCheck:
             raise ValueError("var_name not recognised")
 
         return prior_func
+
+
+def _initialise_sources():
+
+    parameter_config = hnu_config["parameter_config"]
+
+    Parameter.clear_registry()
+    src_index = Parameter(
+        parameter_config["src_index"],
+        "src_index",
+        fixed=False,
+        par_range=parameter_config["src_index_range"],
+    )
+    diff_index = Parameter(
+        parameter_config["diff_index"],
+        "diff_index",
+        fixed=False,
+        par_range=parameter_config["diff_index_range"],
+    )
+    L = Parameter(
+        parameter_config["L"] * u.erg / u.s,
+        "luminosity",
+        fixed=True,
+        par_range=parameter_config["L_range"] * u.erg / u.s,
+    )
+    diffuse_norm = Parameter(
+        parameter_config["diff_norm"] * 1 / (u.GeV * u.m ** 2 * u.s),
+        "diffuse_norm",
+        fixed=True,
+        par_range=(0, np.inf),
+    )
+    Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
+    Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
+    Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
+
+    if parameter_config["Emin_det_eq"]:
+
+        Emin_det = Parameter(
+            parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
+        )
+
+    else:
+
+        Emin_det_tracks = Parameter(
+            parameter_config["Emin_det_tracks"] * u.GeV,
+            "Emin_det_tracks",
+            fixed=True,
+        )
+        Emin_det_cascades = Parameter(
+            parameter_config["Emin_det_cascades"] * u.GeV,
+            "Emin_det_cascades",
+            fixed=True,
+        )
+
+    # Simple point source for testing
+    point_source = PointSource.make_powerlaw_source(
+        "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, 0.43, Emin, Emax
+    )
+
+    sources = Sources()
+    sources.add(point_source)
+    sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
+    sources.add_atmospheric_component()
+
+    return sources
