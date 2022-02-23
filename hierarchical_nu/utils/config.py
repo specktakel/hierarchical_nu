@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from omegaconf import OmegaConf
 
 
-from hierarchical_nu.stan.interface import STAN_PATH
+from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 
 _config_path = Path("~/.config/hierarchical_nu/").expanduser()
 
@@ -17,9 +17,9 @@ _config_file = _config_path / _config_name
 @dataclass
 class FileConfig:
 
-    atmo_sim_filename: str = os.path.join(STAN_PATH, "atmo_gen.stan")
-    main_sim_filename: str = os.path.join(STAN_PATH, "sim_code.stan")
-    fit_filename: str = os.path.join(STAN_PATH, "model_code.stan")
+    atmo_sim_filename: str = os.path.join(STAN_GEN_PATH, "atmo_gen.stan")
+    main_sim_filename: str = os.path.join(STAN_GEN_PATH, "sim_code.stan")
+    fit_filename: str = os.path.join(STAN_GEN_PATH, "model_code.stan")
     include_paths: List[str] = field(default_factory=list)
 
     def __post_init__(self):
