@@ -101,7 +101,7 @@ class ForwardArrayDef(VariableDef):
 
     def _gen_def_code(self) -> TListTExpression:
         # return [self._var_type + " " + self.name] + self._array_dim
-        return ["array"] + self._array_dim + [self._var_type + " " + self.name]
+        return ["array"] + self._array_dim + [" " + self._var_type + " " + self.name]
 
 
 class ParameterVectorDef(ParameterDef):
