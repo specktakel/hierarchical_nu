@@ -34,27 +34,31 @@ class ModelCheck:
 
         self._sources = _initialise_sources()
 
-        f = self._sources.associated_fraction().value
+        f_arr = self._sources.f_arr().value
+
+        f_arr_astro = self._sources.f_arr_astro().value
 
         self.truths = {}
-        diffuse_bg = self._sources.diffuse_component()
+        diffuse_bg = self._sources.diffuse
         self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.value
-        atmo_bg = self._sources.atmo_component()
+        atmo_bg = self._sources.atmospheric
         self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.value
         self.truths["L"] = (
             Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
         )
-        self.truths["f"] = f
+        self.truths["f_arr"] = f_arr
+        self.truths["f_arr_astro"] = f_arr_astro
         self.truths["src_index"] = Parameter.get_parameter("src_index").value
         self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
 
         self._default_var_names = [key for key in self.truths]
 
         self._default_var_labels = [
-            "$F_\mathrm{diff}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
-            "$F_\mathrm{atmo}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
-            "$L$ / $\mathrm{GeV}~\mathrm{s}^{-1}$",
-            "$f$",
+            r"$F_\mathrm{diff}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
+            r"$F_\mathrm{atmo}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
+            r"$L$ / $\mathrm{GeV}~\mathrm{s}^{-1}$",
+            r"$f_\mathrm{arr}$",
+            r"$f_\mathrm{arr}^\mathrm{astro}",
             "src_index",
             "diff_index",
         ]
@@ -168,7 +172,8 @@ class ModelCheck:
         self.results["L"] = []
         self.results["src_index"] = []
         self.results["diff_index"] = []
-        self.results["f"] = []
+        self.results["f_arr"] = []
+        self.results["f_arr_astro"] = []
 
         file_truths = {}
         for filename in filename_list:
@@ -194,7 +199,8 @@ class ModelCheck:
                     self.results["L"].extend(job_folder["L"][()])
                     self.results["src_index"].extend(job_folder["src_index"][()])
                     self.results["diff_index"].extend(job_folder["diff_index"][()])
-                    self.results["f"].extend(job_folder["f"][()])
+                    self.results["f_arr"].extend(job_folder["f_arr"][()])
+                    self.results["f_arr_astro"].extend(job_folder["f_arr_astro"][()])
 
     def compare(self, var_names=None, var_labels=None, show_prior=False):
 
@@ -260,7 +266,8 @@ class ModelCheck:
         outputs["F_diff"] = []
         outputs["F_atmo"] = []
         outputs["L"] = []
-        outputs["f"] = []
+        outputs["f_arr"] = []
+        outputs["f_arr_astro"] = []
         outputs["src_index"] = []
         outputs["diff_index"] = []
 
@@ -298,7 +305,8 @@ class ModelCheck:
             outputs["F_diff"].append(fit._fit_output.stan_variable("F_diff"))
             outputs["F_atmo"].append(fit._fit_output.stan_variable("F_atmo"))
             outputs["L"].append(fit._fit_output.stan_variable("L"))
-            outputs["f"].append(fit._fit_output.stan_variable("f"))
+            outputs["f_arr"].append(fit._fit_output.stan_variable("f_arr"))
+            outputs["f_arr_astro"].append(fit._fit_output.stan_variable("f_arr_astro"))
             outputs["src_index"].append(fit._fit_output.stan_variable("src_index"))
             outputs["diff_index"].append(fit._fit_output.stan_variable("diff_index"))
 
@@ -354,7 +362,7 @@ class ModelCheck:
 
             return norm(F_atmo_scale, 0.1 * F_atmo_scale).rvs(N)
 
-        elif var_name == "f":
+        elif var_name == "f_arr" or var_name == "f_arr_astro":
 
             return uniform(0, 1).rvs(N)
 
@@ -400,7 +408,7 @@ class ModelCheck:
                 F_atmo_scale = self.truths["F_atmo"]
                 return norm(F_atmo_scale, 0.1 * F_atmo_scale).pdf(F_atmo)
 
-        elif var_name == "f":
+        elif var_name == "f_arr" or var_name == "f_arr_astro":
 
             def prior_func(f):
                 return uniform(0, 1).pdf(f)
