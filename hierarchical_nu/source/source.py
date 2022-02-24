@@ -438,12 +438,16 @@ class Sources:
         Add an atmospheric flux component based on the IceCube observations.
         """
 
-        Emin = Parameter.get_parameter("Emin")
-        Emax = Parameter.get_parameter("Emax")
+        Emin = Parameter.get_parameter("Emin").value.to(u.GeV)
+        Emax = Parameter.get_parameter("Emax").value.to(u.GeV)
 
-        flux_model = AtmosphericNuMuFlux(Emin.value, Emax.value)
+        flux_model = AtmosphericNuMuFlux(Emin, Emax)
 
-        atmospheric_component = DiffuseSource("atmo_bg", 0, flux_model=flux_model)
+        atmospheric_component = DiffuseSource(
+            "atmo_bg",
+            0,
+            flux_model=flux_model,
+        )
 
         self.add(atmospheric_component)
 
@@ -470,13 +474,18 @@ class Sources:
         from sources.
         """
 
-        point_source_ints = sum(
-            [
-                s.flux_model.total_flux_int.value
-                for s in self.sources
-                if isinstance(s, PointSource)
-            ]
-        ) * (1 / (u.m ** 2 * u.s))
+        flux_units = 1 / (u.m ** 2 * u.s)
+
+        point_source_ints = (
+            sum(
+                [
+                    s.flux_model.total_flux_int.to(flux_units).value
+                    for s in self.sources
+                    if isinstance(s, PointSource)
+                ]
+            )
+            * flux_units
+        )
 
         return point_source_ints / self.total_flux_int()
 
@@ -486,13 +495,18 @@ class Sources:
         contribution.
         """
 
-        point_source_ints = sum(
-            [
-                s.flux_model.total_flux_int.value
-                for s in self.sources
-                if isinstance(s, PointSource)
-            ]
-        ) * (1 / (u.m ** 2 * u.s))
+        flux_units = 1 / (u.m ** 2 * u.s)
+
+        point_source_ints = (
+            sum(
+                [
+                    s.flux_model.total_flux_int.to(flux_units).value
+                    for s in self.sources
+                    if isinstance(s, PointSource)
+                ]
+            )
+            * flux_units
+        )
 
         if self.diffuse:
 
@@ -500,7 +514,7 @@ class Sources:
 
         else:
 
-            diff_ints = 0 * (1 / (u.m ** 2 * u.s))
+            diff_ints = 0 << flux_units
 
         return point_source_ints / (point_source_ints + diff_ints)
 

@@ -137,6 +137,8 @@ class ExposureIntegral:
         upper_e_edges = self.effective_area.tE_bin_edges[1:] << u.GeV
         e_cen = (lower_e_edges + upper_e_edges) / 2
 
+        integral_unit = 1 / (u.m ** 2 * u.s)
+
         if isinstance(source, PointSource):
             # For point sources the integral over the space angle is trivial
 
@@ -145,7 +147,7 @@ class ExposureIntegral:
 
             integral = source.flux_model.spectral_shape.integral(
                 lower_e_edges, upper_e_edges
-            )
+            ).to(integral_unit)
             if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
                 self.effective_area.cosz_bin_edges
             ):
@@ -176,7 +178,7 @@ class ExposureIntegral:
                 dec_upper[np.newaxis, :],
                 0 * u.rad,
                 2 * np.pi * u.rad,
-            )
+            ).to(integral_unit)
 
             aeff = np.array(self.effective_area.eff_area, copy=True) << (u.m ** 2)
 

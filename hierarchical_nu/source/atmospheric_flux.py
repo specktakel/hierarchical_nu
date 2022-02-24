@@ -169,7 +169,7 @@ class AtmosphericNuMuFlux(FluxModel):
     @u.quantity_input
     def __call__(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m ** 2 * u.sr):
+    ) -> 1 / (u.GeV * u.s * u.cm ** 2 * u.sr):
         energy = np.atleast_1d(energy)
         if np.any((energy > self.EMAX) | (energy < self.EMIN)):
             raise ValueError(
@@ -219,7 +219,7 @@ class AtmosphericNuMuFlux(FluxModel):
 
         vect_int = np.vectorize(_integral)
 
-        return vect_int(energy) << (1 / (u.m ** 2 * u.s * u.GeV))
+        return vect_int(energy) << (1 / (u.cm ** 2 * u.s * u.GeV))
 
     @property
     @u.quantity_input
