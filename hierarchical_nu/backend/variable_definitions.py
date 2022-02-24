@@ -100,7 +100,8 @@ class ForwardArrayDef(VariableDef):
                 expr.add_output(self)
 
     def _gen_def_code(self) -> TListTExpression:
-        return [self._var_type + " " + self.name] + self._array_dim
+        # return [self._var_type + " " + self.name] + self._array_dim
+        return ["array"] + self._array_dim + [" " + self._var_type + " " + self.name]
 
 
 class ParameterVectorDef(ParameterDef):
@@ -153,7 +154,7 @@ class StanArray(VariableDef):
             stan_code += shape_str + " " + self.name
 
         else:
-            stan_code += " " + self.name + shape_str
+            stan_code = "array" + shape_str + " " + self._type + " " + self.name
 
         # Fill array
         arraystr = np.array2string(self._array_data, threshold=np.inf, separator=",")

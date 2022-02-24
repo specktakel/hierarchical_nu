@@ -426,7 +426,7 @@ class StanFit:
         if "tracks" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_t"] = [
-                _.value.tolist()
+                _.to(u.m ** 2).value.tolist()
                 for _ in self._exposure_integral["tracks"].integral_grid
             ]
 
@@ -437,7 +437,7 @@ class StanFit:
         if "cascades" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_c"] = [
-                _.value.tolist()
+                _.to(u.m ** 2).value.tolist()
                 for _ in self._exposure_integral["cascades"].integral_grid
             ]
 
@@ -448,7 +448,10 @@ class StanFit:
         if self._sources.atmospheric:
 
             fit_inputs["atmo_integ_val"] = (
-                self._exposure_integral["tracks"].integral_fixed_vals[0].value
+                self._exposure_integral["tracks"]
+                .integral_fixed_vals[0]
+                .to(u.m ** 2)
+                .value
             )
 
         # To work with cmdstanpy serialization
