@@ -30,7 +30,7 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
 
         UserDefinedFunction.__init__(
             self,
-            "AtmopshericNumuFlux",
+            "AtmosphericNumuFlux",
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real",

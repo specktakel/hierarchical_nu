@@ -172,7 +172,10 @@ We can also define priors using the `Priors` interface. Here, we use the default
 
 ```python
 priors = Priors()
-#atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.value
+
+#flux_unit = 1 / (u.m**2 * u.s)
+#atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.to(flux_unit).value
+
 #priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.1*atmo_flux)
 ```
 
