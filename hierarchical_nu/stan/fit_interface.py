@@ -777,7 +777,7 @@ class StanFitInterface(StanInterface):
                             if self.sources.diffuse:
 
                                 with IfBlockContext(
-                                    [StringExpression([k, " == ", self._Ns + 1])]
+                                    [StringExpression([k, " == ", k_diff])]
                                 ):
 
                                     StringExpression(
@@ -807,7 +807,7 @@ class StanFitInterface(StanInterface):
                             if self.sources.atmospheric:
 
                                 with IfBlockContext(
-                                    [StringExpression([k, " == ", self._Ns + 2])]
+                                    [StringExpression([k, " == ", k_atmo])]
                                 ):
 
                                     StringExpression(

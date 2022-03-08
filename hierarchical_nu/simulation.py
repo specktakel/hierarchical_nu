@@ -561,15 +561,17 @@ class Simulation:
         Uses same approach as in the Stan code for cross-checks.
         """
 
+        sim_inputs_ = sim_inputs.copy()
+
         Nex_t = Nex_c = np.zeros(self._sources.N)
 
         for event_type in self._detector_model_type.event_types:
 
             if event_type == "tracks":
 
-                integral_grid_t = sim_inputs["integral_grid_t"]
+                integral_grid_t = sim_inputs_["integral_grid_t"]
                 Nex_t = _get_expected_Nnu_(
-                    sim_inputs,
+                    sim_inputs_,
                     integral_grid_t,
                     self._sources.point_source,
                     self._sources.diffuse,
@@ -580,9 +582,10 @@ class Simulation:
 
             if event_type == "cascades":
 
-                integral_grid_c = sim_inputs["integral_grid_c"]
+                integral_grid_c = sim_inputs_["integral_grid_c"]
+                sim_inputs_["atmo_integ_val"] = 0
                 Nex_c = _get_expected_Nnu_(
-                    sim_inputs,
+                    sim_inputs_,
                     integral_grid_c,
                     self._sources.point_source,
                     self._sources.diffuse,
@@ -592,6 +595,10 @@ class Simulation:
                 )
 
         Nex = Nex_t + Nex_c
+
+        self._Nex_t = Nex_t
+
+        self._Nex_c = Nex_c
 
         self._expected_Nnu_per_comp = Nex
 
