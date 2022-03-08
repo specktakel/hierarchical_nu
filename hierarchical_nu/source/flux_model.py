@@ -368,7 +368,7 @@ class PowerLawSpectrum(SpectralShape):
         index = self._parameters["index"].value
 
         if (energy < self._lower_energy) or (energy > self._upper_energy):
-            return 0.0
+            return 0.0 << norm.unit
         else:
             return norm * np.power(energy / self._normalisation_energy, -index)
 

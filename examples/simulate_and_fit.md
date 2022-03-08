@@ -38,9 +38,9 @@ Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
 L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, 
-              par_range=(0, 1E60)*(u.erg/u.s))
-diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
-                         par_range=(0, np.inf))
+              par_range=(0, 1E60) * (u.erg / u.s))
+diffuse_norm = Parameter(1e-13 * (1 / (u.GeV * u.m**2 * u.s)), "diffuse_norm",
+                         fixed=True, par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
@@ -71,6 +71,25 @@ my_sources.add(point_source)
 # auto diffuse component 
 my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
 my_sources.add_atmospheric_component() # auto atmo component
+```
+
+```python
+energy = 10**np.linspace(4, 7)
+my_unit = 1 / (u.GeV * u.cm**2 * u.s) 
+
+fig, ax = plt.subplots()
+ax.plot(energy, [my_sources.atmospheric.flux_model.total_flux(E * u.GeV).to(my_unit).value * E**2 / (4*np.pi)  for E in energy])
+ax.plot(energy, [my_sources.diffuse.flux_model.total_flux(E * u.GeV).to(my_unit).value * E**2 / (4*np.pi) for E in energy])
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_ylim(1e-10, 1e-5)
+ax.set_xlim(1e4, 1e7)
+ax.set_xlabel("True energy [GeV]")
+ax.set_ylabel("E^2 Phi [GeV cm^-2 s^-1 sr^-1]")
+```
+
+```python
+my_sources.total_flux_int()
 ```
 
 ```python
@@ -153,7 +172,10 @@ We can also define priors using the `Priors` interface. Here, we use the default
 
 ```python
 priors = Priors()
-#atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.value
+
+#flux_unit = 1 / (u.m**2 * u.s)
+#atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.to(flux_unit).value
+
 #priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.1*atmo_flux)
 ```
 

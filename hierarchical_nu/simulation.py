@@ -397,21 +397,24 @@ class Simulation:
             if event_type == "tracks":
 
                 sim_inputs["integral_grid_t"] = [
-                    _.value.tolist()
+                    _.to(u.m ** 2).value.tolist()
                     for _ in self._exposure_integral["tracks"].integral_grid
                 ]
 
             if event_type == "cascades":
 
                 sim_inputs["integral_grid_c"] = [
-                    _.value.tolist()
+                    _.to(u.m ** 2).value.tolist()
                     for _ in self._exposure_integral["cascades"].integral_grid
                 ]
 
         if self._sources.atmospheric:
 
             sim_inputs["atmo_integ_val"] = (
-                self._exposure_integral["tracks"].integral_fixed_vals[0].value
+                self._exposure_integral["tracks"]
+                .integral_fixed_vals[0]
+                .to(u.m ** 2)
+                .value
             )
 
         sim_inputs["T"] = self._observation_time.to(u.s).value
@@ -509,13 +512,21 @@ class Simulation:
         else:
             sim_inputs["v_lim"] = 0.0
 
+        flux_units = 1 / (u.m ** 2 * u.s)
+
         if self._sources.diffuse:
             diffuse_bg = self._sources.diffuse
-            sim_inputs["F_diff"] = diffuse_bg.flux_model.total_flux_int.value
+            sim_inputs["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
+                flux_units
+            ).value
 
         if self._sources.atmospheric:
             atmo_bg = self._sources.atmospheric
-            sim_inputs["F_atmo"] = atmo_bg.flux_model.total_flux_int.value
+            sim_inputs["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
+                flux_units
+            ).value
+
+        lumi_units = u.GeV / u.s
 
         if self._sources.point_source:
 
@@ -523,7 +534,7 @@ class Simulation:
             if self._shared_luminosity:
 
                 sim_inputs["L"] = (
-                    Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
+                    Parameter.get_parameter("luminosity").value.to(lumi_units).value
                 )
 
             # Otherwise, look for individual ps_%i_luminsoity parameters
@@ -531,7 +542,7 @@ class Simulation:
 
                 sim_inputs["L"] = [
                     Parameter.get_parameter("ps_%i_luminosity" % i)
-                    .value.to(u.GeV / u.s)
+                    .value.to(lumi_units)
                     .value
                     for i in range(sim_inputs["Ns"])
                 ]
