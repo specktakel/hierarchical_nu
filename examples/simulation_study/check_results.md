@@ -14,11 +14,6 @@ jupyter:
 ---
 
 ```python
-import sys
-sys.path.append("../../")
-```
-
-```python
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -30,8 +25,8 @@ model_check = ModelCheck()
 ```
 
 ```python
-file_stem = "output/"
-file_list = [file_stem+"fit_sim_1234_test.h5"]
+file_stem = "raven/output/"
+file_list = [file_stem+"fit_sim_1000_test.h5"]
 
 model_check.load(file_list)
 ```

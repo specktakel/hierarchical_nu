@@ -490,7 +490,7 @@ class StanSimInterface(StanInterface):
                 self._Ftot << self._F_src
                 self._f_arr_astro_ << 1.0
                 self._f_det_ << 1.0
-                self._f_det_astro << 1.0
+                self._f_det_astro_ << 1.0
 
             self._f_arr_ << StringExpression([self._F_src, "/", self._Ftot])
 
