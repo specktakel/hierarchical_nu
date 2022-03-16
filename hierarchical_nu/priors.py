@@ -1,4 +1,5 @@
 from abc import ABCMeta
+import numpy as np
 
 
 class PriorDistribution(metaclass=ABCMeta):
@@ -71,15 +72,15 @@ class Priors(object):
 
     def __init__(self):
 
-        self._luminosity = NormalPrior(mu=0.0, sigma=1e55)
+        self._luminosity = LogNormalPrior(mu=np.log(1e45), sigma=10.0)
 
-        self._diffuse_flux = NormalPrior(mu=0.0, sigma=1e-6)
+        self._diffuse_flux = LogNormalPrior(mu=np.log(1e-7), sigma=5.0)
 
         self._src_index = NormalPrior(mu=2.0, sigma=1.5)
 
         self._diff_index = NormalPrior(mu=2.0, sigma=1.5)
 
-        self._atmospheric_flux = NormalPrior(mu=0.0, sigma=1.5e-7)
+        self._atmospheric_flux = LogNormalPrior(mu=np.log(1e-7), sigma=1.0)
 
     @property
     def luminosity(self):
