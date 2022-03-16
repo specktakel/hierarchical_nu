@@ -535,7 +535,6 @@ class StanSimInterface(StanInterface):
 
                 self._atmo_index = ForwardVariableDef("atmo_index", "int")
 
-            self._cosz = ForwardArrayDef("cosz", "real", self._N_str)
             self._Pdet = ForwardArrayDef("Pdet", "real", self._N_str)
             self._accept = ForwardVariableDef("accept", "int")
             self._detected = ForwardVariableDef("detected", "int")
@@ -622,10 +621,6 @@ class StanSimInterface(StanInterface):
                                 )
                                 self._omega << self._atmo_directions[self._atmo_index]
 
-                        self._cosz[i] << FunctionCall(
-                            [FunctionCall([self._omega], "omega_to_zenith")], "cos"
-                        )
-
                         # Energy
                         if self.sources.point_source:
 
@@ -679,28 +674,9 @@ class StanSimInterface(StanInterface):
                                 self._E[i] << self._Esrc[i]
 
                         # Test against Aeff
-                        if (
-                            self.detector_model_type == NorthernTracksDetectorModel
-                            or self.detector_model_type == IceCubeDetectorModel
-                        ):
-
-                            with IfBlockContext(
-                                [StringExpression([self._cosz[i], ">= 0.1"])]
-                            ):
-
-                                self._Pdet[i] << 0
-
-                            with ElseBlockContext():
-
-                                self._Pdet[i] << self._dm_pdf["tracks"].effective_area(
-                                    self._E[i], self._omega
-                                ) / self._aeff_t_max
-
-                        else:
-
-                            self._Pdet[i] << self._dm_pdf["tracks"].effective_area(
-                                self._E[i], self._omega
-                            ) / self._aeff_t_max
+                        self._Pdet[i] << self._dm_pdf["tracks"].effective_area(
+                            self._E[i], self._omega
+                        ) / self._aeff_t_max
 
                         self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
                             self._E[i]
@@ -795,10 +771,6 @@ class StanSimInterface(StanInterface):
                             [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                         ):
                             self._omega << FunctionCall([1, 0], "sphere_lim_rng")
-
-                        self._cosz[i] << FunctionCall(
-                            [FunctionCall([self._omega], "omega_to_zenith")], "cos"
-                        )
 
                         # Sample energy
                         if self.sources.point_source:
