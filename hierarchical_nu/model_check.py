@@ -23,6 +23,8 @@ from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
 
+from hierarchical_nu.priors import Priors
+
 
 class ModelCheck:
     """
@@ -33,6 +35,8 @@ class ModelCheck:
     def __init__(self):
 
         self._sources = _initialise_sources()
+
+        self.priors = Priors()
 
         f_arr = self._sources.f_arr().value
 
@@ -165,6 +169,8 @@ class ModelCheck:
                 for key, value in res.items():
                     folder.create_dataset(key, data=value)
 
+        self.priors.addto(filename, "priors")
+
     def load(self, filename_list):
 
         self.truths = {}
@@ -180,6 +186,13 @@ class ModelCheck:
 
         file_truths = {}
         for filename in filename_list:
+
+            file_priors = Priors.from_group(filename, "priors")
+
+            if not self.priors:
+
+                self.priors = file_priors
+
             with h5py.File(filename, "r") as f:
 
                 truths_folder = f["truths"]
@@ -194,7 +207,9 @@ class ModelCheck:
                         "Files in list have different truth settings and should not be combined"
                     )
 
-                n_jobs = len([key for key in f if key != "truths"])
+                n_jobs = len(
+                    [key for key in f if (key != "truths" and key != "priors")]
+                )
                 for i in range(n_jobs):
                     job_folder = f["results_%i" % i]
                     self.results["F_atmo"].extend(job_folder["F_atmo"][()])
@@ -296,7 +311,13 @@ class ModelCheck:
             self.events = sim.events
 
             # Fit
-            fit = StanFit(self._sources, detector_model_type, sim.events, obs_time)
+            fit = StanFit(
+                self._sources,
+                detector_model_type,
+                sim.events,
+                obs_time,
+                priors=self.priors,
+            )
             fit.precomputation(exposure_integral=sim._exposure_integral)
             fit.set_stan_filename(file_config["fit_filename"])
             fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
@@ -340,103 +361,28 @@ class ModelCheck:
 
         return dm
 
-    def _get_prior_samples(self, var_name):
-        """
-        Return prior samples for the parameter "var_name".
-        """
-
-        N = len(self.results[var_name][0])
-
-        if var_name == "F_diff":
-
-            F_diff_scale = self.truths["F_diff"]
-
-            return lognorm(5, 0, F_diff_scale).rvs(N)
-
-        elif var_name == "L":
-
-            L_scale = self.truths["L"]
-
-            return lognorm(5, 0, L_scale).rvs(N)
-
-        elif var_name == "F_atmo":
-
-            F_atmo_scale = self.truths["F_atmo"]
-
-            return norm(F_atmo_scale, 0.1 * F_atmo_scale).rvs(N)
-
-        elif var_name == "f_arr" or var_name == "f_arr_astro":
-
-            return uniform(0, 1).rvs(N)
-
-        elif var_name == "src_index":
-
-            return norm(2, 2).rvs(N)
-
-        elif var_name == "diff_index":
-
-            return norm(2, 2).rvs(N)
-
-        elif var_name == "F_tot":
-
-            F_tot_scale = self.truths["F_tot"]
-
-            return norm(F_tot_scale, 0.5 * F_tot_scale).rvs(N)
-
-        else:
-
-            raise ValueError("var_name not recognised")
-
     def _get_prior_func(self, var_name):
         """
         Return function of param "var_name" that
         describes its prior.
         """
 
-        if var_name == "F_diff":
+        try:
 
-            def prior_func(F_diff):
-                F_diff_scale = self.truths["F_diff"]
-                return norm(F_diff_scale, 2 * F_diff_scale).pdf(F_diff)
+            return self.priors.to_dict()[var_name].pdf
 
-        elif var_name == "L":
+        except:
 
-            def prior_func(L):
-                L_scale = self.truths["L"]
-                return norm(L_scale, 2 * L_scale).pdf(L)
+            if var_name == "f_arr" or var_name == "f_arr_astro":
 
-        elif var_name == "F_atmo":
+                def prior_func(f):
+                    return uniform(0, 1).pdf(f)
 
-            def prior_func(F_atmo):
-                F_atmo_scale = self.truths["F_atmo"]
-                return norm(F_atmo_scale, 0.1 * F_atmo_scale).pdf(F_atmo)
+            else:
 
-        elif var_name == "f_arr" or var_name == "f_arr_astro":
+                raise ValueError("var_name not recognised")
 
-            def prior_func(f):
-                return uniform(0, 1).pdf(f)
-
-        elif var_name == "F_tot":
-
-            def prior_func(F_tot):
-                F_tot_scale = self.truths["F_tot"]
-                return norm(F_tot_scale, 0.5 * F_tot_scale)
-
-        elif var_name == "src_index":
-
-            def prior_func(src_index):
-                return norm(2, 2).pdf(src_index)
-
-        elif var_name == "diff_index":
-
-            def prior_func(diff_index):
-                return norm(2, 2).pdf(diff_index)
-
-        else:
-
-            raise ValueError("var_name not recognised")
-
-        return prior_func
+            return prior_func
 
 
 def _initialise_sources():
