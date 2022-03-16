@@ -186,7 +186,14 @@ class ExposureIntegral:
             e_cen, self._min_det_energy
         )
 
+        # from scipy import stats
+
+        # p_Edet = [
+        #     1 - stats.lognorm(scale=e, s=1.0).cdf(5.0e4) for e in e_cen.to(u.GeV).value
+        # ]
+
         return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
+        # return ((integral.T * aeff.T * source.redshift_factor(z)).T).sum()
 
     def _compute_exposure_integral(self):
         """
@@ -296,7 +303,8 @@ class ExposureIntegral:
                 self.energy_grid, self._min_det_energy
             )
 
-            self.pdet_grid.append(p_Edet * pg)
+            # self.pdet_grid.append(p_Edet * pg)
+            self.pdet_grid.append(pg)
 
         self.pdet_grid = np.array(self.pdet_grid) + 1e-10  # avoid log(0)
 
