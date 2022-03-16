@@ -58,7 +58,7 @@ class ModelCheck:
             r"$F_\mathrm{atmo}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
             r"$L$ / $\mathrm{GeV}~\mathrm{s}^{-1}$",
             r"$f_\mathrm{arr}$",
-            r"$f_\mathrm{arr}(\mathrm{astro})",
+            r"$f_\mathrm{arr}(\mathrm{astro})$",
             "src_index",
             "diff_index",
         ]
