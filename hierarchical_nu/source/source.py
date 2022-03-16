@@ -487,7 +487,9 @@ class Sources:
             * flux_units
         )
 
-        return point_source_ints / self.total_flux_int()
+        total_ints = self.total_flux_int().to(flux_units)
+
+        return point_source_ints / total_ints
 
     def f_arr_astro(self):
         """
@@ -510,7 +512,7 @@ class Sources:
 
         if self.diffuse:
 
-            diff_ints = self.diffuse.flux_model.total_flux_int
+            diff_ints = self.diffuse.flux_model.total_flux_int.to(flux_units)
 
         else:
 
