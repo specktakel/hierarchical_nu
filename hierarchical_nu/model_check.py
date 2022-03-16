@@ -232,9 +232,19 @@ class ModelCheck:
         fig, ax = plt.subplots(N, figsize=(5, 15))
 
         for v, var_name in enumerate(var_names):
-            bins = np.linspace(
-                np.min(self.results[var_name]), np.max(self.results[var_name]), 35
-            )
+
+            if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo":
+
+                bins = np.geomspace(
+                    np.min(self.results[var_name]), np.max(self.results[var_name]), 35
+                )
+                ax[v].set_xscale("log")
+
+            else:
+
+                bins = np.linspace(
+                    np.min(self.results[var_name]), np.max(self.results[var_name]), 35
+                )
 
             for i in range(len(self.results[var_name])):
                 ax[v].hist(
@@ -251,8 +261,17 @@ class ModelCheck:
 
                 prior_func = self._get_prior_func(var_name)
                 xmin, xmax = ax[v].get_xlim()
-                x = np.linspace(xmin, xmax)
-                ax[v].plot(x, prior_func(x), lw=1, color="k", alpha=0.5)
+
+                if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo":
+
+                    x = np.geomspace(xmin, xmax)
+                    ax[v].plot(x, prior_func(x), lw=1, color="k", alpha=0.5)
+                    ax[v].set_xscale("log")
+
+                else:
+
+                    x = np.linspace(xmin, xmax)
+                    ax[v].plot(x, prior_func(x), lw=1, color="k", alpha=0.5)
 
             ax[v].axvline(self.truths[var_name], color="k", linestyle="-")
             ax[v].set_xlabel(var_labels[v], labelpad=10)
@@ -369,7 +388,9 @@ class ModelCheck:
 
         try:
 
-            return self.priors.to_dict()[var_name].pdf
+            prior = self.priors.to_dict()[var_name]
+
+            prior_func = prior.pdf
 
         except:
 
@@ -382,7 +403,7 @@ class ModelCheck:
 
                 raise ValueError("var_name not recognised")
 
-            return prior_func
+        return prior_func
 
 
 def _initialise_sources():
