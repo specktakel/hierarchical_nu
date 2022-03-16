@@ -39,10 +39,13 @@ class ModelCheck:
         f_arr_astro = self._sources.f_arr_astro().value
 
         self.truths = {}
+
+        flux_unit = 1 / (u.m ** 2 * u.s)
+
         diffuse_bg = self._sources.diffuse
-        self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.value
+        self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(flux_unit).value
         atmo_bg = self._sources.atmospheric
-        self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.value
+        self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(flux_unit).value
         self.truths["L"] = (
             Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
         )

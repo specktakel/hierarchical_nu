@@ -207,8 +207,10 @@ class Simulation:
                     outputs_folder.create_dataset(key, data=value[0])
 
             source_folder = sim_folder.create_group("source")
+            flux_unit = 1 / (u.m ** 2 * u.s)
             source_folder.create_dataset(
-                "total_flux_int", data=self._sources.total_flux_int().value
+                "total_flux_int",
+                data=self._sources.total_flux_int().to(flux_unit).value,
             )
 
         self.events.to_file(filename, append=True)
