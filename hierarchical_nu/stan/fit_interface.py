@@ -273,14 +273,14 @@ class StanFitInterface(StanInterface):
 
                 diff_index_min, diff_index_max = self._diff_index_par_range
 
-                self._F_diff = ParameterDef("F_diff", "real", 0, 1e-6)
+                self._F_diff = ParameterDef("F_diff", "real", 0, None)
                 self._diff_index = ParameterDef(
                     "diff_index", "real", diff_index_min, diff_index_max
                 )
 
             if self.sources.atmospheric:
 
-                self._F_atmo = ParameterDef("F_atmo", "real", 0.0, 1e-6)
+                self._F_atmo = ParameterDef("F_atmo", "real", 0.0, None)
 
             self._Esrc = ParameterVectorDef(
                 "Esrc", "vector", self._N_str, self._Esrc_min, self._Esrc_max
