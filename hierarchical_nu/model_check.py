@@ -254,27 +254,37 @@ class ModelCheck:
                     histtype="step",
                     bins=bins,
                     lw=1.0,
-                    density=True,
                 )
 
             if show_prior:
 
-                prior_func = self._get_prior_func(var_name)
+                N = len(self.results[var_name][0]) * 100
                 xmin, xmax = ax[v].get_xlim()
 
-                if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo":
+                if var_name == "f_arr" or var_name == "f_arr_astro":
 
-                    x = np.geomspace(xmin, xmax)
-                    ax[v].plot(x, prior_func(x), lw=1, color="k", alpha=0.5)
-                    ax[v].set_xscale("log")
+                    prior_samples = uniform(0, 1).rvs(N)
 
                 else:
 
-                    x = np.linspace(xmin, xmax)
-                    ax[v].plot(x, prior_func(x), lw=1, color="k", alpha=0.5)
+                    prior_samples = self.priors.to_dict()[var_name].sample(N)
 
-            ax[v].axvline(self.truths[var_name], color="k", linestyle="-")
+                ax[v].hist(
+                    prior_samples,
+                    color="k",
+                    alpha=0.5,
+                    histtype="step",
+                    bins=bins,
+                    lw=2,
+                    weights=np.tile(0.01, len(prior_samples)),
+                    label="Prior",
+                )
+
+            ax[v].axvline(
+                self.truths[var_name], color="k", linestyle="-", label="Truth"
+            )
             ax[v].set_xlabel(var_labels[v], labelpad=10)
+            ax[v].legend(loc="best")
 
         fig.tight_layout()
         return fig, ax

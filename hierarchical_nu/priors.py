@@ -82,7 +82,7 @@ class NormalPrior(PriorDistribution):
 
     def sample(self, N):
 
-        return stats.norm(loc=self._mu, sigma=self._sigma).rvs(N)
+        return stats.norm(loc=self._mu, scale=self._sigma).rvs(N)
 
     def to_dict(self):
 
