@@ -32,43 +32,78 @@ class ModelCheck:
     fitting simulated data using different random seeds.
     """
 
-    def __init__(self):
+    def __init__(self, truths=None, priors=None):
 
-        self._sources = _initialise_sources()
+        if priors:
 
-        self.priors = Priors()
+            self.priors = priors
 
-        f_arr = self._sources.f_arr().value
+        else:
 
-        f_arr_astro = self._sources.f_arr_astro().value
+            self.priors = Priors()
 
-        self.truths = {}
+        if truths:
 
-        flux_unit = 1 / (u.m ** 2 * u.s)
+            self.truths = truths
 
-        diffuse_bg = self._sources.diffuse
-        self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(flux_unit).value
-        atmo_bg = self._sources.atmospheric
-        self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(flux_unit).value
-        self.truths["L"] = (
-            Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
-        )
-        self.truths["f_arr"] = f_arr
-        self.truths["f_arr_astro"] = f_arr_astro
-        self.truths["src_index"] = Parameter.get_parameter("src_index").value
-        self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
+        else:
+
+            # Config
+            file_config = hnu_config["file_config"]
+            parameter_config = hnu_config["parameter_config"]
+
+            # Sources
+            self._sources = _initialise_sources()
+            f_arr = self._sources.f_arr().value
+            f_arr_astro = self._sources.f_arr_astro().value
+
+            # Detector
+            self._detector_model_type = ModelCheck._get_dm_from_config(
+                parameter_config["detector_model_type"]
+            )
+
+            self._obs_time = parameter_config["obs_time"] * u.year
+
+            sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
+            sim.precomputation()
+            self._exposure_integral = sim._exposure_integral
+            sim.set_stan_filenames(
+                file_config["atmo_sim_filename"], file_config["main_sim_filename"]
+            )
+            sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
+            sim_inputs = sim._get_sim_inputs()
+            Nex = sim._get_expected_Nnu(sim_inputs)
+            Nex_per_comp = sim._expected_Nnu_per_comp
+
+            # Truths
+            self.truths = {}
+
+            flux_unit = 1 / (u.m ** 2 * u.s)
+
+            diffuse_bg = self._sources.diffuse
+            self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
+                flux_unit
+            ).value
+            atmo_bg = self._sources.atmospheric
+            self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
+                flux_unit
+            ).value
+            self.truths["L"] = (
+                Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
+            )
+            self.truths["f_arr"] = f_arr
+            self.truths["f_arr_astro"] = f_arr_astro
+            self.truths["src_index"] = Parameter.get_parameter("src_index").value
+            self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
+
+            self.truths["Nex"] = Nex
+            self.truths["Nex_src"] = Nex_per_comp[0]
+            self.truths["Nex_diff"] = Nex_per_comp[1]
+            self.truths["Nex_atmo"] = Nex_per_comp[2]
+            self.truths["f_det"] = Nex_per_comp[0] / Nex
+            self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:1])
 
         self._default_var_names = [key for key in self.truths]
-
-        self._default_var_labels = [
-            r"$F_\mathrm{diff}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
-            r"$F_\mathrm{atmo}$ / $\mathrm{m}^{-2}~\mathrm{s}^{-1}$",
-            r"$L$ / $\mathrm{GeV}~\mathrm{s}^{-1}$",
-            r"$f_\mathrm{arr}$",
-            r"$f_\mathrm{arr}(\mathrm{astro})$",
-            "src_index",
-            "diff_index",
-        ]
 
     @classmethod
     def initialise_env(
@@ -171,27 +206,28 @@ class ModelCheck:
 
         self.priors.addto(filename, "priors")
 
-    def load(self, filename_list):
+    @classmethod
+    def load(cls, filename_list):
 
-        self.truths = {}
+        with h5py.File(filename_list[0], "r") as f:
+            job_folder = f["results_0"]
+            _default_var_names = [key for key in job_folder]
 
-        self.results = {}
-        self.results["F_atmo"] = []
-        self.results["F_diff"] = []
-        self.results["L"] = []
-        self.results["src_index"] = []
-        self.results["diff_index"] = []
-        self.results["f_arr"] = []
-        self.results["f_arr_astro"] = []
+        truths = {}
+        priors = None
+
+        results = {}
+        for key in _default_var_names:
+            results[key] = []
 
         file_truths = {}
         for filename in filename_list:
 
             file_priors = Priors.from_group(filename, "priors")
 
-            if not self.priors:
+            if not priors:
 
-                self.priors = file_priors
+                priors = file_priors
 
             with h5py.File(filename, "r") as f:
 
@@ -199,10 +235,10 @@ class ModelCheck:
                 for key, value in truths_folder.items():
                     file_truths[key] = value[()]
 
-                if not self.truths:
-                    self.truths = file_truths
+                if not truths:
+                    truths = file_truths
 
-                if self.truths != file_truths:
+                if truths != file_truths:
                     raise ValueError(
                         "Files in list have different truth settings and should not be combined"
                     )
@@ -212,21 +248,21 @@ class ModelCheck:
                 )
                 for i in range(n_jobs):
                     job_folder = f["results_%i" % i]
-                    self.results["F_atmo"].extend(job_folder["F_atmo"][()])
-                    self.results["F_diff"].extend(job_folder["F_diff"][()])
-                    self.results["L"].extend(job_folder["L"][()])
-                    self.results["src_index"].extend(job_folder["src_index"][()])
-                    self.results["diff_index"].extend(job_folder["diff_index"][()])
-                    self.results["f_arr"].extend(job_folder["f_arr"][()])
-                    self.results["f_arr_astro"].extend(job_folder["f_arr_astro"][()])
+                    for res_key in job_folder:
+                        results[res_key].extend(job_folder[res_key][()])
 
-    def compare(self, var_names=None, var_labels=None, show_prior=False):
+        output = cls(truths, priors)
+        output.results = results
+
+        return output
+
+    def compare(self, var_names=None, var_labels=None, show_prior=False, nbins=50):
 
         if not var_names:
             var_names = self._default_var_names
 
         if not var_labels:
-            var_labels = self._default_var_labels
+            var_labels = self._default_var_names
 
         N = len(var_names)
         fig, ax = plt.subplots(N, figsize=(5, 15))
@@ -236,14 +272,18 @@ class ModelCheck:
             if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo":
 
                 bins = np.geomspace(
-                    np.min(self.results[var_name]), np.max(self.results[var_name]), 35
+                    np.min(self.results[var_name]),
+                    np.max(self.results[var_name]),
+                    nbins,
                 )
                 ax[v].set_xscale("log")
 
             else:
 
                 bins = np.linspace(
-                    np.min(self.results[var_name]), np.max(self.results[var_name]), 35
+                    np.min(self.results[var_name]),
+                    np.max(self.results[var_name]),
+                    nbins,
                 )
 
             for i in range(len(self.results[var_name])):
@@ -261,9 +301,13 @@ class ModelCheck:
                 N = len(self.results[var_name][0]) * 100
                 xmin, xmax = ax[v].get_xlim()
 
-                if var_name == "f_arr" or var_name == "f_arr_astro":
+                if "f_" in var_name:
 
                     prior_samples = uniform(0, 1).rvs(N)
+
+                elif "Nex" in var_name:
+
+                    break
 
                 else:
 
@@ -299,33 +343,22 @@ class ModelCheck:
         self._sources = _initialise_sources()
 
         file_config = hnu_config["file_config"]
-        parameter_config = hnu_config["parameter_config"]
-
-        detector_model_type = ModelCheck._get_dm_from_config(
-            parameter_config["detector_model_type"]
-        )
 
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
         start_time = time.time()
 
         outputs = {}
-        outputs["F_diff"] = []
-        outputs["F_atmo"] = []
-        outputs["L"] = []
-        outputs["f_arr"] = []
-        outputs["f_arr_astro"] = []
-        outputs["src_index"] = []
-        outputs["diff_index"] = []
+        for key in self._default_var_names:
+            outputs[key] = []
 
         for i, s in enumerate(subjob_seeds):
 
             sys.stderr.write("Run %i\n" % i)
 
             # Simulation
-            obs_time = parameter_config["obs_time"] * u.year
-            sim = Simulation(self._sources, detector_model_type, obs_time)
-            sim.precomputation()
+            sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
+            sim.precomputation(self._exposure_integral)
             sim.set_stan_filenames(
                 file_config["atmo_sim_filename"], file_config["main_sim_filename"]
             )
@@ -342,9 +375,9 @@ class ModelCheck:
             # Fit
             fit = StanFit(
                 self._sources,
-                detector_model_type,
+                self._detector_model_type,
                 sim.events,
-                obs_time,
+                self._obs_time,
                 priors=self.priors,
             )
             fit.precomputation(exposure_integral=sim._exposure_integral)
@@ -355,15 +388,8 @@ class ModelCheck:
             self.fit = fit
 
             # Store output
-            outputs["F_diff"].append(fit._fit_output.stan_variable("F_diff"))
-            outputs["F_atmo"].append(fit._fit_output.stan_variable("F_atmo"))
-            outputs["L"].append(fit._fit_output.stan_variable("L"))
-            outputs["f_arr"].append(fit._fit_output.stan_variable("f_arr"))
-            outputs["f_arr_astro"].append(fit._fit_output.stan_variable("f_arr_astro"))
-            outputs["src_index"].append(fit._fit_output.stan_variable("src_index"))
-            outputs["diff_index"].append(fit._fit_output.stan_variable("diff_index"))
-
-            fit.check_classification(sim_output)
+            for key in outputs:
+                outputs[key].append(fit._fit_output.stan_variable(key))
 
             sys.stderr.write("time: %.5f\n" % (time.time() - start_time))
 

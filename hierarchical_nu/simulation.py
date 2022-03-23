@@ -94,18 +94,27 @@ class Simulation:
         except ValueError:
             self._shared_src_index = False
 
-    def precomputation(self):
+    def precomputation(
+        self,
+        exposure_integral: collections.OrderedDict = None,
+    ):
         """
         Run the necessary precomputation
         """
 
-        for event_type in self._detector_model_type.event_types:
+        if not exposure_integral:
 
-            self._exposure_integral[event_type] = ExposureIntegral(
-                self._sources,
-                self._detector_model_type,
-                event_type=event_type,
-            )
+            for event_type in self._detector_model_type.event_types:
+
+                self._exposure_integral[event_type] = ExposureIntegral(
+                    self._sources,
+                    self._detector_model_type,
+                    event_type=event_type,
+                )
+
+        else:
+
+            self._exposure_integral = exposure_integral
 
     def generate_stan_code(self):
 
@@ -273,11 +282,11 @@ class Simulation:
             color = label_cmap[int(l)]
 
             if t == TRACKS:
-                e = e * 5
+                e = e * 5  # to make tracks visible
 
             circle = SphericalCircle(
                 (r, d),
-                e,  # to make tracks visible
+                e,
                 color=color,
                 alpha=0.5,
                 transform=ax.get_transform("icrs"),
