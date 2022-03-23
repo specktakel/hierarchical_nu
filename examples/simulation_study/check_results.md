@@ -21,18 +21,14 @@ from hierarchical_nu.model_check import ModelCheck
 ```
 
 ```python
-model_check = ModelCheck()
-```
-
-```python
 file_stem = "raven/output/"
-file_list = [file_stem+"fit_sim_1000_test.h5"]
+file_list = [file_stem+"fit_sim_1000_test_newmodelcheck.h5"]
 
-model_check.load(file_list)
+model_check = ModelCheck.load(file_list)
 ```
 
 ```python
-fig, ax = model_check.compare(show_prior=True)
+fig, ax = model_check.compare(show_prior=False)
 ```
 
 ```python
