@@ -25,4 +25,9 @@ def test_short_run(output_directory, random_seed):
 
     # Load
     file_list = [output_file]
-    model_check.load(file_list)
+    model_check = ModelCheck.load(file_list)
+
+    # Check visualisations
+    for p in [True, False]:
+
+        fig, ax = model_check.compare(show_prior=p)

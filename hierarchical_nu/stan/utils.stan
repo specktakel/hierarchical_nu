@@ -177,7 +177,6 @@ real truncate_value(real x, real min_val, real max_val){
          return max_val;
      }
      return x;
-
 }
 
 array[] real generate_bin_edges(real lower_edge, real upper_edge, int nbins)

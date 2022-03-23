@@ -278,7 +278,7 @@ class ExposureIntegral:
                         ][cosz_bin]
                         for E in self.energy_grid
                     ]
-                    pg = np.array(pg)  # / max(pg)
+                    pg = np.array(pg)
 
             if isinstance(source, DiffuseSource):
 
@@ -290,13 +290,9 @@ class ExposureIntegral:
                     ]
                     for E in self.energy_grid
                 ]
-                pg = np.array(pg)  # / max(pg)
+                pg = np.array(pg)
 
-            p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                self.energy_grid, self._min_det_energy
-            )
-
-            self.pdet_grid.append(p_Edet * pg)
+            self.pdet_grid.append(pg)
 
         self.pdet_grid = np.array(self.pdet_grid) + 1e-10  # avoid log(0)
 
