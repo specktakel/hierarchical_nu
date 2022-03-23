@@ -101,7 +101,7 @@ class ModelCheck:
             self.truths["Nex_diff"] = Nex_per_comp[1]
             self.truths["Nex_atmo"] = Nex_per_comp[2]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
-            self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:1])
+            self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
 
         self._default_var_names = [key for key in self.truths]
 
@@ -262,7 +262,7 @@ class ModelCheck:
             var_labels = self._default_var_names
 
         N = len(var_names)
-        fig, ax = plt.subplots(N, figsize=(5, 15))
+        fig, ax = plt.subplots(N, figsize=(5, N * 3))
 
         for v, var_name in enumerate(var_names):
 
