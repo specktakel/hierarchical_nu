@@ -157,11 +157,10 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         def _model(x, pars):
             result = 0
             for i in range(n_components):
-                result += (
-                    1
-                    / n_components
-                    * stats.lognorm.pdf(x, scale=pars[2 * i], s=pars[2 * i + 1])
+                result += (1 / n_components) * stats.lognorm.pdf(
+                    x, scale=pars[2 * i], s=pars[2 * i + 1]
                 )
+
             return result
 
         return _model
@@ -456,7 +455,7 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
             )
             model_params += [mu, sigma]
 
-        prob = 1 - model(np.log10(threshold_energy.value), model_params)
+        prob = 1 - model(np.log10(threshold_energy.to(u.GeV).value), model_params)
 
         return prob
 

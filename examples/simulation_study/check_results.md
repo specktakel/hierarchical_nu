@@ -14,11 +14,6 @@ jupyter:
 ---
 
 ```python
-import sys
-sys.path.append("../../")
-```
-
-```python
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -26,18 +21,14 @@ from hierarchical_nu.model_check import ModelCheck
 ```
 
 ```python
-model_check = ModelCheck()
+file_stem = "raven/output/"
+file_list = [file_stem+"fit_sim_1000_test_newmodelcheck.h5"]
+
+model_check = ModelCheck.load(file_list)
 ```
 
 ```python
-file_stem = "output/"
-file_list = [file_stem+"fit_sim_1234_test.h5"]
-
-model_check.load(file_list)
-```
-
-```python
-fig, ax = model_check.compare(show_prior=True)
+fig, ax = model_check.compare(show_prior=False)
 ```
 
 ```python

@@ -48,6 +48,7 @@ class StanSimInterface(StanInterface):
         output_file,
         sources,
         detector_model_type,
+        atmo_output_file=os.path.join(STAN_GEN_PATH, "atmo_gen"),
         includes=["interpolation.stan", "utils.stan", "vMF.stan"],
     ):
 
@@ -58,14 +59,14 @@ class StanSimInterface(StanInterface):
             includes=includes,
         )
 
+        self._atmo_output_file = atmo_output_file
+
     def generate_atmo(self):
 
         atmo_flux_model = self.sources.atmospheric.flux_model
 
-        filename = os.path.join(STAN_GEN_PATH, "atmo_gen")
-
         return generate_atmospheric_sim_code_(
-            filename, atmo_flux_model, theta_points=30
+            self._atmo_output_file, atmo_flux_model, theta_points=30
         )
 
     def _functions(self):
@@ -489,7 +490,7 @@ class StanSimInterface(StanInterface):
                 self._Ftot << self._F_src
                 self._f_arr_astro_ << 1.0
                 self._f_det_ << 1.0
-                self._f_det_astro << 1.0
+                self._f_det_astro_ << 1.0
 
             self._f_arr_ << StringExpression([self._F_src, "/", self._Ftot])
 

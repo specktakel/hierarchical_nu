@@ -11,7 +11,7 @@
  * Includes atmospheric component with known index. Units of [m^2 s].
  */
 vector get_exposure_factor_atmo(real src_index, real diff_index, vector src_index_grid, vector diff_index_grid,
-				vector[] integral_grid, real atmo_integ_val, real T, int Ns) {
+				array[] vector integral_grid, real atmo_integ_val, real T, int Ns) {
 
   vector[Ns+2] eps;
 
@@ -36,7 +36,7 @@ vector get_exposure_factor_atmo(real src_index, real diff_index, vector src_inde
  * Units of [m^2 s].
  */
 vector get_exposure_factor(real src_index, real diff_index, vector src_index_grid, vector diff_index_grid,
-			   vector[] integral_grid, real T, int Ns) {
+			   array[] vector integral_grid, real T, int Ns) {
 
   vector[Ns+1] eps;
 
@@ -177,13 +177,12 @@ real truncate_value(real x, real min_val, real max_val){
          return max_val;
      }
      return x;
-
 }
 
-real[] generate_bin_edges(real lower_edge, real upper_edge, int nbins)
+array[] real generate_bin_edges(real lower_edge, real upper_edge, int nbins)
 {
 
-    real binedges[nbins+1];
+    array[nbins+1] real binedges;
     real binwidth = (upper_edge-lower_edge)/nbins;
     for (i in 1:nbins+1)
     {
@@ -192,7 +191,7 @@ real[] generate_bin_edges(real lower_edge, real upper_edge, int nbins)
     return binedges;
 }
 
-int binary_search(real value, real[] binedges)
+int binary_search(real value, array[] real binedges)
 {
     int L = 1;
     int R = size(binedges);
@@ -204,7 +203,7 @@ int binary_search(real value, real[] binedges)
     else{
         while (L < R-1)
         {
-            m = (L + R) / 2;
+            m = (L + R) %/% 2;
             if (binedges[m] < value)
                 L = m;
             else if (binedges[m] > value)

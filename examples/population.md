@@ -47,8 +47,8 @@ lf.Lmin = 3e46 # erg s^-1
 lf.alpha = 1
 
 # SFR-like distribution
-sd = SFRDistribution()
-sd.r0 = 10 # Gpc^-3
+sd = SFRDistribution() 
+sd.r0 = 10 # Gpc^-3 sr
 sd.a = 0.0
 sd.rise = 1.0
 sd.decay = 3.0

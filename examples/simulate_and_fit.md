@@ -6,7 +6,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.11.2
+      jupytext_version: 1.11.0
   kernelspec:
     display_name: hierarchical_nu
     language: python
@@ -37,22 +37,22 @@ First set up the high-level parameters. The parameters defined here are singleto
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, 
-              par_range=(0, 1E60)*(u.erg/u.s))
-diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+L = Parameter(1.0e47 * (u.erg / u.s), "luminosity", fixed=True, 
+              par_range=(0, 1e60)*(u.erg/u.s))
+diffuse_norm = Parameter(1.0e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
-Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
-Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
-Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
+Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
+Emin = Parameter(5e4 * u.GeV, "Emin", fixed=True)
+Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
 ```
 
 When setting the minimum detected (i.e. reconstructed) energy, there are a few options. If fitting one event type (ie. tracks or cascades), just use `Emin_det`. This is also fine if you are fitting both event types, but want to set the same minimum detected energy. `Emin_det_tracks` and `Emin_det_cascades` are to be used when fitting both event types, but setting different minimum detected energies. 
 
 ```python
-#Emin_det = Parameter(1E5 * u.GeV, "Emin_det", fixed=True)
+Emin_det = Parameter(6e4 * u.GeV, "Emin_det", fixed=True)
 
-Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
-Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
+#Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
+#Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
 ```
 
 Next, we use these high-level parameters to define sources. This can be done for either individual sources, or a list loaded from a file. For now we just work with a single point source. There are functions to add the different background components.
@@ -64,8 +64,6 @@ point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
                                                 L, src_index, 0.4, Emin, Emax)
 
 my_sources = Sources()
-#my_sources.add(point_sources)
-#my_sources.select_below_redshift(0.8)
 my_sources.add(point_source)
 
 # auto diffuse component 
@@ -105,15 +103,11 @@ Below are shown all the necessary steps to set up and run a simulation for clari
 sim.precomputation()
 sim.generate_stan_code()
 sim.compile_stan_code()
-sim.run(verbose=True, seed=42)
+sim.run(verbose=True, seed=42) 
 sim.save("output/test_sim_file.h5")
 ```
 
-```python
-sim._expected_Nnu_per_comp
-```
-
-We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~45 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
+We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~90 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
 
 ```python
 fig, ax = sim.show_spectrum()
@@ -121,14 +115,6 @@ fig, ax = sim.show_spectrum()
 
 ```python
 fig, ax = sim.show_skymap()
-```
-
-```python
-sim._sim_output.stan_variable("f_det")
-```
-
-```python
-sim._sim_output.stan_variable("f_arr")
 ```
 
 ## Fit 
@@ -139,7 +125,7 @@ from hierarchical_nu.fit import StanFit
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
-from hierarchical_nu.priors import Priors, NormalPrior
+from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
 ```
 
 We can start setting up the fit by loading the events from the output of our simulation. This file only contains the information we would have in a realistic data scenario (energies, directions, uncertainties, event types). We also need to specify the observation time and detector model for the fit, as for the simulation. Please make sure you are using the same ones in both for sensible results!
@@ -153,18 +139,19 @@ We can also define priors using the `Priors` interface. Here, we use the default
 
 ```python
 priors = Priors()
-#atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.value
-#priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.1*atmo_flux)
+
+flux_units = 1 / (u.m**2 * u.s)
+atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.to(flux_units).value
+priors.atmospheric_flux = LogNormalPrior(mu=np.log(atmo_flux), sigma=0.1)
 ```
 
 ```python
 #fit = StanFit(my_sources, CascadesDetectorModel, events, obs_time, priors=priors)
-#fit = StanFit(my_sources, NorthernTracksDetectorModel, events, 
-#obs_time, priors=priors)
+#fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time, priors=priors)
 fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time, priors=priors)
 ```
 
-Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes around 10 min on one core.
+Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes around 5 min on one core.
 
 ```python
 fit.precomputation()
@@ -198,6 +185,16 @@ Similarly, we can use the simulation info to check the classification of individ
 
 ```python
 fit.check_classification(sim_info.outputs)
+```
+
+```python
+fig, ax = plt.subplots()
+ax.hist(fit._fit_output.stan_variable("Nex_src"), alpha=0.5);
+ax.hist(fit._fit_output.stan_variable("Nex_diff"), alpha=0.5);
+ax.hist(fit._fit_output.stan_variable("Nex_atmo"), alpha=0.5)
+ax.axvline(sim._expected_Nnu_per_comp[0], color="blue")
+ax.axvline(sim._expected_Nnu_per_comp[1], color="orange")
+ax.axvline(sim._expected_Nnu_per_comp[2], color="green")
 ```
 
 ```python

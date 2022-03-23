@@ -4,7 +4,7 @@ import pytest
 import os
 from cmdstanpy import CmdStanModel
 
-from hierarchical_nu.source.source import PointSource, DiffuseSource
+from hierarchical_nu.source.source import PointSource
 from hierarchical_nu.source.flux_model import PowerLawSpectrum, IsotropicDiffuseBG
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
@@ -13,22 +13,17 @@ from hierarchical_nu.backend.stan_generator import (
     TransformedParametersContext,
     ModelContext,
     GeneratedQuantitiesContext,
-    DataContext,
     FunctionsContext,
     Include,
-    ForLoopContext,
     StanFileGenerator,
     FunctionCall,
 )
 from hierarchical_nu.backend.variable_definitions import (
     ParameterDef,
-    ParameterVectorDef,
     ForwardVariableDef,
-    ForwardArrayDef,
 )
 
 from hierarchical_nu.backend.expression import StringExpression
-from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.stan.interface import STAN_PATH
 
@@ -95,27 +90,27 @@ def test_atmo_flux():
 
     F = atmo_bg_flux.total_flux_int
 
-    assert F.value == pytest.approx(0.30187206)
+    flux_unit = 1 / (u.s * u.m ** 2)
 
-    assert F.unit == 1 / (u.s * u.m ** 2)
+    assert F.to(flux_unit).value == pytest.approx(0.30187206)
 
 
 def test_diffuse_flux():
 
     F = diffuse_flux_model.total_flux_int
 
-    assert F.value == pytest.approx(0.0001439998)
+    flux_unit = 1 / (u.s * u.m ** 2)
 
-    assert F.unit == 1 / (u.s * u.m ** 2)
+    assert F.to(flux_unit).value == pytest.approx(0.0001439998)
 
 
 def test_point_source_flux():
 
     F = source.flux_model.total_flux_int
 
-    assert F.value == pytest.approx(0.0043180246)
+    flux_unit = 1 / (u.s * u.m ** 2)
 
-    assert F.unit == 1 / (u.s * u.m ** 2)
+    assert F.to(flux_unit).value == pytest.approx(0.0043180246)
 
 
 def generate_source_test_code(output_directory):
@@ -179,7 +174,7 @@ def test_source_sampling(output_directory, random_seed):
 
     stan_file = generate_source_test_code(output_directory)
 
-    stanc_options = {"include_paths": [STAN_PATH]}
+    stanc_options = {"include-paths": [STAN_PATH]}
 
     stan_model = CmdStanModel(
         stan_file=stan_file,

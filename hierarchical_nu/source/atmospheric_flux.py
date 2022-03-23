@@ -30,7 +30,7 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
 
         UserDefinedFunction.__init__(
             self,
-            "AtmopshericNumuFlux",
+            "AtmosphericNumuFlux",
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real",
@@ -57,8 +57,8 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             log_trunc_e = LogParameterization(truncated_e)
             # StringExpression(["print(\"log_trunc_e = \",",log_trunc_e,")"])
 
-            # abs() since the flux is symmetric around the horizon
-            cos_dir = StringExpression(["abs(cos(pi() - acos(true_dir[3])))"])
+            # fabs() since the flux is symmetric around the horizon
+            cos_dir = StringExpression(["fabs(cos(pi() - acos(true_dir[3])))"])
             cos_theta_bin_index = FunctionCall(
                 [cos_dir, cos_theta_grid_stan], "binary_search", 2
             )
@@ -169,7 +169,7 @@ class AtmosphericNuMuFlux(FluxModel):
     @u.quantity_input
     def __call__(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m ** 2 * u.sr):
+    ) -> 1 / (u.GeV * u.s * u.cm ** 2 * u.sr):
         energy = np.atleast_1d(energy)
         if np.any((energy > self.EMAX) | (energy < self.EMIN)):
             raise ValueError(
@@ -219,7 +219,7 @@ class AtmosphericNuMuFlux(FluxModel):
 
         vect_int = np.vectorize(_integral)
 
-        return vect_int(energy) << (1 / (u.m ** 2 * u.s * u.GeV))
+        return vect_int(energy) << (1 / (u.cm ** 2 * u.s * u.GeV))
 
     @property
     @u.quantity_input

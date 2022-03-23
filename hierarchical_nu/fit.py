@@ -139,7 +139,7 @@ class StanFit:
             include_paths = [STAN_PATH]
 
         self._fit = CmdStanModel(
-            stan_file=self._fit_filename, stanc_options={"include_paths": include_paths}
+            stan_file=self._fit_filename, stanc_options={"include-paths": include_paths}
         )
 
     def run(self, iterations=1000, chains=1, seed=None, show_progress=False, **kwargs):
@@ -426,7 +426,7 @@ class StanFit:
         if "tracks" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_t"] = [
-                _.value.tolist()
+                _.to(u.m ** 2).value.tolist()
                 for _ in self._exposure_integral["tracks"].integral_grid
             ]
 
@@ -437,7 +437,7 @@ class StanFit:
         if "cascades" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_c"] = [
-                _.value.tolist()
+                _.to(u.m ** 2).value.tolist()
                 for _ in self._exposure_integral["cascades"].integral_grid
             ]
 
@@ -448,7 +448,10 @@ class StanFit:
         if self._sources.atmospheric:
 
             fit_inputs["atmo_integ_val"] = (
-                self._exposure_integral["tracks"].integral_fixed_vals[0].value
+                self._exposure_integral["tracks"]
+                .integral_fixed_vals[0]
+                .to(u.m ** 2)
+                .value
             )
 
         # To work with cmdstanpy serialization

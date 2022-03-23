@@ -2,7 +2,6 @@ from typing import Sequence, Tuple
 import os
 import pandas as pd
 import numpy as np
-from astropy import units as u
 
 from ..utils.cache import Cache
 from ..backend import (
@@ -12,7 +11,6 @@ from ..backend import (
     LogParameterization,
     SimpleHistogram,
     ReturnStatement,
-    UserDefinedFunction,
     FunctionCall,
     DistributionMode,
     LognormalMixture,
