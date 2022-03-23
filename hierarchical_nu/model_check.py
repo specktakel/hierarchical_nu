@@ -105,11 +105,8 @@ class ModelCheck:
 
         self._default_var_names = [key for key in self.truths]
 
-    @classmethod
-    def initialise_env(
-        cls,
-        output_dir,
-    ):
+    @staticmethod
+    def initialise_env(output_dir):
         """
         Script to set up enviroment for parallel
         model checking runs.
