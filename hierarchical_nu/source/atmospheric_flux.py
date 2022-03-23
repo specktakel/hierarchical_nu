@@ -1,5 +1,5 @@
 import pickle
-
+from functools import lru_cache
 import astropy.units as u
 import numpy as np
 import scipy
@@ -186,6 +186,7 @@ class AtmosphericNuMuFlux(FluxModel):
 
         return np.squeeze(result) << (1 / (u.GeV * u.s * u.cm ** 2 * u.sr))
 
+    @lru_cache(maxsize=None)
     def call_fast(self, energy, dec, ra):
         energy = np.atleast_1d(energy)
         if np.any((energy > self.EMAX.value) | (energy < self.EMIN.value)):
