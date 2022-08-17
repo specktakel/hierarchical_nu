@@ -13,10 +13,6 @@ jupyter:
 ---
 
 ```python
-%matplotlib notebook
-```
-
-```python
 import numpy as np
 from matplotlib import pyplot as plt
 import h5py
@@ -37,7 +33,8 @@ from hierarchical_nu.source.source import Sources, PointSource
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 diff_index = Parameter(3.7, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(5E46 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60))
+L = Parameter(5E46 * (u.erg / u.s), "luminosity", fixed=True, 
+              par_range=(0, 1E60) * (u.erg/u.s))
 diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
