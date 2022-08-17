@@ -57,8 +57,8 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             log_trunc_e = LogParameterization(truncated_e)
             # StringExpression(["print(\"log_trunc_e = \",",log_trunc_e,")"])
 
-            # fabs() since the flux is symmetric around the horizon
-            cos_dir = StringExpression(["fabs(cos(pi() - acos(true_dir[3])))"])
+            # abs() since the flux is symmetric around the horizon
+            cos_dir = StringExpression(["abs(cos(pi() - acos(true_dir[3])))"])
             cos_theta_bin_index = FunctionCall(
                 [cos_dir, cos_theta_grid_stan], "binary_search", 2
             )
