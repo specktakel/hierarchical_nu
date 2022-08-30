@@ -47,11 +47,11 @@ class Events:
 
     def remove(self, i):
 
-        self._energies.pop(i)
-        self._coords.pop(i)
-        self._unit_vectors.pop(i)
-        self._types.pop(i)
-        self._ang_errs.pop(i)
+        self._energies = np.delete(self._energies, i)
+        self._coords = np.delete(self._coords, i)
+        self._unit_vectors = np.delete(self._unit_vectors, i)
+        self._types = np.delete(self._types, i)
+        self._ang_errs = np.delete(self._ang_errs, i)
         self.N -= 1
 
     @property
