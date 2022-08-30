@@ -49,7 +49,7 @@ class Events:
 
         self._energies = np.delete(self._energies, i)
         self._coords = np.delete(self._coords, i)
-        self._unit_vectors = np.delete(self._unit_vectors, i)
+        self._unit_vectors = np.delete(self._unit_vectors, i, axis=0)
         self._types = np.delete(self._types, i)
         self._ang_errs = np.delete(self._ang_errs, i)
         self.N -= 1
