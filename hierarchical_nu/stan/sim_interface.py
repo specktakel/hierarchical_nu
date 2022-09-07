@@ -697,9 +697,10 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
 
-                                self._src_factor << self._atmo_flux(
-                                    self._E[i], self._omega
-                                )
+                                (
+                                    self._src_factor
+                                    << self._atmo_flux(self._E[i], self._omega) * 1e7
+                                )  # Scale for reasonable c_values (see precomputation)
                                 self._Esrc[i] << self._E[i]
 
                         elif self.sources.diffuse:
@@ -728,9 +729,10 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
 
-                                self._src_factor << self._atmo_flux(
-                                    self._E[i], self._omega
-                                )
+                                (
+                                    self._src_factor
+                                    << self._atmo_flux(self._E[i], self._omega) * 1e7
+                                )  # Scale for reasonable c_values (see precomputation)
                                 self._Esrc[i] << self._E[i]
 
                         # Calculate quantities for rejection sampling

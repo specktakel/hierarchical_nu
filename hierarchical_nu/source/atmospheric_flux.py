@@ -93,7 +93,7 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             interpolate_cosz = FunctionCall(
                 [vector_coz_grid_points, vector_log_trunc_e, cos_dir], "interpolate", 3
             )
-            _ = ReturnStatement([(10 ** interpolate_cosz) * 1e4])
+            _ = ReturnStatement([(10**interpolate_cosz) * 1e4])
 
 
 class AtmosphericNuMuFlux(FluxModel):
@@ -169,7 +169,7 @@ class AtmosphericNuMuFlux(FluxModel):
     @u.quantity_input
     def __call__(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.cm ** 2 * u.sr):
+    ) -> 1 / (u.GeV * u.s * u.cm**2 * u.sr):
         energy = np.atleast_1d(energy)
         if np.any((energy > self.EMAX) | (energy < self.EMIN)):
             raise ValueError(
@@ -184,7 +184,7 @@ class AtmosphericNuMuFlux(FluxModel):
             print("Error in spline evaluation. Are the evaluation points ordered?")
             raise e
 
-        return np.squeeze(result) << (1 / (u.GeV * u.s * u.cm ** 2 * u.sr))
+        return np.squeeze(result) << (1 / (u.GeV * u.s * u.cm**2 * u.sr))
 
     @lru_cache(maxsize=None)
     def call_fast(self, energy, dec, ra):
@@ -205,7 +205,7 @@ class AtmosphericNuMuFlux(FluxModel):
         return np.squeeze(result)
 
     @u.quantity_input
-    def total_flux(self, energy: u.GeV) -> 1 / (u.m ** 2 * u.s * u.GeV):
+    def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
 
         energy = (energy / u.GeV).value
 
@@ -220,11 +220,11 @@ class AtmosphericNuMuFlux(FluxModel):
 
         vect_int = np.vectorize(_integral)
 
-        return vect_int(energy) << (1 / (u.cm ** 2 * u.s * u.GeV))
+        return vect_int(energy) << (1 / (u.cm**2 * u.s * u.GeV))
 
     @property
     @u.quantity_input
-    def total_flux_int(self) -> 1 / (u.m ** 2 * u.s):
+    def total_flux_int(self) -> 1 / (u.m**2 * u.s):
         return self.integral(
             *self.energy_bounds,
             (-np.pi / 2) * u.rad,
@@ -235,7 +235,7 @@ class AtmosphericNuMuFlux(FluxModel):
 
     @property
     @u.quantity_input
-    def total_flux_density(self) -> u.erg / u.s / u.m ** 2:
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
         raise NotImplementedError()
 
     def redshift_factor(self, z: float):
@@ -254,7 +254,7 @@ class AtmosphericNuMuFlux(FluxModel):
         dec_up: u.rad,
         ra_low: u.rad,
         ra_up: u.rad,
-    ) -> 1 / (u.m ** 2 * u.s):
+    ) -> 1 / (u.m**2 * u.s):
         def _integral(e_low, e_up, dec_low, dec_up, ra_low, ra_up):
             def wrap_call(log_energy, sindec):
                 return self.call_fast(
@@ -284,8 +284,9 @@ class AtmosphericNuMuFlux(FluxModel):
         ra_up = (ra_up / u.rad).value
 
         return vect_int(e_low, e_up, dec_low, dec_up, ra_low, ra_up) << (
-            1 / (u.cm ** 2 * u.s)
+            1 / (u.cm**2 * u.s)
         )
 
     def make_stan_sampling_func(cls, f_name):
-        pass
+
+        raise NotImplementedError()
