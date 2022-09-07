@@ -28,18 +28,18 @@ class SpectralShape(ABC):
 
     @u.quantity_input
     @abstractmethod
-    def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m ** 2 * u.s):
+    def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
         pass
 
     @u.quantity_input
     @abstractmethod
-    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m ** 2 * u.s):
+    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
         pass
 
     @property
     @u.quantity_input
     @abstractmethod
-    def total_flux_density(self) -> u.erg / u.s / u.m ** 2:
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
         pass
 
     @property
@@ -82,18 +82,18 @@ class FluxModel(ABC):
     @abstractmethod
     def __call__(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m ** 2 * u.sr):
+    ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
         pass
 
     @u.quantity_input
     @abstractmethod
-    def total_flux(self, energy: u.GeV) -> 1 / (u.m ** 2 * u.s * u.GeV):
+    def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         pass
 
     @property
     @u.quantity_input
     @abstractmethod
-    def total_flux_int(self) -> 1 / (u.m ** 2 * u.s):
+    def total_flux_int(self) -> 1 / (u.m**2 * u.s):
         pass
 
     @property
@@ -119,13 +119,13 @@ class FluxModel(ABC):
         dec_up: u.rad,
         ra_low: u.rad,
         ra_up: u.rad,
-    ) -> 1 / (u.m ** 2 * u.s):
+    ) -> 1 / (u.m**2 * u.s):
         pass
 
     @property
     @u.quantity_input
     @abstractmethod
-    def total_flux_density(self) -> u.erg / u.s / u.m ** 2:
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
         pass
 
     @abstractmethod
@@ -147,7 +147,7 @@ class PointSourceFluxModel(FluxModel):
     @u.quantity_input
     def __call__(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m ** 2 * u.sr):
+    ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
         if (dec == self.dec) and (ra == self.ra):
             return self._spectral_shape(energy) / (4 * np.pi * u.sr)
         return 0
@@ -173,7 +173,7 @@ class PointSourceFluxModel(FluxModel):
         dec_up: u.rad,
         ra_low: u.rad,
         ra_up: u.rad,
-    ) -> 1 / (u.m ** 2 * u.s):
+    ) -> 1 / (u.m**2 * u.s):
         if not self._is_in_bounds(self.dec, (dec_low, dec_up)):
             return 0
         if not self._is_in_bounds(self.ra, ra_low, ra_up):
@@ -191,17 +191,17 @@ class PointSourceFluxModel(FluxModel):
         return int
 
     @u.quantity_input
-    def total_flux(self, energy: u.GeV) -> 1 / (u.m ** 2 * u.s * u.GeV):
+    def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         return self._spectral_shape(energy)
 
     @property
     @u.quantity_input
-    def total_flux_int(self) -> 1 / (u.m ** 2 * u.s):
+    def total_flux_int(self) -> 1 / (u.m**2 * u.s):
         return self._spectral_shape.integral(*self._spectral_shape.energy_bounds)
 
     @property
     @u.quantity_input
-    def total_flux_density(self) -> u.erg / u.s / u.m ** 2:
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
         return self._spectral_shape.total_flux_density
 
     def redshift_factor(self, z: float):
@@ -236,21 +236,21 @@ class IsotropicDiffuseBG(FluxModel):
     @u.quantity_input
     def __call__(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m ** 2 * u.sr):
+    ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
         return self._spectral_shape(energy) / (4 * np.pi * u.sr)
 
     @u.quantity_input
-    def total_flux(self, energy: u.GeV) -> 1 / (u.m ** 2 * u.s * u.GeV):
+    def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         return self._spectral_shape(energy)
 
     @property
     @u.quantity_input
-    def total_flux_int(self) -> 1 / (u.m ** 2 * u.s):
+    def total_flux_int(self) -> 1 / (u.m**2 * u.s):
         return self._spectral_shape.integral(*self._spectral_shape.energy_bounds)
 
     @property
     @u.quantity_input
-    def total_flux_density(self) -> u.erg / u.s / u.m ** 2:
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
         return self._spectral_shape.total_flux_density
 
     def redshift_factor(self, z: float):
@@ -273,7 +273,7 @@ class IsotropicDiffuseBG(FluxModel):
         dec_up: u.rad,
         ra_low: u.rad,
         ra_up: u.rad,
-    ) -> 1 / (u.m ** 2 * u.s):
+    ) -> 1 / (u.m**2 * u.s):
 
         ra_int = ra_up - ra_low
         dec_int = (np.sin(dec_up) - np.sin(dec_low)) * u.rad
@@ -360,7 +360,7 @@ class PowerLawSpectrum(SpectralShape):
         return np.power(1 + z, 1 - index)
 
     @u.quantity_input
-    def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m ** 2 * u.s):
+    def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
         """
         dN/dEdAdt.
         """
@@ -373,7 +373,7 @@ class PowerLawSpectrum(SpectralShape):
             return norm * np.power(energy / self._normalisation_energy, -index)
 
     @u.quantity_input
-    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m ** 2 * u.s):
+    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
         r"""
         \int spectrum dE over finite energy bounds.
 
@@ -415,8 +415,8 @@ class PowerLawSpectrum(SpectralShape):
             )
 
         # Correct if outside bounds
-        output[(upper <= self._lower_energy)] = 0.0 * 1 / (u.m ** 2 * u.s)
-        output[(lower >= self._upper_energy)] = 0.0 * 1 / (u.m ** 2 * u.s)
+        output[(upper <= self._lower_energy)] = 0.0 * 1 / (u.m**2 * u.s)
+        output[(lower >= self._upper_energy)] = 0.0 * 1 / (u.m**2 * u.s)
 
         return output
 
@@ -437,7 +437,7 @@ class PowerLawSpectrum(SpectralShape):
 
     @property
     @u.quantity_input
-    def total_flux_density(self) -> u.erg / u.s / u.m ** 2:
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value  # diff flux * energy
         lower, upper = self._lower_energy, self._upper_energy
@@ -454,7 +454,7 @@ class PowerLawSpectrum(SpectralShape):
         return (
             int_norm
             * (np.power(upper / u.GeV, 2 - index) - np.power(lower / u.GeV, 2 - index))
-            * u.GeV ** 2
+            * u.GeV**2
         )
 
     def sample(self, N):
@@ -466,11 +466,31 @@ class PowerLawSpectrum(SpectralShape):
         :param N: Number of samples.
         """
 
+        index = self._parameters["index"].value
         self.power_law = BoundedPowerLaw(
-            self._index, self._lower_energy, self._upper_energy
+            index,
+            self._lower_energy.to_value(u.GeV),
+            self._upper_energy.to_value(u.GeV),
         )
 
         return self.power_law.samples(N)
+
+    @u.quantity_input
+    def pdf(self, E: u.GeV):
+        """
+        Return PDF.
+        """
+
+        E_input = E.to_value(u.GeV)
+        index = self._parameters["index"].value
+
+        self.power_law = BoundedPowerLaw(
+            index,
+            self._lower_energy.to_value(u.GeV),
+            self._upper_energy.to_value(u.GeV),
+        )
+
+        return self.power_law.pdf(E_input)
 
     @classmethod
     def make_stan_sampling_func(cls, f_name) -> UserDefinedFunction:
