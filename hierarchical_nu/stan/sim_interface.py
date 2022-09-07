@@ -49,7 +49,12 @@ class StanSimInterface(StanInterface):
         sources,
         detector_model_type,
         atmo_output_file=os.path.join(STAN_GEN_PATH, "atmo_gen"),
-        includes=["interpolation.stan", "utils.stan", "vMF.stan"],
+        includes=[
+            "interpolation.stan",
+            "utils.stan",
+            "vMF.stan",
+            "rejection_sampling.stan",
+        ],
     ):
 
         super().__init__(
@@ -78,8 +83,8 @@ class StanSimInterface(StanInterface):
 
             if self.sources.point_source:
 
-                self._src_spectrum_rng = self._ps_spectrum.make_stan_sampling_func(
-                    "src_spectrum_rng"
+                self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
+                    "src_spectrum_lpdf"
                 )
 
                 self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
@@ -88,8 +93,8 @@ class StanSimInterface(StanInterface):
 
             if self.sources.diffuse:
 
-                self._diff_spectrum_rng = self._diff_spectrum.make_stan_sampling_func(
-                    "diff_spectrum_rng"
+                self._diff_spectrum_lpdf = self._diff_spectrum.make_stan_lpdf_func(
+                    "diff_spectrum_lpdf"
                 )
 
     def _data(self):
@@ -145,7 +150,16 @@ class StanSimInterface(StanInterface):
             if "tracks" in self._event_types:
 
                 self._Emin_det_t = ForwardVariableDef("Emin_det_t", "real")
-                self._aeff_t_max = ForwardVariableDef("aeff_t_max", "real")
+                self._rs_bbpl_Eth_t = ForwardVariableDef("rs_bpl_Eth_t", "real")
+                self._rs_bbpl_gamma1_t = ForwardVariableDef("rs_bpl_gamma1_t", "real")
+                self._rs_bbpl_gamma2_t = ForwardVariableDef("rs_bpl_gamma2_t", "real")
+                self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "real")
+                self._rs_cvals_t = ForwardVariableDef(
+                    "rs_cvals_t", "vector[rs_N_cosz_bins_t]"
+                )
+                self._rs_cosz_bin_edges_t = ForwardVariableDef(
+                    "rs_cosz_bin_edges_t", "vector[rs_N_cosz_bins_t + 1]"
+                )
 
                 if self.sources.diffuse or self.sources.point_source:
                     self._integral_grid_t = ForwardArrayDef(
@@ -155,7 +169,16 @@ class StanSimInterface(StanInterface):
             if "cascades" in self._event_types:
 
                 self._Emin_det_c = ForwardVariableDef("Emin_det_c", "real")
-                self._aeff_c_max = ForwardVariableDef("aeff_c_max", "real")
+                self._rs_bbpl_Eth_c = ForwardVariableDef("rs_bpl_Eth_c", "real")
+                self._rs_bbpl_gamma1_c = ForwardVariableDef("rs_bpl_gamma1_c", "real")
+                self._rs_bbpl_gamma2_c = ForwardVariableDef("rs_bpl_gamma2_c", "real")
+                self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "real")
+                self._rs_cvals_c = ForwardVariableDef(
+                    "rs_cvals_t", "vector[rs_N_cosz_bins_c]"
+                )
+                self._rs_cosz_bin_edges_c = ForwardVariableDef(
+                    "rs_cosz_bin_edges_c", "vector[rs_N_cosz_bins_c + 1]"
+                )
 
                 if self.sources.diffuse or self.sources.point_source:
                     self._integral_grid_c = ForwardArrayDef(
@@ -321,14 +344,18 @@ class StanSimInterface(StanInterface):
 
                     if "tracks" in self._event_types:
 
-                        self._eps_t[k] << FunctionCall(
-                            [
-                                self._src_index_grid,
-                                self._integral_grid_t[k],
-                                src_index_ref,
-                            ],
-                            "interpolate",
-                        ) * self._T
+                        (
+                            self._eps_t[k]
+                            << FunctionCall(
+                                [
+                                    self._src_index_grid,
+                                    self._integral_grid_t[k],
+                                    src_index_ref,
+                                ],
+                                "interpolate",
+                            )
+                            * self._T
+                        )
 
                         StringExpression(
                             [self._Nex_src_t, "+=", self._F[k] * self._eps_t[k]]
@@ -336,14 +363,18 @@ class StanSimInterface(StanInterface):
 
                     if "cascades" in self._event_types:
 
-                        self._eps_c[k] << FunctionCall(
-                            [
-                                self._src_index_grid,
-                                self._integral_grid_c[k],
-                                src_index_ref,
-                            ],
-                            "interpolate",
-                        ) * self._T
+                        (
+                            self._eps_c[k]
+                            << FunctionCall(
+                                [
+                                    self._src_index_grid,
+                                    self._integral_grid_c[k],
+                                    src_index_ref,
+                                ],
+                                "interpolate",
+                            )
+                            * self._T
+                        )
 
                         StringExpression(
                             [self._Nex_src_c, "+=", self._F[k] * self._eps_c[k]]
@@ -353,18 +384,23 @@ class StanSimInterface(StanInterface):
 
                 if "tracks" in self._event_types:
 
-                    self._eps_t[self._Ns + 1] << FunctionCall(
-                        [
-                            self._diff_index_grid,
-                            self._integral_grid_t[self._Ns + 1],
-                            self._diff_index,
-                        ],
-                        "interpolate",
-                    ) * self._T
+                    (
+                        self._eps_t[self._Ns + 1]
+                        << FunctionCall(
+                            [
+                                self._diff_index_grid,
+                                self._integral_grid_t[self._Ns + 1],
+                                self._diff_index,
+                            ],
+                            "interpolate",
+                        )
+                        * self._T
+                    )
 
-                    self._Nex_diff_t << self._F[self._Ns + 1] * self._eps_t[
-                        self._Ns + 1
-                    ]
+                    (
+                        self._Nex_diff_t
+                        << self._F[self._Ns + 1] * self._eps_t[self._Ns + 1]
+                    )
 
                     self._eps_t[self._Ns + 2] << self._atmo_integ_val * self._T
 
@@ -372,50 +408,65 @@ class StanSimInterface(StanInterface):
 
                 if "cascades" in self._event_types:
 
-                    self._eps_c[self._Ns + 1] << FunctionCall(
-                        [
-                            self._diff_index_grid,
-                            self._integral_grid_c[self._Ns + 1],
-                            self._diff_index,
-                        ],
-                        "interpolate",
-                    ) * self._T
+                    (
+                        self._eps_c[self._Ns + 1]
+                        << FunctionCall(
+                            [
+                                self._diff_index_grid,
+                                self._integral_grid_c[self._Ns + 1],
+                                self._diff_index,
+                            ],
+                            "interpolate",
+                        )
+                        * self._T
+                    )
 
-                    self._Nex_diff_c << self._F[self._Ns + 1] * self._eps_c[
-                        self._Ns + 1
-                    ]
+                    (
+                        self._Nex_diff_c
+                        << self._F[self._Ns + 1] * self._eps_c[self._Ns + 1]
+                    )
 
             elif self.sources.diffuse:
 
                 if "tracks" in self._event_types:
 
-                    self._eps_t[self._Ns + 1] << FunctionCall(
-                        [
-                            self._diff_index_grid,
-                            self._integral_grid_t[self._Ns + 1],
-                            self._diff_index,
-                        ],
-                        "interpolate",
-                    ) * self._T
+                    (
+                        self._eps_t[self._Ns + 1]
+                        << FunctionCall(
+                            [
+                                self._diff_index_grid,
+                                self._integral_grid_t[self._Ns + 1],
+                                self._diff_index,
+                            ],
+                            "interpolate",
+                        )
+                        * self._T
+                    )
 
-                    self._Nex_diff_t << self._F[self._Ns + 1] * self._eps_t[
-                        self._Ns + 1
-                    ]
+                    (
+                        self._Nex_diff_t
+                        << self._F[self._Ns + 1] * self._eps_t[self._Ns + 1]
+                    )
 
                 if "cascades" in self._event_types:
 
-                    self._eps_c[self._Ns + 1] << FunctionCall(
-                        [
-                            self._diff_index_grid,
-                            self._integral_grid_c[self._Ns + 1],
-                            self._diff_index,
-                        ],
-                        "interpolate",
-                    ) * self._T
+                    (
+                        self._eps_c[self._Ns + 1]
+                        << FunctionCall(
+                            [
+                                self._diff_index_grid,
+                                self._integral_grid_c[self._Ns + 1],
+                                self._diff_index,
+                            ],
+                            "interpolate",
+                        )
+                        * self._T
+                    )
 
-                    self._Nex_diff_c << self._F[self._Ns + 1] * self._eps_c[
-                        self._Ns + 1
-                    ]
+                    (
+                        self._Nex_diff_c
+                        << self._F[self._Ns + 1] * self._eps_c[self._Ns + 1]
+                    )
 
             elif self.sources.atmospheric and "tracks" in self._event_types:
 
@@ -544,6 +595,15 @@ class StanSimInterface(StanInterface):
 
             self._event = ForwardArrayDef("event", "unit_vector[3]", self._N_str)
 
+            # For rejection sampling
+            self._u_samp = ForwardVariableDef("u_samp", "real")
+            self._aeff_factor = ForwardVariableDef("aeff_factor", "real")
+            self._src_factor = ForwardVariableDef("src_factor", "real")
+            self._f_value = ForwardVariableDef("f_value", "real")
+            self._g_value = ForwardVariableDef("g_value", "real")
+            self._c_value = ForwardVariableDef("c_value", "real")
+            self._idx_cosz = ForwardVariableDef("idx_cosz", "real")
+
             if "tracks" in self._event_types:
                 Nex_t_sim = ForwardVariableDef("Nex_t_sim", "real")
                 Nex_t_sim << self._Nex_t
@@ -584,6 +644,18 @@ class StanSimInterface(StanInterface):
                         self._atmo_index << 1
 
                     with WhileLoopContext([StringExpression([self._accept != 1])]):
+
+                        self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
+                        self._E[i] << FunctionCall(
+                            [
+                                self._Esrc_min,
+                                self._rs_bbpl_Eth_t,
+                                self._Esrc_max,
+                                self._rs_bbpl_gamma1_t,
+                                self._rs_bbpl_gamma2_t,
+                            ],
+                            "bbpl_rng",
+                        )
 
                         with IfBlockContext(
                             [StringExpression([self._lam[i], " <= ", self._Ns])]
@@ -626,7 +698,11 @@ class StanSimInterface(StanInterface):
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
                         )
 
-                        # Energy
+                        self._aeff_factor << self._dm_pdf["tracks"].effective_area(
+                            self._E_samp, self._omega
+                        )
+
+                        # Energy spectrum
                         if self.sources.point_source:
 
                             with IfBlockContext(
@@ -638,12 +714,17 @@ class StanSimInterface(StanInterface):
                                 else:
                                     src_index_ref = self._src_index[self._lam[i]]
 
-                                self._Esrc[i] << self._src_spectrum_rng(
+                                self._src_factor << self._src_spectrum_lpdf(
+                                    self._E[i],
                                     src_index_ref,
                                     self._Esrc_min,
                                     self._Esrc_max,
                                 )
-                                self._E[i] << self._Esrc[i] / (
+                                self._src_factor << FunctionCall(
+                                    [self._src_factor], "exp"
+                                ) / (1 + self._z[self._lam[i]])
+
+                                self._Esrc[i] << self._E[i] * (
                                     1 + self._z[self._lam[i]]
                                 )
 
@@ -662,10 +743,17 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
 
-                                self._Esrc[i] << self._diff_spectrum_rng(
-                                    self._diff_index, self._Esrc_min, self._Esrc_max
+                                self._src_factor << self._diff_spectrum_lpdf(
+                                    self._E[i],
+                                    self._diff_index,
+                                    self._Esrc_min,
+                                    self._Esrc_max,
                                 )
-                                self._E[i] << self._Esrc[i] / (
+                                self._src_factor << FunctionCall(
+                                    [self._src_factor], "exp"
+                                ) / (1 + self._z[self._lam[i]])
+
+                                self._Esrc[i] << self._E[i] * (
                                     1 + self._z[self._lam[i]]
                                 )
 
@@ -678,7 +766,7 @@ class StanSimInterface(StanInterface):
                                 self._Esrc[i] << self._atmo_energies[self._atmo_index]
                                 self._E[i] << self._Esrc[i]
 
-                        # Test against Aeff
+                        # Calculate quantities for rejection sampling
                         if (
                             self.detector_model_type == NorthernTracksDetectorModel
                             or self.detector_model_type == IceCubeDetectorModel
@@ -688,36 +776,56 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._cosz[i], ">= 0.1"])]
                             ):
 
-                                self._Pdet[i] << 0
-
-                            with ElseBlockContext():
-
-                                self._Pdet[i] << self._dm_pdf["tracks"].effective_area(
-                                    self._E[i], self._omega
-                                ) / self._aeff_t_max
-
-                        else:
-
-                            self._Pdet[i] << self._dm_pdf["tracks"].effective_area(
-                                self._E[i], self._omega
-                            ) / self._aeff_t_max
+                                self._aeff_factor << 0
 
                         self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
                             self._E[i]
                         )
 
-                        self._prob[1] << self._Pdet[i]
-                        self._prob[2] << 1 - self._Pdet[i]
+                        self._f_value << self._src_factor * self._aeff_factor
+                        self._g_value << FunctionCall(
+                            [
+                                self._E[i],
+                                self._Esrc_min,
+                                self._rs_bbpl_Eth_t,
+                                self._Esrc_max,
+                                self._rs_bbpl_gamma1_t,
+                                self._rs_bbpl_gamma2_t,
+                            ],
+                            "bbpl_pdf",
+                        )
+                        self._idx_cosz << FunctionCall(
+                            [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
+                        )
+                        self._c_value << self._rs_cvals_t[self._idx_cosz]
+
+                        # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
 
                         with IfBlockContext(
                             [StringExpression([self._ntrials, "< 1000000"])]
                         ):
 
-                            self._detected << FunctionCall(
-                                [self._prob], "categorical_rng"
-                            )
+                            with IfBlockContext(
+                                [
+                                    StringExpression(
+                                        [
+                                            self._u_samp,
+                                            " < ",
+                                            self._f_value
+                                            / (self._c_value * self._g_value),
+                                        ]
+                                    )
+                                ]
+                            ):
 
+                                self._detected << 1
+
+                            with ElseBlockContext():
+
+                                self._detected << 0
+
+                            # Energy threshold
                             with IfBlockContext(
                                 [
                                     StringExpression(
@@ -741,11 +849,14 @@ class StanSimInterface(StanInterface):
 
                                     self._atmo_weights_v << self._atmo_weights_p
                                     self._atmo_weights_v[self._atmo_index] << 0.0
-                                    self._atmo_weights_v << self._atmo_weights_v / FunctionCall(
-                                        [self._atmo_weights_v], "sum"
+                                    (
+                                        self._atmo_weights_v
+                                        << self._atmo_weights_v
+                                        / FunctionCall([self._atmo_weights_v], "sum")
                                     )
                                     self._atmo_weights_p << self._atmo_weights_v
 
+                        # Debugging
                         with ElseBlockContext():
 
                             self._accept << 1
@@ -784,6 +895,18 @@ class StanSimInterface(StanInterface):
 
                     with WhileLoopContext([StringExpression([self._accept != 1])]):
 
+                        self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
+                        self._E[i] << FunctionCall(
+                            [
+                                self._Esrc_min,
+                                self._rs_bbpl_Eth_c,
+                                self._Esrc_max,
+                                self._rs_bbpl_gamma1_c,
+                                self._rs_bbpl_gamma2_c,
+                            ],
+                            "bbpl_rng",
+                        )
+
                         # Sample position
                         with IfBlockContext(
                             [StringExpression([self._lam[i], " <= ", self._Ns])]
@@ -800,7 +923,11 @@ class StanSimInterface(StanInterface):
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
                         )
 
-                        # Sample energy
+                        self._aeff_factor << self._dm_pdf["cascades"].effective_area(
+                            self._E_samp, self._omega
+                        )
+
+                        # Energy spectrum
                         if self.sources.point_source:
 
                             with IfBlockContext(
@@ -812,12 +939,17 @@ class StanSimInterface(StanInterface):
                                 else:
                                     src_index_ref = self._src_index[self._lam[i]]
 
-                                self._Esrc[i] << self._src_spectrum_rng(
+                                self._src_factor << self._src_spectrum_lpdf(
+                                    self._E[i],
                                     src_index_ref,
                                     self._Esrc_min,
                                     self._Esrc_max,
                                 )
-                                self._E[i] << self._Esrc[i] / (
+                                self._src_factor << FunctionCall(
+                                    [self._src_factor], "exp"
+                                ) / (1 + self._z[self._lam[i]])
+
+                                self._Esrc[i] << self._E[i] * (
                                     1 + self._z[self._lam[i]]
                                 )
 
@@ -826,34 +958,70 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-                                self._Esrc[i] << self._diff_spectrum_rng(
-                                    self._diff_index, self._Esrc_min, self._Esrc_max
+
+                                self._src_factor << self._diff_spectrum_lpdf(
+                                    self._E[i],
+                                    self._diff_index,
+                                    self._Esrc_min,
+                                    self._Esrc_max,
                                 )
-                                self._E[i] << self._Esrc[i] / (
+                                self._src_factor << FunctionCall(
+                                    [self._src_factor], "exp"
+                                ) / (1 + self._z[self._lam[i]])
+
+                                self._Esrc[i] << self._E[i] * (
                                     1 + self._z[self._lam[i]]
                                 )
 
-                        # Test against Aeff
-                        self._Pdet[i] << self._dm_pdf["cascades"].effective_area(
-                            self._E[i], self._omega
-                        ) / self._aeff_c_max
-
+                        # Calculate quantities for rejection sampling
                         self._Edet[i] << 10 ** self._dm_rng[
                             "cascades"
                         ].energy_resolution(self._E[i])
 
-                        self._prob[1] << self._Pdet[i]
-                        self._prob[2] << 1 - self._Pdet[i]
+                        self._f_value = self._src_factor * self._aeff_factor
+                        self._g_value << FunctionCall(
+                            [
+                                self._E[i],
+                                self._Esrc_min,
+                                self._rs_bbpl_Eth_c,
+                                self._Esrc_max,
+                                self._rs_bbpl_gamma1_c,
+                                self._rs_bbpl_gamma2_c,
+                            ],
+                            "bbpl_pdf",
+                        )
+                        self._idx_cosz << FunctionCall(
+                            [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
+                        )
+                        self._c_value << self._rs_cvals_c[self._idx_cosz]
+
+                        # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
 
                         with IfBlockContext(
                             [StringExpression([self._ntrials, "< 1000000"])]
                         ):
 
-                            self._detected << FunctionCall(
-                                [self._prob], "categorical_rng"
-                            )
+                            with IfBlockContext(
+                                [
+                                    StringExpression(
+                                        [
+                                            self._u_samp,
+                                            " < ",
+                                            self._f_value
+                                            / (self._c_value * self._g_value),
+                                        ]
+                                    )
+                                ]
+                            ):
 
+                                self._detected << 1
+
+                            with ElseBlockContext():
+
+                                self._detected << 0
+
+                            # Energy threshold
                             with IfBlockContext(
                                 [
                                     StringExpression(
@@ -872,6 +1040,7 @@ class StanSimInterface(StanInterface):
 
                                 self._accept << 1
 
+                        # Debugging
                         with ElseBlockContext():
 
                             self._accept << 1
@@ -884,9 +1053,10 @@ class StanSimInterface(StanInterface):
                     self._event[i] << self._dm_rng["cascades"].angular_resolution(
                         self._E[i], self._omega
                     )
-                    self._kappa[i] << self._dm_rng[
-                        "cascades"
-                    ].angular_resolution.kappa()
+                    (
+                        self._kappa[i]
+                        << self._dm_rng["cascades"].angular_resolution.kappa()
+                    )
 
 
 def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):

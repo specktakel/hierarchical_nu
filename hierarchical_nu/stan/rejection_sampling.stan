@@ -69,3 +69,40 @@ real bbpl_rng(real x0, real x1, real x2, real gamma1, real gamma2) {
 
     return sample;
 }
+
+/**
+* PDF of a bounded broken power law.
+*/
+real bbpl_pdf(real x, real x0, real x1, real x2, real gamma1, real gamma2) {
+
+    real output;
+    real I1;
+    real I2;
+    real N;
+
+    I1 = (pow(x1, gamma1 + 1.0) - pow(x0, gamma1 + 1.0)) / (gamma1 + 1.0);
+    I2 = (
+        pow(x1, gamma1 - gamma2)
+        * (pow(x2, gamma2 + 1.0) - pow(x1, gamma2 + 1.0))
+        / (gamma2 + 1.0)
+    );
+
+    N = 1.0 / (I1 + I2);
+
+    if ((x <= x1) && (x >= x0)) {
+
+        output = N * pow(x, gamma1);
+    }
+    else if ((x > x1) && (x <= x2)) {
+
+        output = N * pow(x1, gamma1 - gamma2) * pow(x, gamma2);
+
+    } 
+    else {
+
+        output = 0.0;
+
+    }
+
+    return output;
+}

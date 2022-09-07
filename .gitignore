@@ -154,6 +154,11 @@ software/simulation_study/output/
 *.hpp
 .stan_files
 
+## VSCode
+.vscode/
+
+# Built Visual Studio Code Extensions
+*.vsix
 
 
 
