@@ -73,6 +73,16 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
 
         return self._cosz_bin_edges
 
+    @property
+    def rs_bbpl_params(self):
+        """
+        Bounded broken power law parameters
+        for suitable sampling of the effective
+        area.
+        """
+
+        return self._rs_bbpl_params
+
 
 class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
     """
