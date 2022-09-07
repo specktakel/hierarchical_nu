@@ -5,27 +5,22 @@ from collections import OrderedDict
 from hierarchical_nu.stan.interface import StanInterface
 
 from hierarchical_nu.backend.stan_generator import (
-    StanFileGenerator,
     FunctionsContext,
     Include,
     DataContext,
     TransformedDataContext,
-    ParametersContext,
-    TransformedParametersContext,
     GeneratedQuantitiesContext,
     ForLoopContext,
     IfBlockContext,
     ElseIfBlockContext,
     ElseBlockContext,
     WhileLoopContext,
-    ModelContext,
     FunctionCall,
 )
 
 from hierarchical_nu.backend.variable_definitions import (
     ForwardVariableDef,
     ForwardArrayDef,
-    ParameterDef,
 )
 
 from hierarchical_nu.backend.expression import StringExpression
@@ -34,8 +29,6 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.events import TRACKS, CASCADES
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
-
-from hierarchical_nu.stan.interface import STAN_GEN_PATH
 
 
 class StanSimInterface(StanInterface):
@@ -48,7 +41,7 @@ class StanSimInterface(StanInterface):
         output_file,
         sources,
         detector_model_type,
-        atmo_output_file=os.path.join(STAN_GEN_PATH, "atmo_gen"),
+        atmo_flux_theta_points=30,
         includes=[
             "interpolation.stan",
             "utils.stan",
@@ -64,15 +57,7 @@ class StanSimInterface(StanInterface):
             includes=includes,
         )
 
-        self._atmo_output_file = atmo_output_file
-
-    def generate_atmo(self):
-
-        atmo_flux_model = self.sources.atmospheric.flux_model
-
-        return generate_atmospheric_sim_code_(
-            self._atmo_output_file, atmo_flux_model, theta_points=30
-        )
+        self._atmo_flux_theta_points = atmo_flux_theta_points
 
     def _functions(self):
 
@@ -95,6 +80,16 @@ class StanSimInterface(StanInterface):
 
                 self._diff_spectrum_lpdf = self._diff_spectrum.make_stan_lpdf_func(
                     "diff_spectrum_lpdf"
+                )
+
+            if self.sources.atmospheric:
+
+                atmo_flux_model = self.sources.atmospheric.flux_model
+
+                # Increasing theta points too much makes compilation very slow
+                # Could switch to passing array as data if problematic
+                self._atmo_flux = atmo_flux_model.make_stan_function(
+                    theta_points=self._atmo_flux_theta_points
                 )
 
     def _data(self):
@@ -201,19 +196,6 @@ class StanSimInterface(StanInterface):
                 self._F_atmo = ForwardVariableDef("F_atmo", "real")
 
                 self._atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
-
-                # Atmo samples
-                self._N_atmo = ForwardVariableDef("N_atmo", "int")
-                self._N_atmo_str = ["[", self._N_atmo, "]"]
-                self._atmo_directions = ForwardArrayDef(
-                    "atmo_directions", "unit_vector[3]", self._N_atmo_str
-                )
-                self._atmo_energies = ForwardVariableDef(
-                    "atmo_energies", "vector[N_atmo]"
-                )
-                self._atmo_weights = ForwardVariableDef(
-                    "atmo_weights", "simplex[N_atmo]"
-                )
 
             self._v_lim = ForwardVariableDef("v_lim", "real")
             self._T = ForwardVariableDef("T", "real")
@@ -582,10 +564,6 @@ class StanSimInterface(StanInterface):
             self._E = ForwardVariableDef("E", "vector[N]")
             self._Edet = ForwardVariableDef("Edet", "vector[N]")
 
-            if self.sources.atmospheric:
-
-                self._atmo_index = ForwardVariableDef("atmo_index", "int")
-
             self._cosz = ForwardArrayDef("cosz", "real", self._N_str)
             self._Pdet = ForwardArrayDef("Pdet", "real", self._N_str)
             self._accept = ForwardVariableDef("accept", "int")
@@ -615,17 +593,6 @@ class StanSimInterface(StanInterface):
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
             self._kappa = ForwardVariableDef("kappa", "vector[N]")
 
-            if self.sources.atmospheric:
-                self._atmo_weights_p = ForwardVariableDef(
-                    "atmo_weights_p", "simplex[N_atmo]"
-                )
-                self._atmo_weights_v = ForwardVariableDef(
-                    "atmo_weights_v", "vector[N_atmo]"
-                )
-
-                self._atmo_weights_p << self._atmo_weights
-                self._atmo_weights_v << self._atmo_weights
-
             if "tracks" in self._event_types:
 
                 with ForLoopContext(1, self._N_t, "i") as i:
@@ -639,9 +606,6 @@ class StanSimInterface(StanInterface):
                     self._accept << 0
                     self._detected << 0
                     self._ntrials << 0
-
-                    if self._sources.atmospheric:
-                        self._atmo_index << 1
 
                     with WhileLoopContext([StringExpression([self._accept != 1])]):
 
@@ -669,10 +633,9 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
 
-                                self._atmo_index << FunctionCall(
-                                    [self._atmo_weights_p], "categorical_rng"
+                                self._omega << FunctionCall(
+                                    [1, self._v_lim], "sphere_lim_rng"
                                 )
-                                self._omega << self._atmo_directions[self._atmo_index]
 
                         elif self.sources.diffuse:
 
@@ -689,10 +652,10 @@ class StanSimInterface(StanInterface):
                             with ElseIfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
-                                self._atmo_index << FunctionCall(
-                                    [self._atmo_weights_p], "categorical_rng"
+
+                                self._omega << FunctionCall(
+                                    [1, self._v_lim], "sphere_lim_rng"
                                 )
-                                self._omega << self._atmo_directions[self._atmo_index]
 
                         self._cosz[i] << FunctionCall(
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
@@ -734,8 +697,10 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
 
-                                self._Esrc[i] << self._atmo_energies[self._atmo_index]
-                                self._E[i] << self._Esrc[i]
+                                self._src_factor << self._atmo_flux(
+                                    self._E[i], self._omega
+                                )
+                                self._Esrc[i] << self._E[i]
 
                         elif self.sources.diffuse:
 
@@ -763,8 +728,10 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
 
-                                self._Esrc[i] << self._atmo_energies[self._atmo_index]
-                                self._E[i] << self._Esrc[i]
+                                self._src_factor << self._atmo_flux(
+                                    self._E[i], self._omega
+                                )
+                                self._Esrc[i] << self._E[i]
 
                         # Calculate quantities for rejection sampling
                         if (
@@ -842,19 +809,6 @@ class StanSimInterface(StanInterface):
                                 ]
                             ):
                                 self._accept << 1
-
-                                # Stop same atmo events being sampled
-                                # multiple times
-                                if self.sources.atmospheric:
-
-                                    self._atmo_weights_v << self._atmo_weights_p
-                                    self._atmo_weights_v[self._atmo_index] << 0.0
-                                    (
-                                        self._atmo_weights_v
-                                        << self._atmo_weights_v
-                                        / FunctionCall([self._atmo_weights_v], "sum")
-                                    )
-                                    self._atmo_weights_p << self._atmo_weights_v
 
                         # Debugging
                         with ElseBlockContext():
@@ -1057,50 +1011,3 @@ class StanSimInterface(StanInterface):
                         self._kappa[i]
                         << self._dm_rng["cascades"].angular_resolution.kappa()
                     )
-
-
-def generate_atmospheric_sim_code_(filename, atmo_flux_model, theta_points=50):
-
-    with StanFileGenerator(filename) as atmo_gen:
-
-        with FunctionsContext():
-            _ = Include("interpolation.stan")
-            _ = Include("utils.stan")
-
-            # Increasing theta points too much makes compilation very slow
-            # Could switch to passing array as data if problematic
-            atmu_nu_flux = atmo_flux_model.make_stan_function(theta_points=theta_points)
-
-        with DataContext():
-            Esrc_min = ForwardVariableDef("Esrc_min", "real")
-            Esrc_max = ForwardVariableDef("Esrc_max", "real")
-
-            cosz_min = ForwardVariableDef("cosz_min", "real")
-            cosz_max = ForwardVariableDef("cosz_max", "real")
-
-        with ParametersContext():
-            # Simulate from Emin and cosz bounds for efficiency
-            energy = ParameterDef("energy", "real", Esrc_min, Esrc_max)
-            coszen = ParameterDef("coszen", "real", cosz_min, cosz_max)
-            phi = ParameterDef("phi", "real", 0, 2 * np.pi)
-
-        with TransformedParametersContext():
-            omega = ForwardVariableDef("omega", "unit_vector[3]")
-            zen = ForwardVariableDef("zen", "real")
-            theta = ForwardVariableDef("theta", "real")
-
-            zen << FunctionCall([coszen], "acos")
-            theta << FunctionCall([], "pi") - zen
-
-            omega[1] << FunctionCall([theta], "sin") * FunctionCall([phi], "cos")
-            omega[2] << FunctionCall([theta], "sin") * FunctionCall([phi], "sin")
-            omega[3] << FunctionCall([theta], "cos")
-
-        with ModelContext():
-
-            logflux = FunctionCall([atmu_nu_flux(energy, omega)], "log")
-            StringExpression(["target += ", logflux])
-
-        atmo_gen.generate_single_file()
-
-        return atmo_gen.filename
