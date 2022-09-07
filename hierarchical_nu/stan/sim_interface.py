@@ -69,7 +69,7 @@ class StanSimInterface(StanInterface):
             if self.sources.point_source:
 
                 self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
-                    "src_spectrum_lpdf"
+                    "src_spectrum_logpdf"
                 )
 
                 self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
@@ -79,7 +79,7 @@ class StanSimInterface(StanInterface):
             if self.sources.diffuse:
 
                 self._diff_spectrum_lpdf = self._diff_spectrum.make_stan_lpdf_func(
-                    "diff_spectrum_lpdf"
+                    "diff_spectrum_logpdf"
                 )
 
             if self.sources.atmospheric:
@@ -148,12 +148,12 @@ class StanSimInterface(StanInterface):
                 self._rs_bbpl_Eth_t = ForwardVariableDef("rs_bpl_Eth_t", "real")
                 self._rs_bbpl_gamma1_t = ForwardVariableDef("rs_bpl_gamma1_t", "real")
                 self._rs_bbpl_gamma2_t = ForwardVariableDef("rs_bpl_gamma2_t", "real")
-                self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "real")
-                self._rs_cvals_t = ForwardVariableDef(
-                    "rs_cvals_t", "vector[rs_N_cosz_bins_t]"
+                self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
+                self._rs_cvals_t = ForwardArrayDef(
+                    "rs_cvals_t", "vector[rs_N_cosz_bins_t]", [f"[{self.sources.N}]"]
                 )
-                self._rs_cosz_bin_edges_t = ForwardVariableDef(
-                    "rs_cosz_bin_edges_t", "vector[rs_N_cosz_bins_t + 1]"
+                self._rs_cosz_bin_edges_t = ForwardArrayDef(
+                    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
                 )
 
                 if self.sources.diffuse or self.sources.point_source:
@@ -167,12 +167,12 @@ class StanSimInterface(StanInterface):
                 self._rs_bbpl_Eth_c = ForwardVariableDef("rs_bpl_Eth_c", "real")
                 self._rs_bbpl_gamma1_c = ForwardVariableDef("rs_bpl_gamma1_c", "real")
                 self._rs_bbpl_gamma2_c = ForwardVariableDef("rs_bpl_gamma2_c", "real")
-                self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "real")
-                self._rs_cvals_c = ForwardVariableDef(
-                    "rs_cvals_t", "vector[rs_N_cosz_bins_c]"
+                self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
+                self._rs_cvals_c = ForwardArrayDef(
+                    "rs_cvals_c", "vector[rs_N_cosz_bins_c]", [f"[{self.sources.N}]"]
                 )
-                self._rs_cosz_bin_edges_c = ForwardVariableDef(
-                    "rs_cosz_bin_edges_c", "vector[rs_N_cosz_bins_c + 1]"
+                self._rs_cosz_bin_edges_c = ForwardArrayDef(
+                    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
                 )
 
                 if self.sources.diffuse or self.sources.point_source:
@@ -580,7 +580,7 @@ class StanSimInterface(StanInterface):
             self._f_value = ForwardVariableDef("f_value", "real")
             self._g_value = ForwardVariableDef("g_value", "real")
             self._c_value = ForwardVariableDef("c_value", "real")
-            self._idx_cosz = ForwardVariableDef("idx_cosz", "real")
+            self._idx_cosz = ForwardVariableDef("idx_cosz", "int")
 
             if "tracks" in self._event_types:
                 Nex_t_sim = ForwardVariableDef("Nex_t_sim", "real")
@@ -662,7 +662,7 @@ class StanSimInterface(StanInterface):
                         )
 
                         self._aeff_factor << self._dm_pdf["tracks"].effective_area(
-                            self._E_samp, self._omega
+                            self._E[i], self._omega
                         )
 
                         # Energy spectrum
@@ -764,7 +764,7 @@ class StanSimInterface(StanInterface):
                         self._idx_cosz << FunctionCall(
                             [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
                         )
-                        self._c_value << self._rs_cvals_t[self._idx_cosz]
+                        self._c_value << self._rs_cvals_t[self._lam[i]][self._idx_cosz]
 
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
@@ -878,7 +878,7 @@ class StanSimInterface(StanInterface):
                         )
 
                         self._aeff_factor << self._dm_pdf["cascades"].effective_area(
-                            self._E_samp, self._omega
+                            self._E[i], self._omega
                         )
 
                         # Energy spectrum
@@ -947,7 +947,7 @@ class StanSimInterface(StanInterface):
                         self._idx_cosz << FunctionCall(
                             [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
                         )
-                        self._c_value << self._rs_cvals_c[self._idx_cosz]
+                        self._c_value << self._rs_cvals_c[self._lam[i]][self._idx_cosz]
 
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
