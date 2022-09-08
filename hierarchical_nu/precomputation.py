@@ -307,20 +307,16 @@ class ExposureIntegral:
         For the rejection sampling implemented in the simulation, we need
         to find max(f/g) for the relevant energy range at different cosz,
         where:
-        f, target function: aeff_factor * (src_spectrum / (1+z))
+        f, target function: aeff_factor * src_spectrum
         g, envelope function: bbpl envelope used for sampling
         """
 
-        Emin = self._min_src_energy.to_value(u.GeV)
-        Emax = self._max_src_energy.to_value(u.GeV)
+        Emin_src = self._min_src_energy.to_value(u.GeV)
+        Emax_src = self._max_src_energy.to_value(u.GeV)
 
         cosz_bin_cens = (
             self.effective_area.cosz_bin_edges[:-1]
             + np.diff(self.effective_area.cosz_bin_edges) / 2
-        )
-        E_range = 10 ** np.linspace(
-            np.log10(Emin),
-            np.log10(Emax),
         )
 
         Eth = self.effective_area.rs_bbpl_params["threshold_energy"]
@@ -329,6 +325,10 @@ class ExposureIntegral:
 
         c_values = []
         for source in self._sources.sources:
+
+            Emin = Emin_src / (1 + source.redshift)
+            Emax = Emax_src / (1 + source.redshift)
+            E_range = 10 ** np.linspace(np.log10(Emin), np.log10(Emax))
 
             f_values_all = []
             for cosz in cosz_bin_cens:
@@ -354,7 +354,11 @@ class ExposureIntegral:
                 else:
 
                     f_values = (
-                        source.flux_model.spectral_shape.pdf(E_range * u.GeV)
+                        source.flux_model.spectral_shape.pdf(
+                            E_range * u.GeV,
+                            Emin * u.GeV,
+                            Emax * u.GeV,
+                        )
                         * aeff_values
                     ) / (1 + source.redshift)
                     gamma2 = (

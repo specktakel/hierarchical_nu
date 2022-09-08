@@ -612,9 +612,9 @@ class StanSimInterface(StanInterface):
                         self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
                         self._E[i] << FunctionCall(
                             [
-                                self._Esrc_min,
+                                self._Esrc_min / (1 + self._z[self._lam[i]]),
                                 self._rs_bbpl_Eth_t,
-                                self._Esrc_max,
+                                self._Esrc_max / (1 + self._z[self._lam[i]]),
                                 self._rs_bbpl_gamma1_t,
                                 self._rs_bbpl_gamma2_t,
                             ],
@@ -680,12 +680,12 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._src_spectrum_lpdf(
                                     self._E[i],
                                     src_index_ref,
-                                    self._Esrc_min,
-                                    self._Esrc_max,
+                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
-                                ) / (1 + self._z[self._lam[i]])
+                                )
 
                                 self._Esrc[i] << self._E[i] * (
                                     1 + self._z[self._lam[i]]
@@ -712,12 +712,12 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    self._Esrc_min,
-                                    self._Esrc_max,
+                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
-                                ) / (1 + self._z[self._lam[i]])
+                                )
 
                                 self._Esrc[i] << self._E[i] * (
                                     1 + self._z[self._lam[i]]
@@ -755,9 +755,9 @@ class StanSimInterface(StanInterface):
                         self._g_value << FunctionCall(
                             [
                                 self._E[i],
-                                self._Esrc_min,
+                                self._Esrc_min / (1 + self._z[self._lam[i]]),
                                 self._rs_bbpl_Eth_t,
-                                self._Esrc_max,
+                                self._Esrc_max / (1 + self._z[self._lam[i]]),
                                 self._rs_bbpl_gamma1_t,
                                 self._rs_bbpl_gamma2_t,
                             ],
@@ -854,9 +854,9 @@ class StanSimInterface(StanInterface):
                         self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
                         self._E[i] << FunctionCall(
                             [
-                                self._Esrc_min,
+                                self._Esrc_min / (1 + self._z[self._lam[i]]),
                                 self._rs_bbpl_Eth_c,
-                                self._Esrc_max,
+                                self._Esrc_max / (1 + self._z[self._lam[i]]),
                                 self._rs_bbpl_gamma1_c,
                                 self._rs_bbpl_gamma2_c,
                             ],
@@ -898,12 +898,12 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._src_spectrum_lpdf(
                                     self._E[i],
                                     src_index_ref,
-                                    self._Esrc_min,
-                                    self._Esrc_max,
+                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
-                                ) / (1 + self._z[self._lam[i]])
+                                )
 
                                 self._Esrc[i] << self._E[i] * (
                                     1 + self._z[self._lam[i]]
@@ -918,12 +918,12 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    self._Esrc_min,
-                                    self._Esrc_max,
+                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
-                                ) / (1 + self._z[self._lam[i]])
+                                )
 
                                 self._Esrc[i] << self._E[i] * (
                                     1 + self._z[self._lam[i]]
@@ -938,9 +938,9 @@ class StanSimInterface(StanInterface):
                         self._g_value << FunctionCall(
                             [
                                 self._E[i],
-                                self._Esrc_min,
+                                self._Esrc_min / (1 + self._z[self._lam[i]]),
                                 self._rs_bbpl_Eth_c,
-                                self._Esrc_max,
+                                self._Esrc_max / (1 + self._z[self._lam[i]]),
                                 self._rs_bbpl_gamma1_c,
                                 self._rs_bbpl_gamma2_c,
                             ],

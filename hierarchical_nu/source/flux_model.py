@@ -476,18 +476,20 @@ class PowerLawSpectrum(SpectralShape):
         return self.power_law.samples(N)
 
     @u.quantity_input
-    def pdf(self, E: u.GeV):
+    def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV):
         """
         Return PDF.
         """
 
         E_input = E.to_value(u.GeV)
+        Emin_input = E.to_value(u.GeV)
+        Emax_input = E.to_value(u.GeV)
         index = self._parameters["index"].value
 
         self.power_law = BoundedPowerLaw(
             index,
-            self._lower_energy.to_value(u.GeV),
-            self._upper_energy.to_value(u.GeV),
+            Emin_input,
+            Emax_input,
         )
 
         return self.power_law.pdf(E_input)
