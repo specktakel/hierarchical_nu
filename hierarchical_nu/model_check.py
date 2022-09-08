@@ -67,9 +67,7 @@ class ModelCheck:
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
             self._exposure_integral = sim._exposure_integral
-            sim.set_stan_filenames(
-                file_config["atmo_sim_filename"], file_config["main_sim_filename"]
-            )
+            sim.set_stan_filename(file_config["sim_filename"])
             sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
@@ -78,7 +76,7 @@ class ModelCheck:
             # Truths
             self.truths = {}
 
-            flux_unit = 1 / (u.m ** 2 * u.s)
+            flux_unit = 1 / (u.m**2 * u.s)
 
             diffuse_bg = self._sources.diffuse
             self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
@@ -132,21 +130,16 @@ class ModelCheck:
             parameter_config["detector_model_type"]
         )
 
-        # Generate atmo and main sim Stan files
-        main_sim_name = file_config["main_sim_filename"][:-5]
-        atmo_sim_name = file_config["atmo_sim_filename"][:-5]
+        # Generate sim Stan file
+        sim_name = file_config["sim_filename"][:-5]
         stan_sim_interface = StanSimInterface(
-            main_sim_name,
+            sim_name,
             sources,
             detector_model_type,
-            atmo_output_file=atmo_sim_name,
         )
 
-        stan_sim_interface.generate_atmo()
-        print("Generated atmo_sim Stan file at:", atmo_sim_name)
-
         stan_sim_interface.generate()
-        print("Generated sim_code Stan file at:", main_sim_name)
+        print("Generated sim_code Stan file at:", sim_name)
 
         # Generate fit Stan file
         fit_name = file_config["fit_filename"][:-5]
@@ -164,11 +157,7 @@ class ModelCheck:
         stanc_options = {"include-paths": list(file_config["include_paths"])}
 
         _ = CmdStanModel(
-            stan_file=file_config["atmo_sim_filename"],
-            stanc_options=stanc_options,
-        )
-        _ = CmdStanModel(
-            stan_file=file_config["main_sim_filename"],
+            stan_file=file_config["sim_filename"],
             stanc_options=stanc_options,
         )
         _ = CmdStanModel(
@@ -356,9 +345,7 @@ class ModelCheck:
             # Simulation
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation(self._exposure_integral)
-            sim.set_stan_filenames(
-                file_config["atmo_sim_filename"], file_config["main_sim_filename"]
-            )
+            sim.set_stan_filename(file_config["sim_filename"])
             sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
             sim.run(seed=s)
             self.sim = sim
@@ -463,7 +450,7 @@ def _initialise_sources():
         par_range=parameter_config["L_range"] * u.erg / u.s,
     )
     diffuse_norm = Parameter(
-        parameter_config["diff_norm"] * 1 / (u.GeV * u.m ** 2 * u.s),
+        parameter_config["diff_norm"] * 1 / (u.GeV * u.m**2 * u.s),
         "diffuse_norm",
         fixed=True,
         par_range=(0, np.inf),

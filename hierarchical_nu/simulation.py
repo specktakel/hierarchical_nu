@@ -118,17 +118,11 @@ class Simulation:
 
     def generate_stan_code(self):
 
-        if self._sources.atmospheric:
-
-            self._atmo_sim_filename = self._stan_interface.generate_atmo()
-
         self._main_sim_filename = self._stan_interface.generate()
 
-    def set_stan_filenames(self, atmo_sim_filename, main_sim_filename):
+    def set_stan_filename(self, sim_filename):
 
-        self._atmo_sim_filename = atmo_sim_filename
-
-        self._main_sim_filename = main_sim_filename
+        self._main_sim_filename = sim_filename
 
     def compile_stan_code(self, include_paths=None):
 
@@ -136,13 +130,6 @@ class Simulation:
             include_paths = [STAN_PATH]
 
         stanc_options = {"include-paths": include_paths}
-
-        if self._sources.atmospheric:
-
-            self._atmo_sim = CmdStanModel(
-                stan_file=self._atmo_sim_filename,
-                stanc_options=stanc_options,
-            )
 
         self._main_sim = CmdStanModel(
             stan_file=self._main_sim_filename,
@@ -216,7 +203,7 @@ class Simulation:
                     outputs_folder.create_dataset(key, data=value[0])
 
             source_folder = sim_folder.create_group("source")
-            flux_unit = 1 / (u.m ** 2 * u.s)
+            flux_unit = 1 / (u.m**2 * u.s)
             source_folder.create_dataset(
                 "total_flux_int",
                 data=self._sources.total_flux_int().to(flux_unit).value,
@@ -315,44 +302,7 @@ class Simulation:
 
     def _get_sim_inputs(self, seed=None):
 
-        atmo_inputs = {}
         sim_inputs = {}
-
-        cz_min = min(
-            [
-                min(e.effective_area._cosz_bin_edges)
-                for _, e in self._exposure_integral.items()
-            ]
-        )
-        cz_max = max(
-            [
-                max(e.effective_area._cosz_bin_edges)
-                for _, e in self._exposure_integral.items()
-            ]
-        )
-
-        if self._sources.atmospheric:
-
-            atmo_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.value
-            atmo_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.value
-
-            atmo_inputs["cosz_min"] = cz_min
-            atmo_inputs["cosz_max"] = cz_max
-
-            atmo_sim = self._atmo_sim.sample(
-                data=atmo_inputs,
-                iter_sampling=1000,
-                chains=1,
-                seed=seed,
-            )
-
-            atmo_energies = atmo_sim.stan_variable("energy")
-            atmo_directions = atmo_sim.stan_variable("omega")
-
-            # Somehow precision of unit_vector gets lost from Stan to here - check
-            atmo_directions = [
-                (_ / np.linalg.norm(_)).tolist() for _ in atmo_directions
-            ]
 
         redshift = [
             s.redshift
@@ -408,14 +358,14 @@ class Simulation:
             if event_type == "tracks":
 
                 sim_inputs["integral_grid_t"] = [
-                    _.to(u.m ** 2).value.tolist()
+                    _.to(u.m**2).value.tolist()
                     for _ in self._exposure_integral["tracks"].integral_grid
                 ]
 
             if event_type == "cascades":
 
                 sim_inputs["integral_grid_c"] = [
-                    _.to(u.m ** 2).value.tolist()
+                    _.to(u.m**2).value.tolist()
                     for _ in self._exposure_integral["cascades"].integral_grid
                 ]
 
@@ -424,20 +374,11 @@ class Simulation:
             sim_inputs["atmo_integ_val"] = (
                 self._exposure_integral["tracks"]
                 .integral_fixed_vals[0]
-                .to(u.m ** 2)
+                .to(u.m**2)
                 .value
             )
 
         sim_inputs["T"] = self._observation_time.to(u.s).value
-
-        if self._sources.atmospheric:
-
-            sim_inputs["N_atmo"] = len(atmo_energies)
-            sim_inputs["atmo_energies"] = atmo_energies
-            sim_inputs["atmo_directions"] = atmo_directions
-            sim_inputs["atmo_weights"] = np.tile(
-                1.0 / len(atmo_energies), len(atmo_energies)
-            )
 
         if self._sources.point_source:
 
@@ -462,6 +403,8 @@ class Simulation:
 
         for event_type in self._detector_model_type.event_types:
 
+            effective_area = self._exposure_integral[event_type].effective_area
+
             if event_type == "tracks":
 
                 try:
@@ -475,6 +418,19 @@ class Simulation:
                     sim_inputs["Emin_det_t"] = (
                         Parameter.get_parameter("Emin_det_tracks").value.to(u.GeV).value
                     )
+
+                # Rejection sampling
+                sim_inputs["rs_bbpl_Eth_t"] = effective_area.rs_bbpl_params[
+                    "threshold_energy"
+                ]
+                sim_inputs["rs_bbpl_gamma1_t"] = effective_area.rs_bbpl_params["gamma1"]
+                sim_inputs["rs_bbpl_gamma2_scale_t"] = effective_area.rs_bbpl_params[
+                    "gamma2_scale"
+                ]
+
+                sim_inputs["rs_N_cosz_bins_t"] = len(effective_area.cosz_bin_edges) - 1
+                sim_inputs["rs_cosz_bin_edges_t"] = effective_area.cosz_bin_edges
+                sim_inputs["rs_cvals_t"] = self._exposure_integral[event_type].c_values
 
             if event_type == "cascades":
 
@@ -492,25 +448,16 @@ class Simulation:
                         .value
                     )
 
-        # Set maximum Aeff based on Emax to speed up rejection sampling
-        Emax = sim_inputs["Esrc_max"]
-        for event_type in self._detector_model_type.event_types:
-
-            lbe = self._exposure_integral[event_type].effective_area._tE_bin_edges[:-1]
-            aeff_max = np.max(
-                self._exposure_integral[event_type].effective_area._eff_area[
-                    lbe < Emax
-                ][:]
-            )
-
-            if event_type == "tracks":
-
-                sim_inputs["aeff_t_max"] = aeff_max + 0.01 * aeff_max
-
-            if event_type == "cascades":
-
-                sim_inputs["aeff_c_max"] = aeff_max + 0.01 * aeff_max
-
+                sim_inputs["rs_bbpl_Eth_c"] = effective_area.rs_bbpl_params[
+                    "threshold_energy"
+                ]
+                sim_inputs["rs_bbpl_gamma1_c"] = effective_area.rs_bbpl_params["gamma1"]
+                sim_inputs["rs_bbpl_gamma2_scale_c"] = effective_area.rs_bbpl_params[
+                    "gamma2_scale"
+                ]
+                sim_inputs["rs_N_cosz_bins_c"] = len(effective_area.cosz_bin_edges) - 1
+                sim_inputs["rs_cosz_bin_edges_c"] = effective_area.cosz_bin_edges
+                sim_inputs["rs_cvals_c"] = self._exposure_integral[event_type].c_values
         if (
             self._detector_model_type == NorthernTracksDetectorModel
             or self._detector_model_type == IceCubeDetectorModel
@@ -523,7 +470,7 @@ class Simulation:
         else:
             sim_inputs["v_lim"] = 0.0
 
-        flux_units = 1 / (u.m ** 2 * u.s)
+        flux_units = 1 / (u.m**2 * u.s)
 
         if self._sources.diffuse:
             diffuse_bg = self._sources.diffuse

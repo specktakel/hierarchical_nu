@@ -105,6 +105,11 @@ class NorthernTracksEffectiveArea(EffectiveArea):
         self._tE_bin_edges = tE_bin_edges
         self._cosz_bin_edges = cosz_bin_edges
 
+        self._rs_bbpl_params = {}
+        self._rs_bbpl_params["threshold_energy"] = 5e4  # GeV
+        self._rs_bbpl_params["gamma1"] = -0.8
+        self._rs_bbpl_params["gamma2_scale"] = 1.2
+
 
 class NorthernTracksEnergyResolution(EnergyResolution):
 
@@ -451,7 +456,7 @@ class NorthernTracksAngularResolution(AngularResolution):
             data["kappa"] = 1.38 / np.radians(data.resolution) ** 2
 
             self._kappa_grid = data.kappa.values
-            self._Egrid = 10 ** data.log10energy.values
+            self._Egrid = 10**data.log10energy.values
             self._poly_params = np.polyfit(
                 data.log10energy.values, data.kappa.values, 5
             )
