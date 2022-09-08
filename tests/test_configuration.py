@@ -38,7 +38,7 @@ def test_user_config_merge():
     hnu_config = HierarchicalNuConfig()
 
     user_configs = [
-        {"file_config": {"atmo_sim_filename": "my_new_name.stan"}},
+        {"file_config": {"sim_filename": "my_new_name.stan"}},
         {"parameter_config": {"src_index": 2.6, "L": 1e47}},
     ]
 
@@ -56,7 +56,7 @@ def test_user_config_merge():
 
         path.unlink()
 
-    assert hnu_config["file_config"]["atmo_sim_filename"] == "my_new_name.stan"
+    assert hnu_config["file_config"]["sim_filename"] == "my_new_name.stan"
 
     assert hnu_config["parameter_config"]["src_index"] == 2.6
 
