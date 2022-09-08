@@ -17,8 +17,7 @@ _config_file = _config_path / _config_name
 @dataclass
 class FileConfig:
 
-    atmo_sim_filename: str = os.path.join(STAN_GEN_PATH, "atmo_gen.stan")
-    main_sim_filename: str = os.path.join(STAN_GEN_PATH, "sim_code.stan")
+    sim_filename: str = os.path.join(STAN_GEN_PATH, "sim_code.stan")
     fit_filename: str = os.path.join(STAN_GEN_PATH, "model_code.stan")
     include_paths: List[str] = field(default_factory=list)
 

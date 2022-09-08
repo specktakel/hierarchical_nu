@@ -120,7 +120,7 @@ class Simulation:
 
         self._main_sim_filename = self._stan_interface.generate()
 
-    def set_stan_filenames(self, sim_filename):
+    def set_stan_filename(self, sim_filename):
 
         self._main_sim_filename = sim_filename
 
