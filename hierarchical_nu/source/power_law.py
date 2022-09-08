@@ -24,36 +24,43 @@ class BoundedPowerLaw(object):
             self.norm = (
                 1.0
                 / self.int_gamma
-                * (self.xmax ** self.int_gamma - self.xmin ** self.int_gamma)
+                * (self.xmax**self.int_gamma - self.xmin**self.int_gamma)
             )
             self.norm = 1.0 / self.norm
 
             self.cdf_factor = self.norm / self.int_gamma
-            self.cdf_const = self.cdf_factor * (-self.xmin ** self.int_gamma)
+            self.cdf_const = self.cdf_factor * (-self.xmin**self.int_gamma)
 
             self.inv_cdf_factor = self.norm ** (-1) * self.int_gamma
-            self.inv_cdf_const = self.xmin ** self.int_gamma
+            self.inv_cdf_const = self.xmin**self.int_gamma
             self.inv_cdf_gamma = 1.0 / self.int_gamma
 
         else:
             self.norm = 1.0 / np.log(self.xmax / self.xmin)
 
-    def pdf(self, x):
+    def pdf(self, x, apply_lim: bool = True):
         """
         Evaluate the probability distribution function at x.
         """
         val = np.power(x, -self.gamma) * self.norm
 
         if not isinstance(x, np.ndarray):
-            if x < self.xmin or x > self.xmax:
-                return 0.0
+            if apply_lim:
+                if x < self.xmin or x > self.xmax:
+                    return 0.0
+                else:
+                    return val
             else:
                 return val
 
         else:
-            idx = np.logical_or(x < self.xmin, x > self.xmax)
-            val[idx] = np.zeros(len(val[idx]))
-            return val
+
+            if apply_lim:
+                idx = np.logical_or(x < self.xmin, x > self.xmax)
+                val[idx] = np.zeros(len(val[idx]))
+                return val
+            else:
+                return val
 
     def cdf(self, x):
         """

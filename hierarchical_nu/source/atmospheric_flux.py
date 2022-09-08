@@ -93,6 +93,7 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             interpolate_cosz = FunctionCall(
                 [vector_coz_grid_points, vector_log_trunc_e, cos_dir], "interpolate", 3
             )
+            # Units of GeV^-1 m^-2 s^-1
             _ = ReturnStatement([(10**interpolate_cosz) * 1e4])
 
 

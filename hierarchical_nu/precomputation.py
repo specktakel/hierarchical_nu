@@ -346,8 +346,8 @@ class ExposureIntegral:
                     f_values = (
                         source.flux_model(
                             E_range * u.GeV, dec * u.rad, 0 * u.rad
-                        ).to_value(1 / (u.GeV * u.s * u.sr * u.cm**2))
-                        * 1e7  # Scale for reasonable c_values
+                        ).to_value(1 / (u.GeV * u.s * u.sr * u.m**2))
+                        * 1e9  # Scale for reasonable c_values
                     )
                     gamma2 = gamma2_scale - 3.7
 
@@ -355,12 +355,10 @@ class ExposureIntegral:
 
                     f_values = (
                         source.flux_model.spectral_shape.pdf(
-                            E_range * u.GeV,
-                            Emin * u.GeV,
-                            Emax * u.GeV,
+                            E_range * u.GeV, Emin * u.GeV, Emax * u.GeV, apply_lim=False
                         )
                         * aeff_values
-                    ) / (1 + source.redshift)
+                    )
                     gamma2 = (
                         gamma2_scale
                         - source.flux_model.spectral_shape.parameters["index"].value
@@ -414,14 +412,11 @@ def bbpl_pdf(x, x0, x1, x2, gamma1, gamma2):
 
     N = 1.0 / (I1 + I2)
 
-    mask1 = (x <= x1) & (x >= x0)
-    mask2 = (x > x1) & (x <= x2)
-    mask3 = mask1 | mask2
+    mask1 = x <= x1
+    mask2 = x > x1
 
     output[mask1] = N * x[mask1] ** gamma1
 
     output[mask2] = N * x1 ** (gamma1 - gamma2) * x[mask2] ** gamma2
-
-    output[~mask3] = 0
 
     return output

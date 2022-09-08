@@ -476,14 +476,14 @@ class PowerLawSpectrum(SpectralShape):
         return self.power_law.samples(N)
 
     @u.quantity_input
-    def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV):
+    def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV, apply_lim: bool = True):
         """
         Return PDF.
         """
 
         E_input = E.to_value(u.GeV)
-        Emin_input = E.to_value(u.GeV)
-        Emax_input = E.to_value(u.GeV)
+        Emin_input = Emin.to_value(u.GeV)
+        Emax_input = Emax.to_value(u.GeV)
         index = self._parameters["index"].value
 
         self.power_law = BoundedPowerLaw(
@@ -492,7 +492,7 @@ class PowerLawSpectrum(SpectralShape):
             Emax_input,
         )
 
-        return self.power_law.pdf(E_input)
+        return self.power_law.pdf(E_input, apply_lim=apply_lim)
 
     @classmethod
     def make_stan_sampling_func(cls, f_name) -> UserDefinedFunction:

@@ -145,9 +145,11 @@ class StanSimInterface(StanInterface):
             if "tracks" in self._event_types:
 
                 self._Emin_det_t = ForwardVariableDef("Emin_det_t", "real")
-                self._rs_bbpl_Eth_t = ForwardVariableDef("rs_bpl_Eth_t", "real")
-                self._rs_bbpl_gamma1_t = ForwardVariableDef("rs_bpl_gamma1_t", "real")
-                self._rs_bbpl_gamma2_t = ForwardVariableDef("rs_bpl_gamma2_t", "real")
+                self._rs_bbpl_Eth_t = ForwardVariableDef("rs_bbpl_Eth_t", "real")
+                self._rs_bbpl_gamma1_t = ForwardVariableDef("rs_bbpl_gamma1_t", "real")
+                self._rs_bbpl_gamma2_scale_t = ForwardVariableDef(
+                    "rs_bbpl_gamma2_scale_t", "real"
+                )
                 self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
                 self._rs_cvals_t = ForwardArrayDef(
                     "rs_cvals_t", "vector[rs_N_cosz_bins_t]", [f"[{self.sources.N}]"]
@@ -164,9 +166,11 @@ class StanSimInterface(StanInterface):
             if "cascades" in self._event_types:
 
                 self._Emin_det_c = ForwardVariableDef("Emin_det_c", "real")
-                self._rs_bbpl_Eth_c = ForwardVariableDef("rs_bpl_Eth_c", "real")
-                self._rs_bbpl_gamma1_c = ForwardVariableDef("rs_bpl_gamma1_c", "real")
-                self._rs_bbpl_gamma2_c = ForwardVariableDef("rs_bpl_gamma2_c", "real")
+                self._rs_bbpl_Eth_c = ForwardVariableDef("rs_bbpl_Eth_c", "real")
+                self._rs_bbpl_gamma1_c = ForwardVariableDef("rs_bbpl_gamma1_c", "real")
+                self._rs_bbpl_gamma2_scale_c = ForwardVariableDef(
+                    "rs_bbpl_gamma2_scale_c", "real"
+                )
                 self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
                 self._rs_cvals_c = ForwardArrayDef(
                     "rs_cvals_c", "vector[rs_N_cosz_bins_c]", [f"[{self.sources.N}]"]
@@ -569,7 +573,6 @@ class StanSimInterface(StanInterface):
             self._accept = ForwardVariableDef("accept", "int")
             self._detected = ForwardVariableDef("detected", "int")
             self._ntrials = ForwardVariableDef("ntrials", "int")
-            self._prob = ForwardVariableDef("prob", "simplex[2]")
 
             self._event = ForwardArrayDef("event", "unit_vector[3]", self._N_str)
 
@@ -581,6 +584,7 @@ class StanSimInterface(StanInterface):
             self._g_value = ForwardVariableDef("g_value", "real")
             self._c_value = ForwardVariableDef("c_value", "real")
             self._idx_cosz = ForwardVariableDef("idx_cosz", "int")
+            self._gamma2 = ForwardVariableDef("gamma2", "real")
 
             if "tracks" in self._event_types:
                 Nex_t_sim = ForwardVariableDef("Nex_t_sim", "real")
@@ -610,16 +614,6 @@ class StanSimInterface(StanInterface):
                     with WhileLoopContext([StringExpression([self._accept != 1])]):
 
                         self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
-                        self._E[i] << FunctionCall(
-                            [
-                                self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                self._rs_bbpl_Eth_t,
-                                self._Esrc_max / (1 + self._z[self._lam[i]]),
-                                self._rs_bbpl_gamma1_t,
-                                self._rs_bbpl_gamma2_t,
-                            ],
-                            "bbpl_rng",
-                        )
 
                         with IfBlockContext(
                             [StringExpression([self._lam[i], " <= ", self._Ns])]
@@ -677,6 +671,32 @@ class StanSimInterface(StanInterface):
                                 else:
                                     src_index_ref = self._src_index[self._lam[i]]
 
+                                (
+                                    self._gamma2
+                                    << self._rs_bbpl_gamma2_scale_t - src_index_ref
+                                )
+                                self._E[i] << FunctionCall(
+                                    [
+                                        self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_Eth_t,
+                                        self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_gamma1_t,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_rng",
+                                )
+                                self._g_value << FunctionCall(
+                                    [
+                                        self._E[i],
+                                        self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_Eth_t,
+                                        self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_gamma1_t,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_pdf",
+                                )
+
                                 self._src_factor << self._src_spectrum_lpdf(
                                     self._E[i],
                                     src_index_ref,
@@ -697,9 +717,32 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
 
+                                self._gamma2 << self._rs_bbpl_gamma2_scale_t - 3.7
+                                self._E[i] << FunctionCall(
+                                    [
+                                        self._Esrc_min,
+                                        self._rs_bbpl_Eth_t,
+                                        self._Esrc_max,
+                                        self._rs_bbpl_gamma1_t,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_rng",
+                                )
+                                self._g_value << FunctionCall(
+                                    [
+                                        self._E[i],
+                                        self._Esrc_min,
+                                        self._rs_bbpl_Eth_t,
+                                        self._Esrc_max,
+                                        self._rs_bbpl_gamma1_t,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_pdf",
+                                )
+
                                 (
                                     self._src_factor
-                                    << self._atmo_flux(self._E[i], self._omega) * 1e7
+                                    << self._atmo_flux(self._E[i], self._omega) * 1e9
                                 )  # Scale for reasonable c_values (see precomputation)
                                 self._Esrc[i] << self._E[i]
 
@@ -708,6 +751,32 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
+
+                                (
+                                    self._gamma2
+                                    << self._rs_bbpl_gamma2_scale_t - self._diff_index
+                                )
+                                self._E[i] << FunctionCall(
+                                    [
+                                        self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_Eth_t,
+                                        self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_gamma1_t,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_rng",
+                                )
+                                self._g_value << FunctionCall(
+                                    [
+                                        self._E[i],
+                                        self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_Eth_t,
+                                        self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_gamma1_t,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_pdf",
+                                )
 
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
@@ -729,9 +798,32 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
 
+                                self._gamma2 << self._rs_bbpl_gamma2_scale_t - 3.7
+                                self._E[i] << FunctionCall(
+                                    [
+                                        self._Esrc_min,
+                                        self._rs_bbpl_Eth_t,
+                                        self._Esrc_max,
+                                        self._rs_bbpl_gamma1_t,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_rng",
+                                )
+                                self._g_value << FunctionCall(
+                                    [
+                                        self._E[i],
+                                        self._Esrc_min,
+                                        self._rs_bbpl_Eth_t,
+                                        self._Esrc_max,
+                                        self._rs_bbpl_gamma1_t,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_pdf",
+                                )
+
                                 (
                                     self._src_factor
-                                    << self._atmo_flux(self._E[i], self._omega) * 1e7
+                                    << self._atmo_flux(self._E[i], self._omega) * 1e9
                                 )  # Scale for reasonable c_values (see precomputation)
                                 self._Esrc[i] << self._E[i]
 
@@ -752,17 +844,7 @@ class StanSimInterface(StanInterface):
                         )
 
                         self._f_value << self._src_factor * self._aeff_factor
-                        self._g_value << FunctionCall(
-                            [
-                                self._E[i],
-                                self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                self._rs_bbpl_Eth_t,
-                                self._Esrc_max / (1 + self._z[self._lam[i]]),
-                                self._rs_bbpl_gamma1_t,
-                                self._rs_bbpl_gamma2_t,
-                            ],
-                            "bbpl_pdf",
-                        )
+
                         self._idx_cosz << FunctionCall(
                             [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
                         )
@@ -852,16 +934,6 @@ class StanSimInterface(StanInterface):
                     with WhileLoopContext([StringExpression([self._accept != 1])]):
 
                         self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
-                        self._E[i] << FunctionCall(
-                            [
-                                self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                self._rs_bbpl_Eth_c,
-                                self._Esrc_max / (1 + self._z[self._lam[i]]),
-                                self._rs_bbpl_gamma1_c,
-                                self._rs_bbpl_gamma2_c,
-                            ],
-                            "bbpl_rng",
-                        )
 
                         # Sample position
                         with IfBlockContext(
@@ -895,6 +967,32 @@ class StanSimInterface(StanInterface):
                                 else:
                                     src_index_ref = self._src_index[self._lam[i]]
 
+                                (
+                                    self._gamma2
+                                    << self._rs_bbpl_gamma2_scale_c - src_index_ref
+                                )
+                                self._E[i] << FunctionCall(
+                                    [
+                                        self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_Eth_c,
+                                        self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_gamma1_c,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_rng",
+                                )
+                                self._g_value << FunctionCall(
+                                    [
+                                        self._E[i],
+                                        self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_Eth_c,
+                                        self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_gamma1_c,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_pdf",
+                                )
+
                                 self._src_factor << self._src_spectrum_lpdf(
                                     self._E[i],
                                     src_index_ref,
@@ -914,6 +1012,32 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
+
+                                (
+                                    self._gamma2
+                                    << self._rs_bbpl_gamma2_scale_c - self._diff_index
+                                )
+                                self._E[i] << FunctionCall(
+                                    [
+                                        self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_Eth_c,
+                                        self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_gamma1_c,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_rng",
+                                )
+                                self._g_value << FunctionCall(
+                                    [
+                                        self._E[i],
+                                        self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_Eth_c,
+                                        self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                        self._rs_bbpl_gamma1_c,
+                                        self._gamma2,
+                                    ],
+                                    "bbpl_pdf",
+                                )
 
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
@@ -935,17 +1059,7 @@ class StanSimInterface(StanInterface):
                         ].energy_resolution(self._E[i])
 
                         self._f_value = self._src_factor * self._aeff_factor
-                        self._g_value << FunctionCall(
-                            [
-                                self._E[i],
-                                self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                self._rs_bbpl_Eth_c,
-                                self._Esrc_max / (1 + self._z[self._lam[i]]),
-                                self._rs_bbpl_gamma1_c,
-                                self._rs_bbpl_gamma2_c,
-                            ],
-                            "bbpl_pdf",
-                        )
+
                         self._idx_cosz << FunctionCall(
                             [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
                         )
