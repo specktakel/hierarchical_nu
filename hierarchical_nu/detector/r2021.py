@@ -33,21 +33,23 @@ logger = logging.getLogger(__name__)
 Cache.set_cache_dir(".cache")
 
 
-class NorthernTracksEffectiveArea(EffectiveArea):
+class R2021EffectiveArea(EffectiveArea):
     """
-    Effective area for the two-year Northern Tracks release:
-    https://icecube.wisc.edu/science/data/HE_NuMu_diffuse
+    Effective area for the ten-year All Sky Point Source release:
+    https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
     """
 
-    local_path = "input/tracks/effective_area.h5"
+    local_path = "input/tracks/IC86_II_effectiveArea.csv"
     DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
 
-    CACHE_FNAME = "aeff_tracks.npz"
+    CACHE_FNAME = "aeff_r2021.npz"
 
     def __init__(self) -> None:
+
+        #what does this? super() is ABC with no arguments specified
         """
         super().__init__(
-            "NorthernTracksEffectiveArea",
+            "R2021EffectiveArea",
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real",
@@ -60,7 +62,7 @@ class NorthernTracksEffectiveArea(EffectiveArea):
             hist = SimpleHistogram(
                 self._eff_area,
                 [self._tE_bin_edges, self._cosz_bin_edges],
-                "NorthernTracksEffAreaHist",
+                "R2021EffAreaHist",
             )
 
             cos_dir = "cos(pi() - acos(true_dir[3]))"
@@ -77,29 +79,20 @@ class NorthernTracksEffectiveArea(EffectiveArea):
                 cosz_bin_edges = data["cosz_bin_edges"]
         else:
 
-            import h5py  # type: ignore
+            from icecube_tools.detector.effective_area import EffectiveArea
 
-            with h5py.File(self.DATA_PATH, "r") as f:
+            aeff = EffectiveArea.from_dataset("20210126")
+            eff_area = aeff.values
+            tE_bin_edges = aeff.true_energy_bins
+            cosz_bin_edges = aeff.cos_zenith_bins
 
-                aeff_numu = f["2010/nu_mu/area"][()]
-                aeff_numubar = f["2010/nu_mu_bar/area"][()]
-
-                # Sum over reco energy and average numu/numubar
-                eff_area = 0.5 * (aeff_numu.sum(axis=2) + aeff_numubar.sum(axis=2))
-
-                # True Energy [GeV]
-                tE_bin_edges = f["2010/nu_mu/bin_edges_0"][:]
-
-                # cos(zenith)
-                cosz_bin_edges = f["2010/nu_mu/bin_edges_1"][:]
-
-                with Cache.open(self.CACHE_FNAME, "wb") as fr:
-                    np.savez(
-                        fr,
-                        eff_area=eff_area,
-                        tE_bin_edges=tE_bin_edges,
-                        cosz_bin_edges=cosz_bin_edges,
-                    )
+            with Cache.open(self.CACHE_FNAME, "wb") as fr:
+                np.savez(
+                    fr,
+                    eff_area=eff_area,
+                    tE_bin_edges=tE_bin_edges,
+                    cosz_bin_edges=cosz_bin_edges,
+                )
 
         self._eff_area = eff_area
         self._tE_bin_edges = tE_bin_edges
@@ -111,7 +104,7 @@ class NorthernTracksEffectiveArea(EffectiveArea):
         self._rs_bbpl_params["gamma2_scale"] = 1.2
 
 
-class NorthernTracksEnergyResolution(EnergyResolution):
+class R2021EnergyResolution(EnergyResolution):
 
     """
     Energy resolution for Northern Tracks Sample
@@ -119,10 +112,10 @@ class NorthernTracksEnergyResolution(EnergyResolution):
     Data from https://arxiv.org/pdf/1811.07979.pdf
     """
 
-    local_path = "input/tracks/effective_area.h5"
+    local_path = "input/tracks/IC86_II_smearing.csv"
     DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
 
-    CACHE_FNAME = "energy_reso_tracks.npz"
+    CACHE_FNAME = "energy_reso_r2021.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
         """
@@ -154,7 +147,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         if mode == DistributionMode.PDF:
 
             super().__init__(
-                "NorthernTracksEnergyResolution",
+                "R2021EnergyResolution",
                 ["true_energy", "reco_energy"],
                 ["real", "real"],
                 "real",
