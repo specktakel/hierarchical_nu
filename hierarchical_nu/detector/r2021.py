@@ -2,6 +2,11 @@ from typing import Sequence, Tuple
 import os
 import pandas as pd
 import numpy as np
+import sys
+
+from icecube_tools.detector.r2021 import R2021IRF
+
+from hierarchical_nu.backend.stan_generator import IfBlockContext
 
 from ..utils.cache import Cache
 from ..backend import (
@@ -47,16 +52,16 @@ class R2021EffectiveArea(EffectiveArea):
     def __init__(self) -> None:
 
         #what does this? super() is ABC with no arguments specified
-        """
+
         super().__init__(
             "R2021EffectiveArea",
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real",
         )
-        """
+
         self.setup()
-        """
+
         # Define Stan interface.
         with self:
             hist = SimpleHistogram(
@@ -68,7 +73,7 @@ class R2021EffectiveArea(EffectiveArea):
             cos_dir = "cos(pi() - acos(true_dir[3]))"
 
             _ = ReturnStatement([hist("true_energy", cos_dir)])
-        """
+
     def setup(self) -> None:
 
         if self.CACHE_FNAME in Cache:
@@ -124,10 +129,16 @@ class R2021EnergyResolution(EnergyResolution):
                 First item is true energy, second item is reco energy
         """
 
+        self.irf = R2021IRF()
+
+
+        #TODO edit type hints later when everything else works
         self._mode = mode
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
         self._poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
+        self._poly_limits_battery: Sequence = []
+        self._declination_bins = self.irf.declination_bins
 
         # For prob_Edet_above_threshold
         self._pdet_limits = (1e2, 1e8)
@@ -136,29 +147,29 @@ class R2021EnergyResolution(EnergyResolution):
         self.setup()
 
         if mode == DistributionMode.PDF:
-            mixture_name = "nt_energy_res_mix"
+            mixture_name = "r2021_energy_res_mix"
         elif mode == DistributionMode.RNG:
-            mixture_name = "nt_energy_res_mix_rng"
+            mixture_name = "r2021_energy_res_mix_rng"
         else:
             RuntimeError("This should never happen")
 
         lognorm = LognormalMixture(mixture_name, self.n_components, self._mode)
 
         if mode == DistributionMode.PDF:
-
+            #this should in princible allow for a third dependency, namely declination
             super().__init__(
                 "R2021EnergyResolution",
-                ["true_energy", "reco_energy"],
-                ["real", "real"],
+                ["true_energy", "reco_energy", "declination"],
+                ["real", "real", "real"],
                 "real",
             )
 
         elif mode == DistributionMode.RNG:
 
             super().__init__(
-                "NorthernTracksEnergyResolution_rng",
-                ["true_energy"],
-                ["real"],
+                "R2021EnergyResolution_rng",
+                ["true_energy", "declination"],
+                ["real", "real"],
                 "real",
             )
 
@@ -170,16 +181,18 @@ class R2021EnergyResolution(EnergyResolution):
 
         # Define Stan interface.
         with self:
-
+            
             truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
 
+            #self._poly_params_mu should have shape (3, 3, 6)
+            #3: declination bins, 3: components, 6: poly-coeffs
             mu_poly_coeffs = StanArray(
                 "NorthernTracksEnergyResolutionMuPolyCoeffs",
                 "real",
                 self._poly_params_mu,
             )
-
+            #same as above
             sd_poly_coeffs = StanArray(
                 "NorthernTracksEnergyResolutionSdPolyCoeffs",
                 "real",
@@ -195,8 +208,11 @@ class R2021EnergyResolution(EnergyResolution):
                 "weights", "vector[" + str(self._n_components) + "]"
             )
 
-            # for some reason stan complains about weights not adding to 1 if
-            # implementing this via StanArray
+            declination_bins = StanArray("dec_bins", "real", self._declination_bins)
+            
+            declination_index = ForwardVariableDef("dec_ind", "int")
+            declination_index << StringExpression(["binary_search(declination, ", declination_bins, ")"])
+
             with ForLoopContext(1, self._n_components, "i") as i:
                 weights[i] << StringExpression(["1.0/", self._n_components])
 
@@ -208,7 +224,7 @@ class R2021EnergyResolution(EnergyResolution):
                     log_trunc_e,
                     ", ",
                     "to_vector(",
-                    mu_poly_coeffs[i],
+                    mu_poly_coeffs[declination_index][i],
                     "))",
                 ]
 
@@ -217,7 +233,7 @@ class R2021EnergyResolution(EnergyResolution):
                     log_trunc_e,
                     ", ",
                     "to_vector(",
-                    sd_poly_coeffs[i],
+                    sd_poly_coeffs[declination_index][i],
                     "))",
                 ]
 
@@ -237,59 +253,96 @@ class R2021EnergyResolution(EnergyResolution):
 
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
                 data = np.load(fr)
-                eres = data["eres"]
-                tE_bin_edges = data["tE_bin_edges"]
-                rE_bin_edges = data["rE_bin_edges"]
-                poly_params_mu = data["poly_params_mu"]
-                poly_params_sd = data["poly_params_sd"]
-                poly_limits = (float(data["Emin"]), float(data["Emax"]))
+                self._eres = data["eres"]
+                self._tE_bin_edges = data["tE_bin_edges"]
+                self._rE_bin_edges = data["rE_bin_edges"]
+                self._poly_params_mu = data["poly_params_mu"]
+                self._poly_params_sd = data["poly_params_sd"]
+                self._poly_limits = (float(data["Emin"]), float(data["Emax"]))
 
         # Or load from file
         else:
 
-            import h5py
-
-            with h5py.File(self.DATA_PATH, "r") as f:
-
-                aeff_numu = f["2010/nu_mu/area"][()]
-                aeff_numubar = f["2010/nu_mu_bar/area"][()]
-
-                # Sum over cosz and average over numu/numubar
-                eff_area = 0.5 * (aeff_numu.sum(axis=1) + aeff_numubar.sum(axis=1))
-
-                # True Energy [GeV]
-                tE_bin_edges = f["2010/nu_mu/bin_edges_0"][:]
-
-                # Reco Energy [GeV]
-                rE_bin_edges = f["2010/nu_mu/bin_edges_2"][:]
-
-            # Normalize along Ereco
-            bin_width = np.log10(rE_bin_edges[1]) - np.log10(rE_bin_edges[0])
-            eres = np.zeros_like(eff_area)
-            for i, pdf in enumerate(eff_area):
-                if pdf.sum() > 0:
-                    eres[i] = pdf / (pdf.sum() * bin_width)
-
+            tE_bin_edges = np.power(10, self.irf.true_energy_bins)
             tE_binc = 0.5 * (tE_bin_edges[:-1] + tE_bin_edges[1:])
-            rE_binc = 0.5 * (rE_bin_edges[:-1] + rE_bin_edges[1:])
+            
+            for c_dec, (dec_low, dec_high) in enumerate(
+                zip(self._declination_bins[:-1], self._declination_bins[1:])
+            ):
 
-            fit_params, rebin_tE_binc = self._fit_energy_res(
-                tE_binc, rE_binc, eres, self._n_components, rebin=3
-            )
+                # Find common rE binning per declination
+                _min = 10
+                _max = 0
+                _diff = 0
 
-            # Min and max values
-            imin = 5
-            imax = -15
+                for bins in self.irf.reco_energy_bins[:, c_dec]:
+                    c_min = bins.min()
+                    c_max = bins.max()
+                    c_diff = np.diff(bins).max()
+                    _min = c_min if c_min < _min else _min
+                    _max = c_max if c_max > _max else _max
+                    _diff = c_diff if c_diff > _diff else _diff
 
-            Emin = rebin_tE_binc[imin]
-            Emax = rebin_tE_binc[imax]
+                # use bins encompassing the entire range
+                # round number to next integer, should that be +1 bc bin edges and not bins?
+                num_bins = int(np.ceil((_max - _min) / _diff))
+                rE_bin_edges = np.logspace(_min, _max, num_bins)
+                rE_binc = 0.5 * (rE_bin_edges[:-1] + rE_bin_edges[1:])
 
-            # Fit polynomial
-            poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
-                fit_params, rebin_tE_binc, Emin, Emax, polydeg=5
-            )
+                # Normalize along Ereco
+                # log10 because rE_bin_edges live in linear space
+                # weird choice to me, everything else with these pdfs is done in log space
+                bin_width = np.log10(rE_bin_edges[1]) - np.log10(rE_bin_edges[0])
+                eres = np.zeros((tE_bin_edges.size-1, rE_bin_edges.size-1))
+                for i, pdf in enumerate(self.irf.reco_energy[:, c_dec]):
+                    for j, (elow, ehigh) in enumerate(zip(
+                        rE_bin_edges[:-1], rE_bin_edges[1:]
+                        )
+                    ):
+                        eres[i, j] = pdf.cdf(np.log10(ehigh)) - pdf.cdf(np.log10(elow))
+                    #eres should already be normalised bc the pdfs (or rather cdfs)
+                    #of which the values are taken are already noralised, nevertheless:
+                    eres[i, :] = eres[i, :] / np.sum(eres[i] * bin_width)
+
+            
+                # do not rebin -> rebin=1
+                fit_params, rebin_tE_binc = self._fit_energy_res(
+                    tE_binc, rE_binc, eres, self._n_components, rebin=1
+                )
+
+                # take entire range
+                imin = 0
+                imax = -1
+
+                # I get that Emin, Emax for fitting might be the bin centers
+                # but why for the truncated parameterisation?
+                # the histogram data covers all the bin, not just up to/down to the center of last/first bin
+                Emin = rebin_tE_binc[imin]
+                Emax = rebin_tE_binc[imax]
+
+            # Fit polynomial:
+                poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
+                    fit_params, rebin_tE_binc, Emin, Emax, polydeg=5
+                )
+                self._poly_params_mu.append(poly_params_mu)
+                self._poly_params_sd.append(poly_params_sd)
+                self._poly_limits_battery.append(poly_limits)
+
+            #find smallest range of poly limits to use globally
+            poly_low = [i[0] for i in self._poly_limits_battery]
+            poly_high = [i[1] for i in self._poly_limits_battery]
+            poly_limits = (max(poly_low), min(poly_high))
+
+            # Save values
+            self._poly_limits = poly_limits
+            self._eres = eres
+            self._tE_bin_edges = tE_bin_edges
+            self._rE_bin_edges = rE_bin_edges
+
+            
 
             # Save polynomial
+
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
 
                 np.savez(
@@ -297,20 +350,11 @@ class R2021EnergyResolution(EnergyResolution):
                     eres=eres,
                     tE_bin_edges=tE_bin_edges,
                     rE_bin_edges=rE_bin_edges,
-                    poly_params_mu=poly_params_mu,
-                    poly_params_sd=poly_params_sd,
+                    poly_params_mu=self._poly_params_mu,
+                    poly_params_sd=self._poly_params_sd,
                     Emin=Emin,
                     Emax=Emax,
                 )
-
-            # Set properties
-            self._eres = eres
-            self._tE_bin_edges = tE_bin_edges
-            self._rE_bin_edges = rE_bin_edges
-
-            self._poly_params_mu = poly_params_mu
-            self._poly_params_sd = poly_params_sd
-            self._poly_limits = poly_limits
 
             # Show results
             self.plot_fit_params(fit_params, rebin_tE_binc)
@@ -321,14 +365,6 @@ class R2021EnergyResolution(EnergyResolution):
                 rebin_tE_binc=rebin_tE_binc,
             )
 
-        # Set properties
-        self._eres = eres
-        self._tE_bin_edges = tE_bin_edges
-        self._rE_bin_edges = rE_bin_edges
-
-        self._poly_params_mu = poly_params_mu
-        self._poly_params_sd = poly_params_sd
-        self._poly_limits = poly_limits
 
 
 class NorthernTracksAngularResolution(AngularResolution):
