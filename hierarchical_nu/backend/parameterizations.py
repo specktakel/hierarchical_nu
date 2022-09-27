@@ -228,22 +228,20 @@ class SimpleHistogram_rng(UserDefinedFunction):
     def __init__(
         self,
         name: str,
-        values: np.ndarray,
-        bins: np.ndarray
     ):
         super().__init__(name, ["hist_array", "hist_edges"], ["array[] real", "array[] real"], "real")
 
         with self:
-            self._bin_width = ForwardArrayDef("bin_width", "real", ["[", values.size, "]"])
-            self._multiplied = ForwardArrayDef("multiplied", "real", ["[", values.size,"]"])
-            self._normalised = ForwardVectorDef("normalised", [values.size])
-            self._bins = bins
-            self._histogram = values
-            with ForLoopContext(2, bins.size, "i") as i:
+            self._bin_width = ForwardArrayDef("bin_width", "real", ["[size(hist_array)]"])
+            self._multiplied = ForwardArrayDef("multiplied", "real", ["[size(hist_array)]"])
+            self._normalised = ForwardVectorDef("normalised", ["size(hist_array)"])
+            #self._bins = bins
+            #self._histogram = values
+            with ForLoopContext(2, "size(hist_edges)", "i") as i:
                 self._bin_width[i-1] << StringExpression(["hist_edges[i] - hist_edges[i-1]"]) #self._bins[i] - self._bins[i-1]
-            with ForLoopContext(1, values.size, "i") as i:
+            with ForLoopContext(1, "size(hist_array)", "i") as i:
                 self._multiplied[i] << StringExpression(["hist_array[i] * bin_width[i]"])  #self._histogram[i] * self._bin_width[i]
-            with ForLoopContext(1, values.size, "i") as i:
+            with ForLoopContext(1, "size(hist_array)", "i") as i:
                 self._normalised[i] << StringExpression(["hist_array[i] / sum(multiplied)"]) # self._histogram[i] / FunctionCall([self._multiplied], "sum")
             
             index = ForwardVariableDef("index", "int")
