@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["VariableDef", "StanArray", "ForwardArrayDef", "ForwardVariableDef"]
+__all__ = ["VariableDef", "StanArray", "ForwardArrayDef", "ForwardVariableDef", "ForwardVectorDef"]
 
 
 class VariableDef(NamedExpression):
@@ -102,6 +102,24 @@ class ForwardArrayDef(VariableDef):
     def _gen_def_code(self) -> TListTExpression:
         # return [self._var_type + " " + self.name] + self._array_dim
         return ["array"] + self._array_dim + [" " + self._var_type + " " + self.name]
+
+
+
+class ForwardVectorDef(VariableDef):
+    """Define a vector of variables"""
+
+    def __init__(self, name: str, array_dim: TListTExpression) -> None:
+
+        self._array_dim = array_dim
+        VariableDef.__init__(self, name)
+
+        for expr in self._array_dim:
+            if isinstance(expr, Expression):
+                expr.add_output(self)
+
+    def _gen_def_code(self) -> TListTExpression:
+        # return [self._var_type + " " + self.name] + self._array_dim
+        return ["vector["] + self._array_dim + ["] " + self.name]
 
 
 class ParameterVectorDef(ParameterDef):

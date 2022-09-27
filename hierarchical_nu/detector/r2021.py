@@ -320,7 +320,7 @@ class R2021EnergyResolution(EnergyResolution):
                 Emin = rebin_tE_binc[imin]
                 Emax = rebin_tE_binc[imax]
 
-            # Fit polynomial:
+                # Fit polynomial:
                 poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
                     fit_params, rebin_tE_binc, Emin, Emax, polydeg=5
                 )
@@ -357,6 +357,8 @@ class R2021EnergyResolution(EnergyResolution):
                 )
 
             # Show results
+            # this isn't working properly right now, why though?
+            """
             self.plot_fit_params(fit_params, rebin_tE_binc)
             self.plot_parameterizations(
                 tE_binc,
@@ -364,7 +366,7 @@ class R2021EnergyResolution(EnergyResolution):
                 fit_params,
                 rebin_tE_binc=rebin_tE_binc,
             )
-
+            """
 
 
 class NorthernTracksAngularResolution(AngularResolution):
@@ -385,9 +387,11 @@ class NorthernTracksAngularResolution(AngularResolution):
     local_path = "input/tracks/NorthernTracksAngularRes.csv"
     DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
 
-    CACHE_FNAME = "angular_reso_tracks.npz"
+    CACHE_FNAME = "angular_reso_r2021.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
+
+        self.irf = R2021IRF()
 
         if mode == DistributionMode.PDF:
 
