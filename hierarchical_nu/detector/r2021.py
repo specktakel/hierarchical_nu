@@ -15,6 +15,7 @@ from ..backend import (
     TruncatedParameterization,
     LogParameterization,
     SimpleHistogram,
+    SimpleHistogram_rng,
     ReturnStatement,
     FunctionCall,
     DistributionMode,
@@ -24,6 +25,7 @@ from ..backend import (
     ForwardArrayDef,
     StanArray,
     StringExpression,
+    UserDefinedFunction,
 )
 from .detector_model import (
     EffectiveArea,
@@ -36,6 +38,84 @@ import logging
 
 logger = logging.getLogger(__name__)
 Cache.set_cache_dir(".cache")
+
+
+class HistogramSampler():
+    def __init__(self):
+        pass
+
+
+    def _generate_ragged_ereco_data(self, irf: R2021IRF):
+        """
+        Should take the R2021 icecube_tools irf and operate on its arrays.
+        """
+
+        num_of_bins = []
+        num_of_values = []
+        cum_num_of_values = []
+        cum_num_of_bins = []
+        indices = np.zeros((14, 3), dtype=int)
+        counter = 0
+        # irf = R2021IRF()   # substitute by provided irf later
+        for c_e, etrue in enumerate(irf.true_energy_values):
+            #inner loop is declination
+            for c_d, dec in enumerate(irf.declination_bins[:-1]):
+                n, b = irf._marginalisation(c_e, c_d)
+                if counter != 0:
+                    bins = np.concatenate((bins, b))
+                    values = np.concatenate((values, n))
+                else:
+                    bins = b.copy()
+                    values = n.copy()
+                num_of_values.append(n.size)
+                num_of_bins.append(b.size)
+                if counter != 0:
+                    cum_num_of_values.append(cum_num_of_values[-1]+n.size)
+                    cum_num_of_bins.append(cum_num_of_bins[-1]+b.size)
+                else:
+                    cum_num_of_values.append(n.size)
+                    cum_num_of_bins.append(b.size)
+                indices[c_e, c_d] = counter
+                counter += 1
+        self._cum_num_values = cum_num_of_values
+        self._cum_num_edges = cum_num_of_bins
+        self._num_values = num_of_values
+        self._num_edges = num_of_bins
+
+        self._get_ragged_index = UserDefinedFunction("get_ragged_index", ["etrue", "dec"], ["int", "int"], "int")
+        # Takes indices of etrue and dec (to be determined elsewhere!)
+        with self._get_ragged_index:
+            ReturnStatement(["3 * etrue + dec"])
+
+        for name, array in zip(["get_cum_num_vals", "get_cum_num_edges", "get_num_vals", "get_num_edges"],
+            [self._cum_num_values, self._cum_num_edges, self._num_values, self._num_edges]):
+            f = UserDefinedFunction(name, ["idx"], ["int"], "int")
+            with f:
+                arr = StanArray("array", "int", array)
+                ReturnStatement(["array[idx]"])
+
+        self._ragged_hist = UserDefinedFunction("get_ragged_hist", ["idx"], ["int"], "real[]")
+        with self._ragged_hist:
+            arr = StanArray("array", "real", values)
+            self._make_ragged_start_stop("vals")
+            ReturnStatement(["array[start:stop]"])
+
+        self._ragged_edges = UserDefinedFunction("get_ragged_edges", ["idx"], ["int"], "real[]")
+        with self._ragged_edges:
+            arr = StanArray("array", "real", bins)
+            self._make_ragged_start_stop("edges")
+            ReturnStatement(["array[start:stop]"])
+
+        
+    def _make_ragged_start_stop(self, type):
+        start = ForwardVariableDef("start", "int")
+        stop = ForwardVariableDef("stop", "int")
+        if type == "edges" or type == "vals":
+            start << StringExpression(["get_cum_num_{}(idx)-get_num_{}(idx)+1".format(type, type)])
+            stop << StringExpression(["get_cum_num_{}(idx)".format(type)])
+        else:
+            raise ValueError("No other type available.")
+        
 
 
 class R2021EffectiveArea(EffectiveArea):
@@ -108,8 +188,9 @@ class R2021EffectiveArea(EffectiveArea):
         self._rs_bbpl_params["gamma1"] = -0.8
         self._rs_bbpl_params["gamma2_scale"] = 1.2
 
+        
 
-class R2021EnergyResolution(EnergyResolution):
+class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
     """
     Energy resolution for Northern Tracks Sample
@@ -130,6 +211,7 @@ class R2021EnergyResolution(EnergyResolution):
         """
 
         self.irf = R2021IRF()
+        #super().__init__()
 
 
         #TODO edit type hints later when everything else works
@@ -146,108 +228,118 @@ class R2021EnergyResolution(EnergyResolution):
         self._n_components = 3
         self.setup()
 
+        # need to change rng mode to actually be sampling from the histogram
         if mode == DistributionMode.PDF:
             mixture_name = "r2021_energy_res_mix"
-        elif mode == DistributionMode.RNG:
-            mixture_name = "r2021_energy_res_mix_rng"
-        else:
-            RuntimeError("This should never happen")
-
-        lognorm = LognormalMixture(mixture_name, self.n_components, self._mode)
-
-        if mode == DistributionMode.PDF:
-            #this should in princible allow for a third dependency, namely declination
             super().__init__(
                 "R2021EnergyResolution",
                 ["true_energy", "reco_energy", "declination"],
                 ["real", "real", "real"],
                 "real",
             )
-
+            lognorm = LognormalMixture(mixture_name, self.n_components, self._mode)
         elif mode == DistributionMode.RNG:
-
+            mixture_name = "r2021_energy_res_mix_rng"
             super().__init__(
                 "R2021EnergyResolution_rng",
                 ["true_energy", "declination"],
                 ["real", "real"],
                 "real",
             )
-
-            mixture_name = "nt_energy_res_mix_rng"
-
         else:
-
-            RuntimeError("mode must be DistributionMode.PDF or DistributionMode.RNG")
+            raise RuntimeError("mode must be DistributionMode.PDF or DistributionMode.RNG")
 
         # Define Stan interface.
         with self:
-            
-            truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
-            log_trunc_e = LogParameterization(truncated_e)
+            if self._mode == DistributionMode.PDF:
+                truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
+                log_trunc_e = LogParameterization(truncated_e)
 
-            #self._poly_params_mu should have shape (3, 3, 6)
-            #3: declination bins, 3: components, 6: poly-coeffs
-            mu_poly_coeffs = StanArray(
-                "NorthernTracksEnergyResolutionMuPolyCoeffs",
-                "real",
-                self._poly_params_mu,
-            )
-            #same as above
-            sd_poly_coeffs = StanArray(
-                "NorthernTracksEnergyResolutionSdPolyCoeffs",
-                "real",
-                self._poly_params_sd,
-            )
+                #self._poly_params_mu should have shape (3, 3, 6)
+                #3: declination bins, 3: components, 6: poly-coeffs
+                mu_poly_coeffs = StanArray(
+                    "NorthernTracksEnergyResolutionMuPolyCoeffs",
+                    "real",
+                    self._poly_params_mu,
+                )
+                #same as above
+                sd_poly_coeffs = StanArray(
+                    "NorthernTracksEnergyResolutionSdPolyCoeffs",
+                    "real",
+                    self._poly_params_sd,
+                )
 
-            mu = ForwardArrayDef("mu_e_res", "real", ["[", self._n_components, "]"])
-            sigma = ForwardArrayDef(
-                "sigma_e_res", "real", ["[", self._n_components, "]"]
-            )
+                mu = ForwardArrayDef("mu_e_res", "real", ["[", self._n_components, "]"])
+                sigma = ForwardArrayDef(
+                    "sigma_e_res", "real", ["[", self._n_components, "]"]
+                )
 
-            weights = ForwardVariableDef(
-                "weights", "vector[" + str(self._n_components) + "]"
-            )
+                weights = ForwardVariableDef(
+                    "weights", "vector[" + str(self._n_components) + "]"
+                )
 
-            declination_bins = StanArray("dec_bins", "real", self._declination_bins)
-            
-            declination_index = ForwardVariableDef("dec_ind", "int")
-            declination_index << StringExpression(["binary_search(declination, ", declination_bins, ")"])
+                declination_bins = StanArray("dec_bins", "real", self._declination_bins)
+                
+                declination_index = ForwardVariableDef("dec_ind", "int")
+                declination_index << StringExpression(["binary_search(declination, ", declination_bins, ")"])
 
-            with ForLoopContext(1, self._n_components, "i") as i:
-                weights[i] << StringExpression(["1.0/", self._n_components])
+                with ForLoopContext(1, self._n_components, "i") as i:
+                    weights[i] << StringExpression(["1.0/", self._n_components])
 
-            log_mu = FunctionCall([mu], "log")
+                log_mu = FunctionCall([mu], "log")
 
-            with ForLoopContext(1, self._n_components, "i") as i:
-                mu[i] << [
-                    "eval_poly1d(",
-                    log_trunc_e,
-                    ", ",
-                    "to_vector(",
-                    mu_poly_coeffs[declination_index][i],
-                    "))",
-                ]
+                with ForLoopContext(1, self._n_components, "i") as i:
+                    mu[i] << [
+                        "eval_poly1d(",
+                        log_trunc_e,
+                        ", ",
+                        "to_vector(",
+                        mu_poly_coeffs[declination_index][i],
+                        "))",
+                    ]
 
-                sigma[i] << [
-                    "eval_poly1d(",
-                    log_trunc_e,
-                    ", ",
-                    "to_vector(",
-                    sd_poly_coeffs[declination_index][i],
-                    "))",
-                ]
+                    sigma[i] << [
+                        "eval_poly1d(",
+                        log_trunc_e,
+                        ", ",
+                        "to_vector(",
+                        sd_poly_coeffs[declination_index][i],
+                        "))",
+                    ]
 
-            log_mu_vec = FunctionCall([log_mu], "to_vector")
-            sigma_vec = FunctionCall([sigma], "to_vector")
+                log_mu_vec = FunctionCall([log_mu], "to_vector")
+                sigma_vec = FunctionCall([sigma], "to_vector")
 
-            if mode == DistributionMode.PDF:
                 log_reco_e = LogParameterization("reco_energy")
                 ReturnStatement([lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
+
             elif mode == DistributionMode.RNG:
-                ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
+                #histogram "histogram_rng(array[] real hist_array, array[] real hist_edges)"
+                #is defined in utils.stan, is included anway
+                self._generate_ragged_ereco_data(self.irf)
+                #TODO truncate or not?
+                truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
+                log_trunc_e = LogParameterization(truncated_e)
+
+                #do binary search for bin of true energy
+                etrue_ind = ForwardVariableDef("etrue_ind", "int")
+                etrue_bins = StanArray("log_etrue_bins", "real", np.log10(self._tE_bin_edges))
+                etrue_ind << StringExpression(["binary_search(", log_trunc_e, ", ", etrue_bins, ")"])
+
+                #do binary search for bin of declination
+                declination_bins = StanArray("dec_bins", "real", self._declination_bins)
+                dec_ind = ForwardVariableDef("dec_ind", "int")
+                dec_ind << StringExpression(["binary_search(declination, ", declination_bins, ")"])
+
+                #find appropriate section in ragged array structure
+                hist_ind = ForwardVariableDef("hist_ind", "int")
+                hist_ind << FunctionCall([etrue_ind, dec_ind], "get_ragged_index")
+
+                #call histogramm with appropriate values/edges
+                ReturnStatement([FunctionCall([FunctionCall([hist_ind], "get_ragged_hist"), FunctionCall([hist_ind], "get_ragged_edges")], "histogram_rng")])
 
     def setup(self) -> None:
-
+     
         # Check cache
         if self.CACHE_FNAME in Cache:
 
@@ -369,7 +461,8 @@ class R2021EnergyResolution(EnergyResolution):
             """
 
 
-class NorthernTracksAngularResolution(AngularResolution):
+
+class R2021AngularResolution(AngularResolution, HistogramSampler):
     """
     Angular resolution for Northern Tracks Sample
 
