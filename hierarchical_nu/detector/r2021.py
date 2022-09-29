@@ -1,4 +1,4 @@
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Iterable
 import os
 import pandas as pd
 import numpy as np
@@ -10,6 +10,7 @@ from hierarchical_nu.backend.stan_generator import IfBlockContext
 
 from ..utils.cache import Cache
 from ..backend import (
+    FunctionsContext,
     VMFParameterization,
     PolynomialParameterization,
     TruncatedParameterization,
@@ -49,7 +50,7 @@ class HistogramSampler():
         """
         Should take the R2021 icecube_tools irf and operate on its arrays.
         """
-
+        #TODO abstract names
         num_of_bins = []
         num_of_values = []
         cum_num_of_values = []
@@ -81,38 +82,50 @@ class HistogramSampler():
         self._cum_num_edges = cum_num_of_bins
         self._num_values = num_of_values
         self._num_edges = num_of_bins
+        self._ereco_hist = values
+        self._ereco_edges = bins
 
-        self._get_ragged_index = UserDefinedFunction("get_ragged_index", ["etrue", "dec"], ["int", "int"], "int")
+
+    def _make_histogram(self, data_type: str, hist_values: Iterable[float], hist_bins: Iterable[float]):
+        #TODO needs to be abstracted in name
+        #this should be a funcion with the edges below
+        self._ragged_hist = UserDefinedFunction("{}_get_ragged_hist".format(data_type), ["idx"], ["int"], "real[]")
+        with self._ragged_hist:
+            arr = StanArray("arr", "real", hist_values)
+            self._make_ragged_start_stop(data_type, "vals")
+            ReturnStatement(["arr[start:stop]"])
+
+        self._ragged_edges = UserDefinedFunction("{}_get_ragged_edges".format(data_type), ["idx"], ["int"], "real[]")
+        with self._ragged_edges:
+            arr = StanArray("arr", "real", hist_bins)
+            self._make_ragged_start_stop(data_type, "edges")
+            ReturnStatement(["arr[start:stop]"])
+
+
+    def _make_ereco_hist_index(self):
+        #TODO needs to be abstracted for use with angles
+        #another function for the specific histogram
+        self._get_ragged_index = UserDefinedFunction("ereco_get_ragged_index", ["etrue", "dec"], ["int", "int"], "int")
         # Takes indices of etrue and dec (to be determined elsewhere!)
         with self._get_ragged_index:
-            ReturnStatement(["3 * etrue + dec"])
+            ReturnStatement(["3 * etrue + dec - 3"])
 
-        for name, array in zip(["get_cum_num_vals", "get_cum_num_edges", "get_num_vals", "get_num_edges"],
-            [self._cum_num_values, self._cum_num_edges, self._num_values, self._num_edges]):
-            f = UserDefinedFunction(name, ["idx"], ["int"], "int")
-            with f:
-                arr = StanArray("array", "int", array)
-                ReturnStatement(["array[idx]"])
 
-        self._ragged_hist = UserDefinedFunction("get_ragged_hist", ["idx"], ["int"], "real[]")
-        with self._ragged_hist:
-            arr = StanArray("array", "real", values)
-            self._make_ragged_start_stop("vals")
-            ReturnStatement(["array[start:stop]"])
-
-        self._ragged_edges = UserDefinedFunction("get_ragged_edges", ["idx"], ["int"], "real[]")
-        with self._ragged_edges:
-            arr = StanArray("array", "real", bins)
-            self._make_ragged_start_stop("edges")
-            ReturnStatement(["array[start:stop]"])
+    def _make_lookup_functions(self, name, array):
+        #DONE
+        #look-up functions for ragged arrays
+        f = UserDefinedFunction(name, ["idx"], ["int"], "int")
+        with f:
+            arr = StanArray("arr", "int", array)
+            ReturnStatement(["arr[idx]"])
 
         
-    def _make_ragged_start_stop(self, type):
+    def _make_ragged_start_stop(self, data, hist):
         start = ForwardVariableDef("start", "int")
         stop = ForwardVariableDef("stop", "int")
-        if type == "edges" or type == "vals":
-            start << StringExpression(["get_cum_num_{}(idx)-get_num_{}(idx)+1".format(type, type)])
-            stop << StringExpression(["get_cum_num_{}(idx)".format(type)])
+        if hist == "edges" or hist == "vals":
+            start << StringExpression(["{}_get_cum_num_{}(idx)-{}_get_num_{}(idx)+1".format(data, hist, data, hist)])
+            stop << StringExpression(["{}_get_cum_num_{}(idx)".format(data, hist)])
         else:
             raise ValueError("No other type available.")
         
@@ -249,9 +262,9 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         else:
             raise RuntimeError("mode must be DistributionMode.PDF or DistributionMode.RNG")
 
-        # Define Stan interface.
-        with self:
-            if self._mode == DistributionMode.PDF:
+        # Define Stan interface
+        if self._mode == DistributionMode.PDF:
+            with self:
                 truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
                 log_trunc_e = LogParameterization(truncated_e)
 
@@ -313,10 +326,19 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 log_reco_e = LogParameterization("reco_energy")
                 ReturnStatement([lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
 
-            elif mode == DistributionMode.RNG:
+        elif mode == DistributionMode.RNG:
+            with self:
                 #histogram "histogram_rng(array[] real hist_array, array[] real hist_edges)"
                 #is defined in utils.stan, is included anway
                 self._generate_ragged_ereco_data(self.irf)
+                self._make_histogram("ereco", self._ereco_hist, self._ereco_edges)
+                self._make_ereco_hist_index()
+                for name, array in zip(["ereco_get_cum_num_vals", "ereco_get_cum_num_edges",
+                    "ereco_get_num_vals", "ereco_get_num_edges"],
+                    [self._cum_num_values, self._cum_num_edges, self._num_values, self._num_edges]
+                ):
+                    self._make_lookup_functions(name, array)
+
                 #TODO truncate or not?
                 truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
                 log_trunc_e = LogParameterization(truncated_e)
@@ -333,10 +355,15 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                 #find appropriate section in ragged array structure
                 hist_ind = ForwardVariableDef("hist_ind", "int")
-                hist_ind << FunctionCall([etrue_ind, dec_ind], "get_ragged_index")
+                hist_ind << FunctionCall([etrue_ind, dec_ind], "ereco_get_ragged_index")
 
                 #call histogramm with appropriate values/edges
-                ReturnStatement([FunctionCall([FunctionCall([hist_ind], "get_ragged_hist"), FunctionCall([hist_ind], "get_ragged_edges")], "histogram_rng")])
+                ReturnStatement([FunctionCall([FunctionCall([hist_ind], "ereco_get_ragged_hist"), FunctionCall([hist_ind], "ereco_get_ragged_edges")], "histogram_rng")])
+
+                #append lookup for inputted energy -> already done, etrue_ind
+                #append lookup for outputted energy
+                # -> use as input for angular stuff
+
 
     def setup(self) -> None:
      
