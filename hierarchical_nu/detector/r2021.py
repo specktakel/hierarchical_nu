@@ -124,10 +124,12 @@ class HistogramSampler():
                         #get psf distribution
                         n_psf, bins_psf = irf._marginalize_over_angerr(etrue, dec, c)
                         #shorten the arrays: get rid of zeros from the beginning and the end
-                        psf_val_start = np.nonzero(n_psf!=0)[0].min()
-                        psf_val_end = n_psf.size - np.nonzero(np.flip(n_psf)!=0)[0].min()
-                        n = n_psf[psf_val_start:psf_val_end]
-                        bins = bins_psf[psf_val_start:psf_val_end+1]
+                        #psf_val_start = np.nonzero(n_psf!=0)[0].min()
+                        #psf_val_end = n_psf.size - np.nonzero(np.flip(n_psf)!=0)[0].min()
+                        #n = n_psf[psf_val_start:psf_val_end]
+                        #bins = bins_psf[psf_val_start:psf_val_end+1]
+                        n = n_psf.copy()
+                        bins = bins_psf.copy()
                         psf_vals.append(n)
                         psf_edges.append(bins)
                         psf_num_vals.append(n.size)
@@ -146,10 +148,12 @@ class HistogramSampler():
                             if v_psf != 0.:
                                 n_ang, bins_ang = irf._get_angerr_dist(etrue, dec, c, c_psf)
                                 #shorten n_ang, bins_ang with previous method
-                                ang_val_start = np.nonzero(n_ang!=0)[0].min()
-                                ang_val_end = n_ang.size - np.nonzero(np.flip(n_ang)!=0)[0].min()
-                                n = n_ang[ang_val_start:ang_val_end]
-                                bins = bins_psf[ang_val_start:ang_val_end+1]
+                                #ang_val_start = np.nonzero(n_ang!=0)[0].min()
+                                #ang_val_end = n_ang.size - np.nonzero(np.flip(n_ang)!=0)[0].min()
+                                #n = n_ang[ang_val_start:ang_val_end]
+                                #bins = bins_psf[ang_val_start:ang_val_end+1]
+                                n = n_ang.copy()
+                                bins = bins_psf.copy()
                                 ang_vals.append(n)
                                 ang_edges.append(bins)
                                 ang_num_vals.append(n.size)
@@ -765,7 +769,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 psf_hist_idx << FunctionCall([etrue_idx, dec_idx, ereco_idx], "psf_get_ragged_index")
                 StringExpression(['print("psfhistidx ", psf_hist_idx)'])
                 StringExpression(["print(", FunctionCall([psf_hist_idx], "psf_get_ragged_hist"), ")"])
-
+                StringExpression(["print(", FunctionCall([psf_hist_idx], "psf_get_ragged_edges"), ")"])
                 #call histogramm with appropriate values/edges
                 psf_idx = ForwardVariableDef("psf_idx", "int")
                 psf_idx << FunctionCall([FunctionCall([psf_hist_idx], "psf_get_ragged_hist"), FunctionCall([psf_hist_idx], "psf_get_ragged_edges")], "hist_cat_rng")
