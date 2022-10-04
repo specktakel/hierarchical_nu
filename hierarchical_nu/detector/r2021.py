@@ -1,3 +1,6 @@
+from ast import Return
+from pyclbr import Function
+from tokenize import String
 from typing import Sequence, Tuple, Iterable
 import os
 import pandas as pd
@@ -6,7 +9,7 @@ import sys
 
 from icecube_tools.detector.r2021 import R2021IRF
 
-from hierarchical_nu.backend.stan_generator import IfBlockContext
+from hierarchical_nu.backend.stan_generator import ElseIfBlockContext, IfBlockContext
 
 from ..utils.cache import Cache
 from ..backend import (
@@ -78,12 +81,157 @@ class HistogramSampler():
                     cum_num_of_bins.append(b.size)
                 indices[c_e, c_d] = counter
                 counter += 1
-        self._cum_num_values = cum_num_of_values
-        self._cum_num_edges = cum_num_of_bins
-        self._num_values = num_of_values
-        self._num_edges = num_of_bins
+        self._ereco_cum_num_vals = cum_num_of_values
+        self._ereco_cum_num_edges = cum_num_of_bins
+        self._ereco_num_vals = num_of_values
+        self._ereco_num_edges = num_of_bins
         self._ereco_hist = values
         self._ereco_edges = bins
+
+
+    def _generate_ragged_psf_data(self, irf: R2021IRF):
+        """
+        Should take the R2021 icecube_tools irf and operate on its arrays.
+        """
+        counter = 0
+        psf_vals = []
+        psf_edges = []
+        psf_num_vals = []
+        psf_num_edges = []
+        psf_cum_num_vals = []
+        psf_cum_num_edges = []
+        ang_num_vals = []
+        ang_num_edges = []
+        ang_cum_num_vals = []
+        ang_cum_num_edges = []
+        ang_vals = []
+        ang_edges = []
+
+        #this does work! extend for ang_err!
+        for etrue, _ in enumerate(irf.true_energy_values):  # 0->13, 1->14
+            #iterate through etrue bins
+            for dec, _ in enumerate(irf.declination_bins[:-1]):  # 0->2, 1->3
+                #iterate through dec bins
+                
+                #get ereco bins, if value is nonzero -> get psf, else -> skip
+                n_reco, bins_reco = irf._marginalisation(etrue, dec)
+            
+                #print(n_reco)
+                for c, v in enumerate(n_reco):   #0->19, 1->20
+                    #iterate through ereco bins
+                    if v != 0.:
+                        #print(etrue, dec, c)
+                        #get psf distribution
+                        n_psf, bins_psf = irf._marginalize_over_angerr(etrue, dec, c)
+                        #shorten the arrays: get rid of zeros from the beginning and the end
+                        psf_val_start = np.nonzero(n_psf!=0)[0].min()
+                        psf_val_end = n_psf.size - np.nonzero(np.flip(n_psf)!=0)[0].min()
+                        n = n_psf[psf_val_start:psf_val_end]
+                        bins = bins_psf[psf_val_start:psf_val_end+1]
+                        psf_vals.append(n)
+                        psf_edges.append(bins)
+                        psf_num_vals.append(n.size)
+                        psf_num_edges.append(bins.size)
+                        try:
+                            psf_cum_num_vals.append(psf_cum_num_vals[-1]+n.size)
+                        except IndexError:
+                            psf_cum_num_vals.append(n.size)
+                        try:
+                            psf_cum_num_edges.append(psf_cum_num_edges[-1]+bins.size)
+                        except IndexError:
+                            psf_cum_num_edges.append(bins.size)
+                        
+                        #do it again for ang_err
+                        for c_psf, v_psf in enumerate(n_psf):
+                            if v_psf != 0.:
+                                n_ang, bins_ang = irf._get_angerr_dist(etrue, dec, c, c_psf)
+                                #shorten n_ang, bins_ang with previous method
+                                ang_val_start = np.nonzero(n_ang!=0)[0].min()
+                                ang_val_end = n_ang.size - np.nonzero(np.flip(n_ang)!=0)[0].min()
+                                n = n_ang[ang_val_start:ang_val_end]
+                                bins = bins_psf[ang_val_start:ang_val_end+1]
+                                ang_vals.append(n)
+                                ang_edges.append(bins)
+                                ang_num_vals.append(n.size)
+                                ang_num_edges.append(bins.size)
+                            else:
+                                ang_num_vals.append(0)
+                                ang_num_edges.append(0)
+                        
+                    else:
+                        #do counter stuff, add only zeros/previous values
+                        psf_num_vals.append(0)
+                        psf_num_edges.append(0)
+                        for _ in range(20):
+                            ang_num_vals.append(0)
+                            ang_num_edges.append(0)
+                        try:
+                            psf_cum_num_vals.append(psf_cum_num_vals[-1])
+                        except IndexError:
+                            psf_cum_num_vals.append(0)
+                        try:
+                            psf_cum_num_edges.append(psf_cum_num_edges[-1])
+                        except IndexError:
+                            psf_cum_num_edges.append(0)
+                break
+            break
+        
+        for v in ang_num_vals:
+            try:
+                ang_cum_num_vals.append(ang_cum_num_vals[-1]+v)
+            except IndexError:
+                ang_cum_num_vals.append(v)
+        for v in ang_num_edges:
+            try:
+                ang_cum_num_edges.append(ang_cum_num_edges[-1]+v)
+            except IndexError:
+                ang_cum_num_edges.append(v)
+        
+
+        self._psf_cum_num_edges = psf_cum_num_edges
+        self._psf_cum_num_vals = psf_cum_num_vals
+        self._psf_num_vals = psf_num_vals
+        self._psf_num_edges = psf_num_edges
+        self._psf_hist = np.concatenate(psf_vals)
+        self._psf_edges = np.concatenate(psf_edges)
+        
+        self._ang_edges = np.concatenate(ang_edges)
+        self._ang_hist = np.concatenate(ang_vals)
+        self._ang_num_vals = ang_num_vals
+        self._ang_num_edges = ang_num_edges
+        self._ang_cum_num_vals = ang_cum_num_vals
+        self._ang_cum_num_edges = ang_cum_num_edges
+        
+
+    def _make_hist_lookup_functions(self):
+
+        self._etrue_lookup = UserDefinedFunction(
+            "etrue_lookup", ["true_energy"], ["real"], "int"
+        )
+        with self._etrue_lookup:
+            truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
+            log_trunc_e = LogParameterization(truncated_e)
+            #do binary search for bin of true energy
+            etrue_bins = StanArray("log_etrue_bins", "real", np.log10(self._tE_bin_edges))
+            ReturnStatement(["binary_search(", log_trunc_e, ", ", etrue_bins, ")"])
+
+        self._dec_lookup = UserDefinedFunction("dec_lookup", ["declination"], ["real"], "int")
+        with self._dec_lookup:
+            #do binary search for bin of declination
+            declination_bins = StanArray("dec_bins", "real", self._declination_bins)
+            ReturnStatement(["binary_search(declination, ", declination_bins, ")"])
+
+
+        """
+            #find appropriate section in ragged array structure
+            hist_ind = ForwardVariableDef("hist_ind", "int")
+            hist_ind << FunctionCall([etrue_ind, dec_ind], "ereco_get_ragged_index")
+
+            with IfBlockContext(["type == 0"]):
+                ReturnStatement([FunctionCall([hist_ind], "ereco_get_ragged_hist")])
+            with ElseIfBlockContext(["type == 1"]):
+                ReturnStatement([FunctionCall([hist_ind], "ereco_get_hist_edges")])
+        """
 
 
     def _make_histogram(self, data_type: str, hist_values: Iterable[float], hist_bins: Iterable[float]):
@@ -103,12 +251,34 @@ class HistogramSampler():
 
 
     def _make_ereco_hist_index(self):
-        #TODO needs to be abstracted for use with angles
         #another function for the specific histogram
-        self._get_ragged_index = UserDefinedFunction("ereco_get_ragged_index", ["etrue", "dec"], ["int", "int"], "int")
+        get_ragged_index = UserDefinedFunction(
+            "ereco_get_ragged_index", ["etrue", "dec"], ["int", "int"], "int"
+        )
         # Takes indices of etrue and dec (to be determined elsewhere!)
-        with self._get_ragged_index:
-            ReturnStatement(["3 * etrue + dec - 3"])
+        with get_ragged_index:
+            ReturnStatement(["dec + (etrue - 1) * 3"])
+
+        
+    def _make_psf_hist_index(self):
+        get_ragged_index = UserDefinedFunction(
+            "psf_get_ragged_index", ["etrue", "dec", "ereco"], ["int", "int", "int"], "int"
+        )
+        with get_ragged_index:
+            #find appropriate expression
+            l_etrue = 14
+            l_dec = 3
+            l_ereco = 20
+            l_psf = 20
+            ReturnStatement(["ereco + (dec - 1) * 20 + (etrue - 1) * 3  * 20"])
+
+    
+    def _make_ang_hist_index(self):
+        get_ragged_index = UserDefinedFunction(
+            "ang_get_ragged_index", ["etrue", "dec", "ereco", "psf"], ["int", "int", "int", "int"], "int"
+        )
+        with get_ragged_index:
+            ReturnStatement(["psf + (ereco - 1) * 20 + (dec - 1) * 20 * 20 + (etrue - 1) * 3 * 20 * 20"])
 
 
     def _make_lookup_functions(self, name, array):
@@ -128,7 +298,7 @@ class HistogramSampler():
             stop << StringExpression(["{}_get_cum_num_{}(idx)".format(data, hist)])
         else:
             raise ValueError("No other type available.")
-        
+
 
 
 class R2021EffectiveArea(EffectiveArea):
@@ -241,6 +411,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self._n_components = 3
         self.setup()
 
+        self._poly_limits = self._pdet_limits
+
         # need to change rng mode to actually be sampling from the histogram
         if mode == DistributionMode.PDF:
             mixture_name = "r2021_energy_res_mix"
@@ -330,35 +502,26 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             with self:
                 #histogram "histogram_rng(array[] real hist_array, array[] real hist_edges)"
                 #is defined in utils.stan, is included anway
+                self._make_hist_lookup_functions()
                 self._generate_ragged_ereco_data(self.irf)
                 self._make_histogram("ereco", self._ereco_hist, self._ereco_edges)
                 self._make_ereco_hist_index()
                 for name, array in zip(["ereco_get_cum_num_vals", "ereco_get_cum_num_edges",
                     "ereco_get_num_vals", "ereco_get_num_edges"],
-                    [self._cum_num_values, self._cum_num_edges, self._num_values, self._num_edges]
+                    [self._ereco_cum_num_vals, self._ereco_cum_num_edges, self._ereco_num_vals, self._ereco_num_edges]
                 ):
                     self._make_lookup_functions(name, array)
-
-                #TODO truncate or not?
-                truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
-                log_trunc_e = LogParameterization(truncated_e)
-
-                #do binary search for bin of true energy
-                etrue_ind = ForwardVariableDef("etrue_ind", "int")
-                etrue_bins = StanArray("log_etrue_bins", "real", np.log10(self._tE_bin_edges))
-                etrue_ind << StringExpression(["binary_search(", log_trunc_e, ", ", etrue_bins, ")"])
-
-                #do binary search for bin of declination
-                declination_bins = StanArray("dec_bins", "real", self._declination_bins)
-                dec_ind = ForwardVariableDef("dec_ind", "int")
-                dec_ind << StringExpression(["binary_search(declination, ", declination_bins, ")"])
-
-                #find appropriate section in ragged array structure
-                hist_ind = ForwardVariableDef("hist_ind", "int")
-                hist_ind << FunctionCall([etrue_ind, dec_ind], "ereco_get_ragged_index")
+                
 
                 #call histogramm with appropriate values/edges
-                ReturnStatement([FunctionCall([FunctionCall([hist_ind], "ereco_get_ragged_hist"), FunctionCall([hist_ind], "ereco_get_ragged_edges")], "histogram_rng")])
+                etrue_idx = ForwardVariableDef("etrue_idx", "int")
+                dec_idx = ForwardVariableDef("dec_idx", "int")
+                ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
+                etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
+                dec_idx << FunctionCall(["declination"], "dec_lookup")
+                ereco_hist_idx << FunctionCall([etrue_idx, dec_idx], "ereco_get_ragged_index")
+                ReturnStatement([FunctionCall([FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"), FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "histogram_rng")])
+                #ReturnStatement([FunctionCall([FunctionCall(["true_energy", "declination", "0"], "ereco_lookup"), FunctionCall(["true_energy", "declination", "1"], "ereco_lookup")], "histogram_rng")])
 
                 #append lookup for inputted energy -> already done, etrue_ind
                 #append lookup for outputted energy
@@ -504,36 +667,38 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
 
     """
 
-    local_path = "input/tracks/NorthernTracksAngularRes.csv"
-    DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
+    #local_path = "input/tracks/NorthernTracksAngularRes.csv"
+    #DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
 
-    CACHE_FNAME = "angular_reso_r2021.npz"
+    #CACHE_FNAME = "angular_reso_r2021.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
 
-        self.irf = R2021IRF()
+        self._irf = R2021IRF()
+        self._mode = mode
 
         if mode == DistributionMode.PDF:
 
             super().__init__(
-                "NorthernTracksAngularResolution",
-                ["true_energy", "true_dir", "reco_dir"],
-                ["real", "vector", "vector"],
+                "R2021AngularResolution",
+                ["true_energy", "reco_energy", "true_dir", "reco_dir", "ang_err"],
+                ["real", "real", "vector", "vector", "real"],
                 "real",
             )
 
         else:
 
             super().__init__(
-                "NorthernTracksAngularResolution_rng",
-                ["true_energy", "true_dir"],
-                ["real", "vector"],
-                "vector",
+                "R2021AngularResolution_rng",
+                ["true_energy", "reco_energy", "true_dir"],
+                ["real", "real", "vector"],
+                "real",
             )
 
-        self._kappa_grid: np.ndarray = None
-        self._Egrid: np.ndarray = None
-        self._poly_params: Sequence = []
+        #self._kappa_grid: np.ndarray = None
+        #self._Egrid: np.ndarray = None
+        #self._poly_params: Sequence = []
+        #TODO check for lin/log scale of energy
         self._Emin: float = float("nan")
         self._Emax: float = float("nan")
 
@@ -543,93 +708,108 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         with self:
 
             # Clip true energy
-            clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
+            #clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
 
-            clipped_log_e = LogParameterization(clipped_e)
-
+            #clipped_log_e = LogParameterization(clipped_e)
+            """
             kappa = PolynomialParameterization(
                 clipped_log_e,
                 self._poly_params,
                 "NorthernTracksAngularResolutionPolyCoeffs",
             )
-
+            """
             if mode == DistributionMode.PDF:
-                # VMF expects x_obs, x_true
-                vmf = VMFParameterization(["reco_dir", "true_dir"], kappa, mode)
+                # VMF expects x_obs, x_true -> true i.e. test source
+                vmf = VMFParameterization(["reco_dir", "true_dir"], "kappa", mode)
+                #calculation of kappa goes here
+                #use approximate formulas from icecube_tools
+                
+
 
             elif mode == DistributionMode.RNG:
-                vmf = VMFParameterization(["true_dir"], kappa, mode)
+                #vmf = VMFParameterization(["true_dir"], "kappa", mode)
 
-            ReturnStatement([vmf])
+                self._generate_ragged_psf_data(self._irf)
+                self._make_histogram("psf", self._psf_hist, self._psf_edges)
+                self._make_psf_hist_index()
+                for name, array in zip(["psf_get_cum_num_vals", "psf_get_cum_num_edges",
+                    "psf_get_num_vals", "psf_get_num_edges"],
+                    [self._psf_cum_num_vals, self._psf_cum_num_edges, self._psf_num_vals, self._psf_num_edges]
+                ):
+                    self._make_lookup_functions(name, array)
+                
+                self._make_histogram("ang", self._ang_hist, self._ang_edges)
+                self._make_ang_hist_index()
+                for name, array in zip(["ang_get_cum_num_vals", "ang_get_cum_num_edges",
+                    "ang_get_num_vals", "ang_get_num_edges"],
+                    [self._ang_cum_num_vals, self._ang_cum_num_edges, self._ang_num_vals, self._ang_num_edges]
+                ):
+                    self._make_lookup_functions(name, array)
+                
+                #get ereco index from eres-defined functions
+                etrue_idx = ForwardVariableDef("etrue_idx", "int")
+                etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
+                StringExpression(['print("etrueidx ", etrue_idx)'])
+                declination = ForwardVariableDef("declination", "real")
+                declination << StringExpression(["pi()/2 - acos(true_dir[3])"])
+                dec_idx = ForwardVariableDef("dec_idx ", "int")
+                dec_idx << FunctionCall(["declination"], "dec_lookup")
+                ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
+                ereco_hist_idx << FunctionCall([etrue_idx, dec_idx], "ereco_get_ragged_index")
+                ereco_idx = ForwardVariableDef("ereco_idx", "int")
+                ereco_idx << FunctionCall(["log10(reco_energy)", FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "binary_search")
+                StringExpression(['print("erecoidx ", ereco_idx)'])
 
-    def kappa(self):
+                #lookup psf stuff
+                psf_hist_idx = ForwardVariableDef("psf_hist_idx", "int")
+                psf_hist_idx << FunctionCall([etrue_idx, dec_idx, ereco_idx], "psf_get_ragged_index")
+                StringExpression(['print("psfhistidx ", psf_hist_idx)'])
+                StringExpression(["print(", FunctionCall([psf_hist_idx], "psf_get_ragged_hist"), ")"])
 
-        clipped_e = TruncatedParameterization("E[i]", self._Emin, self._Emax)
+                #call histogramm with appropriate values/edges
+                psf_idx = ForwardVariableDef("psf_idx", "int")
+                psf_idx << FunctionCall([FunctionCall([psf_hist_idx], "psf_get_ragged_hist"), FunctionCall([psf_hist_idx], "psf_get_ragged_edges")], "hist_cat_rng")
+                StringExpression(['print("psfidx", psf_idx)'])
+                
+                #lookup ang err stuff
+                ang_hist_idx = ForwardVariableDef("ang_hist_idx", "int")
+                ang_hist_idx << FunctionCall([etrue_idx, dec_idx, ereco_idx, psf_idx], "ang_get_ragged_index")
+                StringExpression(['print("anghist", ang_hist_idx)'])
+                StringExpression(["print(", FunctionCall([ang_hist_idx], "ang_get_ragged_hist"), ")"])
+                ang_err = ForwardVariableDef("ang_err", "real")
+                ang_err << FunctionCall([FunctionCall([ang_hist_idx], "ang_get_ragged_hist"), FunctionCall([ang_hist_idx], "ang_get_ragged_edges")], "histogram_rng")
+                
+            #kappa = ForwardVariableDef("kappa", "real")
+            #hardcoded p=0.5 (log(1-p)) from the tabulated data of release
+            #kappa << StringExpression(["- (2 / ang_err^2) * log(1 - 0.5)"]) 
+            #ReturnStatement([vmf])
+            ReturnStatement([ang_err])
 
-        clipped_log_e = LogParameterization(clipped_e)
 
-        kappa = PolynomialParameterization(
-            clipped_log_e,
-            self._poly_params,
-            "NorthernTracksAngularResolutionPolyCoeffs",
-        )
+    def setup(self):
+        self._pdet_limits = (1e2, 1e8)
+        self._Emin, self._Emax = self._pdet_limits
 
-        return kappa
+        if self._mode == DistributionMode.PDF:
+            #what needs to be set up?
+            #only thing needed is gaussian/vMF for reconstruction
+            #that's done in init itself
+            pass
 
-    def setup(self) -> None:
-
-        # Check cache
-        if self.CACHE_FNAME in Cache:
-
-            with Cache.open(self.CACHE_FNAME, "rb") as fr:
-                data = np.load(fr)
-                self._kappa_grid = data["kappa_grid"]
-                self._Egrid = data["Egrid"]
-                self._poly_params = data["poly_params"]
-                self._Emin = float(data["Emin"])
-                self._Emax = float(data["Emax"])
-                self._poly_limits = (self._Emin, self._Emax)
+        elif self._mode == DistributionMode.RNG:
+            #party in the back
+            #extract *all* the histograms bar ereco
+            pass
 
         else:
+            raise ValueError("You weren't supposed to do that.")
 
-            # Load input data and fit polynomial
-            if not os.path.exists(self.DATA_PATH):
-
-                raise RuntimeError(self.DATA_PATH, "is not a valid path")
-
-            data = pd.read_csv(
-                self.DATA_PATH,
-                sep=";",
-                decimal=",",
-                header=None,
-                names=["log10energy", "resolution"],
-            )
-
-            # Kappa parameter of VMF distribution
-            data["kappa"] = 1.38 / np.radians(data.resolution) ** 2
-
-            self._kappa_grid = data.kappa.values
-            self._Egrid = 10**data.log10energy.values
-            self._poly_params = np.polyfit(
-                data.log10energy.values, data.kappa.values, 5
-            )
-            self._Emin = 10 ** float(data.log10energy.min())
-            self._Emax = 10 ** float(data.log10energy.max())
-            self._poly_limits = (self._Emin, self._Emax)
-
-            # Save polynomial
-            with Cache.open(self.CACHE_FNAME, "wb") as fr:
-                np.savez(
-                    fr,
-                    kappa_grid=self._kappa_grid,
-                    Egrid=self._Egrid,
-                    poly_params=self._poly_params,
-                    Emin=self._Emin,
-                    Emax=self._Emax,
-                )
+    def kappa(self):
+        pass
+    
 
 
-class NorthernTracksDetectorModel(DetectorModel):
+class R2021DetectorModel(DetectorModel):
     """
     Implements the detector model for the NT sample
 
@@ -649,14 +829,14 @@ class NorthernTracksDetectorModel(DetectorModel):
 
         super().__init__(mode, event_type="tracks")
 
-        ang_res = NorthernTracksAngularResolution(mode)
+        ang_res = R2021AngularResolution(mode)
         self._angular_resolution = ang_res
 
-        energy_res = NorthernTracksEnergyResolution(mode)
+        energy_res = R2021EnergyResolution(mode)
         self._energy_resolution = energy_res
 
         if mode == DistributionMode.PDF:
-            self._eff_area = NorthernTracksEffectiveArea()
+            self._eff_area = R2021EffectiveArea()
 
     def _get_effective_area(self):
         return self._eff_area
@@ -703,7 +883,7 @@ if __name__ == "__main__":
             reco_dir = ForwardVariableDef(reco_dir_name, "vector[3]")
 
         with GeneratedQuantitiesContext() as gq:
-            ntd = NorthernTracksDetectorModel()
+            ntd = R2021DetectorModel()
 
             """
             ang_res_result = ForwardVariableDef("ang_res", "real")

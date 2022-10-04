@@ -229,11 +229,43 @@ real histogram_rng(array[] real hist_array, array[] real hist_edges)
         bin_width[(i-1)] = hist_edges[i] - hist_edges[i-1];
     }
     for (i in 1:size(hist_array)) {
+      if (hist_array[i] > 0.) {
         multiplied[i] = hist_array[i] * bin_width[i];
+      }
+      else if (hist_array[i] == 0.) {
+        multiplied[i] = 0.;
+      }
     }
     for (i in 1:size(hist_array)) {
         normalised[i] = multiplied[i] / sum(multiplied);
     }
     index = categorical_rng(normalised);
     return uniform_rng(hist_edges[index], hist_edges[index+1]);
+}
+
+/**
+ * Categorical rng, takes n, bins as arguments
+ */
+
+int hist_cat_rng(array[] real hist_array, array[] real hist_edges)
+{
+    array[size(hist_array)] real bin_width;
+    array[size(hist_array)] real multiplied;
+    vector[size(hist_array)] normalised;
+    int index;
+    for (i in 2:size(hist_edges)) {
+        bin_width[(i-1)] = hist_edges[i] - hist_edges[i-1];
+    }
+    for (i in 1:size(hist_array)) {
+      if (hist_array[i] > 0.) {
+        multiplied[i] = hist_array[i] * bin_width[i];
+      }
+      else if (hist_array[i] == 0.) {
+        multiplied[i] = 0.;
+      }
+    }
+    for (i in 1:size(hist_array)) {
+        normalised[i] = multiplied[i] / sum(multiplied);
+    }
+    return categorical_rng(normalised);
 }
