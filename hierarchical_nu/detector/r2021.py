@@ -41,6 +41,7 @@ from .detector_model import (
 import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 Cache.set_cache_dir(".cache")
 
 
@@ -54,16 +55,15 @@ class HistogramSampler():
         """
         Should take the R2021 icecube_tools irf and operate on its arrays.
         """
-        #TODO abstract names
+
+        logger.debug("Creating ragged arrays for reco energy.")
+
         num_of_bins = []
         num_of_values = []
         cum_num_of_values = []
         cum_num_of_bins = []
-        indices = np.zeros((14, 3), dtype=int)
-        counter = 0
-        # irf = R2021IRF()   # substitute by provided irf later
+        counter = 0   #TODO change to try-except
         for c_e, etrue in enumerate(irf.true_energy_values):
-            #inner loop is declination
             for c_d, dec in enumerate(irf.declination_bins[:-1]):
                 n, b = irf._marginalisation(c_e, c_d)
                 if counter != 0:
@@ -80,21 +80,23 @@ class HistogramSampler():
                 else:
                     cum_num_of_values.append(n.size)
                     cum_num_of_bins.append(b.size)
-                indices[c_e, c_d] = counter
-                counter += 1
+            counter += 1
         self._ereco_cum_num_vals = cum_num_of_values
         self._ereco_cum_num_edges = cum_num_of_bins
         self._ereco_num_vals = num_of_values
         self._ereco_num_edges = num_of_bins
         self._ereco_hist = values
         self._ereco_edges = bins
+        self._tE_bin_edges = np.power(10, irf.true_energy_bins)
 
 
     def _generate_ragged_psf_data(self, irf: R2021IRF):
         """
         Should take the R2021 icecube_tools irf and operate on its arrays.
         """
-        counter = 0
+
+        #TODO cleanup
+        logger.debug("Creating ragged arrays for angular parts.")
         psf_vals = []
         psf_edges = []
         psf_num_vals = []
@@ -209,7 +211,7 @@ class HistogramSampler():
         
 
     def _make_hist_lookup_functions(self):
-
+        logger.debug("Making etrue/dec lookup functions.")
         self._etrue_lookup = UserDefinedFunction(
             "etrue_lookup", ["true_energy"], ["real"], "int"
         )
@@ -240,8 +242,7 @@ class HistogramSampler():
 
 
     def _make_histogram(self, data_type: str, hist_values: Iterable[float], hist_bins: Iterable[float]):
-        #TODO needs to be abstracted in name
-        #this should be a funcion with the edges below
+        logger.debug("Making histograms.")
         self._ragged_hist = UserDefinedFunction("{}_get_ragged_hist".format(data_type), ["idx"], ["int"], "real[]")
         with self._ragged_hist:
             arr = StanArray("arr", "real", hist_values)
@@ -256,7 +257,7 @@ class HistogramSampler():
 
 
     def _make_ereco_hist_index(self):
-        #another function for the specific histogram
+        logger.debug("Making ereco histogram indexing function.")
         get_ragged_index = UserDefinedFunction(
             "ereco_get_ragged_index", ["etrue", "dec"], ["int", "int"], "int"
         )
@@ -266,6 +267,7 @@ class HistogramSampler():
 
         
     def _make_psf_hist_index(self):
+        logger.debug("Making psf histogram indexing function.")
         get_ragged_index = UserDefinedFunction(
             "psf_get_ragged_index", ["etrue", "dec", "ereco"], ["int", "int", "int"], "int"
         )
@@ -279,6 +281,7 @@ class HistogramSampler():
 
     
     def _make_ang_hist_index(self):
+        logger.debug("Making ang histogram indexing function.")
         get_ragged_index = UserDefinedFunction(
             "ang_get_ragged_index", ["etrue", "dec", "ereco", "psf"], ["int", "int", "int", "int"], "int"
         )
@@ -287,6 +290,7 @@ class HistogramSampler():
 
 
     def _make_lookup_functions(self, name, array):
+        logger.debug("Making generic lookup functions.")
         #DONE
         #look-up functions for ragged arrays
         f = UserDefinedFunction(name, ["idx"], ["int"], "int")
@@ -296,6 +300,7 @@ class HistogramSampler():
 
         
     def _make_ragged_start_stop(self, data, hist):
+        logger.debug("Making ragged array indexing.")
         start = ForwardVariableDef("start", "int")
         stop = ForwardVariableDef("stop", "int")
         if hist == "edges" or hist == "vals":
@@ -405,6 +410,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         #TODO edit type hints later when everything else works
         self._rewrite = rewrite
+        logger.info("Forced rewriting: {}".format(rewrite))
         self._mode = mode
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
@@ -540,7 +546,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
      
             # Check cache
             if self.CACHE_FNAME_PDF in Cache and not self._rewrite:
-
+                logger.info("Loading pdf data from file.")
                 with Cache.open(self.CACHE_FNAME_PDF, "rb") as fr:
                     data = np.load(fr)
                     self._eres = data["eres"]
@@ -552,7 +558,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
             # Or load from file
             else:
-
+                logger.info("Re-doing pdf data and saving files.")
                 tE_bin_edges = np.power(10, self.irf.true_energy_bins)
                 tE_binc = 0.5 * (tE_bin_edges[:-1] + tE_bin_edges[1:])
                 
@@ -647,7 +653,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     )
         else:
             if self.CACHE_FNAME_RNG in Cache and not self._rewrite:
-
+                logger.info("Loading rng data from file.")
                 with Cache.open(self.CACHE_FNAME_RNG, "rb") as fr:
                     data = np.load(fr)
                     self._ereco_cum_num_vals = data["cum_num_of_values"]
@@ -656,9 +662,11 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     self._ereco_num_edges = data["num_of_bins"]
                     self._ereco_hist = data["values"]
                     self._ereco_edges = data["bins"]
+                    self._tE_bin_edges = data["tE_bin_edges"]
+                    #self._rE_bin_edges = data["rE_bin_edges"]
 
             else:
-
+                logger.info("Re-doing rng data and saving to file.")
                 self._generate_ragged_ereco_data(self.irf)
 
                 with Cache.open(self.CACHE_FNAME_RNG, "wb") as fr:
@@ -670,7 +678,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         num_of_bins = self._ereco_num_edges,
                         num_of_values = self._ereco_num_vals,
                         cum_num_of_bins = self._ereco_cum_num_edges,
-                        cum_num_of_vals = self._ereco_cum_num_vals,
+                        cum_num_of_values = self._ereco_cum_num_vals,
+                        tE_bin_edges = self._tE_bin_edges,
                     )
             
             self._Emin = np.power(10, self.irf.true_energy_bins[0])
@@ -718,10 +727,12 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
     CACHE_FNAME = "angular_reso_r2021.npz"
     #only one file here for the rng data
 
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
+    def __init__(self, mode: DistributionMode = DistributionMode.PDF, rewrite: bool = False) -> None:
 
         self._irf = R2021IRF()
         self._mode = mode
+        self._rewrite = rewrite
+        logger.info("Forced rewriting: {}".format(rewrite))
 
         if mode == DistributionMode.PDF:
 
@@ -818,9 +829,9 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 #lookup ang err stuff
                 ang_hist_idx = ForwardVariableDef("ang_hist_idx", "int")
                 ang_hist_idx << FunctionCall([etrue_idx, dec_idx, ereco_idx, psf_idx], "ang_get_ragged_index")
-                StringExpression(['print("anghist", ang_hist_idx)'])
-                StringExpression(["print(", FunctionCall([ang_hist_idx], "ang_get_ragged_hist"), ")"])
-                StringExpression(["print(", FunctionCall([ang_hist_idx], "ang_get_ragged_edges"), ")"])
+                #StringExpression(['print("anghist", ang_hist_idx)'])
+                #StringExpression(["print(", FunctionCall([ang_hist_idx], "ang_get_ragged_hist"), ")"])
+                #StringExpression(["print(", FunctionCall([ang_hist_idx], "ang_get_ragged_edges"), ")"])
                 ang_err = ForwardVariableDef("ang_err", "real")
                 ang_err << FunctionCall([FunctionCall([ang_hist_idx], "ang_get_ragged_hist"), FunctionCall([ang_hist_idx], "ang_get_ragged_edges")], "histogram_rng")
                 
@@ -846,7 +857,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
             #extract *all* the histograms bar ereco
             #check for loading of data
             if self.CACHE_FNAME in Cache and not self._rewrite:
-
+                logger.info("Loading angular data from file.")
                 with Cache.open(self.CACHE_FNAME, "rb") as fr:
                     data = np.load(fr)
                     self._psf_cum_num_edges = data["psf_cum_num_edges"]
@@ -863,8 +874,9 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                     self._ang_cum_num_edges = data["ang_cum_num_edges"]
 
             else:
+                logger.info("Re-doing angular data and saving to file.")
                 self._generate_ragged_psf_data(self._irf)
-                with Cache.open(self.CACHE_FNAME_RNG, "wb") as fr:
+                with Cache.open(self.CACHE_FNAME, "wb") as fr:
                     np.savez(
                         fr,
                         psf_cum_num_edges = self._psf_cum_num_edges,
