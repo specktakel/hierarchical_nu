@@ -45,8 +45,9 @@ Cache.set_cache_dir(".cache")
 
 
 class HistogramSampler():
-    def __init__(self):
-        pass
+    def __init__(self, rewrite: bool):
+        #should include some data season for icecube_tools
+        self._rewrite = rewrite
 
 
     def _generate_ragged_ereco_data(self, irf: R2021IRF):
@@ -388,9 +389,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
     local_path = "input/tracks/IC86_II_smearing.csv"
     DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
 
-    CACHE_FNAME = "energy_reso_r2021.npz"
+    CACHE_FNAME_PDF = "energy_reso_pdf_r2021.npz"
+    CACHE_FNAME_RNG = "energy_reso_rng_r2021.npz"
 
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
+    def __init__(self, mode: DistributionMode = DistributionMode.PDF, rewrite: bool = False) -> None:
         """
         Args:
             inputs: List[TExpression]
@@ -402,6 +404,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
 
         #TODO edit type hints later when everything else works
+        self._rewrite = rewrite
         self._mode = mode
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
@@ -507,7 +510,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 #histogram "histogram_rng(array[] real hist_array, array[] real hist_edges)"
                 #is defined in utils.stan, is included anway
                 self._make_hist_lookup_functions()
-                self._generate_ragged_ereco_data(self.irf)
                 self._make_histogram("ereco", self._ereco_hist, self._ereco_edges)
                 self._make_ereco_hist_index()
                 for name, array in zip(["ereco_get_cum_num_vals", "ereco_get_cum_num_edges",
@@ -533,114 +535,146 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
 
     def setup(self) -> None:
+
+        if self._mode == DistributionMode.PDF:
      
-        # Check cache
-        if self.CACHE_FNAME in Cache:
+            # Check cache
+            if self.CACHE_FNAME_PDF in Cache and not self._rewrite:
 
-            with Cache.open(self.CACHE_FNAME, "rb") as fr:
-                data = np.load(fr)
-                self._eres = data["eres"]
-                self._tE_bin_edges = data["tE_bin_edges"]
-                self._rE_bin_edges = data["rE_bin_edges"]
-                self._poly_params_mu = data["poly_params_mu"]
-                self._poly_params_sd = data["poly_params_sd"]
-                self._poly_limits = (float(data["Emin"]), float(data["Emax"]))
+                with Cache.open(self.CACHE_FNAME_PDF, "rb") as fr:
+                    data = np.load(fr)
+                    self._eres = data["eres"]
+                    self._tE_bin_edges = data["tE_bin_edges"]
+                    self._rE_bin_edges = data["rE_bin_edges"]
+                    self._poly_params_mu = data["poly_params_mu"]
+                    self._poly_params_sd = data["poly_params_sd"]
+                    self._poly_limits = (float(data["Emin"]), float(data["Emax"]))
 
-        # Or load from file
+            # Or load from file
+            else:
+
+                tE_bin_edges = np.power(10, self.irf.true_energy_bins)
+                tE_binc = 0.5 * (tE_bin_edges[:-1] + tE_bin_edges[1:])
+                
+                for c_dec, (dec_low, dec_high) in enumerate(
+                    zip(self._declination_bins[:-1], self._declination_bins[1:])
+                ):
+
+                    # Find common rE binning per declination
+                    _min = 10
+                    _max = 0
+                    _diff = 0
+
+                    for bins in self.irf.reco_energy_bins[:, c_dec]:
+                        c_min = bins.min()
+                        c_max = bins.max()
+                        c_diff = np.diff(bins).max()
+                        _min = c_min if c_min < _min else _min
+                        _max = c_max if c_max > _max else _max
+                        _diff = c_diff if c_diff > _diff else _diff
+
+                    # use bins encompassing the entire range
+                    # round number to next integer, should that be +1 bc bin edges and not bins?
+                    num_bins = int(np.ceil((_max - _min) / _diff))
+                    rE_bin_edges = np.logspace(_min, _max, num_bins)
+                    rE_binc = 0.5 * (rE_bin_edges[:-1] + rE_bin_edges[1:])
+
+                    # Normalize along Ereco
+                    # log10 because rE_bin_edges live in linear space
+                    # weird choice to me, everything else with these pdfs is done in log space
+                    bin_width = np.log10(rE_bin_edges[1]) - np.log10(rE_bin_edges[0])
+                    eres = np.zeros((tE_bin_edges.size-1, rE_bin_edges.size-1))
+                    for i, pdf in enumerate(self.irf.reco_energy[:, c_dec]):
+                        for j, (elow, ehigh) in enumerate(zip(
+                            rE_bin_edges[:-1], rE_bin_edges[1:]
+                            )
+                        ):
+                            eres[i, j] = pdf.cdf(np.log10(ehigh)) - pdf.cdf(np.log10(elow))
+                        #eres should already be normalised bc the pdfs (or rather cdfs)
+                        #of which the values are taken are already noralised, nevertheless:
+                        eres[i, :] = eres[i, :] / np.sum(eres[i] * bin_width)
+
+                
+                    # do not rebin -> rebin=1
+                    fit_params, rebin_tE_binc = self._fit_energy_res(
+                        tE_binc, rE_binc, eres, self._n_components, rebin=1
+                    )
+
+                    # take entire range
+                    imin = 0
+                    imax = -1
+
+                    # I get that Emin, Emax for fitting might be the bin centers
+                    # but why for the truncated parameterisation?
+                    # the histogram data covers all the bin, not just up to/down to the center of last/first bin
+                    Emin = rebin_tE_binc[imin]
+                    Emax = rebin_tE_binc[imax]
+
+                    # Fit polynomial:
+                    poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
+                        fit_params, rebin_tE_binc, Emin, Emax, polydeg=5
+                    )
+                    self._poly_params_mu.append(poly_params_mu)
+                    self._poly_params_sd.append(poly_params_sd)
+                    self._poly_limits_battery.append(poly_limits)
+
+                #find smallest range of poly limits to use globally
+                poly_low = [i[0] for i in self._poly_limits_battery]
+                poly_high = [i[1] for i in self._poly_limits_battery]
+                poly_limits = (max(poly_low), min(poly_high))
+
+                # Save values
+                self._poly_limits = poly_limits
+                self._eres = eres
+                self._tE_bin_edges = tE_bin_edges
+                self._rE_bin_edges = rE_bin_edges
+
+                
+
+                # Save polynomial
+
+                with Cache.open(self.CACHE_FNAME_PDF, "wb") as fr:
+
+                    np.savez(
+                        fr,
+                        eres=eres,
+                        tE_bin_edges=tE_bin_edges,
+                        rE_bin_edges=rE_bin_edges,
+                        poly_params_mu=self._poly_params_mu,
+                        poly_params_sd=self._poly_params_sd,
+                        Emin=Emin,
+                        Emax=Emax,
+                    )
         else:
+            if self.CACHE_FNAME_RNG in Cache and not self._rewrite:
 
-            tE_bin_edges = np.power(10, self.irf.true_energy_bins)
-            tE_binc = 0.5 * (tE_bin_edges[:-1] + tE_bin_edges[1:])
+                with Cache.open(self.CACHE_FNAME_RNG, "rb") as fr:
+                    data = np.load(fr)
+                    self._ereco_cum_num_vals = data["cum_num_of_values"]
+                    self._ereco_cum_num_edges = data["cum_num_of_bins"]
+                    self._ereco_num_vals = data["num_of_values"]
+                    self._ereco_num_edges = data["num_of_bins"]
+                    self._ereco_hist = data["values"]
+                    self._ereco_edges = data["bins"]
+
+            else:
+
+                self._generate_ragged_ereco_data(self.irf)
+
+                with Cache.open(self.CACHE_FNAME_RNG, "wb") as fr:
+
+                    np.savez(
+                        fr,
+                        bins = self._ereco_edges,
+                        values = self._ereco_hist,
+                        num_of_bins = self._ereco_num_edges,
+                        num_of_values = self._ereco_num_vals,
+                        cum_num_of_bins = self._ereco_cum_num_edges,
+                        cum_num_of_vals = self._ereco_cum_num_vals,
+                    )
             
-            for c_dec, (dec_low, dec_high) in enumerate(
-                zip(self._declination_bins[:-1], self._declination_bins[1:])
-            ):
-
-                # Find common rE binning per declination
-                _min = 10
-                _max = 0
-                _diff = 0
-
-                for bins in self.irf.reco_energy_bins[:, c_dec]:
-                    c_min = bins.min()
-                    c_max = bins.max()
-                    c_diff = np.diff(bins).max()
-                    _min = c_min if c_min < _min else _min
-                    _max = c_max if c_max > _max else _max
-                    _diff = c_diff if c_diff > _diff else _diff
-
-                # use bins encompassing the entire range
-                # round number to next integer, should that be +1 bc bin edges and not bins?
-                num_bins = int(np.ceil((_max - _min) / _diff))
-                rE_bin_edges = np.logspace(_min, _max, num_bins)
-                rE_binc = 0.5 * (rE_bin_edges[:-1] + rE_bin_edges[1:])
-
-                # Normalize along Ereco
-                # log10 because rE_bin_edges live in linear space
-                # weird choice to me, everything else with these pdfs is done in log space
-                bin_width = np.log10(rE_bin_edges[1]) - np.log10(rE_bin_edges[0])
-                eres = np.zeros((tE_bin_edges.size-1, rE_bin_edges.size-1))
-                for i, pdf in enumerate(self.irf.reco_energy[:, c_dec]):
-                    for j, (elow, ehigh) in enumerate(zip(
-                        rE_bin_edges[:-1], rE_bin_edges[1:]
-                        )
-                    ):
-                        eres[i, j] = pdf.cdf(np.log10(ehigh)) - pdf.cdf(np.log10(elow))
-                    #eres should already be normalised bc the pdfs (or rather cdfs)
-                    #of which the values are taken are already noralised, nevertheless:
-                    eres[i, :] = eres[i, :] / np.sum(eres[i] * bin_width)
-
-            
-                # do not rebin -> rebin=1
-                fit_params, rebin_tE_binc = self._fit_energy_res(
-                    tE_binc, rE_binc, eres, self._n_components, rebin=1
-                )
-
-                # take entire range
-                imin = 0
-                imax = -1
-
-                # I get that Emin, Emax for fitting might be the bin centers
-                # but why for the truncated parameterisation?
-                # the histogram data covers all the bin, not just up to/down to the center of last/first bin
-                Emin = rebin_tE_binc[imin]
-                Emax = rebin_tE_binc[imax]
-
-                # Fit polynomial:
-                poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
-                    fit_params, rebin_tE_binc, Emin, Emax, polydeg=5
-                )
-                self._poly_params_mu.append(poly_params_mu)
-                self._poly_params_sd.append(poly_params_sd)
-                self._poly_limits_battery.append(poly_limits)
-
-            #find smallest range of poly limits to use globally
-            poly_low = [i[0] for i in self._poly_limits_battery]
-            poly_high = [i[1] for i in self._poly_limits_battery]
-            poly_limits = (max(poly_low), min(poly_high))
-
-            # Save values
-            self._poly_limits = poly_limits
-            self._eres = eres
-            self._tE_bin_edges = tE_bin_edges
-            self._rE_bin_edges = rE_bin_edges
-
-            
-
-            # Save polynomial
-
-            with Cache.open(self.CACHE_FNAME, "wb") as fr:
-
-                np.savez(
-                    fr,
-                    eres=eres,
-                    tE_bin_edges=tE_bin_edges,
-                    rE_bin_edges=rE_bin_edges,
-                    poly_params_mu=self._poly_params_mu,
-                    poly_params_sd=self._poly_params_sd,
-                    Emin=Emin,
-                    Emax=Emax,
-                )
+            self._Emin = np.power(10, self.irf.true_energy_bins[0])
+            self._Emax = np.power(10, self.irf.true_energy_bins[-1])
 
             # Show results
             # this isn't working properly right now, why though?
@@ -653,6 +687,13 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 rebin_tE_binc=rebin_tE_binc,
             )
             """
+
+
+    @classmethod
+    def rewrite_files(cls):
+        #call this to rewrite npz files
+        cls(DistributionMode.PDF, rewrite=True)
+        cls(DistributionMode.RNG, rewrite=True)
 
 
 
@@ -671,10 +712,11 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
 
     """
 
-    #local_path = "input/tracks/NorthernTracksAngularRes.csv"
-    #DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
+    local_path = "input/tracks/IC86_II_smearing.csv"
+    DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
 
-    #CACHE_FNAME = "angular_reso_r2021.npz"
+    CACHE_FNAME = "angular_reso_r2021.npz"
+    #only one file here for the rng data
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
 
@@ -732,8 +774,6 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
 
             elif mode == DistributionMode.RNG:
                 #vmf = VMFParameterization(["true_dir"], "kappa", mode)
-
-                self._generate_ragged_psf_data(self._irf)
                 self._make_histogram("psf", self._psf_hist, self._psf_edges)
                 self._make_psf_hist_index()
                 for name, array in zip(["psf_get_cum_num_vals", "psf_get_cum_num_edges",
@@ -804,13 +844,55 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         elif self._mode == DistributionMode.RNG:
             #party in the back
             #extract *all* the histograms bar ereco
-            pass
+            #check for loading of data
+            if self.CACHE_FNAME in Cache and not self._rewrite:
+
+                with Cache.open(self.CACHE_FNAME, "rb") as fr:
+                    data = np.load(fr)
+                    self._psf_cum_num_edges = data["psf_cum_num_edges"]
+                    self._psf_cum_num_vals = data["psf_cum_num_vals"]
+                    self._psf_num_vals = data["psf_num_vals"]
+                    self._psf_num_edges = data["psf_num_edges"]
+                    self._psf_hist = data["psf_vals"]
+                    self._psf_edges = data["psf_edges"]
+                    self._ang_edges = data["ang_edges"]
+                    self._ang_hist = data["ang_vals"]
+                    self._ang_num_vals = data["ang_num_vals"]
+                    self._ang_num_edges = data["ang_num_edges"]
+                    self._ang_cum_num_vals = data["ang_cum_num_vals"]
+                    self._ang_cum_num_edges = data["ang_cum_num_edges"]
+
+            else:
+                self._generate_ragged_psf_data(self._irf)
+                with Cache.open(self.CACHE_FNAME_RNG, "wb") as fr:
+                    np.savez(
+                        fr,
+                        psf_cum_num_edges = self._psf_cum_num_edges,
+                        psf_cum_num_vals = self._psf_cum_num_vals,
+                        psf_num_vals = self._psf_num_vals,
+                        psf_num_edges = self._psf_num_edges,
+                        psf_vals = self._psf_hist,
+                        psf_edges = self._psf_edges,
+                        ang_edges = self._ang_edges,
+                        ang_vals = self._ang_hist,
+                        ang_num_vals = self._ang_num_vals,
+                        ang_num_edges = self._ang_num_edges,
+                        ang_cum_num_vals = self._ang_cum_num_vals,
+                        ang_cum_num_edges = self._ang_cum_num_edges,
+                    )
 
         else:
             raise ValueError("You weren't supposed to do that.")
 
+
     def kappa(self):
         pass
+
+
+    @classmethod
+    def rewrite_files(cls):
+        #call this to rewrite npz files
+        cls(DistributionMode.RNG, rewrite=True)
     
 
 
@@ -830,14 +912,15 @@ class R2021DetectorModel(DetectorModel):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         event_type=None,
+        rewrite=False
     ):
 
         super().__init__(mode, event_type="tracks")
 
-        ang_res = R2021AngularResolution(mode)
+        ang_res = R2021AngularResolution(mode, rewrite)
         self._angular_resolution = ang_res
 
-        energy_res = R2021EnergyResolution(mode)
+        energy_res = R2021EnergyResolution(mode, rewrite)
         self._energy_resolution = energy_res
 
         if mode == DistributionMode.PDF:
