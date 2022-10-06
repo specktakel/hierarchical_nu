@@ -430,39 +430,28 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         if mode == DistributionMode.PDF:
             mixture_name = "r2021_energy_res_mix"
             super().__init__(
-                "R2021EnergyResolution",
+                "R2021EnergyResolution_lpdf",
                 ["true_energy", "reco_energy", "declination"],
                 ["real", "real", "real"],
                 "real",
             )
-            lognorm = LognormalMixture(mixture_name, self.n_components, self._mode)
-        elif mode == DistributionMode.RNG:
-            mixture_name = "r2021_energy_res_mix_rng"
-            super().__init__(
-                "R2021EnergyResolution_rng",
-                ["true_energy", "declination"],
-                ["real", "real"],
-                "real",
-            )
-        else:
-            raise RuntimeError("mode must be DistributionMode.PDF or DistributionMode.RNG")
+            
 
-        # Define Stan interface
-        if self._mode == DistributionMode.PDF:
             with self:
+                lognorm = LognormalMixture(mixture_name, self.n_components, self._mode)
                 truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
                 log_trunc_e = LogParameterization(truncated_e)
 
                 #self._poly_params_mu should have shape (3, 3, 6)
                 #3: declination bins, 3: components, 6: poly-coeffs
                 mu_poly_coeffs = StanArray(
-                    "NorthernTracksEnergyResolutionMuPolyCoeffs",
+                    "R2021EnergyResolutionMuPolyCoeffs",
                     "real",
                     self._poly_params_mu,
                 )
                 #same as above
                 sd_poly_coeffs = StanArray(
-                    "NorthernTracksEnergyResolutionSdPolyCoeffs",
+                    "R2021EnergyResolutionSdPolyCoeffs",
                     "real",
                     self._poly_params_sd,
                 )
@@ -512,6 +501,14 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 ReturnStatement([lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
 
         elif mode == DistributionMode.RNG:
+            mixture_name = "r2021_energy_res_mix_rng"
+            super().__init__(
+                "R2021EnergyResolution_rng",
+                ["true_energy", "declination"],
+                ["real", "real"],
+                "real",
+            )
+
             with self:
                 #histogram "histogram_rng(array[] real hist_array, array[] real hist_edges)"
                 #is defined in utils.stan, is included anway
@@ -539,6 +536,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 #append lookup for outputted energy
                 # -> use as input for angular stuff
 
+        else:
+            raise RuntimeError("mode must be DistributionMode.PDF or DistributionMode.RNG")
 
     def setup(self) -> None:
 
@@ -556,7 +555,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     self._poly_params_sd = data["poly_params_sd"]
                     self._poly_limits = (float(data["Emin"]), float(data["Emax"]))
 
-            # Or load from file
             else:
                 logger.info("Re-doing pdf data and saving files.")
                 tE_bin_edges = np.power(10, self.irf.true_energy_bins)
@@ -623,18 +621,22 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     self._poly_params_mu.append(poly_params_mu)
                     self._poly_params_sd.append(poly_params_sd)
                     self._poly_limits_battery.append(poly_limits)
+                    #self._poly_params_mu = poly_params_mu
+                    #self._poly_params_sd = poly_params_sd
+                    #self._poly_limits = poly_limits
+                    #break
 
                 #find smallest range of poly limits to use globally
+                
                 poly_low = [i[0] for i in self._poly_limits_battery]
                 poly_high = [i[1] for i in self._poly_limits_battery]
                 poly_limits = (max(poly_low), min(poly_high))
-
+                
                 # Save values
                 self._poly_limits = poly_limits
                 self._eres = eres
                 self._tE_bin_edges = tE_bin_edges
                 self._rE_bin_edges = rE_bin_edges
-
                 
 
                 # Save polynomial
@@ -651,6 +653,15 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         Emin=Emin,
                         Emax=Emax,
                     )
+                """
+                self.plot_fit_params(fit_params, rebin_tE_binc)
+                self.plot_parameterizations(
+                    tE_binc,
+                    rE_binc,
+                    fit_params,
+                    rebin_tE_binc=rebin_tE_binc,
+                )
+                """
         else:
             if self.CACHE_FNAME_RNG in Cache and not self._rewrite:
                 logger.info("Loading rng data from file.")
@@ -683,19 +694,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     )
             
             self._Emin = np.power(10, self.irf.true_energy_bins[0])
-            self._Emax = np.power(10, self.irf.true_energy_bins[-1])
-
-            # Show results
-            # this isn't working properly right now, why though?
-            """
-            self.plot_fit_params(fit_params, rebin_tE_binc)
-            self.plot_parameterizations(
-                tE_binc,
-                rE_binc,
-                fit_params,
-                rebin_tE_binc=rebin_tE_binc,
-            )
-            """
+            self._Emax = np.power(10, self.irf.true_energy_bins[-1])   
 
 
     @classmethod
@@ -749,7 +748,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 "R2021AngularResolution_rng",
                 ["true_energy", "reco_energy", "true_dir"],
                 ["real", "real", "vector"],
-                "real",
+                "vector",
             )
 
         #self._kappa_grid: np.ndarray = None
@@ -784,7 +783,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
 
 
             elif mode == DistributionMode.RNG:
-                #vmf = VMFParameterization(["true_dir"], "kappa", mode)
+                vmf = VMFParameterization(["true_dir"], "kappa", mode)
                 self._make_histogram("psf", self._psf_hist, self._psf_edges)
                 self._make_psf_hist_index()
                 for name, array in zip(["psf_get_cum_num_vals", "psf_get_cum_num_edges",
@@ -835,11 +834,11 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 ang_err = ForwardVariableDef("ang_err", "real")
                 ang_err << FunctionCall([FunctionCall([ang_hist_idx], "ang_get_ragged_hist"), FunctionCall([ang_hist_idx], "ang_get_ragged_edges")], "histogram_rng")
                 
-            #kappa = ForwardVariableDef("kappa", "real")
+            kappa = ForwardVariableDef("kappa", "real")
             #hardcoded p=0.5 (log(1-p)) from the tabulated data of release
-            #kappa << StringExpression(["- (2 / ang_err^2) * log(1 - 0.5)"]) 
-            #ReturnStatement([vmf])
-            ReturnStatement([ang_err])
+            kappa << StringExpression(["- (2 / (pi() * pow(10, ang_err)^2 / 180)) * log(1 - 0.5)"]) 
+            ReturnStatement([vmf])
+            #ReturnStatement([ang_err])
 
 
     def setup(self):

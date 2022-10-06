@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 Cache.set_cache_dir(".cache")
 
 
-class EffectiveArea(metaclass=ABCMeta): # UserDefinedFunction, 
+class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
     """
     Implements baseclass for effective areas.
 
