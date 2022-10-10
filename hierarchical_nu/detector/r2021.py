@@ -431,8 +431,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             mixture_name = "r2021_energy_res_mix"
             super().__init__(
                 "R2021EnergyResolution_lpdf",
-                ["true_energy", "reco_energy", "declination"],
-                ["real", "real", "real"],
+                ["true_energy", "reco_energy", "omega"],
+                ["real", "real", "vector"],
                 "real",
             )
             
@@ -465,8 +465,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     "weights", "vector[" + str(self._n_components) + "]"
                 )
 
+                declination = ForwardVariableDef("declination", "real")
+                declination << FunctionCall(["omega"], "omega_to_dec")
+
                 declination_bins = StanArray("dec_bins", "real", self._declination_bins)
-                
                 declination_index = ForwardVariableDef("dec_ind", "int")
                 declination_index << StringExpression(["binary_search(declination, ", declination_bins, ")"])
 
@@ -504,8 +506,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             mixture_name = "r2021_energy_res_mix_rng"
             super().__init__(
                 "R2021EnergyResolution_rng",
-                ["true_energy", "declination"],
-                ["real", "real"],
+                ["true_energy", "omega"],
+                ["real", "vector"],
                 "real",
             )
 
@@ -523,12 +525,15 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 
 
                 #call histogramm with appropriate values/edges
+                declination = ForwardVariableDef("declination", "real")
+                declination << FunctionCall(["omega"], "omega_to_dec")
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
                 dec_idx = ForwardVariableDef("dec_idx", "int")
                 ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
                 etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
                 dec_idx << FunctionCall(["declination"], "dec_lookup")
                 ereco_hist_idx << FunctionCall([etrue_idx, dec_idx], "ereco_get_ragged_index")
+                #return is log(E/GeV)
                 ReturnStatement([FunctionCall([FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"), FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "histogram_rng")])
                 #ReturnStatement([FunctionCall([FunctionCall(["true_energy", "declination", "0"], "ereco_lookup"), FunctionCall(["true_energy", "declination", "1"], "ereco_lookup")], "histogram_rng")])
 
@@ -800,9 +805,15 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 ):
                     self._make_lookup_functions(name, array)
                 
+                #convert input energies to logs
+                #log_etrue = ForwardVariableDef("log_etrue", "real")
+                log_etrue = LogParameterization("true_energy")
+
+                log_ereco = LogParameterization("reco_energy")
+                
                 #get ereco index from eres-defined functions
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
-                etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
+                etrue_idx << FunctionCall([log_etrue], "etrue_lookup")
                 #StringExpression(['print("etrueidx ", etrue_idx)'])
                 declination = ForwardVariableDef("declination", "real")
                 declination << StringExpression(["pi()/2 - acos(true_dir[3])"])
@@ -811,7 +822,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
                 ereco_hist_idx << FunctionCall([etrue_idx, dec_idx], "ereco_get_ragged_index")
                 ereco_idx = ForwardVariableDef("ereco_idx", "int")
-                ereco_idx << FunctionCall(["log10(reco_energy)", FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "binary_search")
+                ereco_idx << FunctionCall([log_ereco, FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "binary_search")
                 #StringExpression(['print("erecoidx ", ereco_idx)'])
 
                 #lookup psf stuff
@@ -836,7 +847,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 
             kappa = ForwardVariableDef("kappa", "real")
             #hardcoded p=0.5 (log(1-p)) from the tabulated data of release
-            kappa << StringExpression(["- (2 / (pi() * pow(10, ang_err)^2 / 180)) * log(1 - 0.5)"]) 
+            kappa << StringExpression(["- (2 / (pi() * pow(10, ang_err) / 180)^2) * log(1 - 0.5)"]) 
             ReturnStatement([vmf])
             #ReturnStatement([ang_err])
 

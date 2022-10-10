@@ -108,6 +108,25 @@ real omega_to_zenith(vector omega) {
 }
 
 /**
+ * Convert from unit vector omega to declination of spherical coordinate system.
+ * @param omega a 3D unit vector.
+ */
+real omega_to_dec(vector omega) {
+  
+  real dec;
+  
+  int N = num_elements(omega);
+  
+  if (N != 3) {
+    print("Error: input vector omega must be of 3 dimensions");
+  }
+
+  dec = pi() / 2 - acos(omega[3]);
+    
+  return dec;
+}
+
+/**
  * Calculate the expected number of detected events from each source.
  */
 real get_Nex(vector F, vector eps) {

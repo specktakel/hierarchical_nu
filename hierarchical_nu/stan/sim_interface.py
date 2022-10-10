@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from collections import OrderedDict
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.stan.interface import StanInterface
 
@@ -29,6 +30,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.events import TRACKS, CASCADES
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 
 class StanSimInterface(StanInterface):
@@ -839,9 +841,16 @@ class StanSimInterface(StanInterface):
 
                                 self._aeff_factor << 0
 
-                        self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
-                            self._E[i]
-                        )
+                        if self.detector_model_type == R2021DetectorModel:
+                            #return of energy resolution is log_10(E/GeV)
+                            self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
+                                self._E[i], FunctionCall([self._omega], "omega_to_dec")
+                            )
+                            
+                        else:
+                            self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
+                                self._E[i]
+                            )
 
                         self._f_value << self._src_factor * self._aeff_factor
 
@@ -904,10 +913,16 @@ class StanSimInterface(StanInterface):
                             )
 
                     # Detection effects
-                    self._event[i] << self._dm_rng["tracks"].angular_resolution(
-                        self._E[i], self._omega
-                    )
-                    self._kappa[i] << self._dm_rng["tracks"].angular_resolution.kappa()
+                    if self.detector_model_type == R2021DetectorModel:
+                        #both energies are E/GeV, angular_resolution does log internally
+                        self._event[i] << self._dm_rng["tracks"].angular_resolution(
+                            self._E[i], self._Edet[i], self._omega
+                        )
+                    else:
+                        self._event[i] << self._dm_rng["tracks"].angular_resolution(
+                            self._E[i], self._omega
+                        )
+                        self._kappa[i] << self._dm_rng["tracks"].angular_resolution.kappa()
 
             if "cascades" in self._event_types:
 
