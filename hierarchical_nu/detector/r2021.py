@@ -9,7 +9,9 @@ import sys
 
 from icecube_tools.detector.r2021 import R2021IRF
 
-from hierarchical_nu.backend.stan_generator import ElseIfBlockContext, IfBlockContext
+from hierarchical_nu.backend.stan_generator import ElseIfBlockContext, IfBlockContext, StanGenerator
+
+from hierarchical_nu.stan.interface import STAN_PATH
 
 from ..utils.cache import Cache
 from ..backend import (
@@ -43,6 +45,70 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 Cache.set_cache_dir(".cache")
+
+
+class R2021EffectiveArea(EffectiveArea):
+    def __init__(self):
+        super().__init__(
+            "R2021EffectiveArea",
+            ["true_energy", "true_dir"],
+            ["real", "vector"],
+            "real",
+        )
+    
+
+    def setup(self):
+        pass
+
+
+
+class R2021EnergyResolution(EnergyResolution):
+    def __init__(self, mode: DistributionMode = DistributionMode.PDF):
+        if mode == DistributionMode.PDF:
+            super().__init__(
+                "R2021EnergyResolution_lpdf",
+                ["true_energy", "reco_energy", "omega"],
+                ["real", "real", "vector"],
+                "real",
+            )
+        elif mode == DistributionMode.RNG:
+            super().__init__(
+                "R2021EnergyResolution_rng",
+                ["true_energy", "omega"],
+                ["real", "vector"],
+                "real",
+            )
+
+
+    def setup(self):
+        pass
+        
+
+
+class R2021AngularResolution(AngularResolution):
+    def __init__(self, mode: DistributionMode = DistributionMode.PDF):
+        if mode == DistributionMode.PDF:
+            super().__init__(
+                "R2021AngularResolution",
+                ["true_energy", "reco_energy", "true_dir", "reco_dir", "ang_err"],
+                ["real", "real", "vector", "vector", "real"],
+                "real",
+            )
+        else:
+            super().__init__(
+                "R2021AngularResolution_rng",
+                ["true_energy", "reco_energy", "true_dir"],
+                ["real", "real", "vector"],
+                "vector",
+            )
+
+
+    def kappa(self):
+        pass
+
+
+    def setup(self):
+        pass
 
 
 class HistogramSampler():
@@ -311,7 +377,7 @@ class HistogramSampler():
 
 
 
-class R2021EffectiveArea(EffectiveArea):
+class R2021EffectiveArea_code(R2021EffectiveArea):
     """
     Effective area for the ten-year All Sky Point Source release:
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
@@ -383,7 +449,7 @@ class R2021EffectiveArea(EffectiveArea):
 
         
 
-class R2021EnergyResolution(EnergyResolution, HistogramSampler):
+class R2021EnergyResolution_code(EnergyResolution, HistogramSampler):
 
     """
     Energy resolution for Northern Tracks Sample
@@ -710,7 +776,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
 
 
-class R2021AngularResolution(AngularResolution, HistogramSampler):
+class R2021AngularResolution_code(AngularResolution, HistogramSampler):
     """
     Angular resolution for Northern Tracks Sample
 
@@ -918,7 +984,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
     
 
 
-class R2021DetectorModel(DetectorModel):
+class R2021DetectorModel_code(DetectorModel):
     """
     Implements the detector model for the NT sample
 
@@ -939,14 +1005,14 @@ class R2021DetectorModel(DetectorModel):
 
         super().__init__(mode, event_type="tracks")
 
-        ang_res = R2021AngularResolution(mode, rewrite)
+        ang_res = R2021AngularResolution_code(mode, rewrite)
         self._angular_resolution = ang_res
 
-        energy_res = R2021EnergyResolution(mode, rewrite)
+        energy_res = R2021EnergyResolution_code(mode, rewrite)
         self._energy_resolution = energy_res
 
         if mode == DistributionMode.PDF:
-            self._eff_area = R2021EffectiveArea()
+            self._eff_area = R2021EffectiveArea_code()
 
     def _get_effective_area(self):
         return self._eff_area
@@ -956,6 +1022,49 @@ class R2021DetectorModel(DetectorModel):
 
     def _get_angular_resolution(self):
         return self._angular_resolution
+
+
+    @classmethod
+    def generate_code(cls, mode: DistributionMode):
+        with StanGenerator() as cg:
+            instance = cls(mode=mode)
+            code = cg.generate()
+        code = code.removeprefix("functions\n{")
+        code = code.removesuffix("\n}\n")
+        with open(os.path.join(STAN_PATH, "r2021.stan"), 'w+') as f:
+            f.write(code)
+
+
+
+class R2021DetectorModel(DetectorModel):
+
+    event_types = ["tracks"]
+
+    def __init__(self, mode:DistributionMode, event_type=None):
+
+        super().__init__(mode, event_type="tracks")
+
+        ang_res = R2021AngularResolution(mode)
+        self._angular_resolution = ang_res
+
+        energy_res = R2021EnergyResolution(mode)
+        self._energy_resolution = energy_res
+
+        if mode == DistributionMode.PDF:
+            self._eff_area = R2021EffectiveArea()
+
+
+    def _get_effective_area(self):
+        return self._eff_area
+
+
+    def _get_energy_resolution(self):
+        return self._energy_resolution
+
+
+    def _get_angular_resolution(self):
+        return self._angular_resolution
+
 
 
 # Testing.

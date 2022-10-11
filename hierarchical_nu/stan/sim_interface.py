@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from collections import OrderedDict
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
+from hierarchical_nu.detector.r2021 import R2021DetectorModel, R2021DetectorModel_code
 
 from hierarchical_nu.stan.interface import StanInterface
 
@@ -17,6 +17,7 @@ from hierarchical_nu.backend.stan_generator import (
     ElseBlockContext,
     WhileLoopContext,
     FunctionCall,
+    StanGenerator
 )
 
 from hierarchical_nu.backend.variable_definitions import (
@@ -51,6 +52,11 @@ class StanSimInterface(StanInterface):
             "rejection_sampling.stan",
         ],
     ):
+        if detector_model_type == R2021DetectorModel:
+            includes.append("r2021.stan")
+        #R2021DetectorModel_code.generate_code(DistributionMode.RNG)
+
+
 
         super().__init__(
             output_file=output_file,
@@ -548,10 +554,10 @@ class StanSimInterface(StanInterface):
                     mode=DistributionMode.RNG,
                     event_type=event_type,
                 )
-                self._dm_pdf[event_type] = self.detector_model_type(
-                    mode=DistributionMode.PDF,
-                    event_type=event_type,
-                )
+                #self._dm_pdf[event_type] = self.detector_model_type(
+                #    mode=DistributionMode.PDF,
+                #    event_type=event_type,
+                #)
 
             self._f_arr = ForwardVariableDef("f_arr", "real")
             self._f_arr_astro = ForwardVariableDef("f_arr_astro", "real")
@@ -657,10 +663,12 @@ class StanSimInterface(StanInterface):
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
                         )
 
-                        self._aeff_factor << self._dm_pdf["tracks"].effective_area(
+                        #self._aeff_factor << self._dm_pdf["tracks"].effective_area(
+                        #    self._E[i], self._omega
+                        #)
+                        self._aeff_factor << self._dm_rng["tracks"].effective_area(
                             self._E[i], self._omega
                         )
-
                         # Energy spectrum
                         if self.sources.point_source:
 
