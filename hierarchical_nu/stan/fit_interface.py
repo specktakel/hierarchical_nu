@@ -1,6 +1,8 @@
 import numpy as np
 from astropy import units as u
+from typing import List
 from collections import OrderedDict
+from hierarchical_nu.detector.detector_model import DetectorModel
 
 from hierarchical_nu.priors import Priors
 from hierarchical_nu.stan.interface import StanInterface
@@ -31,22 +33,35 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.events import TRACKS, CASCADES
 from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.source.source import Sources
 
 
 class StanFitInterface(StanInterface):
     """
-    For generating Stan fit code.
+    An interface for generating the Stan fit code.
     """
 
     def __init__(
         self,
-        output_file,
-        sources,
-        detector_model_type,
-        priors=Priors(),
-        includes=["interpolation.stan", "utils.stan", "vMF.stan"],
-        theta_points=30,
+        output_file: str,
+        sources: Sources,
+        detector_model_type: DetectorModel,
+        atmo_flux_theta_points: int = 30,
+        includes: List[str] = ["interpolation.stan", "utils.stan", "vMF.stan"],
+        priors: Priors = Priors(),
     ):
+        """
+        An interface for generating Stan fit code.
+
+        :param output_file: Name of the file to write to
+        :param sources: Sources object containing sources to be fit
+        :param detector_model_type: Type of the detector model to be used
+        :param atmo_flux_theta_points: Number of points to use for the grid of
+        atmospheric flux
+        :param includes: List of names of stan files to include into the
+        functions block of the generated file
+        :param priors: Priors object detailing the priors to use
+        """
 
         super().__init__(
             output_file=output_file,
@@ -57,11 +72,15 @@ class StanFitInterface(StanInterface):
 
         self._priors = priors
 
-        self._theta_points = theta_points
+        self._atmo_flux_theta_points = atmo_flux_theta_points
 
         self._get_par_ranges()
 
     def _get_par_ranges(self):
+        """
+        Extract the parameter ranges to use in Stan from the
+        defined parameters.
+        """
 
         if self.sources.point_source:
 
@@ -85,9 +104,13 @@ class StanFitInterface(StanInterface):
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range
 
     def _functions(self):
+        """
+        Write the functions section of the Stan file.
+        """
 
         with FunctionsContext():
 
+            # Include all the specified files
             for include_file in self._includes:
                 _ = Include(include_file)
 
@@ -95,11 +118,14 @@ class StanFitInterface(StanInterface):
 
             for event_type in self._event_types:
 
+                # Include the PDF mode of the detector model
                 self._dm[event_type] = self._detector_model_type(
                     event_type=event_type,
                     mode=DistributionMode.PDF,
                 )
 
+            # If we have point sources, include the shape of their PDF
+            # and how to convert from energy to number flux
             if self.sources.point_source:
 
                 self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
@@ -110,50 +136,72 @@ class StanFitInterface(StanInterface):
                     "flux_conv"
                 )
 
+            # If we have diffuse sources, include the shape of their PDF
             if self.sources.diffuse:
 
                 self._diff_spectrum_lpdf = self._diff_spectrum.make_stan_lpdf_func(
                     "diff_spectrum_logpdf"
                 )
 
+            # If we have atmospheric sources, include the atmospheric flux table
+            # the density of the grid in theta (ie. declination) is specified here
             if self.sources.atmospheric:
 
+                # Increasing theta points too much makes compilation very slow
+                # Could switch to passing array as data if problematic
                 self._atmo_flux_func = self._atmo_flux.make_stan_function(
-                    theta_points=self._theta_points
+                    theta_points=self._atmo_flux_theta_points
                 )
 
+                # Include integral for normalisation to PDF
                 self._atmo_flux_integral = self._atmo_flux.total_flux_int.to(
-                    1 / (u.m ** 2 * u.s)
+                    1 / (u.m**2 * u.s)
                 ).value
 
     def _data(self):
 
         with DataContext():
 
+            # Total number of detected events
             self._N = ForwardVariableDef("N", "int")
             self._N_str = ["[", self._N, "]"]
+
+            # Detected directions as unit vectors
             self._omega_det = ForwardArrayDef(
                 "omega_det", "unit_vector[3]", self._N_str
             )
+
+            # Dected energies
             self._Edet = ForwardVariableDef("Edet", "vector[N]")
+
+            # Event types as track/cascades
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
+
+            # Uncertainty on the event's angular reconstruction
             self._kappa = ForwardVariableDef("kappa", "vector[N]")
+
+            # Energy range at source
             self._Esrc_min = ForwardVariableDef("Esrc_min", "real")
             self._Esrc_max = ForwardVariableDef("Esrc_max", "real")
 
+            # Number of point sources
             self._Ns = ForwardVariableDef("Ns", "int")
             self._Ns_str = ["[", self._Ns, "]"]
             self._Ns_1p_str = ["[", self._Ns, "+1]"]
             self._Ns_2p_str = ["[", self._Ns, "+2]"]
 
+            # True directions and distances of point sources
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
             self._D = ForwardVariableDef("D", "vector[Ns]")
 
+            # Density of interpolation grid and energy grid points
             self._Ngrid = ForwardVariableDef("Ngrid", "int")
             self._Eg = ForwardVariableDef("E_grid", "vector[Ngrid]")
 
+            # Observation time
             self._T = ForwardVariableDef("T", "real")
 
+            # Redshift
             if self.sources.diffuse:
 
                 N_int_str = self._Ns_1p_str
@@ -164,6 +212,10 @@ class StanFitInterface(StanInterface):
                 N_int_str = self._Ns_str
                 self._z = ForwardVariableDef("z", "vector[Ns]")
 
+            # Interpolation grid points in spectral indices for
+            # sources with spectral index as a free param, and
+            # the exposure integral evaluated at these points, for
+            # different event types (i.e. different Aeff)
             if self.sources.point_source or self.sources.diffuse:
 
                 if self.sources.point_source:
@@ -202,6 +254,8 @@ class StanFitInterface(StanInterface):
 
                 N_pdet_str = self._Ns_str
 
+            # Interpolation grid used for the probability of detecting
+            # an event above the minimum detected energy threshold
             if "tracks" in self._event_types:
 
                 self._Pg_t = ForwardArrayDef("Pdet_grid_t", "vector[Ngrid]", N_pdet_str)
@@ -210,11 +264,15 @@ class StanFitInterface(StanInterface):
 
                 self._Pg_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", N_pdet_str)
 
+            # Don't need a grid for atmo as spectral shape is fixed, so pass single value.
             if self.sources.atmospheric:
 
                 self._atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
 
     def _transformed_data(self):
+        """
+        To write the transformed data section of the Stan file.
+        """
 
         with TransformedDataContext():
 
@@ -228,6 +286,7 @@ class StanFitInterface(StanInterface):
                 self._cascade_type = ForwardVariableDef("cascade_type", "int")
                 self._cascade_type << CASCADES
 
+            # Find out how many cascade and how many track events in data
             if "cascades" in self._event_types and "tracks" in self._event_types:
 
                 self._N_c = ForwardVariableDef("N_c", "int")
@@ -249,11 +308,15 @@ class StanFitInterface(StanInterface):
                     with ElseBlockContext():
                         self._N_t << self._N_t + 1
 
-
     def _parameters(self):
+        """
+        To write the parameters section of the Stan file.
+        """
 
         with ParametersContext():
 
+            # For point sources, L and src_index can be shared or
+            # independent.
             if self.sources.point_source:
 
                 Lmin, Lmax = self._lumi_par_range
@@ -292,6 +355,7 @@ class StanFitInterface(StanInterface):
                         src_index_max,
                     )
 
+            # Specify F_diff and diff_index to characterise the diffuse comp
             if self.sources.diffuse:
 
                 diff_index_min, diff_index_max = self._diff_index_par_range
@@ -301,30 +365,50 @@ class StanFitInterface(StanInterface):
                     "diff_index", "real", diff_index_min, diff_index_max
                 )
 
+            # Atmo spectral shape is fixed, but normalisation can move.
             if self.sources.atmospheric:
 
                 self._F_atmo = ParameterDef("F_atmo", "real", 0.0, None)
 
+            # Vector of latent true source energies for each event
             self._Esrc = ParameterVectorDef(
                 "Esrc", "vector", self._N_str, self._Esrc_min, self._Esrc_max
             )
 
     def _transformed_parameters(self):
+        """
+        To write the transformed parameters section of the Stan file.
+        """
 
+        # The likelihood is defined here, simplifying the code in the
+        # model section for readability
         with TransformedParametersContext():
 
+            # Expected number of events for different components
             self._Nex = ForwardVariableDef("Nex", "real")
             self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
             self._Nex_src = ForwardVariableDef("Nex_src", "real")
             self._Nex_diff = ForwardVariableDef("Nex_diff", "real")
+
+            # Total flux
             self._Ftot = ForwardVariableDef("Ftot", "real")
+
+            # Total flux form point sources
             self._F_src = ForwardVariableDef("Fs", "real")
+
+            # Different definitions of fractional association
             self._f_arr = ForwardVariableDef("f_arr", "real")
             self._f_det = ForwardVariableDef("f_det", "real")
             self._f_arr_astro = ForwardVariableDef("f_arr_astro", "real")
             self._f_det_astro = ForwardVariableDef("f_det_astro", "real")
+
+            # Latent arrival energies for each event
             self._E = ForwardVariableDef("E", "vector[N]")
 
+            # Decide how many source components we have and calculate
+            # `logF` accordingly.
+            # These will be used as weights in the mixture model likelihood
+            # We store the log probability for each source comp in `lp`.
             if self.sources.diffuse and self.sources.atmospheric:
 
                 self._F = ForwardVariableDef("F", "vector[Ns+2]")
@@ -381,6 +465,7 @@ class StanFitInterface(StanInterface):
             self._Nex_src << 0.0
             self._Nex_atmo << 0.0
 
+            # For each source, calculate the number flux and update F, logF
             if self.sources.point_source:
 
                 with ForLoopContext(1, self._Ns, "k") as k:
@@ -425,6 +510,8 @@ class StanFitInterface(StanInterface):
             if self.sources.atmospheric and self.sources.diffuse:
                 StringExpression("F[Ns+2]") << self._F_atmo
 
+            # For each source, calculate the exposure via interpolation
+            # and then the expected number of events
             if self.sources.point_source:
 
                 with ForLoopContext(1, self._Ns, "k") as k:
@@ -436,14 +523,18 @@ class StanFitInterface(StanInterface):
 
                     if "tracks" in self._event_types:
 
-                        self._eps_t[k] << FunctionCall(
-                            [
-                                self._src_index_grid,
-                                self._integral_grid_t[k],
-                                src_index_ref,
-                            ],
-                            "interpolate",
-                        ) * self._T
+                        (
+                            self._eps_t[k]
+                            << FunctionCall(
+                                [
+                                    self._src_index_grid,
+                                    self._integral_grid_t[k],
+                                    src_index_ref,
+                                ],
+                                "interpolate",
+                            )
+                            * self._T
+                        )
 
                         StringExpression(
                             [self._Nex_src_t, "+=", self._F[k] * self._eps_t[k]]
@@ -451,14 +542,18 @@ class StanFitInterface(StanInterface):
 
                     if "cascades" in self._event_types:
 
-                        self._eps_c[k] << FunctionCall(
-                            [
-                                self._src_index_grid,
-                                self._integral_grid_c[k],
-                                src_index_ref,
-                            ],
-                            "interpolate",
-                        ) * self._T
+                        (
+                            self._eps_c[k]
+                            << FunctionCall(
+                                [
+                                    self._src_index_grid,
+                                    self._integral_grid_c[k],
+                                    src_index_ref,
+                                ],
+                                "interpolate",
+                            )
+                            * self._T
+                        )
 
                         StringExpression(
                             [self._Nex_src_c, "+=", self._F[k] * self._eps_c[k]]
@@ -468,18 +563,23 @@ class StanFitInterface(StanInterface):
 
                 if "tracks" in self._event_types:
 
-                    self._eps_t[self._Ns + 1] << FunctionCall(
-                        [
-                            self._diff_index_grid,
-                            self._integral_grid_t[self._Ns + 1],
-                            self._diff_index,
-                        ],
-                        "interpolate",
-                    ) * self._T
+                    (
+                        self._eps_t[self._Ns + 1]
+                        << FunctionCall(
+                            [
+                                self._diff_index_grid,
+                                self._integral_grid_t[self._Ns + 1],
+                                self._diff_index,
+                            ],
+                            "interpolate",
+                        )
+                        * self._T
+                    )
 
-                    self._Nex_diff_t << self._F[self._Ns + 1] * self._eps_t[
-                        self._Ns + 1
-                    ]
+                    (
+                        self._Nex_diff_t
+                        << self._F[self._Ns + 1] * self._eps_t[self._Ns + 1]
+                    )
 
                     self._eps_t[self._Ns + 2] << self._atmo_integ_val * self._T
 
@@ -487,50 +587,65 @@ class StanFitInterface(StanInterface):
 
                 if "cascades" in self._event_types:
 
-                    self._eps_c[self._Ns + 1] << FunctionCall(
-                        [
-                            self._diff_index_grid,
-                            self._integral_grid_c[self._Ns + 1],
-                            self._diff_index,
-                        ],
-                        "interpolate",
-                    ) * self._T
+                    (
+                        self._eps_c[self._Ns + 1]
+                        << FunctionCall(
+                            [
+                                self._diff_index_grid,
+                                self._integral_grid_c[self._Ns + 1],
+                                self._diff_index,
+                            ],
+                            "interpolate",
+                        )
+                        * self._T
+                    )
 
-                    self._Nex_diff_c << self._F[self._Ns + 1] * self._eps_c[
-                        self._Ns + 1
-                    ]
+                    (
+                        self._Nex_diff_c
+                        << self._F[self._Ns + 1] * self._eps_c[self._Ns + 1]
+                    )
 
             elif self.sources.diffuse:
 
                 if "tracks" in self._event_types:
 
-                    self._eps_t[self._Ns + 1] << FunctionCall(
-                        [
-                            self._diff_index_grid,
-                            self._integral_grid_t[self._Ns + 1],
-                            self._diff_index,
-                        ],
-                        "interpolate",
-                    ) * self._T
+                    (
+                        self._eps_t[self._Ns + 1]
+                        << FunctionCall(
+                            [
+                                self._diff_index_grid,
+                                self._integral_grid_t[self._Ns + 1],
+                                self._diff_index,
+                            ],
+                            "interpolate",
+                        )
+                        * self._T
+                    )
 
-                    self._Nex_diff_t << self._F[self._Ns + 1] * self._eps_t[
-                        self._Ns + 1
-                    ]
+                    (
+                        self._Nex_diff_t
+                        << self._F[self._Ns + 1] * self._eps_t[self._Ns + 1]
+                    )
 
                 if "cascades" in self._event_types:
 
-                    self._eps_c[self._Ns + 1] << FunctionCall(
-                        [
-                            self._diff_index_grid,
-                            self._integral_grid_c[self._Ns + 1],
-                            self._diff_index,
-                        ],
-                        "interpolate",
-                    ) * self._T
+                    (
+                        self._eps_c[self._Ns + 1]
+                        << FunctionCall(
+                            [
+                                self._diff_index_grid,
+                                self._integral_grid_c[self._Ns + 1],
+                                self._diff_index,
+                            ],
+                            "interpolate",
+                        )
+                        * self._T
+                    )
 
-                    self._Nex_diff_c << self._F[self._Ns + 1] * self._eps_c[
-                        self._Ns + 1
-                    ]
+                    (
+                        self._Nex_diff_c
+                        << self._F[self._Ns + 1] * self._eps_c[self._Ns + 1]
+                    )
 
             elif self.sources.atmospheric and "tracks" in self._event_types:
 
@@ -555,6 +670,8 @@ class StanFitInterface(StanInterface):
                 self._Nex_src << self._Nex_src_t + self._Nex_src_c
                 self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
                 self._Nex << self._Nex_t + self._Nex_c
+
+                # Relative probability of event types
                 self._logp_c << self._Nex_c / self._Nex
                 self._logp_c << StringExpression(["log(", self._logp_c, ")"])
                 self._logp_t << self._Nex_t / self._Nex
@@ -572,6 +689,7 @@ class StanFitInterface(StanInterface):
                 self._Nex_diff << self._Nex_diff_c
                 self._Nex << self._Nex_c
 
+            # Evaluate the different fractional associations as derived parameters
             if self.sources.diffuse and self.sources.atmospheric:
                 self._Ftot << self._F_src + self._F_diff + self._F_atmo
                 self._f_arr_astro << self._F_src / (self._F_src + self._F_diff)
@@ -611,9 +729,10 @@ class StanFitInterface(StanInterface):
 
                 k_atmo = "Ns + 1"
 
-            # Main model loop
+            # Main model loop where likelihood is evaluated
             self._logF << StringExpression(["log(", self._F, ")"])
 
+            # Product over events => add log likelihoods
             with ForLoopContext(1, self._N, "i") as i:
 
                 self._lp[i] << self._logF
@@ -629,6 +748,7 @@ class StanFitInterface(StanInterface):
                         ]
                     ):
 
+                        # Sum over sources => evaluate and store components
                         with ForLoopContext(1, n_comps_max, "k") as k:
 
                             # Point source components
@@ -643,6 +763,7 @@ class StanFitInterface(StanInterface):
                                     else:
                                         src_index_ref = self._src_index[k]
 
+                                    # log_prob += log(p(Esrc|src_index))
                                     StringExpression(
                                         [
                                             self._lp[i][k],
@@ -655,10 +776,13 @@ class StanFitInterface(StanInterface):
                                             ),
                                         ]
                                     )
+
+                                    # E = Esrc / (1+z)
                                     self._E[i] << StringExpression(
                                         [self._Esrc[i], " / (", 1 + self._z[k], ")"]
                                     )
 
+                                    # log_prob += log(p(omega_det|varpi, kappa))
                                     StringExpression(
                                         [
                                             self._lp[i][k],
@@ -679,6 +803,7 @@ class StanFitInterface(StanInterface):
                                     [StringExpression([k, " == ", k_diff])]
                                 ):
 
+                                    # log_prob += log(p(Esrc|diff_index))
                                     StringExpression(
                                         [
                                             self._lp[i][k],
@@ -691,10 +816,13 @@ class StanFitInterface(StanInterface):
                                             ),
                                         ]
                                     )
+
+                                    # E = Esrc / (1+z)
                                     self._E[i] << StringExpression(
                                         [self._Esrc[i], " / (", 1 + self._z[k], ")"]
                                     )
 
+                                    # log_prob += log(1/4pi)
                                     StringExpression(
                                         [
                                             self._lp[i][k],
@@ -710,6 +838,7 @@ class StanFitInterface(StanInterface):
                                     [StringExpression([k, " == ", k_atmo])]
                                 ):
 
+                                    # log_prob += log(p(Esrc, omega | atmospheric source))
                                     StringExpression(
                                         [
                                             self._lp[i][k],
@@ -726,9 +855,12 @@ class StanFitInterface(StanInterface):
                                             ),
                                         ]
                                     )
+
+                                    # E = Esrc
                                     self._E[i] << self._Esrc[i]
 
                             # Detection effects
+                            # log_prob += log(p(Edet|E))
                             StringExpression(
                                 [
                                     self._lp[i][k],
@@ -738,6 +870,8 @@ class StanFitInterface(StanInterface):
                                     ),
                                 ]
                             )
+
+                            # log_prob += log(p(Edet>Edet_min|E))
                             StringExpression(
                                 [
                                     self._lp[i][k],
@@ -752,6 +886,7 @@ class StanFitInterface(StanInterface):
                             )
 
                 # Cascades
+                # See comments for tracks for more details, approach is the same
                 if "cascades" in self._event_types:
 
                     with IfBlockContext(
@@ -776,6 +911,7 @@ class StanFitInterface(StanInterface):
                                     else:
                                         src_index_ref = self._src_index[k]
 
+                                    # log_prob += log(p(Esrc | src_index))
                                     StringExpression(
                                         [
                                             self._lp[i][k],
@@ -788,10 +924,13 @@ class StanFitInterface(StanInterface):
                                             ),
                                         ]
                                     )
+
+                                    # E = Esrc / (1+z)
                                     self._E[i] << StringExpression(
                                         [self._Esrc[i], " / (", 1 + self._z[k], ")"]
                                     )
 
+                                    # log_prob += log(p(omega_det | varpi, kappa))
                                     StringExpression(
                                         [
                                             self._lp[i][k],
@@ -812,6 +951,7 @@ class StanFitInterface(StanInterface):
                                     [StringExpression([k, " == ", k_diff])]
                                 ):
 
+                                    # log_prob += log(p(Esrc | diff_index))
                                     StringExpression(
                                         [
                                             self._lp[i][k],
@@ -824,9 +964,13 @@ class StanFitInterface(StanInterface):
                                             ),
                                         ]
                                     )
+
+                                    # E = Esrc / (1+z)
                                     self._E[i] << StringExpression(
                                         [self._Esrc[i], " / (", 1 + self._z[k], ")"]
                                     )
+
+                                    # log_prob += log(1/4pi)
                                     StringExpression(
                                         [
                                             self._lp[i][k],
@@ -842,15 +986,19 @@ class StanFitInterface(StanInterface):
                                     [StringExpression([k, " == ", k_atmo])]
                                 ):
 
+                                    # log_prob += -inf (no atmo comp for cascades!)
                                     StringExpression(
                                         [
                                             self._lp[i][k],
                                             " += negative_infinity()",
                                         ]
                                     )
+
+                                    # E = Esrc
                                     self._E[i] << self._Esrc[i]
 
                             # Detection effects
+                            # log_prob += log(p(Edet | E))
                             StringExpression(
                                 [
                                     self._lp[i][k],
@@ -860,6 +1008,8 @@ class StanFitInterface(StanInterface):
                                     ),
                                 ]
                             )
+
+                            # log_prob += log(p(Edet > Edet_min | E))
                             StringExpression(
                                 [
                                     self._lp[i][k],
@@ -874,14 +1024,18 @@ class StanFitInterface(StanInterface):
                             )
 
     def _model(self):
+        """
+        To write the model section of the Stan file.
+        """
 
         with ModelContext():
 
-            # Likelihood
+            # Likelihood: e^(-Nex) \prod_(i=1)^N_events \sum_(k=1)^N_sources lp[i][k]
             with ForLoopContext(1, self._N, "i") as i:
 
                 StringExpression(["target += log_sum_exp(", self._lp[i], ")"])
 
+            # Add factor for relative probability of event types
             if "tracks" in self._event_types and "cascades" in self._event_types:
 
                 StringExpression(["target += ", self._N_c, " * ", self._logp_c])

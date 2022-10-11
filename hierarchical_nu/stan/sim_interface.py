@@ -43,7 +43,7 @@ class StanSimInterface(StanInterface):
         output_file: str,
         sources: Sources,
         detector_model_type: DetectorModel,
-        atmo_flux_theta_points=30,
+        atmo_flux_theta_points: int = 30,
         includes: List[str] = [
             "interpolation.stan",
             "utils.stan",
