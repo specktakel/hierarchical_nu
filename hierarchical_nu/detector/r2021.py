@@ -29,6 +29,7 @@ from ..backend import (
     ForLoopContext,
     ForwardVariableDef,
     ForwardArrayDef,
+    ForwardVectorDef,
     StanArray,
     StringExpression,
     UserDefinedFunction,
@@ -45,70 +46,6 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 Cache.set_cache_dir(".cache")
-
-
-class R2021EffectiveArea(EffectiveArea):
-    def __init__(self):
-        super().__init__(
-            "R2021EffectiveArea",
-            ["true_energy", "true_dir"],
-            ["real", "vector"],
-            "real",
-        )
-    
-
-    def setup(self):
-        pass
-
-
-
-class R2021EnergyResolution(EnergyResolution):
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF):
-        if mode == DistributionMode.PDF:
-            super().__init__(
-                "R2021EnergyResolution_lpdf",
-                ["true_energy", "reco_energy", "omega"],
-                ["real", "real", "vector"],
-                "real",
-            )
-        elif mode == DistributionMode.RNG:
-            super().__init__(
-                "R2021EnergyResolution_rng",
-                ["true_energy", "omega"],
-                ["real", "vector"],
-                "real",
-            )
-
-
-    def setup(self):
-        pass
-        
-
-
-class R2021AngularResolution(AngularResolution):
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF):
-        if mode == DistributionMode.PDF:
-            super().__init__(
-                "R2021AngularResolution",
-                ["true_energy", "reco_energy", "true_dir", "reco_dir", "ang_err"],
-                ["real", "real", "vector", "vector", "real"],
-                "real",
-            )
-        else:
-            super().__init__(
-                "R2021AngularResolution_rng",
-                ["true_energy", "reco_energy", "true_dir"],
-                ["real", "real", "vector"],
-                "vector",
-            )
-
-
-    def kappa(self):
-        pass
-
-
-    def setup(self):
-        pass
 
 
 class HistogramSampler():
@@ -377,7 +314,7 @@ class HistogramSampler():
 
 
 
-class R2021EffectiveArea_code(R2021EffectiveArea):
+class R2021EffectiveArea(EffectiveArea):
     """
     Effective area for the ten-year All Sky Point Source release:
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
@@ -391,6 +328,12 @@ class R2021EffectiveArea_code(R2021EffectiveArea):
     def __init__(self) -> None:
 
         #what does this? super() is ABC with no arguments specified
+        self._func_name = "R2021EffectiveArea"
+
+        self.setup()
+
+
+    def generate_code(self):
 
         super().__init__(
             "R2021EffectiveArea",
@@ -398,8 +341,6 @@ class R2021EffectiveArea_code(R2021EffectiveArea):
             ["real", "vector"],
             "real",
         )
-
-        self.setup()
 
         # Define Stan interface.
         with self:
@@ -413,6 +354,7 @@ class R2021EffectiveArea_code(R2021EffectiveArea):
 
             _ = ReturnStatement([hist("true_energy", cos_dir)])
 
+
     def setup(self) -> None:
 
         if self.CACHE_FNAME in Cache:
@@ -425,9 +367,10 @@ class R2021EffectiveArea_code(R2021EffectiveArea):
 
             from icecube_tools.detector.effective_area import EffectiveArea
 
+            #cut the arrays short because of numerical inaccuracies in comparing large floats
             aeff = EffectiveArea.from_dataset("20210126")
-            eff_area = aeff.values
-            tE_bin_edges = aeff.true_energy_bins
+            eff_area = aeff.values[:-5]
+            tE_bin_edges = aeff.true_energy_bins[:-5]
             cosz_bin_edges = aeff.cos_zenith_bins
 
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
@@ -449,7 +392,7 @@ class R2021EffectiveArea_code(R2021EffectiveArea):
 
         
 
-class R2021EnergyResolution_code(EnergyResolution, HistogramSampler):
+class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
     """
     Energy resolution for Northern Tracks Sample
@@ -473,11 +416,11 @@ class R2021EnergyResolution_code(EnergyResolution, HistogramSampler):
         self.irf = R2021IRF()
         #super().__init__()
 
-
+        self.mode = mode
         #TODO edit type hints later when everything else works
         self._rewrite = rewrite
         logger.info("Forced rewriting: {}".format(rewrite))
-        self._mode = mode
+        self.mode = mode
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
         self._poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
@@ -485,26 +428,44 @@ class R2021EnergyResolution_code(EnergyResolution, HistogramSampler):
         self._declination_bins = self.irf.declination_bins
 
         # For prob_Edet_above_threshold
-        self._pdet_limits = (1e2, 1e8)
+        self._pdet_limits = (1e2, 1e9)
 
         self._n_components = 3
         self.setup()
 
         self._poly_limits = self._pdet_limits
 
+        if self.mode == DistributionMode.PDF:
+            self._func_name = "R2021EnergyResolution"
+        elif self.mode == DistributionMode.RNG:
+            self._func_name = "R2021EnergyResolution_rng"
+
         # need to change rng mode to actually be sampling from the histogram
-        if mode == DistributionMode.PDF:
-            mixture_name = "r2021_energy_res_mix"
+        
+    def generate_code(self):
+
+        if self.mode == DistributionMode.PDF:
+            self.mixture_name = "r2021_energy_res_mix"
             super().__init__(
-                "R2021EnergyResolution_lpdf",
+                "R2021EnergyResolution",
                 ["true_energy", "reco_energy", "omega"],
                 ["real", "real", "vector"],
                 "real",
             )
-            
+        elif self.mode == DistributionMode.RNG:
+            self.mixture_name = "r2021_energy_res_mix_rng"
+            super().__init__(
+                "R2021EnergyResolution_rng",
+                ["true_energy", "omega"],
+                ["real", "vector"],
+                "real",
+            )
 
+
+        if self.mode == DistributionMode.PDF:
+    
             with self:
-                lognorm = LognormalMixture(mixture_name, self.n_components, self._mode)
+                lognorm = LognormalMixture(self.mixture_name, self.n_components, self.mode)
                 truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
                 log_trunc_e = LogParameterization(truncated_e)
 
@@ -568,14 +529,7 @@ class R2021EnergyResolution_code(EnergyResolution, HistogramSampler):
                 log_reco_e = LogParameterization("reco_energy")
                 ReturnStatement([lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
 
-        elif mode == DistributionMode.RNG:
-            mixture_name = "r2021_energy_res_mix_rng"
-            super().__init__(
-                "R2021EnergyResolution_rng",
-                ["true_energy", "omega"],
-                ["real", "vector"],
-                "real",
-            )
+        elif self.mode == DistributionMode.RNG:
 
             with self:
                 #histogram "histogram_rng(array[] real hist_array, array[] real hist_edges)"
@@ -610,9 +564,10 @@ class R2021EnergyResolution_code(EnergyResolution, HistogramSampler):
         else:
             raise RuntimeError("mode must be DistributionMode.PDF or DistributionMode.RNG")
 
+
     def setup(self) -> None:
 
-        if self._mode == DistributionMode.PDF:
+        if self.mode == DistributionMode.PDF:
      
             # Check cache
             if self.CACHE_FNAME_PDF in Cache and not self._rewrite:
@@ -682,8 +637,11 @@ class R2021EnergyResolution_code(EnergyResolution, HistogramSampler):
                     # I get that Emin, Emax for fitting might be the bin centers
                     # but why for the truncated parameterisation?
                     # the histogram data covers all the bin, not just up to/down to the center of last/first bin
-                    Emin = rebin_tE_binc[imin]
-                    Emax = rebin_tE_binc[imax]
+                    
+                    #Emin = rebin_tE_binc[imin]
+                    #Emax = rebin_tE_binc[imax]
+                    Emin = tE_bin_edges[imin]
+                    Emax = tE_bin_edges[imax]
 
                     # Fit polynomial:
                     poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
@@ -765,7 +723,11 @@ class R2021EnergyResolution_code(EnergyResolution, HistogramSampler):
                     )
             
             self._Emin = np.power(10, self.irf.true_energy_bins[0])
-            self._Emax = np.power(10, self.irf.true_energy_bins[-1])   
+            self._Emax = np.power(10, self.irf.true_energy_bins[-1])
+
+        #make private copies for later overwriting _poly_params_mu, _poly_params_sd
+        self._poly_params_mu__ = self.poly_params_mu
+        self._poly_params_sd__ = self.poly_params_sd
 
 
     @classmethod
@@ -775,8 +737,24 @@ class R2021EnergyResolution_code(EnergyResolution, HistogramSampler):
         cls(DistributionMode.RNG, rewrite=True)
 
 
+    def set_fit_params(self, dec):
+        """
+        Used in `sim_interface.py`
+        """
+        dec_idx = np.digitize(dec, self._declination_bins) - 1
+        if dec == np.pi / 2:
+            dec_idx -= 1
+        
+        self._poly_params_mu = self._poly_params_mu__[dec_idx]
+        self._poly_params_sd = self._poly_params_sd__[dec_idx]
 
-class R2021AngularResolution_code(AngularResolution, HistogramSampler):
+
+    # def marginalise_over_dec(self):
+    #     cos_theta_bins = np.cos(np.pi / 2 - self._declination_bins)
+
+
+
+class R2021AngularResolution(AngularResolution, HistogramSampler):
     """
     Angular resolution for Northern Tracks Sample
 
@@ -799,13 +777,32 @@ class R2021AngularResolution_code(AngularResolution, HistogramSampler):
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF, rewrite: bool = False) -> None:
 
-        self._irf = R2021IRF()
-        self._mode = mode
+        self.irf = R2021IRF()
+        self.mode = mode
         self._rewrite = rewrite
         logger.info("Forced rewriting: {}".format(rewrite))
 
         if mode == DistributionMode.PDF:
+            self._func_name = "R2021AngularResolution"
 
+        else:
+            self._func_name = "R2021AngularResolution_rng"
+
+        #self._kappa_grid: np.ndarray = None
+        #self._Egrid: np.ndarray = None
+        #self._poly_params: Sequence = []
+        #TODO check for lin/log scale of energy
+        self._Emin: float = float("nan")
+        self._Emax: float = float("nan")
+
+        self.setup()
+
+
+
+    def generate_code(self):
+
+        if self.mode == DistributionMode.PDF:
+            #TODO check pdf signature
             super().__init__(
                 "R2021AngularResolution",
                 ["true_energy", "reco_energy", "true_dir", "reco_dir", "ang_err"],
@@ -822,15 +819,6 @@ class R2021AngularResolution_code(AngularResolution, HistogramSampler):
                 "vector",
             )
 
-        #self._kappa_grid: np.ndarray = None
-        #self._Egrid: np.ndarray = None
-        #self._poly_params: Sequence = []
-        #TODO check for lin/log scale of energy
-        self._Emin: float = float("nan")
-        self._Emax: float = float("nan")
-
-        self.setup()
-
         # Define Stan interface
         with self:
 
@@ -845,16 +833,16 @@ class R2021AngularResolution_code(AngularResolution, HistogramSampler):
                 "NorthernTracksAngularResolutionPolyCoeffs",
             )
             """
-            if mode == DistributionMode.PDF:
+            if self.mode == DistributionMode.PDF:
                 # VMF expects x_obs, x_true -> true i.e. test source
-                vmf = VMFParameterization(["reco_dir", "true_dir"], "kappa", mode)
+                vmf = VMFParameterization(["reco_dir", "true_dir"], "kappa", self.mode)
                 #calculation of kappa goes here
                 #use approximate formulas from icecube_tools
                 
 
 
-            elif mode == DistributionMode.RNG:
-                vmf = VMFParameterization(["true_dir"], "kappa", mode)
+            elif self.mode == DistributionMode.RNG:
+                vmf = VMFParameterization(["true_dir"], "kappa", self.mode)
                 self._make_histogram("psf", self._psf_hist, self._psf_edges)
                 self._make_psf_hist_index()
                 for name, array in zip(["psf_get_cum_num_vals", "psf_get_cum_num_edges",
@@ -913,8 +901,12 @@ class R2021AngularResolution_code(AngularResolution, HistogramSampler):
                 
             kappa = ForwardVariableDef("kappa", "real")
             #hardcoded p=0.5 (log(1-p)) from the tabulated data of release
-            kappa << StringExpression(["- (2 / (pi() * pow(10, ang_err) / 180)^2) * log(1 - 0.5)"]) 
-            ReturnStatement([vmf])
+            kappa << StringExpression(["- (2 / (pi() * pow(10, ang_err) / 180)^2) * log(1 - 0.5)"])
+            return_vec = ForwardVectorDef("return_this", [4])
+            StringExpression(["return_this[1:3] = ",vmf])
+            StringExpression(["return_this[4] = kappa"])
+            ReturnStatement([return_vec])
+
             #ReturnStatement([ang_err])
 
 
@@ -922,13 +914,13 @@ class R2021AngularResolution_code(AngularResolution, HistogramSampler):
         self._pdet_limits = (1e2, 1e8)
         self._Emin, self._Emax = self._pdet_limits
 
-        if self._mode == DistributionMode.PDF:
+        if self.mode == DistributionMode.PDF:
             #what needs to be set up?
             #only thing needed is gaussian/vMF for reconstruction
             #that's done in init itself
             pass
 
-        elif self._mode == DistributionMode.RNG:
+        elif self.mode == DistributionMode.RNG:
             #party in the back
             #extract *all* the histograms bar ereco
             #check for loading of data
@@ -951,7 +943,7 @@ class R2021AngularResolution_code(AngularResolution, HistogramSampler):
 
             else:
                 logger.info("Re-doing angular data and saving to file.")
-                self._generate_ragged_psf_data(self._irf)
+                self._generate_ragged_psf_data(self.irf)
                 with Cache.open(self.CACHE_FNAME, "wb") as fr:
                     np.savez(
                         fr,
@@ -983,7 +975,7 @@ class R2021AngularResolution_code(AngularResolution, HistogramSampler):
         cls(DistributionMode.RNG, rewrite=True)
     
 
-
+'''
 class R2021DetectorModel_code(DetectorModel):
     """
     Implements the detector model for the NT sample
@@ -1005,14 +997,14 @@ class R2021DetectorModel_code(DetectorModel):
 
         super().__init__(mode, event_type="tracks")
 
-        ang_res = R2021AngularResolution_code(mode, rewrite)
+        ang_res = R2021AngularResolution(mode, rewrite)
         self._angular_resolution = ang_res
 
-        energy_res = R2021EnergyResolution_code(mode, rewrite)
+        energy_res = R2021EnergyResolution(mode, rewrite)
         self._energy_resolution = energy_res
 
         if mode == DistributionMode.PDF:
-            self._eff_area = R2021EffectiveArea_code()
+            self._eff_area = R2021EffectiveArea()
 
     def _get_effective_area(self):
         return self._eff_area
@@ -1025,33 +1017,42 @@ class R2021DetectorModel_code(DetectorModel):
 
 
     @classmethod
-    def generate_code(cls, mode: DistributionMode):
+    def generate_code(cls, mode: DistributionMode, write: bool):
         with StanGenerator() as cg:
             instance = cls(mode=mode)
+            instance._angular_resolution.generate_code()
+            instance._energy_resolution.generate_code()
+            instance._eff_area.generate_code()
             code = cg.generate()
         code = code.removeprefix("functions\n{")
         code = code.removesuffix("\n}\n")
         with open(os.path.join(STAN_PATH, "r2021.stan"), 'w+') as f:
             f.write(code)
-
+'''
 
 
 class R2021DetectorModel(DetectorModel):
 
+    RNG_FILENAME = "r2021_rng.stan"
+    PDF_FILENAME = "r2021_pdf.stan"
+
     event_types = ["tracks"]
 
-    def __init__(self, mode:DistributionMode, event_type=None):
+    def __init__(self,
+        mode: DistributionMode = DistributionMode.PDF,
+        event_type = None,
+        rewrite = False):
 
         super().__init__(mode, event_type="tracks")
 
-        ang_res = R2021AngularResolution(mode)
+        ang_res = R2021AngularResolution(mode, rewrite)
         self._angular_resolution = ang_res
 
-        energy_res = R2021EnergyResolution(mode)
+        energy_res = R2021EnergyResolution(mode, rewrite)
         self._energy_resolution = energy_res
 
-        if mode == DistributionMode.PDF:
-            self._eff_area = R2021EffectiveArea()
+        #if mode == DistributionMode.PDF:
+        self._eff_area = R2021EffectiveArea()
 
 
     def _get_effective_area(self):
@@ -1065,6 +1066,26 @@ class R2021DetectorModel(DetectorModel):
     def _get_angular_resolution(self):
         return self._angular_resolution
 
+
+    @classmethod
+    def generate_code(cls, mode: DistributionMode, rewrite: bool = False):
+        logger.info("Generating r2021 stan code.")
+        with StanGenerator() as cg:
+            instance = cls(mode=mode, rewrite=rewrite)
+            instance.effective_area.generate_code()
+            instance.angular_resolution.generate_code()
+            instance.energy_resolution.generate_code()
+            code = cg.generate()
+        code = code.removeprefix("functions\n{")
+        code = code.removesuffix("\n}\n")
+        if mode == DistributionMode.PDF:
+            with Cache.open(cls.PDF_FILENAME, "w+") as f:
+                f.write(code)
+        else:
+            with Cache.open(cls.RNG_FILENAME, "w+") as f:
+                f.write(code)
+        #with open(os.path.join(STAN_PATH, "r2021.stan"), 'w+') as f:
+        #    f.write(code)
 
 
 # Testing.

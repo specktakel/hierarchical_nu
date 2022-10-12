@@ -9,6 +9,7 @@ import logging
 import collections
 
 import ligo.skymap.plot
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.utils.plotting import SphericalCircle
 
@@ -128,6 +129,11 @@ class Simulation:
 
         if not include_paths:
             include_paths = [STAN_PATH]
+        if isinstance(self._detector_model_type, R2021DetectorModel):
+            #should reside in .cache to be able to run parallelise with different analysis settings
+            r2021_path = os.path.join(os.getcwd(), ".cache")
+            if not ".cache" in include_paths:
+                include_paths.append(r2021_path)
 
         stanc_options = {"include-paths": include_paths}
 

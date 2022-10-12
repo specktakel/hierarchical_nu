@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from collections import OrderedDict
-from hierarchical_nu.detector.r2021 import R2021DetectorModel, R2021DetectorModel_code
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.stan.interface import StanInterface
 
@@ -23,6 +23,7 @@ from hierarchical_nu.backend.stan_generator import (
 from hierarchical_nu.backend.variable_definitions import (
     ForwardVariableDef,
     ForwardArrayDef,
+    ForwardVectorDef
 )
 
 from hierarchical_nu.backend.expression import StringExpression
@@ -54,7 +55,7 @@ class StanSimInterface(StanInterface):
     ):
         if detector_model_type == R2021DetectorModel:
             includes.append("r2021.stan")
-        #R2021DetectorModel_code.generate_code(DistributionMode.RNG)
+            #R2021DetectorModel.generate_code(DistributionMode.RNG, rewrite=False)
 
 
 
@@ -583,6 +584,7 @@ class StanSimInterface(StanInterface):
             self._ntrials = ForwardVariableDef("ntrials", "int")
 
             self._event = ForwardArrayDef("event", "unit_vector[3]", self._N_str)
+            self._pre_event = ForwardVectorDef("pre_event", [4])
 
             # For rejection sampling
             self._u_samp = ForwardVariableDef("u_samp", "real")
@@ -852,7 +854,7 @@ class StanSimInterface(StanInterface):
                         if self.detector_model_type == R2021DetectorModel:
                             #return of energy resolution is log_10(E/GeV)
                             self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
-                                self._E[i], FunctionCall([self._omega], "omega_to_dec")
+                                self._E[i], self._omega
                             )
                             
                         else:
@@ -923,9 +925,11 @@ class StanSimInterface(StanInterface):
                     # Detection effects
                     if self.detector_model_type == R2021DetectorModel:
                         #both energies are E/GeV, angular_resolution does log internally
-                        self._event[i] << self._dm_rng["tracks"].angular_resolution(
+                        self._pre_event << self._dm_rng["tracks"].angular_resolution(
                             self._E[i], self._Edet[i], self._omega
                         )
+                        self._event[i] << StringExpression(["pre_event[1:3]"])
+                        self._kappa[i] << StringExpression(["pre_event[4]"])
                     else:
                         self._event[i] << self._dm_rng["tracks"].angular_resolution(
                             self._E[i], self._omega
