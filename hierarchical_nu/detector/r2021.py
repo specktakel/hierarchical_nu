@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 import sys
 
+from hierarchical_nu.stan.interface import STAN_GEN_PATH
+
 from icecube_tools.detector.r2021 import R2021IRF
 
 from hierarchical_nu.backend.stan_generator import ElseIfBlockContext, IfBlockContext, StanGenerator
@@ -44,7 +46,7 @@ from .detector_model import (
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 Cache.set_cache_dir(".cache")
 
 
@@ -419,7 +421,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self.mode = mode
         #TODO edit type hints later when everything else works
         self._rewrite = rewrite
-        logger.info("Forced rewriting: {}".format(rewrite))
+        logger.info("Forced energy rewriting: {}".format(rewrite))
         self.mode = mode
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
@@ -571,7 +573,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
      
             # Check cache
             if self.CACHE_FNAME_PDF in Cache and not self._rewrite:
-                logger.info("Loading pdf data from file.")
+                logger.info("Loading energy pdf data from file.")
                 with Cache.open(self.CACHE_FNAME_PDF, "rb") as fr:
                     data = np.load(fr)
                     self._eres = data["eres"]
@@ -582,7 +584,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     self._poly_limits = (float(data["Emin"]), float(data["Emax"]))
 
             else:
-                logger.info("Re-doing pdf data and saving files.")
+                logger.info("Re-doing energy pdf data and saving files.")
                 tE_bin_edges = np.power(10, self.irf.true_energy_bins)
                 tE_binc = 0.5 * (tE_bin_edges[:-1] + tE_bin_edges[1:])
                 
@@ -693,7 +695,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 """
         else:
             if self.CACHE_FNAME_RNG in Cache and not self._rewrite:
-                logger.info("Loading rng data from file.")
+                logger.info("Loading energy rng data from file.")
                 with Cache.open(self.CACHE_FNAME_RNG, "rb") as fr:
                     data = np.load(fr)
                     self._ereco_cum_num_vals = data["cum_num_of_values"]
@@ -706,7 +708,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     #self._rE_bin_edges = data["rE_bin_edges"]
 
             else:
-                logger.info("Re-doing rng data and saving to file.")
+                logger.info("Re-doing energy rng data and saving to file.")
                 self._generate_ragged_ereco_data(self.irf)
 
                 with Cache.open(self.CACHE_FNAME_RNG, "wb") as fr:
@@ -780,7 +782,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         self.irf = R2021IRF()
         self.mode = mode
         self._rewrite = rewrite
-        logger.info("Forced rewriting: {}".format(rewrite))
+        logger.info("Forced angular rewriting: {}".format(rewrite))
 
         if mode == DistributionMode.PDF:
             self._func_name = "R2021AngularResolution"
@@ -977,61 +979,6 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         cls(DistributionMode.RNG, rewrite=True)
     
 
-'''
-class R2021DetectorModel_code(DetectorModel):
-    """
-    Implements the detector model for the NT sample
-
-    Parameters:
-        mode: DistributionMode
-            Set mode to either RNG or PDF
-
-    """
-
-    event_types = ["tracks"]
-
-    def __init__(
-        self,
-        mode: DistributionMode = DistributionMode.PDF,
-        event_type=None,
-        rewrite=False
-    ):
-
-        super().__init__(mode, event_type="tracks")
-
-        ang_res = R2021AngularResolution(mode, rewrite)
-        self._angular_resolution = ang_res
-
-        energy_res = R2021EnergyResolution(mode, rewrite)
-        self._energy_resolution = energy_res
-
-        if mode == DistributionMode.PDF:
-            self._eff_area = R2021EffectiveArea()
-
-    def _get_effective_area(self):
-        return self._eff_area
-
-    def _get_energy_resolution(self):
-        return self._energy_resolution
-
-    def _get_angular_resolution(self):
-        return self._angular_resolution
-
-
-    @classmethod
-    def generate_code(cls, mode: DistributionMode, write: bool):
-        with StanGenerator() as cg:
-            instance = cls(mode=mode)
-            instance._angular_resolution.generate_code()
-            instance._energy_resolution.generate_code()
-            instance._eff_area.generate_code()
-            code = cg.generate()
-        code = code.removeprefix("functions\n{")
-        code = code.removesuffix("\n}\n")
-        with open(os.path.join(STAN_PATH, "r2021.stan"), 'w+') as f:
-            f.write(code)
-'''
-
 
 class R2021DetectorModel(DetectorModel):
 
@@ -1039,6 +986,9 @@ class R2021DetectorModel(DetectorModel):
     PDF_FILENAME = "r2021_pdf.stan"
 
     event_types = ["tracks"]
+
+    logger = logging.getLogger(__name__+".R2021DetectorModel")
+    logger.setLevel(logging.INFO)
 
     def __init__(self,
         mode: DistributionMode = DistributionMode.PDF,
@@ -1071,7 +1021,7 @@ class R2021DetectorModel(DetectorModel):
 
     @classmethod
     def generate_code(cls, mode: DistributionMode, rewrite: bool = False):
-        logger.info("Generating r2021 stan code.")
+        cls.logger.info("Generating r2021 stan code.")
         with StanGenerator() as cg:
             instance = cls(mode=mode, rewrite=rewrite)
             instance.effective_area.generate_code()
@@ -1080,88 +1030,17 @@ class R2021DetectorModel(DetectorModel):
             code = cg.generate()
         code = code.removeprefix("functions\n{")
         code = code.removesuffix("\n}\n")
+        if not os.path.isdir(STAN_GEN_PATH):
+            os.makedirs(STAN_GEN_PATH)
         if mode == DistributionMode.PDF:
-            with Cache.open(cls.PDF_FILENAME, "w+") as f:
+            with open(os.path.join(STAN_GEN_PATH, cls.PDF_FILENAME), "w+") as f:
                 f.write(code)
+            #with Cache.open(cls.PDF_FILENAME, "w+") as f:
+            #    f.write(code)
         else:
-            with Cache.open(cls.RNG_FILENAME, "w+") as f:
+            with open(os.path.join(STAN_GEN_PATH, cls.RNG_FILENAME), "w+") as f:
                 f.write(code)
+            #with Cache.open(cls.RNG_FILENAME, "w+") as f:
+            #    f.write(code)
         #with open(os.path.join(STAN_PATH, "r2021.stan"), 'w+') as f:
         #    f.write(code)
-
-
-# Testing.
-# @TODO: This needs updating.
-if __name__ == "__main__":
-
-    e_true_name = "e_true"
-    e_reco_name = "e_reco"
-    true_dir_name = "true_dir"
-    reco_dir_name = "reco_dir"
-    # ntp = NorthernTracksAngularResolution([e_true, pos_true])
-
-    # print(ntp.to_stan())
-    from backend.stan_generator import (
-        StanGenerator,
-        GeneratedQuantitiesContext,
-        DataContext,
-        FunctionsContext,
-        Include,
-    )
-
-    logging.basicConfig(level=logging.DEBUG)
-    import pystan
-
-    with StanGenerator() as cg:
-
-        with FunctionsContext() as fc:
-            Include("utils.stan")
-            Include("vMF.stan")
-
-        with DataContext() as dc:
-            e_true = ForwardVariableDef(e_true_name, "real")
-            e_reco = ForwardVariableDef(e_reco_name, "real")
-            true_dir = ForwardVariableDef(true_dir_name, "vector[3]")
-            reco_dir = ForwardVariableDef(reco_dir_name, "vector[3]")
-
-        with GeneratedQuantitiesContext() as gq:
-            ntd = R2021DetectorModel()
-
-            """
-            ang_res_result = ForwardVariableDef("ang_res", "real")
-            ang_res = FunctionCall(
-                [e_reco], ntd.angular_resolution, 1)
-            ang_res_result = AssignValue(
-                [ang_res], ang_res_result)
-
-            """
-            e_res_result = ForwardVariableDef("e_res", "real")
-            e_res_result << ntd.energy_resolution(e_true, e_reco)
-
-            ang_res_result = ForwardVariableDef("ang_res", "real")
-            ang_res_result << ntd.angular_resolution(e_true, true_dir, reco_dir)
-
-            eff_area_result = ForwardVariableDef("eff_area", "real")
-            eff_area_result << ntd.effective_area(e_true, true_dir)
-
-        model = cg.generate()
-
-    print(model)
-    this_dir = os.path.abspath("")
-    sm = pystan.StanModel(
-        model_code=model,
-        include_paths=[
-            os.path.join(
-                this_dir, "../dev/statistical_model/4_tracks_and_cascades/stan/"
-            )
-        ],  # noqa: E501
-        verbose=False,
-    )
-
-    dir1 = np.array([1, 0, 0])
-    dir2 = np.array([1, 0.1, 0])
-    dir2 /= np.linalg.norm(dir2)
-
-    data = {"e_true": 1e5, "e_reco": 1e5, "true_dir": dir1, "reco_dir": dir2}
-    fit = sm.sampling(data=data, iter=1, chains=1, algorithm="Fixed_param")
-    print(fit)

@@ -54,8 +54,8 @@ class StanSimInterface(StanInterface):
         ],
     ):
         if detector_model_type == R2021DetectorModel:
-            includes.append("r2021.stan")
-            #R2021DetectorModel.generate_code(DistributionMode.RNG, rewrite=False)
+            includes.append("r2021_rng.stan")
+            R2021DetectorModel.generate_code(DistributionMode.RNG, rewrite=False)
 
 
 
