@@ -102,7 +102,7 @@ real omega_to_zenith(vector omega) {
     print("Error: input vector omega must be of 3 dimensions");
   }
 
-  zenith = pi() - acos(omega[3]);
+  zenith = pi() / 2 - acos(omega[3]);
     
   return zenith;
 }
