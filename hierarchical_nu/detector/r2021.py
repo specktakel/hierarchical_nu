@@ -11,7 +11,7 @@ from hierarchical_nu.stan.interface import STAN_GEN_PATH
 
 from icecube_tools.detector.r2021 import R2021IRF
 
-from hierarchical_nu.backend.stan_generator import ElseIfBlockContext, IfBlockContext, StanGenerator
+from hierarchical_nu.backend.stan_generator import ElseBlockContext, ElseIfBlockContext, IfBlockContext, StanGenerator
 
 from hierarchical_nu.stan.interface import STAN_PATH
 
@@ -68,30 +68,38 @@ class HistogramSampler():
         cum_num_of_values = []
         cum_num_of_bins = []
         counter = 0   #TODO change to try-except
+        bins = []
+        values = []
         for c_e, etrue in enumerate(irf.true_energy_values):
             for c_d, dec in enumerate(irf.declination_bins[:-1]):
-                n, b = irf._marginalisation(c_e, c_d)
+                b = irf.reco_energy_bins[c_e, c_d]
+                n = irf.reco_energy[c_e, c_d].pdf(irf.reco_energy_bins[c_e, c_d][:-1]+0.01)
+                #n, b = irf._marginalisation(c_e, c_d)
+                bins.append(b)
+                values.append(n)
+                """
                 if counter != 0:
                     bins = np.concatenate((bins, b))
                     values = np.concatenate((values, n))
                 else:
                     bins = b.copy()
                     values = n.copy()
+                """
                 num_of_values.append(n.size)
                 num_of_bins.append(b.size)
-                if counter != 0:
+                try:
                     cum_num_of_values.append(cum_num_of_values[-1]+n.size)
                     cum_num_of_bins.append(cum_num_of_bins[-1]+b.size)
-                else:
+                except IndexError:
                     cum_num_of_values.append(n.size)
                     cum_num_of_bins.append(b.size)
-            counter += 1
+
         self._ereco_cum_num_vals = cum_num_of_values
         self._ereco_cum_num_edges = cum_num_of_bins
         self._ereco_num_vals = num_of_values
         self._ereco_num_edges = num_of_bins
-        self._ereco_hist = values
-        self._ereco_edges = bins
+        self._ereco_hist = np.concatenate(values)
+        self._ereco_edges = np.concatenate(bins)
         self._tE_bin_edges = np.power(10, irf.true_energy_bins)
 
 
@@ -221,11 +229,11 @@ class HistogramSampler():
             "etrue_lookup", ["true_energy"], ["real"], "int"
         )
         with self._etrue_lookup:
-            truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
-            log_trunc_e = LogParameterization(truncated_e)
+            #truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
+            #log_trunc_e = LogParameterization(truncated_e)
             #do binary search for bin of true energy
             etrue_bins = StanArray("log_etrue_bins", "real", np.log10(self._tE_bin_edges))
-            ReturnStatement(["binary_search(", log_trunc_e, ", ", etrue_bins, ")"])
+            ReturnStatement(["binary_search(", "true_energy", ", ", etrue_bins, ")"])
 
         self._dec_lookup = UserDefinedFunction("dec_lookup", ["declination"], ["real"], "int")
         with self._dec_lookup:
@@ -450,7 +458,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             self.mixture_name = "r2021_energy_res_mix"
             super().__init__(
                 "R2021EnergyResolution_lpdf",
-                ["true_energy", "reco_energy", "omega"],
+                ["reco_energy", "true_energy", "omega"],
                 ["real", "real", "vector"],
                 "real",
             )
@@ -467,6 +475,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         if self.mode == DistributionMode.PDF:
     
             with self:
+                """
                 lognorm = LognormalMixture(self.mixture_name, self.n_components, self.mode)
                 truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
                 log_trunc_e = LogParameterization(truncated_e)
@@ -530,6 +539,48 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                 log_reco_e = LogParameterization("reco_energy")
                 ReturnStatement([lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
+                """
+                self._make_hist_lookup_functions()
+                self._make_histogram("ereco", self._ereco_hist, self._ereco_edges)
+                self._make_ereco_hist_index()
+                for name, array in zip(["ereco_get_cum_num_vals", "ereco_get_cum_num_edges",
+                    "ereco_get_num_vals", "ereco_get_num_edges"],
+                    [self._ereco_cum_num_vals, self._ereco_cum_num_edges, self._ereco_num_vals, self._ereco_num_edges]
+                ):
+                    self._make_lookup_functions(name, array)
+                
+
+                #call histogramm with appropriate values/edges
+                declination = ForwardVariableDef("declination", "real")
+                declination << FunctionCall(["omega"], "omega_to_dec")
+                etrue_idx = ForwardVariableDef("etrue_idx", "int")
+                dec_idx = ForwardVariableDef("dec_idx", "int")
+                ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
+                etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
+                with IfBlockContext(["etrue_idx == 0 || etrue_idx > 14"]):
+                    ReturnStatement(["negative_infinity()"])
+                dec_idx << FunctionCall(["declination"], "dec_lookup")
+                ereco_hist_idx << FunctionCall([etrue_idx, dec_idx], "ereco_get_ragged_index")
+                ereco_idx = ForwardVariableDef("ereco_idx", "int")
+                ereco_idx << StringExpression(["binary_search(log10(reco_energy), ",
+                    FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges"), ")"])
+
+                StringExpression(['print("etrue_idx ", etrue_idx)'])
+                StringExpression(['print("dec_idx ", dec_idx)'])
+                StringExpression(['print("ereco_idx ", ereco_idx)'])
+                #StringExpression(['print("ereco_hist_idx ", ereco_hist_idx)'])
+                #StringExpression("print(log10(reco_energy), ereco_idx)")
+                #intercept outside of hist range here:
+                with IfBlockContext(["ereco_idx == 0 || ereco_idx > ereco_get_num_vals(ereco_hist_idx)"]):
+                    ReturnStatement(["negative_infinity()"])
+                #StringExpression(["array[ereco_get_num_vals(ereco_hist_idx)] real hist_vals = ereco_get_ragged_hist(ereco_hist_idx)"])
+                return_value = ForwardVariableDef("return_value", "real")
+                return_value << StringExpression([FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"), "[ereco_idx]"])
+                with IfBlockContext(["return_value == 0."]):
+                    ReturnStatement(["negative_infinity()"])
+                with ElseBlockContext():
+                    ReturnStatement([FunctionCall([return_value], "log")])
+                #ReturnStatement([FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"), "[ereco_idx]"])
 
         elif self.mode == DistributionMode.RNG:
 
@@ -552,9 +603,12 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
                 dec_idx = ForwardVariableDef("dec_idx", "int")
                 ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
-                etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
+                etrue_idx << FunctionCall(["log10(true_energy)"], "etrue_lookup")
                 dec_idx << FunctionCall(["declination"], "dec_lookup")
                 ereco_hist_idx << FunctionCall([etrue_idx, dec_idx], "ereco_get_ragged_index")
+                StringExpression(['print("etrue_idx ", etrue_idx)'])
+                StringExpression(['print("dec_idx ", dec_idx)'])
+                StringExpression(['print("ereco_hist_idx ", ereco_hist_idx)'])
                 #return is log(E/GeV)
                 ReturnStatement([FunctionCall([FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"), FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "histogram_rng")])
                 #ReturnStatement([FunctionCall([FunctionCall(["true_energy", "declination", "0"], "ereco_lookup"), FunctionCall(["true_energy", "declination", "1"], "ereco_lookup")], "histogram_rng")])
@@ -570,7 +624,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
     def setup(self) -> None:
 
         if self.mode == DistributionMode.PDF:
-     
+            self._generate_ragged_ereco_data(self.irf)
+            """
             # Check cache
             if self.CACHE_FNAME_PDF in Cache and not self._rewrite:
                 logger.info("Loading energy pdf data from file.")
@@ -658,7 +713,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     #self._poly_params_sd = poly_params_sd
                     #self._poly_limits = poly_limits
                     #break
-                    """
+                    '''
                     self.plot_fit_params(fit_params, rebin_tE_binc)
                     self.plot_parameterizations(
                         tE_binc,
@@ -666,7 +721,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         fit_params,
                         rebin_tE_binc=rebin_tE_binc,
                     )
-                    """
+                    '''
 
                 #find smallest range of poly limits to use globally
                 
@@ -695,15 +750,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         Emin=Emin,
                         Emax=Emax,
                     )
-                """
-                self.plot_fit_params(fit_params, rebin_tE_binc)
-                self.plot_parameterizations(
-                    tE_binc,
-                    rE_binc,
-                    fit_params,
-                    rebin_tE_binc=rebin_tE_binc,
-                )
-                """
+            """    
         else:
             if self.CACHE_FNAME_RNG in Cache and not self._rewrite:
                 logger.info("Loading energy rng data from file.")
@@ -1036,8 +1083,8 @@ class R2021DetectorModel(DetectorModel):
         cls.logger.info("Generating r2021 stan code.")
         with StanGenerator() as cg:
             instance = cls(mode=mode, rewrite=rewrite)
-            instance.effective_area.generate_code()
-            instance.angular_resolution.generate_code()
+            #instance.effective_area.generate_code()
+            #instance.angular_resolution.generate_code()
             instance.energy_resolution.generate_code()
             code = cg.generate()
         code = code.removeprefix("functions\n{")
