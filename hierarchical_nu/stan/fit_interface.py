@@ -1,6 +1,7 @@
 import numpy as np
 from astropy import units as u
 from collections import OrderedDict
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.priors import Priors
 from hierarchical_nu.stan.interface import StanInterface
@@ -47,6 +48,9 @@ class StanFitInterface(StanInterface):
         includes=["interpolation.stan", "utils.stan", "vMF.stan"],
         theta_points=30,
     ):
+        if detector_model_type == R2021DetectorModel:
+            includes.append("r2021_pdf.stan")
+            R2021DetectorModel.generate_code(DistributionMode.PDF, rewrite=False)
 
         super().__init__(
             output_file=output_file,
@@ -729,15 +733,29 @@ class StanFitInterface(StanInterface):
                                     self._E[i] << self._Esrc[i]
 
                             # Detection effects
-                            StringExpression(
-                                [
-                                    self._lp[i][k],
-                                    " += ",
-                                    self._dm["tracks"].energy_resolution(
-                                        self._E[i], self._Edet[i]
-                                    ),
-                                ]
-                            )
+                            if self.detector_model_type == R2021DetectorModel:
+
+                                StringExpression(
+                                    [
+                                        self._lp[i][k],
+                                        " += ",
+                                        self._dm["tracks"].energy_resolution(
+                                            self._E[i], self._Edet[i], self._omega_det[i]
+                                        ),
+                                    ]
+                                )
+
+                            else:
+
+                                StringExpression(
+                                    [
+                                        self._lp[i][k],
+                                        " += ",
+                                        self._dm["tracks"].energy_resolution(
+                                            self._E[i], self._Edet[i]
+                                        ),
+                                    ]
+                                )
                             StringExpression(
                                 [
                                     self._lp[i][k],

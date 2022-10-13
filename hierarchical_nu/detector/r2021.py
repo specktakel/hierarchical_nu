@@ -449,7 +449,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         if self.mode == DistributionMode.PDF:
             self.mixture_name = "r2021_energy_res_mix"
             super().__init__(
-                "R2021EnergyResolution",
+                "R2021EnergyResolution_lpdf",
                 ["true_energy", "reco_energy", "omega"],
                 ["real", "real", "vector"],
                 "real",
@@ -625,12 +625,13 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         #eres should already be normalised bc the pdfs (or rather cdfs)
                         #of which the values are taken are already noralised, nevertheless:
                         eres[i, :] = eres[i, :] / np.sum(eres[i] * bin_width)
-
+                    self._eres = eres
                 
                     # do not rebin -> rebin=1
                     fit_params, rebin_tE_binc = self._fit_energy_res(
                         tE_binc, rE_binc, eres, self._n_components, rebin=1
                     )
+                    
 
                     # take entire range
                     imin = 0
@@ -649,6 +650,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
                         fit_params, rebin_tE_binc, Emin, Emax, polydeg=5
                     )
+                    
                     self._poly_params_mu.append(poly_params_mu)
                     self._poly_params_sd.append(poly_params_sd)
                     self._poly_limits_battery.append(poly_limits)
@@ -656,6 +658,15 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     #self._poly_params_sd = poly_params_sd
                     #self._poly_limits = poly_limits
                     #break
+                    """
+                    self.plot_fit_params(fit_params, rebin_tE_binc)
+                    self.plot_parameterizations(
+                        tE_binc,
+                        rE_binc,
+                        fit_params,
+                        rebin_tE_binc=rebin_tE_binc,
+                    )
+                    """
 
                 #find smallest range of poly limits to use globally
                 
@@ -807,8 +818,8 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
             #TODO check pdf signature
             super().__init__(
                 "R2021AngularResolution",
-                ["true_energy", "reco_energy", "true_dir", "reco_dir", "ang_err"],
-                ["real", "real", "vector", "vector", "real"],
+                ["true_dir", "reco_dir", "kappa"],
+                ["vector", "vector", "real"],
                 "real",
             )
 
@@ -840,6 +851,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 vmf = VMFParameterization(["reco_dir", "true_dir"], "kappa", self.mode)
                 #calculation of kappa goes here
                 #use approximate formulas from icecube_tools
+                ReturnStatement([vmf])
                 
 
 
@@ -901,15 +913,15 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 ang_err = ForwardVariableDef("ang_err", "real")
                 ang_err << FunctionCall([FunctionCall([ang_hist_idx], "ang_get_ragged_hist"), FunctionCall([ang_hist_idx], "ang_get_ragged_edges")], "histogram_rng")
                 
-            kappa = ForwardVariableDef("kappa", "real")
-            #hardcoded p=0.5 (log(1-p)) from the tabulated data of release
-            kappa << StringExpression(["- (2 / (pi() * pow(10, ang_err) / 180)^2) * log(1 - 0.5)"])
-            StringExpression(["print(ang_err)"])
-            StringExpression(["print(kappa)"])
-            return_vec = ForwardVectorDef("return_this", [4])
-            StringExpression(["return_this[1:3] = ", vmf])
-            StringExpression(["return_this[4] = kappa"])
-            ReturnStatement([return_vec])
+                kappa = ForwardVariableDef("kappa", "real")
+                #hardcoded p=0.5 (log(1-p)) from the tabulated data of release
+                kappa << StringExpression(["- (2 / (pi() * pow(10, ang_err) / 180)^2) * log(1 - 0.5)"])
+                StringExpression(["print(ang_err)"])
+                StringExpression(["print(kappa)"])
+                return_vec = ForwardVectorDef("return_this", [4])
+                StringExpression(["return_this[1:3] = ", vmf])
+                StringExpression(["return_this[4] = kappa"])
+                ReturnStatement([return_vec])
 
             #ReturnStatement([ang_err])
 

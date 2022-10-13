@@ -129,10 +129,10 @@ class Simulation:
 
         if not include_paths:
             include_paths = [STAN_PATH]
-        if isinstance(self._detector_model_type, R2021DetectorModel):
+        if self._detector_model_type == R2021DetectorModel:
             #should reside in .cache to be able to run parallelise with different analysis settings
             r2021_path = os.path.join(os.getcwd(), ".stan_files")
-            if not ".cache" in include_paths:
+            if not r2021_path in include_paths:
                 include_paths.append(r2021_path)
 
         stanc_options = {"include-paths": include_paths}
@@ -159,8 +159,7 @@ class Simulation:
             iter_sampling=1,
             chains=1,
             fixed_param=True,
-            seed=seed,
-            show_console=True
+            seed=seed
         )
 
         self._sim_output = sim_output
