@@ -697,6 +697,7 @@ class StanSimInterface(StanInterface):
                                     ],
                                     "bbpl_rng",
                                 )
+                                StringExpression(['print("sampled energy: ",', self._E[i], ')'])
                                 self._g_value << FunctionCall(
                                     [
                                         self._E[i],
@@ -853,6 +854,8 @@ class StanSimInterface(StanInterface):
 
                         if self.detector_model_type == R2021DetectorModel:
                             #return of energy resolution is log_10(E/GeV)
+                            #self._Edet[i] << self._E[i]
+                            
                             self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
                                 self._E[i], self._omega
                             )
@@ -925,11 +928,16 @@ class StanSimInterface(StanInterface):
                     # Detection effects
                     if self.detector_model_type == R2021DetectorModel:
                         #both energies are E/GeV, angular_resolution does log internally
+                        
                         self._pre_event << self._dm_rng["tracks"].angular_resolution(
                             self._E[i], self._Edet[i], self._omega
                         )
                         self._event[i] << StringExpression(["pre_event[1:3]"])
                         self._kappa[i] << StringExpression(["pre_event[4]"])
+                        """
+                        self._event[i] << self._omega
+                        self._kappa[i] << 40000.
+                        """
                     else:
                         self._event[i] << self._dm_rng["tracks"].angular_resolution(
                             self._E[i], self._omega

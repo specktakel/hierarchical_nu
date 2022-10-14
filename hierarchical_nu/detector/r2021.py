@@ -309,6 +309,8 @@ class HistogramSampler():
         f = UserDefinedFunction(name, ["idx"], ["int"], "int")
         with f:
             arr = StanArray("arr", "int", array)
+            with IfBlockContext(["idx > ", len(array), "|| idx < 0"]):
+                FunctionCall(['"idx outside range, "', "idx"], "reject")
             ReturnStatement(["arr[idx]"])
 
         
@@ -932,35 +934,35 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 
                 #get ereco index from eres-defined functions
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
-                etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
-                StringExpression(['print("etrue_idx ", etrue_idx)'])
+                etrue_idx << FunctionCall(["log10(true_energy)"], "etrue_lookup")
+                #StringExpression(['print("etrue_idx ", etrue_idx)'])
                 declination = ForwardVariableDef("declination", "real")
-                declination << StringExpression(["pi()/2 - acos(true_dir[3])"])
+                declination << FunctionCall(["true_dir"], "omega_to_dec")
                 dec_idx = ForwardVariableDef("dec_idx ", "int")
                 dec_idx << FunctionCall(["declination"], "dec_lookup")
                 ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
                 ereco_hist_idx << FunctionCall([etrue_idx, dec_idx], "ereco_get_ragged_index")
                 ereco_idx = ForwardVariableDef("ereco_idx", "int")
                 ereco_idx << FunctionCall([log_ereco, FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "binary_search")
-                StringExpression(['print("erecoidx ", ereco_idx)'])
+                #StringExpression(['print("ereco_idx ", ereco_idx)'])
 
                 #lookup psf stuff
                 psf_hist_idx = ForwardVariableDef("psf_hist_idx", "int")
                 psf_hist_idx << FunctionCall([etrue_idx, dec_idx, ereco_idx], "psf_get_ragged_index")
                 #StringExpression(['print("psfhistidx ", psf_hist_idx)'])
-                StringExpression(["print(", FunctionCall([psf_hist_idx], "psf_get_ragged_hist"), ")"])
-                StringExpression(["print(", FunctionCall([psf_hist_idx], "psf_get_ragged_edges"), ")"])
+                #StringExpression(["print(", FunctionCall([psf_hist_idx], "psf_get_ragged_hist"), ")"])
+                #StringExpression(["print(", FunctionCall([psf_hist_idx], "psf_get_ragged_edges"), ")"])
                 #call histogramm with appropriate values/edges
                 psf_idx = ForwardVariableDef("psf_idx", "int")
                 psf_idx << FunctionCall([FunctionCall([psf_hist_idx], "psf_get_ragged_hist"), FunctionCall([psf_hist_idx], "psf_get_ragged_edges")], "hist_cat_rng")
-                StringExpression(['print("psfidx", psf_idx)'])
+                #StringExpression(['print("psfidx", psf_idx)'])
                 
                 #lookup ang err stuff
                 ang_hist_idx = ForwardVariableDef("ang_hist_idx", "int")
                 ang_hist_idx << FunctionCall([etrue_idx, dec_idx, ereco_idx, psf_idx], "ang_get_ragged_index")
-                StringExpression(['print("anghist", ang_hist_idx)'])
-                StringExpression(["print(", FunctionCall([ang_hist_idx], "ang_get_ragged_hist"), ")"])
-                StringExpression(["print(", FunctionCall([ang_hist_idx], "ang_get_ragged_edges"), ")"])
+                #StringExpression(['print("anghist", ang_hist_idx)'])
+                #StringExpression(["print(", FunctionCall([ang_hist_idx], "ang_get_ragged_hist"), ")"])
+                #StringExpression(["print(", FunctionCall([ang_hist_idx], "ang_get_ragged_edges"), ")"])
                 ang_err = ForwardVariableDef("ang_err", "real")
                 ang_err << FunctionCall([FunctionCall([ang_hist_idx], "ang_get_ragged_hist"), FunctionCall([ang_hist_idx], "ang_get_ragged_edges")], "histogram_rng")
                 

@@ -334,7 +334,7 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         for comp in range(self._n_components):
 
             params_mu = self._poly_params_mu[comp]
-            axs[0].plot(xs, np.poly1d(params_mu)(xs))
+            axs[0].plot(xs, np.poly1d(params_mu)(xs), label="poly, mean")
             axs[0].plot(
                 np.log10(tE_binc),
                 fit_params[:, 2 * comp],
@@ -342,7 +342,7 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
             )
 
             params_sigma = self._poly_params_sd[comp]
-            axs[1].plot(xs, np.poly1d(params_sigma)(xs))
+            axs[1].plot(xs, np.poly1d(params_sigma)(xs), label="poly, sigma")
             axs[1].plot(
                 np.log10(tE_binc),
                 fit_params[:, 2 * comp + 1],
@@ -351,6 +351,8 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
 
         axs[0].set_xlabel("log10(True Energy / GeV)")
         axs[0].set_ylabel("Parameter Value")
+        axs[0].legend()
+        axs[1].legend()
         plt.tight_layout()
 
     def plot_parameterizations(
