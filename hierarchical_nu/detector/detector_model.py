@@ -354,6 +354,7 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         axs[0].legend()
         axs[1].legend()
         plt.tight_layout()
+        return fig
 
     def plot_parameterizations(
         self,
@@ -422,12 +423,13 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 e_reso = self._eres[p_i]
                 res = fit_params[plot_indices[i]]
 
-            fl_ax[i].plot(log10_rE_binc, e_reso)
+            fl_ax[i].plot(log10_rE_binc, e_reso, label="input eres")
             fl_ax[i].plot(xs, model(xs, model_params))
             fl_ax[i].plot(xs, model(xs, res))
             fl_ax[i].set_ylim(1e-4, 5)
             fl_ax[i].set_yscale("log")
             fl_ax[i].set_title("True E: {:.1E}".format(tE_binc[p_i]))
+            fl_ax[i].legend()
 
         ax = fig.add_subplot(111, frameon=False)
 
@@ -439,6 +441,7 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         ax.set_xlabel("log10(Reconstructed Energy /GeV)")
         ax.set_ylabel("PDF")
         plt.tight_layout()
+        return fig
 
     @u.quantity_input
     def prob_Edet_above_threshold(self, true_energy: u.GeV, threshold_energy: u.GeV):
