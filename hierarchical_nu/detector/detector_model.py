@@ -254,8 +254,11 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                     bounds_lo += [0, 0.01]
                     bounds_hi += [8, 1]
                 #seed[0] = seed_mu - 1
+
+
+                
                 limits = [(l, h) for (l, h) in zip(bounds_lo, bounds_hi)]
-                m = Minuit(ls, *tuple(seed), names)
+                m = Minuit(ls, *tuple(seed), name=names)
                 m.errordef = 1
                 m.errors = 0.1 * np.asarray(seed)
                 m.limits = limits
@@ -439,8 +442,8 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 res = fit_params[plot_indices[i]]
 
             fl_ax[i].plot(log10_rE_binc, e_reso, label="input eres")
-            fl_ax[i].plot(xs, model(xs, model_params), label="poly evaluated")
-            fl_ax[i].plot(xs, model(xs, res), label="nearest bin's parameters")
+            fl_ax[i].plot(xs, model(xs, *model_params), label="poly evaluated")
+            fl_ax[i].plot(xs, model(xs, *res), label="nearest bin's parameters")
             fl_ax[i].set_ylim(1e-4, 5)
             fl_ax[i].set_yscale("log")
             fl_ax[i].set_title("True E: {:.1E}".format(tE_binc[p_i]))

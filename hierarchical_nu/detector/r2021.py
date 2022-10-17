@@ -823,7 +823,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             self._poly_params_sd__ = self.poly_params_sd
             self._eres__ = self._eres
 
-            '''
+            
             for c, dec in enumerate(self._declination_bins[:-1]):
                 self.set_fit_params(dec+0.01)
                 fig = self.plot_fit_params(self.fit_params[c], self.rebin_tE_binc)
@@ -835,7 +835,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     #rebin_tE_binc=rebin_tE_binc,
                 )
                 fig.savefig(f"/Users/David/Documents/phd/icecube/hi_nu_plots/parameterisation_{c}.png")
-            '''
+            
             self._poly_params_mu = self._poly_params_mu__
             self._poly_params_sd = self._poly_params_sd__
             
