@@ -163,7 +163,8 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         """
         Lognormal mixture with n_components.
         """
-
+        #s is width of lognormal
+        #scale is ~expectation value
         def _model(x, pars):
             result = 0
             for i in range(n_components):
@@ -245,9 +246,10 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 bounds_hi: List[float] = []
                 for i in range(n_components):
                     seed[2 * i] = seed_mu + 0.1 * (i + 1)
-                    seed[2 * i + 1] = 0.02
+                    seed[2 * i + 1] = 0.1
                     bounds_lo += [0, 0.01]
                     bounds_hi += [8, 1]
+                #seed[0] = seed_mu - 1
 
                 # Fit using simple least squares
                 res = least_squares(
@@ -416,6 +418,7 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 e_reso = self._eres[
                     int(p_i / rebin) * rebin : (int(p_i / rebin) + 1) * rebin
                 ]
+                #normalisation of e_reso in case it's not normalised yet
                 e_reso = e_reso.sum(axis=0) / (e_reso.sum() * log10_bin_width)
                 res = fit_params[param_indices[i]]
 
@@ -424,8 +427,8 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 res = fit_params[plot_indices[i]]
 
             fl_ax[i].plot(log10_rE_binc, e_reso, label="input eres")
-            fl_ax[i].plot(xs, model(xs, model_params))
-            fl_ax[i].plot(xs, model(xs, res))
+            fl_ax[i].plot(xs, model(xs, model_params), label="poly evaluated")
+            fl_ax[i].plot(xs, model(xs, res), label="nearest bin's parameters")
             fl_ax[i].set_ylim(1e-4, 5)
             fl_ax[i].set_yscale("log")
             fl_ax[i].set_title("True E: {:.1E}".format(tE_binc[p_i]))

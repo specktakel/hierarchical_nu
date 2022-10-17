@@ -477,8 +477,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             logger.info("Using lognorm")
             with self:
                 lognorm = LognormalMixture(self.mixture_name, self.n_components, self.mode)
-                truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
-                log_trunc_e = LogParameterization(truncated_e)
+                log_trunc_e = TruncatedParameterization("true_energy", *np.log10(self._poly_limits))
+                #log_trunc_e = LogParameterization(truncated_e)
 
                 #self._poly_params_mu should have shape (3, n_components, poly_deg+1)s
                 mu_poly_coeffs = StanArray(
@@ -536,8 +536,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 log_mu_vec = FunctionCall([log_mu], "to_vector")
                 sigma_vec = FunctionCall([sigma], "to_vector")
                 if self.mode == DistributionMode.PDF:
-                    log_reco_e = LogParameterization("reco_energy")
-                    ReturnStatement([lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
+                    #log_reco_e = LogParameterization("reco_energy")
+                    ReturnStatement([lognorm("reco_energy", log_mu_vec, sigma_vec, weights)])
                 else:
                     ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
                 
@@ -559,7 +559,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
                 dec_idx = ForwardVariableDef("dec_idx", "int")
                 ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
-                etrue_idx << FunctionCall(["log10(true_energy)"], "etrue_lookup")
+                etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
                 if self.mode == DistributionMode.PDF:
                     with IfBlockContext(["etrue_idx == 0 || etrue_idx > 14"]):
                         ReturnStatement(["negative_infinity()"])
@@ -567,7 +567,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 ereco_hist_idx << FunctionCall([etrue_idx, dec_idx], "ereco_get_ragged_index")
                 if self.mode == DistributionMode.PDF:
                     ereco_idx = ForwardVariableDef("ereco_idx", "int")
-                    ereco_idx << StringExpression(["binary_search(log10(reco_energy), ",
+                    ereco_idx << StringExpression(["binary_search(reco_energy, ",
                         FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges"), ")"]
                     )
                     #intercept outside of hist range here:
@@ -823,7 +823,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             self._poly_params_sd__ = self.poly_params_sd
             self._eres__ = self._eres
 
-            
+            '''
             for c, dec in enumerate(self._declination_bins[:-1]):
                 self.set_fit_params(dec+0.01)
                 fig = self.plot_fit_params(self.fit_params[c], self.rebin_tE_binc)
@@ -835,6 +835,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     #rebin_tE_binc=rebin_tE_binc,
                 )
                 fig.savefig(f"/Users/David/Documents/phd/icecube/hi_nu_plots/parameterisation_{c}.png")
+            '''
             self._poly_params_mu = self._poly_params_mu__
             self._poly_params_sd = self._poly_params_sd__
             
