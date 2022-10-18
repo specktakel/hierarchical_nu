@@ -583,116 +583,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 else:
                     ReturnStatement([FunctionCall([FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"), FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "histogram_rng")])
 
-        '''            
-        elif self.mode == DistributionMode.RNG:
-
-            with self:
-                """
-                #histogram "histogram_rng(array[] real hist_array, array[] real hist_edges)"
-                #is defined in utils.stan, is included anway
-                self._make_hist_lookup_functions()
-                self._make_histogram("ereco", self._ereco_hist, self._ereco_edges)
-                self._make_ereco_hist_index()
-                for name, array in zip(["ereco_get_cum_num_vals", "ereco_get_cum_num_edges",
-                    "ereco_get_num_vals", "ereco_get_num_edges"],
-                    [self._ereco_cum_num_vals, self._ereco_cum_num_edges, self._ereco_num_vals, self._ereco_num_edges]
-                ):
-                    self._make_lookup_functions(name, array)
-                
-
-                #call histogramm with appropriate values/edges
-                declination = ForwardVariableDef("declination", "real")
-                declination << FunctionCall(["omega"], "omega_to_dec")
-                etrue_idx = ForwardVariableDef("etrue_idx", "int")
-                dec_idx = ForwardVariableDef("dec_idx", "int")
-                ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
-                etrue_idx << FunctionCall(["log10(true_energy)"], "etrue_lookup")
-                #StringExpression(['print("Etrue ", log10(true_energy))'])
-                with IfBlockContext(["etrue_idx == 0 || etrue_idx > 14"]):
-                    StringExpression(['reject("True energy outside IRF range", true_energy)'])
-                with ElseBlockContext():
-                    dec_idx << FunctionCall(["declination"], "dec_lookup")
-                    ereco_hist_idx << FunctionCall([etrue_idx, dec_idx], "ereco_get_ragged_index")
-                    #StringExpression(['print("etrue_idx ", etrue_idx)'])
-                    #StringExpression(['print("dec_idx ", dec_idx)'])
-                    #StringExpression(['print("ereco_hist_idx ", ereco_hist_idx)'])
-                    #return is log(E/GeV)
-                    ReturnStatement([FunctionCall([FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"), FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "histogram_rng")])
-                    #ReturnStatement([FunctionCall([FunctionCall(["true_energy", "declination", "0"], "ereco_lookup"), FunctionCall(["true_energy", "declination", "1"], "ereco_lookup")], "histogram_rng")])
-
-                #append lookup for inputted energy -> already done, etrue_ind
-                #append lookup for outputted energy
-                # -> use as input for angular stuff
-                """
-                #use alternatively for testing the lognormal approach
-                lognorm = LognormalMixture(self.mixture_name, self.n_components, self.mode)
-                truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
-                log_trunc_e = LogParameterization(truncated_e)
-
-                #self._poly_params_mu should have shape (3, 3, 6)
-                #3: declination bins, 3: components, 6: poly-coeffs
-                mu_poly_coeffs = StanArray(
-                    "R2021EnergyResolutionMuPolyCoeffs",
-                    "real",
-                    self._poly_params_mu,
-                )
-                #same as above
-                sd_poly_coeffs = StanArray(
-                    "R2021EnergyResolutionSdPolyCoeffs",
-                    "real",
-                    self._poly_params_sd,
-                )
-
-                mu = ForwardArrayDef("mu_e_res", "real", ["[", self._n_components, "]"])
-                sigma = ForwardArrayDef(
-                    "sigma_e_res", "real", ["[", self._n_components, "]"]
-                )
-
-                weights = ForwardVariableDef(
-                    "weights", "vector[" + str(self._n_components) + "]"
-                )
-
-                declination = ForwardVariableDef("declination", "real")
-                declination << FunctionCall(["omega"], "omega_to_dec")
-
-                declination_bins = StanArray("dec_bins", "real", self._declination_bins)
-                declination_index = ForwardVariableDef("dec_ind", "int")
-                declination_index << StringExpression(["binary_search(declination, ", declination_bins, ")"])
-
-                with ForLoopContext(1, self._n_components, "i") as i:
-                    weights[i] << StringExpression(["1.0/", self._n_components])
-
-                log_mu = FunctionCall([mu], "log")
-
-                with ForLoopContext(1, self._n_components, "i") as i:
-                    mu[i] << [
-                        "eval_poly1d(",
-                        log_trunc_e,
-                        ", ",
-                        "to_vector(",
-                        mu_poly_coeffs[declination_index][i],
-                        "))",
-                    ]
-
-                    sigma[i] << [
-                        "eval_poly1d(",
-                        log_trunc_e,
-                        ", ",
-                        "to_vector(",
-                        sd_poly_coeffs[declination_index][i],
-                        "))",
-                    ]
-
-                log_mu_vec = FunctionCall([log_mu], "to_vector")
-                sigma_vec = FunctionCall([sigma], "to_vector")
-
-                #log_reco_e = LogParameterization("reco_energy")
-                ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
-
-
-        else:
-            raise RuntimeError("mode must be DistributionMode.PDF or DistributionMode.RNG")
-        '''
 
     def setup(self) -> None:
 
@@ -966,17 +856,6 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         # Define Stan interface
         with self:
 
-            # Clip true energy
-            #clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
-
-            #clipped_log_e = LogParameterization(clipped_e)
-            """
-            kappa = PolynomialParameterization(
-                clipped_log_e,
-                self._poly_params,
-                "NorthernTracksAngularResolutionPolyCoeffs",
-            )
-            """
             if self.mode == DistributionMode.PDF:
                 # VMF expects x_obs, x_true -> true i.e. test source
                 vmf = VMFParameterization(["reco_dir", "true_dir"], "kappa", self.mode)
@@ -1012,7 +891,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 
                 #get ereco index from eres-defined functions
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
-                etrue_idx << FunctionCall(["log10(true_energy)"], "etrue_lookup")
+                etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
                 #StringExpression(['print("etrue_idx ", etrue_idx)'])
                 declination = ForwardVariableDef("declination", "real")
                 declination << FunctionCall(["true_dir"], "omega_to_dec")
@@ -1021,7 +900,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
                 ereco_hist_idx << FunctionCall([etrue_idx, dec_idx], "ereco_get_ragged_index")
                 ereco_idx = ForwardVariableDef("ereco_idx", "int")
-                ereco_idx << FunctionCall([log_ereco, FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "binary_search")
+                ereco_idx << FunctionCall(["reco_energy", FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "binary_search")
                 #StringExpression(['print("ereco_idx ", ereco_idx)'])
 
                 #lookup psf stuff
@@ -1054,17 +933,12 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 StringExpression(["return_this[4] = kappa"])
                 ReturnStatement([return_vec])
 
-            #ReturnStatement([ang_err])
-
 
     def setup(self):
         self._pdet_limits = (1e2, 1e8)
         self._Emin, self._Emax = self._pdet_limits
 
         if self.mode == DistributionMode.PDF:
-            #what needs to be set up?
-            #only thing needed is gaussian/vMF for reconstruction
-            #that's done in init itself
             pass
 
         elif self.mode == DistributionMode.RNG:
