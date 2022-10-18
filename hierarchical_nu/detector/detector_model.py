@@ -262,7 +262,7 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 m.errordef = 1
                 m.errors = 0.1 * np.asarray(seed)
                 m.limits = limits
-                m.migrad()
+                m.scipy(method="SLSQP")
                 # Fit using simple least squares
                 #res = least_squares(
                 #    residuals,
