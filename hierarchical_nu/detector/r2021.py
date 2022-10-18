@@ -441,7 +441,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         # For prob_Edet_above_threshold
         self._pdet_limits = (1e2, 1e9)
 
-        self._n_components = 2
+        self._n_components = 3 
         self.setup()
 
         #mis-use inheritence without initialising parent class
