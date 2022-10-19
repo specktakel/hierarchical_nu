@@ -55,7 +55,7 @@ class StanSimInterface(StanInterface):
     ):
         if detector_model_type == R2021DetectorModel:
             includes.append("r2021_rng.stan")
-            R2021DetectorModel.generate_code(DistributionMode.RNG, rewrite=False)
+            R2021DetectorModel.generate_code(DistributionMode.RNG, rewrite=True, gen_type="histogram")
 
 
 
@@ -550,11 +550,18 @@ class StanSimInterface(StanInterface):
             self._dm_pdf = OrderedDict()
 
             for event_type in self._event_types:
-
-                self._dm_rng[event_type] = self.detector_model_type(
-                    mode=DistributionMode.RNG,
-                    event_type=event_type,
-                )
+                if self.detector_model_type == R2021DetectorModel:
+                    self._dm_rng[event_type] = self.detector_model_type(
+                        mode=DistributionMode.RNG,
+                        event_type=event_type,
+                        gen_type="histogram",
+                        rewrite=True
+                    )
+                else:
+                    self._dm_rng[event_type] = self.detector_model_type(
+                        mode=DistributionMode.RNG,
+                        event_type=event_type
+                    )
                 #self._dm_pdf[event_type] = self.detector_model_type(
                 #    mode=DistributionMode.PDF,
                 #    event_type=event_type,
@@ -857,7 +864,7 @@ class StanSimInterface(StanInterface):
                             #self._Edet[i] << self._E[i]
                             
                             self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
-                                self._E[i], self._omega
+                                FunctionCall([self._E[i]], "log10"), self._omega
                             )
                             
                         else:
@@ -930,14 +937,11 @@ class StanSimInterface(StanInterface):
                         #both energies are E/GeV, angular_resolution does log internally
                         
                         self._pre_event << self._dm_rng["tracks"].angular_resolution(
-                            self._E[i], self._Edet[i], self._omega
+                            FunctionCall([self._E[i]], "log10"), FunctionCall([self._Edet[i]], "log10"), self._omega
                         )
                         self._event[i] << StringExpression(["pre_event[1:3]"])
                         self._kappa[i] << StringExpression(["pre_event[4]"])
-                        """
-                        self._event[i] << self._omega
-                        self._kappa[i] << 40000.
-                        """
+
                     else:
                         self._event[i] << self._dm_rng["tracks"].angular_resolution(
                             self._E[i], self._omega

@@ -446,7 +446,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         #mis-use inheritence without initialising parent class
         if self.mode == DistributionMode.PDF:
-            self._func_name = "R2021EnergyResolution_lpdf"
+            self._func_name = "R2021EnergyResolution"
         elif self.mode == DistributionMode.RNG:
             self._func_name = "R2021EnergyResolution_rng"
 
@@ -604,6 +604,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     self._poly_params_mu = data["poly_params_mu"]
                     self._poly_params_sd = data["poly_params_sd"]
                     self._poly_limits = (float(data["Emin"]), float(data["Emax"]))
+                    self.fit_params = data["fit_params"]
 
             else:
                 logger.info("Re-doing energy lognorm data and saving files.")
@@ -708,9 +709,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         poly_params_sd=self._poly_params_sd,
                         Emin=Emin,
                         Emax=Emax,
+                        fit_params=self.fit_params
                     )
-            self._poly_params_mu__ = self.poly_params_mu
-            self._poly_params_sd__ = self.poly_params_sd
+            self._poly_params_mu__ = self._poly_params_mu
+            self._poly_params_sd__ = self._poly_params_sd
             self._eres__ = self._eres
 
             
@@ -887,7 +889,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 #log_etrue = ForwardVariableDef("log_etrue", "real")
                 #log_etrue = LogParameterization("true_energy")
 
-                log_ereco = LogParameterization("reco_energy")
+                #log_ereco = LogParameterization("reco_energy")
                 
                 #get ereco index from eres-defined functions
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
@@ -1010,19 +1012,17 @@ class R2021DetectorModel(DetectorModel):
     def __init__(self,
         mode: DistributionMode = DistributionMode.PDF,
         event_type = None,
-        rewrite = False,
-        gen_type = "histogram"):
+        rewrite = True,
+        gen_type = "lognorm"):
 
         super().__init__(mode, event_type="tracks")
 
-        #ang_res = R2021AngularResolution(mode, rewrite)
-        #self._angular_resolution = ang_res
+        ang_res = R2021AngularResolution(mode, rewrite)
+        self._angular_resolution = ang_res
 
         energy_res = R2021EnergyResolution(mode, rewrite, gen_type)
         self._energy_resolution = energy_res
-
-        #if mode == DistributionMode.PDF:
-        #self._eff_area = R2021EffectiveArea()
+        self._eff_area = R2021EffectiveArea()
 
 
     def _get_effective_area(self):
@@ -1042,8 +1042,8 @@ class R2021DetectorModel(DetectorModel):
         cls.logger.info("Generating r2021 stan code.")
         with StanGenerator() as cg:
             instance = cls(mode=mode, rewrite=rewrite, gen_type=gen_type)
-            #instance.effective_area.generate_code()
-            #instance.angular_resolution.generate_code()
+            instance.effective_area.generate_code()
+            instance.angular_resolution.generate_code()
             instance.energy_resolution.generate_code()
             code = cg.generate()
         code = code.removeprefix("functions\n{")

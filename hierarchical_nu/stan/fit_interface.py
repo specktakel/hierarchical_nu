@@ -50,7 +50,7 @@ class StanFitInterface(StanInterface):
     ):
         if detector_model_type == R2021DetectorModel:
             includes.append("r2021_pdf.stan")
-            R2021DetectorModel.generate_code(DistributionMode.PDF, rewrite=False)
+            R2021DetectorModel.generate_code(DistributionMode.PDF, rewrite=True, gen_type="lognorm")
 
         super().__init__(
             output_file=output_file,
@@ -740,7 +740,11 @@ class StanFitInterface(StanInterface):
                                         self._lp[i][k],
                                         " += ",
                                         self._dm["tracks"].energy_resolution(
-                                            self._E[i], self._Edet[i], self._omega_det[i]
+                                            FunctionCall([self._E[i]], "log10"),
+                                            FunctionCall([self._Edet[i]], "log10"),
+                                            #self._E[i],
+                                            #self._Edet[i],
+                                            self._omega_det[i]
                                         ),
                                     ]
                                 )
