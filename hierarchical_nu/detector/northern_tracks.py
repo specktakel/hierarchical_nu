@@ -45,16 +45,16 @@ class NorthernTracksEffectiveArea(EffectiveArea):
     CACHE_FNAME = "aeff_tracks.npz"
 
     def __init__(self) -> None:
-        
+
         super().__init__(
             "NorthernTracksEffectiveArea",
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real",
         )
-        
+
         self.setup()
-        
+
         # Define Stan interface.
         with self:
             hist = SimpleHistogram(
@@ -66,7 +66,7 @@ class NorthernTracksEffectiveArea(EffectiveArea):
             cos_dir = "cos(pi() - acos(true_dir[3]))"
 
             _ = ReturnStatement([hist("true_energy", cos_dir)])
-        
+
     def setup(self) -> None:
 
         if self.CACHE_FNAME in Cache:
