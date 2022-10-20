@@ -502,8 +502,8 @@ class NorthernTracksDetectorModel(DetectorModel):
         energy_res = NorthernTracksEnergyResolution(mode)
         self._energy_resolution = energy_res
 
-        if mode == DistributionMode.PDF:
-            self._eff_area = NorthernTracksEffectiveArea()
+        #if mode == DistributionMode.PDF:
+        self._eff_area = NorthernTracksEffectiveArea()
 
     def _get_effective_area(self):
         return self._eff_area
