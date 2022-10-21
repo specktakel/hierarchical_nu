@@ -3,6 +3,7 @@ from astropy import units as u
 from typing import List
 from collections import OrderedDict
 from hierarchical_nu.detector.detector_model import DetectorModel
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.priors import Priors
 from hierarchical_nu.stan.interface import StanInterface
@@ -62,6 +63,10 @@ class StanFitInterface(StanInterface):
         functions block of the generated file
         :param priors: Priors object detailing the priors to use
         """
+        
+        if detector_model_type == R2021DetectorModel:
+            includes.append("r2021_pdf.stan")
+            R2021DetectorModel.generate_code(DistributionMode.PDF, rewrite=True, gen_type="lognorm")
 
         super().__init__(
             output_file=output_file,
@@ -860,18 +865,33 @@ class StanFitInterface(StanInterface):
                                     self._E[i] << self._Esrc[i]
 
                             # Detection effects
-                            # log_prob += log(p(Edet|E))
-                            StringExpression(
-                                [
-                                    self._lp[i][k],
-                                    " += ",
-                                    self._dm["tracks"].energy_resolution(
-                                        self._E[i], self._Edet[i]
-                                    ),
-                                ]
-                            )
+                            if self.detector_model_type == R2021DetectorModel:
 
-                            # log_prob += log(p(Edet>Edet_min|E))
+                                StringExpression(
+                                    [
+                                        self._lp[i][k],
+                                        " += ",
+                                        self._dm["tracks"].energy_resolution(
+                                            FunctionCall([self._E[i]], "log10"),
+                                            FunctionCall([self._Edet[i]], "log10"),
+                                            #self._E[i],
+                                            #self._Edet[i],
+                                            self._omega_det[i]
+                                        ),
+                                    ]
+                                )
+
+                            else:
+
+                                StringExpression(
+                                    [
+                                        self._lp[i][k],
+                                        " += ",
+                                        self._dm["tracks"].energy_resolution(
+                                            self._E[i], self._Edet[i]
+                                        ),
+                                    ]
+                                )
                             StringExpression(
                                 [
                                     self._lp[i][k],

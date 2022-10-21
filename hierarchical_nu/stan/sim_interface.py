@@ -1,6 +1,7 @@
 from typing import List
 from collections import OrderedDict
 from hierarchical_nu.detector.detector_model import DetectorModel
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.stan.interface import StanInterface
 
@@ -16,11 +17,13 @@ from hierarchical_nu.backend.stan_generator import (
     ElseBlockContext,
     WhileLoopContext,
     FunctionCall,
+    StanGenerator
 )
 
 from hierarchical_nu.backend.variable_definitions import (
     ForwardVariableDef,
     ForwardArrayDef,
+    ForwardVectorDef
 )
 
 from hierarchical_nu.backend.expression import StringExpression
@@ -29,6 +32,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.events import TRACKS, CASCADES
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.source.source import Sources
 
@@ -62,6 +66,10 @@ class StanSimInterface(StanInterface):
         :param includes: List of names of stan files to include into the
         functions block of the generated file
         """
+
+        if detector_model_type == R2021DetectorModel:
+            includes.append("r2021_rng.stan")
+            R2021DetectorModel.generate_code(DistributionMode.RNG, rewrite=True, gen_type="histogram")
 
         super().__init__(
             output_file=output_file,
@@ -635,15 +643,22 @@ class StanSimInterface(StanInterface):
             # mode to have all functions included.
             # This will add to the functions section of the Stan file automatically.
             for event_type in self._event_types:
-
-                self._dm_rng[event_type] = self.detector_model_type(
-                    mode=DistributionMode.RNG,
-                    event_type=event_type,
-                )
-                self._dm_pdf[event_type] = self.detector_model_type(
-                    mode=DistributionMode.PDF,
-                    event_type=event_type,
-                )
+                if self.detector_model_type == R2021DetectorModel:
+                    self._dm_rng[event_type] = self.detector_model_type(
+                        mode=DistributionMode.RNG,
+                        event_type=event_type,
+                        gen_type="histogram",
+                        rewrite=True
+                    )
+                else:
+                    self._dm_rng[event_type] = self.detector_model_type(
+                        mode=DistributionMode.RNG,
+                        event_type=event_type
+                    )
+                #self._dm_pdf[event_type] = self.detector_model_type(
+                #    mode=DistributionMode.PDF,
+                #    event_type=event_type,
+                #)
 
             # We redefine a bunch of variables from transformed data here, as we would
             # like to access them as outputs from the Stan simulation.
@@ -674,6 +689,7 @@ class StanSimInterface(StanInterface):
 
             # Detected directions as unit vectors for each event
             self._event = ForwardArrayDef("event", "unit_vector[3]", self._N_str)
+            self._pre_event = ForwardVectorDef("pre_event", [4])
 
             # Variables for rejection sampling
             # Rejection sampling is based on a broken power law envelope,
@@ -772,7 +788,10 @@ class StanSimInterface(StanInterface):
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
                         )
 
-                        self._aeff_factor << self._dm_pdf["tracks"].effective_area(
+                        #self._aeff_factor << self._dm_pdf["tracks"].effective_area(
+                        #    self._E[i], self._omega
+                        #)
+                        self._aeff_factor << self._dm_rng["tracks"].effective_area(
                             self._E[i], self._omega
                         )
 
@@ -970,9 +989,18 @@ class StanSimInterface(StanInterface):
 
                                 self._aeff_factor << 0
 
-                        self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
-                            self._E[i]
-                        )
+                        if self.detector_model_type == R2021DetectorModel:
+                            #return of energy resolution is log_10(E/GeV)
+                            #self._Edet[i] << self._E[i]
+                            
+                            self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
+                                FunctionCall([self._E[i]], "log10"), self._omega
+                            )
+                            
+                        else:
+                            self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
+                                self._E[i]
+                            )
 
                         # Value of the distribution that we want to sample from
                         self._f_value << self._src_factor * self._aeff_factor
@@ -1041,10 +1069,20 @@ class StanSimInterface(StanInterface):
                             )
 
                     # Detection effects
-                    self._event[i] << self._dm_rng["tracks"].angular_resolution(
-                        self._E[i], self._omega
-                    )
-                    self._kappa[i] << self._dm_rng["tracks"].angular_resolution.kappa()
+                    if self.detector_model_type == R2021DetectorModel:
+                        #both energies are E/GeV, angular_resolution does log internally
+                        
+                        self._pre_event << self._dm_rng["tracks"].angular_resolution(
+                            FunctionCall([self._E[i]], "log10"), FunctionCall([self._Edet[i]], "log10"), self._omega
+                        )
+                        self._event[i] << StringExpression(["pre_event[1:3]"])
+                        self._kappa[i] << StringExpression(["pre_event[4]"])
+
+                    else:
+                        self._event[i] << self._dm_rng["tracks"].angular_resolution(
+                            self._E[i], self._omega
+                        )
+                        self._kappa[i] << self._dm_rng["tracks"].angular_resolution.kappa()
 
             # Repeat as above for cascades! For detailed comments see tracks, approach is identical.
             if "cascades" in self._event_types:
