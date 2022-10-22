@@ -749,15 +749,13 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 for c, dec in enumerate(self._declination_bins[:-1]):
                     self.set_fit_params(dec+0.01)
                     fig = self.plot_fit_params(self._fit_params[c], self.rebin_tE_binc)
-                    fig.savefig(f"/Users/David/Documents/phd/icecube/hi_nu_plots/minuit_least_squares/fit_params_{c}.png")
                     fig = self.plot_parameterizations(
                         tE_binc,
                         self._rE_binc[c],
                         self._fit_params[c],
                         #rebin_tE_binc=rebin_tE_binc,
                     )
-                    fig.savefig(f"/Users/David/Documents/phd/icecube/hi_nu_plots/minuit_least_squares/parameterisation_{c}.png")
-            
+                    
                 
                 
 
