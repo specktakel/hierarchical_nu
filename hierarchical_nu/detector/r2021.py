@@ -652,11 +652,14 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     data = np.load(fr)
                     self._eres = data["eres"]
                     self._tE_bin_edges = data["tE_bin_edges"]
-                    self._rE_bin_edges = data["rE_bin_edges"]
+                    #self._rE_bin_edges = data["rE_bin_edges"]
                     self._poly_params_mu = data["poly_params_mu"]
                     self._poly_params_sd = data["poly_params_sd"]
                     self._poly_limits = (float(data["Emin"]), float(data["Emax"]))
                     self._fit_params = data["fit_params"]
+
+                self._poly_params_mu__ = self._poly_params_mu
+                self._poly_params_sd__ = self._poly_params_sd
 
             else:
                 logger.info("Re-doing energy lognorm data and saving files.")
@@ -734,10 +737,28 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 poly_high = [i[1] for i in self._poly_limits_battery]
                 poly_limits = (max(poly_low), min(poly_high))
                 
+                self._poly_params_mu__ = self._poly_params_mu.copy()
+                self._poly_params_sd__ = self._poly_params_sd.copy()
+                self._eres__ = self._eres
+
+
                 # Save values
                 self._poly_limits = poly_limits
                 self._tE_bin_edges = tE_bin_edges
                 # self._rE_bin_edges = rE_bin_edges
+                for c, dec in enumerate(self._declination_bins[:-1]):
+                    self.set_fit_params(dec+0.01)
+                    fig = self.plot_fit_params(self._fit_params[c], self.rebin_tE_binc)
+                    fig.savefig(f"/Users/David/Documents/phd/icecube/hi_nu_plots/minuit_least_squares/fit_params_{c}.png")
+                    fig = self.plot_parameterizations(
+                        tE_binc,
+                        self._rE_binc[c],
+                        self._fit_params[c],
+                        #rebin_tE_binc=rebin_tE_binc,
+                    )
+                    fig.savefig(f"/Users/David/Documents/phd/icecube/hi_nu_plots/minuit_least_squares/parameterisation_{c}.png")
+            
+                
                 
 
                 # Save polynomial
@@ -754,25 +775,15 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         Emax=self._poly_limits[1],
                         fit_params=self._fit_params
                     )
-            self._poly_params_mu__ = self._poly_params_mu
-            self._poly_params_sd__ = self._poly_params_sd
-            self._eres__ = self._eres
+                self._poly_params_mu = self._poly_params_mu__.copy()
+                self._poly_params_sd = self._poly_params_sd__.copy()
+                self._eres = self._eres__
 
             
-            for c, dec in enumerate(self._declination_bins[:-1]):
-                self.set_fit_params(dec+0.01)
-                fig = self.plot_fit_params(self._fit_params[c], self.rebin_tE_binc)
-                fig.savefig(f"/Users/David/Documents/phd/icecube/hi_nu_plots/minuit_least_squares/fit_params_{c}.png")
-                fig = self.plot_parameterizations(
-                    tE_binc,
-                    self._rE_binc[c],
-                    self._fit_params[c],
-                    #rebin_tE_binc=rebin_tE_binc,
-                )
-                fig.savefig(f"/Users/David/Documents/phd/icecube/hi_nu_plots/minuit_least_squares/parameterisation_{c}.png")
             
-            self._poly_params_mu = self._poly_params_mu__
-            self._poly_params_sd = self._poly_params_sd__
+
+            
+            
             
         else:
             # Check cache
@@ -1092,7 +1103,8 @@ class R2021DetectorModel(DetectorModel):
         cls,
         mode: DistributionMode, 
         rewrite: bool = False,
-        gen_type: str = "histogram"
+        gen_type: str = "histogram",
+        path: str = STAN_GEN_PATH
     ) -> None:
         """
         Classmethod to generate stan code of entire detector.
@@ -1110,11 +1122,15 @@ class R2021DetectorModel(DetectorModel):
             code = cg.generate()
         code = code.removeprefix("functions\n{")
         code = code.removesuffix("\n}\n")
-        if not os.path.isdir(STAN_GEN_PATH):
-            os.makedirs(STAN_GEN_PATH)
+        if not os.path.isdir(path):
+            os.makedirs(path)
         if mode == DistributionMode.PDF:
-            with open(os.path.join(STAN_GEN_PATH, cls.PDF_FILENAME), "w+") as f:
+            with open(os.path.join(path, cls.PDF_FILENAME), "w+") as f:
                 f.write(code)
+            return os.path.join(path, cls.PDF_FILENAME)
         else:
-            with open(os.path.join(STAN_GEN_PATH, cls.RNG_FILENAME), "w+") as f:
+            with open(os.path.join(path, cls.RNG_FILENAME), "w+") as f:
                 f.write(code)
+            return os.path.join(path, cls.RNG_FILENAME)
+
+        
