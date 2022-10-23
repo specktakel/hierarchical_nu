@@ -991,7 +991,6 @@ class StanSimInterface(StanInterface):
 
                         if self.detector_model_type == R2021DetectorModel:
                             #return of energy resolution is log_10(E/GeV)
-                            #self._Edet[i] << self._E[i]
                             
                             self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
                                 FunctionCall([self._E[i]], "log10"), self._omega
@@ -1127,9 +1126,12 @@ class StanSimInterface(StanInterface):
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
                         )
 
-                        self._aeff_factor << self._dm_pdf["cascades"].effective_area(
+                        self._aeff_factor << self._dm_rng["cascades"].effective_area(
                             self._E[i], self._omega
                         )
+                        #self._aeff_factor << self._dm_pdf["cascades"].effective_area(
+                        #    self._E[i], self._omega
+                        #)
 
                         # Energy spectrum
                         if self.sources.point_source:

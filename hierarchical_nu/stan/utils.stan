@@ -263,7 +263,8 @@ real histogram_rng(array[] real hist_array, array[] real hist_edges)
 }
 
 /**
- * Categorical rng, takes n, bins as arguments
+ * Categorical rng, takes n, bins as arguments.
+ * Like Histogram_rng, but returns the bin index instead of a sampled value.
  */
 
 int hist_cat_rng(array[] real hist_array, array[] real hist_edges)

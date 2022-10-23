@@ -874,8 +874,6 @@ class StanFitInterface(StanInterface):
                                         self._dm["tracks"].energy_resolution(
                                             FunctionCall([self._E[i]], "log10"),
                                             FunctionCall([self._Edet[i]], "log10"),
-                                            #self._E[i],
-                                            #self._Edet[i],
                                             self._omega_det[i]
                                         ),
                                     ]
