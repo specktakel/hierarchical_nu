@@ -795,8 +795,19 @@ class StanSimInterface(StanInterface):
                             self._E[i], self._omega
                         )
 
+                        if (
+                            self.detector_model_type == NorthernTracksDetectorModel
+                            or self.detector_model_type == IceCubeDetectorModel
+                        ):
+
+                            with IfBlockContext(
+                                [StringExpression([self._cosz[i], ">= 0.1"])]
+                            ):
+
+                                self._aeff_factor << 0
+
                         # Calculate the envelope for rejection sampling and the shape of
-                        # the source spectrum for the varioua source components
+                        # the source spectrum for the various source components
                         if self.sources.point_source:
 
                             with IfBlockContext(
@@ -978,29 +989,6 @@ class StanSimInterface(StanInterface):
                                 self._Esrc[i] << self._E[i]
 
                         # Calculate quantities for rejection sampling
-                        if (
-                            self.detector_model_type == NorthernTracksDetectorModel
-                            or self.detector_model_type == IceCubeDetectorModel
-                        ):
-
-                            with IfBlockContext(
-                                [StringExpression([self._cosz[i], ">= 0.1"])]
-                            ):
-
-                                self._aeff_factor << 0
-
-                        if self.detector_model_type == R2021DetectorModel:
-                            #return of energy resolution is log_10(E/GeV)
-                            
-                            self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
-                                FunctionCall([self._E[i]], "log10"), self._omega
-                            )
-                            
-                        else:
-                            self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
-                                self._E[i]
-                            )
-
                         # Value of the distribution that we want to sample from
                         self._f_value << self._src_factor * self._aeff_factor
 
@@ -1032,6 +1020,36 @@ class StanSimInterface(StanInterface):
                             ):
 
                                 self._detected << 1
+
+                                
+
+                                if self.detector_model_type == R2021DetectorModel:
+                                    #return of energy resolution is log_10(E/GeV)
+                                    
+                                    self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
+                                        FunctionCall([self._E[i]], "log10"), self._omega
+                                    )
+                                    
+                                else:
+                                    self._Edet[i] << 10 ** self._dm_rng["tracks"].energy_resolution(
+                                        self._E[i]
+                                    )
+
+                                # Detection effects
+                                if self.detector_model_type == R2021DetectorModel:
+                                    #both energies are E/GeV, angular_resolution does log internally
+                                    
+                                    self._pre_event << self._dm_rng["tracks"].angular_resolution(
+                                        FunctionCall([self._E[i]], "log10"), FunctionCall([self._Edet[i]], "log10"), self._omega
+                                    )
+                                    self._event[i] << StringExpression(["pre_event[1:3]"])
+                                    self._kappa[i] << StringExpression(["pre_event[4]"])
+
+                                else:
+                                    self._event[i] << self._dm_rng["tracks"].angular_resolution(
+                                        self._E[i], self._omega
+                                    )
+                                    self._kappa[i] << self._dm_rng["tracks"].angular_resolution.kappa()
 
                             with ElseBlockContext():
 
@@ -1067,21 +1085,6 @@ class StanSimInterface(StanInterface):
                                 ['print("problem component: ", ', self._lam[i], ");\n"]
                             )
 
-                    # Detection effects
-                    if self.detector_model_type == R2021DetectorModel:
-                        #both energies are E/GeV, angular_resolution does log internally
-                        
-                        self._pre_event << self._dm_rng["tracks"].angular_resolution(
-                            FunctionCall([self._E[i]], "log10"), FunctionCall([self._Edet[i]], "log10"), self._omega
-                        )
-                        self._event[i] << StringExpression(["pre_event[1:3]"])
-                        self._kappa[i] << StringExpression(["pre_event[4]"])
-
-                    else:
-                        self._event[i] << self._dm_rng["tracks"].angular_resolution(
-                            self._E[i], self._omega
-                        )
-                        self._kappa[i] << self._dm_rng["tracks"].angular_resolution.kappa()
 
             # Repeat as above for cascades! For detailed comments see tracks, approach is identical.
             if "cascades" in self._event_types:
@@ -1231,10 +1234,6 @@ class StanSimInterface(StanInterface):
                                     1 + self._z[self._lam[i]]
                                 )
 
-                        # Calculate quantities for rejection sampling
-                        self._Edet[i] << 10 ** self._dm_rng[
-                            "cascades"
-                        ].energy_resolution(self._E[i])
 
                         self._f_value = self._src_factor * self._aeff_factor
 
@@ -1264,6 +1263,21 @@ class StanSimInterface(StanInterface):
                             ):
 
                                 self._detected << 1
+                                #effective area veto for possibly empty true_energy bins overcome,
+                                # Detection effects
+                                # Calculate quantities for rejection sampling
+                                self._Edet[i] << 10 ** self._dm_rng[
+                                    "cascades"
+                                ].energy_resolution(self._E[i])
+
+                                self._event[i] << self._dm_rng["cascades"].angular_resolution(
+                                    self._E[i], self._omega
+                                )
+                                (
+                                    self._kappa[i]
+                                    << self._dm_rng["cascades"].angular_resolution.kappa()
+                                )
+
 
                             with ElseBlockContext():
 
@@ -1297,11 +1311,4 @@ class StanSimInterface(StanInterface):
                                 ['print("problem component: ", ', self._lam[i], ");\n"]
                             )
 
-                    # Detection effects
-                    self._event[i] << self._dm_rng["cascades"].angular_resolution(
-                        self._E[i], self._omega
-                    )
-                    (
-                        self._kappa[i]
-                        << self._dm_rng["cascades"].angular_resolution.kappa()
-                    )
+
