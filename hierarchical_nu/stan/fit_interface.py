@@ -46,6 +46,7 @@ class StanFitInterface(StanInterface):
         output_file: str,
         sources: Sources,
         detector_model_type: DetectorModel,
+        atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
         includes: List[str] = ["interpolation.stan", "utils.stan", "vMF.stan"],
         priors: Priors = Priors(),
@@ -71,6 +72,8 @@ class StanFitInterface(StanInterface):
         )
 
         self._priors = priors
+
+        self._atmo_flux_energy_points = atmo_flux_energy_points
 
         self._atmo_flux_theta_points = atmo_flux_theta_points
 
@@ -150,7 +153,8 @@ class StanFitInterface(StanInterface):
                 # Increasing theta points too much makes compilation very slow
                 # Could switch to passing array as data if problematic
                 self._atmo_flux_func = self._atmo_flux.make_stan_function(
-                    theta_points=self._atmo_flux_theta_points
+                    energy_points=self._atmo_flux_energy_points,
+                    theta_points=self._atmo_flux_theta_points,
                 )
 
                 # Include integral for normalisation to PDF

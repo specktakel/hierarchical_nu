@@ -26,7 +26,12 @@ Cache.set_cache_dir(".cache")
 
 
 class _AtmosphericNuMuFluxStan(UserDefinedFunction):
-    def __init__(self, splined_flux, log_energy_grid, theta_points=50):
+    def __init__(
+        self,
+        splined_flux,
+        log_energy_grid,
+        theta_points: int = 50,
+    ):
 
         UserDefinedFunction.__init__(
             self,
@@ -43,10 +48,21 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
         spl_evals = np.empty((self.theta_points, len(log_energy_grid)))
 
         for i, cos_theta in enumerate(cos_theta_grid):
+
             spl_evals[i] = splined_flux(cos_theta, log_energy_grid).squeeze()
 
         with self:
-            spl_evals_stan = StanArray("AtmosphericFluxPolyCoeffs", "real", spl_evals)
+
+            cos_theta = ForwardVariableDef("cos_theta", "real")
+            cos_theta_bin_index = ForwardVariableDef("cos_theta_bin_index", "int")
+            vals_cos_theta_low = ForwardVariableDef(
+                "vals_cos_theta_low", "vector[%i]" % len(log_energy_grid)
+            )
+            vals_cos_theta_high = ForwardVariableDef(
+                "vals_cos_theta_high", "vector[%i]" % len(log_energy_grid)
+            )
+
+            spl_evals_stan = StanArray("AtmosphericNuMuFluxGrid", "real", spl_evals)
 
             cos_theta_grid_stan = StanArray("cos_theta_grid", "real", cos_theta_grid)
             log_energy_grid_stan = StanArray("log_energy_grid", "real", log_energy_grid)
@@ -55,44 +71,54 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
                 "true_energy", 10 ** log_energy_grid[0], 10 ** log_energy_grid[-1]
             )
             log_trunc_e = LogParameterization(truncated_e)
-            # StringExpression(["print(\"log_trunc_e = \",",log_trunc_e,")"])
 
-            # abs() since the flux is symmetric around the horizon
-            cos_dir = StringExpression(["abs(cos(pi() - acos(true_dir[3])))"])
-            cos_theta_bin_index = FunctionCall(
-                [cos_dir, cos_theta_grid_stan], "binary_search", 2
+            # Use abs() since the flux is symmetric around the horizon
+            cos_theta << StringExpression(["abs(cos(pi() - acos(true_dir[3])))"])
+            cos_theta_bin_index << FunctionCall(
+                [cos_theta, cos_theta_grid_stan],
+                "binary_search",
             )
+
             # StringExpression(["print(\"cos_dir = \",",cos_dir,")"])
             # StringExpression(["print(\"cos_theta_bin_index = \",",cos_theta_bin_index,")"])
-            vect_spl_vals_low = FunctionCall(
+
+            vals_cos_theta_low << FunctionCall(
                 [spl_evals_stan[cos_theta_bin_index]], "to_vector"
             )
-            vect_spl_vals_high = FunctionCall(
+            vals_cos_theta_high << FunctionCall(
                 [spl_evals_stan[cos_theta_bin_index + 1]], "to_vector"
             )
+
+            # vect_spl_vals_low = FunctionCall(
+            #    [spl_evals_stan[cos_theta_bin_index]], "to_vector"
+            # )
+            # vect_spl_vals_high = FunctionCall(
+            #    [spl_evals_stan[cos_theta_bin_index + 1]], "to_vector"
+            # )
             vect_log_e_grid = FunctionCall([log_energy_grid_stan], "to_vector")
 
             interpolated_energy_low = FunctionCall(
-                [vect_log_e_grid, vect_spl_vals_low, log_trunc_e], "interpolate", 3
+                [vect_log_e_grid, vals_cos_theta_low, log_trunc_e], "interpolate"
             )
             interpolated_energy_high = FunctionCall(
-                [vect_log_e_grid, vect_spl_vals_high, log_trunc_e], "interpolate", 3
+                [vect_log_e_grid, vals_cos_theta_high, log_trunc_e], "interpolate"
             )
 
             vector_log_trunc_e = ForwardVariableDef(
                 "vector_interp_energies", "vector[2]"
             )
-            vector_coz_grid_points = ForwardVariableDef(
-                "vector_coz_grid_points", "vector[2]"
+            vector_cosz_grid_points = ForwardVariableDef(
+                "vector_cosz_grid_points", "vector[2]"
             )
             vector_log_trunc_e[1] << interpolated_energy_low
             vector_log_trunc_e[2] << interpolated_energy_high
-            vector_coz_grid_points[1] << cos_theta_grid_stan[cos_theta_bin_index]
-            vector_coz_grid_points[2] << cos_theta_grid_stan[cos_theta_bin_index + 1]
+            vector_cosz_grid_points[1] << cos_theta_grid_stan[cos_theta_bin_index]
+            vector_cosz_grid_points[2] << cos_theta_grid_stan[cos_theta_bin_index + 1]
 
             interpolate_cosz = FunctionCall(
-                [vector_coz_grid_points, vector_log_trunc_e, cos_dir], "interpolate", 3
+                [vector_cosz_grid_points, vector_log_trunc_e, cos_theta], "interpolate"
             )
+
             # Units of GeV^-1 m^-2 s^-1
             _ = ReturnStatement([(10**interpolate_cosz) * 1e4])
 
