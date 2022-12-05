@@ -137,7 +137,6 @@ class TestR2021():
 
     @pytest.fixture
     def test_samples(self, sim_file, random_seed):
-        #return np.load("/Users/David/Documents/phd/icecube/hierarchical_nu/tests/test_samples.npy")
         num_samples = 1000
 
         irf = R2021IRF()
@@ -187,12 +186,11 @@ class TestR2021():
                 assert np.all(ang_err <= 20.)
 
                 assert n == pytest.approx(irf.reco_energy[c_e, c_d].pdf(irf.reco_energy_bins[c_e, c_d][:-1]+0.01), abs=0.2)
-        np.save("/Users/David/Documents/phd/icecube/hierarchical_nu/tests/test_samples.npy", samples)
+
         return samples
 
 
     def test_everything(self, test_samples, model_file, random_seed):
-        #samples = np.load("/Users/David/Documents/phd/icecube/hierarchical_nu/tests/test_samples.npy")
         # Generate model for fitting
         stanc_options = {"include-paths": [STAN_PATH, os.path.dirname(model_file)]}
         #model_file = os.path.join(model_dir, "r2021")
@@ -228,8 +226,6 @@ class TestR2021():
                 )
 
                 true_energy = output.stan_variable("true_energy")
-                #np.savetxt(f"/Users/David/Documents/phd/icecube/hierarchical_nu/tests/test_samples_{c_e}_{c_d}.dat", np.array([true_energy.min(), true_energy.max()]))
-
                 # Tests, manual, have shown that this sometimes not the case!
                 assert true_energy.min() < e
 
