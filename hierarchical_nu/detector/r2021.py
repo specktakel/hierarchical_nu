@@ -1,24 +1,24 @@
-from ast import Return
-from pyclbr import Function
-from tokenize import String
+# from ast import Return
+# from pyclbr import Function
+# from tokenize import String
 from typing import Sequence, Tuple, Iterable
 import os
-import pandas as pd
+# import pandas as pd
 import numpy as np
-import sys
+# import sys
 
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.backend.stan_generator import ElseBlockContext, ElseIfBlockContext, IfBlockContext, StanGenerator
 from hierarchical_nu.stan.interface import STAN_PATH
 from ..utils.cache import Cache
 from ..backend import (
-    FunctionsContext,
+    #FunctionsContext,
     VMFParameterization,
-    PolynomialParameterization,
+    #PolynomialParameterization,
     TruncatedParameterization,
-    LogParameterization,
+    #LogParameterization,
     SimpleHistogram,
-    SimpleHistogram_rng,
+    #SimpleHistogram_rng,
     ReturnStatement,
     FunctionCall,
     DistributionMode,
@@ -784,14 +784,12 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 for c, dec in enumerate(self._declination_bins[:-1]):
                     self.set_fit_params(dec+0.01)
                     fig = self.plot_fit_params(self._fit_params[c], self._rebin_tE_binc[c])
-                    fig.savefig(f"/Users/David/Documents/phd/icecube/hi_nu_plots/fit_params_{c}.png")
                     fig = self.plot_parameterizations(
                         self._tE_binc[c],
                         self._rE_binc[c],
                         self._fit_params[c],
                         #rebin_tE_binc=rebin_tE_binc,
                     )
-                    fig.savefig(f"/Users/David/Documents/phd/icecube/hi_nu_plots/fit_parameterisation_{c}.png")
                     
                 
                 
@@ -1115,11 +1113,11 @@ class R2021DetectorModel(DetectorModel):
 
         super().__init__(mode, event_type="tracks")
 
-        #self._angular_resolution = R2021AngularResolution(mode, rewrite)
+        self._angular_resolution = R2021AngularResolution(mode, rewrite)
 
         self._energy_resolution = R2021EnergyResolution(mode, rewrite, gen_type)
 
-        #self._eff_area = R2021EffectiveArea()
+        self._eff_area = R2021EffectiveArea()
 
 
     def _get_effective_area(self) -> R2021EffectiveArea:
@@ -1152,8 +1150,8 @@ class R2021DetectorModel(DetectorModel):
         cls.logger.info("Generating r2021 stan code.")
         with StanGenerator() as cg:
             instance = cls(mode=mode, rewrite=rewrite, gen_type=gen_type)
-            #instance.effective_area.generate_code()
-            #instance.angular_resolution.generate_code()
+            instance.effective_area.generate_code()
+            instance.angular_resolution.generate_code()
             instance.energy_resolution.generate_code()
             code = cg.generate()
         code = code.removeprefix("functions\n{")

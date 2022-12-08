@@ -129,3 +129,28 @@ class Events:
                 for key, value in zip(self._file_keys, self._file_values):
 
                     event_folder.create_dataset(key, data=value)
+
+                
+    @classmethod
+    def from_ev_file(cls, p: str):
+        """
+        Load events from the 2021 data release
+        :param p: string of period to be loaded.
+        :return: :class:`hierarchical_nu.events.Events`
+        """
+
+        from icecube_tools.utils.data import RealEvents
+
+        # Borrow from icecube_tools
+        events = RealEvents.from_event_files(p)
+        # Read in relevant data
+        ra = events.ra[p]
+        dec = events.dec[p]
+        reco_energy = events.reco_energy[p] * u.GeV
+        # Conversion from 50% containment to 68% is already done in RealEvents
+        ang_err = events.ang_err[p] * u.deg
+        types = ra.size * [TRACKS]
+        coords = SkyCoord(ra, dec, frame='icrs', unit=u.deg)
+
+        return cls(reco_energy, coords, types, ang_err)
+
