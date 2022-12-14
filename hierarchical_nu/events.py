@@ -4,8 +4,20 @@ import h5py
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from icecube_tools.utils.data import available_irf_periods
+
 TRACKS = 0
 CASCADES = 1
+
+IC40 = 0
+IC59 = 1
+IC79 = 2
+IC86_I = 3
+IC86_II = 4
+
+peridos = {}
+
+# Translate IRF period into integer from 0 to 4 (IC40 to IC86_II)
 
 
 class Events:
@@ -147,10 +159,10 @@ class Events:
         ra = events.ra[p]
         dec = events.dec[p]
         reco_energy = events.reco_energy[p] * u.GeV
+        period = 
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = events.ang_err[p] * u.deg
         types = ra.size * [TRACKS]
         coords = SkyCoord(ra, dec, frame='icrs', unit=u.deg)
-
-        return cls(reco_energy, coords, types, ang_err)
+        ev = cls(reco_energy, coords, types, ang_err)
 

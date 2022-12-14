@@ -49,10 +49,12 @@ Classes implement organisation of data and stan code generation.
 """
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 Cache.set_cache_dir(".cache")
 
 IRF_PERIOD = "IC86_II"
+LOGNORM = "lognorm"
+HISTOGRAM = "histogram"
 
 
 class HistogramSampler():
@@ -461,7 +463,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         gen_type: str = "histogram"
     ) -> None:
         """
-        Instanciate class.
+        Instantiate class.
         :param mode: DistributionMode.PDF or .RNG (fitting or simulating)
         :parm rewrite: bool, True if cached files should be overwritten,
                        if there are no cached files they will be generated either way
@@ -791,8 +793,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         #rebin_tE_binc=rebin_tE_binc,
                     )
                     
-                
-                
+                self._poly_params_mu = self._poly_params_mu__.copy()
+                self._poly_params_sd = self._poly_params_sd__.copy()
+                self._poly_limits = self._poly_limits__.copy()
+                self._eres = self._eres__
 
                 # Save polynomial
                 with Cache.open(self.CACHE_FNAME_LOGNORM, "wb") as fr:
@@ -801,23 +805,14 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         fr,
                         eres=eres,
                         tE_bin_edges=tE_bin_edges,
-                        # rE_bin_edges=rE_bin_edges,
+                        rE_bin_edges=rE_bin_edges,
                         poly_params_mu=self._poly_params_mu,
                         poly_params_sd=self._poly_params_sd,
                         poly_limits=self.poly_limits,
                         fit_params=self._fit_params
                     )
-                self._poly_params_mu = self._poly_params_mu__.copy()
-                self._poly_params_sd = self._poly_params_sd__.copy()
-                self._poly_limits = self._poly_limits__.copy()
-                self._eres = self._eres__
+                
 
-            
-            
-
-            
-            
-            
         else:
             # Check cache
             if self.CACHE_FNAME_HISTOGRAM in Cache and not self._rewrite:
@@ -1101,14 +1096,14 @@ class R2021DetectorModel(DetectorModel):
     event_types = ["tracks"]
 
     logger = logging.getLogger(__name__+".R2021DetectorModel")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
-        event_type: str = "tracks",
-        rewrite: bool = True,
-        gen_type: str = "lognorm"
+        event_type: str="tracks",
+        rewrite: bool=True,
+        gen_type: str="lognorm"
     ) -> None:
 
         super().__init__(mode, event_type="tracks")

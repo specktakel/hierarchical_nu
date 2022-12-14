@@ -561,7 +561,7 @@ class StanSimInterface(StanInterface):
 
             # Get the relative exposure weights of all sources
             # This will be used to sample the labels
-            # Aslo sample the number of events
+            # Also sample the number of events
             if "tracks" in self._event_types:
 
                 self._Nex_t << FunctionCall([self._F, self._eps_t], "get_Nex")
@@ -792,6 +792,7 @@ class StanSimInterface(StanInterface):
                         #self._aeff_factor << self._dm_pdf["tracks"].effective_area(
                         #    self._E[i], self._omega
                         #)
+                        StringExpression(["print(E[i])"])
                         self._aeff_factor << self._dm_rng["tracks"].effective_area(
                             self._E[i], self._omega
                         )
