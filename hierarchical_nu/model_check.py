@@ -277,7 +277,7 @@ class ModelCheck:
                 ax[v].hist(
                     self.results[var_name][i],
                     color="#017B76",
-                    alpha=0.05,
+                    alpha=0.1,
                     histtype="step",
                     bins=bins,
                     lw=1.0,
