@@ -71,6 +71,7 @@ class ModelCheck:
             sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
+            print("expected events:", Nex)
             Nex_per_comp = sim._expected_Nnu_per_comp
 
             # Truths
