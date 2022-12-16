@@ -158,7 +158,8 @@ class Simulation:
             iter_sampling=1,
             chains=1,
             fixed_param=True,
-            seed=seed
+            seed=seed,
+            show_console=verbose
         )
 
         self._sim_output = sim_output

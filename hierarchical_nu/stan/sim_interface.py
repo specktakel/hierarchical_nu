@@ -70,7 +70,7 @@ class StanSimInterface(StanInterface):
         if detector_model_type == R2021DetectorModel:
             if "r2021_rng.stan" not in includes:
                 includes.append("r2021_rng.stan")
-            R2021DetectorModel.generate_code(DistributionMode.RNG, rewrite=True, gen_type="histogram")
+            R2021DetectorModel.generate_code(DistributionMode.RNG, rewrite=False, gen_type="histogram")
 
         super().__init__(
             output_file=output_file,

@@ -460,7 +460,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        gen_type: str = "histogram"
+        gen_type: str = "histogram",
+        make_plots: bool = False
     ) -> None:
         """
         Instantiate class.
@@ -468,6 +469,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         :parm rewrite: bool, True if cached files should be overwritten,
                        if there are no cached files they will be generated either way
         :param gen_type: "histogram" or "lognorm": Which type should be used for simulation/fitting
+        :param make_plots: bool, true if plots of parameterisation in case of lognorm should be made
         """
 
         self.irf = R2021IRF.from_period(IRF_PERIOD)
@@ -476,6 +478,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self._rewrite = rewrite
         logger.info("Forced energy rewriting: {}".format(rewrite))
         self.mode = mode
+        self.make_plots = make_plots
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
         self._poly_limits: Sequence = []
@@ -782,16 +785,17 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                 # Save values
                 self._tE_bin_edges = tE_bin_edges
-                # self._rE_bin_edges = rE_bin_edges
-                for c, dec in enumerate(self._declination_bins[:-1]):
-                    self.set_fit_params(dec+0.01)
-                    fig = self.plot_fit_params(self._fit_params[c], self._rebin_tE_binc[c])
-                    fig = self.plot_parameterizations(
-                        self._tE_binc[c],
-                        self._rE_binc[c],
-                        self._fit_params[c],
-                        #rebin_tE_binc=rebin_tE_binc,
-                    )
+                #self._rE_bin_edges = rE_bin_edges
+                if self.make_plots:
+                    for c, dec in enumerate(self._declination_bins[:-1]):
+                        self.set_fit_params(dec+0.01)
+                        fig = self.plot_fit_params(self._fit_params[c], self._rebin_tE_binc[c])
+                        fig = self.plot_parameterizations(
+                            self._tE_binc[c],
+                            self._rE_binc[c],
+                            self._fit_params[c],
+                            #rebin_tE_binc=rebin_tE_binc,
+                        )
                     
                 self._poly_params_mu = self._poly_params_mu__.copy()
                 self._poly_params_sd = self._poly_params_sd__.copy()

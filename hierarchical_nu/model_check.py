@@ -347,7 +347,7 @@ class ModelCheck:
             sim.precomputation(self._exposure_integral)
             sim.set_stan_filename(file_config["sim_filename"])
             sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
-            sim.run(seed=s)
+            sim.run(seed=s, verbose=True)
             self.sim = sim
 
             lam = sim._sim_output.stan_variable("Lambda")[0]
@@ -367,7 +367,7 @@ class ModelCheck:
             fit.precomputation(exposure_integral=sim._exposure_integral)
             fit.set_stan_filename(file_config["fit_filename"])
             fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
-            fit.run(seed=s)
+            fit.run(seed=s, show_progress=True)
 
             self.fit = fit
 
