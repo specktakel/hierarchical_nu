@@ -48,8 +48,8 @@ class ParameterConfig:
     Emin_det_tracks: float = 1e5  # u.GeV
     Emin_det_cascades: float = 6e4  # u.GeV
 
-    # Can be "icecube", "northern_tracks" or "cascades"
-    detector_model_type: str = "icecube"
+    # Can be "icecube", "northern_tracks", "cascades", or "r2021"
+    detector_model_type: str = "r2021"
 
     obs_time: float = 10  # years
 

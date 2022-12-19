@@ -16,6 +16,7 @@ from hierarchical_nu.source.source import PointSource, Sources
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
@@ -71,7 +72,6 @@ class ModelCheck:
             sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
-            print("expected events:", Nex)
             Nex_per_comp = sim._expected_Nnu_per_comp
 
             # Truths
@@ -395,6 +395,10 @@ class ModelCheck:
 
             dm = IceCubeDetectorModel
 
+        elif dm_key == "r2021":
+
+            dm = R2021DetectorModel
+
         else:
 
             raise ValueError("Detector model key in config not recognised")
@@ -487,6 +491,6 @@ def _initialise_sources():
     sources = Sources()
     sources.add(point_source)
     sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
-    sources.add_atmospheric_component()
+    #sources.add_atmospheric_component()
 
     return sources

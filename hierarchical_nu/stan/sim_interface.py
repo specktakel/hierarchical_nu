@@ -644,13 +644,14 @@ class StanSimInterface(StanInterface):
             # mode to have all functions included.
             # This will add to the functions section of the Stan file automatically.
             for event_type in self._event_types:
-                if self.detector_model_type == R2021DetectorModel:
+                if self.detector_model_type == R2021DetectorModel and event_type == TRACKS:
                     self._dm_rng[event_type] = self.detector_model_type(
                         mode=DistributionMode.RNG,
                         event_type=event_type,
                         gen_type="histogram",
-                        rewrite=True
+                        rewrite=False
                     )
+
                 else:
                     self._dm_rng[event_type] = self.detector_model_type(
                         mode=DistributionMode.RNG,

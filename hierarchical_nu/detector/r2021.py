@@ -876,7 +876,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         Cumulative Lognormal mixture above xth with n_components.
         """
 
-        def _cumulative_model(xth, *pars):
+        def _cumulative_model(xth, pars):
             result = 0
             for i in range(n_components):
                 result += (1 / n_components) * stats.lognorm.cdf(
