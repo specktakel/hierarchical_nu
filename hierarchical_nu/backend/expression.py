@@ -92,7 +92,7 @@ class _BaseExpression(Contextable, metaclass=ABCMeta):
 
 
 # Define type union for stanable types
-TExpression = Union[_BaseExpression, str, float, int]
+TExpression = Union[_BaseExpression, str, float, int, slice]
 TListTExpression = List[TExpression]
 
 
@@ -112,7 +112,12 @@ class Expression(_BaseExpression):
 
     def __getitem__(self: _BaseExpression, key: TExpression):
 
-        stan_code: TListTExpression = [self, "[", key, "]"]
+        if isinstance(key, slice):
+            start = key.start
+            stop = key.stop
+            stan_code: TListTExpression = [self, "[", start, ":", stop, "]"]
+        else:
+            stan_code: TListTExpression = [self, "[", key, "]"]
 
         return Expression([self, key], stan_code)
 
@@ -182,6 +187,10 @@ class Expression(_BaseExpression):
 
     def __req__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "==", True)
+
+    def __mod__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "%")
+
 
     """
     Comparisons are used internally to sort contexts, FIX

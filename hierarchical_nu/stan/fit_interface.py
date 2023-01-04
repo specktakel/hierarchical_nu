@@ -18,8 +18,15 @@ from hierarchical_nu.backend.stan_generator import (
     ForLoopContext,
     IfBlockContext,
     ElseBlockContext,
+    ElseIfBlockContext,
     ModelContext,
     FunctionCall,
+    UserDefinedFunction
+)
+
+from hierarchical_nu.backend.expression import (
+    ReturnStatement,
+    StringExpression,
 )
 
 from hierarchical_nu.backend.variable_definitions import (
@@ -27,6 +34,8 @@ from hierarchical_nu.backend.variable_definitions import (
     ForwardArrayDef,
     ParameterDef,
     ParameterVectorDef,
+    VariableDef
+    
 )
 
 from hierarchical_nu.backend.expression import StringExpression
@@ -162,6 +171,60 @@ class StanFitInterface(StanInterface):
                 self._atmo_flux_integral = self._atmo_flux.total_flux_int.to(
                     1 / (u.m**2 * u.s)
                 ).value
+            
+            # Create a function to be used in map_rect in the model block
+            # Signature is determined by stan's `map_rect` function
+            lp_reduce = UserDefinedFunction(
+                "lp_reduce",
+                ["global", "local", "real_data", "int_data"],
+                ["vector", "vector", "array[] real", "array[] int"],
+                "vector"
+            )
+
+            with lp_reduce:
+                # Define function block
+                # First, unpack arguments
+                # StringExpression(["[src_index, L, diff_index, F_diff, F_atmo]'"])
+                if self._shared_src_index:
+                    src_index = ForwardVariableDef("src_index", "real")
+                    src_index << StringExpression(["global[1]"])
+                    idx = 2
+                else:
+                    src_index = ForwardVariableDef(
+                        "src_index",
+                        "vector["+str(len(self.sources._point_sources))+"]"
+                    )
+                    idx = len(self.sources._point_sources) + 1
+
+                if self.sources.diffuse:
+                    diff_index = ForwardVariableDef("diff_index", "real")
+                    diff_index << StringExpression(["global[", idx, "]"])
+                    idx += 1
+
+                logF = ForwardVariableDef("logF", "vector["+str(self.sources.N)+"]")
+                logF << StringExpression(["global[", idx, ":]"])
+                
+
+                """
+                # Copypasta 
+                if self._shared_src_index:
+                    self._global_pars[1] << self._src_index
+                    idx = 2
+                else:
+                    self._global_pars[1:self._Ns] << self._src_index
+                    idx = len(self.sources._point_sources) + 1
+                
+                if self.sources.diffuse:
+                    self._global_pars[idx] << self._diff_index
+                    idx += 1
+                
+                self._global_pars[idx:idx+self.sources.N-1] << self._logF
+                """
+
+                #Esrc = ForwardVariableDef("Esrc", "vector")
+                #Esrc << StringExpression("local")
+                ReturnStatement(["[2.]'"])
+
 
     def _data(self):
 
@@ -170,6 +233,10 @@ class StanFitInterface(StanInterface):
             # Total number of detected events
             self._N = ForwardVariableDef("N", "int")
             self._N_str = ["[", self._N, "]"]
+
+            # Number of shards for multi-threading
+            self._N_shards = ForwardVariableDef("N_shards", "int")
+            self._N_shards_str = ["[", self._N_shards, "]"]
 
             # Detected directions as unit vectors
             self._omega_det = ForwardArrayDef(
@@ -312,6 +379,102 @@ class StanFitInterface(StanInterface):
 
                     with ElseBlockContext():
                         self._N_t << self._N_t + 1
+
+            # Create the rectangular data blocks for use in `map_rect`
+            # Number of events per shard, integer division rounds down, so increase by one and pad last shard with dummy-entries
+            self._J = ForwardVariableDef("J", "int")
+            self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
+            self._N_mod_J << self._N % self._N_shards
+            with IfBlockContext([self._N_mod_J == 0]):
+                self._J << StringExpression(["(N%/%N_shards)"])
+            with ElseBlockContext():
+                self._J << StringExpression(["(N%/%N_shards) + 1"])
+            self._J_str = ["[", self._J, "]"]
+            StringExpression(["print(N)"])
+            StringExpression(["print(J)"])
+            StringExpression(["print(N_mod_J)"])
+
+            # Create data structures for integer and real data
+            # neded integer data
+            # N, Ns, diff, atmo, shared index, shared lumi, Ngrid (compare Ngrid with J), event_type
+
+            # needed real data
+            # in length of events:
+            # N: kappa, Edet, omega_det (x3)
+            # Ns: varpi (x3), z, P_det_grid (Ns+atmo+diff, Ngrid)
+            # Ngrid: Egrid, P_det_grid(Ns+atmo+diff, Ngrid)
+            # scalar: Esrc_min, Esrc_max
+            """
+            # P_det_grid should be stored transposed, I guess
+            second_dim = ForwardVariableDef("second_dim", "int")
+            with IfBlockContext([StringExpression([self._J, ">=", self._Ngrid])]):
+                # if J greater than Ngrid, use J as second dim, else Ngrid
+                # TODO re-work this in the end when I know how large the array is
+                second_dim << self._J
+            with ElseBlockContext():
+                second_dim << self._Ngrid
+
+            self.real_data = ForwardArrayDef(
+                "real_data",
+                "real",
+                ["[",self._N_shards, ", ", second_dim, "]"])
+
+            self.int_data = ForwardArrayDef(
+                "int_data",
+                "int",
+                ["[", self._N_shards, ", ", self._J]
+            )
+       
+            with ForLoopContext(1, self._N_shards, "i") as i:
+                Ns_tot = ForwardVariableDef("Ns_tot", "int")
+                # Ns_tot << 
+                start = ForwardVariableDef("start", "int")
+                end = ForwardVariableDef("end", "int")
+                start << (i - 1) * self._J + 1
+                end << i * self._J
+
+                self.real_data[i][1][1:self._J] << self._Edet[start:end]
+                self.real_data[i][2][1:self._J] << self._kappa[start:end]
+                with ForLoopContext() as f:
+                    self.real_data[i][2+f][1:self._J] << self._omega_det[start:end]
+                # z has one entry more if there is a diffuse source
+                if self.sources.diffuse:
+                    self.real_data[i][3][1:self._Ns+1] << self._z
+                else:
+                    self.real_data[i][3][1:self._Ns] << self._z
+                self.real_data[i][3][self._Ns+1] << self._Esrc_min
+                self.real_data[i][3][self._Ns+2] << self._Esrc_min
+                self.real_data[i][4][1:self._Ngrid] << self._Eg   # maybe cast to array
+                #loop over all source components, including backgrounds if they exist
+                
+                with ForLoopContext(1:self._Ns, "l") as l:
+                    
+
+
+                self.int_data[i][1] << self._N
+                self.int_data[i][2] << self._Ns
+                if self.sources.diffuse:
+                    self.int_data[i][3] << 1
+                else:
+                    self.int_data[i][3] << 0
+                if self.sources.atmospheric:
+                    self.int_data[i][4] << 1
+                else:
+                    self.int_data[i][4] << 0
+                self.int_data[i][5] << self._Ngrid
+
+                with IfBlockContext([i != self._N_shards, "||", self._N_mod_J == 0]):
+                    self.int_data[i][6:6+self._J] << self._Esrc[start:end]
+
+                with ElseBlockContext():
+                    self.int_data[i][6:6+self._N_mod_J] << self._Esrc[start:self._N]
+            """
+
+                
+
+
+            
+
 
     def _parameters(self):
         """
@@ -465,6 +628,45 @@ class StanFitInterface(StanInterface):
 
                 self._logp_c = ForwardVariableDef("logp_c", "real")
                 self._logp_t = ForwardVariableDef("logp_t", "real")
+
+            # Create vector of parameters
+            # Global pars are src_index, diff_index, L, F_atmo
+            # Count number of pars:
+            num_of_pars = 0
+            global_pars_string = ""
+            if self._shared_luminosity:
+                num_of_pars += 1
+                global_pars_string += "L"
+            else:
+                num_of_pars += self._Ns
+
+            if self._shared_src_index:
+                num_of_pars += 1
+            else:
+                num_of_pars += self._Ns
+
+            if self.sources.diffuse:
+                num_of_pars += 2
+            if self.sources.atmospheric:
+                num_of_pars += 1
+
+            self._global_pars = ForwardVariableDef("global_pars", f"vector[{num_of_pars}]")
+            
+
+            self._local_pars = ForwardArrayDef("local_pars", "vector[J]", self._N_shards_str)
+
+            with ForLoopContext(1, self._N_shards, "i") as i:
+                start = ForwardVariableDef("start", "int")
+                end = ForwardVariableDef("end", "int")
+                start << (i - 1) * self._J + 1
+                end << i * self._J
+                with IfBlockContext([i != self._N_shards, "||", self._N_mod_J == 0]):
+                    self._local_pars[i] << self._Esrc[start:end]
+                #with ElseIfBlockContext([self._N_mod_J == 0]):
+                #    self._local_pars[i] << self._Esrc[start:self._N]
+                with ElseBlockContext():
+                    self._local_pars[i][start:self._N_mod_J] << self._Esrc[start:self._N]
+
 
             self._F_src << 0.0
             self._Nex_src << 0.0
@@ -736,8 +938,21 @@ class StanFitInterface(StanInterface):
 
             # Main model loop where likelihood is evaluated
             self._logF << StringExpression(["log(", self._F, ")"])
+            #idx = ForwardVariableDef("idx", "int")
+            if self._shared_src_index:
+                self._global_pars[1] << self._src_index
+                idx = 2
+            else:
+                self._global_pars[1:self._Ns] << self._src_index
+                idx = len(self.sources._point_sources) + 1
+            if self.sources.diffuse:
+                self._global_pars[idx] << self._diff_index
+                idx += 1
+            
+            self._global_pars[idx:idx+self.sources.N-1] << self._logF
 
             # Product over events => add log likelihoods
+            # Starting here, everything needs to go to lp_reduce!
             with ForLoopContext(1, self._N, "i") as i:
 
                 self._lp[i] << self._logF
