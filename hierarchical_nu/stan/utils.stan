@@ -181,11 +181,11 @@ vector linspace(real A, real B, int N) {
  */
 real eval_poly1d(real x, vector coeffs){
   int N = num_elements(coeffs);
-  real res=0;
+  array[N] real res;
   for(i in 1:N){
-    res += coeffs[i]*pow(x, N-i);
+    res[i] = coeffs[i]*pow(x, N-i);
   }
-  return res;
+  return sum(res);
 }
   
 real truncate_value(real x, real min_val, real max_val){

@@ -379,7 +379,7 @@ class R2021EffectiveArea(EffectiveArea):
 
     CACHE_FNAME = "aeff_r2021.npz"
 
-    def __init__(self) -> None:
+    def __init__(self, period: str="IC86_II") -> None:
 
         self._func_name = "R2021EffectiveArea"
 
@@ -1456,7 +1456,19 @@ class R2021DetectorModel(DetectorModel):
         therefore the functions block statement is deleted before writing the code to a file.
         """
 
-        cls.logger.info("Generating r2021 stan code.")
+        
+        # check if stan code is already generated, delegating the task of checking for correct version
+        # to the end-user
+        files = os.listdir(STAN_GEN_PATH)
+        if not rewrite:
+            if mode == DistributionMode.PDF and cls.PDF_FILENAME in files:
+                return os.path.join(path, cls.PDF_FILENAME)
+            elif mode == DistributionMode.RNG and cls.RNG_FILENAME in files:
+                return os.path.join(path, cls.RNG_FILENAME)
+            
+        else:
+            cls.logger.info("Generating r2021 stan code.")
+
         with StanGenerator() as cg:
             instance = cls(mode=mode, rewrite=rewrite, gen_type=gen_type)
             instance.effective_area.generate_code()

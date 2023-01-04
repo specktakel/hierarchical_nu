@@ -83,10 +83,10 @@ class ModelCheck:
             self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
                 flux_unit
             ).value
-            atmo_bg = self._sources.atmospheric
-            self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
-                flux_unit
-            ).value
+            # atmo_bg = self._sources.atmospheric
+            # self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
+            #    flux_unit
+            #).value
             self.truths["L"] = (
                 Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
             )
@@ -98,10 +98,9 @@ class ModelCheck:
             self.truths["Nex"] = Nex
             self.truths["Nex_src"] = Nex_per_comp[0]
             self.truths["Nex_diff"] = Nex_per_comp[1]
-            self.truths["Nex_atmo"] = Nex_per_comp[2]
+            # self.truths["Nex_atmo"] = Nex_per_comp[2]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
             self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
-
         self._default_var_names = [key for key in self.truths]
 
     @staticmethod
@@ -344,10 +343,11 @@ class ModelCheck:
             sys.stderr.write("Run %i\n" % i)
 
             # Simulation
-            sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
-            sim.precomputation(self._exposure_integral)
-            sim.set_stan_filename(file_config["sim_filename"])
-            sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
+            if i == 0:
+                sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
+                sim.precomputation(self._exposure_integral)
+                sim.set_stan_filename(file_config["sim_filename"])
+                sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
             sim.run(seed=s, verbose=True)
             self.sim = sim
 
@@ -358,16 +358,17 @@ class ModelCheck:
             self.events = sim.events
 
             # Fit
-            fit = StanFit(
-                self._sources,
-                self._detector_model_type,
-                sim.events,
-                self._obs_time,
-                priors=self.priors,
-            )
-            fit.precomputation(exposure_integral=sim._exposure_integral)
-            fit.set_stan_filename(file_config["fit_filename"])
-            fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
+            if i == 0:
+                fit = StanFit(
+                    self._sources,
+                    self._detector_model_type,
+                    sim.events,
+                    self._obs_time,
+                    priors=self.priors,
+                )
+                fit.precomputation(exposure_integral=sim._exposure_integral)
+                fit.set_stan_filename(file_config["fit_filename"])
+                fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
             fit.run(seed=s, show_progress=True)
 
             self.fit = fit
@@ -491,6 +492,6 @@ def _initialise_sources():
     sources = Sources()
     sources.add(point_source)
     sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
-    #sources.add_atmospheric_component()
+    sources.add_atmospheric_component()
 
     return sources

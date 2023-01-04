@@ -159,7 +159,7 @@ class Simulation:
             chains=1,
             fixed_param=True,
             seed=seed,
-            show_console=verbose
+            show_console=True
         )
 
         self._sim_output = sim_output
