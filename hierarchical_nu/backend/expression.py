@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, Sequence, List
+from typing import Union, Sequence, List, Tuple
 import logging
 from .stan_code import StanCodeBit, TListStrStanCodeBit
 from .code_generator import Contextable
@@ -92,7 +92,7 @@ class _BaseExpression(Contextable, metaclass=ABCMeta):
 
 
 # Define type union for stanable types
-TExpression = Union[_BaseExpression, str, float, int, slice]
+TExpression = Union[_BaseExpression, str, float, int, slice, Tuple]
 TListTExpression = List[TExpression]
 
 
@@ -112,7 +112,20 @@ class Expression(_BaseExpression):
 
     def __getitem__(self: _BaseExpression, key: TExpression):
 
-        if isinstance(key, slice):
+        if isinstance(key, tuple):
+            stan_code: TListTExpression = [self, "["]
+            for c, k in enumerate(key, start=-len(key)+1):
+                if isinstance(k, slice):
+                    stan_code += [k.start, ":", k.stop]
+                else:
+                    stan_code += [k]
+                # If it's not the last key-entry, add a comma
+                if c != 0:
+                    stan_code += [","]
+                # Last entry: close bracket
+                else:
+                    stan_code += ["]"]
+        elif isinstance(key, slice):
             start = key.start
             stop = key.stop
             stan_code: TListTExpression = [self, "[", start, ":", stop, "]"]

@@ -34,8 +34,7 @@ from hierarchical_nu.backend.variable_definitions import (
     ForwardArrayDef,
     ParameterDef,
     ParameterVectorDef,
-    VariableDef
-    
+    InstantVariableDef
 )
 
 from hierarchical_nu.backend.expression import StringExpression
@@ -181,14 +180,13 @@ class StanFitInterface(StanInterface):
             lp_reduce = UserDefinedFunction(
                 "lp_reduce",
                 ["global", "local", "real_data", "int_data"],
-                ["vector", "vector", "array[] real", "array[] int"],
+                ["vector", "vector", "array[,] real", "array[] int"],
                 "vector"
             )
 
             with lp_reduce:
                 # Define function block
                 # First, unpack arguments
-                # StringExpression(["[src_index, L, diff_index, F_diff, F_atmo]'"])
                 if self._shared_src_index:
                     src_index = ForwardVariableDef("src_index", "real")
                     src_index << StringExpression(["global[1]"])
@@ -207,6 +205,65 @@ class StanFitInterface(StanInterface):
 
                 logF = ForwardVariableDef("logF", "vector["+str(self.sources.N)+"]")
                 logF << StringExpression(["global[", idx, ":]"])
+
+                #Unpack integer data, needed to interpret real data
+                N = ForwardVariableDef("N", "int")
+                N << StringExpression(["int_data[1]"])
+                Ns = ForwardVariableDef("Ns", "int")
+                Ns << StringExpression(["int_data[2]"])
+                atmo = ForwardVariableDef("atmo", "int")
+                diffuse = ForwardVariableDef("diffuse", "int")
+                diffuse << StringExpression(["int_data[3]"])
+                atmo << StringExpression(["int_data[4]"])
+                Ngrid = ForwardVariableDef("Ngrid", "int")
+                Ngrid << StringExpression(["int_data[5]"])
+
+                event_type = ForwardArrayDef("event_type", "int", ["[N]"])
+                event_type << StringExpression(["int_data[6:5+N]"])
+                Edet = ForwardVariableDef("Edet", "vector[N]")
+                Edet << StringExpression(["to_vector(real_data[1, 1:N])"])
+                kappa = ForwardVariableDef("kappa", "vector[N]")
+                kappa << StringExpression(["to_vector(real_data[2, 1:N])"])
+                omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
+
+                varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
+                z = ForwardVariableDef("z", "vector[Ns+diffuse]")
+                z << StringExpression(["to_vector(real_data[9, 1:Ns+diffuse])"])
+
+                with ForLoopContext(1, N, "i") as i:
+                    omega_det[i] << StringExpression(["to_vector(real_data[3:5, i])"])
+                with ForLoopContext(1, Ns, "i") as i:
+                    varpi[i] << StringExpression(["to_vector(real_data[6:8, i])"])
+                Esrc_min = ForwardVariableDef("Esrc_min", "real")
+                Esrc_max = ForwardVariableDef("Esrc_max", "real")
+                Esrc_min << StringExpression(["real_data[10, 1]"])
+                Esrc_max << StringExpression(["real_data[10, 2]"])
+
+                Egrid = ForwardVariableDef("Egrid", "vector[Ngrid]")
+                Egrid << StringExpression(["to_vector(real_data[11, 1:Ngrid])"])
+
+        
+                if "tracks" in self._event_types and "cascades" in self._event_types:
+                    Pdet_grid_t = ForwardArrayDef("Pdet_grid_t", "vector[Ngrid]", ["[Ns+atmo+diffuse]"])
+                    Pdet_grid_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", ["[Ns+atmo+diffuse]"])
+                    with ForLoopContext(1, "Ns+atmo+diffuse", "f") as f:
+                        Pdet_grid_t[f] << StringExpression(["to_vector(real_data[11+f, 1:Ngrid])"])
+                        Pdet_grid_c[f] << StringExpression(["to_vector(real_data[11+f+Ns+atmo+diffuse, 1:Ngrid])"])
+                elif "tracks" in self._event_types:
+                    Pdet_grid_t = ForwardArrayDef("Pdet_grid_t", "vector[Ngrid]", ["[Ns+atmo+diffuse]"])
+                    with ForLoopContext(1, "Ns+atmo+diffuse", "f") as f:
+                        Pdet_grid_t[f] << StringExpression(["to_vector(real_data[11+f, 1:Ngrid])"])
+                        
+                else:
+                    Pdet_grid_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", ["[Ns+atmo+diffuse]"])
+                    with ForLoopContext(1, Ns+atmo+diffuse, "f") as f:
+                        Pdet_grid_c[f] << StringExpression(["to_vector(real_data[11+f, 1:Ngrid])"])
+                        
+
+
+
+
+                
                 
 
                 """
@@ -238,9 +295,15 @@ class StanFitInterface(StanInterface):
             self._N = ForwardVariableDef("N", "int")
             self._N_str = ["[", self._N, "]"]
 
+            
+
             # Number of shards for multi-threading
             self._N_shards = ForwardVariableDef("N_shards", "int")
             self._N_shards_str = ["[", self._N_shards, "]"]
+
+            # Max number of events per shard
+            self._J = ForwardVariableDef("J", "int")
+
 
             # Detected directions as unit vectors
             self._omega_det = ForwardArrayDef(
@@ -265,6 +328,9 @@ class StanFitInterface(StanInterface):
             self._Ns_str = ["[", self._Ns, "]"]
             self._Ns_1p_str = ["[", self._Ns, "+1]"]
             self._Ns_2p_str = ["[", self._Ns, "+2]"]
+
+            # Total number of sources
+            self._Ns_tot = ForwardVariableDef("Ns_tot", "int")
 
             # True directions and distances of point sources
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
@@ -386,21 +452,23 @@ class StanFitInterface(StanInterface):
 
             # Create the rectangular data blocks for use in `map_rect`
             # Number of events per shard, integer division rounds down, so increase by one and pad last shard with dummy-entries
-            self._J = ForwardVariableDef("J", "int")
+            #self._J = InstantVariableDef("J", "int", "")
             self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
             self._N_mod_J << self._N % self._N_shards
-            with IfBlockContext([self._N_mod_J == 0]):
-                self._J << StringExpression(["(N%/%N_shards)"])
-            with ElseBlockContext():
-                self._J << StringExpression(["(N%/%N_shards) + 1"])
-            self._J_str = ["[", self._J, "]"]
             StringExpression(["print(N)"])
-            StringExpression(["print(J)"])
+            StringExpression(["print(N_shards)"])
             StringExpression(["print(N_mod_J)"])
+            #with IfBlockContext([self._N_mod_J == 0]):
+            #    self._J = InstantVariableDef("J", "int", "(N%/%N_shards)")
+            #with ElseBlockContext():
+            #    self._J = InstantVariableDef("J", "int", "(N%/%N_shards) + 1")
+            #self._J_str = ["[", self._J, "]"]
+            
+            StringExpression(["print(J)"])
 
             # Create data structures for integer and real data
             # neded integer data
-            # N, Ns, diff, atmo, shared index, shared lumi, Ngrid (compare Ngrid with J), event_type
+            # N, event_type
 
             # needed real data
             # in length of events:
@@ -408,39 +476,76 @@ class StanFitInterface(StanInterface):
             # Ns: varpi (x3), z, P_det_grid (Ns+atmo+diff, Ngrid)
             # Ngrid: Egrid, P_det_grid(Ns+atmo+diff, Ngrid)
             # scalar: Esrc_min, Esrc_max
-            """
+            # second_dim = ForwardVariableDef("second_dim", "int")
             # P_det_grid should be stored transposed, I guess
-            second_dim = ForwardVariableDef("second_dim", "int")
+            """
             with IfBlockContext([StringExpression([self._J, ">=", self._Ngrid])]):
                 # if J greater than Ngrid, use J as second dim, else Ngrid
                 # TODO re-work this in the end when I know how large the array is
-                second_dim << self._J
+                self.real_data = ForwardArrayDef(
+                    "real_data",
+                    "real",
+                    ["[", self._N_shards, ", ", "11+Ns_tot", ", ", self._J, "]"]
+                )
             with ElseBlockContext():
-                second_dim << self._Ngrid
-
+                self.real_data = ForwardArrayDef(
+                    "real_data",
+                    "real",
+                    ["[", self._N_shards, ", ", "11+Ns_tot", ", ", self._Ngrid, "]"]
+                )
+            """
             self.real_data = ForwardArrayDef(
                 "real_data",
                 "real",
-                ["[",self._N_shards, ", ", second_dim, "]"])
+                ["[N_shards, 11+Ns_tot, J>=Ngrid ? J : Ngrid]"]
+            )
+            
+            
 
             self.int_data = ForwardArrayDef(
                 "int_data",
                 "int",
-                ["[", self._N_shards, ", ", self._J]
+                ["[", self._N_shards, ", ", "J+5", "]"]
             )
        
             with ForLoopContext(1, self._N_shards, "i") as i:
-                Ns_tot = ForwardVariableDef("Ns_tot", "int")
-                # Ns_tot << 
                 start = ForwardVariableDef("start", "int")
                 end = ForwardVariableDef("end", "int")
+                insert_end = ForwardVariableDef("insert_end", "int")
                 start << (i - 1) * self._J + 1
-                end << i * self._J
+                with IfBlockContext([i != self._N_shards, "||", self._N_mod_J == 0]):
+                    end << i * self._J
+                    insert_end << self._J
+                with ElseBlockContext():
+                    end << start - 1 + self._N_mod_J
+                    insert_end << self._N_mod_J
+                self.real_data[i, 1, 1:insert_end] << FunctionCall([self._Edet[start:end]], "to_array_1d")
+                self.real_data[i, 2, 1:insert_end] << FunctionCall([self._kappa[start:end]], "to_array_1d")
 
-                self.real_data[i][1][1:self._J] << self._Edet[start:end]
-                self.real_data[i][2][1:self._J] << self._kappa[start:end]
-                with ForLoopContext() as f:
-                    self.real_data[i][2+f][1:self._J] << self._omega_det[start:end]
+                with ForLoopContext(1, insert_end, "f") as f:
+                    self.real_data[i, 3:5, f] << FunctionCall([self._omega_det[f]], "to_array_1d")
+                with ForLoopContext(1, self._Ns, "f") as f:
+                    self.real_data[i, 6:8, f] << FunctionCall([self._varpi[f]], "to_array_1d")
+                if self.sources.diffuse:
+                    self.real_data[i, 9, 1:"Ns+1"] << FunctionCall([self._z], "to_array_1d")
+                else:
+                    self.real_data[i, 9, 1:self._Ns] << FunctionCall([self._z], "to_array_1d")
+                self.real_data[i, 10, 1] << self._Esrc_min
+                self.real_data[i, 10, 2] << self._Esrc_max
+                self.real_data[i, 11, 1:self._Ngrid] << FunctionCall([self._Eg], "to_array_1d")
+                if "tracks" in self._event_types and "cascades" in self._event_types:
+                    with ForLoopContext(1, self._Ns_tot, "f") as f:
+                        self.real_data[i, "11+f", 1:self._Ngrid] << FunctionCall([self._Pg_t[f]], "to_array_1d")
+                        self.real_data[i, "11+f+Ns_tot", 1:self._Ngrid] << FunctionCall([self._Pg_c[f]], "to_array_1d")
+                elif "tracks" in self._event_types:
+                    with ForLoopContext(1, self._Ns_tot, "f") as f:
+                        self.real_data[i, "11+f", 1:self._Ngrid] << FunctionCall([self._Pg_t[f]], "to_array_1d")
+                else:
+                    with ForLoopContext(1, self._Ns_tot, "f") as f:
+                        self.real_data[i, "11+f", 1:self._Ngrid] << FunctionCall([self._Pg_c[f]], "to_array_1d")
+                    
+                
+                """
                 # z has one entry more if there is a diffuse source
                 if self.sources.diffuse:
                     self.real_data[i][3][1:self._Ns+1] << self._z
@@ -449,30 +554,34 @@ class StanFitInterface(StanInterface):
                 self.real_data[i][3][self._Ns+1] << self._Esrc_min
                 self.real_data[i][3][self._Ns+2] << self._Esrc_min
                 self.real_data[i][4][1:self._Ngrid] << self._Eg   # maybe cast to array
-                #loop over all source components, including backgrounds if they exist
                 
-                with ForLoopContext(1:self._Ns, "l") as l:
-                    
-
-
-                self.int_data[i][1] << self._N
-                self.int_data[i][2] << self._Ns
-                if self.sources.diffuse:
-                    self.int_data[i][3] << 1
-                else:
-                    self.int_data[i][3] << 0
-                if self.sources.atmospheric:
-                    self.int_data[i][4] << 1
-                else:
-                    self.int_data[i][4] << 0
-                self.int_data[i][5] << self._Ngrid
-
+                #loop over all source components, including backgrounds if they exist
+                """
+                #with ForLoopContext(1:self._Ns, "l") as l:
+                self.int_data[i, 1] << self._N     
+                self.int_data[i, 2] << self._Ns 
+                
+                self.int_data[i, 3] << 1 if self.sources.diffuse else 0
+                self.int_data[i, 4] << 1 if self.sources.atmospheric else 0
+                self.int_data[i, 5] << self._Ngrid
                 with IfBlockContext([i != self._N_shards, "||", self._N_mod_J == 0]):
-                    self.int_data[i][6:6+self._J] << self._Esrc[start:end]
-
+                    self.int_data[i, 6:"5+J"] << FunctionCall([FunctionCall([self._event_type[start:end]], "to_array_1d")], "to_int")
                 with ElseBlockContext():
-                    self.int_data[i][6:6+self._N_mod_J] << self._Esrc[start:self._N]
-            """
+                    self.int_data[i, 6:"5+N_mod_J"] << FunctionCall([FunctionCall([self._event_type[start:self._N]], "to_array_1d")], "to_int")
+
+                
+                #ForwardArrayDef("Pdet_grid_t", "vector[Ngrid]", N_pdet_str)
+                # Find out how many sources Ns+x
+                if "tracks" in self._event_types and "cascades" in self._event_types:
+                    with ForLoopContext(1, self._Ns_tot, "f") as f:
+                        self.real_data[i][10+f][1:self._Ngrid]
+
+                elif "tracks" in self._event_types:
+                    pass
+                else: 
+                    pass
+                StringExpression(["print(int_data[i])"])
+            
 
                 
 

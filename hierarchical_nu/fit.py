@@ -6,6 +6,8 @@ import collections
 from astropy import units as u
 import corner
 
+from math import ceil
+
 from cmdstanpy import CmdStanModel
 
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
@@ -156,7 +158,7 @@ class StanFit:
             iter_sampling=iterations,
             chains=chains,
             seed=seed,
-            show_console=show_progress,
+            show_console=True,
             show_progress=show_progress,
             **kwargs
         )
@@ -369,6 +371,11 @@ class StanFit:
 
         fit_inputs = {}
         fit_inputs["N"] = self._events.N
+        fit_inputs["N_shards"] = 4
+        fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
+        fit_inputs["Ns_tot"] = len(
+            [s for s in self._sources.sources]
+        )
         fit_inputs["Edet"] = self._events.energies.to(u.GeV).value
         fit_inputs["omega_det"] = self._events.unit_vectors
         fit_inputs["omega_det"] = [
