@@ -669,7 +669,7 @@ class StanFitInterface(StanInterface):
                 #with ElseIfBlockContext([self._N_mod_J == 0]):
                 #    self._local_pars[i] << self._Esrc[start:self._N]
                 with ElseBlockContext():
-                    self._local_pars[i][start:self._N_mod_J] << self._Esrc[start:self._N]
+                    self._local_pars[i][1:self._N_mod_J] << self._Esrc[start:self._N]
 
 
             self._F_src << 0.0
