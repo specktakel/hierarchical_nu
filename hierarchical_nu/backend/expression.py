@@ -150,6 +150,25 @@ class Expression(_BaseExpression):
         inputs += other
         return Expression(inputs, stan_code)
 
+    """
+    def __iadd__(self: _BaseExpression, other: Union[TExpression, TListTExpression]):
+        logger.debug("Assigning {} to {}".format(other, self))  # noqa: E501
+        logger.debug("My code: {}".format(self.stan_code))  # noqa: E501
+        if not isinstance(other, list):
+            other = [other]
+        stan_code: TListTExpression = [self, " += "]
+        stan_code += other
+
+        if self.output:
+            # Output node is already connected to something
+            logger.debug("Output is connected to: {}".format(self.output))  # noqa: E501
+
+        inputs: TListTExpression = [self]
+        inputs += other
+        return Expression(inputs, stan_code)
+    """   
+
+
     def _make_operator_expression(self, other: TExpression, op_code, invert=False):
         stan_code: TListTExpression = []
         if invert:
@@ -203,6 +222,9 @@ class Expression(_BaseExpression):
 
     def __mod__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "%")
+
+    def __rmod__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "%", True)
 
 
     """
