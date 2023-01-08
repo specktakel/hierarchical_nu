@@ -371,7 +371,7 @@ class StanFit:
 
         fit_inputs = {}
         fit_inputs["N"] = self._events.N
-        fit_inputs["N_shards"] = 4
+        fit_inputs["N_shards"] = 8
         fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
         fit_inputs["Ns_tot"] = len(
             [s for s in self._sources.sources]
