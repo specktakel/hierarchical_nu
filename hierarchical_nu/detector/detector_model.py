@@ -165,7 +165,7 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         """
         #s is width of lognormal
         #scale is ~expectation value
-        def _model(x, *pars):
+        def _model(x, pars):
             result = 0
             for i in range(n_components):
                 result += (1 / n_components) * stats.lognorm.pdf(
@@ -205,8 +205,6 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         """
 
         from scipy.optimize import least_squares
-        from iminuit import Minuit
-        from iminuit.cost import LeastSquares
 
         fit_params = []
 
@@ -237,7 +235,7 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 e_reso = e_reso / (e_reso.sum() * log10_bin_width)
 
                 residuals = Residuals((log10_rE_binc, e_reso), model)
-                ls = LeastSquares(log10_rE_binc, e_reso, np.ones_like(e_reso), model)
+
                 # Calculate seed as mean of the resolution to help minimizer
                 seed_mu = np.average(log10_rE_binc, weights=e_reso)
                 if ~np.isfinite(seed_mu):
@@ -246,43 +244,29 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 seed = np.zeros(n_components * 2)
                 bounds_lo: List[float] = []
                 bounds_hi: List[float] = []
-                names: List[str] = []
                 for i in range(n_components):
                     seed[2 * i] = seed_mu + 0.1 * (i + 1)
-                    seed[2 * i + 1] = 0.1
-                    names += [f"scale_{i}", f"s_{i}"]
+                    seed[2 * i + 1] = 0.02
                     bounds_lo += [0, 0.01]
                     bounds_hi += [8, 1]
-                #seed[0] = seed_mu - 1
 
-
-                
-                limits = [(l, h) for (l, h) in zip(bounds_lo, bounds_hi)]
-                m = Minuit(ls, *tuple(seed), name=names)
-                m.errordef = 1
-                m.errors = 0.1 * np.asarray(seed)
-                m.limits = limits
-                m.scipy(method="SLSQP")
                 # Fit using simple least squares
-                #res = least_squares(
-                #    residuals,
-                #    seed,
-                #    bounds=(bounds_lo, bounds_hi),
-                #)
-                temp = []
-                for i in range(n_components):
-                    temp += [m.values[f"scale_{i}"], m.values[f"s_{i}"]]
-                fit_params.append(temp)
+                res = least_squares(
+                    residuals,
+                    seed,
+                    bounds=(bounds_lo, bounds_hi),
+                )
+
                 # Check for label swapping
-                #mu_indices = np.arange(0, stop=n_components * 2, step=2)
-                #mu_order = np.argsort(res.x[mu_indices])
+                mu_indices = np.arange(0, stop=n_components * 2, step=2)
+                mu_order = np.argsort(res.x[mu_indices])
 
                 # Store fit parameters
-                #this_fit_pars: List = []
-                #for i in range(n_components):
-                #    mu_index = mu_indices[mu_order[i]]
-                #    this_fit_pars += [res.x[mu_index], res.x[mu_index + 1]]
-                #fit_params.append(this_fit_pars)
+                this_fit_pars: List = []
+                for i in range(n_components):
+                    mu_index = mu_indices[mu_order[i]]
+                    this_fit_pars += [res.x[mu_index], res.x[mu_index + 1]]
+                fit_params.append(this_fit_pars)
 
             else:
 
@@ -442,8 +426,8 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 res = fit_params[plot_indices[i]]
 
             fl_ax[i].plot(log10_rE_binc, e_reso, label="input eres")
-            fl_ax[i].plot(xs, model(xs, *model_params), label="poly evaluated")
-            fl_ax[i].plot(xs, model(xs, *res), label="nearest bin's parameters")
+            fl_ax[i].plot(xs, model(xs, model_params), label="poly evaluated")
+            fl_ax[i].plot(xs, model(xs, res), label="nearest bin's parameters")
             fl_ax[i].set_ylim(1e-4, 5)
             fl_ax[i].set_yscale("log")
             fl_ax[i].set_title("True E: {:.1E}".format(tE_binc[p_i]))

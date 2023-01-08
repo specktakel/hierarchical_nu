@@ -156,6 +156,7 @@ class StanFit:
             iter_sampling=iterations,
             chains=chains,
             seed=seed,
+            show_console=show_progress,
             show_progress=show_progress,
             **kwargs
         )

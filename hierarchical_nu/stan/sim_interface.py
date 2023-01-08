@@ -70,7 +70,7 @@ class StanSimInterface(StanInterface):
         if detector_model_type == R2021DetectorModel:
             if "r2021_rng.stan" not in includes:
                 includes.append("r2021_rng.stan")
-            R2021DetectorModel.generate_code(DistributionMode.RNG, rewrite=True, gen_type="histogram")
+            R2021DetectorModel.generate_code(DistributionMode.RNG, rewrite=False, gen_type="histogram")
 
         super().__init__(
             output_file=output_file,
@@ -561,7 +561,7 @@ class StanSimInterface(StanInterface):
 
             # Get the relative exposure weights of all sources
             # This will be used to sample the labels
-            # Aslo sample the number of events
+            # Also sample the number of events
             if "tracks" in self._event_types:
 
                 self._Nex_t << FunctionCall([self._F, self._eps_t], "get_Nex")
@@ -644,13 +644,14 @@ class StanSimInterface(StanInterface):
             # mode to have all functions included.
             # This will add to the functions section of the Stan file automatically.
             for event_type in self._event_types:
-                if self.detector_model_type == R2021DetectorModel:
+                if self.detector_model_type == R2021DetectorModel and event_type == TRACKS:
                     self._dm_rng[event_type] = self.detector_model_type(
                         mode=DistributionMode.RNG,
                         event_type=event_type,
                         gen_type="histogram",
-                        rewrite=True
+                        rewrite=False
                     )
+
                 else:
                     self._dm_rng[event_type] = self.detector_model_type(
                         mode=DistributionMode.RNG,
@@ -792,6 +793,7 @@ class StanSimInterface(StanInterface):
                         #self._aeff_factor << self._dm_pdf["tracks"].effective_area(
                         #    self._E[i], self._omega
                         #)
+                        StringExpression(["print(E[i])"])
                         self._aeff_factor << self._dm_rng["tracks"].effective_area(
                             self._E[i], self._omega
                         )

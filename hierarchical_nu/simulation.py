@@ -158,7 +158,8 @@ class Simulation:
             iter_sampling=1,
             chains=1,
             fixed_param=True,
-            seed=seed
+            seed=seed,
+            show_console=True
         )
 
         self._sim_output = sim_output
@@ -241,7 +242,10 @@ class Simulation:
 
         return fig, ax
 
-    def show_skymap(self):
+    def show_skymap(self, track_zoom: float=1.):
+        """
+        :param track_zoom: Increase radius of track events by this factor for visibility
+        """
 
         lam = list(
             self._sim_output.stan_variable("Lambda")[0] - 1
@@ -274,7 +278,7 @@ class Simulation:
             color = label_cmap[int(l)]
 
             if t == TRACKS:
-                e = e * 5  # to make tracks visible
+                e = e * track_zoom  # to make tracks visible
 
             circle = SphericalCircle(
                 (r, d),

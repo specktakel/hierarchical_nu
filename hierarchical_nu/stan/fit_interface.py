@@ -66,7 +66,7 @@ class StanFitInterface(StanInterface):
         
         if detector_model_type == R2021DetectorModel:
             includes.append("r2021_pdf.stan")
-            R2021DetectorModel.generate_code(DistributionMode.PDF, rewrite=True, gen_type="lognorm")
+            R2021DetectorModel.generate_code(DistributionMode.PDF, rewrite=False, gen_type="lognorm")
 
         super().__init__(
             output_file=output_file,

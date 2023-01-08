@@ -1,16 +1,18 @@
 # from ast import Return
 # from pyclbr import Function
 # from tokenize import String
-from typing import Sequence, Tuple, Iterable
+from typing import Sequence, Tuple, Iterable, List
 import os
 # import pandas as pd
 import numpy as np
+from scipy import stats
 # import sys
 
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.backend.stan_generator import ElseBlockContext, ElseIfBlockContext, IfBlockContext, StanGenerator
 from hierarchical_nu.stan.interface import STAN_PATH
 from ..utils.cache import Cache
+from ..utils.fitting_tools import Residuals
 from ..backend import (
     #FunctionsContext,
     VMFParameterization,
@@ -49,10 +51,12 @@ Classes implement organisation of data and stan code generation.
 """
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 Cache.set_cache_dir(".cache")
 
 IRF_PERIOD = "IC86_II"
+LOGNORM = "lognorm"
+HISTOGRAM = "histogram"
 
 
 class HistogramSampler():
@@ -375,7 +379,7 @@ class R2021EffectiveArea(EffectiveArea):
 
     CACHE_FNAME = "aeff_r2021.npz"
 
-    def __init__(self) -> None:
+    def __init__(self, period: str="IC86_II") -> None:
 
         self._func_name = "R2021EffectiveArea"
 
@@ -458,14 +462,16 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        gen_type: str = "histogram"
+        gen_type: str = "histogram",
+        make_plots: bool = False
     ) -> None:
         """
-        Instanciate class.
+        Instantiate class.
         :param mode: DistributionMode.PDF or .RNG (fitting or simulating)
         :parm rewrite: bool, True if cached files should be overwritten,
                        if there are no cached files they will be generated either way
         :param gen_type: "histogram" or "lognorm": Which type should be used for simulation/fitting
+        :param make_plots: bool, true if plots of parameterisation in case of lognorm should be made
         """
 
         self.irf = R2021IRF.from_period(IRF_PERIOD)
@@ -474,6 +480,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self._rewrite = rewrite
         logger.info("Forced energy rewriting: {}".format(rewrite))
         self.mode = mode
+        self.make_plots = make_plots
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
         self._poly_limits: Sequence = []
@@ -780,19 +787,22 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                 # Save values
                 self._tE_bin_edges = tE_bin_edges
-                # self._rE_bin_edges = rE_bin_edges
-                for c, dec in enumerate(self._declination_bins[:-1]):
-                    self.set_fit_params(dec+0.01)
-                    fig = self.plot_fit_params(self._fit_params[c], self._rebin_tE_binc[c])
-                    fig = self.plot_parameterizations(
-                        self._tE_binc[c],
-                        self._rE_binc[c],
-                        self._fit_params[c],
-                        #rebin_tE_binc=rebin_tE_binc,
-                    )
+                #self._rE_bin_edges = rE_bin_edges
+                if self.make_plots:
+                    for c, dec in enumerate(self._declination_bins[:-1]):
+                        self.set_fit_params(dec+0.01)
+                        fig = self.plot_fit_params(self._fit_params[c], self._rebin_tE_binc[c])
+                        fig = self.plot_parameterizations(
+                            self._tE_binc[c],
+                            self._rE_binc[c],
+                            self._fit_params[c],
+                            #rebin_tE_binc=rebin_tE_binc,
+                        )
                     
-                
-                
+                self._poly_params_mu = self._poly_params_mu__.copy()
+                self._poly_params_sd = self._poly_params_sd__.copy()
+                self._poly_limits = self._poly_limits__.copy()
+                self._eres = self._eres__
 
                 # Save polynomial
                 with Cache.open(self.CACHE_FNAME_LOGNORM, "wb") as fr:
@@ -801,23 +811,14 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         fr,
                         eres=eres,
                         tE_bin_edges=tE_bin_edges,
-                        # rE_bin_edges=rE_bin_edges,
+                        rE_bin_edges=rE_bin_edges,
                         poly_params_mu=self._poly_params_mu,
                         poly_params_sd=self._poly_params_sd,
                         poly_limits=self.poly_limits,
                         fit_params=self._fit_params
                     )
-                self._poly_params_mu = self._poly_params_mu__.copy()
-                self._poly_params_sd = self._poly_params_sd__.copy()
-                self._poly_limits = self._poly_limits__.copy()
-                self._eres = self._eres__
+                
 
-            
-            
-
-            
-            
-            
         else:
             # Check cache
             if self.CACHE_FNAME_HISTOGRAM in Cache and not self._rewrite:
@@ -849,6 +850,314 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             
             self._Emin = np.power(10, self.irf.true_energy_bins[0])
             self._Emax = np.power(10, self.irf.true_energy_bins[-1])
+
+
+    @staticmethod
+    def make_fit_model(n_components):
+        """
+        Lognormal mixture with n_components.
+        """
+        #s is width of lognormal
+        #scale is ~expectation value
+        def _model(x, *pars):
+            result = 0
+            for i in range(n_components):
+                result += (1 / n_components) * stats.lognorm.pdf(
+                    x, scale=pars[2 * i], s=pars[2 * i + 1]
+                )
+
+            return result
+
+        return _model
+
+    @staticmethod
+    def make_cumulative_model(n_components):
+        """
+        Cumulative Lognormal mixture above xth with n_components.
+        """
+
+        def _cumulative_model(xth, pars):
+            result = 0
+            for i in range(n_components):
+                result += (1 / n_components) * stats.lognorm.cdf(
+                    xth, scale=pars[2 * i], s=pars[2 * i + 1]
+                )
+            return result
+
+        return _cumulative_model
+
+
+    def _fit_energy_res(
+        self,
+        tE_binc: np.ndarray,
+        rE_binc: np.ndarray,
+        eres: np.ndarray,
+        n_components: int,
+        rebin: int = 1,
+    ) -> np.ndarray:
+        """
+        Fit a lognormal mixture to P(Ereco | Etrue) in given Etrue bins.
+        """
+
+        from scipy.optimize import least_squares
+        from iminuit import Minuit
+        from iminuit.cost import LeastSquares
+
+        fit_params = []
+
+        log10_rE_binc = np.log10(rE_binc)
+        log10_bin_width = log10_rE_binc[1] - log10_rE_binc[0]
+
+        # Rebin to have higher statistics at upper
+        # and lower end of energy range
+        rebin_tE_binc = np.zeros(int(len(tE_binc) / rebin))
+
+        # Lognormal mixture
+        model = self.make_fit_model(n_components)
+
+        # Fitting loop
+        for index in range(len(rebin_tE_binc)):
+
+            rebin_tE_binc[index] = (
+                0.5 * (tE_binc[[index * rebin, rebin * (index + 1) - 1]]).sum()
+            )
+
+            # Energy resolution for this true-energy bin
+            e_reso = eres[index * rebin : (index + 1) * rebin]
+            e_reso = e_reso.sum(axis=0)
+
+            if e_reso.sum() > 0:
+
+                # Normalize to prob. density / bin
+                e_reso = e_reso / (e_reso.sum() * log10_bin_width)
+
+                residuals = Residuals((log10_rE_binc, e_reso), model)
+                ls = LeastSquares(log10_rE_binc, e_reso, np.ones_like(e_reso), model)
+                # Calculate seed as mean of the resolution to help minimizer
+                seed_mu = np.average(log10_rE_binc, weights=e_reso)
+                if ~np.isfinite(seed_mu):
+                    seed_mu = 3
+
+                seed = np.zeros(n_components * 2)
+                bounds_lo: List[float] = []
+                bounds_hi: List[float] = []
+                names: List[str] = []
+                for i in range(n_components):
+                    seed[2 * i] = seed_mu + 0.1 * (i + 1)
+                    seed[2 * i + 1] = 0.1
+                    names += [f"scale_{i}", f"s_{i}"]
+                    bounds_lo += [0, 0.01]
+                    bounds_hi += [8, 1]
+                #seed[0] = seed_mu - 1
+
+
+                
+                limits = [(l, h) for (l, h) in zip(bounds_lo, bounds_hi)]
+                m = Minuit(ls, *tuple(seed), name=names)
+                m.errordef = 1
+                m.errors = 0.1 * np.asarray(seed)
+                m.limits = limits
+                m.scipy(method="SLSQP")
+                # Fit using simple least squares
+                #res = least_squares(
+                #    residuals,
+                #    seed,
+                #    bounds=(bounds_lo, bounds_hi),
+                #)
+                temp = []
+                for i in range(n_components):
+                    temp += [m.values[f"scale_{i}"], m.values[f"s_{i}"]]
+                fit_params.append(temp)
+                # Check for label swapping
+                #mu_indices = np.arange(0, stop=n_components * 2, step=2)
+                #mu_order = np.argsort(res.x[mu_indices])
+
+                # Store fit parameters
+                #this_fit_pars: List = []
+                #for i in range(n_components):
+                #    mu_index = mu_indices[mu_order[i]]
+                #    this_fit_pars += [res.x[mu_index], res.x[mu_index + 1]]
+                #fit_params.append(this_fit_pars)
+
+            else:
+
+                fit_params.append(np.zeros(2 * n_components))
+
+        fit_params = np.asarray(fit_params)
+
+        return fit_params, rebin_tE_binc
+
+
+    def _fit_polynomial(
+        self,
+        fit_params: np.ndarray,
+        tE_binc: np.ndarray,
+        Emin: float,
+        Emax: float,
+        polydeg: int,
+    ):
+        """
+        Fit polynomial to energy dependence of lognorm mixture params.
+        """
+
+        def find_nearest_idx(array, value):
+
+            array = np.asarray(array)
+            idx = (np.abs(array - value)).argmin()
+            return idx
+
+        imin = find_nearest_idx(tE_binc, Emin)
+        imax = find_nearest_idx(tE_binc, Emax)
+
+        log10_tE_binc = np.log10(tE_binc)
+        poly_params_mu = np.zeros((self._n_components, polydeg + 1))
+
+        # Fit polynomial
+        poly_params_sd = np.zeros_like(poly_params_mu)
+        for i in range(self.n_components):
+            poly_params_mu[i] = np.polyfit(
+                log10_tE_binc[imin:imax], fit_params[:, 2 * i][imin:imax], polydeg
+            )
+            poly_params_sd[i] = np.polyfit(
+                log10_tE_binc[imin:imax],
+                fit_params[:, 2 * i + 1][imin:imax],
+                polydeg,
+            )
+
+            poly_limits = (Emin, Emax)
+
+        return poly_params_mu, poly_params_sd, poly_limits
+
+
+    def plot_fit_params(self, fit_params: np.ndarray, tE_binc: np.ndarray) -> None:
+        """
+        Plot the evolution of the lognormal parameters with true energy,
+        for each mixture component.
+        """
+
+        import matplotlib.pyplot as plt
+
+        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+        xs = np.linspace(*np.log10(self._poly_limits), num=100)
+
+        if self._poly_params_mu is None:
+
+            raise RuntimeError("Run setup() first")
+
+        # Plot polynomial fits for each mixture component.
+        for comp in range(self._n_components):
+
+            params_mu = self._poly_params_mu[comp]
+            axs[0].plot(xs, np.poly1d(params_mu)(xs), label="poly, mean")
+            axs[0].plot(
+                np.log10(tE_binc),
+                fit_params[:, 2 * comp],
+                label="Mean {}".format(comp),
+            )
+
+            params_sigma = self._poly_params_sd[comp]
+            axs[1].plot(xs, np.poly1d(params_sigma)(xs), label="poly, sigma")
+            axs[1].plot(
+                np.log10(tE_binc),
+                fit_params[:, 2 * comp + 1],
+                label="SD {}".format(comp),
+            )
+
+        axs[0].set_xlabel("log10(True Energy / GeV)")
+        axs[0].set_ylabel("Parameter Value")
+        axs[0].legend()
+        axs[1].legend()
+        plt.tight_layout()
+        return fig
+
+
+    def plot_parameterizations(
+        self,
+        tE_binc: np.ndarray,
+        rE_binc: np.ndarray,
+        fit_params: np.ndarray,
+        rebin_tE_binc=None,
+    ):
+        """
+        Plot fitted parameterizations
+        Args:
+            tE_binc: np.ndarray
+                True energy bin centers
+            rE_binc: np.ndarray
+                Reconstructed energy bin centers
+            fit_params: np.ndarray
+                Fitted parameters for mu and sigma
+            eres: np.ndarray
+                P(Ereco | Etrue)
+        """
+
+        import matplotlib.pyplot as plt
+
+        plot_energies = [1e5, 3e5, 5e5, 8e5, 1e6, 3e6, 5e6, 8e6]  # GeV
+
+        if self._poly_params_mu is None:
+
+            raise RuntimeError("Run setup() first")
+
+        # Find true energy bins for the chosen plotting energies
+        plot_indices = np.digitize(plot_energies, tE_binc)
+
+        if rebin_tE_binc is not None:
+            # Parameters are relative to the rebinned histogram
+            param_indices = np.digitize(plot_energies, rebin_tE_binc)
+            rebin = int(len(tE_binc) / len(rebin_tE_binc))
+
+        log10_rE_binc = np.log10(rE_binc)
+        log10_bin_width = log10_rE_binc[1] - log10_rE_binc[0]
+
+        fig, axs = plt.subplots(3, 3, figsize=(10, 10))
+        xs = np.linspace(*np.log10(self._poly_limits), num=100)
+
+        model = self.make_fit_model(self._n_components)
+        fl_ax = axs.ravel()
+
+        for i, p_i in enumerate(plot_indices):
+
+            log_plot_e = np.log10(plot_energies[i])
+
+            model_params: List[float] = []
+            for comp in range(self.n_components):
+
+                mu = np.poly1d(self._poly_params_mu[comp])(log_plot_e)
+                sigma = np.poly1d(self._poly_params_sd[comp])(log_plot_e)
+                model_params += [mu, sigma]
+
+            if rebin_tE_binc is not None:
+                e_reso = self._eres[
+                    int(p_i / rebin) * rebin : (int(p_i / rebin) + 1) * rebin
+                ]
+                #normalisation of e_reso in case it's not normalised yet
+                e_reso = e_reso.sum(axis=0) / (e_reso.sum() * log10_bin_width)
+                res = fit_params[param_indices[i]]
+
+            else:
+                e_reso = self._eres[p_i]
+                res = fit_params[plot_indices[i]]
+
+            fl_ax[i].plot(log10_rE_binc, e_reso, label="input eres")
+            fl_ax[i].plot(xs, model(xs, *model_params), label="poly evaluated")
+            fl_ax[i].plot(xs, model(xs, *res), label="nearest bin's parameters")
+            fl_ax[i].set_ylim(1e-4, 5)
+            fl_ax[i].set_yscale("log")
+            fl_ax[i].set_title("True E: {:.1E}".format(tE_binc[p_i]))
+            fl_ax[i].legend()
+
+        ax = fig.add_subplot(111, frameon=False)
+
+        # Hide tick and tick label of the big axes
+        ax.tick_params(
+            labelcolor="none", top="off", bottom="off", left="off", right="off"
+        )
+        ax.grid(False)
+        ax.set_xlabel("log10(Reconstructed Energy /GeV)")
+        ax.set_ylabel("PDF")
+        plt.tight_layout()
+        return fig
         
 
 
@@ -1101,14 +1410,14 @@ class R2021DetectorModel(DetectorModel):
     event_types = ["tracks"]
 
     logger = logging.getLogger(__name__+".R2021DetectorModel")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
-        event_type: str = "tracks",
-        rewrite: bool = True,
-        gen_type: str = "lognorm"
+        event_type: str="tracks",
+        rewrite: bool=True,
+        gen_type: str="lognorm"
     ) -> None:
 
         super().__init__(mode, event_type="tracks")
@@ -1147,7 +1456,19 @@ class R2021DetectorModel(DetectorModel):
         therefore the functions block statement is deleted before writing the code to a file.
         """
 
-        cls.logger.info("Generating r2021 stan code.")
+        
+        # check if stan code is already generated, delegating the task of checking for correct version
+        # to the end-user
+        files = os.listdir(STAN_GEN_PATH)
+        if not rewrite:
+            if mode == DistributionMode.PDF and cls.PDF_FILENAME in files:
+                return os.path.join(path, cls.PDF_FILENAME)
+            elif mode == DistributionMode.RNG and cls.RNG_FILENAME in files:
+                return os.path.join(path, cls.RNG_FILENAME)
+            
+        else:
+            cls.logger.info("Generating r2021 stan code.")
+
         with StanGenerator() as cg:
             instance = cls(mode=mode, rewrite=rewrite, gen_type=gen_type)
             instance.effective_area.generate_code()

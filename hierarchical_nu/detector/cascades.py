@@ -122,7 +122,7 @@ class CascadesEnergyResolution(EnergyResolution):
 
     CACHE_FNAME = "energy_reso_cascades.npz"
 
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
+    def __init__(self, mode: DistributionMode = DistributionMode.PDF, make_plots: bool = False) -> None:
         """
         Energy resolution based on the cascade_model simulation.
 
@@ -138,6 +138,8 @@ class CascadesEnergyResolution(EnergyResolution):
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
         self._poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
+
+        self.make_plots = make_plots
 
         # For prob_Edet_above_threshold
         self._pdet_limits = (5e2, 1e8)
@@ -309,8 +311,9 @@ class CascadesEnergyResolution(EnergyResolution):
             self._poly_limits = poly_limits
 
             # Show results
-            self.plot_fit_params(fit_params, tE_binc)
-            self.plot_parameterizations(tE_binc, rE_binc, fit_params)
+            if self.make_plots:
+                self.plot_fit_params(fit_params, tE_binc)
+                self.plot_parameterizations(tE_binc, rE_binc, fit_params)
 
         # poly params are now set
         self._poly_params_mu = poly_params_mu
