@@ -152,6 +152,8 @@ class Expression(_BaseExpression):
 
     """
     def __iadd__(self: _BaseExpression, other: Union[TExpression, TListTExpression]):
+        # Why is this not working? It does not print a line as __lshift__ with `+=` instead of `=`
+        # Instead at next call of variable the expression is printed
         logger.debug("Assigning {} to {}".format(other, self))  # noqa: E501
         logger.debug("My code: {}".format(self.stan_code))  # noqa: E501
         if not isinstance(other, list):
