@@ -118,7 +118,7 @@ class TestR2021():
         return code_gen.filename
 
 
-    def test_file_generation_northern_tracks(self, output_directory):
+    def test_file_generation_r2021(self, output_directory):
 
         R2021DetectorModel.generate_code(
             mode=DistributionMode.PDF,
@@ -139,7 +139,7 @@ class TestR2021():
     def test_samples(self, sim_file, random_seed):
         num_samples = 1000
 
-        irf = R2021IRF()
+        irf = R2021IRF.from_period("IC86_II")
 
         samples = np.zeros((irf.true_energy_values.size, irf.declination_bins.size-1, num_samples))
 
@@ -200,7 +200,7 @@ class TestR2021():
             stanc_options=stanc_options,
         )
 
-        irf = R2021IRF()
+        irf = R2021IRF.from_period("IC86_II")
         phi = 0
         theta = np.array([3*np.pi/4])#, np.pi/2, np.pi/4])
         etrue = irf.true_energy_values
