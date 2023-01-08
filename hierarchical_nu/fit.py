@@ -109,6 +109,20 @@ class StanFit:
 
         self._exposure_integral = collections.OrderedDict()
 
+    
+    @property
+    def events(self):
+        return self._events
+
+    
+    @events.setter
+    def events(self, events: Events):
+        if isinstance(events, Events):
+            self._events = events
+        else:
+            raise ValueError("events must be instance of Events")
+
+
     def precomputation(
         self,
         exposure_integral: collections.OrderedDict = None,
