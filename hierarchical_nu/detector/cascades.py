@@ -479,8 +479,7 @@ class CascadesDetectorModel(DetectorModel):
         energy_res = CascadesEnergyResolution(mode)
         self._energy_resolution = energy_res
 
-        if mode == DistributionMode.PDF:
-            self._eff_area = CascadesEffectiveArea()
+        self._eff_area = CascadesEffectiveArea()
 
     def _get_effective_area(self):
         return self._eff_area

@@ -64,7 +64,7 @@ class StanFitInterface(StanInterface):
         :param priors: Priors object detailing the priors to use
         """
         
-        if detector_model_type == R2021DetectorModel:
+        if detector_model_type == R2021DetectorModel and "r2021_pdf.stan" not in includes:
             includes.append("r2021_pdf.stan")
             R2021DetectorModel.generate_code(DistributionMode.PDF, rewrite=False, gen_type="lognorm")
 
