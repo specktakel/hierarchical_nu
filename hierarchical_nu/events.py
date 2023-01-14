@@ -4,8 +4,21 @@ import h5py
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from icecube_tools.utils.data import available_irf_periods
+
+from typing import List
 TRACKS = 0
 CASCADES = 1
+
+IC40 = 0
+IC59 = 1
+IC79 = 2
+IC86_I = 3
+IC86_II = 4
+
+periods = {"IC40": IC40, "IC59": IC59, "IC79": IC79, "IC86_I": IC86_I, "IC86_II": IC86_II}
+
+# Translate IRF period into integer from 0 to 4 (IC40 to IC86_II)
 
 
 class Events:
@@ -20,6 +33,7 @@ class Events:
         coords: SkyCoord,
         types,
         ang_errs: u.deg = None,
+        periods: List[str]=None
     ):
         """
         Events class for the storage of event observables
@@ -44,6 +58,10 @@ class Events:
             raise ValueError("Event types not recognised")
 
         self._ang_errs = ang_errs
+
+        if periods is not None:
+            self._periods = periods
+
 
     def remove(self, i):
 
@@ -129,3 +147,28 @@ class Events:
                 for key, value in zip(self._file_keys, self._file_values):
 
                     event_folder.create_dataset(key, data=value)
+
+                
+    @classmethod
+    def from_ev_file(cls, p: str):
+        """
+        Load events from the 2021 data release
+        :param p: string of period to be loaded.
+        :return: :class:`hierarchical_nu.events.Events`
+        """
+
+        from icecube_tools.utils.data import RealEvents
+
+        # Borrow from icecube_tools
+        events = RealEvents.from_event_files(p)
+        # Read in relevant data
+        ra = events.ra[p]
+        dec = events.dec[p]
+        reco_energy = events.reco_energy[p] * u.GeV
+        period = ra.size * [p]
+        # Conversion from 50% containment to 68% is already done in RealEvents
+        ang_err = events.ang_err[p] * u.deg
+        types = ra.size * [TRACKS]
+        coords = SkyCoord(ra, dec, frame='icrs', unit=u.deg)
+        return cls(reco_energy, coords, types, ang_err, p)
+

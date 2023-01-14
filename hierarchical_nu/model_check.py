@@ -16,6 +16,7 @@ from hierarchical_nu.source.source import PointSource, Sources
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
@@ -82,10 +83,10 @@ class ModelCheck:
             self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
                 flux_unit
             ).value
-            atmo_bg = self._sources.atmospheric
-            self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
-                flux_unit
-            ).value
+            # atmo_bg = self._sources.atmospheric
+            # self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
+            #    flux_unit
+            #).value
             self.truths["L"] = (
                 Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
             )
@@ -97,10 +98,9 @@ class ModelCheck:
             self.truths["Nex"] = Nex
             self.truths["Nex_src"] = Nex_per_comp[0]
             self.truths["Nex_diff"] = Nex_per_comp[1]
-            self.truths["Nex_atmo"] = Nex_per_comp[2]
+            # self.truths["Nex_atmo"] = Nex_per_comp[2]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
             self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
-
         self._default_var_names = [key for key in self.truths]
 
     @staticmethod
@@ -276,7 +276,7 @@ class ModelCheck:
                 ax[v].hist(
                     self.results[var_name][i],
                     color="#017B76",
-                    alpha=0.05,
+                    alpha=0.1,
                     histtype="step",
                     bins=bins,
                     lw=1.0,
@@ -343,11 +343,12 @@ class ModelCheck:
             sys.stderr.write("Run %i\n" % i)
 
             # Simulation
-            sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
-            sim.precomputation(self._exposure_integral)
-            sim.set_stan_filename(file_config["sim_filename"])
-            sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
-            sim.run(seed=s)
+            if i == 0:
+                sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
+                sim.precomputation(self._exposure_integral)
+                sim.set_stan_filename(file_config["sim_filename"])
+                sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
+            sim.run(seed=s, verbose=True)
             self.sim = sim
 
             lam = sim._sim_output.stan_variable("Lambda")[0]
@@ -357,17 +358,18 @@ class ModelCheck:
             self.events = sim.events
 
             # Fit
-            fit = StanFit(
-                self._sources,
-                self._detector_model_type,
-                sim.events,
-                self._obs_time,
-                priors=self.priors,
-            )
-            fit.precomputation(exposure_integral=sim._exposure_integral)
-            fit.set_stan_filename(file_config["fit_filename"])
-            fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
-            fit.run(seed=s)
+            if i == 0:
+                fit = StanFit(
+                    self._sources,
+                    self._detector_model_type,
+                    sim.events,
+                    self._obs_time,
+                    priors=self.priors,
+                )
+                fit.precomputation(exposure_integral=sim._exposure_integral)
+                fit.set_stan_filename(file_config["fit_filename"])
+                fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
+            fit.run(seed=s, show_progress=True)
 
             self.fit = fit
 
@@ -393,6 +395,10 @@ class ModelCheck:
         elif dm_key == "icecube":
 
             dm = IceCubeDetectorModel
+
+        elif dm_key == "r2021":
+
+            dm = R2021DetectorModel
 
         else:
 

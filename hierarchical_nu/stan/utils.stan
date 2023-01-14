@@ -108,6 +108,25 @@ real omega_to_zenith(vector omega) {
 }
 
 /**
+ * Convert from unit vector omega to declination of spherical coordinate system.
+ * @param omega a 3D unit vector.
+ */
+real omega_to_dec(vector omega) {
+  
+  real dec;
+  
+  int N = num_elements(omega);
+  
+  if (N != 3) {
+    print("Error: input vector omega must be of 3 dimensions");
+  }
+
+  dec = pi() / 2 - acos(omega[3]);
+    
+  return dec;
+}
+
+/**
  * Calculate the expected number of detected events from each source.
  */
 real get_Nex(vector F, vector eps) {
@@ -162,11 +181,11 @@ vector linspace(real A, real B, int N) {
  */
 real eval_poly1d(real x, vector coeffs){
   int N = num_elements(coeffs);
-  real res=0;
+  array[N] real res;
   for(i in 1:N){
-    res += coeffs[i]*pow(x, N-i);
+    res[i] = coeffs[i]*pow(x, N-i);
   }
-  return res;
+  return sum(res);
 }
   
 real truncate_value(real x, real min_val, real max_val){
@@ -213,4 +232,60 @@ int binary_search(real value, array[] real binedges)
         }
     }
     return L;
+}
+
+
+/**
+ * Histogram rng, takes n, bins as arguments
+ */
+real histogram_rng(array[] real hist_array, array[] real hist_edges)
+{
+    array[size(hist_array)] real bin_width;
+    array[size(hist_array)] real multiplied;
+    vector[size(hist_array)] normalised;
+    int index;
+    for (i in 2:size(hist_edges)) {
+        bin_width[(i-1)] = hist_edges[i] - hist_edges[i-1];
+    }
+    for (i in 1:size(hist_array)) {
+      if (hist_array[i] > 0.) {
+        multiplied[i] = hist_array[i] * bin_width[i];
+      }
+      else if (hist_array[i] == 0.) {
+        multiplied[i] = 0.;
+      }
+    }
+    for (i in 1:size(hist_array)) {
+        normalised[i] = multiplied[i] / sum(multiplied);
+    }
+    index = categorical_rng(normalised);
+    return uniform_rng(hist_edges[index], hist_edges[index+1]);
+}
+
+/**
+ * Categorical rng, takes n, bins as arguments.
+ * Like Histogram_rng, but returns the bin index instead of a sampled value.
+ */
+
+int hist_cat_rng(array[] real hist_array, array[] real hist_edges)
+{
+    array[size(hist_array)] real bin_width;
+    array[size(hist_array)] real multiplied;
+    vector[size(hist_array)] normalised;
+    int index;
+    for (i in 2:size(hist_edges)) {
+        bin_width[(i-1)] = hist_edges[i] - hist_edges[i-1];
+    }
+    for (i in 1:size(hist_array)) {
+      if (hist_array[i] > 0.) {
+        multiplied[i] = hist_array[i] * bin_width[i];
+      }
+      else if (hist_array[i] == 0.) {
+        multiplied[i] = 0.;
+      }
+    }
+    for (i in 1:size(hist_array)) {
+        normalised[i] = multiplied[i] / sum(multiplied);
+    }
+    return categorical_rng(normalised);
 }

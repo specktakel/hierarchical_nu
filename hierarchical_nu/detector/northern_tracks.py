@@ -124,7 +124,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
 
     CACHE_FNAME = "energy_reso_tracks.npz"
 
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
+    def __init__(self, mode: DistributionMode = DistributionMode.PDF, make_plots: bool = False) -> None:
         """
         Args:
             inputs: List[TExpression]
@@ -135,6 +135,8 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
         self._poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
+
+        self.make_plots = make_plots
 
         # For prob_Edet_above_threshold
         self._pdet_limits = (1e2, 1e8)
@@ -320,13 +322,14 @@ class NorthernTracksEnergyResolution(EnergyResolution):
             self._poly_limits = poly_limits
 
             # Show results
-            self.plot_fit_params(fit_params, rebin_tE_binc)
-            self.plot_parameterizations(
-                tE_binc,
-                rE_binc,
-                fit_params,
-                rebin_tE_binc=rebin_tE_binc,
-            )
+            if self.make_plots:
+                self.plot_fit_params(fit_params, rebin_tE_binc)
+                self.plot_parameterizations(
+                    tE_binc,
+                    rE_binc,
+                    fit_params,
+                    rebin_tE_binc=rebin_tE_binc,
+                )
 
         # Set properties
         self._eres = eres
@@ -502,8 +505,8 @@ class NorthernTracksDetectorModel(DetectorModel):
         energy_res = NorthernTracksEnergyResolution(mode)
         self._energy_resolution = energy_res
 
-        if mode == DistributionMode.PDF:
-            self._eff_area = NorthernTracksEffectiveArea()
+        #if mode == DistributionMode.PDF:
+        self._eff_area = NorthernTracksEffectiveArea()
 
     def _get_effective_area(self):
         return self._eff_area
