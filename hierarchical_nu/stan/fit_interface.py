@@ -18,8 +18,15 @@ from hierarchical_nu.backend.stan_generator import (
     ForLoopContext,
     IfBlockContext,
     ElseBlockContext,
+    ElseIfBlockContext,
     ModelContext,
     FunctionCall,
+    UserDefinedFunction
+)
+
+from hierarchical_nu.backend.expression import (
+    ReturnStatement,
+    StringExpression,
 )
 
 from hierarchical_nu.backend.variable_definitions import (
@@ -27,6 +34,7 @@ from hierarchical_nu.backend.variable_definitions import (
     ForwardArrayDef,
     ParameterDef,
     ParameterVectorDef,
+    InstantVariableDef
 )
 
 from hierarchical_nu.backend.expression import StringExpression
@@ -47,6 +55,7 @@ class StanFitInterface(StanInterface):
         output_file: str,
         sources: Sources,
         detector_model_type: DetectorModel,
+        atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
         includes: List[str] = ["interpolation.stan", "utils.stan", "vMF.stan"],
         priors: Priors = Priors(),
@@ -76,6 +85,8 @@ class StanFitInterface(StanInterface):
         )
 
         self._priors = priors
+
+        self._atmo_flux_energy_points = atmo_flux_energy_points
 
         self._atmo_flux_theta_points = atmo_flux_theta_points
 
@@ -155,13 +166,475 @@ class StanFitInterface(StanInterface):
                 # Increasing theta points too much makes compilation very slow
                 # Could switch to passing array as data if problematic
                 self._atmo_flux_func = self._atmo_flux.make_stan_function(
-                    theta_points=self._atmo_flux_theta_points
+                    energy_points=self._atmo_flux_energy_points,
+                    theta_points=self._atmo_flux_theta_points,
                 )
 
                 # Include integral for normalisation to PDF
                 self._atmo_flux_integral = self._atmo_flux.total_flux_int.to(
                     1 / (u.m**2 * u.s)
                 ).value
+            
+            # Create a function to be used in map_rect in the model block
+            # Signature is determined by stan's `map_rect` function
+            lp_reduce = UserDefinedFunction(
+                "lp_reduce",
+                ["global", "local", "real_data", "int_data"],
+                ["vector", "vector", "array[] real", "array[] int"],
+                "vector"
+            )
+
+            with lp_reduce:
+                # Unpack integer data, needed to interpret real data
+                # Use InstantVariableDef to save on lines
+                N = InstantVariableDef("N", "int", ["int_data[1]"])
+                Ns = InstantVariableDef("Ns", "int", ["int_data[2]"])
+                diffuse = InstantVariableDef("diffuse", "int", ["int_data[3]"])
+                atmo = InstantVariableDef("atmo", "int", ["int_data[4]"])
+                Ns_tot = InstantVariableDef("Ns_tot", "int", ["Ns + atmo + diffuse"])
+                Ngrid = InstantVariableDef("Ngrid", "int", ["int_data[5]"])
+                start = ForwardVariableDef("start", "int")
+                end = ForwardVariableDef("end", "int")
+                len = ForwardVariableDef("len", "int")
+                # Get global parameters
+                # Check for shared index
+                if self._shared_src_index:
+                    src_index = ForwardVariableDef("src_index", "real")
+                    src_index << StringExpression(["global[1]"])
+                    idx = 2
+                else:
+                    src_index = ForwardVariableDef(
+                        "src_index",
+                        "vector[Ns]"
+                    )
+                    idx = len(self.sources._point_sources) + 1
+
+                # Get diffuse index
+                if self.sources.diffuse:
+                    diff_index = ForwardVariableDef("diff_index", "real")
+                    diff_index << StringExpression(["global[", idx, "]"])
+                    idx += 1
+
+                logF = ForwardVariableDef("logF", "vector[Ns_tot]")
+                logF << StringExpression(["global[", idx, ":]"])
+
+                # Local pars are only source energies
+                Esrc = ForwardVariableDef("Esrc", "vector[N]")
+                Esrc << StringExpression(["local"])
+                E = ForwardVariableDef("E", "vector[N]")
+
+                # Define indices for unpacking of real_data
+                start << 1
+                len << N
+                end << N
+
+                # Define variable to store loglikelihood
+                lp = ForwardArrayDef("lp", "vector[Ns_tot]", ["[N]"])
+
+                # Unpack event types (track or cascade)
+                event_type = ForwardArrayDef("event_type", "int", ["[N]"])
+                event_type << StringExpression(["int_data[6:5+N]"])
+
+                Edet = ForwardVariableDef("Edet", "vector[N]")
+                Edet << FunctionCall(["real_data[start:end]"], "to_vector")
+                # Shift indices appropriate amount for next batch of data
+                start << start + len
+                end << end + len
+                kappa = ForwardVariableDef("kappa", "vector[N]")
+                kappa << StringExpression(["to_vector(real_data[start:end])"])
+
+                omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
+                start << start + len
+                varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
+                # Loop over events to unpack reconstructed direction
+                with ForLoopContext(1, N, "i") as i:
+                    end << end + 3
+                    omega_det[i] << StringExpression(["to_vector(real_data[start:end])"])
+                    start << start + 3
+                # Loop over sources to unpack source direction (for point sources only)
+                with ForLoopContext(1, Ns, "i") as i:
+                    end << end + 3
+                    varpi[i] << StringExpression(["to_vector(real_data[start:end])"])
+                    start << start + 3
+                # If diffuse source, z is longer by 1 element
+                if self.sources.diffuse:
+                    end << end + Ns + 1
+                    z = ForwardVariableDef("z", "vector[Ns+diffuse]")
+                    z << StringExpression(["to_vector(real_data[start:end])"])
+                    start << start + Ns + 1
+                else:
+                    end << end + Ns
+                    z = ForwardVariableDef("z", "vector[Ns]")
+                    z << StringExpression(["to_vector(real_data[start:end])"])
+                    start << start + Ns
+
+                Esrc_min = ForwardVariableDef("Esrc_min", "real")
+                Esrc_max = ForwardVariableDef("Esrc_max", "real")
+
+                end << end + 1
+                Esrc_min << StringExpression(["real_data[start]"])
+                start << start + 1
+
+                end << end + 1
+                Esrc_max << StringExpression(["real_data[start]"])
+                start << start + 1
+
+                # Unpack Egrid
+                end << end + Ngrid
+                Eg = ForwardVariableDef("Egrid", "vector[Ngrid]")
+                Eg << StringExpression(["to_vector(real_data[start:end])"])
+                start << start + Ngrid
+
+                # Depending on tracks or cascades in event types covered by detector,
+                # one or two grids for each source component must be unpacked
+                if "tracks" in self._event_types and "cascades" in self._event_types:
+                    Pdet_grid_t = ForwardArrayDef("Pdet_grid_t", "vector[Ngrid]", ["[Ns_tot]"])
+                    Pdet_grid_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", ["[Ns_tot]"])
+                    # Loop over all source components
+                    with ForLoopContext(1, "Ns_tot", "f") as f:
+                        end << end + Ngrid
+                        Pdet_grid_t[f] << StringExpression(["to_vector(real_data[start:end])"])
+                        start << start + Ngrid
+                    with ForLoopContext(1, "Ns_tot", "f") as f:
+                        end << end + Ngrid
+                        Pdet_grid_c[f] << StringExpression(["to_vector(real_data[start:end])"])
+                        start << start + Ngrid
+
+                elif "tracks" in self._event_types:
+                    Pdet_grid_t = ForwardArrayDef("Pdet_grid_t", "vector[Ngrid]", ["[Ns_tot]"])
+                    with ForLoopContext(1, "Ns_tot", "f") as f:
+                        end << end + Ngrid
+                        Pdet_grid_t[f] << StringExpression(["to_vector(real_data[start:end])"])
+                        start << start + Ngrid
+
+                else:
+                    Pdet_grid_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", ["[Ns_tot]"])
+                    with ForLoopContext(1, "", "f") as f:
+                        end << end + Ngrid
+                        #StringExpression(['print(start, end)'])
+                        Pdet_grid_c[f] << StringExpression(["to_vector(real_data[start:end])"])
+                        start << start + Ngrid
+
+                # Define tracks and cascades to sort events into correct detector response
+                if "tracks" in self._event_types:
+                    track_type = ForwardVariableDef("track_type", "int")
+                    track_type << TRACKS
+
+                if "cascades" in self._event_types:
+                    cascade_type = ForwardVariableDef("cascade_type", "int")
+                    cascade_type << CASCADES
+
+                if self.sources.diffuse and self.sources.atmospheric:
+                    k_diff = "Ns + 1"
+                    k_atmo = "Ns + 2"
+
+                elif self.sources.diffuse:
+                    k_diff = "Ns + 1"
+
+                elif self.sources.atmospheric:
+                    k_atmo = "Ns + 1"
+                
+                # Actual function body goes here
+                # Starting here, everything needs to go to lp_reduce!
+                with ForLoopContext(1, N, "i") as i:
+                    lp[i] << logF
+                    # Tracks
+                    if "tracks" in self._event_types:
+                        with IfBlockContext(
+                            [
+                                StringExpression(
+                                    [event_type[i], " == ", track_type]
+                                )
+                            ]
+                        ):
+                            # Sum over sources => evaluate and store components
+                            with ForLoopContext(1, "Ns+atmo+diffuse", "k") as k:
+                                # Point source components
+                                if self.sources.point_source:
+                                    with IfBlockContext(
+                                        [StringExpression([k, " < ", Ns + 1])]
+                                    ):
+                                        if self._shared_src_index:
+                                            src_index_ref = src_index
+                                        else:
+                                            src_index_ref = src_index[k]
+                                        # log_prob += log(p(Esrc|src_index))
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += ",
+                                                self._src_spectrum_lpdf(
+                                                    Esrc[i],
+                                                    src_index_ref,
+                                                    Esrc_min,
+                                                    Esrc_max,
+                                                ),
+                                            ]
+                                        )
+
+                                        # E = Esrc / (1+z)
+                                        E[i] << StringExpression(
+                                            [Esrc[i], " / (", 1 + z[k], ")"]
+                                        )
+
+                                        # log_prob += log(p(omega_det|varpi, kappa))
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += vMF_lpdf(",
+                                                omega_det[i],
+                                                " | ",
+                                                varpi[k],
+                                                ", ",
+                                                kappa[i],
+                                                ")",
+                                            ]
+                                        )
+
+                                # Diffuse component
+                                if self.sources.diffuse:
+
+                                    with IfBlockContext(
+                                        [StringExpression([k, " == ", k_diff])]
+                                    ):
+
+                                        # log_prob += log(p(Esrc|diff_index))
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += ",
+                                                self._diff_spectrum_lpdf(
+                                                    Esrc[i],
+                                                    diff_index,
+                                                    Esrc_min,
+                                                    Esrc_max,
+                                                ),
+                                            ]
+                                        )
+
+                                        # E = Esrc / (1+z)
+                                        E[i] << StringExpression(
+                                            [Esrc[i], " / (", 1 + z[k], ")"]
+                                        )
+
+                                        # log_prob += log(1/4pi)
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += ",
+                                                np.log(1 / (4 * np.pi)),
+                                            ]
+                                        )
+
+                                # Atmospheric component
+                                if self.sources.atmospheric:
+
+                                    with IfBlockContext(
+                                        [StringExpression([k, " == ", k_atmo])]
+                                    ):
+
+                                        # log_prob += log(p(Esrc, omega | atmospheric source))
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += ",
+                                                FunctionCall(
+                                                    [
+                                                        self._atmo_flux_func(
+                                                            Esrc[i],
+                                                            omega_det[i],
+                                                        )
+                                                        / self._atmo_flux_integral
+                                                    ],
+                                                    "log",
+                                                ),
+                                            ]
+                                        )
+
+                                        # E = Esrc
+                                        E[i] << Esrc[i]
+
+                                # Detection effects
+                                if self.detector_model_type == R2021DetectorModel:
+
+                                    StringExpression(
+                                        [
+                                            lp[i][k],
+                                            " += ",
+                                            self._dm["tracks"].energy_resolution(
+                                                FunctionCall([E[i]], "log10"),
+                                                FunctionCall([Edet[i]], "log10"),
+                                                omega_det[i]
+                                            ),
+                                        ]
+                                    )
+
+                                else:
+
+                                    StringExpression(
+                                        [
+                                            lp[i][k],
+                                            " += ",
+                                            self._dm["tracks"].energy_resolution(
+                                                E[i], Edet[i]
+                                            ),
+                                        ]
+                                    )
+                                StringExpression(
+                                    [
+                                        lp[i][k],
+                                        " += log(interpolate(",
+                                        Eg,
+                                        ", ",
+                                        Pdet_grid_t[k],
+                                        ", ",
+                                        E[i],
+                                        "))",
+                                    ]
+                                )
+
+                    # Cascades
+                    # See comments for tracks for more details, approach is the same
+                    if "cascades" in self._event_types:
+
+                        with IfBlockContext(
+                            [
+                                StringExpression(
+                                    [event_type[i], " == ", cascade_type]
+                                )
+                            ]
+                        ):
+
+                            with ForLoopContext(1, "Ns+atmo+diffuse", "k") as k:
+
+                                # Point source components
+                                if self.sources.point_source:
+
+                                    with IfBlockContext(
+                                        [StringExpression([k, " < ", Ns + 1])]
+                                    ):
+
+                                        if self._shared_src_index:
+                                            src_index_ref = src_index
+                                        else:
+                                            src_index_ref = src_index[k]
+
+                                        # log_prob += log(p(Esrc | src_index))
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += ",
+                                                self._src_spectrum_lpdf(
+                                                    Esrc[i],
+                                                    src_index_ref,
+                                                    Esrc_min,
+                                                    Esrc_max,
+                                                ),
+                                            ]
+                                        )
+
+                                        # E = Esrc / (1+z)
+                                        E[i] << StringExpression(
+                                            [Esrc[i], " / (", 1 + z[k], ")"]
+                                        )
+
+                                        # log_prob += log(p(omega_det | varpi, kappa))
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += vMF_lpdf(",
+                                                omega_det[i],
+                                                " | ",
+                                                varpi[k],
+                                                ", ",
+                                                kappa[i],
+                                                ")",
+                                            ]
+                                        )
+
+                                # Diffuse component
+                                if self.sources.diffuse:
+
+                                    with IfBlockContext(
+                                        [StringExpression([k, " == ", k_diff])]
+                                    ):
+
+                                        # log_prob += log(p(Esrc | diff_index))
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += ",
+                                                self._diff_spectrum_lpdf(
+                                                    Esrc[i],
+                                                    diff_index,
+                                                    Esrc_min,
+                                                    Esrc_max,
+                                                ),
+                                            ]
+                                        )
+
+                                        # E = Esrc / (1+z)
+                                        E[i] << StringExpression(
+                                            [Esrc[i], " / (", 1 + z[k], ")"]
+                                        )
+
+                                        # log_prob += log(1/4pi)
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += ",
+                                                np.log(1 / (4 * np.pi)),
+                                            ]
+                                        )
+
+                                # Atmospheric component
+                                if self.sources.atmospheric:
+
+                                    with IfBlockContext(
+                                        [StringExpression([k, " == ", k_atmo])]
+                                    ):
+
+                                        # log_prob += -inf (no atmo comp for cascades!)
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += negative_infinity()",
+                                            ]
+                                        )
+
+                                        # E = Esrc
+                                        E[i] << Esrc[i]
+
+                                # Detection effects
+                                # log_prob += log(p(Edet | E))
+                                StringExpression(
+                                    [
+                                        lp[i][k],
+                                        " += ",
+                                        self._dm["cascades"].energy_resolution(
+                                            E[i], Edet[i]
+                                        ),
+                                    ]
+                                )
+
+                                # log_prob += log(p(Edet > Edet_min | E))
+                                StringExpression(
+                                    [
+                                        lp[i][k],
+                                        " += log(interpolate(",
+                                        Eg,
+                                        ", ",
+                                        Pdet_grid_c[k],
+                                        ", ",
+                                        E[i],
+                                        "))",
+                                    ]
+                                )
+                results = ForwardArrayDef("results", "real", ["[N]"])
+                with ForLoopContext(1, N, "i") as i:
+                    results[i] << FunctionCall([lp[i]], "log_sum_exp")
+                ReturnStatement(["[sum(results)]'"])
+
 
     def _data(self):
 
@@ -170,6 +643,13 @@ class StanFitInterface(StanInterface):
             # Total number of detected events
             self._N = ForwardVariableDef("N", "int")
             self._N_str = ["[", self._N, "]"]
+
+            # Number of shards for multi-threading
+            self._N_shards = ForwardVariableDef("N_shards", "int")
+            self._N_shards_str = ["[", self._N_shards, "]"]
+
+            # Max number of events per shard
+            self._J = ForwardVariableDef("J", "int")
 
             # Detected directions as unit vectors
             self._omega_det = ForwardArrayDef(
@@ -194,6 +674,9 @@ class StanFitInterface(StanInterface):
             self._Ns_str = ["[", self._Ns, "]"]
             self._Ns_1p_str = ["[", self._Ns, "+1]"]
             self._Ns_2p_str = ["[", self._Ns, "+2]"]
+
+            # Total number of sources
+            self._Ns_tot = ForwardVariableDef("Ns_tot", "int")
 
             # True directions and distances of point sources
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
@@ -312,6 +795,132 @@ class StanFitInterface(StanInterface):
 
                     with ElseBlockContext():
                         self._N_t << self._N_t + 1
+
+            # Create the rectangular data blocks for use in `map_rect`
+            # This is badly named (N % Nshards...)
+            self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
+            self._N_mod_J << self._N % self._N_shards
+
+            # Find size for real_data array
+            sd_events_J = 5
+            sd_varpi_Ns = 3
+            sd_if_atmo_z = 1
+            sd_z_Ns = 1
+            sd_other = 2
+            sd_Ngrid = 1
+            sd_string = f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other}"
+            if self.sources.diffuse:
+                sd_string += f" + {sd_if_atmo_z}"
+            if "tracks" in self._event_types:
+                sd_Ngrid += 1
+            if "cascades" in self._event_types:
+                sd_Ngrid += 1
+            sd_string += f" + {sd_Ngrid}*Ngrid*Ns_tot"
+
+            # Create data arrays
+            self.real_data = ForwardArrayDef(
+                "real_data",
+                "real",
+                ["[N_shards,", sd_string, "]"]
+            )
+
+            self.int_data = ForwardArrayDef(
+                "int_data",
+                "int",
+                ["[", self._N_shards, ", ", "J+5", "]"]
+            )
+
+            # Pack data into shards  
+            # Format is (obviously) the same as the unpacking done in `lp_reduce`
+            # First dimension is number of shard, second dimension is what `lp_reduce` will see
+            with ForLoopContext(1, self._N_shards, "i") as i:
+                start = ForwardVariableDef("start", "int")
+                end = ForwardVariableDef("end", "int")
+                insert_start = ForwardVariableDef("insert_start", "int")
+                insert_end = ForwardVariableDef("insert_end", "int")
+                insert_len = ForwardVariableDef("insert_len", "int")
+                start << (i - 1) * self._J + 1
+                insert_start << 1
+                
+                with IfBlockContext([i != self._N_shards, "||", self._N_mod_J == 0]):
+                    end << i * self._J
+                    insert_len << self._J
+                with ElseBlockContext():
+                    end << start - 1 + self._N_mod_J
+                    insert_len << self._N_mod_J
+
+                insert_end << insert_len
+                self.real_data[i, insert_start:insert_end] << FunctionCall([self._Edet[start:end]], "to_array_1d")
+                insert_start << insert_start + insert_len
+                insert_end << insert_end + insert_len
+                self.real_data[i, insert_start:insert_end] << FunctionCall([self._kappa[start:end]], "to_array_1d")
+                insert_start << insert_start + insert_len
+                
+                with ForLoopContext(start, end, "f") as f:
+                    insert_end << insert_end + 3
+                    self.real_data[i, insert_start:insert_end] << FunctionCall([self._omega_det[f]], "to_array_1d")
+                    insert_start << insert_start + 3
+
+                with ForLoopContext(1, self._Ns, "f") as f:
+                    insert_end << insert_end + 3
+                    self.real_data[i, insert_start:insert_end] << FunctionCall([self._varpi[f]], "to_array_1d")
+                    insert_start << insert_start + 3
+
+                if self.sources.diffuse:
+                    insert_end << insert_end + self._Ns + 1
+                    self.real_data[i, insert_start:insert_end] << FunctionCall([self._z], "to_array_1d")
+                    insert_start << insert_start + self._Ns + 1
+
+                else:
+                    insert_end << insert_end + self._Ns
+                    self.real_data[i, insert_start:insert_end] << FunctionCall([self._z], "to_array_1d")
+                    insert_start << insert_start + self._Ns
+                
+                insert_end << insert_end + 1
+                self.real_data[i, insert_start] << self._Esrc_min
+                insert_start << insert_start + 1
+                
+                insert_end << insert_end + 1
+                self.real_data[i, insert_start] << self._Esrc_max
+                insert_start << insert_start + 1
+                
+                insert_end << insert_end + self._Ngrid
+                self.real_data[i, insert_start:insert_end] << FunctionCall([self._Eg], "to_array_1d")
+                insert_start << insert_start + self._Ngrid
+
+                if "tracks" in self._event_types and "cascades" in self._event_types:
+                    with ForLoopContext(1, self._Ns_tot, "f") as f:
+                        insert_end << insert_end + self._Ngrid
+                        self.real_data[i, insert_start:insert_end] << FunctionCall([self._Pg_t[f]], "to_array_1d")
+                        insert_start << insert_start + self._Ngrid
+
+                    with ForLoopContext(1, self._Ns_tot, "f") as f:
+                        insert_end << insert_end + self._Ngrid
+                        self.real_data[i, insert_start:insert_end] << FunctionCall([self._Pg_c[f]], "to_array_1d")
+                        insert_start << insert_start + self._Ngrid
+
+                elif "tracks" in self._event_types:
+                    with ForLoopContext(1, self._Ns_tot, "f") as f:
+                        insert_end << insert_end + self._Ngrid
+                        self.real_data[i, insert_start:insert_end] << FunctionCall([self._Pg_t[f]], "to_array_1d")
+                        insert_start << insert_start + self._Ngrid
+                else:
+                    with ForLoopContext(1, self._Ns_tot, "f") as f:
+                        insert_end << insert_end + self._Ngrid
+                        self.real_data[i, insert_start:insert_end] << FunctionCall([self._Pg_c[f]], "to_array_1d")
+                        insert_start << insert_start + self._Ngrid
+                
+                # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
+                self.int_data[i, 1] << insert_len   
+                self.int_data[i, 2] << self._Ns 
+                self.int_data[i, 3] << 1 if self.sources.diffuse else 0
+                self.int_data[i, 4] << 1 if self.sources.atmospheric else 0
+                self.int_data[i, 5] << self._Ngrid
+                with IfBlockContext([i != self._N_shards, "||", self._N_mod_J == 0]):
+                    self.int_data[i, 6:"5+insert_len"] << FunctionCall([FunctionCall([self._event_type[start:end]], "to_array_1d")], "to_int")
+                with ElseBlockContext():
+                    self.int_data[i, 6:"5+insert_len"] << FunctionCall([FunctionCall([self._event_type[start:self._N]], "to_array_1d")], "to_int")
+
 
     def _parameters(self):
         """
@@ -465,6 +1074,44 @@ class StanFitInterface(StanInterface):
 
                 self._logp_c = ForwardVariableDef("logp_c", "real")
                 self._logp_t = ForwardVariableDef("logp_t", "real")
+
+            # Create vector of parameters
+            # Global pars are src_index, diff_index, logF
+            # Count number of pars:
+            num_of_pars = 0
+            if self._shared_luminosity:
+                num_of_pars += 1
+            else:
+                num_of_pars += self._Ns
+
+            if self._shared_src_index:
+                num_of_pars += 1
+            else:
+                num_of_pars += self._Ns
+
+            if self.sources.diffuse:
+                num_of_pars += 2
+            if self.sources.atmospheric:
+                num_of_pars += 1
+
+            self._global_pars = ForwardVariableDef("global_pars", f"vector[{num_of_pars}]")
+            
+
+            self._local_pars = ForwardArrayDef("local_pars", "vector[J]", self._N_shards_str)
+
+            # Pack source energies into local parameter vector
+            with ForLoopContext(1, self._N_shards, "i") as i:
+                start = ForwardVariableDef("start", "int")
+                end = ForwardVariableDef("end", "int")
+                start << (i - 1) * self._J + 1
+                end << i * self._J
+                # If it's not the last shard or all shards have same length anyway:
+                with IfBlockContext([i != self._N_shards, "||", self._N_mod_J == 0]):
+                    self._local_pars[i] << self._Esrc[start:end]
+                # Else, only relevant for last shard if it's shorter
+                with ElseBlockContext():
+                    self._local_pars[i][1:self._N_mod_J] << self._Esrc[start:self._N]
+
 
             self._F_src << 0.0
             self._Nex_src << 0.0
@@ -734,312 +1381,21 @@ class StanFitInterface(StanInterface):
 
                 k_atmo = "Ns + 1"
 
-            # Main model loop where likelihood is evaluated
+            # Evaluate logF, packup global parameters
             self._logF << StringExpression(["log(", self._F, ")"])
+            if self._shared_src_index:
+                self._global_pars[1] << self._src_index
+                idx = 2
+            else:
+                self._global_pars[1:self._Ns] << self._src_index
+                idx = len(self.sources._point_sources) + 1
+            if self.sources.diffuse:
+                self._global_pars[idx] << self._diff_index
+                idx += 1
+            
+            self._global_pars[idx:idx+self.sources.N-1] << self._logF
+            # Likelihood is evaluated in `lp_reduce`
 
-            # Product over events => add log likelihoods
-            with ForLoopContext(1, self._N, "i") as i:
-
-                self._lp[i] << self._logF
-
-                # Tracks
-                if "tracks" in self._event_types:
-
-                    with IfBlockContext(
-                        [
-                            StringExpression(
-                                [self._event_type[i], " == ", self._track_type]
-                            )
-                        ]
-                    ):
-
-                        # Sum over sources => evaluate and store components
-                        with ForLoopContext(1, n_comps_max, "k") as k:
-
-                            # Point source components
-                            if self.sources.point_source:
-
-                                with IfBlockContext(
-                                    [StringExpression([k, " < ", self._Ns + 1])]
-                                ):
-
-                                    if self._shared_src_index:
-                                        src_index_ref = self._src_index
-                                    else:
-                                        src_index_ref = self._src_index[k]
-
-                                    # log_prob += log(p(Esrc|src_index))
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += ",
-                                            self._src_spectrum_lpdf(
-                                                self._Esrc[i],
-                                                src_index_ref,
-                                                self._Esrc_min,
-                                                self._Esrc_max,
-                                            ),
-                                        ]
-                                    )
-
-                                    # E = Esrc / (1+z)
-                                    self._E[i] << StringExpression(
-                                        [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                    )
-
-                                    # log_prob += log(p(omega_det|varpi, kappa))
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += vMF_lpdf(",
-                                            self._omega_det[i],
-                                            " | ",
-                                            self._varpi[k],
-                                            ", ",
-                                            self._kappa[i],
-                                            ")",
-                                        ]
-                                    )
-
-                            # Diffuse component
-                            if self.sources.diffuse:
-
-                                with IfBlockContext(
-                                    [StringExpression([k, " == ", k_diff])]
-                                ):
-
-                                    # log_prob += log(p(Esrc|diff_index))
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += ",
-                                            self._diff_spectrum_lpdf(
-                                                self._Esrc[i],
-                                                self._diff_index,
-                                                self._Esrc_min,
-                                                self._Esrc_max,
-                                            ),
-                                        ]
-                                    )
-
-                                    # E = Esrc / (1+z)
-                                    self._E[i] << StringExpression(
-                                        [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                    )
-
-                                    # log_prob += log(1/4pi)
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += ",
-                                            np.log(1 / (4 * np.pi)),
-                                        ]
-                                    )
-
-                            # Atmospheric component
-                            if self.sources.atmospheric:
-
-                                with IfBlockContext(
-                                    [StringExpression([k, " == ", k_atmo])]
-                                ):
-
-                                    # log_prob += log(p(Esrc, omega | atmospheric source))
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += ",
-                                            FunctionCall(
-                                                [
-                                                    self._atmo_flux_func(
-                                                        self._Esrc[i],
-                                                        self._omega_det[i],
-                                                    )
-                                                    / self._atmo_flux_integral
-                                                ],
-                                                "log",
-                                            ),
-                                        ]
-                                    )
-
-                                    # E = Esrc
-                                    self._E[i] << self._Esrc[i]
-
-                            # Detection effects
-                            if self.detector_model_type == R2021DetectorModel:
-
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += ",
-                                        self._dm["tracks"].energy_resolution(
-                                            FunctionCall([self._E[i]], "log10"),
-                                            FunctionCall([self._Edet[i]], "log10"),
-                                            self._omega_det[i]
-                                        ),
-                                    ]
-                                )
-
-                            else:
-
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += ",
-                                        self._dm["tracks"].energy_resolution(
-                                            self._E[i], self._Edet[i]
-                                        ),
-                                    ]
-                                )
-                            StringExpression(
-                                [
-                                    self._lp[i][k],
-                                    " += log(interpolate(",
-                                    self._Eg,
-                                    ", ",
-                                    self._Pg_t[k],
-                                    ", ",
-                                    self._E[i],
-                                    "))",
-                                ]
-                            )
-
-                # Cascades
-                # See comments for tracks for more details, approach is the same
-                if "cascades" in self._event_types:
-
-                    with IfBlockContext(
-                        [
-                            StringExpression(
-                                [self._event_type[i], " == ", self._cascade_type]
-                            )
-                        ]
-                    ):
-
-                        with ForLoopContext(1, n_comps_max, "k") as k:
-
-                            # Point source components
-                            if self.sources.point_source:
-
-                                with IfBlockContext(
-                                    [StringExpression([k, " < ", self._Ns + 1])]
-                                ):
-
-                                    if self._shared_src_index:
-                                        src_index_ref = self._src_index
-                                    else:
-                                        src_index_ref = self._src_index[k]
-
-                                    # log_prob += log(p(Esrc | src_index))
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += ",
-                                            self._src_spectrum_lpdf(
-                                                self._Esrc[i],
-                                                src_index_ref,
-                                                self._Esrc_min,
-                                                self._Esrc_max,
-                                            ),
-                                        ]
-                                    )
-
-                                    # E = Esrc / (1+z)
-                                    self._E[i] << StringExpression(
-                                        [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                    )
-
-                                    # log_prob += log(p(omega_det | varpi, kappa))
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += vMF_lpdf(",
-                                            self._omega_det[i],
-                                            " | ",
-                                            self._varpi[k],
-                                            ", ",
-                                            self._kappa[i],
-                                            ")",
-                                        ]
-                                    )
-
-                            # Diffuse component
-                            if self.sources.diffuse:
-
-                                with IfBlockContext(
-                                    [StringExpression([k, " == ", k_diff])]
-                                ):
-
-                                    # log_prob += log(p(Esrc | diff_index))
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += ",
-                                            self._diff_spectrum_lpdf(
-                                                self._Esrc[i],
-                                                self._diff_index,
-                                                self._Esrc_min,
-                                                self._Esrc_max,
-                                            ),
-                                        ]
-                                    )
-
-                                    # E = Esrc / (1+z)
-                                    self._E[i] << StringExpression(
-                                        [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                    )
-
-                                    # log_prob += log(1/4pi)
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += ",
-                                            np.log(1 / (4 * np.pi)),
-                                        ]
-                                    )
-
-                            # Atmospheric component
-                            if self.sources.atmospheric:
-
-                                with IfBlockContext(
-                                    [StringExpression([k, " == ", k_atmo])]
-                                ):
-
-                                    # log_prob += -inf (no atmo comp for cascades!)
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += negative_infinity()",
-                                        ]
-                                    )
-
-                                    # E = Esrc
-                                    self._E[i] << self._Esrc[i]
-
-                            # Detection effects
-                            # log_prob += log(p(Edet | E))
-                            StringExpression(
-                                [
-                                    self._lp[i][k],
-                                    " += ",
-                                    self._dm["cascades"].energy_resolution(
-                                        self._E[i], self._Edet[i]
-                                    ),
-                                ]
-                            )
-
-                            # log_prob += log(p(Edet > Edet_min | E))
-                            StringExpression(
-                                [
-                                    self._lp[i][k],
-                                    " += log(interpolate(",
-                                    self._Eg,
-                                    ", ",
-                                    self._Pg_c[k],
-                                    ", ",
-                                    self._E[i],
-                                    "))",
-                                ]
-                            )
 
     def _model(self):
         """
@@ -1049,9 +1405,10 @@ class StanFitInterface(StanInterface):
         with ModelContext():
 
             # Likelihood: e^(-Nex) \prod_(i=1)^N_events \sum_(k=1)^N_sources lp[i][k]
-            with ForLoopContext(1, self._N, "i") as i:
+            #with ForLoopContext(1, self._N, "i") as i:
 
-                StringExpression(["target += log_sum_exp(", self._lp[i], ")"])
+            # Map data to lp_reduce
+            StringExpression(["target += sum(map_rect(lp_reduce, global_pars, local_pars, real_data, int_data))"])
 
             # Add factor for relative probability of event types
             if "tracks" in self._event_types and "cascades" in self._event_types:

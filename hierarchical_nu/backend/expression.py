@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, Sequence, List
+from typing import Union, Sequence, List, Tuple
 import logging
 from .stan_code import StanCodeBit, TListStrStanCodeBit
 from .code_generator import Contextable
@@ -92,7 +92,7 @@ class _BaseExpression(Contextable, metaclass=ABCMeta):
 
 
 # Define type union for stanable types
-TExpression = Union[_BaseExpression, str, float, int]
+TExpression = Union[_BaseExpression, str, float, int, slice, Tuple]
 TListTExpression = List[TExpression]
 
 
@@ -112,7 +112,25 @@ class Expression(_BaseExpression):
 
     def __getitem__(self: _BaseExpression, key: TExpression):
 
-        stan_code: TListTExpression = [self, "[", key, "]"]
+        if isinstance(key, tuple):
+            stan_code: TListTExpression = [self, "["]
+            for c, k in enumerate(key, start=-len(key)+1):
+                if isinstance(k, slice):
+                    stan_code += [k.start, ":", k.stop]
+                else:
+                    stan_code += [k]
+                # If it's not the last key-entry, add a comma
+                if c != 0:
+                    stan_code += [","]
+                # Last entry: close bracket
+                else:
+                    stan_code += ["]"]
+        elif isinstance(key, slice):
+            start = key.start
+            stop = key.stop
+            stan_code: TListTExpression = [self, "[", start, ":", stop, "]"]
+        else:
+            stan_code: TListTExpression = [self, "[", key, "]"]
 
         return Expression([self, key], stan_code)
 
@@ -131,6 +149,27 @@ class Expression(_BaseExpression):
         inputs: TListTExpression = [self]
         inputs += other
         return Expression(inputs, stan_code)
+
+    """
+    def __iadd__(self: _BaseExpression, other: Union[TExpression, TListTExpression]):
+        # Why is this not working? It does not print a line as __lshift__ with `+=` instead of `=`
+        # Instead at next call of variable the expression is printed
+        logger.debug("Assigning {} to {}".format(other, self))  # noqa: E501
+        logger.debug("My code: {}".format(self.stan_code))  # noqa: E501
+        if not isinstance(other, list):
+            other = [other]
+        stan_code: TListTExpression = [self, " += "]
+        stan_code += other
+
+        if self.output:
+            # Output node is already connected to something
+            logger.debug("Output is connected to: {}".format(self.output))  # noqa: E501
+
+        inputs: TListTExpression = [self]
+        inputs += other
+        return Expression(inputs, stan_code)
+    """   
+
 
     def _make_operator_expression(self, other: TExpression, op_code, invert=False):
         stan_code: TListTExpression = []
@@ -182,6 +221,13 @@ class Expression(_BaseExpression):
 
     def __req__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "==", True)
+
+    def __mod__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "%")
+
+    def __rmod__(self: "Expression", other: TExpression) -> "Expression":
+        return self._make_operator_expression(other, "%", True)
+
 
     """
     Comparisons are used internally to sort contexts, FIX
