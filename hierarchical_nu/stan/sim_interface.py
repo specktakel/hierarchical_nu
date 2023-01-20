@@ -793,7 +793,6 @@ class StanSimInterface(StanInterface):
                         #self._aeff_factor << self._dm_pdf["tracks"].effective_area(
                         #    self._E[i], self._omega
                         #)
-                        StringExpression(["print(E[i])"])
                         self._aeff_factor << self._dm_rng["tracks"].effective_area(
                             self._E[i], self._omega
                         )

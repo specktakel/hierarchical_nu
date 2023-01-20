@@ -46,7 +46,7 @@ class ForwardVariableDef(VariableDef):
 
 
 class InstantVariableDef(VariableDef):
-    """Define variable without assigning value"""
+    """Define variable and immediately assign a value"""
 
     def __init__(self, name: str, var_type: str, value: TListTExpression) -> None:
         self._var_type = var_type

@@ -191,7 +191,7 @@ class StanFitInterface(StanInterface):
                 Ns = InstantVariableDef("Ns", "int", ["int_data[2]"])
                 diffuse = InstantVariableDef("diffuse", "int", ["int_data[3]"])
                 atmo = InstantVariableDef("atmo", "int", ["int_data[4]"])
-                Ns_tot = InstantVariableDef("Ns_tot", "int", ["Ns + atmo + diffuse"])
+                Ns_tot = InstantVariableDef("Ns_tot", "int", ["Ns+atmo+diffuse"])
                 Ngrid = InstantVariableDef("Ngrid", "int", ["int_data[5]"])
                 start = ForwardVariableDef("start", "int")
                 end = ForwardVariableDef("end", "int")
@@ -219,7 +219,7 @@ class StanFitInterface(StanInterface):
                 logF << StringExpression(["global[", idx, ":]"])
 
                 # Local pars are only source energies
-                Esrc = ForwardVariableDef("Esrc", "vector[N]")
+                Esrc = ForwardVariableDef("Esrc", "vector[size(local)]")
                 Esrc << StringExpression(["local"])
                 E = ForwardVariableDef("E", "vector[N]")
 
@@ -309,7 +309,7 @@ class StanFitInterface(StanInterface):
 
                 else:
                     Pdet_grid_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", ["[Ns_tot]"])
-                    with ForLoopContext(1, "", "f") as f:
+                    with ForLoopContext(1, "Ns_tot", "f") as f:
                         end << end + Ngrid
                         #StringExpression(['print(start, end)'])
                         Pdet_grid_c[f] << StringExpression(["to_vector(real_data[start:end])"])
@@ -799,7 +799,7 @@ class StanFitInterface(StanInterface):
             # Create the rectangular data blocks for use in `map_rect`
             # This is badly named (N % Nshards...)
             self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
-            self._N_mod_J << self._N % self._N_shards
+            self._N_mod_J << self._N % self._J
 
             # Find size for real_data array
             sd_events_J = 5
@@ -912,9 +912,15 @@ class StanFitInterface(StanInterface):
                 
                 # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
                 self.int_data[i, 1] << insert_len   
-                self.int_data[i, 2] << self._Ns 
-                self.int_data[i, 3] << 1 if self.sources.diffuse else 0
-                self.int_data[i, 4] << 1 if self.sources.atmospheric else 0
+                self.int_data[i, 2] << self._Ns
+                if self.sources.diffuse:
+                    self.int_data[i, 3] << 1
+                else:
+                    self.int_data[i, 3] << 0
+                if self.sources.atmospheric:
+                    self.int_data[i, 4] << 1
+                else:
+                    self.int_data[i, 4] << 0
                 self.int_data[i, 5] << self._Ngrid
                 with IfBlockContext([i != self._N_shards, "||", self._N_mod_J == 0]):
                     self.int_data[i, 6:"5+insert_len"] << FunctionCall([FunctionCall([self._event_type[start:end]], "to_array_1d")], "to_int")

@@ -150,10 +150,11 @@ class Events:
 
                 
     @classmethod
-    def from_ev_file(cls, p: str):
+    def from_ev_file(cls, p: str, **kwargs):
         """
         Load events from the 2021 data release
         :param p: string of period to be loaded.
+        :param kwargs: kwargs passed to make an event selection, see icecube_tools's documentation for details
         :return: :class:`hierarchical_nu.events.Events`
         """
 
@@ -161,6 +162,7 @@ class Events:
 
         # Borrow from icecube_tools
         events = RealEvents.from_event_files(p)
+        events.restrict(**kwargs)
         # Read in relevant data
         ra = events.ra[p]
         dec = events.dec[p]
