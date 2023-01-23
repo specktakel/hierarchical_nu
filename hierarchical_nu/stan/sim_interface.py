@@ -1128,13 +1128,6 @@ class StanSimInterface(StanInterface):
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
                         )
 
-                        self._aeff_factor << self._dm_rng["cascades"].effective_area(
-                            self._E[i], self._omega
-                        )
-                        #self._aeff_factor << self._dm_pdf["cascades"].effective_area(
-                        #    self._E[i], self._omega
-                        #)
-
                         # Energy spectrum
                         if self.sources.point_source:
 
@@ -1233,6 +1226,9 @@ class StanSimInterface(StanInterface):
                                     1 + self._z[self._lam[i]]
                                 )
 
+                        self._aeff_factor << self._dm_rng["cascades"].effective_area(
+                            self._E[i], self._omega
+                        )
 
                         self._f_value = self._src_factor * self._aeff_factor
 
