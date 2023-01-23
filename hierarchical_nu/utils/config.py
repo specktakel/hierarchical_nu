@@ -53,6 +53,9 @@ class ParameterConfig:
 
     obs_time: float = 10  # years
 
+    nshards: int = 2
+    threads_per_chain: int = nshards
+
 
 @dataclass
 class HierarchicalNuConfig:

@@ -63,6 +63,7 @@ class ModelCheck:
             )
 
             self._obs_time = parameter_config["obs_time"] * u.year
+            self._nshards = parameter_config["nshards"]
 
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
@@ -122,6 +123,8 @@ class ModelCheck:
         Emin = parameter_config["Emin"] * u.GeV
         Emax = parameter_config["Emax"] * u.GeV
         atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
+        nshards = parameter_config["nshards"]
+        threads_per_chain = parameter_config["threads_per_chain"]
 
         # Build necessary details to define simulation and fit code
         sources = _initialise_sources()
@@ -146,6 +149,8 @@ class ModelCheck:
             fit_name,
             sources,
             detector_model_type,
+            nshards=nshards,
+            threads_per_chain=threads_per_chain
         )
 
         stan_fit_interface.generate()
@@ -368,6 +373,7 @@ class ModelCheck:
                     sim.events,
                     self._obs_time,
                     priors=self.priors,
+                    nshards=self._nshards
                 )
                 fit.precomputation()
                 fit.set_stan_filename(file_config["fit_filename"])

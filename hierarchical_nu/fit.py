@@ -37,6 +37,7 @@ class StanFit:
         events: Events,
         observation_time: u.year,
         priors: Priors = Priors(),
+        nshards: int = 0,
     ):
         """
         To set up and run fits in Stan.
@@ -46,16 +47,20 @@ class StanFit:
         self._detector_model_type = detector_model
         self._events = events
         self._observation_time = observation_time
+        self._nshards = nshards
 
         self._sources.organise()
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
+
+        
 
         self._stan_interface = StanFitInterface(
             stan_file_name,
             self._sources,
             self._detector_model_type,
             priors=priors,
+            nshards=nshards
         )
 
         # Check for unsupported combinations
@@ -163,7 +168,10 @@ class StanFit:
             stan_file=self._fit_filename, stanc_options={"include-paths": include_paths}
         )
 
-    def run(self, iterations=1000, chains=1, seed=None, show_progress=False, **kwargs):
+    def run(self, iterations=1000, chains=1, seed=None, show_progress=False, threads_per_chain=1, **kwargs):
+        
+        if threads_per_chain == 1 and self._nshards >=2:
+            threads_per_chain == max(self._nshards, 12)
 
         self._fit_inputs = self._get_fit_inputs()
 
@@ -174,6 +182,7 @@ class StanFit:
             seed=seed,
             show_console=True,
             show_progress=show_progress,
+            threads_per_chain=threads_per_chain,
             **kwargs
         )
 
@@ -385,8 +394,10 @@ class StanFit:
 
         fit_inputs = {}
         fit_inputs["N"] = self._events.N
-        fit_inputs["N_shards"] = 8
-        fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
+        if self._nshards:
+            # Number of shards and max. events per shards only used if multithreading is desired
+            fit_inputs["N_shards"] = self._nshards
+            fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
         fit_inputs["Ns_tot"] = len(
             [s for s in self._sources.sources]
         )
