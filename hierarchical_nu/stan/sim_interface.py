@@ -790,25 +790,6 @@ class StanSimInterface(StanInterface):
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
                         )
 
-                        #self._aeff_factor << self._dm_pdf["tracks"].effective_area(
-                        #    self._E[i], self._omega
-                        #)
-                        StringExpression(["print(E[i])"])
-                        self._aeff_factor << self._dm_rng["tracks"].effective_area(
-                            self._E[i], self._omega
-                        )
-
-                        if (
-                            self.detector_model_type == NorthernTracksDetectorModel
-                            or self.detector_model_type == IceCubeDetectorModel
-                        ):
-
-                            with IfBlockContext(
-                                [StringExpression([self._cosz[i], ">= 0.1"])]
-                            ):
-
-                                self._aeff_factor << 0
-
                         # Calculate the envelope for rejection sampling and the shape of
                         # the source spectrum for the various source components
                         if self.sources.point_source:
@@ -990,6 +971,21 @@ class StanSimInterface(StanInterface):
                                     << self._atmo_flux(self._E[i], self._omega) * 1e9
                                 )  # Scale for reasonable c_values in rejection algo (see precomputation)
                                 self._Esrc[i] << self._E[i]
+
+                        self._aeff_factor << self._dm_rng["tracks"].effective_area(
+                            self._E[i], self._omega
+                        )
+
+                        if (
+                            self.detector_model_type == NorthernTracksDetectorModel
+                            or self.detector_model_type == IceCubeDetectorModel
+                        ):
+
+                            with IfBlockContext(
+                                [StringExpression([self._cosz[i], ">= 0.1"])]
+                            ):
+
+                                self._aeff_factor << 0
 
                         # Calculate quantities for rejection sampling
                         # Value of the distribution that we want to sample from
