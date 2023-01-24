@@ -171,7 +171,6 @@ def generate_rv_test_code(output_directory):
             with GeneratedQuantitiesContext():
 
                 ntd_rng = NorthernTracksDetectorModel(mode=DistributionMode.RNG)
-                ntd_pdf = NorthernTracksDetectorModel(mode=DistributionMode.PDF)
                 rec_energy = ForwardVariableDef("rec_energy", "real")
                 rec_dir = ForwardVariableDef("rec_dir", "vector[3]")
 

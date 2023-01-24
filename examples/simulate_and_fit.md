@@ -8,9 +8,9 @@ jupyter:
       format_version: '1.3'
       jupytext_version: 1.14.1
   kernelspec:
-    display_name: hierarchical_nu
+    display_name: Python 3 (ipykernel)
     language: python
-    name: hierarchical_nu
+    name: python3
 ---
 
 # Demonstrate simulation and fit
@@ -86,6 +86,7 @@ from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.detector.cascades import CascadesDetectorModel 
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 ```
 
 In order to go from sources to a simulation, we need to specify an observation time and a detector model. The detector model defines the effective area, energy resolution and angular resolution to be simulated. The currently implemented options are `NorthernTracksDetectorModel`, `CascadesDetectorModel` and `IceCubeDetectorModel`. The `IceCubeDetectorModel` is really a wrapper around the models for tracks and cascades, for an easy interface. The models should be used in conjunction with the correct `Edet_min`, as described above.
@@ -94,7 +95,7 @@ In order to go from sources to a simulation, we need to specify an observation t
 obs_time = 10 * u.year
 #sim = Simulation(my_sources, CascadesDetectorModel, obs_time)
 #sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
-sim = Simulation(my_sources, IceCubeDetectorModel, obs_time)
+sim = Simulation(my_sources, R2021DetectorModel, obs_time)
 ```
 
 Below are shown all the necessary steps to set up and run a simulation for clarity. There is also the handy sim.setup_and_run() option which calls everything.

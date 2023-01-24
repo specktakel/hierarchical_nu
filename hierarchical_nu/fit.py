@@ -13,6 +13,7 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.detector_model import DetectorModel
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors
@@ -141,6 +142,10 @@ class StanFit:
 
         if not include_paths:
             include_paths = [STAN_PATH]
+        if self._detector_model_type == R2021DetectorModel:
+            r2021_path = os.path.join(os.getcwd(), ".stan_files")
+            if not r2021_path in include_paths:
+                include_paths.append(r2021_path)
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename, stanc_options={"include-paths": include_paths}
@@ -155,6 +160,7 @@ class StanFit:
             iter_sampling=iterations,
             chains=chains,
             seed=seed,
+            show_console=show_progress,
             show_progress=show_progress,
             **kwargs
         )

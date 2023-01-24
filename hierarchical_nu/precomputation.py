@@ -18,6 +18,7 @@ from hierarchical_nu.source.source import (
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import ParScale, Parameter
 from hierarchical_nu.backend.stan_generator import StanGenerator
+from hierarchical_nu.detector.r2021 import R2021EnergyResolution
 
 m_to_cm = 100  # cm
 
@@ -167,6 +168,13 @@ class ExposureIntegral:
                     ]
                     * u.m**2
                 )
+            if isinstance(self.energy_resolution, R2021EnergyResolution):
+                self.energy_resolution.set_fit_params(dec.value)
+            
+            p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                e_cen, self._min_det_energy
+            )
+            p_Edet = np.nan_to_num(p_Edet)
 
         else:
 
@@ -188,9 +196,26 @@ class ExposureIntegral:
 
             aeff = np.array(self.effective_area.eff_area, copy=True) << (u.m**2)
 
-        p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-            e_cen, self._min_det_energy
-        )
+            if isinstance(self.energy_resolution, R2021EnergyResolution):
+
+                p_Edet_av = np.zeros((self.energy_resolution._declination_bins[:-1].size, e_cen.size))
+                for c, (dec_l, dec_h) in enumerate(zip(
+                    self.energy_resolution._declination_bins[:-1], self.energy_resolution._declination_bins[1:])
+                ):
+                    self.energy_resolution.set_fit_params(dec_l+0.01)
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        e_cen, self._min_det_energy
+                    )
+                    #Integral over sphere, omit phi \el 0, 2pi and just divide each value by two here already
+                    p_Edet = np.nan_to_num(p_Edet)
+                    p_Edet_av[c] = p_Edet * (np.cos(np.pi / 2 - dec_h) - np.cos(np.pi / 2 - dec_l)) / 2
+
+                p_Edet = np.sum(p_Edet_av, axis=0)
+
+            else:
+                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                    e_cen, self._min_det_energy
+                )      
 
         return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
 

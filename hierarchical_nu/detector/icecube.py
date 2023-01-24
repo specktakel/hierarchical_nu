@@ -36,8 +36,8 @@ class IceCubeDetectorModel(DetectorModel):
             energy_res = CascadesEnergyResolution(mode)
             self._energy_resolution = energy_res
 
-            if mode == DistributionMode.PDF:
-                self._eff_area = CascadesEffectiveArea()
+            #if mode == DistributionMode.PDF:
+            self._eff_area = CascadesEffectiveArea()
 
         elif self._event_type == "tracks":
 
@@ -47,8 +47,8 @@ class IceCubeDetectorModel(DetectorModel):
             energy_res = NorthernTracksEnergyResolution(mode)
             self._energy_resolution = energy_res
 
-            if mode == DistributionMode.PDF:
-                self._eff_area = NorthernTracksEffectiveArea()
+            #if mode == DistributionMode.PDF:
+            self._eff_area = NorthernTracksEffectiveArea()
 
         else:
 
