@@ -34,6 +34,8 @@ class StanFit:
         events: Events,
         observation_time: u.year,
         priors: Priors = Priors(),
+        atmo_flux_energy_points: int = 100,
+        atmo_flux_theta_points: int = 30,
     ):
         """
         To set up and run fits in Stan.
@@ -53,6 +55,8 @@ class StanFit:
             self._sources,
             self._detector_model_type,
             priors=priors,
+            atmo_flux_energy_points=atmo_flux_energy_points,
+            atmo_flux_theta_points=atmo_flux_theta_points,
         )
 
         # Check for unsupported combinations
@@ -426,7 +430,7 @@ class StanFit:
         if "tracks" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_t"] = [
-                _.to(u.m ** 2).value.tolist()
+                _.to(u.m**2).value.tolist()
                 for _ in self._exposure_integral["tracks"].integral_grid
             ]
 
@@ -437,7 +441,7 @@ class StanFit:
         if "cascades" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_c"] = [
-                _.to(u.m ** 2).value.tolist()
+                _.to(u.m**2).value.tolist()
                 for _ in self._exposure_integral["cascades"].integral_grid
             ]
 
@@ -450,7 +454,7 @@ class StanFit:
             fit_inputs["atmo_integ_val"] = (
                 self._exposure_integral["tracks"]
                 .integral_fixed_vals[0]
-                .to(u.m ** 2)
+                .to(u.m**2)
                 .value
             )
 
