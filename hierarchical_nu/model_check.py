@@ -124,7 +124,6 @@ class ModelCheck:
         Emax = parameter_config["Emax"] * u.GeV
         atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
         nshards = parameter_config["nshards"]
-        threads_per_chain = parameter_config["threads_per_chain"]
 
         # Build necessary details to define simulation and fit code
         sources = _initialise_sources()
@@ -149,8 +148,7 @@ class ModelCheck:
             fit_name,
             sources,
             detector_model_type,
-            nshards=nshards,
-            threads_per_chain=threads_per_chain
+            nshards=nshards
         )
 
         stan_fit_interface.generate()
