@@ -23,7 +23,6 @@ from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
-
 from hierarchical_nu.priors import Priors
 
 
@@ -64,6 +63,7 @@ class ModelCheck:
             )
 
             self._obs_time = parameter_config["obs_time"] * u.year
+            self._nshards = parameter_config["nshards"]
 
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
@@ -83,10 +83,10 @@ class ModelCheck:
             self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
                 flux_unit
             ).value
-            # atmo_bg = self._sources.atmospheric
-            # self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
-            #    flux_unit
-            #).value
+            atmo_bg = self._sources.atmospheric
+            self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
+                flux_unit
+            ).value
             self.truths["L"] = (
                 Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
             )
@@ -98,7 +98,7 @@ class ModelCheck:
             self.truths["Nex"] = Nex
             self.truths["Nex_src"] = Nex_per_comp[0]
             self.truths["Nex_diff"] = Nex_per_comp[1]
-            # self.truths["Nex_atmo"] = Nex_per_comp[2]
+            self.truths["Nex_atmo"] = Nex_per_comp[2]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
             self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
         self._default_var_names = [key for key in self.truths]
@@ -123,6 +123,7 @@ class ModelCheck:
         Emin = parameter_config["Emin"] * u.GeV
         Emax = parameter_config["Emax"] * u.GeV
         atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
+        nshards = parameter_config["nshards"]
 
         # Build necessary details to define simulation and fit code
         sources = _initialise_sources()
@@ -147,6 +148,7 @@ class ModelCheck:
             fit_name,
             sources,
             detector_model_type,
+            nshards=nshards
         )
 
         stan_fit_interface.generate()
@@ -168,12 +170,12 @@ class ModelCheck:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-    def parallel_run(self, n_jobs=1, n_subjobs=1, seed=None):
+    def parallel_run(self, n_jobs=1, n_subjobs=1, seed=None, **kwargs):
 
         job_seeds = [(seed + job) * 10 for job in range(n_jobs)]
 
         self._results = Parallel(n_jobs=n_jobs, backend="loky")(
-            delayed(self._single_run)(n_subjobs, seed=s) for s in job_seeds
+            delayed(self._single_run)(n_subjobs, seed=s, **kwargs) for s in job_seeds
         )
 
     def save(self, filename):
@@ -319,7 +321,7 @@ class ModelCheck:
         fig.tight_layout()
         return fig, ax
 
-    def _single_run(self, n_subjobs, seed):
+    def _single_run(self, n_subjobs, seed, **kwargs):
         """
         Single run to be called using Parallel.
         """
@@ -343,6 +345,7 @@ class ModelCheck:
             sys.stderr.write("Run %i\n" % i)
 
             # Simulation
+            # Should reduce time consumption if only on first iteration model is compiled
             if i == 0:
                 sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
                 sim.precomputation(self._exposure_integral)
@@ -354,10 +357,13 @@ class ModelCheck:
             lam = sim._sim_output.stan_variable("Lambda")[0]
             sim_output = {}
             sim_output["Lambda"] = lam
+            
 
             self.events = sim.events
+            
 
             # Fit
+            # Same as above, save time
             if i == 0:
                 fit = StanFit(
                     self._sources,
@@ -365,11 +371,15 @@ class ModelCheck:
                     sim.events,
                     self._obs_time,
                     priors=self.priors,
+                    nshards=self._nshards
                 )
-                fit.precomputation(exposure_integral=sim._exposure_integral)
+                fit.precomputation()
                 fit.set_stan_filename(file_config["fit_filename"])
                 fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
-            fit.run(seed=s, show_progress=True)
+            
+            else:
+                fit.events = sim.events
+            fit.run(seed=s, show_progress=True, **kwargs)
 
             self.fit = fit
 

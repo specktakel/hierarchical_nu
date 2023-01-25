@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["VariableDef", "StanArray", "ForwardArrayDef", "ForwardVariableDef", "ForwardVectorDef"]
+__all__ = ["VariableDef", "StanArray", "ForwardArrayDef", "ForwardVariableDef", "ForwardVectorDef", "InstantVariableDef"]
 
 
 class VariableDef(NamedExpression):
@@ -43,6 +43,20 @@ class ForwardVariableDef(VariableDef):
         """See parent class"""
 
         return [self._var_type + " " + self.name]
+
+
+class InstantVariableDef(VariableDef):
+    """Define variable and immediately assign a value"""
+
+    def __init__(self, name: str, var_type: str, value: TListTExpression) -> None:
+        self._var_type = var_type
+        self._value = value
+        VariableDef.__init__(self, name)
+
+    def _gen_def_code(self) -> TListTExpression:
+        """See parent class"""
+
+        return [self._var_type + " " + self.name + " = "] + self._value
 
 
 class ParameterDef(ForwardVariableDef):

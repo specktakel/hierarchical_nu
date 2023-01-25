@@ -12,6 +12,7 @@ from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 # Set up sources
 Parameter.clear_registry()
@@ -52,6 +53,7 @@ detector_models = [
     NorthernTracksDetectorModel,
     CascadesDetectorModel,
     IceCubeDetectorModel,
+    R2021DetectorModel
 ]
 
 stanc_options = {"include-paths": [STAN_PATH]}
