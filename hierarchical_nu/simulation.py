@@ -141,7 +141,7 @@ class Simulation:
             stanc_options=stanc_options,
         )
 
-    def run(self, seed=None, verbose=False):
+    def run(self, seed=None, verbose=False, **kwargs):
 
         self._sim_inputs = self._get_sim_inputs(seed)
 
@@ -159,7 +159,8 @@ class Simulation:
             chains=1,
             fixed_param=True,
             seed=seed,
-            show_console=True
+            show_console=True,
+            **kwargs,
         )
 
         self._sim_output = sim_output

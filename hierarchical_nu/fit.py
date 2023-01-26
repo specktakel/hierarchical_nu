@@ -151,7 +151,7 @@ class StanFit:
             stan_file=self._fit_filename, stanc_options={"include-paths": include_paths}
         )
 
-    def run(self, iterations=1000, chains=1, seed=None, show_progress=False, **kwargs):
+    def run(self, iterations=1000, chains=1, seed=None, **kwargs):
 
         self._fit_inputs = self._get_fit_inputs()
 
@@ -160,8 +160,6 @@ class StanFit:
             iter_sampling=iterations,
             chains=chains,
             seed=seed,
-            show_console=show_progress,
-            show_progress=show_progress,
             **kwargs
         )
 
