@@ -159,7 +159,6 @@ class Simulation:
             chains=1,
             fixed_param=True,
             seed=seed,
-            show_console=True,
             **kwargs,
         )
 
@@ -243,7 +242,7 @@ class Simulation:
 
         return fig, ax
 
-    def show_skymap(self, track_zoom: float=1.):
+    def show_skymap(self, track_zoom: float = 1.0):
         """
         :param track_zoom: Increase radius of track events by this factor for visibility
         """
