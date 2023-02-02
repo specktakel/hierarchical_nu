@@ -38,6 +38,8 @@ class StanFit:
         events: Events,
         observation_time: u.year,
         priors: Priors = Priors(),
+        atmo_flux_energy_points: int = 100,
+        atmo_flux_theta_points: int = 30,
         nshards: int = 0,
     ):
         """
@@ -60,6 +62,8 @@ class StanFit:
             self._detector_model_type,
             priors=priors,
             nshards=nshards,
+            atmo_flux_energy_points=atmo_flux_energy_points,
+            atmo_flux_theta_points=atmo_flux_theta_points,
         )
 
         # Check for unsupported combinations
@@ -187,7 +191,6 @@ class StanFit:
             iter_sampling=iterations,
             chains=chains,
             seed=seed,
-            show_console=True,
             show_progress=show_progress,
             threads_per_chain=threads_per_chain,
             **kwargs
