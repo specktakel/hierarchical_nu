@@ -4,7 +4,7 @@ import h5py
 import logging
 import collections
 from astropy import units as u
-from typing import List
+from typing import List, Union
 import corner
 
 from math import ceil
@@ -172,12 +172,12 @@ class StanFit:
         chains: int = 1,
         seed: int = None,
         show_progress: bool = False,
-        threads_per_chain: int = None,
+        threads_per_chain: Union[int, None] = None,
         **kwargs
     ):
 
         # Use threads_per_chain = nshards as default
-        if not threads_per_chain:
+        if not threads_per_chain and self._nshards > 0:
             threads_per_chain = self._nshards
 
         self._fit_inputs = self._get_fit_inputs()
