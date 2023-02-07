@@ -4,6 +4,7 @@ import h5py
 import logging
 import collections
 from astropy import units as u
+from typing import List, Union
 import corner
 
 from math import ceil
@@ -37,6 +38,8 @@ class StanFit:
         events: Events,
         observation_time: u.year,
         priors: Priors = Priors(),
+        atmo_flux_energy_points: int = 100,
+        atmo_flux_theta_points: int = 30,
         nshards: int = 0,
     ):
         """
@@ -53,14 +56,14 @@ class StanFit:
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
 
-        
-
         self._stan_interface = StanFitInterface(
             stan_file_name,
             self._sources,
             self._detector_model_type,
             priors=priors,
-            nshards=nshards
+            nshards=nshards,
+            atmo_flux_energy_points=atmo_flux_energy_points,
+            atmo_flux_theta_points=atmo_flux_theta_points,
         )
 
         # Check for unsupported combinations
@@ -114,19 +117,16 @@ class StanFit:
 
         self._exposure_integral = collections.OrderedDict()
 
-    
     @property
     def events(self):
         return self._events
 
-    
     @events.setter
     def events(self, events: Events):
         if isinstance(events, Events):
             self._events = events
         else:
             raise ValueError("events must be instance of Events")
-
 
     def precomputation(
         self,
@@ -165,13 +165,24 @@ class StanFit:
                 include_paths.append(r2021_path)
 
         self._fit = CmdStanModel(
-            stan_file=self._fit_filename, stanc_options={"include-paths": include_paths}
+            stan_file=self._fit_filename,
+            stanc_options={"include-paths": include_paths},
+            cpp_options={"STAN_THREADS": True},
         )
 
-    def run(self, iterations=1000, chains=1, seed=None, show_progress=False, threads_per_chain=1, **kwargs):
-        
-        if threads_per_chain == 1 and self._nshards >=2:
-            threads_per_chain == max(self._nshards, 12)
+    def run(
+        self,
+        iterations: int = 1000,
+        chains: int = 1,
+        seed: int = None,
+        show_progress: bool = False,
+        threads_per_chain: Union[int, None] = None,
+        **kwargs
+    ):
+
+        # Use threads_per_chain = nshards as default
+        if not threads_per_chain and self._nshards > 0:
+            threads_per_chain = self._nshards
 
         self._fit_inputs = self._get_fit_inputs()
 
@@ -180,7 +191,6 @@ class StanFit:
             iter_sampling=iterations,
             chains=chains,
             seed=seed,
-            show_console=True,
             show_progress=show_progress,
             threads_per_chain=threads_per_chain,
             **kwargs
@@ -188,11 +198,11 @@ class StanFit:
 
     def setup_and_run(
         self,
-        iterations=1000,
-        chains=1,
-        seed=None,
-        show_progress=False,
-        include_paths=None,
+        iterations: int = 1000,
+        chains: int = 1,
+        seed: int = None,
+        show_progress: bool = False,
+        include_paths: List[str] = None,
         **kwargs
     ):
 
@@ -398,9 +408,7 @@ class StanFit:
             # Number of shards and max. events per shards only used if multithreading is desired
             fit_inputs["N_shards"] = self._nshards
             fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
-        fit_inputs["Ns_tot"] = len(
-            [s for s in self._sources.sources]
-        )
+        fit_inputs["Ns_tot"] = len([s for s in self._sources.sources])
         fit_inputs["Edet"] = self._events.energies.to(u.GeV).value
         fit_inputs["omega_det"] = self._events.unit_vectors
         fit_inputs["omega_det"] = [
@@ -464,7 +472,7 @@ class StanFit:
         if "tracks" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_t"] = [
-                _.to(u.m ** 2).value.tolist()
+                _.to(u.m**2).value.tolist()
                 for _ in self._exposure_integral["tracks"].integral_grid
             ]
 
@@ -475,7 +483,7 @@ class StanFit:
         if "cascades" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_c"] = [
-                _.to(u.m ** 2).value.tolist()
+                _.to(u.m**2).value.tolist()
                 for _ in self._exposure_integral["cascades"].integral_grid
             ]
 
@@ -488,7 +496,7 @@ class StanFit:
             fit_inputs["atmo_integ_val"] = (
                 self._exposure_integral["tracks"]
                 .integral_fixed_vals[0]
-                .to(u.m ** 2)
+                .to(u.m**2)
                 .value
             )
 

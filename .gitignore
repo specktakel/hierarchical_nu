@@ -153,13 +153,13 @@ software/simulation_study/output/
 ## Stan-related
 *.hpp
 .stan_files
+*.csv
 
 ## VSCode
 .vscode/
 
 # Built Visual Studio Code Extensions
 *.vsix
-
 
 
 

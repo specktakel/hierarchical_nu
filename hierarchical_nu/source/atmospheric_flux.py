@@ -89,12 +89,6 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
                 [spl_evals_stan[cos_theta_bin_index + 1]], "to_vector"
             )
 
-            # vect_spl_vals_low = FunctionCall(
-            #    [spl_evals_stan[cos_theta_bin_index]], "to_vector"
-            # )
-            # vect_spl_vals_high = FunctionCall(
-            #    [spl_evals_stan[cos_theta_bin_index + 1]], "to_vector"
-            # )
             vect_log_e_grid = FunctionCall([log_energy_grid_stan], "to_vector")
 
             interpolated_energy_low = FunctionCall(
