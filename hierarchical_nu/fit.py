@@ -7,7 +7,7 @@ from astropy import units as u
 from typing import List, Union
 import corner
 
-from math import ceil
+from math import ceil, floor
 
 from cmdstanpy import CmdStanModel
 
@@ -404,7 +404,7 @@ class StanFit:
 
         fit_inputs = {}
         fit_inputs["N"] = self._events.N
-        if self._nshards:
+        if self._nshards not in [0, 1]:
             # Number of shards and max. events per shards only used if multithreading is desired
             fit_inputs["N_shards"] = self._nshards
             fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
