@@ -161,6 +161,7 @@ software/simulation_study/output/
 # Built Visual Studio Code Extensions
 *.vsix
 
+cache_files
 
 
 
