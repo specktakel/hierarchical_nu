@@ -64,6 +64,7 @@ class ModelCheck:
 
             self._obs_time = parameter_config["obs_time"] * u.year
             self._nshards = parameter_config["nshards"]
+            self._threads_per_chain = parameter_config["threads_per_chain"]
 
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
@@ -412,7 +413,12 @@ class ModelCheck:
 
             else:
                 fit.events = sim.events
-            fit.run(seed=s, show_progress=True, **kwargs)
+            fit.run(
+                seed=s,
+                show_progress=True,
+                threads_per_chain=self._threads_per_chain,
+                **kwargs
+            )
 
             self.fit = fit
 
