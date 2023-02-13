@@ -29,7 +29,7 @@ L = Parameter(
 )
 
 diffuse_norm = Parameter(
-    1e-13 / u.GeV / u.m ** 2 / u.s,
+    1e-13 / u.GeV / u.m**2 / u.s,
     "diffuse_norm",
     fixed=True,
     par_range=(0, np.inf),
@@ -53,7 +53,7 @@ detector_models = [
     NorthernTracksDetectorModel,
     CascadesDetectorModel,
     IceCubeDetectorModel,
-    R2021DetectorModel
+    R2021DetectorModel,
 ]
 
 stanc_options = {"include-paths": [STAN_PATH]}
@@ -80,10 +80,12 @@ def test_stan_fit_interface(output_directory):
 
     for dm in detector_models:
 
-        interface = StanFitInterface(file_name, my_sources, dm)
+        for nshards in [1, 2]:
 
-        # Generate Stan code
-        stan_file = interface.generate()
+            interface = StanFitInterface(file_name, my_sources, dm, nshards=nshards)
 
-        # Compile Stan code
-        stan_model = CmdStanModel(stan_file=stan_file, stanc_options=stanc_options)
+            # Generate Stan code
+            stan_file = interface.generate()
+
+            # Compile Stan code
+            stan_model = CmdStanModel(stan_file=stan_file, stanc_options=stanc_options)
