@@ -145,10 +145,7 @@ class ModelCheck:
         # Generate fit Stan file
         fit_name = file_config["fit_filename"][:-5]
         stan_fit_interface = StanFitInterface(
-            fit_name,
-            sources,
-            detector_model_type,
-            nshards=nshards
+            fit_name, sources, detector_model_type, nshards=nshards
         )
 
         stan_fit_interface.generate()
@@ -244,7 +241,14 @@ class ModelCheck:
 
         return output
 
-    def compare(self, var_names=None, var_labels=None, show_prior=False, nbins=50):
+    def compare(
+        self,
+        var_names=None,
+        var_labels=None,
+        show_prior=False,
+        nbins=50,
+        alpha=0.1,
+    ):
 
         if not var_names:
             var_names = self._default_var_names
@@ -278,7 +282,7 @@ class ModelCheck:
                 ax[v].hist(
                     self.results[var_name][i],
                     color="#017B76",
-                    alpha=0.1,
+                    alpha=alpha,
                     histtype="step",
                     bins=bins,
                     lw=1.0,
@@ -347,7 +351,9 @@ class ModelCheck:
             # Simulation
             # Should reduce time consumption if only on first iteration model is compiled
             if i == 0:
-                sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
+                sim = Simulation(
+                    self._sources, self._detector_model_type, self._obs_time
+                )
                 sim.precomputation(self._exposure_integral)
                 sim.set_stan_filename(file_config["sim_filename"])
                 sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
@@ -357,10 +363,8 @@ class ModelCheck:
             lam = sim._sim_output.stan_variable("Lambda")[0]
             sim_output = {}
             sim_output["Lambda"] = lam
-            
 
             self.events = sim.events
-            
 
             # Fit
             # Same as above, save time
@@ -371,12 +375,12 @@ class ModelCheck:
                     sim.events,
                     self._obs_time,
                     priors=self.priors,
-                    nshards=self._nshards
+                    nshards=self._nshards,
                 )
                 fit.precomputation()
                 fit.set_stan_filename(file_config["fit_filename"])
                 fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
-            
+
             else:
                 fit.events = sim.events
             fit.run(seed=s, show_progress=True, **kwargs)
