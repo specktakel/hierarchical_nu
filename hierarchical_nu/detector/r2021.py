@@ -688,6 +688,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                 self._poly_params_mu__ = self._poly_params_mu.copy()
                 self._poly_params_sd__ = self._poly_params_sd.copy()
+                self._poly_limits__ = self._poly_limits.copy()
+                self._eres__ = self._eres.copy()
 
             else:
                 logger.info("Re-doing energy lognorm data and saving files.")
@@ -1415,9 +1417,9 @@ class R2021DetectorModel(DetectorModel):
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
-        event_type: str="tracks",
-        rewrite: bool=True,
-        gen_type: str="lognorm"
+        event_type: str = "tracks",
+        rewrite: bool = False,
+        gen_type: str = "lognorm"
     ) -> None:
 
         super().__init__(mode, event_type="tracks")
