@@ -389,14 +389,41 @@ class ExposureIntegral:
 
                 f_values_all.append(f_values)
 
-            g_values = bbpl_pdf(
-                E_range,
-                Emin,
-                Eth,
-                Emax,
-                gamma1,
-                gamma2,
-            )
+            if Emin < Eth and Emax > Eth:
+
+                g_values = bbpl_pdf(
+                    E_range,
+                    Emin,
+                    Eth,
+                    Emax,
+                    gamma1,
+                    gamma2,
+                )
+
+            elif Emin < Eth and Emax <= Eth:
+
+                Eth_tmp = Emin + (Emax-Emin)/2
+
+                g_values = bbpl_pdf(
+                    E_range,
+                    Emin,
+                    Eth_tmp,
+                    Emax,
+                    gamma1,
+                    gamma1,
+                )
+
+            elif Emin >= Eth and Emax > Eth:
+
+                Eth_tmp = Emin + (Emax-Emin)/2
+                g_values = bbpl_pdf(
+                    E_range,
+                    Emin,
+                    Eth_tmp,
+                    Emax,
+                    gamma2,
+                    gamma2,
+                )
 
             c_values_src = [max(f_values / g_values) for f_values in f_values_all]
             c_values.append(c_values_src)
