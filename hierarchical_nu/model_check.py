@@ -23,7 +23,7 @@ from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
-from hierarchical_nu.priors import Priors
+from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
 
 
 class ModelCheck:
@@ -101,6 +101,15 @@ class ModelCheck:
             self.truths["Nex_atmo"] = Nex_per_comp[2]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
             self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
+
+            self.priors.atmospheric_flux = NormalPrior(
+                mu=atmo_bg.flux_model.total_flux_int.to(flux_unit),
+                sigma=atmo_bg.flux_model.total_flux_int.to(flux_unit))
+            self.priors.diffuse_flux = NormalPrior(
+                mu=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value, 
+                sigma=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value,
+            )
+
         self._default_var_names = [key for key in self.truths]
 
     @staticmethod
@@ -144,11 +153,20 @@ class ModelCheck:
 
         # Generate fit Stan file
         fit_name = file_config["fit_filename"][:-5]
+        priors = Priors()
+        flux_units = 1 / (u.m**2 * u.s)
+        atmo_flux = atmo_flux_model.total_flux_int.to(flux_units).value
+        priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=atmo_flux*5)
+        priors.diffuse_flux = NormalPrior(
+            mu=sources.diffuse.flux_model.total_flux_int.to(flux_units).value, 
+            sigma=sources.diffuse.flux_model.total_flux_int.to(flux_units).value*5,
+        )
         stan_fit_interface = StanFitInterface(
             fit_name,
             sources,
             detector_model_type,
-            nshards=nshards
+            nshards=nshards,
+            priors=priors,
         )
 
         stan_fit_interface.generate()
@@ -259,7 +277,13 @@ class ModelCheck:
 
             if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo":
 
-                bins = np.geomspace(
+                prior_supp = np.geomspace(
+                    np.min(self.results[var_name]),
+                    np.max(self.results[var_name]),
+                    1000,
+                )
+
+                bins =  np.geomspace(
                     np.min(self.results[var_name]),
                     np.max(self.results[var_name]),
                     nbins,
@@ -268,14 +292,20 @@ class ModelCheck:
 
             else:
 
+                prior_supp = np.linspace(
+                    np.min(self.results[var_name]),
+                    np.max(self.results[var_name]),
+                    1000,
+                )
+
                 bins = np.linspace(
                     np.min(self.results[var_name]),
                     np.max(self.results[var_name]),
                     nbins,
                 )
-
+            max_value = 0
             for i in range(len(self.results[var_name])):
-                ax[v].hist(
+                n, bins, _ = ax[v].hist(
                     self.results[var_name][i],
                     color="#017B76",
                     alpha=0.1,
@@ -283,6 +313,9 @@ class ModelCheck:
                     bins=bins,
                     lw=1.0,
                 )
+
+                max_value = n.max() if \
+                    n.max() > max_value else max_value
 
             if show_prior:
 
@@ -292,15 +325,19 @@ class ModelCheck:
                 if "f_" in var_name:
 
                     prior_samples = uniform(0, 1).rvs(N)
+                    prior_density = uniform(0, 1).pdf(prior_supp)
+                    plot = True
 
                 elif "Nex" in var_name:
 
-                    break
+                    plot = False
 
                 else:
 
                     prior_samples = self.priors.to_dict()[var_name].sample(N)
-
+                    prior_density = self.priors.to_dict()[var_name].pdf(prior_supp)
+                    plot = True
+                '''
                 ax[v].hist(
                     prior_samples,
                     color="k",
@@ -311,6 +348,16 @@ class ModelCheck:
                     weights=np.tile(0.01, len(prior_samples)),
                     label="Prior",
                 )
+                '''
+                if plot:
+                    ax[v].plot(
+                        prior_supp,
+                        prior_density / prior_density.max() * max_value / 2.,
+                        color="k",
+                        alpha=0.5,
+                        lw=2,
+                        label="Prior",
+                    )
 
             ax[v].axvline(
                 self.truths[var_name], color="k", linestyle="-", label="Truth"
@@ -379,7 +426,7 @@ class ModelCheck:
             
             else:
                 fit.events = sim.events
-            fit.run(seed=s, show_progress=True, **kwargs)
+            fit.run(seed=s, show_progress=True, inits={"L": 1e52, "src_index": 2.0}, **kwargs)
 
             self.fit = fit
 
