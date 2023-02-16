@@ -24,6 +24,10 @@ class PriorDistribution(metaclass=ABCMeta):
 
         pass
 
+    def pdf_logspace(self, x):
+        
+        return self.pdf(x) * x * np.log(10)
+
     @abstractmethod
     def sample(self, N):
 
@@ -160,13 +164,13 @@ class Priors(object):
 
     def __init__(self):
 
-        self._luminosity = LogNormalPrior(mu=np.log(1e45), sigma=10.0)
+        self._luminosity = LogNormalPrior(mu=np.log(1e50), sigma=10.0)
 
         self._diffuse_flux = LogNormalPrior(mu=np.log(1e-7), sigma=1.0)
 
         self._src_index = NormalPrior(mu=2.0, sigma=1.5)
 
-        self._diff_index = NormalPrior(mu=2.0, sigma=1.5)
+        self._diff_index = NormalPrior(mu=2.5, sigma=1.5)
 
         self._atmospheric_flux = LogNormalPrior(mu=np.log(1e-5), sigma=1.0)
 
