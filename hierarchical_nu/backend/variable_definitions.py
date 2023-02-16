@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["VariableDef", "StanArray", "ForwardArrayDef", "ForwardVariableDef", "ForwardVectorDef", "InstantVariableDef"]
+__all__ = ["VariableDef", "StanArray", "StanVector", "ForwardArrayDef", "ForwardVariableDef", "ForwardVectorDef", "InstantVariableDef"]
 
 
 class VariableDef(NamedExpression):
@@ -196,6 +196,41 @@ class StanArray(VariableDef):
         stan_code += " = " + arraystr
         if self._type == "vector":
             stan_code += "'"  # FU Stan
+        stan_code += ""
+
+        return [stan_code]
+
+
+class StanVector(VariableDef):
+    """
+    Stan real array definition
+
+    Parameters:
+        name: Variable name to use in stan code
+    """
+
+    def __init__(self, name: str, array_data: Iterable):
+
+        self._array_data = np.asarray(array_data)
+        self._type = "vector"
+        VariableDef.__init__(self, name)
+
+    def _gen_def_code(self) -> TListTExpression:
+        """
+        See parent class
+        """
+
+        # Variable Definition
+        stan_code = self._type
+
+        shape_str = "[" + str(self._array_data.size) + "]"
+        
+        stan_code += shape_str + " " + self.name
+
+        # Fill array
+        arraystr = np.array2string(self._array_data, threshold=np.inf, separator=",")
+        stan_code += " = " + arraystr
+        stan_code += "'"  # FU Stan
         stan_code += ""
 
         return [stan_code]
