@@ -308,7 +308,7 @@ class ModelCheck:
                 n, bins, _ = ax[v].hist(
                     self.results[var_name][i],
                     color="#017B76",
-                    alpha=0.1,
+                    alpha=0.3,
                     histtype="step",
                     bins=bins,
                     lw=1.0,
@@ -322,7 +322,7 @@ class ModelCheck:
                 N = len(self.results[var_name][0]) * 100
                 xmin, xmax = ax[v].get_xlim()
 
-                if "f_" in var_name:
+                if "f_" in var_name and not "diff" in var_name:   # yikes
 
                     prior_samples = uniform(0, 1).rvs(N)
                     prior_density = uniform(0, 1).pdf(prior_supp)
@@ -332,23 +332,18 @@ class ModelCheck:
 
                     plot = False
 
+                elif "index" in var_name:
+                    prior_density = self.priors.to_dict()[var_name].pdf(prior_supp)
+                    plot = True
+
                 else:
 
                     prior_samples = self.priors.to_dict()[var_name].sample(N)
-                    prior_density = self.priors.to_dict()[var_name].pdf(prior_supp)
+                    prior_density = self.priors.to_dict()[var_name].pdf_logspace(prior_supp)
                     plot = True
-                '''
-                ax[v].hist(
-                    prior_samples,
-                    color="k",
-                    alpha=0.5,
-                    histtype="step",
-                    bins=bins,
-                    lw=2,
-                    weights=np.tile(0.01, len(prior_samples)),
-                    label="Prior",
-                )
-                '''
+                
+                
+                
                 if plot:
                     ax[v].plot(
                         prior_supp,
@@ -358,6 +353,16 @@ class ModelCheck:
                         lw=2,
                         label="Prior",
                     )
+                    ax[v].hist(
+                    prior_samples,
+                    color="k",
+                    alpha=0.5,
+                    histtype="step",
+                    bins=bins,
+                    lw=2,
+                    weights=np.tile(0.01, len(prior_samples)),
+                    label="Prior samples",
+                )
 
             ax[v].axvline(
                 self.truths[var_name], color="k", linestyle="-", label="Truth"
