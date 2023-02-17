@@ -102,6 +102,7 @@ class ModelCheck:
             self.truths["f_det"] = Nex_per_comp[0] / Nex
             self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
 
+            """
             self.priors.atmospheric_flux = NormalPrior(
                 mu=atmo_bg.flux_model.total_flux_int.to(flux_unit),
                 sigma=atmo_bg.flux_model.total_flux_int.to(flux_unit))
@@ -109,11 +110,11 @@ class ModelCheck:
                 mu=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value, 
                 sigma=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value,
             )
-
+            """
         self._default_var_names = [key for key in self.truths]
 
     @staticmethod
-    def initialise_env(output_dir):
+    def initialise_env(output_dir, priors: Priors = Priors()):
         """
         Script to set up enviroment for parallel
         model checking runs.
@@ -123,9 +124,20 @@ class ModelCheck:
         Only need to run once before calling ModelCheck(...).run()
         """
 
+        def make_prior(p):
+            if p["name"] == "LogNormalPrior":
+                prior = LogNormalPrior(mu=np.log(p["mu"]), sigma=p["sigma"])
+            elif p["name"] == "NormalPrior":
+                prior = NormalPrior(mu=p["mu"], sigma=p["sigma"])
+            else:
+                raise ValueError("Currently no other prior implemented")
+            return prior
+        
+
         # Config
         parameter_config = hnu_config["parameter_config"]
         file_config = hnu_config["file_config"]
+        prior_config = hnu_config["prior_config"]
 
         # Run MCEq computation
         print("Setting up MCEq run for AtmopshericNumuFlux")
@@ -153,14 +165,15 @@ class ModelCheck:
 
         # Generate fit Stan file
         fit_name = file_config["fit_filename"][:-5]
+        
         priors = Priors()
-        flux_units = 1 / (u.m**2 * u.s)
-        atmo_flux = atmo_flux_model.total_flux_int.to(flux_units).value
-        priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=atmo_flux*5)
-        priors.diffuse_flux = NormalPrior(
-            mu=sources.diffuse.flux_model.total_flux_int.to(flux_units).value, 
-            sigma=sources.diffuse.flux_model.total_flux_int.to(flux_units).value*5,
-        )
+        priors.luminosity = make_prior(prior_config["L"])
+        priors.src_index = make_prior(prior_config["src_index"])
+        priors.atmospheric_flux = make_prior(prior_config["atmospheric_flux"])
+        priors.diffuse_flux = make_prior(prior_config["diffuse_flux"])
+        priors.diff_index = make_prior(prior_config["diff_index"])
+
+
         stan_fit_interface = StanFitInterface(
             fit_name,
             sources,
@@ -548,7 +561,14 @@ def _initialise_sources():
 
     # Simple point source for testing
     point_source = PointSource.make_powerlaw_source(
-        "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, 0.43, Emin, Emax
+        "test",
+        np.deg2rad(parameter_config["src_dec"]) * u.rad,
+        np.deg2rad(parameter_config["src_ra"]) * u.rad,
+        L,
+        src_index,
+        0.43,
+        Emin,
+        Emax,
     )
 
     sources = Sources()
