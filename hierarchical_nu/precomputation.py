@@ -170,7 +170,7 @@ class ExposureIntegral:
                 )
             if isinstance(self.energy_resolution, R2021EnergyResolution):
                 self.energy_resolution.set_fit_params(dec.value)
-            
+
             p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                 e_cen, self._min_det_energy
             )
@@ -370,7 +370,7 @@ class ExposureIntegral:
                         source.flux_model(
                             E_range * u.GeV, dec * u.rad, 0 * u.rad
                         ).to_value(1 / (u.GeV * u.s * u.sr * u.m**2))
-                        * 1e9  # Scale for reasonable c_values
+                        * 1e10  # Scale for reasonable c_values
                     )
                     gamma2 = gamma2_scale - 3.7
 
@@ -402,7 +402,7 @@ class ExposureIntegral:
 
             elif Emin < Eth and Emax <= Eth:
 
-                Eth_tmp = Emin + (Emax-Emin)/2
+                Eth_tmp = Emin + (Emax - Emin) / 2
 
                 g_values = bbpl_pdf(
                     E_range,
@@ -415,7 +415,7 @@ class ExposureIntegral:
 
             elif Emin >= Eth and Emax > Eth:
 
-                Eth_tmp = Emin + (Emax-Emin)/2
+                Eth_tmp = Emin + (Emax - Emin) / 2
                 g_values = bbpl_pdf(
                     E_range,
                     Emin,
