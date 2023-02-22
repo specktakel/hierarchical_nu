@@ -162,7 +162,7 @@ software/simulation_study/output/
 *.vsix
 
 tests/cache_files
-
+.cache.sqlite
 
 
 

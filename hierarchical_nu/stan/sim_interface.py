@@ -931,7 +931,7 @@ class StanSimInterface(StanInterface):
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
                                                 self._Esrc_max_arr,
-                                                "<",
+                                                ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
                                             ]
@@ -1108,7 +1108,7 @@ class StanSimInterface(StanInterface):
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
                                                 self._Esrc_max_arr,
-                                                "<",
+                                                ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
                                             ]
@@ -1277,7 +1277,7 @@ class StanSimInterface(StanInterface):
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
                                                 self._Esrc_max_arr,
-                                                "<",
+                                                ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
                                             ]
@@ -1448,7 +1448,7 @@ class StanSimInterface(StanInterface):
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
                                                 self._Esrc_max_arr,
-                                                "<",
+                                                ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
                                             ]
@@ -1790,7 +1790,7 @@ class StanSimInterface(StanInterface):
                                                 self._rs_bbpl_Eth_c,
                                                 ") && (",
                                                 self._Esrc_max_arr,
-                                                "<",
+                                                ">",
                                                 self._rs_bbpl_Eth_c,
                                                 ")",
                                             ]
@@ -1968,7 +1968,7 @@ class StanSimInterface(StanInterface):
                                                 self._rs_bbpl_Eth_c,
                                                 ") && (",
                                                 self._Esrc_max_arr,
-                                                "<",
+                                                ">",
                                                 self._rs_bbpl_Eth_c,
                                                 ")",
                                             ]
