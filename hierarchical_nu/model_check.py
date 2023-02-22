@@ -40,7 +40,14 @@ class ModelCheck:
 
         else:
 
-            self.priors = Priors()
+            prior_config = hnu_config["prior_config"]
+            priors = Priors()
+            priors.luminosity = self.make_prior(prior_config["L"])
+            priors.src_index = self.make_prior(prior_config["src_index"])
+            priors.atmospheric_flux = self.make_prior(prior_config["atmo_flux"])
+            priors.diffuse_flux = self.make_prior(prior_config["diff_flux"])
+            priors.diff_index = self.make_prior(prior_config["diff_index"])
+            self.priors = priors
 
         if truths:
 
@@ -113,6 +120,18 @@ class ModelCheck:
             """
         self._default_var_names = [key for key in self.truths]
 
+
+    @staticmethod
+    def make_prior(p):
+        if p["name"] == "LogNormalPrior":
+            prior = LogNormalPrior(mu=np.log(p["mu"]), sigma=p["sigma"])
+        elif p["name"] == "NormalPrior":
+            prior = NormalPrior(mu=p["mu"], sigma=p["sigma"])
+        else:
+            raise ValueError("Currently no other prior implemented")
+        return prior
+
+
     @staticmethod
     def initialise_env(output_dir, priors: Priors = Priors()):
         """
@@ -122,17 +141,7 @@ class ModelCheck:
         * Runs MCEq for atmo flux if needed
         * Generates and compiles necessary Stan files
         Only need to run once before calling ModelCheck(...).run()
-        """
-
-        def make_prior(p):
-            if p["name"] == "LogNormalPrior":
-                prior = LogNormalPrior(mu=np.log(p["mu"]), sigma=p["sigma"])
-            elif p["name"] == "NormalPrior":
-                prior = NormalPrior(mu=p["mu"], sigma=p["sigma"])
-            else:
-                raise ValueError("Currently no other prior implemented")
-            return prior
-        
+        """        
 
         # Config
         parameter_config = hnu_config["parameter_config"]
@@ -167,11 +176,11 @@ class ModelCheck:
         fit_name = file_config["fit_filename"][:-5]
         
         priors = Priors()
-        priors.luminosity = make_prior(prior_config["L"])
-        priors.src_index = make_prior(prior_config["src_index"])
-        priors.atmospheric_flux = make_prior(prior_config["atmospheric_flux"])
-        priors.diffuse_flux = make_prior(prior_config["diffuse_flux"])
-        priors.diff_index = make_prior(prior_config["diff_index"])
+        priors.luminosity = ModelCheck.make_prior(prior_config["L"])
+        priors.src_index = ModelCheck.make_prior(prior_config["src_index"])
+        priors.atmospheric_flux = ModelCheck.make_prior(prior_config["atmo_flux"])
+        priors.diffuse_flux = ModelCheck.make_prior(prior_config["diff_flux"])
+        priors.diff_index = ModelCheck.make_prior(prior_config["diff_index"])
 
 
         stan_fit_interface = StanFitInterface(
@@ -290,9 +299,21 @@ class ModelCheck:
 
             if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo":
 
+                # Could be reverted, I just did this to better see if
+                # the priors were consistent with the input values
+                if np.min(self.results[var_name]) > self.truths[var_name]:
+                    _min =  self.truths[var_name]
+                else:
+                    _min = np.min(self.results[var_name])
+
+                if np.max(self.results[var_name]) < self.truths[var_name]:
+                    _max =  self.truths[var_name]
+                else:
+                    _max = np.max(self.results[var_name])
+
                 prior_supp = np.geomspace(
-                    np.min(self.results[var_name]),
-                    np.max(self.results[var_name]),
+                    _min,
+                    _max,
                     1000,
                 )
 
@@ -444,6 +465,7 @@ class ModelCheck:
             
             else:
                 fit.events = sim.events
+            kwargs["threads_per_chain"] = kwargs.get("threads_per_chain", hnu_config["parameter_config"]["threads_per_chain"])
             fit.run(seed=s, show_progress=True, inits={"L": 1e52, "src_index": 2.0}, **kwargs)
 
             self.fit = fit

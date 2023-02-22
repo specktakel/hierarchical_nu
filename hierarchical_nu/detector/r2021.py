@@ -729,7 +729,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             if self.CACHE_FNAME_LOGNORM in Cache and not self._rewrite:
                 logger.info("Loading energy lognorm data from file.")
                 with Cache.open(self.CACHE_FNAME_LOGNORM, "rb") as fr:
-                    print(fr)
                     data = np.load(fr)
                     self._eres = data["eres"]
                     self._tE_bin_edges = data["tE_bin_edges"]

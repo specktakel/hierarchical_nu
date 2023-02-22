@@ -40,6 +40,7 @@ class StanFit:
         priors: Priors = Priors(),
         atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
+        n_grid_points: int = 50,
         nshards: int = 0,
     ):
         """
@@ -50,6 +51,7 @@ class StanFit:
         self._detector_model_type = detector_model
         self._events = events
         self._observation_time = observation_time
+        self._n_grid_points = n_grid_points
         self._nshards = nshards
 
         self._sources.organise()
@@ -140,6 +142,7 @@ class StanFit:
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
                     self._detector_model_type,
+                    n_grid_points=self._n_grid_points,
                     event_type=event_type,
                 )
 

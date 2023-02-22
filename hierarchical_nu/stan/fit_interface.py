@@ -825,11 +825,14 @@ class StanFitInterface(StanInterface):
                         self._N_t << self._N_t + 1
 
             if self._nshards not in [0, 1]:
+                self._N_shards_use_this = ForwardVariableDef("N_shards_loop", "int")
+                self._N_shards_use_this << self._N_shards
                 # Create the rectangular data blocks for use in `map_rect`
                 # This is badly named (N % Nshards...)
                 self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
                 self._N_mod_J << self._N % self._J
-
+                self._N_ev_distributed = ForwardVariableDef("N_ev_distributed", "int")
+                self._N_ev_distributed << 0
                 # Find size for real_data array
                 sd_events_J = 5
                 sd_varpi_Ns = 3
@@ -884,6 +887,15 @@ class StanFitInterface(StanInterface):
                     )
                     insert_start << insert_start + insert_len
                     insert_end << insert_end + insert_len
+                    with IfBlockContext([insert_start, ">", self._N]):
+                        self._N_shards_use_this << i - 1
+                        self._N_shards_str = ["[", self._N_shards_use_this, "]"]
+                        StringExpression(["break"])
+                    #with IfBlockContext(
+                    #    [self._N_ev_distributed + insert_len > self._N]
+                    #):
+                    #    difference = InstantVariableDef("difference", "int", self._N_ev_distributed + insert_len - self._N)
+                    #    StringExpression(["break"])
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
                         [self._kappa[start:end]], "to_array_1d"
                     )
@@ -996,6 +1008,8 @@ class StanFitInterface(StanInterface):
                             ],
                             "to_int",
                         )
+                    self._N_ev_distributed << self._N_ev_distributed + insert_len
+                    StringExpression(['print("N distributed: ", ', self._N_ev_distributed,')'])
 
     def _parameters(self):
         """
@@ -1805,7 +1819,7 @@ class StanFitInterface(StanInterface):
                 # Map data to lp_reduce
                 StringExpression(
                     [
-                        "target += sum(map_rect(lp_reduce, global_pars, local_pars, real_data, int_data))"
+                        "target += sum(map_rect(lp_reduce, global_pars, local_pars[:N_shards_loop], real_data[:N_shards_loop], int_data[:N_shards_loop]))"
                     ]
                 )
 
