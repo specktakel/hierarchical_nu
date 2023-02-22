@@ -925,15 +925,13 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             self._Emin = np.power(10, self.irf.true_energy_bins[0])
             self._Emax = np.power(10, self.irf.true_energy_bins[-1])
 
-    '''
-    # outdated, uses method implemented in abstract bass class
+
     @u.quantity_input
     def prob_Edet_above_threshold(
         self,
         true_energy: u.GeV,
         lower_threshold_energy: u.GeV,
         dec: u.rad,
-        upper_threshold_energy: u.GeV=1e9*u.GeV,
         ):
         """
         P(Edet > Edet_min | E) for use in precomputation.
@@ -942,7 +940,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         find lowest and highest reconstructed energy
         and restrict the threshold energy by the found values.
         """
-        self.set_fit_params(dec.value)
+        # self.set_fit_params(dec.value)
         # Truncate input energies to safe range
         energy_trunc = true_energy.to(u.GeV).value
         energy_trunc[energy_trunc < self._pdet_limits[0]] = self._pdet_limits[0]
@@ -968,20 +966,15 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         dec_idx = np.digitize(dec.value, self._icecube_tools_eres.declination_bins_aeff) - 1
         # are in log10(E/GeV)
         e_low = self._icecube_tools_eres._ereco_limits[dec_idx, 0]
-        e_high = self._icecube_tools_eres._ereco_limits[dec_idx, 1]
+        # e_high = self._icecube_tools_eres._ereco_limits[dec_idx, 1]
 
         ethr_low = lower_threshold_energy.to(u.GeV).value
         lower_threshold_energy = \
             ethr_low * u.GeV if ethr_low > np.power(10, e_low) else np.power(10, e_low) * u.GeV
-        ethr_high = upper_threshold_energy.to(u.GeV).value
-        upper_threshold_energy = \
-            ethr_high * u.GeV if ethr_high < np.power(10, e_low) else np.power(10, e_high) * u.GeV
-        prob = model(np.log10(upper_threshold_energy.to(u.GeV).value), model_params) - \
-            model(np.log10(lower_threshold_energy.to(u.GeV).value), model_params)
+        # ethr_high = upper_threshold_energy.to(u.GeV).value
+        prob = 1 - model(np.log10(lower_threshold_energy.to(u.GeV).value), model_params)
 
-        prob = 1 - model(np.log10())
         return prob
-        '''
 
 
     @staticmethod

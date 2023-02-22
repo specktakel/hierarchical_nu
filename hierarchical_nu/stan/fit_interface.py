@@ -882,15 +882,16 @@ class StanFitInterface(StanInterface):
                         insert_len << self._N_mod_J
 
                     insert_end << insert_len
+                    with IfBlockContext([start, ">", self._N]):
+                        self._N_shards_use_this << i - 1
+                        self._N_shards_str = ["[", self._N_shards_use_this, "]"]
+                        StringExpression(["break"])
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
                         [self._Edet[start:end]], "to_array_1d"
                     )
                     insert_start << insert_start + insert_len
                     insert_end << insert_end + insert_len
-                    with IfBlockContext([insert_start, ">", self._N]):
-                        self._N_shards_use_this << i - 1
-                        self._N_shards_str = ["[", self._N_shards_use_this, "]"]
-                        StringExpression(["break"])
+                    
                     #with IfBlockContext(
                     #    [self._N_ev_distributed + insert_len > self._N]
                     #):
@@ -1193,15 +1194,17 @@ class StanFitInterface(StanInterface):
                 )
 
                 # Pack source energies into local parameter vector
-                with ForLoopContext(1, self._N_shards, "i") as i:
+                with ForLoopContext(1, self._N_shards_use_this, "i") as i:
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
                     start << (i - 1) * self._J + 1
                     end << i * self._J
+                    
                     # If it's not the last shard or all shards have same length anyway:
                     with IfBlockContext(
                         [i != self._N_shards, "||", self._N_mod_J == 0]
                     ):
+                        
                         self._local_pars[i] << self._Esrc[start:end]
                     # Else, only relevant for last shard if it's shorter
                     with ElseBlockContext():

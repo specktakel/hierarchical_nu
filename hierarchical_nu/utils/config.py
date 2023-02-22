@@ -76,8 +76,8 @@ class PriorConfig:
     src_index: SinglePriorConfig = SinglePriorConfig(name="NormalPrior", mu=2., sigma=1.5)
     diff_index: SinglePriorConfig = SinglePriorConfig(name="NormalPrior", mu=2.5, sigma=1.5)
     L: SinglePriorConfig = SinglePriorConfig(name="LogNormalPrior", mu=1e52, sigma=10.)
-    diffuse_flux: SinglePriorConfig = SinglePriorConfig(name="LogNormalPrior", mu=1e-6, sigma=1.)
-    atmospheric_flux: SinglePriorConfig = SinglePriorConfig(name="LogNormalPrior", mu=1e-6, sigma=1.)
+    diff_flux: SinglePriorConfig = SinglePriorConfig(name="LogNormalPrior", mu=1e-6, sigma=1.)
+    atmo_flux: SinglePriorConfig = SinglePriorConfig(name="LogNormalPrior", mu=1e-6, sigma=1.)
 
 
 
@@ -94,7 +94,8 @@ hnu_config: HierarchicalNuConfig = OmegaConf.structured(HierarchicalNuConfig)
 
 
 if not _config_file.is_file() or not _local_config_file.is_file():
-
+    # Prints should be converted to logger at some point
+    print("No config found, creating new one")
     _config_path.mkdir(parents=True, exist_ok=True)
 
     with _config_file.open("w") as f:
@@ -102,7 +103,7 @@ if not _config_file.is_file() or not _local_config_file.is_file():
         OmegaConf.save(config=hnu_config, f=f.name)
 
 elif _local_config_file.is_file():
-
+    print("local config found")
     _local_config = OmegaConf.load(_local_config_file)
 
     hnu_config: HierarchicalNuConfig = OmegaConf.merge(
@@ -111,7 +112,7 @@ elif _local_config_file.is_file():
     )
 
 elif _config_file.is_file():
-
+    print("global config found")
     _local_config = OmegaConf.load(_config_file)
 
     hnu_config: HierarchicalNuConfig = OmegaConf.merge(
