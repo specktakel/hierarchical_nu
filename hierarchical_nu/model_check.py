@@ -64,6 +64,7 @@ class ModelCheck:
 
             self._obs_time = parameter_config["obs_time"] * u.year
             self._nshards = parameter_config["nshards"]
+            self._threads_per_chain = parameter_config["threads_per_chain"]
 
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
@@ -103,6 +104,8 @@ class ModelCheck:
             self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
         self._default_var_names = [key for key in self.truths]
 
+        self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
+
     @staticmethod
     def initialise_env(output_dir):
         """
@@ -123,7 +126,6 @@ class ModelCheck:
         Emin = parameter_config["Emin"] * u.GeV
         Emax = parameter_config["Emax"] * u.GeV
         atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
-        nshards = parameter_config["nshards"]
 
         # Build necessary details to define simulation and fit code
         sources = _initialise_sources()
@@ -143,6 +145,7 @@ class ModelCheck:
         print("Generated sim_code Stan file at:", sim_name)
 
         # Generate fit Stan file
+        nshards = parameter_config["nshards"]
         fit_name = file_config["fit_filename"][:-5]
         stan_fit_interface = StanFitInterface(
             fit_name, sources, detector_model_type, nshards=nshards
@@ -154,13 +157,19 @@ class ModelCheck:
         # Comilation of Stan models
         print("Compile Stan models")
         stanc_options = {"include-paths": list(file_config["include_paths"])}
+        cpp_options = None
+
+        if nshards not in [0, 1]:
+            cpp_options = {"STAN_THREADS": True}
 
         _ = CmdStanModel(
             stan_file=file_config["sim_filename"],
             stanc_options=stanc_options,
         )
         _ = CmdStanModel(
-            stan_file=file_config["fit_filename"], stanc_options=stanc_options
+            stan_file=file_config["fit_filename"],
+            stanc_options=stanc_options,
+            cpp_options=cpp_options,
         )
 
         # Create output directory
@@ -196,13 +205,13 @@ class ModelCheck:
 
         with h5py.File(filename_list[0], "r") as f:
             job_folder = f["results_0"]
-            _default_var_names = [key for key in job_folder]
+            _result_names = [key for key in job_folder]
 
         truths = {}
         priors = None
 
         results = {}
-        for key in _default_var_names:
+        for key in _result_names:
             results[key] = []
 
         file_truths = {}
@@ -325,6 +334,29 @@ class ModelCheck:
         fig.tight_layout()
         return fig, ax
 
+    def diagnose(self):
+        """
+        Quickly check output of CmdStanMCMC.diagnose().
+        Return index of fits with issues.
+        """
+
+        diagnostics_array = np.array(self.results["diagnostics_ok"])
+
+        ind_not_ok = np.where(diagnostics_array == 0)[0]
+
+        if len(ind_not_ok) > 0:
+
+            print(
+                "%.2f percent of fits have issues!"
+                % (len(ind_not_ok) / len(diagnostics_array) * 100)
+            )
+
+        else:
+
+            print("No issues found")
+
+        return ind_not_ok
+
     def _single_run(self, n_subjobs, seed, **kwargs):
         """
         Single run to be called using Parallel.
@@ -343,6 +375,11 @@ class ModelCheck:
         outputs = {}
         for key in self._default_var_names:
             outputs[key] = []
+        for key in self._diagnostic_names:
+            outputs[key] = []
+
+        outputs["diagnostics_ok"] = []
+        outputs["run_time"] = []
 
         for i, s in enumerate(subjob_seeds):
 
@@ -383,15 +420,31 @@ class ModelCheck:
 
             else:
                 fit.events = sim.events
-            fit.run(seed=s, show_progress=True, **kwargs)
+            fit.run(
+                seed=s,
+                show_progress=True,
+                threads_per_chain=self._threads_per_chain,
+                **kwargs
+            )
 
             self.fit = fit
 
             # Store output
-            for key in outputs:
+            run_time = time.time() - start_time
+            sys.stderr.write("time: %.5f\n" % run_time)
+            outputs["run_time"].append(run_time)
+
+            for key in self._default_var_names:
                 outputs[key].append(fit._fit_output.stan_variable(key))
 
-            sys.stderr.write("time: %.5f\n" % (time.time() - start_time))
+            for key in self._diagnostic_names:
+                outputs[key].append(fit._fit_output.method_variables()[key])
+
+            diagnostics_output_str = fit._fit_output.diagnose()
+            if "no problems detected" in diagnostics_output_str:
+                outputs["diagnostics_ok"].append(1)
+            else:
+                outputs["diagnostics_ok"].append(0)
 
         return outputs
 
