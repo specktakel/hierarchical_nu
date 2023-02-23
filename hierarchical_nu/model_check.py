@@ -7,7 +7,8 @@ from matplotlib import pyplot as plt
 from joblib import Parallel, delayed
 from astropy import units as u
 from cmdstanpy import CmdStanModel
-from scipy.stats import lognorm, norm, uniform
+from scipy.stats import uniform
+from typing import List, Union
 
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import Parameter
@@ -252,10 +253,11 @@ class ModelCheck:
 
     def compare(
         self,
-        var_names=None,
-        var_labels=None,
-        show_prior=False,
-        nbins=50,
+        var_names: Union[None, List[str]] = None,
+        var_labels: Union[None, List[str]] = None,
+        show_prior: bool = False,
+        nbins: int = 50,
+        mask_results: Union[None, np.ndarray] = None,
         alpha=0.1,
     ):
 
@@ -265,6 +267,12 @@ class ModelCheck:
         if not var_labels:
             var_labels = self._default_var_names
 
+        mask = np.tile(False, len(self.results[var_names[0]]))
+        if mask_results is not None:
+            mask[mask_results] = True
+        else:
+            mask_results = np.array([])
+
         N = len(var_names)
         fig, ax = plt.subplots(N, figsize=(5, N * 3))
 
@@ -273,8 +281,8 @@ class ModelCheck:
             if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo":
 
                 bins = np.geomspace(
-                    np.min(self.results[var_name]),
-                    np.max(self.results[var_name]),
+                    np.min(np.array(self.results[var_name])[~mask]),
+                    np.max(np.array(self.results[var_name])[~mask]),
                     nbins,
                 )
                 ax[v].set_xscale("log")
@@ -282,20 +290,22 @@ class ModelCheck:
             else:
 
                 bins = np.linspace(
-                    np.min(self.results[var_name]),
-                    np.max(self.results[var_name]),
+                    np.min(np.array(self.results[var_name])[~mask]),
+                    np.max(np.array(self.results[var_name])[~mask]),
                     nbins,
                 )
 
             for i in range(len(self.results[var_name])):
-                ax[v].hist(
-                    self.results[var_name][i],
-                    color="#017B76",
-                    alpha=alpha,
-                    histtype="step",
-                    bins=bins,
-                    lw=1.0,
-                )
+
+                if i not in mask_results:
+                    ax[v].hist(
+                        self.results[var_name][i],
+                        color="#017B76",
+                        alpha=alpha,
+                        histtype="step",
+                        bins=bins,
+                        lw=1.0,
+                    )
 
             if show_prior:
 
@@ -370,8 +380,6 @@ class ModelCheck:
 
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
-        start_time = time.time()
-
         outputs = {}
         for key in self._default_var_names:
             outputs[key] = []
@@ -420,6 +428,8 @@ class ModelCheck:
 
             else:
                 fit.events = sim.events
+
+            start_time = time.time()
             fit.run(
                 seed=s,
                 show_progress=True,
