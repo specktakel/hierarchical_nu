@@ -203,7 +203,7 @@ class StanArray(VariableDef):
 
 class StanVector(VariableDef):
     """
-    Stan real array definition
+    Stan vector definition
 
     Parameters:
         name: Variable name to use in stan code

@@ -871,17 +871,8 @@ class StanFitInterface(StanInterface):
                     insert_len = ForwardVariableDef("insert_len", "int")
                     start << (i - 1) * self._J + 1
                     insert_start << 1
-
-                    with IfBlockContext(
-                        [i != self._N_shards, "||", self._N_mod_J == 0]
-                    ):
-                        end << i * self._J
-                        insert_len << self._J
-                    with ElseBlockContext():
-                        end << start - 1 + self._N_mod_J
-                        insert_len << self._N_mod_J
-
-                    insert_end << insert_len
+                    end << i * self._J
+                    
                     with IfBlockContext([start, ">", self._N]):
                         self._N_shards_use_this << i - 1
                         self._N_shards_str = ["[", self._N_shards_use_this, "]"]
@@ -890,19 +881,15 @@ class StanFitInterface(StanInterface):
                         end << self._N
                         insert_len << end - start + 1
                         insert_end << insert_len
+                    with ElseBlockContext():
+                        insert_len << self._J
+                        insert_end << insert_len
 
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
                         [self._Edet[start:end]], "to_array_1d"
                     )
                     insert_start << insert_start + insert_len
                     insert_end << insert_end + insert_len
-                    StringExpression(['print("start: ", insert_start)'])
-                    StringExpression(['print("end: ", insert_end)'])
-                    #with IfBlockContext(
-                    #    [self._N_ev_distributed + insert_len > self._N]
-                    #):
-                    #    difference = InstantVariableDef("difference", "int", self._N_ev_distributed + insert_len - self._N)
-                    #    StringExpression(["break"])
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
                         [self._kappa[start:end]], "to_array_1d"
                     )
@@ -910,8 +897,6 @@ class StanFitInterface(StanInterface):
 
                     with ForLoopContext(start, end, "f") as f:
                         insert_end << insert_end + 3
-                        StringExpression(['print("start: ", insert_start)'])
-                        StringExpression(['print("end: ", insert_end)'])
                         self.real_data[i, insert_start:insert_end] << FunctionCall(
                             [self._omega_det[f]], "to_array_1d"
                         )
@@ -919,8 +904,6 @@ class StanFitInterface(StanInterface):
 
                     with ForLoopContext(1, self._Ns, "f") as f:
                         insert_end << insert_end + 3
-                        StringExpression(['print("start: ", insert_start)'])
-                        StringExpression(['print("end: ", insert_end)'])
                         self.real_data[i, insert_start:insert_end] << FunctionCall(
                             [self._varpi[f]], "to_array_1d"
                         )
@@ -928,8 +911,6 @@ class StanFitInterface(StanInterface):
 
                     if self.sources.diffuse:
                         insert_end << insert_end + self._Ns + 1
-                        StringExpression(['print("start: ", insert_start)'])
-                        StringExpression(['print("end: ", insert_end)'])
                         self.real_data[i, insert_start:insert_end] << FunctionCall(
                             [self._z], "to_array_1d"
                         )
@@ -937,8 +918,6 @@ class StanFitInterface(StanInterface):
 
                     else:
                         insert_end << insert_end + self._Ns
-                        StringExpression(['print("start: ", insert_start)'])
-                        StringExpression(['print("end: ", insert_end)'])
                         self.real_data[i, insert_start:insert_end] << FunctionCall(
                             [self._z], "to_array_1d"
                         )
@@ -1024,7 +1003,6 @@ class StanFitInterface(StanInterface):
                             "to_int",
                         )
                     self._N_ev_distributed << self._N_ev_distributed + insert_len
-                    StringExpression(['print("N distributed: ", ', self._N_ev_distributed,')'])
 
     def _parameters(self):
         """
@@ -1215,17 +1193,15 @@ class StanFitInterface(StanInterface):
                     end << i * self._J
                     
                     # If it's not the last shard or all shards have same length anyway:
-                    with IfBlockContext(
-                        [i != self._N_shards, "||", self._N_mod_J == 0]
-                    ):
+                    with IfBlockContext([end, ">", self._N]):
+                        length = ForwardVariableDef("length", "int")
+                        length << self._N - start + 1
+                        self._local_pars[i][1 : length] << self._Esrc[start : self._N]
                         
-                        self._local_pars[i] << self._Esrc[start:end]
                     # Else, only relevant for last shard if it's shorter
                     with ElseBlockContext():
-                        (
-                            self._local_pars[i][1 : self._N_mod_J]
-                            << self._Esrc[start : self._N]
-                        )
+                        self._local_pars[i] << self._Esrc[start:end]
+
 
             else:
 
