@@ -366,13 +366,16 @@ class ExposureIntegral:
                 if isinstance(source.flux_model, AtmosphericNuMuFlux):
 
                     dec = np.arcsin(-cosz)  # Only for IceCube
+                    atmo_flux_integ_val = source.flux_model.total_flux_int.to(
+                        1 / (u.m**2 * u.s)
+                    ).value
                     f_values = (
                         source.flux_model(
                             E_range * u.GeV, dec * u.rad, 0 * u.rad
                         ).to_value(1 / (u.GeV * u.s * u.sr * u.m**2))
-                        * 1e10  # Scale for reasonable c_values
-                    )
-                    gamma2 = gamma2_scale - 3.7
+                        / atmo_flux_integ_val
+                    ) * aeff_values
+                    gamma2 = gamma2_scale - 3.6
 
                 else:
 

@@ -1,5 +1,7 @@
 from typing import List
 from collections import OrderedDict
+from astropy import units as u
+
 from hierarchical_nu.detector.detector_model import DetectorModel
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
@@ -17,7 +19,6 @@ from hierarchical_nu.backend.stan_generator import (
     ElseBlockContext,
     WhileLoopContext,
     FunctionCall,
-    StanGenerator,
 )
 
 from hierarchical_nu.backend.variable_definitions import (
@@ -666,6 +667,16 @@ class StanSimInterface(StanInterface):
                 #    event_type=event_type,
                 # )
 
+            self._atmo_flux_integ_val = ForwardVariableDef(
+                "atmo_flux_integ_val", "real"
+            )
+            (
+                self._atmo_flux_integ_val
+                << self._sources.atmospheric_flux.total_flux_int.to(
+                    1 / (u.m**2 * u.s)
+                ).value
+            )
+
             # We redefine a bunch of variables from transformed data here, as we would
             # like to access them as outputs from the Stan simulation.
             self._f_arr = ForwardVariableDef("f_arr", "real")
@@ -995,9 +1006,9 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
 
-                                # Assume fixed index of ~3.7 for atmo to get reasonable
+                                # Assume fixed index of ~3.6 for atmo to get reasonable
                                 # envelope function
-                                self._gamma2 << self._rs_bbpl_gamma2_scale_t - 3.7
+                                self._gamma2 << self._rs_bbpl_gamma2_scale_t - 3.6
 
                                 # Handle energy thresholds
                                 # 3 cases:
@@ -1149,8 +1160,9 @@ class StanSimInterface(StanInterface):
 
                                 (
                                     self._src_factor
-                                    << self._atmo_flux(self._E[i], self._omega) * 1e9
-                                )  # Scale for reasonable c_values in rejection algo (see precomputation)
+                                    << self._atmo_flux(self._E[i], self._omega)
+                                    / self._atmo_flux_integ_val
+                                )  # Normalise
                                 self._Esrc[i] << self._E[i]
 
                         elif self.sources.diffuse:
@@ -1336,7 +1348,7 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
 
-                                self._gamma2 << self._rs_bbpl_gamma2_scale_t - 3.7
+                                self._gamma2 << self._rs_bbpl_gamma2_scale_t - 3.6
 
                                 # Handle energy thresholds
                                 # 3 cases:
@@ -1489,8 +1501,9 @@ class StanSimInterface(StanInterface):
 
                                 (
                                     self._src_factor
-                                    << self._atmo_flux(self._E[i], self._omega) * 1e9
-                                )  # Scale for reasonable c_values in rejection algo (see precomputation)
+                                    << self._atmo_flux(self._E[i], self._omega)
+                                    / self._atmo_flux_integ_val
+                                )  # Normalise
                                 self._Esrc[i] << self._E[i]
 
                         self._aeff_factor << self._dm_rng["tracks"].effective_area(
