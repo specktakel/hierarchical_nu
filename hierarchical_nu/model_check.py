@@ -258,6 +258,7 @@ class ModelCheck:
         show_prior: bool = False,
         nbins: int = 50,
         mask_results: Union[None, np.ndarray] = None,
+        alpha=0.1,
     ):
 
         if not var_names:
@@ -295,11 +296,12 @@ class ModelCheck:
                 )
 
             for i in range(len(self.results[var_name])):
+
                 if i not in mask_results:
                     ax[v].hist(
                         self.results[var_name][i],
                         color="#017B76",
-                        alpha=0.1,
+                        alpha=alpha,
                         histtype="step",
                         bins=bins,
                         lw=1.0,

@@ -162,8 +162,7 @@ software/simulation_study/output/
 *.vsix
 
 cache_files
-
-
+.cache.sqlite
 
 
 
