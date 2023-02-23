@@ -565,6 +565,18 @@ class StanSimInterface(StanInterface):
 
                     self._eps_c[self._Ns + 1] << 0.0
 
+            if self.sources.atmospheric:
+
+                self._atmo_flux_integ_val = ForwardVariableDef(
+                    "atmo_flux_integ_val", "real"
+                )
+                (
+                    self._atmo_flux_integ_val
+                    << self._sources.atmospheric_flux.total_flux_int.to(
+                        1 / (u.m**2 * u.s)
+                    ).value
+                )
+
             # Get the relative exposure weights of all sources
             # This will be used to sample the labels
             # Also sample the number of events
@@ -673,16 +685,6 @@ class StanSimInterface(StanInterface):
                 #    mode=DistributionMode.PDF,
                 #    event_type=event_type,
                 # )
-
-            self._atmo_flux_integ_val = ForwardVariableDef(
-                "atmo_flux_integ_val", "real"
-            )
-            (
-                self._atmo_flux_integ_val
-                << self._sources.atmospheric_flux.total_flux_int.to(
-                    1 / (u.m**2 * u.s)
-                ).value
-            )
 
             # We redefine a bunch of variables from transformed data here, as we would
             # like to access them as outputs from the Stan simulation.
