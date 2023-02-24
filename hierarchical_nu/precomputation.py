@@ -172,7 +172,7 @@ class ExposureIntegral:
                 self.energy_resolution.set_fit_params(dec.value)
 
             p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                e_cen, self._min_det_energy
+                e_cen, self._min_det_energy, dec
             )
             p_Edet = np.nan_to_num(p_Edet)
 
@@ -204,9 +204,10 @@ class ExposureIntegral:
 
                 p_Edet = np.zeros((dec_upper.size, e_cen.size))
                 for c, (dec_l, dec_h) in enumerate(zip(dec_lower, dec_upper)):
-                    self.energy_resolution.set_fit_params(((dec_l + dec_h) / 2).value)
+                    dec = (dec_l + dec_h) / 2
+                    self.energy_resolution.set_fit_params(dec.value)
                     p_Edet[c] = self.energy_resolution.prob_Edet_above_threshold(
-                        e_cen, self._min_det_energy
+                        e_cen, self._min_det_energy, dec
                     )
 
             else:

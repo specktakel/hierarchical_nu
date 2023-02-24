@@ -825,11 +825,14 @@ class StanFitInterface(StanInterface):
                         self._N_t << self._N_t + 1
 
             if self._nshards not in [0, 1]:
+                self._N_shards_use_this = ForwardVariableDef("N_shards_loop", "int")
+                self._N_shards_use_this << self._N_shards
                 # Create the rectangular data blocks for use in `map_rect`
                 # This is badly named (N % Nshards...)
                 self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
                 self._N_mod_J << self._N % self._J
-
+                self._N_ev_distributed = ForwardVariableDef("N_ev_distributed", "int")
+                self._N_ev_distributed << 0
                 # Find size for real_data array
                 sd_events_J = 5
                 sd_varpi_Ns = 3
@@ -868,17 +871,20 @@ class StanFitInterface(StanInterface):
                     insert_len = ForwardVariableDef("insert_len", "int")
                     start << (i - 1) * self._J + 1
                     insert_start << 1
-
-                    with IfBlockContext(
-                        [i != self._N_shards, "||", self._N_mod_J == 0]
-                    ):
-                        end << i * self._J
-                        insert_len << self._J
+                    end << i * self._J
+                    
+                    with IfBlockContext([start, ">", self._N]):
+                        self._N_shards_use_this << i - 1
+                        self._N_shards_str = ["[", self._N_shards_use_this, "]"]
+                        StringExpression(["break"])
+                    with IfBlockContext([end, ">", self._N]):
+                        end << self._N
+                        insert_len << end - start + 1
+                        insert_end << insert_len
                     with ElseBlockContext():
-                        end << start - 1 + self._N_mod_J
-                        insert_len << self._N_mod_J
+                        insert_len << self._J
+                        insert_end << insert_len
 
-                    insert_end << insert_len
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
                         [self._Edet[start:end]], "to_array_1d"
                     )
@@ -996,6 +1002,7 @@ class StanFitInterface(StanInterface):
                             ],
                             "to_int",
                         )
+                    self._N_ev_distributed << self._N_ev_distributed + insert_len
 
     def _parameters(self):
         """
@@ -1179,22 +1186,22 @@ class StanFitInterface(StanInterface):
                 )
 
                 # Pack source energies into local parameter vector
-                with ForLoopContext(1, self._N_shards, "i") as i:
+                with ForLoopContext(1, self._N_shards_use_this, "i") as i:
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
                     start << (i - 1) * self._J + 1
                     end << i * self._J
+                    
                     # If it's not the last shard or all shards have same length anyway:
-                    with IfBlockContext(
-                        [i != self._N_shards, "||", self._N_mod_J == 0]
-                    ):
-                        self._local_pars[i] << self._Esrc[start:end]
+                    with IfBlockContext([end, ">", self._N]):
+                        length = ForwardVariableDef("length", "int")
+                        length << self._N - start + 1
+                        self._local_pars[i][1 : length] << self._Esrc[start : self._N]
+                        
                     # Else, only relevant for last shard if it's shorter
                     with ElseBlockContext():
-                        (
-                            self._local_pars[i][1 : self._N_mod_J]
-                            << self._Esrc[start : self._N]
-                        )
+                        self._local_pars[i] << self._Esrc[start:end]
+
 
             else:
 
@@ -1805,7 +1812,7 @@ class StanFitInterface(StanInterface):
                 # Map data to lp_reduce
                 StringExpression(
                     [
-                        "target += sum(map_rect(lp_reduce, global_pars, local_pars, real_data, int_data))"
+                        "target += sum(map_rect(lp_reduce, global_pars, local_pars[:N_shards_loop], real_data[:N_shards_loop], int_data[:N_shards_loop]))"
                     ]
                 )
 

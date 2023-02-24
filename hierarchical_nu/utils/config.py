@@ -3,15 +3,18 @@ from pathlib import Path
 from typing import List
 from dataclasses import dataclass, field
 from omegaconf import OmegaConf
+import numpy as np
 
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 
 _config_path = Path("~/.config/hierarchical_nu/").expanduser()
-
+_local_config_path = Path(".")
 _config_name = Path("hnu_config.yml")
 
 _config_file = _config_path / _config_name
+# Overwrite global config with local config
+_local_config_file = _local_config_path / _config_name
 
 
 @dataclass
@@ -35,6 +38,8 @@ class ParameterConfig:
     diff_index_range: tuple = (1.0, 4.0)
     L: float = 5e46  # u.erg / u.s
     L_range: tuple = (0, 1e60)
+    src_dec: float = 0.  # u.deg
+    src_ra: float = 90.  # u.deg
     Enorm: float = 1e5  # u.GeV
     Emin: float = 5e4  # u.GeV
     Emax: float = 1e8  # u.GeV
@@ -59,31 +64,59 @@ class ParameterConfig:
 
 
 @dataclass
+class SinglePriorConfig:
+
+    name: str = "LogNormalPrior"
+    mu: float = 1.
+    sigma: float = 1.
+
+    
+@dataclass
+class PriorConfig:
+
+    src_index: SinglePriorConfig = SinglePriorConfig(name="NormalPrior", mu=2., sigma=1.5)
+    diff_index: SinglePriorConfig = SinglePriorConfig(name="NormalPrior", mu=2.5, sigma=1.5)
+    L: SinglePriorConfig = SinglePriorConfig(name="LogNormalPrior", mu=1e52, sigma=10.)
+    diff_flux: SinglePriorConfig = SinglePriorConfig(name="LogNormalPrior", mu=1e-6, sigma=1.)
+    atmo_flux: SinglePriorConfig = SinglePriorConfig(name="LogNormalPrior", mu=1e-6, sigma=1.)
+
+
+
+@dataclass
 class HierarchicalNuConfig:
 
     file_config: FileConfig = FileConfig()
     parameter_config: ParameterConfig = ParameterConfig()
+    prior_config: PriorConfig = PriorConfig()
 
 
 # Load default config
 hnu_config: HierarchicalNuConfig = OmegaConf.structured(HierarchicalNuConfig)
 
-# Merge user config
-if _config_file.is_file():
 
-    _local_config = OmegaConf.load(_config_file)
+if not _config_file.is_file() or not _local_config_file.is_file():
+    # Prints should be converted to logger at some point
+    print("No config found, creating new one")
+    _config_path.mkdir(parents=True, exist_ok=True)
+
+    with _config_file.open("w") as f:
+
+        OmegaConf.save(config=hnu_config, f=f.name)
+
+elif _local_config_file.is_file():
+    print("local config found")
+    _local_config = OmegaConf.load(_local_config_file)
 
     hnu_config: HierarchicalNuConfig = OmegaConf.merge(
         hnu_config,
         _local_config,
     )
 
-# Write defaults
-else:
+elif _config_file.is_file():
+    print("global config found")
+    _local_config = OmegaConf.load(_config_file)
 
-    # Make directory if needed
-    _config_path.mkdir(parents=True, exist_ok=True)
-
-    with _config_file.open("w") as f:
-
-        OmegaConf.save(config=hnu_config, f=f.name)
+    hnu_config: HierarchicalNuConfig = OmegaConf.merge(
+        hnu_config,
+        _local_config,
+    )

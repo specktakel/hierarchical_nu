@@ -24,7 +24,7 @@ from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
-from hierarchical_nu.priors import Priors
+from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
 
 
 class ModelCheck:
@@ -41,7 +41,14 @@ class ModelCheck:
 
         else:
 
-            self.priors = Priors()
+            prior_config = hnu_config["prior_config"]
+            priors = Priors()
+            priors.luminosity = self.make_prior(prior_config["L"])
+            priors.src_index = self.make_prior(prior_config["src_index"])
+            priors.atmospheric_flux = self.make_prior(prior_config["atmo_flux"])
+            priors.diffuse_flux = self.make_prior(prior_config["diff_flux"])
+            priors.diff_index = self.make_prior(prior_config["diff_index"])
+            self.priors = priors
 
         if truths:
 
@@ -103,12 +110,33 @@ class ModelCheck:
             self.truths["Nex_atmo"] = Nex_per_comp[2]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
             self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
+
+            """
+            self.priors.atmospheric_flux = NormalPrior(
+                mu=atmo_bg.flux_model.total_flux_int.to(flux_unit),
+                sigma=atmo_bg.flux_model.total_flux_int.to(flux_unit))
+            self.priors.diffuse_flux = NormalPrior(
+                mu=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value, 
+                sigma=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value,
+            )
+            """
         self._default_var_names = [key for key in self.truths]
 
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
     @staticmethod
-    def initialise_env(output_dir):
+    def make_prior(p):
+        if p["name"] == "LogNormalPrior":
+            prior = LogNormalPrior(mu=np.log(p["mu"]), sigma=p["sigma"])
+        elif p["name"] == "NormalPrior":
+            prior = NormalPrior(mu=p["mu"], sigma=p["sigma"])
+        else:
+            raise ValueError("Currently no other prior implemented")
+        return prior
+
+
+    @staticmethod
+    def initialise_env(output_dir, priors: Priors = Priors()):
         """
         Script to set up enviroment for parallel
         model checking runs.
@@ -116,11 +144,12 @@ class ModelCheck:
         * Runs MCEq for atmo flux if needed
         * Generates and compiles necessary Stan files
         Only need to run once before calling ModelCheck(...).run()
-        """
+        """        
 
         # Config
         parameter_config = hnu_config["parameter_config"]
         file_config = hnu_config["file_config"]
+        prior_config = hnu_config["prior_config"]
 
         # Run MCEq computation
         print("Setting up MCEq run for AtmopshericNumuFlux")
@@ -148,8 +177,21 @@ class ModelCheck:
         # Generate fit Stan file
         nshards = parameter_config["nshards"]
         fit_name = file_config["fit_filename"][:-5]
+        
+        priors = Priors()
+        priors.luminosity = ModelCheck.make_prior(prior_config["L"])
+        priors.src_index = ModelCheck.make_prior(prior_config["src_index"])
+        priors.atmospheric_flux = ModelCheck.make_prior(prior_config["atmo_flux"])
+        priors.diffuse_flux = ModelCheck.make_prior(prior_config["diff_flux"])
+        priors.diff_index = ModelCheck.make_prior(prior_config["diff_index"])
+
+
         stan_fit_interface = StanFitInterface(
-            fit_name, sources, detector_model_type, nshards=nshards
+            fit_name,
+            sources,
+            detector_model_type,
+            nshards=nshards,
+            priors=priors,
         )
 
         stan_fit_interface.generate()
@@ -285,20 +327,31 @@ class ModelCheck:
                     np.max(np.array(self.results[var_name])[~mask]),
                     nbins,
                 )
+                prior_supp = np.geomspace(
+                    np.min(np.array(self.results[var_name])[~mask]),
+                    np.max(np.array(self.results[var_name])[~mask]),
+                    1000,
+                )
                 ax[v].set_xscale("log")
 
             else:
 
+                prior_supp = np.linspace(
+                    np.min(self.results[var_name]),
+                    np.max(self.results[var_name]),
+                    1000,
+                )
                 bins = np.linspace(
                     np.min(np.array(self.results[var_name])[~mask]),
                     np.max(np.array(self.results[var_name])[~mask]),
                     nbins,
                 )
+            max_value = 0            
 
             for i in range(len(self.results[var_name])):
-
+                
                 if i not in mask_results:
-                    ax[v].hist(
+                    n, bins, _ = ax[v].hist(
                         self.results[var_name][i],
                         color="#017B76",
                         alpha=alpha,
@@ -307,24 +360,46 @@ class ModelCheck:
                         lw=1.0,
                     )
 
+                    max_value = n.max() if \
+                        n.max() > max_value else max_value
+
             if show_prior:
 
                 N = len(self.results[var_name][0]) * 100
                 xmin, xmax = ax[v].get_xlim()
 
-                if "f_" in var_name:
+                if "f_" in var_name and not "diff" in var_name:   # yikes
 
                     prior_samples = uniform(0, 1).rvs(N)
+                    prior_density = uniform(0, 1).pdf(prior_supp)
+                    plot = True
 
                 elif "Nex" in var_name:
 
-                    break
+                    plot = False
+
+                elif "index" in var_name:
+                    prior_density = self.priors.to_dict()[var_name].pdf(prior_supp)
+                    plot = True
 
                 else:
 
                     prior_samples = self.priors.to_dict()[var_name].sample(N)
-
-                ax[v].hist(
+                    prior_density = self.priors.to_dict()[var_name].pdf_logspace(prior_supp)
+                    plot = True
+                
+                
+                
+                if plot:
+                    ax[v].plot(
+                        prior_supp,
+                        prior_density / prior_density.max() * max_value / 2.,
+                        color="k",
+                        alpha=0.5,
+                        lw=2,
+                        label="Prior",
+                    )
+                    ax[v].hist(
                     prior_samples,
                     color="k",
                     alpha=0.5,
@@ -332,7 +407,7 @@ class ModelCheck:
                     bins=bins,
                     lw=2,
                     weights=np.tile(0.01, len(prior_samples)),
-                    label="Prior",
+                    label="Prior samples",
                 )
 
             ax[v].axvline(
@@ -563,7 +638,14 @@ def _initialise_sources():
 
     # Simple point source for testing
     point_source = PointSource.make_powerlaw_source(
-        "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, 0.43, Emin, Emax
+        "test",
+        np.deg2rad(parameter_config["src_dec"]) * u.rad,
+        np.deg2rad(parameter_config["src_ra"]) * u.rad,
+        L,
+        src_index,
+        0.43,
+        Emin,
+        Emax,
     )
 
     sources = Sources()
