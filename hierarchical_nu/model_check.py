@@ -346,12 +346,12 @@ class ModelCheck:
                     np.max(np.array(self.results[var_name])[~mask]),
                     nbins,
                 )
-            max_value = 0
+            max_value = 0            
 
             for i in range(len(self.results[var_name])):
-
+                
                 if i not in mask_results:
-                    ax[v].hist(
+                    n, bins, _ = ax[v].hist(
                         self.results[var_name][i],
                         color="#017B76",
                         alpha=alpha,
@@ -360,8 +360,8 @@ class ModelCheck:
                         lw=1.0,
                     )
 
-                max_value = n.max() if \
-                    n.max() > max_value else max_value
+                    max_value = n.max() if \
+                        n.max() > max_value else max_value
 
             if show_prior:
 
