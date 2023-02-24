@@ -170,7 +170,7 @@ class ExposureIntegral:
                 )
             if isinstance(self.energy_resolution, R2021EnergyResolution):
                 self.energy_resolution.set_fit_params(dec.value)
-            
+
             p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                 e_cen, self._min_det_energy, dec
             )
@@ -367,13 +367,16 @@ class ExposureIntegral:
                 if isinstance(source.flux_model, AtmosphericNuMuFlux):
 
                     dec = np.arcsin(-cosz)  # Only for IceCube
+                    atmo_flux_integ_val = source.flux_model.total_flux_int.to(
+                        1 / (u.m**2 * u.s)
+                    ).value
                     f_values = (
                         source.flux_model(
                             E_range * u.GeV, dec * u.rad, 0 * u.rad
                         ).to_value(1 / (u.GeV * u.s * u.sr * u.m**2))
-                        * 1e9  # Scale for reasonable c_values
-                    )
-                    gamma2 = gamma2_scale - 3.7
+                        / atmo_flux_integ_val
+                    ) * aeff_values
+                    gamma2 = gamma2_scale - 3.6
 
                 else:
 
@@ -390,14 +393,41 @@ class ExposureIntegral:
 
                 f_values_all.append(f_values)
 
-            g_values = bbpl_pdf(
-                E_range,
-                Emin,
-                Eth,
-                Emax,
-                gamma1,
-                gamma2,
-            )
+            if Emin < Eth and Emax > Eth:
+
+                g_values = bbpl_pdf(
+                    E_range,
+                    Emin,
+                    Eth,
+                    Emax,
+                    gamma1,
+                    gamma2,
+                )
+
+            elif Emin < Eth and Emax <= Eth:
+
+                Eth_tmp = Emin + (Emax - Emin) / 2
+
+                g_values = bbpl_pdf(
+                    E_range,
+                    Emin,
+                    Eth_tmp,
+                    Emax,
+                    gamma1,
+                    gamma1,
+                )
+
+            elif Emin >= Eth and Emax > Eth:
+
+                Eth_tmp = Emin + (Emax - Emin) / 2
+                g_values = bbpl_pdf(
+                    E_range,
+                    Emin,
+                    Eth_tmp,
+                    Emax,
+                    gamma2,
+                    gamma2,
+                )
 
             c_values_src = [max(f_values / g_values) for f_values in f_values_all]
             c_values.append(c_values_src)

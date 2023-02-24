@@ -27,6 +27,10 @@ def test_short_run(output_directory, random_seed):
     file_list = [output_file]
     model_check = ModelCheck.load(file_list)
 
+    # Check diagnostics
+    ind_not_ok = model_check.diagnose()
+    assert len(ind_not_ok) == 0
+
     # Check visualisations
     for p in [True, False]:
 
