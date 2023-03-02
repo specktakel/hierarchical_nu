@@ -153,7 +153,7 @@ class ExposureIntegral:
             cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
 
             integral = source.flux_model.spectral_shape.integral(
-                lower_e_edges, upper_e_edges
+                lower_e_edges * (1 + z), upper_e_edges * (1 + z)
             ).to(integral_unit)
             if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
                 self.effective_area.cosz_bin_edges
@@ -190,8 +190,8 @@ class ExposureIntegral:
             #    dec_upper = np.union1d(dec_lower, self.energy_resolution._declination_bins[1:] * u.rad)
 
             integral = source.flux_model.integral(
-                lower_e_edges[:, np.newaxis],
-                upper_e_edges[:, np.newaxis],
+                lower_e_edges[:, np.newaxis] * (1 + z),
+                upper_e_edges[:, np.newaxis] * (1 + z),
                 dec_lower[np.newaxis, :],
                 dec_upper[np.newaxis, :],
                 0 * u.rad,
@@ -216,7 +216,7 @@ class ExposureIntegral:
                 )
             p_Edet = np.nan_to_num(p_Edet)
 
-        return ((p_Edet * integral.T * aeff.T * source.redshift_factor(z)).T).sum()
+        return ((p_Edet * integral.T * aeff.T).T).sum() * (1 + z)
 
     def _compute_exposure_integral(self):
         """
