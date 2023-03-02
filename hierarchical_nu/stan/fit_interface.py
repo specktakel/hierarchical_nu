@@ -982,27 +982,15 @@ class StanFitInterface(StanInterface):
                     else:
                         self.int_data[i, 4] << 0
                     self.int_data[i, 5] << self._Ngrid
-                    with IfBlockContext(
-                        [i != self._N_shards, "||", self._N_mod_J == 0]
-                    ):
-                        self.int_data[i, 6:"5+insert_len"] << FunctionCall(
-                            [
-                                FunctionCall(
-                                    [self._event_type[start:end]], "to_array_1d"
-                                )
-                            ],
-                            "to_int",
-                        )
-                    with ElseBlockContext():
-                        self.int_data[i, 6:"5+insert_len"] << FunctionCall(
-                            [
-                                FunctionCall(
-                                    [self._event_type[start : self._N]], "to_array_1d"
-                                )
-                            ],
-                            "to_int",
-                        )
-                    self._N_ev_distributed << self._N_ev_distributed + insert_len
+
+                    self.int_data[i, 6:"5+insert_len"] << FunctionCall(
+                        [
+                            FunctionCall(
+                                [self._event_type[start:end]], "to_array_1d"
+                            )
+                        ],
+                        "to_int",
+                    )
 
     def _parameters(self):
         """
@@ -1242,7 +1230,7 @@ class StanFitInterface(StanInterface):
                             self._F[k],
                             "*=",
                             self._flux_conv(
-                                src_index_ref, self._Esrc_min, self._Esrc_max
+                                src_index_ref, self._Esrc_min/(1+self._z[k]), self._Esrc_max/(1+self._z[k]),
                             ),
                         ]
                     )
