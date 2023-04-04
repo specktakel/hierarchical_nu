@@ -44,6 +44,7 @@ class ParameterConfig:
     Emin: float = 5e4  # u.GeV
     Emax: float = 1e8  # u.GeV
     diff_norm: float = 5e-14  # 1 / (u.GeV * u.m**2 * u.s)
+    z: float = 0.43  # cosmological redshift, dimensionless
 
     # If True, use same Emin_det for all
     # If False, use separate for tracks and cascades

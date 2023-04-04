@@ -20,7 +20,8 @@ __all__ = ["LogParameterization",
            "PolynomialParameterization", "LognormalParameterization",
            "VMFParameterization", "TruncatedParameterization",
            "SimpleHistogram", "SimpleHistogram_rng",
-           "DistributionMode", "LognormalMixture"
+           "DistributionMode", "LognormalMixture",
+           "TwoDimHistInterpolation"
            ]
 
 DistributionMode = Enum("DistributionMode", "PDF RNG")
@@ -378,6 +379,44 @@ class SimpleHistogram(UserDefinedFunction):
         for be in self._binedges:
             be.add_output(self)
         """
+
+
+class TwoDimHistInterpolation(UserDefinedFunction):
+    """
+    2D Histogram that interpolates the returned value along the first axis
+    """
+    def __init__(
+            self,
+            histogram: np.ndarray,
+            binedges: Sequence[np.ndarray],
+            name: str
+            ):
+
+        #self._dim = len(binedges)
+        assert histogram.ndim == 2
+        self._dim = 2
+
+        val_names = ["value_{}".format(i) for i in range(self._dim)]
+        val_types = ["real"]*self._dim
+
+        UserDefinedFunction.__init__(
+            self, name, val_names, val_types, "real")
+
+        with self:
+            self._histogram = StanArray("hist_array", "real", histogram)
+            self._binedges = [
+                StanArray("hist_edge_{}".format(i), "real", be)
+                for i, be in enumerate(binedges)]
+            loge_c = np.power(10, (np.log10(binedges[0][:-1]) + np.log10(binedges[0][1:])) / 2)
+            self._loge = StanArray("energy", "real", loge_c)
+            temp = ForwardArrayDef("temp", "real", ["[", binedges[0].size-1, "]"])
+            temp << StringExpression(
+                [
+                    "hist_array[:, binary_search(", val_names[1], ", ", self._binedges[1], ")]"
+                ]
+            )
+            return_this: TListTExpression = ["interpolate(to_vector(energy), to_vector(temp), value_0)"]
+            _ = ReturnStatement(return_this)
 
 
 if __name__ == "__main__":
