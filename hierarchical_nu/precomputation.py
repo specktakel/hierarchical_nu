@@ -48,8 +48,8 @@ class ExposureIntegral:
         """
 
         self._sources = sources
-        self._min_src_energy = Parameter.get_parameter("Emin").value
-        self._max_src_energy = Parameter.get_parameter("Emax").value
+        self._min_src_energy = Parameter.get_parameter("Emin_src").value
+        self._max_src_energy = Parameter.get_parameter("Emax_src").value
         self._n_grid_points = n_grid_points
 
         # Use Emin_det if available, otherwise use per event_type
@@ -153,7 +153,7 @@ class ExposureIntegral:
             cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
 
             integral = source.flux_model.spectral_shape.integral(
-                lower_e_edges * (1 + z), upper_e_edges * (1 + z)
+                lower_e_edges, upper_e_edges
             ).to(integral_unit)
             if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
                 self.effective_area.cosz_bin_edges
@@ -216,7 +216,7 @@ class ExposureIntegral:
                 )
             p_Edet = np.nan_to_num(p_Edet)
 
-        return ((p_Edet * integral.T * aeff.T).T).sum() * (1 + z)
+        return ((p_Edet * integral.T * aeff.T).T).sum()
 
     def _compute_exposure_integral(self):
         """
@@ -254,6 +254,10 @@ class ExposureIntegral:
                 integral_grids_tmp[indices] += self.calculate_rate(
                     source
                 ) / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
+                # essentially my calculation, but from the other end
+                # normalisation of integrated particle flux is taken out 
+                # because it is used as a transformed parameter
+                # remainder is only dependent on gamma and detector
 
             # Reset free parameters to original values
             for par_name in this_free_pars:
@@ -333,6 +337,11 @@ class ExposureIntegral:
         where:
         f, target function: aeff_factor * src_spectrum
         g, envelope function: bbpl envelope used for sampling
+
+        src_spectrum should be transformed to detector frame
+        and have a cutoff at the transformed boundaries
+        most restrictive, i.e. (detector) union (source in detector frame)
+        TODO: see if neccessary to do this or if cuts on simulation are done in stan file
         """
 
         Emin_src = self._min_src_energy.to_value(u.GeV)
@@ -350,6 +359,7 @@ class ExposureIntegral:
         c_values = []
         for source in self._sources.sources:
 
+            # should be Emin, Emax of source at detector
             Emin = Emin_src / (1 + source.redshift)
             Emax = Emax_src / (1 + source.redshift)
             E_range = 10 ** np.linspace(np.log10(Emin), np.log10(Emax))

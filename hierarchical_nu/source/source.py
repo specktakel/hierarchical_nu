@@ -7,6 +7,7 @@ from .flux_model import (
     PointSourceFluxModel,
     PowerLawSpectrum,
     IsotropicDiffuseBG,
+    integral_power_law,
 )
 from .atmospheric_flux import AtmosphericNuMuFlux
 from .cosmology import luminosity_distance
@@ -101,9 +102,12 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
+        pivot: Parameter,
     ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
+        Luminosity and all energies given as arguments/parameters live in the source frame
+        and are converted to detector frame internally.
 
         Parameters:
             name: str
@@ -121,14 +125,17 @@ class PointSource(Source):
                 Lower energy bound
             upper: Parameter
                 Upper energy bound
+        All parameters are taken to be defined in the source frame.
         """
 
         total_flux = luminosity.value / (
             4 * np.pi * luminosity_distance(redshift) ** 2
-        )  # here flux is W / m^2
+        )  # here flux is W / m^2, lives in the detector frame
 
         # Each source has an independent normalization, thus use the source name as identifier
+        # Normalisation to dN/(dEdtdA)
         norm = Parameter(
+            # is defined at the detector!
             1 / (u.GeV * u.s * u.m ** 2),
             "{}_norm".format(name),
             fixed=False,
@@ -136,9 +143,14 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
-        shape = PowerLawSpectrum(norm, 1e5 * u.GeV, index, lower.value, upper.value)
+        shape = PowerLawSpectrum(
+            norm,
+            pivot.value / (1 + redshift),
+            index,
+            lower.value / (1 + redshift),
+            upper.value / (1 + redshift),
+        )
         total_power = shape.total_flux_density
-
         norm.value *= total_flux / total_power
         norm.value = norm.value.to(1 / (u.GeV * u.m ** 2 * u.s))
         norm.fixed = True
@@ -153,6 +165,8 @@ class PointSource(Source):
         include_undetected: bool = False,
     ):
         """
+        TODO: check if compatible with updated physics!
+        
         Factory for power law sources defined in
         HDF5 files ( update: output from popsynth).
 
@@ -285,6 +299,8 @@ class PointSource(Source):
 
     @luminosity.setter
     @u.quantity_input
+    # TODO add calculation for fluxes etc.
+    # needs to be defined in the source frame
     def luminosity(self, value: u.erg / u.s):
         self._luminosity = value
 

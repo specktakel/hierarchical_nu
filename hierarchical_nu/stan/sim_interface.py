@@ -398,7 +398,9 @@ class StanSimInterface(StanInterface):
                             self._F[k],
                             "*=",
                             self._flux_conv(
-                                src_index_ref, self._Esrc_min, self._Esrc_max
+                                src_index_ref,
+                                self._Esrc_min / (1 + self._z[k]),
+                                self._Esrc_max / (1 + self._z[k])
                             ),
                         ]
                     )

@@ -129,10 +129,6 @@ class Simulation:
 
         if not include_paths:
             include_paths = [STAN_PATH]
-        if self._detector_model_type == R2021DetectorModel:
-            r2021_path = os.path.join(os.getcwd(), ".stan_files")
-            if not r2021_path in include_paths:
-                include_paths.append(r2021_path)
 
         stanc_options = {"include-paths": include_paths}
 
@@ -412,8 +408,11 @@ class Simulation:
         if self._sources.diffuse:
             sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
 
-        sim_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
-        sim_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+        sim_inputs["Esrc_min"] = Parameter.get_parameter("Emin_src").value.to(u.GeV).value
+        sim_inputs["Esrc_max"] = Parameter.get_parameter("Emax_src").value.to(u.GeV).value
+
+        sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
+        sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
 
         for event_type in self._detector_model_type.event_types:
 

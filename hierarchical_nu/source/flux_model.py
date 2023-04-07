@@ -149,6 +149,9 @@ class PointSourceFluxModel(FluxModel):
         self, energy: u.GeV, dec: u.rad, ra: u.rad
     ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
         if (dec == self.dec) and (ra == self.ra):
+            # why is this divided by 4pi?
+            # if clause above acts as a delta function
+            # integral over delta should lead to unity
             return self._spectral_shape(energy) / (4 * np.pi * u.sr)
         return 0
 
@@ -182,6 +185,9 @@ class PointSourceFluxModel(FluxModel):
         ra_int = ra_up - ra_low
         dec_int = (np.sin(dec_up) - np.sin(dec_low)) * u.rad
 
+        #same here with the deltas, looks off to me
+        # is it actually needed somewhere or only implemented
+        # because of abstract method requirements?
         int = (
             self._spectral_shape.integral(e_low, e_up)
             * ra_int
@@ -323,6 +329,7 @@ class PowerLawSpectrum(SpectralShape):
     ):
         """
         Power law flux models.
+        Lives in the detector frame.
 
         normalisation: float
             Flux normalisation [GeV^-1 m^-2 s^-1]
@@ -356,19 +363,22 @@ class PowerLawSpectrum(SpectralShape):
         par.value = par_value
 
     def redshift_factor(self, z: float):
+        """
+        To be seen if actually used anymore
+        """
         index = self._parameters["index"].value
         return np.power(1 + z, 1 - index)
 
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
         """
-        dN/dEdAdt.
+        dN/(dEdAdt).
         """
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value
 
         if (energy < self._lower_energy) or (energy > self._upper_energy):
-            return 0.0 << norm.unit
+            return 0.0 * norm
         else:
             return norm * np.power(energy / self._normalisation_energy, -index)
 
@@ -444,12 +454,13 @@ class PowerLawSpectrum(SpectralShape):
 
         if index == 2:
             # special case
-            int_norm = norm / (np.power(self._normalisation_energy, -index))
+            int_norm = norm * np.power(self._normalisation_energy, index)
             return int_norm * (np.log(upper / lower))
 
         # Pull out the units here because astropy screwes this up sometimes
-        int_norm = norm / (
-            np.power(self._normalisation_energy / u.GeV, -index) * (2 - index)
+        int_norm = (norm 
+                    * np.power(self._normalisation_energy / u.GeV, index)
+                    / (2 - index)
         )
         return (
             int_norm
@@ -580,6 +591,23 @@ class PowerLawSpectrum(SpectralShape):
             ReturnStatement([f1 / f2])
 
         return func
+    
+
+def integral_power_law(gamma, n, x0, x1, x2):
+    """
+    Implements expectation value (up to normalisation
+    of the distribution) over power law/pareto distribution of the form
+    <x^n> = \int_{x1}^{x2} (x/x_0)^{-\gamma} x^n dx
+
+    Is used for flux conversion from energy to numbers.
+
+    Should in the end replace flux_conv_
+    """
+
+    if gamma != n + 1.:
+        return np.power(x0, gamma) * (np.power(x2, n + 1 - gamma) - np.power(x1, n + 1 - gamma)) / (n + 1 - gamma)
+    else:
+        return np.power(x0, n+1) * np.log(x2 / x1)
 
 
 def flux_conv_(alpha, e_low, e_up):
