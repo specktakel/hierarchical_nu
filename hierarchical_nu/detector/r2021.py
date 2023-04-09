@@ -34,6 +34,7 @@ from ..backend import (
     StanVector,
     StringExpression,
     UserDefinedFunction,
+    TwoDimHistInterpolation
 )
 from .detector_model import (
     EffectiveArea,
@@ -382,9 +383,11 @@ class R2021EffectiveArea(EffectiveArea):
 
     CACHE_FNAME = "aeff_r2021.npz"
 
-    def __init__(self, period: str="IC86_II") -> None:
+    def __init__(self, mode: DistributionMode=DistributionMode.PDF, period: str="IC86_II") -> None:
 
         self._func_name = "R2021EffectiveArea"
+
+        self.mode = mode
 
         self.setup()
 
@@ -399,8 +402,13 @@ class R2021EffectiveArea(EffectiveArea):
         )
 
         # Define Stan interface.
+        if self.mode == DistributionMode.PDF:
+            type_ = TwoDimHistInterpolation
+        else:
+            type_ = SimpleHistogram
+        #type_ = SimpleHistogram
         with self:
-            hist = SimpleHistogram(
+            hist = type_(
                 self._eff_area,
                 [self._tE_bin_edges, self._cosz_bin_edges],
                 "R2021EffAreaHist",
@@ -1574,7 +1582,7 @@ class R2021DetectorModel(DetectorModel):
 
         self._energy_resolution = R2021EnergyResolution(mode, rewrite, gen_type)
 
-        self._eff_area = R2021EffectiveArea()
+        self._eff_area = R2021EffectiveArea(mode)
 
 
     def _get_effective_area(self) -> R2021EffectiveArea:

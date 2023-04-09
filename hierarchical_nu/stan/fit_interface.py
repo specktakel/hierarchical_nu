@@ -508,6 +508,7 @@ class StanFitInterface(StanInterface):
                                                 ),
                                             ]
                                         )
+                                    """
                                     StringExpression(
                                         [
                                             lp[i][k],
@@ -518,6 +519,17 @@ class StanFitInterface(StanInterface):
                                             ", ",
                                             E[i],
                                             "))",
+                                        ]
+                                    )
+                                    """
+                                    StringExpression(
+                                        [
+                                            lp[i][k],
+                                            " += log(",
+                                            self._dm["tracks"].effective_area(
+                                                E[i], omega_det[i]
+                                            ),
+                                            ")",
                                         ]
                                     )
 
@@ -1635,6 +1647,7 @@ class StanFitInterface(StanInterface):
                                             ),
                                         ]
                                     )
+                                """
                                 StringExpression(
                                     [
                                         self._lp[i][k],
@@ -1645,6 +1658,17 @@ class StanFitInterface(StanInterface):
                                         ", ",
                                         self._E[i],
                                         "))",
+                                    ]
+                                )
+                                """
+                                StringExpression(
+                                    [
+                                        self._lp[i][k],
+                                        " += log(",
+                                        self._dm["tracks"].effective_area(
+                                            self._E[i], self._omega_det[i]
+                                        ),
+                                        ")",
                                     ]
                                 )
 
@@ -2074,6 +2098,7 @@ class StanFitInterface(StanInterface):
                                             ),
                                         ]
                                     )
+                                """
                                 StringExpression(
                                     [
                                         self._lp[i][k],
@@ -2084,6 +2109,17 @@ class StanFitInterface(StanInterface):
                                         ", ",
                                         self._E[i],
                                         "))",
+                                    ]
+                                )
+                                """
+                                StringExpression(
+                                    [
+                                        self._lp[i][k],
+                                        " += log(",
+                                        self._dm["tracks"].effective_area(
+                                            self._E[i], self._omega_det[i]
+                                        ),
+                                        ")",
                                     ]
                                 )
 

@@ -121,6 +121,7 @@ class ModelCheck:
             )
             """
         self._default_var_names = [key for key in self.truths]
+        self._default_var_names.append("Fs")
 
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
@@ -320,7 +321,7 @@ class ModelCheck:
 
         for v, var_name in enumerate(var_names):
 
-            if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo":
+            if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo" or var_name == "Fs":
 
                 bins = np.geomspace(
                     np.min(np.array(self.results[var_name])[~mask]),
@@ -381,15 +382,14 @@ class ModelCheck:
                 elif "index" in var_name:
                     prior_density = self.priors.to_dict()[var_name].pdf(prior_supp)
                     plot = True
-
-                else:
-
+                
+                elif not "Fs" in var_name:
                     prior_samples = self.priors.to_dict()[var_name].sample(N)
                     prior_density = self.priors.to_dict()[var_name].pdf_logspace(prior_supp)
                     plot = True
-                
-                
-                
+                else:
+                    plot = False
+
                 if plot:
                     ax[v].plot(
                         prior_supp,
@@ -409,10 +409,12 @@ class ModelCheck:
                     weights=np.tile(0.01, len(prior_samples)),
                     label="Prior samples",
                 )
-
-            ax[v].axvline(
-                self.truths[var_name], color="k", linestyle="-", label="Truth"
-            )
+            try:
+                ax[v].axvline(
+                    self.truths[var_name], color="k", linestyle="-", label="Truth"
+                )
+            except KeyError:
+                pass
             ax[v].set_xlabel(var_labels[v], labelpad=10)
             ax[v].legend(loc="best")
 
@@ -509,6 +511,7 @@ class ModelCheck:
                 seed=s,
                 show_progress=True,
                 threads_per_chain=self._threads_per_chain,
+                inits={"src_index": 2.2, "L": 1e50, "diff_index": 2.2},
                 **kwargs
             )
 
@@ -643,7 +646,7 @@ def _initialise_sources():
         np.deg2rad(parameter_config["src_ra"]) * u.rad,
         L,
         src_index,
-        0.43,
+        parameter_config["z"],
         Emin,
         Emax,
     )

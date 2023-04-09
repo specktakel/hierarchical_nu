@@ -737,13 +737,13 @@ def _get_expected_Nnu_(
                 flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
                 if shared_src_index:
                     flux = flux * flux_conv_(
-                        src_index, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
+                        src_index, sim_inputs["Esrc_min"] / (1 + sim_inputs["z"][i]), sim_inputs["Esrc_max"] / (1 + sim_inputs["z"][i])
                     )
                 else:
                     flux = flux * flux_conv_(
                         src_index_list[i],
-                        sim_inputs["Esrc_min"],
-                        sim_inputs["Esrc_max"],
+                        sim_inputs["Esrc_min"]  / (1 + sim_inputs["z"][i]),
+                        sim_inputs["Esrc_max"]  / (1 + sim_inputs["z"][i]),
                     )
                 F.append(flux)
 
@@ -753,13 +753,13 @@ def _get_expected_Nnu_(
                 flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
                 if shared_src_index:
                     flux = flux * flux_conv_(
-                        src_index, sim_inputs["Esrc_min"], sim_inputs["Esrc_max"]
+                        src_index, sim_inputs["Esrc_min"] / (1 + sim_inputs["z"][i]), sim_inputs["Esrc_max"] / (1 + sim_inputs["z"][i])
                     )
                 else:
                     flux = flux * flux_conv_(
                         src_index_list[i],
-                        sim_inputs["Esrc_min"],
-                        sim_inputs["Esrc_max"],
+                        sim_inputs["Esrc_min"] / (1 + sim_inputs["z"][i]),
+                        sim_inputs["Esrc_max"] / (1 + sim_inputs["z"][i]),
                     )
                 F.append(flux)
 
