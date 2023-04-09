@@ -662,7 +662,6 @@ class StanSimInterface(StanInterface):
         with GeneratedQuantitiesContext():
 
             self._dm_rng = OrderedDict()
-            self._dm_pdf = OrderedDict()
 
             # For different event types, define the detector model in both RNG and PDF
             # mode to have all functions included.
@@ -683,10 +682,6 @@ class StanSimInterface(StanInterface):
                     self._dm_rng[event_type] = self.detector_model_type(
                         mode=DistributionMode.RNG, event_type=event_type
                     )
-                # self._dm_pdf[event_type] = self.detector_model_type(
-                #    mode=DistributionMode.PDF,
-                #    event_type=event_type,
-                # )
 
             # We redefine a bunch of variables from transformed data here, as we would
             # like to access them as outputs from the Stan simulation.

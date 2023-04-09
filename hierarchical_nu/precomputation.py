@@ -338,10 +338,8 @@ class ExposureIntegral:
         f, target function: aeff_factor * src_spectrum
         g, envelope function: bbpl envelope used for sampling
 
-        src_spectrum should be transformed to detector frame
-        and have a cutoff at the transformed boundaries
+        TODO: cutoff at the transformed boundaries
         most restrictive, i.e. (detector) union (source in detector frame)
-        TODO: see if neccessary to do this or if cuts on simulation are done in stan file
         """
 
         Emin_src = self._min_src_energy.to_value(u.GeV)
