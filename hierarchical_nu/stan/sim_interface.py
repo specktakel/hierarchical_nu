@@ -194,6 +194,11 @@ class StanSimInterface(StanInterface):
             self._Esrc_min = ForwardVariableDef("Esrc_min", "real")
             self._Esrc_max = ForwardVariableDef("Esrc_max", "real")
 
+            # Energy range that the detector should consider
+            # Is influenced by parameterisation of energy resolution
+            self._Emin = ForwardVariableDef("Emin", "real")
+            self._Emax = ForwardVariableDef("Emax", "real")
+
             # For tracks, we specify Emin_det, and several parameters for the
             # rejection sampling, denoted by rs_...
             # Separate interpolation grids are also provided for tracks and cascades
