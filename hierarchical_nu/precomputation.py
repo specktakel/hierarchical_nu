@@ -337,9 +337,6 @@ class ExposureIntegral:
         where:
         f, target function: aeff_factor * src_spectrum
         g, envelope function: bbpl envelope used for sampling
-
-        TODO: cutoff at the transformed boundaries
-        most restrictive, i.e. (detector) union (source in detector frame)
         """
 
         Emin_src = self._min_src_energy.to_value(u.GeV)
