@@ -369,6 +369,7 @@ class StanFitInterface(StanInterface):
                     # Actual function body goes here
                     # Starting here, everything needs to go to lp_reduce!
                     with ForLoopContext(1, N, "i") as i:
+                        #TODO make eps_t/c accessible here
                         lp[i] << logF
                         # Tracks
                         if "tracks" in self._event_types:
@@ -857,6 +858,9 @@ class StanFitInterface(StanInterface):
                 )
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_atmo_z}"
+                # sd_Ngrid currently used for Pdet_grid
+                # which is obsolete.
+                # TODO: Re-use instead for exposure factor as function of index grid
                 if "tracks" in self._event_types:
                     sd_Ngrid += 1
                 if "cascades" in self._event_types:
@@ -1419,6 +1423,8 @@ class StanFitInterface(StanInterface):
                 self._Nex << self._Nex_t + self._Nex_c
 
                 # Relative probability of event types
+                # How does this relate to the likelihood?
+                # see l. ~1840 something
                 self._logp_c << self._Nex_c / self._Nex
                 self._logp_c << StringExpression(["log(", self._logp_c, ")"])
                 self._logp_t << self._Nex_t / self._Nex
@@ -1497,7 +1503,11 @@ class StanFitInterface(StanInterface):
                 # Product over events => add log likelihoods
                 with ForLoopContext(1, self._N, "i") as i:
 
-                    self._lp[i] << self._logF
+                    # self._lp[i] << self._logF
+                    # should be self._eps_t + self._eps_c
+                    # or do we treat these as different source components? Don't think so
+                    #self._lp[i] << FunctionCall([self._F * self._eps_t], "log")
+                    self._lp[i] << StringExpression(["log(F .* eps_t)"])
 
                     # Tracks
                     if "tracks" in self._event_types:
@@ -1800,13 +1810,11 @@ class StanFitInterface(StanInterface):
                                 StringExpression(
                                     [
                                         self._lp[i][k],
-                                        " += log(interpolate(",
-                                        self._Eg,
-                                        ", ",
-                                        self._Pg_c[k],
-                                        ", ",
-                                        self._E[i],
-                                        "))",
+                                        " += log(",
+                                        self._dm["cascades"].effective_area(
+                                            self._E[i], self._omega_det[i]
+                                        ),
+                                        ")",
                                     ]
                                 )
 
@@ -1954,7 +1962,8 @@ class StanFitInterface(StanInterface):
                 self._E = ForwardVariableDef("E", "vector[N]")
 
                 with ForLoopContext(1, self._N, "i") as i:
-                    self._lp[i] << self._logF
+                    # TODO: change to use both tracks and cascades
+                    self._lp[i] << StringExpression(["log(F .* eps_t)"])
 
                     # Tracks
                     if "tracks" in self._event_types:
@@ -2247,16 +2256,14 @@ class StanFitInterface(StanInterface):
                                     ]
                                 )
 
-                                # log_prob += log(p(Edet > Edet_min | E))
+                                # log_prob += log(p(detected | E))
                                 StringExpression(
                                     [
                                         self._lp[i][k],
-                                        " += log(interpolate(",
-                                        self._Eg,
-                                        ", ",
-                                        self._Pg_c[k],
-                                        ", ",
-                                        self._E[i],
-                                        "))",
+                                        " += log(",
+                                        self._dm["cascades"].effective_area(
+                                            self._E[i], self._omega_det[i]
+                                        ),
+                                        ")",
                                     ]
                                 )
