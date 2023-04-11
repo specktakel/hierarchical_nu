@@ -479,9 +479,9 @@ class StanFit:
                 for _ in self._exposure_integral["tracks"].integral_grid
             ]
 
-            fit_inputs["Pdet_grid_t"] = np.array(
-                self._exposure_integral["tracks"].pdet_grid
-            )
+            # fit_inputs["Pdet_grid_t"] = np.array(
+            #     self._exposure_integral["tracks"].pdet_grid
+            # )
 
         if "cascades" in self._stan_interface._event_types:
 
@@ -490,9 +490,9 @@ class StanFit:
                 for _ in self._exposure_integral["cascades"].integral_grid
             ]
 
-            fit_inputs["Pdet_grid_c"] = np.array(
-                self._exposure_integral["cascades"].pdet_grid
-            )
+            #fit_inputs["Pdet_grid_c"] = np.array(
+            #    self._exposure_integral["cascades"].pdet_grid
+            #)
 
         if self._sources.atmospheric:
 

@@ -197,6 +197,7 @@ class StanFitInterface(StanInterface):
                 )
 
                 with lp_reduce:
+                    #TODO: make obs time available
                     # Unpack integer data, needed to interpret real data
                     # Use InstantVariableDef to save on lines
                     N = InstantVariableDef("N", "int", ["int_data[1]"])
@@ -208,6 +209,22 @@ class StanFitInterface(StanInterface):
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
                     len = ForwardVariableDef("len", "int")
+                    src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
+                    T = ForwardVariableDef("T", "real")
+                    if self._sources.diffuse:
+                        diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
+
+                    if "tracks" in self._event_types:
+                        integral_grid_t = ForwardArrayDef(
+                            "integral_grid_t", "vector[Ngrid]", ["[Ns+diffuse]"]
+                        )
+                        eps_t = ForwardVariableDef("eps_t", "vector[Ns+diffuse]")
+                    if "cascades" in self._event_types:
+                        integral_grid_c = ForwardArrayDef(
+                            "integral_grid_c", "vector[Ngrid]", ["[Ns+diffuse]"]
+                        )
+                        eps_c = ForwardVariableDef("eps_c", "vector[Ns+diffuse]")
+
                     # Get global parameters
                     # Check for shared index
                     if self._shared_src_index:
@@ -292,6 +309,33 @@ class StanFitInterface(StanInterface):
                     Esrc_max << StringExpression(["real_data[start]"])
                     start << start + 1
 
+                    end << end + 1
+                    T << StringExpression(["real_dta[start]"])
+                    start << start + 1
+
+                    end << end + Ngrid
+                    src_index_grid << StringExpression(["to_vector(real_data[start:end])"])
+                    start << start + Ngrid
+
+                    if self._sources.diffuse:
+                        end << end + Ngrid
+                        diff_index_grid << StringExpression(["to_vector(real_data[start:end])"])
+                        start << start + Ngrid
+
+                    if "tracks" in self._event_types:
+                        with ForLoopContext(1, "Ns+diffuse", "k") as k:
+                            end << end + Ngrid
+                            integral_grid_t[k] << StringExpression(["to_vector(real_data[start:end])"])
+                            start << start + Ngrid
+
+                    if "cascades" in self._event_types:
+                        with ForLoopContext(1, "Ns+diffuse", "k") as k:
+                            end << end + Ngrid
+                            integral_grid_c[k] << StringExpression(["to_vector(real_data[start:end])"])
+                            start << start + Ngrid
+
+
+                    """
                     # Unpack Egrid
                     end << end + Ngrid
                     Eg = ForwardVariableDef("Egrid", "vector[Ngrid]")
@@ -346,7 +390,7 @@ class StanFitInterface(StanInterface):
                                 ["to_vector(real_data[start:end])"]
                             )
                             start << start + Ngrid
-
+                    """
                     # Define tracks and cascades to sort events into correct detector response
                     if "tracks" in self._event_types:
                         track_type = ForwardVariableDef("track_type", "int")
@@ -366,11 +410,12 @@ class StanFitInterface(StanInterface):
                     elif self.sources.atmospheric:
                         k_atmo = "Ns + 1"
 
+
+                    
                     # Actual function body goes here
                     # Starting here, everything needs to go to lp_reduce!
                     with ForLoopContext(1, N, "i") as i:
-                        #TODO make eps_t/c accessible here
-                        lp[i] << logF
+
                         # Tracks
                         if "tracks" in self._event_types:
                             with IfBlockContext(
@@ -387,6 +432,16 @@ class StanFitInterface(StanInterface):
                                                 src_index_ref = src_index
                                             else:
                                                 src_index_ref = src_index[k]
+
+                                            eps_t[k] << FunctionCall(
+                                                [
+                                                    src_index_grid,
+                                                    integral_grid_t[k],
+                                                    src_index_ref,
+                                                ],
+                                                "interpolate",
+                                            ) * T
+
                                             # log_prob += log(p(Esrc|src_index))
                                             StringExpression(
                                                 [
@@ -426,6 +481,15 @@ class StanFitInterface(StanInterface):
                                         with IfBlockContext(
                                             [StringExpression([k, " == ", k_diff])]
                                         ):
+                                            
+                                            eps_t[k] << FunctionCall(
+                                                [
+                                                    diff_index_grid,
+                                                    integral_grid_t[k],
+                                                    diff_index,
+                                                ],
+                                                "interpolate",
+                                            ) * T
 
                                             # log_prob += log(p(Esrc|diff_index))
                                             StringExpression(
@@ -509,20 +573,7 @@ class StanFitInterface(StanInterface):
                                                 ),
                                             ]
                                         )
-                                    """
-                                    StringExpression(
-                                        [
-                                            lp[i][k],
-                                            " += log(interpolate(",
-                                            Eg,
-                                            ", ",
-                                            Pdet_grid_t[k],
-                                            ", ",
-                                            E[i],
-                                            "))",
-                                        ]
-                                    )
-                                    """
+
                                     StringExpression(
                                         [
                                             lp[i][k],
@@ -559,6 +610,15 @@ class StanFitInterface(StanInterface):
                                                 src_index_ref = src_index
                                             else:
                                                 src_index_ref = src_index[k]
+
+                                            eps_c[k] << FunctionCall(
+                                                [
+                                                    src_index_grid,
+                                                    integral_grid_c[k],
+                                                    src_index_ref,
+                                                ],
+                                                "interpolate",
+                                            ) * T
 
                                             # log_prob += log(p(Esrc | src_index))
                                             StringExpression(
@@ -599,6 +659,15 @@ class StanFitInterface(StanInterface):
                                         with IfBlockContext(
                                             [StringExpression([k, " == ", k_diff])]
                                         ):
+                                            
+                                            eps_c[k] << FunctionCall(
+                                                [
+                                                    diff_index_grid,
+                                                    integral_grid_c[k],
+                                                    diff_index,
+                                                ],
+                                                "interpolate",
+                                            ) * T
 
                                             # log_prob += log(p(Esrc | diff_index))
                                             StringExpression(
@@ -658,19 +727,6 @@ class StanFitInterface(StanInterface):
                                         ]
                                     )
 
-                                    # log_prob += log(p(Edet > Edet_min | E))
-                                    StringExpression(
-                                        [
-                                            lp[i][k],
-                                            " += log(interpolate(",
-                                            Eg,
-                                            ", ",
-                                            Pdet_grid_c[k],
-                                            ", ",
-                                            E[i],
-                                            "))",
-                                        ]
-                                    )
                     results = ForwardArrayDef("results", "real", ["[N]"])
                     with ForLoopContext(1, N, "i") as i:
                         results[i] << FunctionCall([lp[i]], "log_sum_exp")
@@ -783,6 +839,7 @@ class StanFitInterface(StanInterface):
 
                 N_pdet_str = self._Ns_str
 
+            """
             # Interpolation grid used for the probability of detecting
             # an event above the minimum detected energy threshold
             if "tracks" in self._event_types:
@@ -793,6 +850,7 @@ class StanFitInterface(StanInterface):
 
                 self._Pg_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", N_pdet_str)
 
+            """
             # Don't need a grid for atmo as spectral shape is fixed, so pass single value.
             if self.sources.atmospheric:
 
@@ -841,31 +899,39 @@ class StanFitInterface(StanInterface):
                 self._N_shards_use_this = ForwardVariableDef("N_shards_loop", "int")
                 self._N_shards_use_this << self._N_shards
                 # Create the rectangular data blocks for use in `map_rect`
-                # This is badly named (N % Nshards...)
                 self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
                 self._N_mod_J << self._N % self._J
                 self._N_ev_distributed = ForwardVariableDef("N_ev_distributed", "int")
                 self._N_ev_distributed << 0
                 # Find size for real_data array
-                sd_events_J = 5
-                sd_varpi_Ns = 3
-                sd_if_atmo_z = 1
-                sd_z_Ns = 1
-                sd_other = 2
-                sd_Ngrid = 1
+                sd_events_J = 5    # the hell is this?
+                sd_varpi_Ns = 3    # coords of events in the sky (unit vector)
+                sd_if_atmo_z = 1   # redshift of diffuse component
+                sd_z_Ns = 1        # redshift of PS
+                sd_other = 3       # Esrc_min, max, obs time
                 sd_string = (
                     f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other}"
                 )
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_atmo_z}"
-                # sd_Ngrid currently used for Pdet_grid
-                # which is obsolete.
-                # TODO: Re-use instead for exposure factor as function of index grid
+                sd_Ngrid = 0      # arrays of length Ngrid
+                #how many are needed?
+                #grid itself for PS and diff
+                #exposure for tracks and cascades for PS and diff
+                #              exposure integrals                      index grids
+                # (--------------------------------------------)   (-----------------)
+                # ((if cascades) + (if tracks))*(Ns + (if diff)) + (if PS) + (if diff)
                 if "tracks" in self._event_types:
                     sd_Ngrid += 1
                 if "cascades" in self._event_types:
                     sd_Ngrid += 1
-                sd_string += f" + {sd_Ngrid}*Ngrid*Ns_tot"
+                sd_Ngrid_diff = 1 if self._sources.diffuse else 0
+                sd_Ngrid_ps = 1 if self._sources._point_source else 0
+                sd_string += f" + ({sd_Ngrid}*(Ns + {sd_Ngrid_diff}) + {sd_Ngrid_diff} + {sd_Ngrid_ps})*Ngrid"
+
+                #order:
+                # ps index grid, diff index grid, tracks: ps grids, diff grid
+                # cascades: ps grids, diff grid
 
                 # Create data arrays
                 self.real_data = ForwardArrayDef(
@@ -947,12 +1013,63 @@ class StanFitInterface(StanInterface):
                     self.real_data[i, insert_start] << self._Esrc_max
                     insert_start << insert_start + 1
 
+                    insert_end << insert_end + 1
+                    self.real_data[i, insert_start] << self._T
+                    insert_start << insert_start + 1
+                    """
                     insert_end << insert_end + self._Ngrid
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
                         [self._Eg], "to_array_1d"
                     )
                     insert_start << insert_start + self._Ngrid
+                    """
+                    # Spectral index grids
+                    # used to interpolate over exposure factor
+                    # For order of entries see above
+                    insert_end << insert_end + self._Ngrid
+                    self.real_data[i, insert_start:insert_end] << FunctionCall(
+                        [self._src_index_grid], "to_array_1d"
+                    )
+                    insert_start << insert_start + self._Ngrid
 
+                    if self._sources.diffuse:
+                        insert_end << insert_end + self._Ngrid
+                        self.real_data[i, insert_start:insert_end] << FunctionCall(
+                            [self._diff_index_grid], "to_array_1d"
+                        )
+                        insert_start << insert_start + self._Ngrid
+
+                    if "tracks" in self._event_types:
+                        with ForLoopContext(1, self._Ns, "k") as k:
+                            insert_end << insert_end + self._Ngrid
+                            self.real_data[i, insert_start:insert_end] << FunctionCall(
+                                [self._integral_grid_t[k]], "to_array_1d"
+                            )
+                            insert_start << insert_start + self._Ngrid
+
+                        if self._sources.diffuse:
+                            insert_end << insert_end + self._Ngrid
+                            self.real_data[i, insert_start:insert_end] << FunctionCall(
+                                [self._integral_grid_t[-1]], "to_array_1d"
+                            )
+                            insert_start << insert_start + self._Ngrid
+                    
+                    if "cascades" in self._event_types:
+                        with ForLoopContext(1, self._Ns, "k") as k:
+                            insert_end << insert_end + self._Ngrid
+                            self.real_data[i, insert_start:insert_end] << FunctionCall(
+                                [self._integral_grid_c[k]], "to_array_1d"
+                            )
+                            insert_start << insert_start + self._Ngrid
+
+                        if self._sources.diffuse:
+                            insert_end << insert_end + self._Ngrid
+                            self.real_data[i, insert_start:insert_end] << FunctionCall(
+                                [self._integral_grid_c[-1]], "to_array_1d"
+                            )
+                            insert_start << insert_start + self._Ngrid
+
+                    """
                     if (
                         "tracks" in self._event_types
                         and "cascades" in self._event_types
@@ -985,7 +1102,7 @@ class StanFitInterface(StanInterface):
                                 [self._Pg_c[f]], "to_array_1d"
                             )
                             insert_start << insert_start + self._Ngrid
-
+                    """
                     # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
                     self.int_data[i, 1] << insert_len
                     self.int_data[i, 2] << self._Ns
@@ -1503,11 +1620,12 @@ class StanFitInterface(StanInterface):
                 # Product over events => add log likelihoods
                 with ForLoopContext(1, self._N, "i") as i:
 
-                    # self._lp[i] << self._logF
-                    # should be self._eps_t + self._eps_c
-                    # or do we treat these as different source components? Don't think so
-                    #self._lp[i] << FunctionCall([self._F * self._eps_t], "log")
-                    self._lp[i] << StringExpression(["log(F .* eps_t)"])
+                    if "tracks" in self._event_types and not "cascades" in self._event_types:
+                        self._lp[i] << StringExpression(["log(F .* eps_t)"])
+                    elif "cascades" in self._event_types and not "cascades" in self._event_types:
+                        self._lp[i] << StringExpression(["log(F .* eps_c)"])
+                    else:
+                        self._lp[i] << StringExpression(["log(F .* eps_t) + log(F .* eps_c)"])
 
                     # Tracks
                     if "tracks" in self._event_types:
@@ -1963,7 +2081,12 @@ class StanFitInterface(StanInterface):
 
                 with ForLoopContext(1, self._N, "i") as i:
                     # TODO: change to use both tracks and cascades
-                    self._lp[i] << StringExpression(["log(F .* eps_t)"])
+                    if "tracks" in self._event_types and not "cascades" in self._event_types:
+                        self._lp[i] << StringExpression(["log(F .* eps_t)"])
+                    elif "cascades" in self._event_types and not "cascades" in self._event_types:
+                        self._lp[i] << StringExpression(["log(F .* eps_c)"])
+                    else:
+                        self._lp[i] << StringExpression(["log(F .* eps_t) + log(F .* eps_c)"])
 
                     # Tracks
                     if "tracks" in self._event_types:
