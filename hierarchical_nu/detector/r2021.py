@@ -423,7 +423,7 @@ class R2021EffectiveArea(EffectiveArea):
 
         if self.CACHE_FNAME in Cache:
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
-                data = np.load(fr)
+                data = np.load(fr, allow_pickle=True)
                 eff_area = data["eff_area"]
                 tE_bin_edges = data["tE_bin_edges"]
                 cosz_bin_edges = data["cosz_bin_edges"]
@@ -737,7 +737,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             if self.CACHE_FNAME_LOGNORM in Cache and not self._rewrite:
                 logger.info("Loading energy lognorm data from file.")
                 with Cache.open(self.CACHE_FNAME_LOGNORM, "rb") as fr:
-                    data = np.load(fr)
+                    data = np.load(fr, allow_pickle=True)
                     self._eres = data["eres"]
                     self._tE_bin_edges = data["tE_bin_edges"]
                     #self._rE_bin_edges = data["rE_bin_edges"]
@@ -907,7 +907,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 logger.info("Loading energy pdf data from file.")
                 
                 with Cache.open(self.CACHE_FNAME_HISTOGRAM, "rb") as fr:
-                    data = np.load(fr)
+                    data = np.load(fr, allow_pickle=True)
                     self._ereco_cum_num_vals = data["cum_num_of_values"]
                     self._ereco_cum_num_edges = data["cum_num_of_bins"]
                     self._ereco_num_vals = data["num_of_values"]
@@ -1498,7 +1498,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
             if self.CACHE_FNAME in Cache and not self._rewrite:
                 logger.info("Loading angular data from file.")
                 with Cache.open(self.CACHE_FNAME, "rb") as fr:
-                    data = np.load(fr)
+                    data = np.load(fr, allow_pickle=True)
                     self._psf_cum_num_edges = data["psf_cum_num_edges"]
                     self._psf_cum_num_vals = data["psf_cum_num_vals"]
                     self._psf_num_vals = data["psf_num_vals"]
