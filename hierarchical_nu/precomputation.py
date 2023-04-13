@@ -48,8 +48,8 @@ class ExposureIntegral:
         """
 
         self._sources = sources
-        self._min_src_energy = Parameter.get_parameter("Emin_src").value
-        self._max_src_energy = Parameter.get_parameter("Emax_src").value
+        self._min_src_energy = Parameter.get_parameter("Emin").value
+        self._max_src_energy = Parameter.get_parameter("Emax").value
         self._n_grid_points = n_grid_points
 
         # Use Emin_det if available, otherwise use per event_type
