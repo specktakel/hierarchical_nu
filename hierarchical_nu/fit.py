@@ -444,13 +444,13 @@ class StanFit:
         fit_inputs["D"] = D
         fit_inputs["varpi"] = src_pos
 
-        fit_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
-        fit_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+        fit_inputs["Esrc_min"] = Parameter.get_parameter("Emin_src").value.to(u.GeV).value
+        fit_inputs["Esrc_max"] = Parameter.get_parameter("Emax_src").value.to(u.GeV).value
 
         fit_inputs["T"] = self._observation_time.to(u.s).value
 
         event_type = self._detector_model_type.event_types[0]
-        fit_inputs["E_grid"] = self._exposure_integral[event_type].energy_grid.value
+        # fit_inputs["E_grid"] = self._exposure_integral[event_type].energy_grid.value
 
         fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
 

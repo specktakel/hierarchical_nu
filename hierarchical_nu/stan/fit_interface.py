@@ -210,6 +210,8 @@ class StanFitInterface(StanInterface):
                     end = ForwardVariableDef("end", "int")
                     len = ForwardVariableDef("len", "int")
                     src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
+                    if self.sources.atmospheric and "tracks" in self._event_types:
+                        atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
                     T = ForwardVariableDef("T", "real")
                     if self._sources.diffuse:
                         diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
@@ -218,12 +220,12 @@ class StanFitInterface(StanInterface):
                         integral_grid_t = ForwardArrayDef(
                             "integral_grid_t", "vector[Ngrid]", ["[Ns+diffuse]"]
                         )
-                        eps_t = ForwardVariableDef("eps_t", "vector[Ns+diffuse]")
+                        eps_t = ForwardVariableDef("eps_t", "vector[Ns_tot]")
                     if "cascades" in self._event_types:
                         integral_grid_c = ForwardArrayDef(
                             "integral_grid_c", "vector[Ngrid]", ["[Ns+diffuse]"]
                         )
-                        eps_c = ForwardVariableDef("eps_c", "vector[Ns+diffuse]")
+                        eps_c = ForwardVariableDef("eps_c", "vector[Ns_tot]")
 
                     # Get global parameters
                     # Check for shared index
@@ -310,8 +312,13 @@ class StanFitInterface(StanInterface):
                     start << start + 1
 
                     end << end + 1
-                    T << StringExpression(["real_dta[start]"])
+                    T << StringExpression(["real_data[start]"])
                     start << start + 1
+
+                    if self.sources.atmospheric and "tracks" in self._event_types:
+                        end << end + 1
+                        atmo_integ_val << StringExpression(["real_data[start]"])
+                        start << start + 1
 
                     end << end + Ngrid
                     src_index_grid << StringExpression(["to_vector(real_data[start:end])"])
@@ -525,6 +532,8 @@ class StanFitInterface(StanInterface):
                                         with IfBlockContext(
                                             [StringExpression([k, " == ", k_atmo])]
                                         ):
+                                            
+                                            eps_t[k] << atmo_integ_val * T
 
                                             # log_prob += log(p(Esrc, omega | atmospheric source))
                                             StringExpression(
@@ -584,6 +593,18 @@ class StanFitInterface(StanInterface):
                                             ")",
                                         ]
                                     )
+                                StringExpression(
+                                    [
+                                        lp[i],
+                                        " += ",
+                                        FunctionCall(
+                                            [eps_t],
+                                            "log"
+                                        ),
+                                        " + ",
+                                        logF
+                                    ]
+                                )
 
                         # Cascades
                         # See comments for tracks for more details, approach is the same
@@ -715,6 +736,8 @@ class StanFitInterface(StanInterface):
                                             # E = Esrc
                                             E[i] << Esrc[i]
 
+                                            eps_c[k] << atmo_integ_val * T
+
                                     # Detection effects
                                     # log_prob += log(p(Edet | E))
                                     StringExpression(
@@ -726,6 +749,18 @@ class StanFitInterface(StanInterface):
                                             ),
                                         ]
                                     )
+                                StringExpression(
+                                    [
+                                        lp[i],
+                                        " += ",
+                                        FunctionCall(
+                                            [eps_c],
+                                            "log"
+                                        ),
+                                        " + ",
+                                        logF
+                                    ]
+                                )
 
                     results = ForwardArrayDef("results", "real", ["[N]"])
                     with ForLoopContext(1, N, "i") as i:
@@ -904,11 +939,13 @@ class StanFitInterface(StanInterface):
                 self._N_ev_distributed = ForwardVariableDef("N_ev_distributed", "int")
                 self._N_ev_distributed << 0
                 # Find size for real_data array
-                sd_events_J = 5    # the hell is this?
+                sd_events_J = 5    # reco energy, kappa, reco dir (unit vector)
                 sd_varpi_Ns = 3    # coords of events in the sky (unit vector)
                 sd_if_atmo_z = 1   # redshift of diffuse component
                 sd_z_Ns = 1        # redshift of PS
                 sd_other = 3       # Esrc_min, max, obs time
+                if self.sources.atmospheric and "tracks" in self._event_types:
+                    sd_other += 1    # no atmo in cascades
                 sd_string = (
                     f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other}"
                 )
@@ -941,7 +978,7 @@ class StanFitInterface(StanInterface):
                 self.int_data = ForwardArrayDef(
                     "int_data", "int", ["[", self._N_shards, ", ", "J+5", "]"]
                 )
-
+                #TODO: pack atmo_integ_val into real_data
                 # Pack data into shards
                 # Format is (obviously) the same as the unpacking done in `lp_reduce`
                 # First dimension is number of shard, second dimension is what `lp_reduce` will see
@@ -1016,6 +1053,12 @@ class StanFitInterface(StanInterface):
                     insert_end << insert_end + 1
                     self.real_data[i, insert_start] << self._T
                     insert_start << insert_start + 1
+
+                    if self.sources.atmospheric and "tracks" in self._event_types:
+                        insert_end << insert_end + 1
+                        self.real_data[i, insert_start] << self._atmo_integ_val
+                        insert_start << insert_start + 1
+                    
                     """
                     insert_end << insert_end + self._Ngrid
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
@@ -1050,7 +1093,7 @@ class StanFitInterface(StanInterface):
                         if self._sources.diffuse:
                             insert_end << insert_end + self._Ngrid
                             self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._integral_grid_t[-1]], "to_array_1d"
+                                [self._integral_grid_t[self._Ns+1]], "to_array_1d"
                             )
                             insert_start << insert_start + self._Ngrid
                     
@@ -1065,7 +1108,7 @@ class StanFitInterface(StanInterface):
                         if self._sources.diffuse:
                             insert_end << insert_end + self._Ngrid
                             self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._integral_grid_c[-1]], "to_array_1d"
+                                [self._integral_grid_c[self._Ns+1]], "to_array_1d"
                             )
                             insert_start << insert_start + self._Ngrid
 
@@ -1273,10 +1316,12 @@ class StanFitInterface(StanInterface):
                 self._Nex_c = ForwardVariableDef("Nex_c", "real")
                 self._Nex_src_c << 0.0
 
+            """
             if "cascades" in self._event_types and "tracks" in self._event_types:
 
                 self._logp_c = ForwardVariableDef("logp_c", "real")
                 self._logp_t = ForwardVariableDef("logp_t", "real")
+            """
 
             if self._nshards not in [0, 1]:
                 # Create vector of parameters
@@ -1331,7 +1376,8 @@ class StanFitInterface(StanInterface):
 
             self._F_src << 0.0
             self._Nex_src << 0.0
-            self._Nex_atmo << 0.0
+            if self.sources.atmospheric:
+                self._Nex_atmo << 0.0
 
             # For each source, calculate the number flux and update F, logF
             if self.sources.point_source:
@@ -1618,6 +1664,27 @@ class StanFitInterface(StanInterface):
 
             else:
                 # Product over events => add log likelihoods
+                StringExpression(
+                        [
+                            "print(",
+                            self._F_src,
+                            ")",
+                        ]
+                    )
+                StringExpression(
+                        [
+                            "print(",
+                            self._src_index,
+                            ")",
+                        ]
+                    )
+                StringExpression(
+                        [
+                            "print(",
+                            self._Nex_src,
+                            ")",
+                        ]
+                    )
                 with ForLoopContext(1, self._N, "i") as i:
 
                     if "tracks" in self._event_types and not "cascades" in self._event_types:
