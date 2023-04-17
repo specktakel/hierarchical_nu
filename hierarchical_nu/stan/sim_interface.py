@@ -1026,8 +1026,8 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min
-                                self._Esrc_max_arr << self._Esrc_max
+                                self._Esrc_min_arr << self._Emin
+                                self._Esrc_max_arr << self._Emax
                                 with IfBlockContext(
                                     [
                                         StringExpression(
@@ -1192,12 +1192,17 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
+                                """
                                 self._Esrc_min_arr << self._Esrc_min / (
                                     1 + self._z[self._lam[i]]
                                 )
                                 self._Esrc_max_arr << self._Esrc_max / (
                                     1 + self._z[self._lam[i]]
                                 )
+                                """
+                                self._Esrc_min_arr << self._Emin
+                                self._Esrc_max_arr << self._Emax
+
                                 with IfBlockContext(
                                     [
                                         StringExpression(
@@ -1342,8 +1347,10 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    #self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                    #self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    self._Emin,
+                                    self._Emax,
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
@@ -1366,8 +1373,10 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min
-                                self._Esrc_max_arr << self._Esrc_max
+                                #self._Esrc_min_arr << self._Esrc_min
+                                #self._Esrc_max_arr << self._Esrc_max
+                                self._Esrc_min_arr << self._Emin
+                                self._Esrc_max_arr << self._Emax
 
                                 with IfBlockContext(
                                     [
@@ -1883,12 +1892,16 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
+                                """
                                 self._Esrc_min_arr << self._Esrc_min / (
                                     1 + self._z[self._lam[i]]
                                 )
                                 self._Esrc_max_arr << self._Esrc_max / (
                                     1 + self._z[self._lam[i]]
                                 )
+                                """
+                                self._Esrc_min_arr << self._Emin
+                                self._Esrc_max_arr << self._Emax
 
                                 with IfBlockContext(
                                     [
@@ -2034,8 +2047,10 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    #self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                    #self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    self._Esrc_min_arr,
+                                    self._Esrc_max_arr,
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"

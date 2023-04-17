@@ -48,8 +48,8 @@ class ExposureIntegral:
         """
 
         self._sources = sources
-        self._min_src_energy = Parameter.get_parameter("Emin").value
-        self._max_src_energy = Parameter.get_parameter("Emax").value
+        #self._min_src_energy = Parameter.get_parameter("Emin").value
+        #self._max_src_energy = Parameter.get_parameter("Emax").value
         self._n_grid_points = n_grid_points
 
         # Use Emin_det if available, otherwise use per event_type
@@ -341,8 +341,8 @@ class ExposureIntegral:
         g, envelope function: bbpl envelope used for sampling
         """
 
-        Emin_src = self._min_src_energy.to_value(u.GeV)
-        Emax_src = self._max_src_energy.to_value(u.GeV)
+        #Emin_src = self._min_src_energy.to_value(u.GeV)
+        #Emax_src = self._max_src_energy.to_value(u.GeV)
 
         cosz_bin_cens = (
             self.effective_area.cosz_bin_edges[:-1]
@@ -356,9 +356,10 @@ class ExposureIntegral:
         c_values = []
         for source in self._sources.sources:
 
-            # should be Emin, Emax of source at detector
-            Emin = Emin_src / (1 + source.redshift)
-            Emax = Emax_src / (1 + source.redshift)
+            # Energy bounds in flux model are already redshift-corrected
+            # and live in the detector frame
+            Emin = source.flux_model.spectral_shape._lower_energy.to_value(u.GeV)
+            Emax = source.flux_model.spectral_shape._upper_energy.to_value(u.GeV)
             E_range = 10 ** np.linspace(np.log10(Emin), np.log10(Emax))
 
             f_values_all = []
