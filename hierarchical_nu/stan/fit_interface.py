@@ -205,16 +205,16 @@ class StanFitInterface(StanInterface):
                     diffuse = InstantVariableDef("diffuse", "int", ["int_data[3]"])
                     atmo = InstantVariableDef("atmo", "int", ["int_data[4]"])
                     Ns_tot = InstantVariableDef("Ns_tot", "int", ["Ns+atmo+diffuse"])
-                    Ngrid = InstantVariableDef("Ngrid", "int", ["int_data[5]"])
+                    # Ngrid = InstantVariableDef("Ngrid", "int", ["int_data[5]"])
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
                     len = ForwardVariableDef("len", "int")
-                    src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
-                    if self.sources.atmospheric and "tracks" in self._event_types:
-                        atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
-                    T = ForwardVariableDef("T", "real")
-                    if self._sources.diffuse:
-                        diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
+                    # src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
+                    # if self.sources.atmospheric and "tracks" in self._event_types:
+                    #     atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
+                    # T = ForwardVariableDef("T", "real")
+                    # if self._sources.diffuse:
+                    #     diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
 
                     """
                     if "tracks" in self._event_types:
@@ -262,19 +262,19 @@ class StanFitInterface(StanInterface):
 
                     # Unpack event types (track or cascade)
                     event_type = ForwardArrayDef("event_type", "int", ["[N]"])
-                    event_type << StringExpression(["int_data[6:5+N]"])
+                    event_type << StringExpression(["int_data[5:4+N]"])
 
                     Edet = ForwardVariableDef("Edet", "vector[N]")
                     Edet << FunctionCall(["real_data[start:end]"], "to_vector")
                     # Shift indices appropriate amount for next batch of data
                     start << start + len
+
                     end << end + len
                     kappa = ForwardVariableDef("kappa", "vector[N]")
                     kappa << StringExpression(["to_vector(real_data[start:end])"])
+                    start << start + len
 
                     omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
-                    start << start + len
-                    varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
                     # Loop over events to unpack reconstructed direction
                     with ForLoopContext(1, N, "i") as i:
                         end << end + 3
@@ -282,6 +282,8 @@ class StanFitInterface(StanInterface):
                             ["to_vector(real_data[start:end])"]
                         )
                         start << start + 3
+
+                    varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
                     # Loop over sources to unpack source direction (for point sources only)
                     with ForLoopContext(1, Ns, "i") as i:
                         end << end + 3
@@ -312,15 +314,17 @@ class StanFitInterface(StanInterface):
                     Esrc_max << StringExpression(["real_data[start]"])
                     start << start + 1
 
+                    """
                     end << end + 1
                     T << StringExpression(["real_data[start]"])
                     start << start + 1
-
+                    """
+                    """
                     if self.sources.atmospheric and "tracks" in self._event_types:
                         end << end + 1
                         atmo_integ_val << StringExpression(["real_data[start]"])
                         start << start + 1
-                    """
+                    
                     end << end + Ngrid
                     src_index_grid << StringExpression(["to_vector(real_data[start:end])"])
                     start << start + Ngrid
@@ -819,6 +823,7 @@ class StanFitInterface(StanInterface):
                 )
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_atmo_z}"
+                """
                 sd_Ngrid = 0      # arrays of length Ngrid
                 #how many are needed?
                 #grid itself for PS and diff
@@ -837,14 +842,14 @@ class StanFitInterface(StanInterface):
                 #order:
                 # ps index grid, diff index grid, tracks: ps grids, diff grid
                 # cascades: ps grids, diff grid
-
+                """
                 # Create data arrays
                 self.real_data = ForwardArrayDef(
                     "real_data", "real", ["[N_shards,", sd_string, "]"]
                 )
 
                 self.int_data = ForwardArrayDef(
-                    "int_data", "int", ["[", self._N_shards, ", ", "J+5", "]"]
+                    "int_data", "int", ["[", self._N_shards, ", ", "J+4", "]"]
                 )
                 #TODO: pack atmo_integ_val into real_data
                 # Pack data into shards
@@ -876,6 +881,7 @@ class StanFitInterface(StanInterface):
                         [self._Edet[start:end]], "to_array_1d"
                     )
                     insert_start << insert_start + insert_len
+
                     insert_end << insert_end + insert_len
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
                         [self._kappa[start:end]], "to_array_1d"
@@ -922,13 +928,13 @@ class StanFitInterface(StanInterface):
                     insert_end << insert_end + 1
                     self.real_data[i, insert_start] << self._T
                     insert_start << insert_start + 1
-                    """
+
                     if self.sources.atmospheric and "tracks" in self._event_types:
                         insert_end << insert_end + 1
                         self.real_data[i, insert_start] << self._atmo_integ_val
                         insert_start << insert_start + 1
                     
-                    """
+
                     insert_end << insert_end + self._Ngrid
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
                         [self._Eg], "to_array_1d"
@@ -938,6 +944,7 @@ class StanFitInterface(StanInterface):
                     # Spectral index grids
                     # used to interpolate over exposure factor
                     # For order of entries see above
+                    """
                     insert_end << insert_end + self._Ngrid
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
                         [self._src_index_grid], "to_array_1d"
@@ -950,6 +957,7 @@ class StanFitInterface(StanInterface):
                             [self._diff_index_grid], "to_array_1d"
                         )
                         insert_start << insert_start + self._Ngrid
+                    """
                     """
                     if "tracks" in self._event_types:
                         with ForLoopContext(1, self._Ns, "k") as k:
@@ -1026,9 +1034,9 @@ class StanFitInterface(StanInterface):
                         self.int_data[i, 4] << 1
                     else:
                         self.int_data[i, 4] << 0
-                    self.int_data[i, 5] << self._Ngrid
+                    # self.int_data[i, 5] << self._Ngrid
 
-                    self.int_data[i, 6:"5+insert_len"] << FunctionCall(
+                    self.int_data[i, 5:"4+insert_len"] << FunctionCall(
                         [
                             FunctionCall(
                                 [self._event_type[start:end]], "to_array_1d"
