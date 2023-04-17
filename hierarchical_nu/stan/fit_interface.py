@@ -760,7 +760,6 @@ class StanFitInterface(StanInterface):
 
             # Density of interpolation grid and energy grid points
             self._Ngrid = ForwardVariableDef("Ngrid", "int")
-            self._Eg = ForwardVariableDef("E_grid", "vector[Ngrid]")
 
             # Observation time
             self._T = ForwardVariableDef("T", "real")
@@ -1596,29 +1595,6 @@ class StanFitInterface(StanInterface):
 
             else:
                 # Product over events => add log likelihoods
-                """
-                StringExpression(
-                        [
-                            "print(",
-                            self._F_src,
-                            ")",
-                        ]
-                    )
-                StringExpression(
-                        [
-                            "print(",
-                            self._src_index,
-                            ")",
-                        ]
-                    )
-                StringExpression(
-                        [
-                            "print(",
-                            self._Nex_src,
-                            ")",
-                        ]
-                    )
-                """
                 with ForLoopContext(1, self._N, "i") as i:
 
                     self._lp[i] << self._logF
