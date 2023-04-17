@@ -21,8 +21,6 @@ class TestPrecomputation():
         self.diffuse_norm = Parameter(1.0e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                                 par_range=(0, np.inf))
         self.Enorm_src = Parameter(1e5 * u.GeV, "Enorm_src", fixed=True)
-        self.Emin = Parameter(1e4 * u.GeV, "Emin", fixed=True)
-        self.Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
         self.Emin_src = Parameter(5e4 * u.GeV, "Emin_src", fixed=True)
         self.Emax_src = Parameter(1e8 * u.GeV, "Emax_src", fixed=True)
         self.Emin_det = Parameter(6e4 * u.GeV, "Emin_det", fixed=True)
@@ -43,7 +41,39 @@ class TestPrecomputation():
         self.my_sources.add(self.point_source)
 
 
-    def test_flux_conversion(self, setup_point_source):
+    @pytest.fixture
+    def setup_diff_source(self):
+        self.diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
+        self.diffuse_norm = Parameter(1.0e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+                                par_range=(0, np.inf))
+        self.Enorm_src = Parameter(1e5 * u.GeV, "Enorm_src", fixed=True)
+        self.Emin = Parameter(1e4 * u.GeV, "Emin", fixed=True)
+        self.Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
+
+        try:
+            self.my_sources.add_diffuse_component(self.diffuse_norm, 1e5*u.GeV, self.diff_index)
+        except:
+            self.my_sources = Sources()
+            self.my_sources.add_diffuse_component(self.diffuse_norm, 1e5*u.GeV, self.diff_index)
+
+        
+    def test_flux_conversion_diff_source(self, setup_diff_source):
+        F = self.my_sources.diffuse._parameters["norm"].value.copy()
+        print(F)
+        F *= integral_power_law(
+            self.diff_index.value,
+            0.,
+            self.Enorm_src.value,
+            self.Emin.value,
+            self.Emax.value
+        )
+        print(F)
+        assert self.my_sources.diffuse.flux_model.total_flux_int.value == pytest.approx(
+            F.value
+        )
+
+
+    def test_flux_conversion_point_source(self, setup_point_source):
         F = self.L.value / (4 * np.pi * luminosity_distance(0.4)**2)
         F *= integral_power_law(
             self.src_index.value,
@@ -59,4 +89,6 @@ class TestPrecomputation():
             self.Emin_src.value / (1 + self.redshift),
             self.Emax_src.value / (1 + self.redshift)
         )
-        assert self.point_source.flux_model.total_flux_int.value == pytest.approx(F.to(1/(u.second * u.meter**2)).value, rel=1e-5)
+        assert self.point_source.flux_model.total_flux_int.value == pytest.approx(
+            F.to(1/(u.second * u.meter**2)).value, rel=1e-5
+        )
