@@ -197,7 +197,6 @@ class StanFitInterface(StanInterface):
                 )
 
                 with lp_reduce:
-                    #TODO: make obs time available
                     # Unpack integer data, needed to interpret real data
                     # Use InstantVariableDef to save on lines
                     N = InstantVariableDef("N", "int", ["int_data[1]"])
@@ -205,29 +204,10 @@ class StanFitInterface(StanInterface):
                     diffuse = InstantVariableDef("diffuse", "int", ["int_data[3]"])
                     atmo = InstantVariableDef("atmo", "int", ["int_data[4]"])
                     Ns_tot = InstantVariableDef("Ns_tot", "int", ["Ns+atmo+diffuse"])
-                    # Ngrid = InstantVariableDef("Ngrid", "int", ["int_data[5]"])
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
                     len = ForwardVariableDef("len", "int")
-                    # src_index_grid = ForwardVariableDef("src_index_grid", "vector[Ngrid]")
-                    # if self.sources.atmospheric and "tracks" in self._event_types:
-                    #     atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
-                    # T = ForwardVariableDef("T", "real")
-                    # if self._sources.diffuse:
-                    #     diff_index_grid = ForwardVariableDef("diff_index_grid", "vector[Ngrid]")
-
-                    """
-                    if "tracks" in self._event_types:
-                        integral_grid_t = ForwardArrayDef(
-                            "integral_grid_t", "vector[Ngrid]", ["[Ns+diffuse]"]
-                        )
-                        eps_t = ForwardVariableDef("eps_t", "vector[Ns_tot]")
-                    if "cascades" in self._event_types:
-                        integral_grid_c = ForwardArrayDef(
-                            "integral_grid_c", "vector[Ngrid]", ["[Ns+diffuse]"]
-                        )
-                        eps_c = ForwardVariableDef("eps_c", "vector[Ns_tot]")
-                    """
+                    
                     # Get global parameters
                     # Check for shared index
                     if self._shared_src_index:
@@ -314,38 +294,6 @@ class StanFitInterface(StanInterface):
                     Esrc_max << StringExpression(["real_data[start]"])
                     start << start + 1
 
-                    """
-                    end << end + 1
-                    T << StringExpression(["real_data[start]"])
-                    start << start + 1
-                    """
-                    """
-                    if self.sources.atmospheric and "tracks" in self._event_types:
-                        end << end + 1
-                        atmo_integ_val << StringExpression(["real_data[start]"])
-                        start << start + 1
-                    
-                    end << end + Ngrid
-                    src_index_grid << StringExpression(["to_vector(real_data[start:end])"])
-                    start << start + Ngrid
-
-                    if self._sources.diffuse:
-                        end << end + Ngrid
-                        diff_index_grid << StringExpression(["to_vector(real_data[start:end])"])
-                        start << start + Ngrid
-
-                    if "tracks" in self._event_types:
-                        with ForLoopContext(1, "Ns+diffuse", "k") as k:
-                            end << end + Ngrid
-                            integral_grid_t[k] << StringExpression(["to_vector(real_data[start:end])"])
-                            start << start + Ngrid
-
-                    if "cascades" in self._event_types:
-                        with ForLoopContext(1, "Ns+diffuse", "k") as k:
-                            end << end + Ngrid
-                            integral_grid_c[k] << StringExpression(["to_vector(real_data[start:end])"])
-                            start << start + Ngrid
-                    """
                     # Define tracks and cascades to sort events into correct detector response
                     if "tracks" in self._event_types:
                         track_type = ForwardVariableDef("track_type", "int")
@@ -823,26 +771,7 @@ class StanFitInterface(StanInterface):
                 )
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_atmo_z}"
-                """
-                sd_Ngrid = 0      # arrays of length Ngrid
-                #how many are needed?
-                #grid itself for PS and diff
-                #exposure for tracks and cascades for PS and diff
-                #              exposure integrals                      index grids
-                # (--------------------------------------------)   (-----------------)
-                # ((if cascades) + (if tracks))*(Ns + (if diff)) + (if PS) + (if diff)
-                if "tracks" in self._event_types:
-                    sd_Ngrid += 1
-                if "cascades" in self._event_types:
-                    sd_Ngrid += 1
-                sd_Ngrid_diff = 1 if self._sources.diffuse else 0
-                sd_Ngrid_ps = 1 if self._sources._point_source else 0
-                sd_string += f" + ({sd_Ngrid}*(Ns + {sd_Ngrid_diff}) + {sd_Ngrid_diff} + {sd_Ngrid_ps})*Ngrid"
 
-                #order:
-                # ps index grid, diff index grid, tracks: ps grids, diff grid
-                # cascades: ps grids, diff grid
-                """
                 # Create data arrays
                 self.real_data = ForwardArrayDef(
                     "real_data", "real", ["[N_shards,", sd_string, "]"]
@@ -851,7 +780,7 @@ class StanFitInterface(StanInterface):
                 self.int_data = ForwardArrayDef(
                     "int_data", "int", ["[", self._N_shards, ", ", "J+4", "]"]
                 )
-                #TODO: pack atmo_integ_val into real_data
+
                 # Pack data into shards
                 # Format is (obviously) the same as the unpacking done in `lp_reduce`
                 # First dimension is number of shard, second dimension is what `lp_reduce` will see
@@ -924,105 +853,6 @@ class StanFitInterface(StanInterface):
                     self.real_data[i, insert_start] << self._Esrc_max
                     insert_start << insert_start + 1
 
-                    """
-                    insert_end << insert_end + 1
-                    self.real_data[i, insert_start] << self._T
-                    insert_start << insert_start + 1
-
-                    if self.sources.atmospheric and "tracks" in self._event_types:
-                        insert_end << insert_end + 1
-                        self.real_data[i, insert_start] << self._atmo_integ_val
-                        insert_start << insert_start + 1
-                    
-
-                    insert_end << insert_end + self._Ngrid
-                    self.real_data[i, insert_start:insert_end] << FunctionCall(
-                        [self._Eg], "to_array_1d"
-                    )
-                    insert_start << insert_start + self._Ngrid
-                    """
-                    # Spectral index grids
-                    # used to interpolate over exposure factor
-                    # For order of entries see above
-                    """
-                    insert_end << insert_end + self._Ngrid
-                    self.real_data[i, insert_start:insert_end] << FunctionCall(
-                        [self._src_index_grid], "to_array_1d"
-                    )
-                    insert_start << insert_start + self._Ngrid
-
-                    if self._sources.diffuse:
-                        insert_end << insert_end + self._Ngrid
-                        self.real_data[i, insert_start:insert_end] << FunctionCall(
-                            [self._diff_index_grid], "to_array_1d"
-                        )
-                        insert_start << insert_start + self._Ngrid
-                    """
-                    """
-                    if "tracks" in self._event_types:
-                        with ForLoopContext(1, self._Ns, "k") as k:
-                            insert_end << insert_end + self._Ngrid
-                            self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._integral_grid_t[k]], "to_array_1d"
-                            )
-                            insert_start << insert_start + self._Ngrid
-
-                        if self._sources.diffuse:
-                            insert_end << insert_end + self._Ngrid
-                            self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._integral_grid_t[self._Ns+1]], "to_array_1d"
-                            )
-                            insert_start << insert_start + self._Ngrid
-                    
-                    if "cascades" in self._event_types:
-                        with ForLoopContext(1, self._Ns, "k") as k:
-                            insert_end << insert_end + self._Ngrid
-                            self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._integral_grid_c[k]], "to_array_1d"
-                            )
-                            insert_start << insert_start + self._Ngrid
-
-                        if self._sources.diffuse:
-                            insert_end << insert_end + self._Ngrid
-                            self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._integral_grid_c[self._Ns+1]], "to_array_1d"
-                            )
-                            insert_start << insert_start + self._Ngrid
-                    """
-                    """
-                    if (
-                        "tracks" in self._event_types
-                        and "cascades" in self._event_types
-                    ):
-                        with ForLoopContext(1, self._Ns_tot, "f") as f:
-                            insert_end << insert_end + self._Ngrid
-                            self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._Pg_t[f]], "to_array_1d"
-                            )
-                            insert_start << insert_start + self._Ngrid
-
-                        with ForLoopContext(1, self._Ns_tot, "f") as f:
-                            insert_end << insert_end + self._Ngrid
-                            self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._Pg_c[f]], "to_array_1d"
-                            )
-                            insert_start << insert_start + self._Ngrid
-
-                    elif "tracks" in self._event_types:
-                        with ForLoopContext(1, self._Ns_tot, "f") as f:
-                            insert_end << insert_end + self._Ngrid
-                            self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._Pg_t[f]], "to_array_1d"
-                            )
-                            insert_start << insert_start + self._Ngrid
-                    else:
-                        with ForLoopContext(1, self._Ns_tot, "f") as f:
-                            insert_end << insert_end + self._Ngrid
-                            self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._Pg_c[f]], "to_array_1d"
-                            )
-                            insert_start << insert_start + self._Ngrid
-                    """
                     # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
                     self.int_data[i, 1] << insert_len
                     self.int_data[i, 2] << self._Ns
@@ -1693,20 +1523,7 @@ class StanFitInterface(StanInterface):
                                             ),
                                         ]
                                     )
-                                """
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += log(interpolate(",
-                                        self._Eg,
-                                        ", ",
-                                        self._Pg_t[k],
-                                        ", ",
-                                        self._E[i],
-                                        "))",
-                                    ]
-                                )
-                                """
+
                                 StringExpression(
                                     [
                                         self._lp[i][k],
