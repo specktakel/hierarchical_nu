@@ -1815,13 +1815,7 @@ class StanFitInterface(StanInterface):
                 self._E = ForwardVariableDef("E", "vector[N]")
 
                 with ForLoopContext(1, self._N, "i") as i:
-                    # TODO: change to use both tracks and cascades
-                    if "tracks" in self._event_types and not "cascades" in self._event_types:
-                        self._lp[i] << StringExpression(["log(F .* eps_t)"])
-                    elif "cascades" in self._event_types and not "cascades" in self._event_types:
-                        self._lp[i] << StringExpression(["log(F .* eps_c)"])
-                    else:
-                        self._lp[i] << StringExpression(["log(F .* eps_t) + log(F .* eps_c)"])
+                    self._lp[i] << self._logF
 
                     # Tracks
                     if "tracks" in self._event_types:
@@ -1965,20 +1959,7 @@ class StanFitInterface(StanInterface):
                                             ),
                                         ]
                                     )
-                                """
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += log(interpolate(",
-                                        self._Eg,
-                                        ", ",
-                                        self._Pg_t[k],
-                                        ", ",
-                                        self._E[i],
-                                        "))",
-                                    ]
-                                )
-                                """
+                                
                                 StringExpression(
                                     [
                                         self._lp[i][k],
