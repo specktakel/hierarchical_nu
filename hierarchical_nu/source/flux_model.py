@@ -148,6 +148,7 @@ class PointSourceFluxModel(FluxModel):
     def __call__(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
     ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
+        raise NotImplementedError
         if (dec == self.dec) and (ra == self.ra):
             # why is this divided by 4pi?
             # if clause above acts as a delta function
@@ -177,6 +178,7 @@ class PointSourceFluxModel(FluxModel):
         ra_low: u.rad,
         ra_up: u.rad,
     ) -> 1 / (u.m**2 * u.s):
+        raise NotImplementedError
         if not self._is_in_bounds(self.dec, (dec_low, dec_up)):
             return 0
         if not self._is_in_bounds(self.ra, ra_low, ra_up):
