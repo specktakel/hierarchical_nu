@@ -390,7 +390,7 @@ class Sources:
         flux_norm: Parameter,
         norm_energy: u.GeV,
         diff_index: Parameter,
-        z: float = 0,
+        # z: float = 0,
     ):
         """
         Add diffuse component based on point
@@ -404,7 +404,7 @@ class Sources:
         :param diff_index: The index of the power law spectrum
         :param z: The redshift of the background shell
         """
-
+        z = 0.
         Emin = Parameter.get_parameter("Emin")
         Emax = Parameter.get_parameter("Emax")
 
