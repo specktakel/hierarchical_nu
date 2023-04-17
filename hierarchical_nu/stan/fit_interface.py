@@ -341,63 +341,6 @@ class StanFitInterface(StanInterface):
                             integral_grid_c[k] << StringExpression(["to_vector(real_data[start:end])"])
                             start << start + Ngrid
 
-
-                    """
-                    # Unpack Egrid
-                    end << end + Ngrid
-                    Eg = ForwardVariableDef("Egrid", "vector[Ngrid]")
-                    Eg << StringExpression(["to_vector(real_data[start:end])"])
-                    start << start + Ngrid
-
-                    # Depending on tracks or cascades in event types covered by detector,
-                    # one or two grids for each source component must be unpacked
-                    if (
-                        "tracks" in self._event_types
-                        and "cascades" in self._event_types
-                    ):
-                        Pdet_grid_t = ForwardArrayDef(
-                            "Pdet_grid_t", "vector[Ngrid]", ["[Ns_tot]"]
-                        )
-                        Pdet_grid_c = ForwardArrayDef(
-                            "Pdet_grid_c", "vector[Ngrid]", ["[Ns_tot]"]
-                        )
-                        # Loop over all source components
-                        with ForLoopContext(1, "Ns_tot", "f") as f:
-                            end << end + Ngrid
-                            Pdet_grid_t[f] << StringExpression(
-                                ["to_vector(real_data[start:end])"]
-                            )
-                            start << start + Ngrid
-                        with ForLoopContext(1, "Ns_tot", "f") as f:
-                            end << end + Ngrid
-                            Pdet_grid_c[f] << StringExpression(
-                                ["to_vector(real_data[start:end])"]
-                            )
-                            start << start + Ngrid
-
-                    elif "tracks" in self._event_types:
-                        Pdet_grid_t = ForwardArrayDef(
-                            "Pdet_grid_t", "vector[Ngrid]", ["[Ns_tot]"]
-                        )
-                        with ForLoopContext(1, "Ns_tot", "f") as f:
-                            end << end + Ngrid
-                            Pdet_grid_t[f] << StringExpression(
-                                ["to_vector(real_data[start:end])"]
-                            )
-                            start << start + Ngrid
-
-                    else:
-                        Pdet_grid_c = ForwardArrayDef(
-                            "Pdet_grid_c", "vector[Ngrid]", ["[Ns_tot]"]
-                        )
-                        with ForLoopContext(1, "Ns_tot", "f") as f:
-                            end << end + Ngrid
-                            # StringExpression(['print(start, end)'])
-                            Pdet_grid_c[f] << StringExpression(
-                                ["to_vector(real_data[start:end])"]
-                            )
-                            start << start + Ngrid
-                    """
                     # Define tracks and cascades to sort events into correct detector response
                     if "tracks" in self._event_types:
                         track_type = ForwardVariableDef("track_type", "int")
@@ -800,6 +743,7 @@ class StanFitInterface(StanInterface):
             # Energy range at source
             self._Esrc_min = ForwardVariableDef("Esrc_min", "real")
             self._Esrc_max = ForwardVariableDef("Esrc_max", "real")
+            self._Esrc_norm = ForwardVariableDef("Esrc_norm", "real")
 
             # Number of point sources
             self._Ns = ForwardVariableDef("Ns", "int")
@@ -816,7 +760,7 @@ class StanFitInterface(StanInterface):
 
             # Density of interpolation grid and energy grid points
             self._Ngrid = ForwardVariableDef("Ngrid", "int")
-            #self._Eg = ForwardVariableDef("E_grid", "vector[Ngrid]")
+            self._Eg = ForwardVariableDef("E_grid", "vector[Ngrid]")
 
             # Observation time
             self._T = ForwardVariableDef("T", "real")
@@ -874,18 +818,6 @@ class StanFitInterface(StanInterface):
 
                 N_pdet_str = self._Ns_str
 
-            """
-            # Interpolation grid used for the probability of detecting
-            # an event above the minimum detected energy threshold
-            if "tracks" in self._event_types:
-
-                self._Pg_t = ForwardArrayDef("Pdet_grid_t", "vector[Ngrid]", N_pdet_str)
-
-            if "cascades" in self._event_types:
-
-                self._Pg_c = ForwardArrayDef("Pdet_grid_c", "vector[Ngrid]", N_pdet_str)
-
-            """
             # Don't need a grid for atmo as spectral shape is fixed, so pass single value.
             if self.sources.atmospheric:
 
@@ -1689,12 +1621,7 @@ class StanFitInterface(StanInterface):
                 """
                 with ForLoopContext(1, self._N, "i") as i:
 
-                    if "tracks" in self._event_types and not "cascades" in self._event_types:
-                        self._lp[i] << StringExpression(["log(F .* eps_t)"])
-                    elif "cascades" in self._event_types and not "cascades" in self._event_types:
-                        self._lp[i] << StringExpression(["log(F .* eps_c)"])
-                    else:
-                        self._lp[i] << StringExpression(["log(F .* eps_t) + log(F .* eps_c)"])
+                    self._lp[i] << self._logF
 
                     # Tracks
                     if "tracks" in self._event_types:

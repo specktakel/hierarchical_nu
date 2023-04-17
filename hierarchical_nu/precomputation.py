@@ -271,6 +271,7 @@ class ExposureIntegral:
 
             self._integral_grid.append(integral_grids_tmp)
 
+    '''
     def _compute_energy_detection_factor(self):
         """
         Loop over sources and calculate Aeff as a function of arrival energy.
@@ -306,13 +307,13 @@ class ExposureIntegral:
 
                 else:
 
-                    pg = [
-                        self.effective_area.eff_area[
-                            np.digitize(E.value, self.effective_area.tE_bin_edges) - 1
-                        ][cosz_bin]
-                        for E in self.energy_grid
-                    ]
-                    pg = np.array(pg)
+                    if isinstance(self.energy_resolution, R2021EnergyResolution):
+                        self.energy_resolution.set_fit_params(source.dec.value)
+
+                    pg = self.energy_resolution.prob_Edet_above_threshold(
+                        self.energy_grid, self._min_det_energy, source.dec
+                    )
+                    pg = np.nan_to_num(pg)
 
             if isinstance(source, DiffuseSource):
 
@@ -329,6 +330,7 @@ class ExposureIntegral:
             self.pdet_grid.append(pg)
 
         self.pdet_grid = np.array(self.pdet_grid) + 1e-10  # avoid log(0)
+        '''
 
     def _compute_c_values(self):
         """
@@ -446,7 +448,7 @@ class ExposureIntegral:
 
         self._compute_exposure_integral()
 
-        self._compute_energy_detection_factor()
+        # self._compute_energy_detection_factor()
 
         self._compute_c_values()
 

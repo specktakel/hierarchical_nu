@@ -446,11 +446,11 @@ class StanFit:
 
         fit_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         fit_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+        fit_inputs["Esrc_norm"] = Parameter.get_parameter("Enorm").value.to(u.GeV).value
 
         fit_inputs["T"] = self._observation_time.to(u.s).value
 
         event_type = self._detector_model_type.event_types[0]
-        #fit_inputs["E_grid"] = self._exposure_integral[event_type].energy_grid.value
 
         fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
 
@@ -479,20 +479,12 @@ class StanFit:
                 for _ in self._exposure_integral["tracks"].integral_grid
             ]
 
-            # fit_inputs["Pdet_grid_t"] = np.array(
-            #     self._exposure_integral["tracks"].pdet_grid
-            # )
-
         if "cascades" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_c"] = [
                 _.to(u.m**2).value.tolist()
                 for _ in self._exposure_integral["cascades"].integral_grid
             ]
-
-            #fit_inputs["Pdet_grid_c"] = np.array(
-            #    self._exposure_integral["cascades"].pdet_grid
-            #)
 
         if self._sources.atmospheric:
 
