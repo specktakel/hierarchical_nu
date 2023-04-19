@@ -228,9 +228,9 @@ class StanFitInterface(StanInterface):
                     logF << StringExpression(["global[", idx, ":]"])
 
                     # Local pars are only source energies
-                    Esrc = ForwardVariableDef("Esrc", "vector[size(local)]")
-                    Esrc << StringExpression(["local"])
-                    E = ForwardVariableDef("E", "vector[N]")
+                    E = ForwardVariableDef("Esrc", "vector[size(local)]")
+                    E << StringExpression(["local"])
+                    Esrc = ForwardVariableDef("E", "vector[N]")
 
                     # Define indices for unpacking of real_data
                     start << 1
@@ -285,6 +285,8 @@ class StanFitInterface(StanInterface):
 
                     Esrc_min = ForwardVariableDef("Esrc_min", "real")
                     Esrc_max = ForwardVariableDef("Esrc_max", "real")
+                    Emin = ForwardVariableDef("Emin", "real")
+                    Emax = ForwardVariableDef("Emax", "real")
 
                     end << end + 1
                     Esrc_min << StringExpression(["real_data[start]"])
@@ -292,6 +294,14 @@ class StanFitInterface(StanInterface):
 
                     end << end + 1
                     Esrc_max << StringExpression(["real_data[start]"])
+                    start << start + 1
+
+                    end << end + 1
+                    Emin << StringExpression(["real_data[start]"])
+                    start << start + 1
+
+                    end << end + 1
+                    Emin << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     # Define tracks and cascades to sort events into correct detector response
@@ -337,8 +347,8 @@ class StanFitInterface(StanInterface):
                                                 src_index_ref = src_index[k]
 
                                             # E = Esrc / (1+z)
-                                            E[i] << StringExpression(
-                                                [Esrc[i], " / (", 1 + z[k], ")"]
+                                            Esrc[i] << StringExpression(
+                                                [Esrc[i], " * (", 1 + z[k], ")"]
                                             )
                                             # log_prob += log(p(Esrc|src_index))
                                             StringExpression(
@@ -376,9 +386,11 @@ class StanFitInterface(StanInterface):
                                         ):
 
                                             # E = Esrc / (1+z)
-                                            E[i] << StringExpression(
-                                                [Esrc[i], " / (", 1 + z[k], ")"]
-                                            )
+                                            #E[i] << StringExpression(
+                                            #    [Esrc[i], " / (", 1 + z[k], ")"]
+                                            #)
+                                            Esrc[i] << E[i]
+
                                             # log_prob += log(p(Esrc|diff_index))
                                             StringExpression(
                                                 [
@@ -387,8 +399,8 @@ class StanFitInterface(StanInterface):
                                                     self._diff_spectrum_lpdf(
                                                         E[i],
                                                         diff_index,
-                                                        Esrc_min / (1 + z[k]),
-                                                        Esrc_max / (1 + z[k]),
+                                                        Emin,
+                                                        Emax,
                                                     ),
                                                 ]
                                             )
@@ -500,17 +512,17 @@ class StanFitInterface(StanInterface):
                                                     lp[i][k],
                                                     " += ",
                                                     self._src_spectrum_lpdf(
-                                                        Esrc[i],
+                                                        E[i],
                                                         src_index_ref,
-                                                        Esrc_min,
-                                                        Esrc_max,
+                                                        Esrc_min / (1 + z[k]),
+                                                        Esrc_max / (1 + z[k]),
                                                     ),
                                                 ]
                                             )
 
                                             # E = Esrc / (1+z)
-                                            E[i] << StringExpression(
-                                                [Esrc[i], " / (", 1 + z[k], ")"]
+                                            Esrc[i] << StringExpression(
+                                                [Esrc[i], " * (", 1 + z[k], ")"]
                                             )
 
                                             # log_prob += log(p(omega_det | varpi, kappa))
@@ -540,18 +552,19 @@ class StanFitInterface(StanInterface):
                                                     lp[i][k],
                                                     " += ",
                                                     self._diff_spectrum_lpdf(
-                                                        Esrc[i],
+                                                        E[i],
                                                         diff_index,
-                                                        Esrc_min,
-                                                        Esrc_max,
+                                                        Emin,
+                                                        Emax,
                                                     ),
                                                 ]
                                             )
 
                                             # E = Esrc / (1+z)
-                                            E[i] << StringExpression(
-                                                [Esrc[i], " / (", 1 + z[k], ")"]
-                                            )
+                                            #E[i] << StringExpression(
+                                            #    [Esrc[i], " / (", 1 + z[k], ")"]
+                                            #)
+                                            Esrc[i] << E[i]
 
                                             # log_prob += log(1/4pi)
                                             StringExpression(
@@ -776,7 +789,7 @@ class StanFitInterface(StanInterface):
                 sd_varpi_Ns = 3    # coords of events in the sky (unit vector)
                 sd_if_atmo_z = 1   # redshift of diffuse component
                 sd_z_Ns = 1        # redshift of PS
-                sd_other = 3       # Esrc_min, max, obs time
+                sd_other = 5       # Esrc_min, Esrc_max, Emin, Emax
                 if self.sources.atmospheric and "tracks" in self._event_types:
                     sd_other += 1    # no atmo in cascades
                 sd_string = (
@@ -865,6 +878,15 @@ class StanFitInterface(StanInterface):
                     insert_end << insert_end + 1
                     self.real_data[i, insert_start] << self._Esrc_max
                     insert_start << insert_start + 1
+
+                    insert_end << insert_end + 1
+                    self.real_data[i, insert_start] << self._Emin
+                    insert_start << insert_start + 1
+
+                    insert_end << insert_end + 1
+                    self.real_data[i, insert_start] << self._Emax
+                    insert_start << insert_start + 1
+
 
                     # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
                     self.int_data[i, 1] << insert_len
@@ -1088,11 +1110,11 @@ class StanFitInterface(StanInterface):
                     with IfBlockContext([end, ">", self._N]):
                         length = ForwardVariableDef("length", "int")
                         length << self._N - start + 1
-                        self._local_pars[i][1 : length] << self._Esrc[start : self._N]
+                        self._local_pars[i][1 : length] << self._E[start : self._N]
                         
                     # Else, only relevant for last shard if it's shorter
                     with ElseBlockContext():
-                        self._local_pars[i] << self._Esrc[start:end]
+                        self._local_pars[i] << self._E[start:end]
 
 
             else:
@@ -1850,8 +1872,8 @@ class StanFitInterface(StanInterface):
                                         [StringExpression([k, " < ", self._Ns + 1])]
                                     ):
                                         # E = Esrc / (1+z)
-                                        self._E[i] << StringExpression(
-                                            [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                        self._Esrc[i] << StringExpression(
+                                            [self._E[i], " * (", 1 + self._z[k], ")"]
                                         )
 
                                         if self._shared_src_index:
@@ -1893,8 +1915,8 @@ class StanFitInterface(StanInterface):
                                         [StringExpression([k, " == ", self._k_diff])]
                                     ):
                                         # E = Esrc / (1+z)
-                                        self._E[i] << StringExpression(
-                                            [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                        self._Esrc[i] << StringExpression(
+                                            [self._E[i], " * (", 1 + self._z[k], ")"]
                                         )
 
                                         # log_prob += log(p(Esrc|diff_index))
@@ -1905,8 +1927,8 @@ class StanFitInterface(StanInterface):
                                                 self._diff_spectrum_lpdf(
                                                     self._E[i],
                                                     self._diff_index,
-                                                    self._Ediff_min / (1 + self._z[k]),
-                                                    self._Ediff_max / (1 + self._z[k]),
+                                                    self._Emin,
+                                                    self._Emax,
                                                 ),
                                             ]
                                         )
@@ -1928,7 +1950,7 @@ class StanFitInterface(StanInterface):
                                     ):
                                         
                                         # E = Esrc
-                                        self._E[i] << self._Esrc[i]
+                                        self._Esrc[i] << self._E[i]
 
                                         # log_prob += log(p(Esrc, omega | atmospheric source))
                                         StringExpression(
@@ -2018,17 +2040,17 @@ class StanFitInterface(StanInterface):
                                                 self._lp[i][k],
                                                 " += ",
                                                 self._src_spectrum_lpdf(
-                                                    self._Esrc[i],
+                                                    self._E[i],
                                                     src_index_ref,
-                                                    self._Esrc_min,
-                                                    self._Esrc_max,
+                                                    self._Esrc_min / (1 + self._z[k]),
+                                                    self._Esrc_max / (1 + self._z[k]),
                                                 ),
                                             ]
                                         )
 
                                         # E = Esrc / (1+z)
-                                        self._E[i] << StringExpression(
-                                            [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                        self._Esrc[i] << StringExpression(
+                                            [self._E[i], " * (", 1 + self._z[k], ")"]
                                         )
 
                                         # log_prob += log(p(omega_det | varpi, kappa))
@@ -2058,18 +2080,19 @@ class StanFitInterface(StanInterface):
                                                 self._lp[i][k],
                                                 " += ",
                                                 self._diff_spectrum_lpdf(
-                                                    self._Esrc[i],
+                                                    self._E[i],
                                                     self._diff_index,
-                                                    self._Esrc_min,
-                                                    self._Esrc_max,
+                                                    self._Emin,
+                                                    self._Emax,
                                                 ),
                                             ]
                                         )
 
                                         # E = Esrc / (1+z)
-                                        self._E[i] << StringExpression(
-                                            [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                        )
+                                        #self._Esrc[i] << StringExpression(
+                                        #    [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                        #)
+                                        self._Esrc[i] << self._E[i]
 
                                         # log_prob += log(1/4pi)
                                         StringExpression(
