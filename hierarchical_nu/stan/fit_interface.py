@@ -789,7 +789,7 @@ class StanFitInterface(StanInterface):
                 sd_varpi_Ns = 3    # coords of events in the sky (unit vector)
                 sd_if_atmo_z = 1   # redshift of diffuse component
                 sd_z_Ns = 1        # redshift of PS
-                sd_other = 5       # Esrc_min, Esrc_max, Emin, Emax
+                sd_other = 4       # Esrc_min, Esrc_max, Emin, Emax
                 if self.sources.atmospheric and "tracks" in self._event_types:
                     sd_other += 1    # no atmo in cascades
                 sd_string = (
