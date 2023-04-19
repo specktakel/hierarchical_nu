@@ -408,8 +408,8 @@ class Simulation:
         if self._sources.diffuse:
             sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
 
-        sim_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
-        sim_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+        sim_inputs["Esrc_min"] = Parameter.get_parameter("Esrc_min").value.to(u.GeV).value
+        sim_inputs["Esrc_max"] = Parameter.get_parameter("Esrc_max").value.to(u.GeV).value
 
         sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value

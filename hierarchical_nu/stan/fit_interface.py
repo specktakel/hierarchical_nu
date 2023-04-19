@@ -631,6 +631,9 @@ class StanFitInterface(StanInterface):
             self._Esrc_min = ForwardVariableDef("Esrc_min", "real")
             self._Esrc_max = ForwardVariableDef("Esrc_max", "real")
             self._Esrc_norm = ForwardVariableDef("Esrc_norm", "real")
+            # Energy range at the detector
+            self._Emin = ForwardVariableDef("Emin", "real")
+            self._Emax = ForwardVariableDef("Emax", "real")
 
             # Number of point sources
             self._Ns = ForwardVariableDef("Ns", "int")
@@ -747,6 +750,18 @@ class StanFitInterface(StanInterface):
 
                     with ElseBlockContext():
                         self._N_t << self._N_t + 1
+
+            # Find largest permitted range of energies at the detector
+            self._Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
+            self._Emax_at_det = ForwardVariableDef("Emax_at_det", "real")
+            self._Emin_at_det << self._Emin
+            self._Emax_at_det << self._Emax
+
+            with ForLoopContext(1, self._Ns, "k") as k:
+                with IfBlockContext([self._Esrc_min / (1 + self._z[k]), " < ", self._Emin_at_det]):
+                    self._Emin_at_det << self._Esrc_min / (1 + self._z[k])
+                with IfBlockContext([self._Esrc_max / (1 + self._z[k]), " > ", self._Emax_at_det]):
+                    self._Emax_at_det << self._Esrc_max / (1 + self._z[k])
 
             if self._nshards not in [0, 1]:
                 self._N_shards_use_this = ForwardVariableDef("N_shards_loop", "int")
@@ -936,8 +951,14 @@ class StanFitInterface(StanInterface):
                 self._F_atmo = ParameterDef("F_atmo", "real", 0.0, None)
 
             # Vector of latent true source energies for each event
-            self._Esrc = ParameterVectorDef(
-                "Esrc", "vector", self._N_str, self._Esrc_min, self._Esrc_max
+            #TODO change to energies at the detector
+            #find largest allowed range in loop over sources
+
+            #self._Esrc = ParameterVectorDef(
+            #    "Esrc", "vector", self._N_str, self._Esrc_min, self._Esrc_max
+            #)
+            self._E = ParameterVectorDef(
+                "E", "vector", self._N_str, self._Emin_at_det, self._Emax_at_det
             )
 
     def _transformed_parameters(self):
@@ -1077,7 +1098,8 @@ class StanFitInterface(StanInterface):
             else:
 
                 # Latent arrival energies for each event
-                self._E = ForwardVariableDef("E", "vector[N]")
+                #self._E = ForwardVariableDef("E", "vector[N]")
+                self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
 
             self._F_src << 0.0
             self._Nex_src << 0.0
@@ -1405,17 +1427,17 @@ class StanFitInterface(StanInterface):
                                                 self._lp[i][k],
                                                 " += ",
                                                 self._src_spectrum_lpdf(
-                                                    self._Esrc[i],
+                                                    self._E[i],
                                                     src_index_ref,
-                                                    self._Esrc_min,
-                                                    self._Esrc_max,
+                                                    self._Esrc_min / (1 + self._z[k]),
+                                                    self._Esrc_max / (1 + self._z[k]),
                                                 ),
                                             ]
                                         )
 
                                         # E = Esrc / (1+z)
-                                        self._E[i] << StringExpression(
-                                            [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                        self._Esrc[i] << StringExpression(
+                                            [self._E[i], " * (", 1 + self._z[k], ")"]
                                         )
 
                                         # log_prob += log(p(omega_det|varpi, kappa))
@@ -1439,23 +1461,22 @@ class StanFitInterface(StanInterface):
                                         [StringExpression([k, " == ", self._k_diff])]
                                     ):
 
+                                        # E = Esrc / (1+z)
+                                        # update: z of diffuse is set to zero
+                                        self._Esrc[i] << self._E[i]
+
                                         # log_prob += log(p(Esrc|diff_index))
                                         StringExpression(
                                             [
                                                 self._lp[i][k],
                                                 " += ",
                                                 self._diff_spectrum_lpdf(
-                                                    self._Esrc[i],
+                                                    self._E[i],
                                                     self._diff_index,
-                                                    self._Esrc_min,
-                                                    self._Esrc_max,
+                                                    self._Emin,
+                                                    self._Emax,
                                                 ),
                                             ]
-                                        )
-
-                                        # E = Esrc / (1+z)
-                                        self._E[i] << StringExpression(
-                                            [self._Esrc[i], " / (", 1 + self._z[k], ")"]
                                         )
 
                                         # log_prob += log(1/4pi)
@@ -1473,6 +1494,9 @@ class StanFitInterface(StanInterface):
                                     with IfBlockContext(
                                         [StringExpression([k, " == ", self._k_atmo])]
                                     ):
+                                        
+                                        # E = Esrc
+                                        self._Esrc[i] << self._E[i]
 
                                         # log_prob += log(p(Esrc, omega | atmospheric source))
                                         StringExpression(
@@ -1482,7 +1506,7 @@ class StanFitInterface(StanInterface):
                                                 FunctionCall(
                                                     [
                                                         self._atmo_flux_func(
-                                                            self._Esrc[i],
+                                                            self._E[i],
                                                             self._omega_det[i],
                                                         )
                                                         / self._atmo_flux_integral
@@ -1491,9 +1515,6 @@ class StanFitInterface(StanInterface):
                                                 ),
                                             ]
                                         )
-
-                                        # E = Esrc
-                                        self._E[i] << self._Esrc[i]
 
                                 # Detection effects
                                 if self.detector_model_type == R2021DetectorModel:
@@ -1565,17 +1586,17 @@ class StanFitInterface(StanInterface):
                                                 self._lp[i][k],
                                                 " += ",
                                                 self._src_spectrum_lpdf(
-                                                    self._Esrc[i],
+                                                    self._E[i],
                                                     src_index_ref,
-                                                    self._Esrc_min,
-                                                    self._Esrc_max,
+                                                    self._Esrc_min / (1 + self._z[k]),
+                                                    self._Esrc_max / (1 + self._z[k]),
                                                 ),
                                             ]
                                         )
 
                                         # E = Esrc / (1+z)
-                                        self._E[i] << StringExpression(
-                                            [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                        self._Esrc[i] << StringExpression(
+                                            [self._E[i], " * (", 1 + self._z[k], ")"]
                                         )
 
                                         # log_prob += log(p(omega_det | varpi, kappa))
@@ -1605,19 +1626,16 @@ class StanFitInterface(StanInterface):
                                                 self._lp[i][k],
                                                 " += ",
                                                 self._diff_spectrum_lpdf(
-                                                    self._Esrc[i],
+                                                    self._E[i],
                                                     self._diff_index,
-                                                    self._Esrc_min,
-                                                    self._Esrc_max,
+                                                    self._Emin,
+                                                    self._Emax,
                                                 ),
                                             ]
                                         )
 
                                         # E = Esrc / (1+z)
-                                        self._E[i] << StringExpression(
-                                            [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                        )
-
+                                        self._Esrc[i] << self._E[i]
                                         # log_prob += log(1/4pi)
                                         StringExpression(
                                             [
@@ -1643,7 +1661,7 @@ class StanFitInterface(StanInterface):
                                         )
 
                                         # E = Esrc
-                                        self._E[i] << self._Esrc[i]
+                                        self._Esrc[i] << self._E[i]
 
                                 # Detection effects
                                 # log_prob += log(p(Edet | E))
