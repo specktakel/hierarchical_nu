@@ -57,7 +57,7 @@ class StanFitInterface(StanInterface):
         detector_model_type: DetectorModel,
         atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
-        includes: List[str] = ["interpolation.stan", "utils.stan", "vMF.stan"],
+        includes: List[str] = ["interpolation.stan", "utils.stan", "vMF.stan", "power_law.stan"],
         priors: Priors = Priors(),
         nshards: int = 1,
     ):
@@ -228,9 +228,9 @@ class StanFitInterface(StanInterface):
                     logF << StringExpression(["global[", idx, ":]"])
 
                     # Local pars are only source energies
-                    E = ForwardVariableDef("Esrc", "vector[size(local)]")
-                    E << StringExpression(["local"])
-                    Esrc = ForwardVariableDef("E", "vector[N]")
+                    E = ForwardVariableDef("E", "vector[N]")
+                    E << StringExpression(["local[:N]"])
+                    Esrc = ForwardVariableDef("Esrc", "vector[N]")
 
                     # Define indices for unpacking of real_data
                     start << 1
@@ -301,7 +301,7 @@ class StanFitInterface(StanInterface):
                     start << start + 1
 
                     end << end + 1
-                    Emin << StringExpression(["real_data[start]"])
+                    Emax << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     # Define tracks and cascades to sort events into correct detector response
@@ -348,7 +348,7 @@ class StanFitInterface(StanInterface):
 
                                             # E = Esrc / (1+z)
                                             Esrc[i] << StringExpression(
-                                                [Esrc[i], " * (", 1 + z[k], ")"]
+                                                [E[i], " * (", 1 + z[k], ")"]
                                             )
                                             # log_prob += log(p(Esrc|src_index))
                                             StringExpression(
@@ -1448,12 +1448,13 @@ class StanFitInterface(StanInterface):
                                             [
                                                 self._lp[i][k],
                                                 " += ",
-                                                self._src_spectrum_lpdf(
-                                                    self._E[i],
-                                                    src_index_ref,
-                                                    self._Esrc_min / (1 + self._z[k]),
-                                                    self._Esrc_max / (1 + self._z[k]),
-                                                ),
+                                                #self._src_spectrum_lpdf(
+                                                #    self._E[i],
+                                                #    src_index_ref,
+                                                #    self._Esrc_min / (1 + self._z[k]),
+                                                #    self._Esrc_max / (1 + self._z[k]),
+                                                #),
+                                                "cutoff_powerlaw_logpdf(E[i], src_index, Esrc_min/(1+z[k]), Esrc_max/(1+z[k]))"
                                             ]
                                         )
 
@@ -1850,7 +1851,7 @@ class StanFitInterface(StanInterface):
                 # Define variables to store loglikelihood
                 # and latent energies
                 self._lp = ForwardArrayDef("lp", "vector[Ns_tot]", ["[N]"])
-                self._E = ForwardVariableDef("E", "vector[N]")
+                self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
 
                 with ForLoopContext(1, self._N, "i") as i:
                     self._lp[i] << self._logF

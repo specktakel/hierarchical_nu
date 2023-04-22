@@ -358,8 +358,15 @@ class ExposureIntegral:
 
             # Energy bounds in flux model are already redshift-corrected
             # and live in the detector frame
-            Emin = source.flux_model.spectral_shape._lower_energy.to_value(u.GeV)
-            Emax = source.flux_model.spectral_shape._upper_energy.to_value(u.GeV)
+            
+            try:
+                Emin = source.flux_model.spectral_shape._lower_energy.to_value(u.GeV)
+                Emax = source.flux_model.spectral_shape._upper_energy.to_value(u.GeV)
+            except AttributeError:
+            
+                Emin = source.flux_model._lower_energy.to_value(u.GeV)
+                Emax = source.flux_model._upper_energy.to_value(u.GeV)
+
             E_range = 10 ** np.linspace(np.log10(Emin), np.log10(Emax))
 
             f_values_all = []
