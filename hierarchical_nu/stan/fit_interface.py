@@ -287,6 +287,8 @@ class StanFitInterface(StanInterface):
                     Esrc_max = ForwardVariableDef("Esrc_max", "real")
                     Emin = ForwardVariableDef("Emin", "real")
                     Emax = ForwardVariableDef("Emax", "real")
+                    Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
+                    Emax_at_det = ForwardVariableDef("Emax_at_det", "real")
 
                     end << end + 1
                     Esrc_min << StringExpression(["real_data[start]"])
@@ -302,6 +304,14 @@ class StanFitInterface(StanInterface):
 
                     end << end + 1
                     Emax << StringExpression(["real_data[start]"])
+                    start << start + 1
+
+                    end << end + 1
+                    Emin_at_det << StringExpression(["real_data[start]"])
+                    start << start + 1
+
+                    end << end + 1
+                    Emax_at_det << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     # Define tracks and cascades to sort events into correct detector response
@@ -352,17 +362,24 @@ class StanFitInterface(StanInterface):
                                             )
                                             # log_prob += log(p(Esrc|src_index))
                                             StringExpression(
-                                                [
-                                                    lp[i][k],
-                                                    " += ",
-                                                    self._src_spectrum_lpdf(
-                                                        E[i],
-                                                        src_index_ref,
-                                                        Esrc_min / (1 + z[k]),
-                                                        Esrc_max / (1 + z[k]),
-                                                    ),
-                                                ]
-                                            )
+                                            [
+                                                lp[i][k],
+                                                " += ",
+                                                "dbbpl_logpdf(",
+                                                E[i], 
+                                                ", ",
+                                                src_index_ref,
+                                                ", ",
+                                                Emin_at_det, 
+                                                ", ",
+                                                Esrc_min/(1+z[k]),
+                                                ", ",
+                                                Esrc_max/(1+z[k]),
+                                                ", ",
+                                                Emax_at_det,
+                                                ")"
+                                            ]
+                                        )
 
                                             # log_prob += log(p(omega_det|varpi, kappa))
                                             StringExpression(
@@ -789,7 +806,7 @@ class StanFitInterface(StanInterface):
                 sd_varpi_Ns = 3    # coords of events in the sky (unit vector)
                 sd_if_atmo_z = 1   # redshift of diffuse component
                 sd_z_Ns = 1        # redshift of PS
-                sd_other = 4       # Esrc_min, Esrc_max, Emin, Emax
+                sd_other = 6       # Esrc_min, Esrc_max, Emin, Emax
                 if self.sources.atmospheric and "tracks" in self._event_types:
                     sd_other += 1    # no atmo in cascades
                 sd_string = (
@@ -887,6 +904,13 @@ class StanFitInterface(StanInterface):
                     self.real_data[i, insert_start] << self._Emax
                     insert_start << insert_start + 1
 
+                    insert_end << insert_end + 1
+                    self.real_data[i, insert_start] << self._Emin_at_det
+                    insert_start << insert_start + 1
+
+                    insert_end << insert_end + 1
+                    self.real_data[i, insert_start] << self._Emax_at_det
+                    insert_start << insert_start + 1
 
                     # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
                     self.int_data[i, 1] << insert_len
@@ -1454,7 +1478,19 @@ class StanFitInterface(StanInterface):
                                                 #    self._Esrc_min / (1 + self._z[k]),
                                                 #    self._Esrc_max / (1 + self._z[k]),
                                                 #),
-                                                "cutoff_powerlaw_logpdf(E[i], src_index, Esrc_min/(1+z[k]), Esrc_max/(1+z[k]))"
+                                                "dbbpl_logpdf(",
+                                                self._E[i], 
+                                                ", ",
+                                                src_index_ref,
+                                                ", ",
+                                                self._Emin_at_det, 
+                                                ", ",
+                                                self._Esrc_min/(1+self._z[k]),
+                                                ", ",
+                                                self._Esrc_max/(1+self._z[k]),
+                                                ", ",
+                                                self._Emax_at_det,
+                                                ")"
                                             ]
                                         )
 
@@ -1886,12 +1922,19 @@ class StanFitInterface(StanInterface):
                                             [
                                                 self._lp[i][k],
                                                 " += ",
-                                                self._src_spectrum_lpdf(
-                                                    self._E[i],
-                                                    src_index_ref,
-                                                    self._Esrc_min / (1+self._z[k]),
-                                                    self._Esrc_max / (1+self._z[k]),
-                                                ),
+                                                "dbbpl_logpdf(",
+                                                self._E[i], 
+                                                ", ",
+                                                src_index_ref,
+                                                ", ",
+                                                self._Emin_at_det, 
+                                                ", ",
+                                                self._Esrc_min/(1+self._z[k]),
+                                                ", ",
+                                                self._Esrc_max/(1+self._z[k]),
+                                                ", ",
+                                                self._Emax_at_det,
+                                                ")"
                                             ]
                                         )
 
