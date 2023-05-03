@@ -38,9 +38,10 @@ class ModelCheck:
         if priors:
 
             self.priors = priors
+            print("Found priors")
 
         else:
-
+            print("Loading priors from config")
             prior_config = hnu_config["prior_config"]
             priors = Priors()
             priors.luminosity = self.make_prior(prior_config["L"])
@@ -51,11 +52,11 @@ class ModelCheck:
             self.priors = priors
 
         if truths:
-
+            print("Found true values")
             self.truths = truths
 
         else:
-
+            print("Loading true values from config")
             # Config
             file_config = hnu_config["file_config"]
             parameter_config = hnu_config["parameter_config"]
@@ -71,7 +72,7 @@ class ModelCheck:
             )
 
             self._obs_time = parameter_config["obs_time"] * u.year
-            self._nshards = parameter_config["nshards"]
+            # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
 
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
@@ -120,6 +121,7 @@ class ModelCheck:
                 sigma=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value,
             )
             """
+            
         self._default_var_names = [key for key in self.truths]
         self._default_var_names.append("Fs")
 
@@ -497,7 +499,7 @@ class ModelCheck:
                     sim.events,
                     self._obs_time,
                     priors=self.priors,
-                    nshards=self._nshards,
+                    nshards=self._threads_per_chain,
                 )
                 fit.precomputation()
                 fit.set_stan_filename(file_config["fit_filename"])
@@ -620,6 +622,10 @@ def _initialise_sources():
     Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
     Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
 
+    Esrc_min = Parameter(parameter_config["Esrc_min"] * u.GeV, "Esrc_min", fixed=True)
+    Esrc_max = Parameter(parameter_config["Esrc_max"] * u.GeV, "Esrc_max", fixed=True)
+    Esrc_norm = Parameter(1e5 * u.GeV, "Esrc_norm", fixed=True)
+
     if parameter_config["Emin_det_eq"]:
 
         Emin_det = Parameter(
@@ -647,8 +653,9 @@ def _initialise_sources():
         L,
         src_index,
         parameter_config["z"],
-        Emin,
-        Emax,
+        Esrc_min,
+        Esrc_max,
+        Esrc_norm,
     )
 
     sources = Sources()

@@ -190,8 +190,8 @@ class ExposureIntegral:
             #    dec_upper = np.union1d(dec_lower, self.energy_resolution._declination_bins[1:] * u.rad)
 
             integral = source.flux_model.integral(
-                lower_e_edges[:, np.newaxis] * (1 + z),
-                upper_e_edges[:, np.newaxis] * (1 + z),
+                lower_e_edges[:, np.newaxis],
+                upper_e_edges[:, np.newaxis],
                 dec_lower[np.newaxis, :],
                 dec_upper[np.newaxis, :],
                 0 * u.rad,

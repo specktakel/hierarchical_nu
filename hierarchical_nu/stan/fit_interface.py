@@ -206,7 +206,7 @@ class StanFitInterface(StanInterface):
                     Ns_tot = InstantVariableDef("Ns_tot", "int", ["Ns+atmo+diffuse"])
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
-                    len = ForwardVariableDef("len", "int")
+                    length = ForwardVariableDef("length", "int")
                     
                     # Get global parameters
                     # Check for shared index
@@ -216,7 +216,8 @@ class StanFitInterface(StanInterface):
                         idx = 2
                     else:
                         src_index = ForwardVariableDef("src_index", "vector[Ns]")
-                        idx = len(self.sources._point_sources) + 1
+                        src_index << StringExpression(["global[1:Ns]"])
+                        idx = len(self.sources._point_source) + 1
 
                     # Get diffuse index
                     if self.sources.diffuse:
@@ -234,7 +235,7 @@ class StanFitInterface(StanInterface):
 
                     # Define indices for unpacking of real_data
                     start << 1
-                    len << N
+                    length << N
                     end << N
 
                     # Define variable to store loglikelihood
@@ -247,12 +248,12 @@ class StanFitInterface(StanInterface):
                     Edet = ForwardVariableDef("Edet", "vector[N]")
                     Edet << FunctionCall(["real_data[start:end]"], "to_vector")
                     # Shift indices appropriate amount for next batch of data
-                    start << start + len
+                    start << start + length
 
-                    end << end + len
+                    end << end + length
                     kappa = ForwardVariableDef("kappa", "vector[N]")
                     kappa << StringExpression(["to_vector(real_data[start:end])"])
-                    start << start + len
+                    start << start + length
 
                     omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
                     # Loop over events to unpack reconstructed direction
@@ -365,19 +366,27 @@ class StanFitInterface(StanInterface):
                                             [
                                                 lp[i][k],
                                                 " += ",
-                                                "dbbpl_logpdf(",
-                                                E[i], 
-                                                ", ",
-                                                src_index_ref,
-                                                ", ",
-                                                Emin_at_det, 
-                                                ", ",
-                                                Esrc_min/(1+z[k]),
-                                                ", ",
-                                                Esrc_max/(1+z[k]),
-                                                ", ",
-                                                Emax_at_det,
-                                                ")"
+                                                self._src_spectrum_lpdf(
+                                                    E[i],
+                                                    src_index_ref,
+                                                    Esrc_min / (1 + z[k]),
+                                                    Esrc_max / (1 + z[k]),
+                                                    #Emin,
+                                                    #Emax,
+                                                ),
+                                                #"dbbpl_logpdf(",
+                                                #E[i], 
+                                                #", ",
+                                                #src_index_ref,
+                                                #", ",
+                                                #Emin_at_det, 
+                                                #", ",
+                                                #Esrc_min/(1+z[k]),
+                                                #", ",
+                                                #Esrc_max/(1+z[k]),
+                                                #", ",
+                                                #Emax_at_det,
+                                                #")"
                                             ]
                                         )
 
@@ -1099,21 +1108,20 @@ class StanFitInterface(StanInterface):
                 # Create vector of parameters
                 # Global pars are src_index, diff_index, logF
                 # Count number of pars:
-                num_of_pars = 0
                 if self._shared_luminosity:
-                    num_of_pars += 1
+                    num_of_pars = "1"
                 else:
-                    num_of_pars += self._Ns
+                    num_of_pars = " Ns"
 
                 if self._shared_src_index:
-                    num_of_pars += 1
+                    num_of_pars += " + 1"
                 else:
-                    num_of_pars += self._Ns
+                    num_of_pars += " + Ns"
 
                 if self.sources.diffuse:
-                    num_of_pars += 2
+                    num_of_pars += " + 2"
                 if self.sources.atmospheric:
-                    num_of_pars += 1
+                    num_of_pars += " + 1"
 
                 self._global_pars = ForwardVariableDef(
                     "global_pars", f"vector[{num_of_pars}]"
@@ -1427,7 +1435,7 @@ class StanFitInterface(StanInterface):
                     idx = 2
                 else:
                     self._global_pars[1 : self._Ns] << self._src_index
-                    idx = len(self.sources._point_sources) + 1
+                    idx = len(self.sources._point_source) + 1
                 if self.sources.diffuse:
                     self._global_pars[idx] << self._diff_index
                     idx += 1
@@ -1472,25 +1480,27 @@ class StanFitInterface(StanInterface):
                                             [
                                                 self._lp[i][k],
                                                 " += ",
-                                                #self._src_spectrum_lpdf(
-                                                #    self._E[i],
-                                                #    src_index_ref,
-                                                #    self._Esrc_min / (1 + self._z[k]),
-                                                #    self._Esrc_max / (1 + self._z[k]),
-                                                #),
-                                                "dbbpl_logpdf(",
-                                                self._E[i], 
-                                                ", ",
-                                                src_index_ref,
-                                                ", ",
-                                                self._Emin_at_det, 
-                                                ", ",
-                                                self._Esrc_min/(1+self._z[k]),
-                                                ", ",
-                                                self._Esrc_max/(1+self._z[k]),
-                                                ", ",
-                                                self._Emax_at_det,
-                                                ")"
+                                                self._src_spectrum_lpdf(
+                                                    self._E[i],
+                                                    src_index_ref,
+                                                    self._Esrc_min / (1 + self._z[k]),
+                                                    self._Esrc_max / (1 + self._z[k]),
+                                                    #self._Emin,
+                                                    #self._Emax,
+                                                ),
+                                                #"dbbpl_logpdf(",
+                                                #self._E[i], 
+                                                #", ",
+                                                #src_index_ref,
+                                                #", ",
+                                                #self._Emin_at_det, 
+                                                #", ",
+                                                #self._Esrc_min/(1+self._z[k]),
+                                                #", ",
+                                                #self._Esrc_max/(1+self._z[k]),
+                                                #", ",
+                                                #self._Emax_at_det,
+                                                #")"
                                             ]
                                         )
 
@@ -1922,19 +1932,25 @@ class StanFitInterface(StanInterface):
                                             [
                                                 self._lp[i][k],
                                                 " += ",
-                                                "dbbpl_logpdf(",
-                                                self._E[i], 
-                                                ", ",
-                                                src_index_ref,
-                                                ", ",
-                                                self._Emin_at_det, 
-                                                ", ",
-                                                self._Esrc_min/(1+self._z[k]),
-                                                ", ",
-                                                self._Esrc_max/(1+self._z[k]),
-                                                ", ",
-                                                self._Emax_at_det,
-                                                ")"
+                                                self._src_spectrum_lpdf(
+                                                    self._E[i],
+                                                    src_index_ref,
+                                                    self._Esrc_min / (1 + self._z[k]),
+                                                    self._Esrc_max / (1 + self._z[k]),
+                                                ),
+                                                #"dbbpl_logpdf(",
+                                                #self._E[i], 
+                                                #", ",
+                                                #src_index_ref,
+                                                #", ",
+                                                #self._Emin_at_det, 
+                                                #", ",
+                                                #self._Esrc_min/(1+self._z[k]),
+                                                #", ",
+                                                #self._Esrc_max/(1+self._z[k]),
+                                                #", ",
+                                                #self._Emax_at_det,
+                                                #")"
                                             ]
                                         )
 
