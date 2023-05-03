@@ -808,8 +808,6 @@ class StanFitInterface(StanInterface):
                 # Create the rectangular data blocks for use in `map_rect`
                 self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
                 self._N_mod_J << self._N % self._J
-                self._N_ev_distributed = ForwardVariableDef("N_ev_distributed", "int")
-                self._N_ev_distributed << 0
                 # Find size for real_data array
                 sd_events_J = 5    # reco energy, kappa, reco dir (unit vector)
                 sd_varpi_Ns = 3    # coords of events in the sky (unit vector)
