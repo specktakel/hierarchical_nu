@@ -6,6 +6,7 @@ import numpy as np
 from .flux_model import (
     PointSourceFluxModel,
     PowerLawSpectrum,
+    TwiceBrokenPowerLaw,
     IsotropicDiffuseBG,
     integral_power_law,
 )
@@ -128,6 +129,72 @@ class PointSource(Source):
         All parameters are taken to be defined in the source frame.
         """
 
+        total_flux = luminosity.value / (
+            4 * np.pi * luminosity_distance(redshift) ** 2
+        )  # here flux is W / m^2, lives in the detector frame
+
+        # Each source has an independent normalization, thus use the source name as identifier
+        # Normalisation to dN/(dEdtdA)
+        norm = Parameter(
+            # is defined at the detector!
+            1 / (u.GeV * u.s * u.m ** 2),
+            "{}_norm".format(name),
+            fixed=False,
+            par_range=(0, np.inf),
+            scale=ParScale.log,
+        )
+
+        shape = PowerLawSpectrum(
+            norm,
+            pivot.value / (1 + redshift),
+            index,
+            lower.value / (1 + redshift),
+            upper.value / (1 + redshift),
+        )
+        total_power = shape.total_flux_density
+        norm.value *= total_flux / total_power
+        norm.value = norm.value.to(1 / (u.GeV * u.m ** 2 * u.s))
+        norm.fixed = True
+        return cls(name, dec, ra, redshift, shape, luminosity)
+
+    @classmethod
+    @u.quantity_input
+    def make_twicebroken_powerlaw_source(
+        cls,
+        name: str,
+        dec: u.rad,
+        ra: u.rad,
+        luminosity: Parameter,
+        index: Parameter,
+        redshift: float,
+        lower: Parameter,
+        upper: Parameter,
+        pivot: Parameter,
+    ):
+        """
+        Factory class for creating sources with powerlaw spectrum and given luminosity.
+        Luminosity and all energies given as arguments/parameters live in the source frame
+        and are converted to detector frame internally.
+
+        Parameters:
+            name: str
+                Source name
+            dec: u.rad,
+                Declination of the source
+            ra: u.rad,
+                Right Ascension of the source
+            luminosity: Parameter,
+                luminosity
+            index: Parameter
+                Spectral index
+            redshift: float
+            lower: Parameter
+                Lower energy bound
+            upper: Parameter
+                Upper energy bound
+        All parameters are taken to be defined in the source frame.
+        """
+        # raise NotImplementedError
         total_flux = luminosity.value / (
             4 * np.pi * luminosity_distance(redshift) ** 2
         )  # here flux is W / m^2, lives in the detector frame

@@ -23,7 +23,7 @@ real dbbpl_logpdf(real x, real gamma2, real x1, real x2, real x3, real x4)
 {
 //real x1 = 1.;   // bounds at which integration is cutoff in the flanks
 //real x4 = 100.;
-real gamma1 = -6.;   // indices at the flanks
+real gamma1 = -10.;   // indices at the flanks
 real gamma3 = 10.;
 real N2;
 real N3;
