@@ -319,10 +319,14 @@ class StanFitInterface(StanInterface):
                     if "tracks" in self._event_types:
                         track_type = ForwardVariableDef("track_type", "int")
                         track_type << TRACKS
+                        eres_tracks = ForwardVariableDef("eres_tracks", "real")
+                        aeff_tracks = ForwardVariableDef("aeff_tracks", "real")
 
                     if "cascades" in self._event_types:
                         cascade_type = ForwardVariableDef("cascade_type", "int")
                         cascade_type << CASCADES
+                        eres_cascades = ForwardVariableDef("eres_cascades", "real")
+                        aeff_cascades = ForwardVariableDef("aeff_cascades", "real")
 
                     if self.sources.diffuse and self.sources.atmospheric:
                         k_diff = "Ns + 1"
@@ -345,13 +349,45 @@ class StanFitInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([event_type[i], " == ", track_type])]
                             ):
+                                # Selection effects
+                                if self.detector_model_type == R2021DetectorModel:
+                                    eres_tracks << self._dm["tracks"].energy_resolution(
+                                        FunctionCall([E[i]], "log10"),
+                                        FunctionCall([Edet[i]], "log10"),
+                                        omega_det[i],
+                                    )
+
+                                else:
+                                    eres_tracks << self._dm["tracks"].energy_resolution(
+                                        E[i], Edet[i]
+                                    )
+
+                                aeff_tracks << FunctionCall(
+                                    [self._dm["tracks"].effective_area( E[i], omega_det[i])],
+                                    "log"
+                                )
                                 # Sum over sources => evaluate and store components
                                 with ForLoopContext(1, "Ns+atmo+diffuse", "k") as k:
                                     # Point source components
+                                    StringExpression(
+                                        [
+                                            lp[i][k],
+                                            " += ",
+                                            aeff_tracks,
+                                        ]
+                                    )
+                                    StringExpression(
+                                        [
+                                            lp[i][k],
+                                            " += ",
+                                            eres_tracks,
+                                        ]
+                                    )
                                     if self.sources.point_source:
                                         with IfBlockContext(
                                             [StringExpression([k, " < ", Ns + 1])]
                                         ):
+                                            
                                             if self._shared_src_index:
                                                 src_index_ref = src_index
                                             else:
@@ -468,43 +504,6 @@ class StanFitInterface(StanInterface):
                                                 ]
                                             )
 
-                                    # Detection effects
-                                    if self.detector_model_type == R2021DetectorModel:
-
-                                        StringExpression(
-                                            [
-                                                lp[i][k],
-                                                " += ",
-                                                self._dm["tracks"].energy_resolution(
-                                                    FunctionCall([E[i]], "log10"),
-                                                    FunctionCall([Edet[i]], "log10"),
-                                                    omega_det[i],
-                                                ),
-                                            ]
-                                        )
-
-                                    else:
-
-                                        StringExpression(
-                                            [
-                                                lp[i][k],
-                                                " += ",
-                                                self._dm["tracks"].energy_resolution(
-                                                    E[i], Edet[i]
-                                                ),
-                                            ]
-                                        )
-
-                                    StringExpression(
-                                        [
-                                            lp[i][k],
-                                            " += log(",
-                                            self._dm["tracks"].effective_area(
-                                                E[i], omega_det[i]
-                                            ),
-                                            ")",
-                                        ]
-                                    )
 
                         # Cascades
                         # See comments for tracks for more details, approach is the same
@@ -517,8 +516,32 @@ class StanFitInterface(StanInterface):
                                     )
                                 ]
                             ):
+                                aeff_cascades << FunctionCall(
+                                    [self._dm["cascades"].effective_area( E[i], omega_det[i])],
+                                    "log"
+                                )
+
+                                eres_cascades << self._dm["cascades"].energy_resolution(
+                                    E[i], Edet[i]
+                                )
 
                                 with ForLoopContext(1, "Ns+atmo+diffuse", "k") as k:
+
+                                    StringExpression(
+                                        [
+                                            lp[i][k],
+                                            " += ",
+                                            aeff_cascades,
+                                        ]
+                                    )
+
+                                    StringExpression(
+                                        [
+                                            lp[i][k],
+                                            " += ",
+                                            eres_cascades,
+                                        ]
+                                    )
 
                                     # Point source components
                                     if self.sources.point_source:
@@ -617,19 +640,7 @@ class StanFitInterface(StanInterface):
                                             )
 
                                             # E = Esrc
-                                            E[i] << Esrc[i]
-
-                                    # Detection effects
-                                    # log_prob += log(p(Edet | E))
-                                    StringExpression(
-                                        [
-                                            lp[i][k],
-                                            " += ",
-                                            self._dm["cascades"].energy_resolution(
-                                                E[i], Edet[i]
-                                            ),
-                                        ]
-                                    )
+                                            Esrc[i] << E[i]
 
                     results = ForwardArrayDef("results", "real", ["[N]"])
                     with ForLoopContext(1, N, "i") as i:
@@ -1086,6 +1097,8 @@ class StanFitInterface(StanInterface):
                 self._Nex_diff_t = ForwardVariableDef("Nex_diff_t", "real")
                 self._Nex_t = ForwardVariableDef("Nex_t", "real")
                 self._Nex_src_t << 0.0
+                self._eres_tracks = ForwardVariableDef("eres_tracks", "real")
+                self._aeff_tracks = ForwardVariableDef("aeff_tracks", "real")
 
             if "cascades" in self._event_types:
 
@@ -1094,6 +1107,8 @@ class StanFitInterface(StanInterface):
                 self._Nex_diff_c = ForwardVariableDef("Nex_diff_c", "real")
                 self._Nex_c = ForwardVariableDef("Nex_c", "real")
                 self._Nex_src_c << 0.0
+                self._eres_cascades = ForwardVariableDef("eres_cascades", "real")
+                self._aeff_cascades = ForwardVariableDef("aeff_cascades", "real")
 
             """
             if "cascades" in self._event_types and "tracks" in self._event_types:
@@ -1457,9 +1472,51 @@ class StanFitInterface(StanInterface):
                                 )
                             ]
                         ):
+                            
+                            # Detection effects
+                            self._aeff_tracks << FunctionCall(
+                                [
+                                    self._dm["tracks"].effective_area(
+                                            self._E[i], self._omega_det[i]
+                                        )
+                                ],
+                                "log"
+                            )
+
+                            if self.detector_model_type == R2021DetectorModel:
+
+                                self._eres_tracks << \
+                                    self._dm["tracks"].energy_resolution(
+                                        FunctionCall([self._E[i]], "log10"),
+                                        FunctionCall([self._Edet[i]], "log10"),
+                                        self._omega_det[i],
+                                    )
+
+                            else:
+
+                                self._eres_tracks << \
+                                    self._dm["tracks"].energy_resolution(
+                                        self._E[i], self._Edet[i]
+                                    )
 
                             # Sum over sources => evaluate and store components
                             with ForLoopContext(1, n_comps_max, "k") as k:
+
+                                StringExpression(
+                                    [
+                                        self._lp[i][k],
+                                        " += ",
+                                        self._eres_tracks,
+                                    ]
+                                )
+
+                                StringExpression(
+                                    [
+                                        self._lp[i][k],
+                                        " += ",
+                                        self._aeff_tracks,
+                                    ]
+                                )
 
                                 # Point source components
                                 if self.sources.point_source:
@@ -1583,44 +1640,6 @@ class StanFitInterface(StanInterface):
                                             ]
                                         )
 
-                                # Detection effects
-                                if self.detector_model_type == R2021DetectorModel:
-
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += ",
-                                            self._dm["tracks"].energy_resolution(
-                                                FunctionCall([self._E[i]], "log10"),
-                                                FunctionCall([self._Edet[i]], "log10"),
-                                                self._omega_det[i],
-                                            ),
-                                        ]
-                                    )
-
-                                else:
-
-                                    StringExpression(
-                                        [
-                                            self._lp[i][k],
-                                            " += ",
-                                            self._dm["tracks"].energy_resolution(
-                                                self._E[i], self._Edet[i]
-                                            ),
-                                        ]
-                                    )
-
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += log(",
-                                        self._dm["tracks"].effective_area(
-                                            self._E[i], self._omega_det[i]
-                                        ),
-                                        ")",
-                                    ]
-                                )
-
                     # Cascades
                     # See comments for tracks for more details, approach is the same
                     if "cascades" in self._event_types:
@@ -1632,8 +1651,38 @@ class StanFitInterface(StanInterface):
                                 )
                             ]
                         ):
+                            # Detection effects
+                            # Detection probability
+                            self._aeff_cascades << FunctionCall(
+                                [
+                                    self._dm["cascades"].effective_area(
+                                            self._E[i], self._omega_det[i]
+                                        )
+                                ],
+                                "log"
+                            )
+                            # log(p(Edet|E))
+                            self._eres_cascades << self._dm["cascades"].energy_resolution(
+                                self._E[i], self._Edet[i]
+                            )
 
                             with ForLoopContext(1, n_comps_max, "k") as k:
+
+                                StringExpression(
+                                    [
+                                        self._lp[i][k],
+                                        " += ",
+                                        self._aeff_cascades,
+                                    ]
+                                )
+
+                                StringExpression(
+                                    [
+                                        self._lp[i][k],
+                                        " += ",
+                                        self._eres_cascades,
+                                    ]
+                                )
 
                                 # Point source components
                                 if self.sources.point_source:
@@ -1729,30 +1778,6 @@ class StanFitInterface(StanInterface):
 
                                         # E = Esrc
                                         self._Esrc[i] << self._E[i]
-
-                                # Detection effects
-                                # log_prob += log(p(Edet | E))
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += ",
-                                        self._dm["cascades"].energy_resolution(
-                                            self._E[i], self._Edet[i]
-                                        ),
-                                    ]
-                                )
-
-                                # log_prob += log(p(Edet > Edet_min | E))
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += log(",
-                                        self._dm["cascades"].effective_area(
-                                            self._E[i], self._omega_det[i]
-                                        ),
-                                        ")",
-                                    ]
-                                )
 
     def _model(self):
         """
