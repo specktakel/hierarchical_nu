@@ -250,10 +250,10 @@ class StanFitInterface(StanInterface):
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
 
-                    end << end + length
-                    kappa = ForwardVariableDef("kappa", "vector[N]")
-                    kappa << StringExpression(["to_vector(real_data[start:end])"])
-                    start << start + length
+                    #end << end + length
+                    #kappa = ForwardVariableDef("kappa", "vector[N]")
+                    #kappa << StringExpression(["to_vector(real_data[start:end])"])
+                    #start << start + length
 
                     omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
                     # Loop over events to unpack reconstructed direction
@@ -283,6 +283,14 @@ class StanFitInterface(StanInterface):
                         z = ForwardVariableDef("z", "vector[Ns]")
                         z << StringExpression(["to_vector(real_data[start:end])"])
                         start << start + Ns
+
+
+                    if self.sources.point_source:
+                        spatial_loglike = ForwardArrayDef("spatial_loglike", "real", ["[Ns, N]"])
+                        with ForLoopContext(1, Ns, "k") as k:
+                            end << end + length
+                            spatial_loglike[k] << StringExpression(["real_data[start:end]"])
+                            start << start + length
 
                     Esrc_min = ForwardVariableDef("Esrc_min", "real")
                     Esrc_max = ForwardVariableDef("Esrc_max", "real")
@@ -425,7 +433,7 @@ class StanFitInterface(StanInterface):
                                                 #")"
                                             ]
                                         )
-
+                                            """
                                             # log_prob += log(p(omega_det|varpi, kappa))
                                             StringExpression(
                                                 [
@@ -437,6 +445,14 @@ class StanFitInterface(StanInterface):
                                                     ", ",
                                                     kappa[i],
                                                     ")",
+                                                ]
+                                            )
+                                            """
+                                            StringExpression(
+                                                [
+                                                    lp[i][k],
+                                                    " += ",
+                                                    spatial_loglike[k, i],
                                                 ]
                                             )
 
@@ -573,7 +589,7 @@ class StanFitInterface(StanInterface):
                                             Esrc[i] << StringExpression(
                                                 [Esrc[i], " * (", 1 + z[k], ")"]
                                             )
-
+                                            """
                                             # log_prob += log(p(omega_det | varpi, kappa))
                                             StringExpression(
                                                 [
@@ -585,6 +601,14 @@ class StanFitInterface(StanInterface):
                                                     ", ",
                                                     kappa[i],
                                                     ")",
+                                                ]
+                                            )
+                                            """
+                                            StringExpression(
+                                                [
+                                                    lp[i][k],
+                                                    " += ",
+                                                    spatial_loglike[k, i],
                                                 ]
                                             )
 
@@ -769,6 +793,26 @@ class StanFitInterface(StanInterface):
 
         with TransformedDataContext():
 
+            if self.sources.point_source:
+                #Vector to hold pre-calculated spatial loglikes
+                #This needs to be compatible with multiple point sources!
+                self._spatial_loglike = ForwardArrayDef("spatial_loglike", "real", ["[Ns, N]"])
+                with ForLoopContext(1, self._N, "i") as i:
+                    with ForLoopContext(1, self._Ns, "k") as k:
+                        StringExpression(
+                            [
+                                "spatial_loglike[k, i]",
+                                " = vMF_lpdf(",
+                                self._omega_det[i],
+                                " | ",
+                                self._varpi[k],
+                                ", ",
+                                self._kappa[i],
+                                ")",
+                            ]
+                        )
+
+
             if "tracks" in self._event_types:
 
                 self._track_type = ForwardVariableDef("track_type", "int")
@@ -820,15 +864,16 @@ class StanFitInterface(StanInterface):
                 self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
                 self._N_mod_J << self._N % self._J
                 # Find size for real_data array
-                sd_events_J = 5    # reco energy, kappa, reco dir (unit vector)
+                sd_events_J = 4    # reco energy, reco dir (unit vector)
                 sd_varpi_Ns = 3    # coords of events in the sky (unit vector)
                 sd_if_atmo_z = 1   # redshift of diffuse component
                 sd_z_Ns = 1        # redshift of PS
                 sd_other = 6       # Esrc_min, Esrc_max, Emin, Emax
+                #Need Ns * N for spatial loglike, added extra in sd_string
                 if self.sources.atmospheric and "tracks" in self._event_types:
                     sd_other += 1    # no atmo in cascades
                 sd_string = (
-                    f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other}"
+                    f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other} + J*Ns"
                 )
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_atmo_z}"
@@ -871,13 +916,13 @@ class StanFitInterface(StanInterface):
                         [self._Edet[start:end]], "to_array_1d"
                     )
                     insert_start << insert_start + insert_len
-
+                    """
                     insert_end << insert_end + insert_len
                     self.real_data[i, insert_start:insert_end] << FunctionCall(
                         [self._kappa[start:end]], "to_array_1d"
                     )
                     insert_start << insert_start + insert_len
-
+                    """
                     with ForLoopContext(start, end, "f") as f:
                         insert_end << insert_end + 3
                         self.real_data[i, insert_start:insert_end] << FunctionCall(
@@ -905,6 +950,16 @@ class StanFitInterface(StanInterface):
                             [self._z], "to_array_1d"
                         )
                         insert_start << insert_start + self._Ns
+
+                    if self.sources.point_source:
+                        with ForLoopContext(1, self._Ns, "k") as k:
+                            # Loop over sources
+                            insert_end << insert_end + insert_len
+                            #The double-index is needed because of a bug with the code generator
+                            # if I use [k, start:end], a single line of "k;" is printed after entering
+                            # the for loop
+                            self.real_data[i, insert_start:insert_end] << self._spatial_loglike[k][start:end]
+                            insert_start << insert_start + insert_len
 
                     insert_end << insert_end + 1
                     self.real_data[i, insert_start] << self._Esrc_min
@@ -1565,6 +1620,7 @@ class StanFitInterface(StanInterface):
                                         )
 
                                         # log_prob += log(p(omega_det|varpi, kappa))
+                                        """
                                         StringExpression(
                                             [
                                                 self._lp[i][k],
@@ -1575,6 +1631,14 @@ class StanFitInterface(StanInterface):
                                                 ", ",
                                                 self._kappa[i],
                                                 ")",
+                                            ]
+                                        )
+                                        """
+                                        StringExpression(
+                                            [
+                                                self._lp[i][k],
+                                                " += ",
+                                                self._spatial_loglike[k, i],
                                             ]
                                         )
 
@@ -1716,6 +1780,7 @@ class StanFitInterface(StanInterface):
                                         )
 
                                         # log_prob += log(p(omega_det | varpi, kappa))
+                                        """
                                         StringExpression(
                                             [
                                                 self._lp[i][k],
@@ -1726,6 +1791,14 @@ class StanFitInterface(StanInterface):
                                                 ", ",
                                                 self._kappa[i],
                                                 ")",
+                                            ]
+                                        )
+                                        """
+                                        StringExpression(
+                                            [
+                                                self._lp[i][k],
+                                                " += ",
+                                                self._spatial_loglike[k, i],
                                             ]
                                         )
 
