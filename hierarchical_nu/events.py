@@ -33,7 +33,9 @@ class Events:
         coords: SkyCoord,
         types,
         ang_errs: u.deg = None,
-        periods: List[str]=None
+        true_energies: u.GeV = None,
+        cosz = None,
+        periods: List[str] = None
     ):
         """
         Events class for the storage of event observables
@@ -44,6 +46,10 @@ class Events:
         self.N = len(energies)
 
         self._energies = energies
+
+        self._true_energies = true_energies
+
+        self._cosz = cosz
 
         coords.representation_type = "spherical"
         self._coords = coords
@@ -66,6 +72,8 @@ class Events:
     def remove(self, i):
 
         self._energies = np.delete(self._energies, i)
+        self._true_energies = np.delete(self._true_energies, i)
+        self._cosz = np.delete(self._cosz, i)
         self._coords = np.delete(self._coords, i)
         self._unit_vectors = np.delete(self._unit_vectors, i, axis=0)
         self._types = np.delete(self._types, i)
@@ -76,6 +84,11 @@ class Events:
     def energies(self):
 
         return self._energies
+    
+    @property
+    def true_energies(self):
+        
+        return self._true_energies
 
     @property
     def coords(self):
@@ -86,6 +99,11 @@ class Events:
     def unit_vectors(self):
 
         return self._unit_vectors
+    
+    @property
+    def cosz(self):
+        
+        return self._cosz
 
     @property
     def types(self):
@@ -113,21 +131,25 @@ class Events:
             uvs = events_folder["unit_vectors"][()]
             types = events_folder["event_types"][()]
             ang_errs = events_folder["ang_errs"][()] * u.deg
+            true_energies = events_folder["true_energies"][()] * u.GeV
+            cosz = events_folder["cosz"][()]
 
         coords = SkyCoord(
             uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
         )
 
-        return cls(energies, coords, types, ang_errs)
+        return cls(energies, coords, types, ang_errs, true_energies, cosz)
 
     def to_file(self, filename, append=False):
 
-        self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs"]
+        self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "true_energies", "cosz"]
         self._file_values = [
             self.energies.to(u.GeV).value,
             self.unit_vectors,
             self.types,
             self.ang_errs.to(u.deg).value,
+            self.true_energies.to(u.GeV).value,
+            self.cosz
         ]
 
         if append:

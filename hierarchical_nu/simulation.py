@@ -137,6 +137,15 @@ class Simulation:
             stanc_options=stanc_options,
         )
 
+    def setup_stan_sim(self, exe_file):
+        """
+        Reuse previously compiled model
+        """
+
+        self._main_sim = CmdStanModel(
+            exe_file=exe_file
+        )
+
     def run(self, seed=None, verbose=False, **kwargs):
 
         self._sim_inputs = self._get_sim_inputs(seed)
@@ -185,8 +194,10 @@ class Simulation:
         kappa = self._sim_output.stan_variable("kappa")[0]
         # Equivalent 1 sigma errors in deg
         ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
+        true_energies = self._sim_output.stan_variable("E")[0] * u.GeV
+        cosz = self._sim_output.stan_variable("cosz")[0]
 
-        return energies, coords, event_types, ang_errs
+        return energies, coords, event_types, ang_errs, true_energies, cosz
 
     def save(self, filename):
 
@@ -216,7 +227,7 @@ class Simulation:
                 data=self._sources.total_flux_int().to(flux_unit).value,
             )
 
-        self.events.to_file(filename, append=True)
+        self.events.to_file(filename, append=False)
 
     def show_spectrum(self):
 
