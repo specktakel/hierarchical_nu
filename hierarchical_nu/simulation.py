@@ -227,7 +227,7 @@ class Simulation:
                 data=self._sources.total_flux_int().to(flux_unit).value,
             )
 
-        self.events.to_file(filename, append=False)
+        self.events.to_file(filename, append=True)
 
     def show_spectrum(self):
 
