@@ -500,7 +500,7 @@ class StanFitInterface(StanInterface):
                                         ):
 
                                             # E = Esrc
-                                            E[i] << Esrc[i]
+                                            Esrc[i] << E[i]
 
                                             # log_prob += log(p(Esrc, omega | atmospheric source))
                                             StringExpression(
