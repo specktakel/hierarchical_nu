@@ -173,6 +173,13 @@ class StanFit:
             cpp_options={"STAN_THREADS": True},
         )
 
+    def setup_stan_fit(self, filename):
+        """
+        Create stan model from already compiled file
+        """
+        
+        self._fit = CmdStanModel(exe_file=filename)
+
     def run(
         self,
         iterations: int = 1000,
