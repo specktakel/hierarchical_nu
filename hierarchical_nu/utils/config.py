@@ -107,7 +107,6 @@ if _local_config_file.is_file():
     )
 
 elif _config_file.is_file():
-    print(_config_file.absolute())
     print("global config found")
     _local_config = OmegaConf.load(_config_file)
 
