@@ -210,13 +210,13 @@ class StanSimInterface(StanInterface):
                 self._rs_bbpl_gamma2_scale_t = ForwardVariableDef(
                     "rs_bbpl_gamma2_scale_t", "real"
                 )
-                self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
+                # self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
                 self._rs_cvals_t = ForwardArrayDef(
-                    "rs_cvals_t", "vector[rs_N_cosz_bins_t]", [f"[{self.sources.N}]"]
+                    "rs_cvals_t", "real", [f"[{self.sources.N}]"]
                 )
-                self._rs_cosz_bin_edges_t = ForwardArrayDef(
-                    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
-                )
+                #self._rs_cosz_bin_edges_t = ForwardArrayDef(
+                #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
+                #)
 
                 if self.sources.diffuse or self.sources.point_source:
                     self._integral_grid_t = ForwardArrayDef(
@@ -234,13 +234,13 @@ class StanSimInterface(StanInterface):
                 self._rs_bbpl_gamma2_scale_c = ForwardVariableDef(
                     "rs_bbpl_gamma2_scale_c", "real"
                 )
-                self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
+                #self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
                 self._rs_cvals_c = ForwardArrayDef(
-                    "rs_cvals_c", "vector[rs_N_cosz_bins_c]", [f"[{self.sources.N}]"]
+                    "rs_cvals_c", "real", [f"[{self.sources.N}]"]
                 )
-                self._rs_cosz_bin_edges_c = ForwardArrayDef(
-                    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
-                )
+                #self._rs_cosz_bin_edges_c = ForwardArrayDef(
+                #    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
+                #)
 
                 if self.sources.diffuse or self.sources.point_source:
                     self._integral_grid_c = ForwardArrayDef(
@@ -1546,10 +1546,10 @@ class StanSimInterface(StanInterface):
                         self._f_value << self._src_factor * self._aeff_factor
 
                         # Find the precomputed c_value for this source and cosz
-                        self._idx_cosz << FunctionCall(
-                            [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
-                        )
-                        self._c_value << self._rs_cvals_t[self._lam[i]][self._idx_cosz]
+                        #self._idx_cosz << FunctionCall(
+                        #    [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
+                        #)
+                        self._c_value << self._rs_cvals_t[self._lam[i]]
 
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
@@ -2066,10 +2066,10 @@ class StanSimInterface(StanInterface):
 
                         self._f_value = self._src_factor * self._aeff_factor
 
-                        self._idx_cosz << FunctionCall(
-                            [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
-                        )
-                        self._c_value << self._rs_cvals_c[self._lam[i]][self._idx_cosz]
+                        #self._idx_cosz << FunctionCall(
+                        #    [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
+                        #)
+                        self._c_value << self._rs_cvals_c[self._lam[i]]
 
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
