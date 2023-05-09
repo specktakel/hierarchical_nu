@@ -35,7 +35,8 @@ class Events:
         ang_errs: u.deg = None,
         true_energies: u.GeV = None,
         cosz = None,
-        periods: List[str] = None
+        lamb = None,
+        periods: List[str] = None,
     ):
         """
         Events class for the storage of event observables
@@ -50,6 +51,8 @@ class Events:
         self._true_energies = true_energies
 
         self._cosz = cosz
+
+        self._lambdas = lamb
 
         coords.representation_type = "spherical"
         self._coords = coords
@@ -120,6 +123,11 @@ class Events:
 
         return 1.38 / self._ang_errs.to(u.rad).value ** 2
 
+    @property
+    def lambdas(self):
+        
+        return self._lambdas
+
     @classmethod
     def from_file(cls, filename):
 
@@ -133,23 +141,25 @@ class Events:
             ang_errs = events_folder["ang_errs"][()] * u.deg
             true_energies = events_folder["true_energies"][()] * u.GeV
             cosz = events_folder["cosz"][()]
+            lamb = events_folder["Lambdas"][()]
 
         coords = SkyCoord(
             uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
         )
 
-        return cls(energies, coords, types, ang_errs, true_energies, cosz)
+        return cls(energies, coords, types, ang_errs, true_energies, cosz, lamb)
 
     def to_file(self, filename, append=False):
 
-        self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "true_energies", "cosz"]
+        self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "true_energies", "cosz", "Lambdas"]
         self._file_values = [
             self.energies.to(u.GeV).value,
             self.unit_vectors,
             self.types,
             self.ang_errs.to(u.deg).value,
             self.true_energies.to(u.GeV).value,
-            self.cosz
+            self.cosz,
+            self.lambdas
         ]
 
         if append:
@@ -179,7 +189,7 @@ class Events:
         :param kwargs: kwargs passed to make an event selection, see icecube_tools's documentation for details
         :return: :class:`hierarchical_nu.events.Events`
         """
-
+        raise NotImplementedError("Things changed, someone needs to fix this")
         from icecube_tools.utils.data import RealEvents
 
         # Borrow from icecube_tools

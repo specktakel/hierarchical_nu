@@ -196,8 +196,9 @@ class Simulation:
         ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
         true_energies = self._sim_output.stan_variable("E")[0] * u.GeV
         cosz = self._sim_output.stan_variable("cosz")[0]
+        lamb = self._sim_output.stan_variable("Lambda")[0] - 1
 
-        return energies, coords, event_types, ang_errs, true_energies, cosz
+        return energies, coords, event_types, ang_errs, true_energies, cosz, lamb
 
     def save(self, filename):
 
