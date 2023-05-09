@@ -341,14 +341,10 @@ class ExposureIntegral:
         g, envelope function: bbpl envelope used for sampling
         """
 
-        #Emin_src = self._min_src_energy.to_value(u.GeV)
-        #Emax_src = self._max_src_energy.to_value(u.GeV)
-
         cosz_bin_cens = (
             self.effective_area.cosz_bin_edges[:-1]
             + np.diff(self.effective_area.cosz_bin_edges) / 2
         )
-        print(cosz_bin_cens)
 
         Eth = self.effective_area.rs_bbpl_params["threshold_energy"]
         gamma1 = self.effective_area.rs_bbpl_params["gamma1"]
@@ -365,7 +361,6 @@ class ExposureIntegral:
                 Emin = source.flux_model.spectral_shape._lower_energy.to_value(u.GeV)
                 Emax = source.flux_model.spectral_shape._upper_energy.to_value(u.GeV)
             except AttributeError:
-            
                 Emin = source.flux_model._lower_energy.to_value(u.GeV)
                 Emax = source.flux_model._upper_energy.to_value(u.GeV)
 
@@ -392,7 +387,14 @@ class ExposureIntegral:
                 )
                 
             else:
-
+                # For diffuse sources, we need to find the largest c value
+                # that is then used at all declinations.
+                # In the case of the atmospheric background,
+                # the distribution is bivariate. We are not allowed to 
+                # pic c-values for each declination separetely
+                # because then we assume independent distributions
+                # at each declination, all "relative information"
+                # is then lost.
                 f_values_all = []
 
                 for cosz in cosz_bin_cens:
@@ -466,8 +468,10 @@ class ExposureIntegral:
                     gamma2,
                 )
             if isinstance(source, PointSource):
+                # Pick the largest
                 c_values_src = max(f_values / g_values)
             else:
+                # Pick the larget of the largest, encompassing now all declinations.
                 c_values_src = max([max(f_values / g_values) for f_values in f_values_all])
             c_values.append(c_values_src)
 
