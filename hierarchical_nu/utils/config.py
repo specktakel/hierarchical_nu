@@ -13,6 +13,7 @@ _local_config_path = Path(".")
 _config_name = Path("hnu_config.yml")
 
 _config_file = _config_path / _config_name
+
 # Overwrite global config with local config
 _local_config_file = _local_config_path / _config_name
 
@@ -96,17 +97,7 @@ class HierarchicalNuConfig:
 # Load default config
 hnu_config: HierarchicalNuConfig = OmegaConf.structured(HierarchicalNuConfig)
 
-
-if not _config_file.is_file() or not _local_config_file.is_file():
-    # Prints should be converted to logger at some point
-    print("No config found, creating new one")
-    _config_path.mkdir(parents=True, exist_ok=True)
-
-    with _config_file.open("w") as f:
-
-        OmegaConf.save(config=hnu_config, f=f.name)
-
-elif _local_config_file.is_file():
+if _local_config_file.is_file():
     print("local config found")
     _local_config = OmegaConf.load(_local_config_file)
 
@@ -116,6 +107,7 @@ elif _local_config_file.is_file():
     )
 
 elif _config_file.is_file():
+    print(_config_file.absolute())
     print("global config found")
     _local_config = OmegaConf.load(_config_file)
 
@@ -123,3 +115,11 @@ elif _config_file.is_file():
         hnu_config,
         _local_config,
     )
+
+else:
+    # Prints should be converted to logger at some point
+    print("No config found, creating new global config from default")
+    _config_path.mkdir(parents=True, exist_ok=True)
+
+    with _config_file.open("w") as f:
+        OmegaConf.save(config=hnu_config, f=f.name)
