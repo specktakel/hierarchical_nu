@@ -1434,6 +1434,7 @@ class StanFitInterface(StanInterface):
                 self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
                 self._Nex << self._Nex_t + self._Nex_c
 
+                """
                 # Relative probability of event types
                 # How does this relate to the likelihood?
                 # see l. ~1840 something
@@ -1441,6 +1442,7 @@ class StanFitInterface(StanInterface):
                 self._logp_c << StringExpression(["log(", self._logp_c, ")"])
                 self._logp_t << self._Nex_t / self._Nex
                 self._logp_t << StringExpression(["log(", self._logp_t, ")"])
+                """
 
             elif "tracks" in self._event_types:
 

@@ -335,9 +335,10 @@ class PointSource(Source):
     @property
     def dec(self):
         return self._dec
-
+    
     @dec.setter
-    def dec(self, value):
+    @u.quantity_input
+    def dec(self, value: u.rad):
         self._dec = value
 
     @property
@@ -345,9 +346,14 @@ class PointSource(Source):
         return self._ra
 
     @ra.setter
-    def ra(self, value):
+    @u.quantity_input
+    def ra(self, value: u.rad):
         self._ra = value
 
+    @property
+    def cosz(self):
+        return np.cos(self._dec.value + np.pi / 2)
+    
     @property
     def redshift(self):
         return self._redshift
