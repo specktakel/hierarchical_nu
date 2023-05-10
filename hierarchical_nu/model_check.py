@@ -378,19 +378,19 @@ class ModelCheck:
                         for val in self.sim_Lambdas.values():
                             # Overplot the actual number of events for each component
                             for line in val:
-                                ax[v].axvline(line[0], ls='-', c='red')
+                                ax[v].axvline(line[0], ls='-', c='red', lw=0.3)
 
                     elif var_name == "Nex_diff":
                         for val in self.sim_Lambdas.values():
                             # Overplot the actual number of events for each component
                             for line in val:
-                                ax[v].axvline(line[1], ls='-', c='red')
+                                ax[v].axvline(line[1], ls='-', c='red', lw=0.3)
 
                     elif var_name == "Nex_atmo":
                         for val in self.sim_Lambdas.values():
                             # Overplot the actual number of events for each component
                             for line in val:
-                                ax[v].axvline(line[2], ls='-', c='red')
+                                ax[v].axvline(line[2], ls='-', c='red', lw=0.3)
 
                     max_value = n.max() if \
                         n.max() > max_value else max_value
