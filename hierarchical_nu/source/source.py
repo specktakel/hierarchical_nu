@@ -422,6 +422,9 @@ class Sources:
         # Initialise the source list
         self._sources = []
 
+    def __len__(self):
+        return self.N
+
     @property
     def sources(self):
         return self._sources
