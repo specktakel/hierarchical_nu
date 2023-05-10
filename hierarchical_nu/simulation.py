@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
 import logging
 import collections
-
+from cycler import cycler
 import ligo.skymap.plot
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
@@ -230,8 +230,10 @@ class Simulation:
 
         self.events.to_file(filename, append=True)
 
-    def show_spectrum(self):
+    def show_spectrum(self, *components: str):
 
+        #hatch_cycle = cycler(hatch=['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'])
+        hatch_cycle = ['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*']
         Esrc = self._sim_output.stan_variable("Esrc")[0]
         E = self._sim_output.stan_variable("E")[0]
         Edet = self.events.energies.value
@@ -243,8 +245,6 @@ class Simulation:
         E_plot = [E[np.nonzero(self.events.lambdas==float(i))] for i in range(N)]
         Edet_plot = [Edet[np.nonzero(self.events.lambdas==float(i))] for i in range(N)]
 
-        alpha = np.linspace(0.2, 1., num=N, endpoint=True)
-
         bins = np.logspace(
             np.log10(Emin_det),
             np.log10(Parameter.get_parameter("Emax").value.to(u.GeV).value),
@@ -252,14 +252,38 @@ class Simulation:
             base=10,
         )
 
-        fig, ax = plt.subplots()
-        ax.hist(Esrc_plot, bins=bins, label="E at source", stacked=True, color=["C0"]*N, alpha=0.5)
-        ax.hist(E_plot, bins=bins, label="E at detector", stacked=True, color=["C1"]*N ,alpha=0.5)
-        ax.hist(Edet_plot, bins=bins, label="E reconstructed", stacked=True, color=["C2"]*N, alpha=0.5)
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax.set_xlabel("E")
-        ax.legend()
+        fig, ax = plt.subplots(3, 1)
+        for c, (source, hatch, _Esrc, _E, _Edet) in enumerate(zip(self._sources, hatch_cycle, Esrc_plot, E_plot, Edet_plot)):
+            
+            if c == 0:
+                label = "E at source"
+                _bsrc = np.zeros(bins[:-1].shape)
+            else:
+                label = None
+                _bsrc += _nEsrc
+            _nEsrc, _, _ = ax[0].hist(_Esrc, bins=bins, label=label, bottom=_bsrc, alpha=0.5, hatch=hatch)
+            
+            if c == 0:
+                label = "E at detector"
+                _b = np.zeros(bins[:-1].shape)
+            else:
+                label = None
+                _b += _nE
+            _nE, _, _ = ax[1].hist(_E, bins=bins, label=label, bottom=_b, alpha=0.5, hatch=hatch)
+            
+            if c == 0:
+                label = "E reconstructed"
+                _bdet = np.zeros(bins[:-1].shape)
+            else:
+                label = None
+                _bdet += _nEdet
+            _nEdet, _, _ = ax[2].hist(_Edet, bins=bins, label=label, bottom=_bdet, alpha=0.5, hatch=hatch)
+
+        for a in ax:
+            a.set_xscale("log")
+            a.set_yscale("log")
+            a.set_xlabel("E")
+            a.legend()
 
         return fig, ax
 
