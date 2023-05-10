@@ -349,6 +349,9 @@ class StanFit:
             source_labels.append("atmo")
 
         wrong = []
+        assumed = []
+        correct = []
+
         for i in range(len(prob_each_src)):
 
             classified = np.where(prob_each_src[i] == np.max(prob_each_src[i]))[0][
@@ -379,7 +382,8 @@ class StanFit:
                     print("P(atmo) = %.6f" % prob_each_src[i][Ns])
 
                 print("The correct component is", source_labels[int(event_labels[i])])
-                print()
+                correct.append(source_labels[int(event_labels[i])])
+                assumed.append(event_labels[i])
 
         if not wrong:
             print("All events are correctly classified")
@@ -388,6 +392,8 @@ class StanFit:
                 "A total of %i events out of %i are misclassified"
                 % (len(wrong), len(event_labels))
             )
+
+        return wrong, assumed, correct
 
     def _get_event_classifications(self):
 
