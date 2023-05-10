@@ -237,6 +237,14 @@ class Simulation:
         Edet = self.events.energies.value
         Emin_det = self._get_min_det_energy().to(u.GeV).value
 
+        N = len(self._sources)
+
+        Esrc_plot = [Esrc[np.nonzero(self.events.lambdas==float(i))] for i in range(N)]
+        E_plot = [E[np.nonzero(self.events.lambdas==float(i))] for i in range(N)]
+        Edet_plot = [Edet[np.nonzero(self.events.lambdas==float(i))] for i in range(N)]
+
+        alpha = np.linspace(0.2, 1., num=N, endpoint=True)
+
         bins = np.logspace(
             np.log10(Emin_det),
             np.log10(Parameter.get_parameter("Emax").value.to(u.GeV).value),
@@ -245,9 +253,9 @@ class Simulation:
         )
 
         fig, ax = plt.subplots()
-        ax.hist(Esrc, bins=bins, label="E at source", alpha=0.5)
-        ax.hist(E, bins=bins, label="E at detector", alpha=0.5)
-        ax.hist(Edet, bins=bins, label="E reconstructed", alpha=0.5)
+        ax.hist(Esrc_plot, bins=bins, label="E at source", stacked=True, color=["C0"]*N, alpha=0.5)
+        ax.hist(E_plot, bins=bins, label="E at detector", stacked=True, color=["C1"]*N ,alpha=0.5)
+        ax.hist(Edet_plot, bins=bins, label="E reconstructed", stacked=True, color=["C2"]*N, alpha=0.5)
         ax.set_xscale("log")
         ax.set_yscale("log")
         ax.set_xlabel("E")
