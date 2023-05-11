@@ -133,9 +133,6 @@ class StanSimInterface(StanInterface):
 
         with DataContext():
 
-            self._N_poisson_t = ForwardVariableDef("N_poisson_t", "int")
-            self._N_poisson_c = ForwardVariableDef("N_poisson_c", "int")
-
             # Useful strings depending on the total number of sources
             # Ns is the number of point sources
             self._Ns = ForwardVariableDef("Ns", "int")
@@ -586,9 +583,8 @@ class StanSimInterface(StanInterface):
                 self._w_exposure_t << FunctionCall(
                     [self._F, self._eps_t], "get_exposure_weights"
                 )
-                # WORKAROUND, weird bug in Stan poisson_rng
-                # self._N_t << StringExpression(["poisson_rng(", self._Nex_t, ")"])
-                self._N_t << self._N_poisson_t
+                
+                self._N_t << StringExpression(["poisson_rng(", self._Nex_t, ")"])
 
             if "cascades" in self._event_types:
 
@@ -596,9 +592,8 @@ class StanSimInterface(StanInterface):
                 self._w_exposure_c << FunctionCall(
                     [self._F, self._eps_c], "get_exposure_weights"
                 )
-                # WORKAROUND, weird bug in Stan poisson_rng
-                # self._N_c << StringExpression(["poisson_rng(", self._Nex_c, ")"])
-                self._N_c << self._N_poisson_c
+                
+                self._N_c << StringExpression(["poisson_rng(", self._Nex_c, ")"])
 
             if "tracks" in self._event_types and "cascades" in self._event_types:
 
