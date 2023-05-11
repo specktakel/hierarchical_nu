@@ -786,7 +786,7 @@ class StanFitInterface(StanInterface):
 
                 self._atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
 
-            if self._sources.point_sources:
+            if self._sources.point_source:
                 
                 self._stan_prior_src_index_mu = ForwardVariableDef("src_index_mu", "real")
                 self._stan_prior_src_index_sigma = ForwardVariableDef("src_index_sigma", "real")
@@ -800,11 +800,16 @@ class StanFitInterface(StanInterface):
             
             if self._sources.diffuse:
                 
-                pass
-            
+                self._stan_prior_f_diff_mu = ForwardVariableDef("f_diff_mu", "real")
+                self._stan_prior_f_diff_sigma = ForwardVariableDef("f_diff_sigma", "real")
+
+                self._stan_prior_diff_index_mu = ForwardVariableDef("diff_index_mu", "real")
+                self._stan_prior_diff_index_sigma = ForwardVariableDef("diff_index_sigma", "real")
+
             if self._sources.atmospheric:
                 
-                pass
+                self._stan_prior_f_atmo_mu = ForwardVariableDef("f_atmo_mu", "real")
+                self._stan_prior_f_atmo_sigma = ForwardVariableDef("f_atmo_sigma", "real")
 
     def _transformed_data(self):
         """
@@ -1966,8 +1971,8 @@ class StanFitInterface(StanInterface):
                         " ~ ",
                         FunctionCall(
                             [
-                                self._priors.diffuse_flux.mu,
-                                self._priors.diffuse_flux.sigma,
+                                self._stan_prior_f_diff_mu,
+                                self._stan_prior_f_diff_sigma,
                             ],
                             self._priors.diffuse_flux.name,
                         ),
@@ -1979,7 +1984,7 @@ class StanFitInterface(StanInterface):
                         self._diff_index,
                         " ~ ",
                         FunctionCall(
-                            [self._priors.diff_index.mu, self._priors.diff_index.sigma],
+                            [self._stan_prior_diff_index_mu, self._stan_prior_diff_index_sigma],
                             self._priors.diff_index.name,
                         ),
                     ]
@@ -1993,8 +1998,8 @@ class StanFitInterface(StanInterface):
                         " ~ ",
                         FunctionCall(
                             [
-                                self._priors.atmospheric_flux.mu,
-                                self._priors.atmospheric_flux.sigma,
+                                self._stan_prior_f_atmo_mu,
+                                self._stan_prior_f_atmo_sigma,
                             ],
                             self._priors.atmospheric_flux.name,
                         ),

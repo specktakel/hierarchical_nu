@@ -501,6 +501,12 @@ class StanFit:
                 event_type
             ].par_grids["diff_index"]
 
+            #Priors for diffuse model
+            fit_inputs["f_diff_mu"] = self._priors.diffuse_flux.mu
+            fit_inputs["f_diff_sigma"] = self._priors.diffuse_flux.sigma
+            fit_inputs["diff_index_mu"] = self._priors.diff_index.mu
+            fit_inputs["diff_index_sigma"] = self._priors.diff_index.sigma
+
         if "tracks" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_t"] = [
@@ -523,6 +529,10 @@ class StanFit:
                 .to(u.m**2)
                 .value
             )
+
+            #Priors for atmo model
+            fit_inputs["f_atmo_mu"] = self._priors.atmospheric_flux.mu
+            fit_inputs["f_atmo_sigma"] = self._priors.atmospheric_flux.sigma
 
         # To work with cmdstanpy serialization
         fit_inputs = {
