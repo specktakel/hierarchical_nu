@@ -230,12 +230,13 @@ class Simulation:
 
         self.events.to_file(filename, append=True)
 
-    def show_spectrum(self, *components: str):
+    def show_spectrum(self, *components: str, scale: str="linear"):
 
         #hatch_cycle = cycler(hatch=['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'])
         hatch_cycle = ['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*']
         Esrc = self._sim_output.stan_variable("Esrc")[0]
         E = self._sim_output.stan_variable("E")[0]
+        assert np.all(Esrc >= E)
         Edet = self.events.energies.value
         Emin_det = self._get_min_det_energy().to(u.GeV).value
 
@@ -281,7 +282,7 @@ class Simulation:
 
         for a in ax:
             a.set_xscale("log")
-            a.set_yscale("log")
+            a.set_yscale(scale)
             a.set_xlabel("E")
             a.legend()
 
