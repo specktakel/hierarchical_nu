@@ -53,6 +53,7 @@ class StanFit:
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
         self._nshards = nshards
+        self._priors = priors
 
         self._sources.organise()
 
@@ -481,6 +482,18 @@ class StanFit:
             fit_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
             ].par_grids[key]
+
+            #Inputs for priors of point sources
+            fit_inputs["src_index_mu"] = self._priors.src_index.mu
+            fit_inputs["src_index_sigma"] = self._priors.src_index.sigma
+            if self._priors.luminosity.name in ["normal", "lognormal"]:
+                fit_inputs["lumi_mu"] = self._priors.luminosity.mu
+                fit_inputs["lumi_sigma"] = self._priors.luminosity.sigma
+            elif self._priors.luminosity.name == "pareto":
+                fit_inputs["lumi_xmin"] = self._priors.luminosity.xmin
+                fit_inputs["lumi_alpha"] = self._priors.luminosity.alpha
+            else:
+                raise ValueError("No other prior type for luminosity implemented")
 
         if self._sources.diffuse:
 

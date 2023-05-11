@@ -786,6 +786,26 @@ class StanFitInterface(StanInterface):
 
                 self._atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
 
+            if self._sources.point_sources:
+                
+                self._stan_prior_src_index_mu = ForwardVariableDef("src_index_mu", "real")
+                self._stan_prior_src_index_sigma = ForwardVariableDef("src_index_sigma", "real")
+                # check for luminosity, if they all have the same prior
+                if self._priors.luminosity.name in ["normal", "lognormal"]:
+                    self._stan_prior_lumi_mu = ForwardVariableDef("lumi_mu", "real")
+                    self._stan_prior_lumi_sigma = ForwardVariableDef("lumi_sigma", "real")
+                elif self._priors.luminosity.name == "pareto":
+                    self._stan_prior_lumi_xmin = ForwardVariableDef("lumi_xmin", "real")
+                    self._stan_prior_lumi_alpha = ForwardVariableDef("lumi_alpha", "real")
+            
+            if self._sources.diffuse:
+                
+                pass
+            
+            if self._sources.atmospheric:
+                
+                pass
+
     def _transformed_data(self):
         """
         To write the transformed data section of the Stan file.
@@ -1897,8 +1917,8 @@ class StanFitInterface(StanInterface):
                             " ~ ",
                             FunctionCall(
                                 [
-                                    self._priors.luminosity.mu,
-                                    self._priors.luminosity.sigma,
+                                    self._stan_prior_src_index_mu,
+                                    self._stan_prior_lumi_sigma,
                                 ],
                                 self._priors.luminosity.name,
                             ),
@@ -1913,8 +1933,8 @@ class StanFitInterface(StanInterface):
                             " ~ ",
                             FunctionCall(
                                 [
-                                    self._priors.luminosity.xmin,
-                                    self._priors.luminosity.alpha,
+                                    self._stan_prior_lumi_xmin,
+                                    self._stan_prior_lumi_alpha,
                                 ],
                                 self._priors.luminosity.name,
                             ),
@@ -1932,7 +1952,7 @@ class StanFitInterface(StanInterface):
                         self._src_index,
                         " ~ ",
                         FunctionCall(
-                            [self._priors.src_index.mu, self._priors.src_index.sigma],
+                            [self._stan_prior_src_index_mu, self._stan_prior_src_index_sigma],
                             self._priors.src_index.name,
                         ),
                     ]
