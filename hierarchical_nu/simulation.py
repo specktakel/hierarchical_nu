@@ -147,11 +147,6 @@ class Simulation:
 
         self._expected_Nnu = self._get_expected_Nnu(self._sim_inputs)
 
-        # WORKAROUD, weird bug in poisson sampling in Stan
-        np.random.seed(seed)
-        self._sim_inputs["N_poisson_t"] = np.random.poisson(sum(self._Nex_t))
-        self._sim_inputs["N_poisson_c"] = np.random.poisson(sum(self._Nex_c))
-
         if verbose:
             print(
                 "Running a simulation with expected Nnu = %.2f events"
