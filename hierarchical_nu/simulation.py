@@ -257,27 +257,28 @@ class Simulation:
         for c, (source, hatch, _Esrc, _E, _Edet) in enumerate(zip(self._sources, hatch_cycle, Esrc_plot, E_plot, Edet_plot)):
             
             if c == 0:
-                label = "E at source"
                 _bsrc = np.zeros(bins[:-1].shape)
+                label = source.name + " at source"
             else:
-                label = None
                 _bsrc += _nEsrc
+                label = source.name
+
             _nEsrc, _, _ = ax[0].hist(_Esrc, bins=bins, label=label, bottom=_bsrc, alpha=0.5, hatch=hatch)
             
             if c == 0:
-                label = "E at detector"
                 _b = np.zeros(bins[:-1].shape)
+                label = source.name + " at detector"
             else:
-                label = None
                 _b += _nE
+                label = source.name
             _nE, _, _ = ax[1].hist(_E, bins=bins, label=label, bottom=_b, alpha=0.5, hatch=hatch)
             
             if c == 0:
-                label = "E reconstructed"
                 _bdet = np.zeros(bins[:-1].shape)
+                label = source.name + ", detected"
             else:
-                label = None
                 _bdet += _nEdet
+                label = source.name
             _nEdet, _, _ = ax[2].hist(_Edet, bins=bins, label=label, bottom=_bdet, alpha=0.5, hatch=hatch)
 
         for a in ax:
