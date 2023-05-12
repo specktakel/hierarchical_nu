@@ -44,8 +44,8 @@ class ParameterConfig:
     Enorm: float = 1e5  # u.GeV
     Emin: float = 5e4  # u.GeV
     Emax: float = 1e8  # u.GeV
-    Esrc_min: float = 1e5  # u.GeV
-    Esrc_max: float = 1e8   # u.GeV
+    Esrc_min: float = 1.4e5  # u.GeV, value to fix current problems with energy ranges
+    Esrc_max: float = 1.4e8   # u.GeV
     diff_norm: float = 2e-13  # 1 / (u.GeV * u.m**2 * u.s)
     z: float = 0.4  # cosmological redshift, dimensionless
 

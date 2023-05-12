@@ -53,6 +53,7 @@ def make_point_source():
         1,
         Emin,
         Emax,
+        Enorm,
     )
 
     return source
@@ -110,7 +111,7 @@ def test_point_source_flux():
 
     flux_unit = 1 / (u.s * u.m ** 2)
 
-    assert F.to(flux_unit).value == pytest.approx(0.0043180246)
+    assert F.to(flux_unit).value == pytest.approx(0.00863604929452374) #pytest.approx(0.0043180246)
 
 
 def generate_source_test_code(output_directory):
