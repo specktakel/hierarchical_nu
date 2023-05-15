@@ -8,6 +8,7 @@ indices = np.linspace(1.8, 3.6, 10, endpoint=True)
 min_energy = 1e5
 max_energy = 1e8
 norm_energy = 1e5
+diff_norm = 1.0e-13 /u.GeV/u.m**2/u.s
 
 class TestNex():
 
@@ -57,8 +58,6 @@ class TestNex():
         from icecube_tools.neutrino_calculator import NeutrinoCalculator, PhiSolver
         
         aeff = EffectiveArea.from_dataset("20210126", "IC86_II")
-        irf = R2021IRF.from_period("IC86_II")
-        detector = IceCube(aeff, irf, irf, "IC86_II")
 
         point_flux_norm = 1e-19
         point_power_law = PowerLawFlux(point_flux_norm, norm_energy, 2.8, 
@@ -80,9 +79,6 @@ class TestNex():
 
         for idx in indices:
             ps_hnu._parameters["index"].value = idx
-            #ps_hnu._parameters["norm"].fixed = False
-            #ps_hnu._parameters["norm"].value = norm
-            #ps_hnu._parameters["norm"].fixed = True
             nex_hnu = sim._exposure_integral["tracks"].calculate_rate(ps_hnu).value
             nu_calc._sources[0].flux_model._index = idx
             nex_it = nu_calc(time=1, # years
@@ -105,15 +101,14 @@ class TestNex():
         diff_index = Parameter(2.1, "diff_index", fixed=False, par_range=(1.5, 4))
         L = Parameter(4.0e47 * (u.erg / u.s), "luminosity", fixed=True, 
                     par_range=(0, 1e60)*(u.erg/u.s))
-        diffuse_norm = Parameter(1.0e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+        diffuse_norm = Parameter(diff_norm, "diffuse_norm", fixed=True, 
                                 par_range=(0, np.inf))
         Emin = Parameter(1e5 * u.GeV, "Emin", fixed=True)
         Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
         Emin_src = Parameter(Emin.value*1.4, "Esrc_min", fixed=True)
         Emax_src = Parameter(Emax.value*1.4, "Esrc_max", fixed=True)
         Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
-        Enorm_src = Parameter(Enorm.value*1.4, "Enorm_src", fixed=True)
-        Epivot = Parameter(1e5*1.4 * u.GeV, "Epivot", fixed=True)
+        Epivot = Parameter(Enorm.value*1.4, "Epivot", fixed=True)
         Emin_det = Parameter(1.e1 * u.GeV, "Emin_det", fixed=True)
 
         ps_hnu = PointSource.make_powerlaw_source("test", np.deg2rad(-30)*u.rad,
@@ -122,28 +117,31 @@ class TestNex():
 
         my_sources = Sources()
         my_sources.add(ps_hnu)
+        
+        my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
 
         sim = Simulation(my_sources, R2021DetectorModel, 1*u.year)
         sim.precomputation()
-        Nex_hnu = []
-        verification_norm = []
-        test_source_norm = []
+        Nex_ps_hnu = []
+        Nex_diff_hnu = []
         calculated_norm = []
 
         for c, idx in enumerate(indices):
+
             src_index.value = idx
-            verification_source = PointSource.make_powerlaw_source(f"verification_{c}", np.deg2rad(-30)*u.rad,
-                                                        np.pi*u.rad, 
-                                                        L, src_index, 0.4, Emin_src, Emax_src, Epivot)
-            Nex_hnu.append(sim._get_expected_Nnu(sim._get_sim_inputs()))
-            verification_norm.append(verification_source.flux_model._parameters["norm"])
-            test_source_norm.append(my_sources[0].flux_model._parameters["norm"])
+            diff_index.value = idx
+            
+            _ = sim._get_expected_Nnu(sim._get_sim_inputs())
+            Nex_ps_hnu.append(sim._expected_Nnu_per_comp[0])
+            Nex_diff_hnu.append(sim._expected_Nnu_per_comp[1])
+
             calculated_norm.append(
                 (L.value / 4. / np.pi/dl(0.4)**2 / ipl(src_index.value, 1., Enorm.value, Emin.value, Emax.value,)).to(1/(u.GeV*u.m**2*u.s))
             )
 
-        self._hnu_norm = calculated_norm
-        self._Nex_hnu = np.array(Nex_hnu)
+        self._hnu_ps_norm = calculated_norm
+        self._Nex_ps_hnu = np.array(Nex_ps_hnu)
+        self._Nex_diff_hnu = np.array(Nex_diff_hnu)
     
     @pytest.fixture
     def calc_it_nex(self, calc_hnu_nex):
@@ -158,23 +156,32 @@ class TestNex():
         from hierarchical_nu.simulation import Simulation
 
         aeff = EffectiveArea.from_dataset("20210126", "IC86_II")
-        Nex_it = []
+        Nex_ps_it = []
+        Nex_diff_it = []
 
-        for idx, norm in zip(indices, self._hnu_norm):
-            point_flux_norm = norm.to(1/(u.GeV*u.cm**2*u.s)).value
+        for idx, norm_ps in zip(indices, self._hnu_ps_norm):
 
+            point_flux_norm = norm_ps.to(1/(u.GeV*u.cm**2*u.s)).value
             point_power_law = PowerLawFlux(point_flux_norm, norm_energy, idx, 
                                         min_energy, max_energy)
             point_source = PointSource(point_power_law, z=0., coord=(np.pi, np.deg2rad(-30)))
-            sources = [point_source]
-            nu_calc = NeutrinoCalculator(sources, aeff)
-            Nex_it.append(nu_calc(time=1, # years
-                    min_energy=min_energy, max_energy=max_energy, # energy range
-                    min_cosz=-1, max_cosz=1)[0] # cos(zenith) range
-            )
 
-        self._Nex_it = np.array(Nex_it)
+            diff_flux_norm = diff_norm.to(1/(u.GeV*u.cm**2*u.s)).value / (4 * np.pi)
+            diff_power_law = PowerLawFlux(diff_flux_norm, norm_energy, idx, 
+                              min_energy, max_energy)
+            diff_source = DiffuseSource(diff_power_law, z=0.0)
+            sources = [point_source, diff_source]
+            nu_calc = NeutrinoCalculator(sources, aeff)
+            n = nu_calc(time=1, # years
+                    min_energy=min_energy, max_energy=max_energy, # energy range
+                    min_cosz=-1, max_cosz=1) # cos(zenith) range
+            Nex_ps_it.append(n[0])
+            Nex_diff_it.append(n[1])
+
+        self._Nex_ps_it = np.array(Nex_ps_it)
+        self._Nex_diff_it = np.array(Nex_diff_it)
     
     def test_nex(self, calc_it_nex):
         
-        assert self._Nex_it == pytest.approx(self._Nex_hnu, rel=5e-2)
+        assert self._Nex_ps_it == pytest.approx(self._Nex_ps_hnu, rel=5e-2)
+        assert self._Nex_diff_it == pytest.approx(self._Nex_diff_hnu, rel=5e-2)
