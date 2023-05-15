@@ -5,7 +5,8 @@ import os
 from cmdstanpy import CmdStanModel
 
 from hierarchical_nu.source.source import PointSource
-from hierarchical_nu.source.flux_model import PowerLawSpectrum, IsotropicDiffuseBG
+from hierarchical_nu.source.flux_model import PowerLawSpectrum, IsotropicDiffuseBG, integral_power_law
+from hierarchical_nu.source.cosmology import luminosity_distance as dl
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.backend.stan_generator import (
@@ -34,6 +35,10 @@ Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(1e2 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
 
+z = 1.
+Esrc_norm = Parameter(Enorm.value*(1.+z), "Epivot", fixed=True)
+Esrc_min = Parameter(Emin.value*(1.+z), "Esrc_min", fixed=True)
+Esrc_max = Parameter(Emax.value*(1.+z), "Esrc_max", fixed=True)
 
 def make_point_source():
 
@@ -51,9 +56,9 @@ def make_point_source():
         lumi,
         index,
         1,
-        Emin,
-        Emax,
-        Enorm,
+        Esrc_min,
+        Esrc_max, 
+        Esrc_norm,
     )
 
     return source
@@ -111,7 +116,7 @@ def test_point_source_flux():
 
     flux_unit = 1 / (u.s * u.m ** 2)
 
-    assert F.to(flux_unit).value == pytest.approx(0.00863604929452374) #pytest.approx(0.0043180246)
+    assert F.to(flux_unit).value == pytest.approx(0.0043180246)
 
 
 def generate_source_test_code(output_directory):
