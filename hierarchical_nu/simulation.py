@@ -256,9 +256,13 @@ class Simulation:
         fig, ax = plt.subplots(3, 1)
         for c, (source, hatch, _Esrc, _E, _Edet) in enumerate(zip(self._sources, hatch_cycle, Esrc_plot, E_plot, Edet_plot)):
             
+           
+
             if c == 0:
                 _bsrc = np.zeros(bins[:-1].shape)
                 label = source.name + " at source"
+                 # This is only needed s.t. flake does not complain
+                _nEsrc = 0
             else:
                 _bsrc += _nEsrc
                 label = source.name
@@ -268,6 +272,7 @@ class Simulation:
             if c == 0:
                 _b = np.zeros(bins[:-1].shape)
                 label = source.name + " at detector"
+                _nE = 0
             else:
                 _b += _nE
                 label = source.name
@@ -276,6 +281,7 @@ class Simulation:
             if c == 0:
                 _bdet = np.zeros(bins[:-1].shape)
                 label = source.name + ", detected"
+                _nEdet = 0
             else:
                 _bdet += _nEdet
                 label = source.name
