@@ -1190,12 +1190,10 @@ class StanFitInterface(StanInterface):
                 self._eres_cascades = ForwardVariableDef("eres_cascades", "real")
                 self._aeff_cascades = ForwardVariableDef("aeff_cascades", "real")
 
-            """
             if "cascades" in self._event_types and "tracks" in self._event_types:
 
                 self._logp_c = ForwardVariableDef("logp_c", "real")
                 self._logp_t = ForwardVariableDef("logp_t", "real")
-            """
 
             if self._nshards not in [0, 1]:
                 # Create vector of parameters
@@ -1459,15 +1457,13 @@ class StanFitInterface(StanInterface):
                 self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
                 self._Nex << self._Nex_t + self._Nex_c
 
-                """
+
                 # Relative probability of event types
-                # How does this relate to the likelihood?
-                # see l. ~1840 something
                 self._logp_c << self._Nex_c / self._Nex
                 self._logp_c << StringExpression(["log(", self._logp_c, ")"])
                 self._logp_t << self._Nex_t / self._Nex
                 self._logp_t << StringExpression(["log(", self._logp_t, ")"])
-                """
+
 
             elif "tracks" in self._event_types:
 
