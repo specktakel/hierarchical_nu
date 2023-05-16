@@ -434,8 +434,9 @@ class R2021EffectiveArea(EffectiveArea):
             #cut the arrays short because of numerical issues in precomputation.py
             aeff = EffectiveArea.from_dataset("20210126", IRF_PERIOD)
             # 1st axis: energy, 2nd axis: cosz
-            eff_area = aeff.values[:-5]
-            tE_bin_edges = aeff.true_energy_bins[:-5]
+            eff_area = aeff.values
+            # Deleting zero-entries above 1e9GeV is done in icecube_tools
+            tE_bin_edges = aeff.true_energy_bins
             cosz_bin_edges = aeff.cos_zenith_bins
 
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
