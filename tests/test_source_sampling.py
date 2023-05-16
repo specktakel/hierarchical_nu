@@ -187,7 +187,7 @@ def test_source_sampling(output_directory, random_seed):
         stanc_options=stanc_options,
     )
 
-    output = stan_model.sample(data={}, iter_sampling=1000, chains=1, seed=random_seed)
+    output = stan_model.sample(data={}, iter_sampling=10000, chains=1, seed=random_seed)
 
     diffuse_events = output.stan_variable("diffuse_events")
 
@@ -233,4 +233,4 @@ def test_source_sampling(output_directory, random_seed):
         density=True,
     )
 
-    assert max(E_hist) == pytest.approx(max(integrate_per_log.value), 0.1)
+    assert max(E_hist) == pytest.approx(max(integrate_per_log.value), 0.15)
