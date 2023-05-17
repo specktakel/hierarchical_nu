@@ -26,7 +26,7 @@ class TestPrecomputation():
         self.Emin_det = Parameter(6e4 * u.GeV, "Emin_det", fixed=True)
 
         self.point_source = PointSource.make_powerlaw_source(
-            "test",
+            "your_ad_here",
             np.deg2rad(5)*u.rad,
             np.pi*u.rad, 
             self.L,
