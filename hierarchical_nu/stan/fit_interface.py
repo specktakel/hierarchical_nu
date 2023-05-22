@@ -1918,7 +1918,7 @@ class StanFitInterface(StanInterface):
                             " ~ ",
                             FunctionCall(
                                 [
-                                    self._stan_prior_src_index_mu,
+                                    self._stan_prior_lumi_mu,
                                     self._stan_prior_lumi_sigma,
                                 ],
                                 self._priors.luminosity.name,
@@ -2298,7 +2298,7 @@ class StanFitInterface(StanInterface):
                                         )
 
                                         # E = Esrc
-                                        self._E[i] << self._Esrc[i]
+                                        self._Esrc[i] << self._E[i]
 
                                 # Detection effects
                                 # log_prob += log(p(Edet | E))
