@@ -10,6 +10,7 @@ from ..backend import (
     TruncatedParameterization,
     LogParameterization,
     SimpleHistogram,
+    TwoDimHistInterpolation,
     ReturnStatement,
     UserDefinedFunction,
     FunctionCall,
@@ -57,7 +58,7 @@ class CascadesEffectiveArea(EffectiveArea):
 
         # Define Stan interface
         with self:
-            hist = SimpleHistogram(
+            hist = TwoDimHistInterpolation(
                 self._eff_area,
                 [self._tE_bin_edges, self._cosz_bin_edges],
                 "CascadesEffAreaHist",

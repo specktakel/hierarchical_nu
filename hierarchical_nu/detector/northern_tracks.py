@@ -19,6 +19,7 @@ from ..backend import (
     ForwardArrayDef,
     StanArray,
     StringExpression,
+    TwoDimHistInterpolation,
 )
 from .detector_model import (
     EffectiveArea,
@@ -57,7 +58,7 @@ class NorthernTracksEffectiveArea(EffectiveArea):
 
         # Define Stan interface.
         with self:
-            hist = SimpleHistogram(
+            hist = TwoDimHistInterpolation(
                 self._eff_area,
                 [self._tE_bin_edges, self._cosz_bin_edges],
                 "NorthernTracksEffAreaHist",
