@@ -194,11 +194,8 @@ class Simulation:
         kappa = self._sim_output.stan_variable("kappa")[0]
         # Equivalent 1 sigma errors in deg
         ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
-        true_energies = self._sim_output.stan_variable("E")[0] * u.GeV
-        cosz = self._sim_output.stan_variable("cosz")[0]
-        lamb = self._sim_output.stan_variable("Lambda")[0] - 1
 
-        return energies, coords, event_types, ang_errs, true_energies, cosz, lamb
+        return energies, coords, event_types, ang_errs
 
     def save(self, filename):
 
@@ -236,15 +233,16 @@ class Simulation:
         hatch_cycle = ['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*']
         Esrc = self._sim_output.stan_variable("Esrc")[0]
         E = self._sim_output.stan_variable("E")[0]
+        lam = self._sim_output.stan_variable("Lambda")[0] - 1
         assert np.all(Esrc >= E)
         Edet = self.events.energies.value
         Emin_det = self._get_min_det_energy().to(u.GeV).value
 
         N = len(self._sources)
 
-        Esrc_plot = [Esrc[np.nonzero(self.events.lambdas==float(i))] for i in range(N)]
-        E_plot = [E[np.nonzero(self.events.lambdas==float(i))] for i in range(N)]
-        Edet_plot = [Edet[np.nonzero(self.events.lambdas==float(i))] for i in range(N)]
+        Esrc_plot = [Esrc[np.nonzero(lam==float(i))] for i in range(N)]
+        E_plot = [E[np.nonzero(lam==float(i))] for i in range(N)]
+        Edet_plot = [Edet[np.nonzero(lam==float(i))] for i in range(N)]
 
         bins = np.logspace(
             np.log10(Emin_det),

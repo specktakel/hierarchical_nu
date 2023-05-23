@@ -40,12 +40,11 @@ Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
 Emin_det = Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
 
 z = 0.4
-Epivot = Parameter(Enorm.value * (z + 1.), "Epivot", fixed=True)
 Esrc_min = Parameter(Emin.value * (z + 1.), "Esrc_min", fixed=True)
 Esrc_max = Parameter(Emax.value * (z + 1.), "Esrc_max", fixed=True)
 
 point_source = PointSource.make_powerlaw_source(
-    "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, z, Esrc_min, Esrc_max, Epivot
+    "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, z, Esrc_min, Esrc_max
 )
 
 my_sources = Sources()

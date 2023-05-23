@@ -36,7 +36,6 @@ Emin = Parameter(1e2 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
 
 z = 1.
-Esrc_norm = Parameter(Enorm.value*(1.+z), "Epivot", fixed=True)
 Esrc_min = Parameter(Emin.value*(1.+z), "Esrc_min", fixed=True)
 Esrc_max = Parameter(Emax.value*(1.+z), "Esrc_max", fixed=True)
 
@@ -57,8 +56,7 @@ def make_point_source():
         index,
         1,
         Esrc_min,
-        Esrc_max, 
-        Esrc_norm,
+        Esrc_max,
     )
 
     return source
