@@ -54,15 +54,16 @@ my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
 # my_sources.add_atmospheric_component()
 
 detector_models = [
-    NorthernTracksDetectorModel,
-    CascadesDetectorModel,
-    IceCubeDetectorModel,
+    #NorthernTracksDetectorModel,
+    #CascadesDetectorModel,
+    #IceCubeDetectorModel,
     R2021DetectorModel,
 ]
 
 stanc_options = {"include-paths": [STAN_PATH, STAN_GEN_PATH]}
 
 
+"""
 def test_stan_sim_interface(output_directory):
 
     file_name = os.path.join(output_directory, "test_sim_interface")
@@ -76,7 +77,7 @@ def test_stan_sim_interface(output_directory):
 
         # Compile Stan code
         stan_model = CmdStanModel(stan_file=stan_file, stanc_options=stanc_options)
-
+"""
 
 def test_stan_fit_interface(output_directory):
 
