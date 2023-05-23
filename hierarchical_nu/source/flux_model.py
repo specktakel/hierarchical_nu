@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 import astropy.units as u
 import numpy as np
@@ -972,8 +972,8 @@ class TwiceBrokenPowerLaw(SpectralShape):
     
 
 
-
-def integral_power_law(gamma, n, x0, x1, x2):
+@u.quantity_input
+def integral_power_law(gamma: float, n: Union[float, int], x1: u.GeV, x2: u.GeV, x0: u.GeV = 1e5*u.GeV):
     """
     Implements expectation value (up to normalisation
     of the distribution) over power law/pareto distribution of the form

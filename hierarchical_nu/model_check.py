@@ -661,7 +661,6 @@ def _initialise_sources():
 
     Esrc_min = Parameter(parameter_config["Esrc_min"] * u.GeV, "Esrc_min", fixed=True)
     Esrc_max = Parameter(parameter_config["Esrc_max"] * u.GeV, "Esrc_max", fixed=True)
-    Esrc_norm = Parameter(1e5 * u.GeV, "Esrc_norm", fixed=True)
 
     if parameter_config["Emin_det_eq"]:
 
@@ -692,7 +691,6 @@ def _initialise_sources():
         parameter_config["z"],
         Esrc_min,
         Esrc_max,
-        Esrc_norm,
     )
 
     sources = Sources()

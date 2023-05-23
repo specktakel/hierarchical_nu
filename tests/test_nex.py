@@ -29,12 +29,11 @@ class TestNex():
         Emax = Parameter(max_energy * u.GeV, "Emax", fixed=True)
         Emin_src = Parameter(Emin.value*1.4, "Esrc_min", fixed=True)   # correct for redshift
         Emax_src = Parameter(Emax.value*1.4, "Esrc_max", fixed=True)
-        Epivot = Parameter(norm_energy*1.4 * u.GeV, "Epivot", fixed=True)
         Emin_det = Parameter(1.e1 * u.GeV, "Emin_det", fixed=True)
 
         ps_hnu = PointSource.make_powerlaw_source("test", np.deg2rad(-30)*u.rad,
                                                         np.pi*u.rad, 
-                                                        L, src_index, 0.4, Emin_src, Emax_src, Epivot)
+                                                        L, src_index, 0.4, Emin_src, Emax_src)
 
 
 
@@ -108,12 +107,11 @@ class TestNex():
         Emin_src = Parameter(Emin.value*1.4, "Esrc_min", fixed=True)
         Emax_src = Parameter(Emax.value*1.4, "Esrc_max", fixed=True)
         Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
-        Epivot = Parameter(Enorm.value*1.4, "Epivot", fixed=True)
         Emin_det = Parameter(1.e1 * u.GeV, "Emin_det", fixed=True)
 
         ps_hnu = PointSource.make_powerlaw_source("test", np.deg2rad(-30)*u.rad,
                                                         np.pi*u.rad, 
-                                                        L, src_index, 0.4, Emin_src, Emax_src, Epivot)
+                                                        L, src_index, 0.4, Emin_src, Emax_src)
 
         my_sources = Sources()
         my_sources.add(ps_hnu)
@@ -136,7 +134,7 @@ class TestNex():
             Nex_diff_hnu.append(sim._expected_Nnu_per_comp[1])
 
             calculated_norm.append(
-                (L.value / 4. / np.pi/dl(0.4)**2 / ipl(src_index.value, 1., Enorm.value, Emin.value, Emax.value,)).to(1/(u.GeV*u.m**2*u.s))
+                (L.value / 4. / np.pi/dl(0.4)**2 / ipl(src_index.value, 1., Emin.value, Emax.value, Enorm.value,)).to(1/(u.GeV*u.m**2*u.s))
             )
 
         self._hnu_ps_norm = calculated_norm

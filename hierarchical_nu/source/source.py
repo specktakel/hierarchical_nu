@@ -103,7 +103,6 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
-        pivot: Parameter,
     ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
@@ -146,7 +145,7 @@ class PointSource(Source):
 
         shape = PowerLawSpectrum(
             norm,
-            pivot.value / (1 + redshift),
+            1e5 * u.GeV,
             index,
             lower.value / (1 + redshift),
             upper.value / (1 + redshift),
