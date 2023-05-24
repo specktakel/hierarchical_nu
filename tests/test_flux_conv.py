@@ -56,14 +56,12 @@ class TestPrecomputation():
         
     def test_flux_conversion_diff_source(self, setup_diff_source):
         F = self.my_sources.diffuse._parameters["norm"].value.copy()
-        print(F)
         F *= integral_power_law(
             self.diff_index.value,
             0.,
             self.Emin.value,
             self.Emax.value
         )
-        print(F)
         assert self.my_sources.diffuse.flux_model.total_flux_int.value == pytest.approx(
             F.value
         )
