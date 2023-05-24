@@ -230,9 +230,7 @@ class PointSource(Source):
         upper_energy: Parameter,
         include_undetected: bool = False,
     ):
-        """
-        TODO: check if compatible with updated physics!
-        
+        """        
         Factory for power law sources defined in
         HDF5 files ( update: output from popsynth).
 
