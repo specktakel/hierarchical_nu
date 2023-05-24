@@ -43,14 +43,6 @@ class Source(ABC):
     ) -> 1 / (u.GeV * u.m ** 2 * u.s * u.sr):
         return self._flux_model(energy, dec, ra)
 
-    @abstractmethod
-    def redshift_factor(self, z: float):
-        """
-        Needs to be implemented in subclass.
-        Factor that appears when evaluating the flux in the local frame
-        """
-        pass
-
 
 class PointSource(Source):
     """
@@ -359,9 +351,6 @@ class PointSource(Source):
     def redshift(self, value):
         self._redshift = value
 
-    def redshift_factor(self, z: float):
-        return self._flux_model.redshift_factor(z)
-
     @property
     @u.quantity_input
     def luminosity(self) -> u.erg / u.s:
@@ -400,9 +389,6 @@ class DiffuseSource(Source):
     @redshift.setter
     def redshift(self, value):
         self._redshift = value
-
-    def redshift_factor(self, z: float):
-        return self._flux_model.redshift_factor(z)
 
 
 class Sources:

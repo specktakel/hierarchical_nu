@@ -46,13 +46,6 @@ class SpectralShape(ABC):
     def parameters(self):
         return self._parameters
 
-    @abstractmethod
-    def redshift_factor(self, redshift: float):
-        """
-        Factor that appears when evaluating the spectrum in the local frame
-        """
-        pass
-
     @classmethod
     @abstractmethod
     def make_stan_sampling_func(cls):
@@ -97,10 +90,6 @@ class FluxModel(ABC):
     @property
     def parameters(self):
         return self._parameters
-
-    @abstractmethod
-    def redshift_factor(self, z: float):
-        pass
 
     @property
     @u.quantity_input
@@ -150,9 +139,6 @@ class PointSourceFluxModel(FluxModel):
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
         return self._spectral_shape.total_flux_density
 
-    def redshift_factor(self, z: float):
-        return self._spectral_shape.redshift_factor(z)
-
     def make_stan_sampling_func(self, f_name: str) -> UserDefinedFunction:
         shape_rng = self._spectral_shape.make_stan_sampling_func()
         func = UserDefinedFunction(
@@ -192,9 +178,6 @@ class IsotropicDiffuseBG(FluxModel):
     @u.quantity_input
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
         return self._spectral_shape.total_flux_density
-
-    def redshift_factor(self, z: float):
-        return self._spectral_shape.redshift_factor(z)
 
     @property
     def spectral_shape(self):
@@ -295,13 +278,6 @@ class PowerLawSpectrum(SpectralShape):
             raise ValueError("Parameter {} is out of bounds".format(par_name))
 
         par.value = par_value
-
-    def redshift_factor(self, z: float):
-        """
-        To be seen if actually used anymore
-        """
-        index = self._parameters["index"].value
-        return np.power(1 + z, 1 - index)
 
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
@@ -636,13 +612,6 @@ class TwiceBrokenPowerLaw(SpectralShape):
             raise ValueError("Parameter {} is out of bounds".format(par_name))
 
         par.value = par_value
-
-    def redshift_factor(self, z: float):
-        """
-        To be seen if actually used anymore
-        """
-        index = self._parameters["index"].value
-        return np.power(1 + z, 1 - index)
 
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
