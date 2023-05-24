@@ -104,6 +104,8 @@ class TestNex():
                                 par_range=(0, np.inf))
         Emin = Parameter(1e5 * u.GeV, "Emin", fixed=True)
         Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
+        Ediff_min = Parameter(1e5 * u.GeV, "Ediff_min", fixed=True)
+        Ediff_max = Parameter(1e8 * u.GeV, "Ediff_max", fixed=True)
         Emin_src = Parameter(Emin.value*1.4, "Esrc_min", fixed=True)
         Emax_src = Parameter(Emax.value*1.4, "Esrc_max", fixed=True)
         Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
@@ -116,7 +118,7 @@ class TestNex():
         my_sources = Sources()
         my_sources.add(ps_hnu)
         
-        my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
+        my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Ediff_min, Ediff_max)
 
         sim = Simulation(my_sources, R2021DetectorModel, 1*u.year)
         sim.precomputation()

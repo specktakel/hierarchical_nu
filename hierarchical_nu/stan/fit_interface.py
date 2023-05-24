@@ -296,6 +296,9 @@ class StanFitInterface(StanInterface):
                     Esrc_max = ForwardVariableDef("Esrc_max", "real")
                     Emin = ForwardVariableDef("Emin", "real")
                     Emax = ForwardVariableDef("Emax", "real")
+                    if self.sources.diffuse:
+                        Ediff_min = ForwardVariableDef("Ediff_min", "real")
+                        Ediff_max = ForwardVariableDef("Ediff_max", "real")
                     Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
                     Emax_at_det = ForwardVariableDef("Emax_at_det", "real")
 
@@ -306,6 +309,15 @@ class StanFitInterface(StanInterface):
                     end << end + 1
                     Esrc_max << StringExpression(["real_data[start]"])
                     start << start + 1
+
+                    if self.sources.diffuse:
+                        end << end + 1
+                        Ediff_min << StringExpression(["real_data[start]"])
+                        start << start + 1
+
+                        end << end + 1
+                        Ediff_max << StringExpression(["real_data[start]"])
+                        start << start + 1
 
                     end << end + 1
                     Emin << StringExpression(["real_data[start]"])
@@ -489,7 +501,7 @@ class StanFitInterface(StanInterface):
                                             #E[i] << StringExpression(
                                             #    [Esrc[i], " / (", 1 + z[k], ")"]
                                             #)
-                                            Esrc[i] << E[i]
+                                            Esrc[i] << E[i] * (1 + z[k])
 
                                             # log_prob += log(p(Esrc|diff_index))
                                             StringExpression(
@@ -499,8 +511,8 @@ class StanFitInterface(StanInterface):
                                                     self._diff_spectrum_lpdf(
                                                         E[i],
                                                         diff_index,
-                                                        Emin,
-                                                        Emax,
+                                                        Ediff_min / (1. + z[k]),
+                                                        Ediff_max / (1. + z[k]),
                                                     ),
                                                 ]
                                             )
@@ -668,8 +680,8 @@ class StanFitInterface(StanInterface):
                                                     self._diff_spectrum_lpdf(
                                                         E[i],
                                                         diff_index,
-                                                        Emin,
-                                                        Emax,
+                                                        Ediff_min / (1. + z[k]),
+                                                        Ediff_max / (1. + z[k]),
                                                     ),
                                                 ]
                                             )
@@ -678,7 +690,7 @@ class StanFitInterface(StanInterface):
                                             #E[i] << StringExpression(
                                             #    [Esrc[i], " / (", 1 + z[k], ")"]
                                             #)
-                                            Esrc[i] << E[i]
+                                            Esrc[i] << E[i] * (1. + z[k])
 
                                             # log_prob += log(1/4pi)
                                             StringExpression(
@@ -745,7 +757,11 @@ class StanFitInterface(StanInterface):
             # Energy range at source
             self._Esrc_min = ForwardVariableDef("Esrc_min", "real")
             self._Esrc_max = ForwardVariableDef("Esrc_max", "real")
-            self._Esrc_norm = ForwardVariableDef("Esrc_norm", "real")
+
+            #Energy range at the diffuse component at redshift z
+            self._Ediff_min = ForwardVariableDef("Ediff_min", "real")
+            self._Ediff_max = ForwardVariableDef("Ediff_max", "real")
+            
             # Energy range at the detector
             self._Emin = ForwardVariableDef("Emin", "real")
             self._Emax = ForwardVariableDef("Emax", "real")
@@ -912,6 +928,7 @@ class StanFitInterface(StanInterface):
                         self._N_t << self._N_t + 1
 
             # Find largest permitted range of energies at the detector
+            # TODO: not sure about this construct...
             self._Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
             self._Emax_at_det = ForwardVariableDef("Emax_at_det", "real")
             self._Emin_at_det << self._Emin
@@ -922,6 +939,11 @@ class StanFitInterface(StanInterface):
                     self._Emin_at_det << self._Esrc_min / (1 + self._z[k])
                 with IfBlockContext([self._Esrc_max / (1 + self._z[k]), " > ", self._Emax_at_det]):
                     self._Emax_at_det << self._Esrc_max / (1 + self._z[k])
+            if self.sources.diffuse:
+                with IfBlockContext([self._Ediff_min / (1 + self._z[self._Ns+1]), " < ", self._Emin_at_det]):
+                    self._Emin_at_det << self._Ediff_min / (1. + self._z[self._Ns + 1])
+                with IfBlockContext([self._Ediff_max / (1 + self._z[self._Ns+1]), " > ", self._Emax_at_det]):
+                    self._Emax_at_det << self._Ediff_max / (1. + self._z[self._Ns + 1])
 
             if self._nshards not in [0, 1]:
                 self._N_shards_use_this = ForwardVariableDef("N_shards_loop", "int")
@@ -932,7 +954,7 @@ class StanFitInterface(StanInterface):
                 # Find size for real_data array
                 sd_events_J = 4    # reco energy, reco dir (unit vector)
                 sd_varpi_Ns = 3    # coords of events in the sky (unit vector)
-                sd_if_atmo_z = 1   # redshift of diffuse component
+                sd_if_diff = 3     # redshift of diffuse component, Ediff_min/max
                 sd_z_Ns = 1        # redshift of PS
                 sd_other = 6       # Esrc_min, Esrc_max, Emin, Emax
                 #Need Ns * N for spatial loglike, added extra in sd_string
@@ -942,7 +964,7 @@ class StanFitInterface(StanInterface):
                     f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other} + J*Ns"
                 )
                 if self.sources.diffuse:
-                    sd_string += f" + {sd_if_atmo_z}"
+                    sd_string += f" + {sd_if_diff}"
 
                 # Create data arrays
                 self.real_data = ForwardArrayDef(
@@ -982,13 +1004,7 @@ class StanFitInterface(StanInterface):
                         [self._Edet[start:end]], "to_array_1d"
                     )
                     insert_start << insert_start + insert_len
-                    """
-                    insert_end << insert_end + insert_len
-                    self.real_data[i, insert_start:insert_end] << FunctionCall(
-                        [self._kappa[start:end]], "to_array_1d"
-                    )
-                    insert_start << insert_start + insert_len
-                    """
+
                     with ForLoopContext(start, end, "f") as f:
                         insert_end << insert_end + 3
                         self.real_data[i, insert_start:insert_end] << FunctionCall(
@@ -1034,6 +1050,15 @@ class StanFitInterface(StanInterface):
                     insert_end << insert_end + 1
                     self.real_data[i, insert_start] << self._Esrc_max
                     insert_start << insert_start + 1
+
+                    if self.sources.diffuse:
+                        insert_end << insert_end + 1
+                        self.real_data[i, insert_start] << self._Ediff_min
+                        insert_start << insert_start + 1
+
+                        insert_end << insert_end + 1
+                        self.real_data[i, insert_start] << self._Ediff_max
+                        insert_start << insert_start + 1
 
                     insert_end << insert_end + 1
                     self.real_data[i, insert_start] << self._Emin
@@ -1739,8 +1764,7 @@ class StanFitInterface(StanInterface):
                                         )
 
                                         # E = Esrc / (1+z)
-                                        # update: z of diffuse is set to zero
-                                        self._Esrc[i] << self._E[i]
+                                        self._Esrc[i] << self._E[i] * (1. + self._z[k])
 
                                         # log_prob += log(p(Esrc|diff_index))
                                         StringExpression(
@@ -1750,8 +1774,8 @@ class StanFitInterface(StanInterface):
                                                 self._diff_spectrum_lpdf(
                                                     self._E[i],
                                                     self._diff_index,
-                                                    self._Emin,
-                                                    self._Emax,
+                                                    self._Ediff_min / (1. + self._z[k]),
+                                                    self._Ediff_max / (1. + self._z[k]),
                                                 ),
                                             ]
                                         )
@@ -1915,14 +1939,14 @@ class StanFitInterface(StanInterface):
                                                 self._diff_spectrum_lpdf(
                                                     self._E[i],
                                                     self._diff_index,
-                                                    self._Emin,
-                                                    self._Emax,
+                                                    self._Ediff_min / (1. + self._z[k]),
+                                                    self._Ediff_max / (1. + self._z[k]),
                                                 ),
                                             ]
                                         )
 
                                         # E = Esrc / (1+z)
-                                        self._Esrc[i] << self._E[i]
+                                        self._Esrc[i] << self._E[i] * (1. + self._z[k])
                                         # log_prob += log(1/4pi)
                                         StringExpression(
                                             [
@@ -2219,8 +2243,8 @@ class StanFitInterface(StanInterface):
                                                 self._diff_spectrum_lpdf(
                                                     self._E[i],
                                                     self._diff_index,
-                                                    self._Emin,
-                                                    self._Emax,
+                                                    self._Ediff_min / (1. + self._z[k]),
+                                                    self._Ediff_max / (1. + self._z[k]),
                                                 ),
                                             ]
                                         )
@@ -2423,17 +2447,16 @@ class StanFitInterface(StanInterface):
                                                 self._diff_spectrum_lpdf(
                                                     self._E[i],
                                                     self._diff_index,
-                                                    self._Emin,
-                                                    self._Emax,
+                                                    self._Ediff_min / (1. + self._z[k]),
+                                                    self._Ediff_max / (1. + self._z[k]),
                                                 ),
                                             ]
                                         )
 
                                         # E = Esrc / (1+z)
-                                        #self._Esrc[i] << StringExpression(
-                                        #    [self._Esrc[i], " / (", 1 + self._z[k], ")"]
-                                        #)
-                                        self._Esrc[i] << self._E[i]
+                                        self._Esrc[i] << StringExpression(
+                                            [self._Esrc[i], " / (", 1 + self._z[k], ")"]
+                                        )
 
                                         # log_prob += log(1/4pi)
                                         StringExpression(

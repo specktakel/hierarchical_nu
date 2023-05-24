@@ -39,6 +39,9 @@ z = 1.
 Esrc_min = Parameter(Emin.value*(1.+z), "Esrc_min", fixed=True)
 Esrc_max = Parameter(Emax.value*(1.+z), "Esrc_max", fixed=True)
 
+Ediff_min = Parameter(Emin.value, "Ediff_min", fixed=True)
+Ediff_max = Parameter(Emax.value, "Ediff_max", fixed=True)
+
 def make_point_source():
 
     lumi = Parameter(
@@ -76,8 +79,8 @@ def make_diffuse_flux():
             diffuse_norm,
             Enorm.value,
             index,
-            Emin.value,
-            Emax.value,
+            Ediff_min.value,
+            Ediff_max.value,
         )
     )
 

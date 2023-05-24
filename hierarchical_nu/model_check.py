@@ -111,16 +111,6 @@ class ModelCheck:
             self.truths["Nex_atmo"] = Nex_per_comp[2]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
             self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
-
-            """
-            self.priors.atmospheric_flux = NormalPrior(
-                mu=atmo_bg.flux_model.total_flux_int.to(flux_unit),
-                sigma=atmo_bg.flux_model.total_flux_int.to(flux_unit))
-            self.priors.diffuse_flux = NormalPrior(
-                mu=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value, 
-                sigma=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value,
-            )
-            """
             
         self._default_var_names = [key for key in self.truths]
         self._default_var_names.append("Fs")
@@ -662,6 +652,9 @@ def _initialise_sources():
     Esrc_min = Parameter(parameter_config["Esrc_min"] * u.GeV, "Esrc_min", fixed=True)
     Esrc_max = Parameter(parameter_config["Esrc_max"] * u.GeV, "Esrc_max", fixed=True)
 
+    Ediff_min = Parameter(parameter_config["Ediff_min"] * u.GeV, "Ediff_min", fixed=True)
+    Ediff_max = Parameter(parameter_config["Ediff_max"] * u.GeV, "Ediff_max", fixed=True)
+
     if parameter_config["Emin_det_eq"]:
 
         Emin_det = Parameter(
@@ -695,7 +688,7 @@ def _initialise_sources():
 
     sources = Sources()
     sources.add(point_source)
-    sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
+    sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Ediff_min, Ediff_max, 0.)
     sources.add_atmospheric_component()
 
     return sources

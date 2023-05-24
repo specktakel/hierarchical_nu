@@ -199,6 +199,10 @@ class StanSimInterface(StanInterface):
             self._Emin = ForwardVariableDef("Emin", "real")
             self._Emax = ForwardVariableDef("Emax", "real")
 
+            # Energy range considered for diffuse astrophysical sources, defined at redshift z of shell
+            self._Ediff_min = ForwardVariableDef("Ediff_min", "real")
+            self._Ediff_max = ForwardVariableDef("Ediff_max", "real")
+
             # For tracks, we specify Emin_det, and several parameters for the
             # rejection sampling, denoted by rs_...
             # Separate interpolation grids are also provided for tracks and cascades
@@ -1192,16 +1196,13 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                """
-                                self._Esrc_min_arr << self._Esrc_min / (
+
+                                self._Esrc_min_arr << self._Ediff_min / (
                                     1 + self._z[self._lam[i]]
                                 )
-                                self._Esrc_max_arr << self._Esrc_max / (
+                                self._Esrc_max_arr << self._Ediff_max / (
                                     1 + self._z[self._lam[i]]
                                 )
-                                """
-                                self._Esrc_min_arr << self._Emin
-                                self._Esrc_max_arr << self._Emax
 
                                 with IfBlockContext(
                                     [
@@ -1347,10 +1348,8 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    #self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                    #self._Esrc_max / (1 + self._z[self._lam[i]]),
-                                    self._Emin,
-                                    self._Emax,
+                                    self._Ediff_min / (1 + self._z[self._lam[i]]),
+                                    self._Ediff_max / (1 + self._z[self._lam[i]]),
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
@@ -1373,8 +1372,6 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                #self._Esrc_min_arr << self._Esrc_min
-                                #self._Esrc_max_arr << self._Esrc_max
                                 self._Esrc_min_arr << self._Emin
                                 self._Esrc_max_arr << self._Emax
 

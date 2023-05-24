@@ -464,6 +464,9 @@ class Simulation:
         sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
 
+        sim_inputs["Ediff_min"] = Parameter.get_parameter("Ediff_min").value.to(u.GeV).value
+        sim_inputs["Ediff_max"] = Parameter.get_parameter("Ediff_max").value.to(u.GeV).value
+
         for event_type in self._detector_model_type.event_types:
 
             effective_area = self._exposure_integral[event_type].effective_area

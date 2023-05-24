@@ -43,6 +43,9 @@ z = 0.4
 Esrc_min = Parameter(Emin.value * (z + 1.), "Esrc_min", fixed=True)
 Esrc_max = Parameter(Emax.value * (z + 1.), "Esrc_max", fixed=True)
 
+Ediff_min = Parameter(Emin.value, "Ediff_min", fixed=True)
+Ediff_max = Parameter(Emax.value, "Ediff_max", fixed=True)
+
 point_source = PointSource.make_powerlaw_source(
     "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, z, Esrc_min, Esrc_max
 )
@@ -50,7 +53,7 @@ point_source = PointSource.make_powerlaw_source(
 my_sources = Sources()
 my_sources.add(point_source)
 
-my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
+my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Ediff_min, Ediff_max)
 my_sources.add_atmospheric_component()
 
 detector_models = [

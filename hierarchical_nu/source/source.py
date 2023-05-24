@@ -449,7 +449,9 @@ class Sources:
         flux_norm: Parameter,
         norm_energy: u.GeV,
         diff_index: Parameter,
-        # z: float = 0,
+        lower: Parameter,
+        upper: Parameter,
+        z: float = 0,
     ):
         """
         Add diffuse component based on point
@@ -461,14 +463,13 @@ class Sources:
         :param flux_norm: The flux normalization for this component
         :param norm_energy: The energy at which the flux norm is defined
         :param diff_index: The index of the power law spectrum
+        :param lower: Lower energy bound of spectrum, defined at z
+        :param upper: Upper energy bound of spectrum, defined at z
         :param z: The redshift of the background shell
         """
-        z = 0.
-        Emin = Parameter.get_parameter("Emin")
-        Emax = Parameter.get_parameter("Emax")
 
         spectral_shape = PowerLawSpectrum(
-            flux_norm, norm_energy, diff_index, Emin.value, Emax.value
+            flux_norm, norm_energy, diff_index, lower.value / (1. + z), upper.value / (1. + z)
         )
         flux_model = IsotropicDiffuseBG(spectral_shape)
 
