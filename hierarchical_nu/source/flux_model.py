@@ -80,13 +80,6 @@ class FluxModel(ABC):
 
     @u.quantity_input
     @abstractmethod
-    def __call__(
-        self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
-        pass
-
-    @u.quantity_input
-    @abstractmethod
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         pass
 
@@ -107,19 +100,6 @@ class FluxModel(ABC):
 
     @abstractmethod
     def redshift_factor(self, z: float):
-        pass
-
-    @u.quantity_input
-    @abstractmethod
-    def integral(
-        self,
-        e_low: u.GeV,
-        e_up: u.GeV,
-        dec_low: u.rad,
-        dec_up: u.rad,
-        ra_low: u.rad,
-        ra_up: u.rad,
-    ) -> 1 / (u.m**2 * u.s):
         pass
 
     @property
@@ -144,18 +124,6 @@ class PointSourceFluxModel(FluxModel):
         self.dec = dec
         self.ra = ra
 
-    @u.quantity_input
-    def __call__(
-        self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
-        raise NotImplementedError
-        if (dec == self.dec) and (ra == self.ra):
-            # why is this divided by 4pi?
-            # if clause above acts as a delta function
-            # integral over delta should lead to unity
-            return self._spectral_shape(energy) / (4 * np.pi * u.sr)
-        return 0
-
     @staticmethod
     def _is_in_bounds(value: float, bounds: Tuple[float, float]):
         return bounds[0] <= value <= bounds[1]
@@ -167,36 +135,6 @@ class PointSourceFluxModel(FluxModel):
     @property
     def energy_bounds(self):
         return self._spectral_shape.energy_bounds
-
-    @u.quantity_input
-    def integral(
-        self,
-        e_low: u.GeV,
-        e_up: u.GeV,
-        dec_low: u.rad,
-        dec_up: u.rad,
-        ra_low: u.rad,
-        ra_up: u.rad,
-    ) -> 1 / (u.m**2 * u.s):
-        raise NotImplementedError
-        if not self._is_in_bounds(self.dec, (dec_low, dec_up)):
-            return 0
-        if not self._is_in_bounds(self.ra, ra_low, ra_up):
-            return 0
-
-        ra_int = ra_up - ra_low
-        dec_int = (np.sin(dec_up) - np.sin(dec_low)) * u.rad
-
-        #same here with the deltas, looks off to me
-        # is it actually needed somewhere or only implemented
-        # because of abstract method requirements?
-        int = (
-            self._spectral_shape.integral(e_low, e_up)
-            * ra_int
-            * dec_int
-            / (4 * np.pi * u.sr)
-        )
-        return int
 
     @u.quantity_input
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
@@ -240,12 +178,6 @@ class IsotropicDiffuseBG(FluxModel):
         super().__init__(self)
         self._spectral_shape = spectral_shape
         self._parameters = spectral_shape.parameters
-
-    @u.quantity_input
-    def __call__(
-        self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
-        return self._spectral_shape(energy) / (4 * np.pi * u.sr)
 
     @u.quantity_input
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
