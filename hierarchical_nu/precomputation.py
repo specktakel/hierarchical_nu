@@ -271,66 +271,27 @@ class ExposureIntegral:
 
             self._integral_grid.append(integral_grids_tmp)
 
-    '''
-    def _compute_energy_detection_factor(self):
+    def _slice_aeff_for_point_sources(self):
         """
-        Loop over sources and calculate Aeff as a function of arrival energy.
+        Return a slice of the effective area at each point source's declination
         """
 
-        epsilon = 1e-5
-        Emin = min(self.effective_area.tE_bin_edges)
-        Emax = max(self.effective_area.tE_bin_edges)
-        self.energy_grid = (
-            10
-            ** np.linspace(
-                np.log10(Emin), np.log10(Emax - epsilon), self._n_grid_points
-            )
-            << u.GeV
-        )
+        logelow = np.log10(self.effective_area.tE_bin_edges[:-1])
+        logehigh = np.log10(self._effective_area.tE_bin_edges[1:])
+
+        ec = np.power(10, (logelow + logehigh) / 2) << u.GeV
 
         self.pdet_grid = []
-
-        for source in self._sources.sources:
-
+        self.pdet_grid.append(ec)
+        for source in self._sources:
             if isinstance(source, PointSource):
-
                 unit_vector = icrs_to_uv(source.dec.value, source.ra.value)
                 cosz = np.cos(np.pi - np.arccos(unit_vector[2]))
                 cosz_bin = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
 
-                # Set to zero if outside cosz range
-                if (cosz < min(self.effective_area.cosz_bin_edges)) or (
-                    cosz >= max(self.effective_area.cosz_bin_edges)
-                ):
+                aeff_slice = self.effective_area.eff_area[:, cosz_bin] << u.m**2
 
-                    pg = np.zeros_like(self.energy_grid)
-
-                else:
-
-                    if isinstance(self.energy_resolution, R2021EnergyResolution):
-                        self.energy_resolution.set_fit_params(source.dec.value)
-
-                    pg = self.energy_resolution.prob_Edet_above_threshold(
-                        self.energy_grid, self._min_det_energy, source.dec
-                    )
-                    pg = np.nan_to_num(pg)
-
-            if isinstance(source, DiffuseSource):
-
-                aeff_vals = np.sum(self.effective_area.eff_area, axis=1)
-
-                pg = [
-                    aeff_vals[
-                        np.digitize(E.value, self.effective_area.tE_bin_edges) - 1
-                    ]
-                    for E in self.energy_grid
-                ]
-                pg = np.array(pg)
-
-            self.pdet_grid.append(pg)
-
-        self.pdet_grid = np.array(self.pdet_grid) + 1e-10  # avoid log(0)
-        '''
+                self.pdet_grid.append(aeff_slice)
 
     def _compute_c_values(self):
         """
@@ -485,6 +446,8 @@ class ExposureIntegral:
         self._compute_exposure_integral()
 
         # self._compute_energy_detection_factor()
+
+        self._slice_aeff_for_point_sources()
 
         self._compute_c_values()
 

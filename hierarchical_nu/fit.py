@@ -516,12 +516,27 @@ class StanFit:
                 for _ in self._exposure_integral["tracks"].integral_grid
             ]
 
+            if self._sources.point_source:
+                fit_inputs["aeff_egrid_t"] = self._exposure_integral["tracks"].pdet_grid[0].to(u.GeV).value.tolist()
+                fit_inputs["aeff_slice_t"] = [
+                    _.to(u.m**2).value.tolist() for _ in self._exposure_integral["tracks"].pdet_grid[1:]
+                ]
+                fit_inputs["aeff_len_t"] = len(self._exposure_integral["tracks"].pdet_grid[0].to(u.GeV).value.tolist())
+
+
         if "cascades" in self._stan_interface._event_types:
 
             fit_inputs["integral_grid_c"] = [
                 _.to(u.m**2).value.tolist()
                 for _ in self._exposure_integral["cascades"].integral_grid
             ]
+            
+            if self._sources.point_source:
+                fit_inputs["aeff_egrid_c"] = self._exposure_integral["cascades"].pdet_grid[0].to(u.GeV).value.tolist()
+                fit_inputs["aeff_slice_c"] = [
+                    _.to(u.m**2).value.tolist() for _ in self._exposure_integral["cascades"].pdet_grid[1:]
+                ]
+                fit_inputs["aeff_len_c"] = len(self._exposure_integral["cascades"].pdet_grid[0].to(u.GeV).value.tolist())
 
         if self._sources.atmospheric:
 

@@ -204,6 +204,16 @@ class StanFitInterface(StanInterface):
                     diffuse = InstantVariableDef("diffuse", "int", ["int_data[3]"])
                     atmo = InstantVariableDef("atmo", "int", ["int_data[4]"])
                     Ns_tot = InstantVariableDef("Ns_tot", "int", ["Ns+atmo+diffuse"])
+
+                    aeff_len_t = InstantVariableDef("aeff_len_t", "int", ["int_data[5]"])
+                    aeff_len_c = InstantVariableDef("aeff_len_c", "int", ["int_data[6]"])
+                    #with IfBlockContext([aeff_len_t, " > ", 0]):
+                    aeff_egrid_t = ForwardVariableDef("aeff_egrid_t", "vector[aeff_len_t]")
+                    aeff_slice_t = ForwardArrayDef("aeff_slice_t", "vector[aeff_len_t]", ["[Ns]"])
+                    #with IfBlockContext([aeff_len_c, " > ", 0]):
+                    aeff_egrid_c = ForwardVariableDef("aeff_egrid_c", "vector[aeff_len_c]")
+                    aeff_slice_c = ForwardArrayDef("aeff_slice_c", "vector[aeff_len_c]", ["[Ns]"])
+                                        
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
                     length = ForwardVariableDef("length", "int")
@@ -243,7 +253,7 @@ class StanFitInterface(StanInterface):
 
                     # Unpack event types (track or cascade)
                     event_type = ForwardArrayDef("event_type", "int", ["[N]"])
-                    event_type << StringExpression(["int_data[5:4+N]"])
+                    event_type << StringExpression(["int_data[7:6+N]"])
 
                     Edet = ForwardVariableDef("Edet", "vector[N]")
                     Edet << FunctionCall(["real_data[start:end]"], "to_vector")
@@ -291,6 +301,26 @@ class StanFitInterface(StanInterface):
                             end << end + length
                             spatial_loglike[k] << StringExpression(["real_data[start:end]"])
                             start << start + length
+
+                        if "tracks" in self._event_types:
+                            end << end + aeff_len_t
+                            aeff_egrid_t << StringExpression(["to_vector(real_data[start:end])"])
+                            start << start + aeff_len_t
+
+                            with ForLoopContext(1, Ns, "k") as k:
+                                end << end + aeff_len_t
+                                aeff_slice_t[k] << StringExpression(["to_vector(real_data[start:end])"])
+                                start << start + aeff_len_t
+
+                        if "cascades" in self._event_types:
+                            end << end + aeff_len_c
+                            aeff_egrid_c << StringExpression(["to_vector(real_data[start:end])"])
+                            start << start + aeff_len_c
+
+                            with ForLoopContext(1, Ns, "k") as k:
+                                end << end + aeff_len_c
+                                aeff_slice_c[k] << StringExpression(["to_vector(real_data[start:end])"])
+                                start << start + aeff_len_c
 
                     Esrc_min = ForwardVariableDef("Esrc_min", "real")
                     Esrc_max = ForwardVariableDef("Esrc_max", "real")
@@ -398,10 +428,16 @@ class StanFitInterface(StanInterface):
                                                 [
                                                     lp[i][k],
                                                     " += ",
+                                                    "log(",
                                                     FunctionCall(
-                                                        [self._dm["tracks"].effective_area(E[i], varpi[k])],
-                                                        "log"
+                                                        [
+                                                            aeff_egrid_t,
+                                                            aeff_slice_t[k],
+                                                            E[i],
+                                                        ],
+                                                        "interpolate"
                                                     ),
+                                                    " + 1e-10)",
                                                 ]
                                             )
                                             
@@ -598,9 +634,15 @@ class StanFitInterface(StanInterface):
                                             StringExpression(
                                                 [
                                                     lp[i][k],
-                                                    " += log(",
-                                                    self._dm["cascades"].effective_area(
-                                                        E[i], varpi[k]
+                                                    " += ",
+                                                    "log(",
+                                                    FunctionCall(
+                                                        [
+                                                            aeff_egrid_c,
+                                                            aeff_slice_c[k],
+                                                            E[i],
+                                                        ],
+                                                        "interpolate"
                                                     ),
                                                     " + 1e-10)",
                                                 ]
@@ -826,6 +868,22 @@ class StanFitInterface(StanInterface):
                         "integral_grid_c", "vector[Ngrid]", N_int_str
                     )
 
+            # Aeff interpolation points for point sources
+            if self.sources.point_source:
+                if "tracks" in self._event_types:
+                    self._aeff_len_t = ForwardVariableDef("aeff_len_t", "int")
+                    self._aeff_slice_t = ForwardArrayDef(
+                        "aeff_slice_t", f"vector[aeff_len_t]", self._Ns_str
+                    )
+                    self._aeff_egrid_t = ForwardVariableDef("aeff_egrid_t", "vector[aeff_len_t]")
+
+                if "cascades" in self._event_types:
+                    self._aeff_len_c = ForwardVariableDef("aeff_len_c", "int")
+                    self._aeff_slice_c = ForwardArrayDef(
+                        "aeff_slice_c", f"vector[aeff_len_c]", self._Ns_str
+                    )
+                    self._aeff_egrid_c = ForwardVariableDef("aeff_egrid_c", "vector[aeff_len_c]")
+
             if self.sources.diffuse and self.sources.atmospheric:
 
                 N_pdet_str = self._Ns_2p_str
@@ -965,14 +1023,18 @@ class StanFitInterface(StanInterface):
                 )
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_diff}"
-
+                if self.sources.point_source:
+                    if "tracks" in self._event_types:
+                        sd_string += " + (Ns+1)*aeff_len_t"
+                    if "cascades" in self._event_types:
+                        sd_string += " + (Ns+1)*aeff_len_c"
                 # Create data arrays
                 self.real_data = ForwardArrayDef(
                     "real_data", "real", ["[N_shards,", sd_string, "]"]
                 )
 
                 self.int_data = ForwardArrayDef(
-                    "int_data", "int", ["[", self._N_shards, ", ", "J+4", "]"]
+                    "int_data", "int", ["[", self._N_shards, ", ", "J+6", "]"]
                 )
 
                 # Pack data into shards
@@ -1043,6 +1105,29 @@ class StanFitInterface(StanInterface):
                             self.real_data[i, insert_start:insert_end] << self._spatial_loglike[k][start:end]
                             insert_start << insert_start + insert_len
 
+                        # Pack aeff slices and the egrid of the slice
+                        if "tracks" in self._event_types:
+
+                            insert_end << insert_end + self._aeff_len_t
+                            self.real_data[i, insert_start:insert_end] << FunctionCall([self._aeff_egrid_t], "to_array_1d")
+                            insert_start << insert_start + self._aeff_len_t
+
+                            with ForLoopContext(1, self._Ns, "k") as k:
+                                insert_end << insert_end + self._aeff_len_t
+                                self.real_data[i, insert_start:insert_end] << FunctionCall([self._aeff_slice_t[k]], "to_array_1d")
+                                insert_start << insert_start + self._aeff_len_t
+
+                        if "cascades" in self._event_types:
+
+                            insert_end << insert_end + self._aeff_len_c
+                            self.real_data[i, insert_start:insert_end] << FunctionCall([self._aeff_egrid_c], "to_array_1d")
+                            insert_start << insert_start + self._aeff_len_c
+
+                            with ForLoopContext(1, self._Ns, "k") as k:
+                                insert_end << insert_end + self._aeff_len_c
+                                self.real_data[i, insert_start:insert_end] << FunctionCall([self._aeff_slice_c[k]], "to_array_1d")
+                                insert_start << insert_start + self._aeff_len_c
+
                     insert_end << insert_end + 1
                     self.real_data[i, insert_start] << self._Esrc_min
                     insert_start << insert_start + 1
@@ -1087,9 +1172,18 @@ class StanFitInterface(StanInterface):
                         self.int_data[i, 4] << 1
                     else:
                         self.int_data[i, 4] << 0
-                    # self.int_data[i, 5] << self._Ngrid
+                    
+                    if "tracks" in self._event_types:
+                        self.int_data[i, 5] << self._aeff_len_t
+                    else:
+                        self.int_data[i, 5] << 0
+                    if "cascades" in self._event_types:
+                        self.int_data[i, 6] << self._aeff_len_c
+                    else:
+                        self.int_data[i, 6] << 0
 
-                    self.int_data[i, 5:"4+insert_len"] << FunctionCall(
+
+                    self.int_data[i, 7:"6+insert_len"] << FunctionCall(
                         [
                             FunctionCall(
                                 [self._event_type[start:end]], "to_array_1d"
@@ -1654,7 +1748,7 @@ class StanFitInterface(StanInterface):
                                     with IfBlockContext(
                                         [StringExpression([k, " < ", self._Ns + 1])]
                                     ):
-                                        
+                                        """
                                         StringExpression(
                                             [
                                                 self._lp[i][k],
@@ -1667,6 +1761,23 @@ class StanFitInterface(StanInterface):
                                                     ],
                                                     "log"
                                                 )
+                                            ]
+                                        )
+                                        """
+                                        StringExpression(
+                                            [
+                                                self._lp[i][k],
+                                                " += ",
+                                                "log(",
+                                                FunctionCall(
+                                                    [
+                                                        self._aeff_egrid_t,
+                                                        self._aeff_slice_t[k],
+                                                        self._E[i]
+                                                    ],
+                                                    "interpolate"
+                                                ),
+                                                " + 1e-10)",
                                             ]
                                         )
 
@@ -1921,15 +2032,21 @@ class StanFitInterface(StanInterface):
                                     ):
 
                                         StringExpression(
-                                                [
-                                                    self._lp[i][k],
-                                                    " += log(",
-                                                    self._dm["cascades"].effective_area(
-                                                        self._E[i], self._omega_det[i]
-                                                    ),
-                                                    " + 1e-10)",
-                                                ]
-                                            )
+                                            [
+                                                self._lp[i][k],
+                                                " += ",
+                                                "log(",
+                                                FunctionCall(
+                                                    [
+                                                        self._aeff_egrid_c,
+                                                        self._aeff_slice_c[k],
+                                                        self._E[i]
+                                                    ],
+                                                    "interpolate"
+                                                ),
+                                                " + 1e-10)",
+                                            ]
+                                        )
 
                                         # log_prob += log(p(Esrc | diff_index))
                                         StringExpression(
