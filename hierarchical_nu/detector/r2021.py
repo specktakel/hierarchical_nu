@@ -269,13 +269,13 @@ class HistogramSampler():
         """
 
         logger.debug("Making histograms.")
-        self._ragged_hist = UserDefinedFunction("{}_get_ragged_hist".format(data_type), ["idx"], ["int"], "real[]")
+        self._ragged_hist = UserDefinedFunction("{}_get_ragged_hist".format(data_type), ["idx"], ["int"], "array[] real")
         with self._ragged_hist:
             arr = StanArray("arr", "real", hist_values)
             self._make_ragged_start_stop(data_type, "vals")
             ReturnStatement(["arr[start:stop]"])
 
-        self._ragged_edges = UserDefinedFunction("{}_get_ragged_edges".format(data_type), ["idx"], ["int"], "real[]")
+        self._ragged_edges = UserDefinedFunction("{}_get_ragged_edges".format(data_type), ["idx"], ["int"], "array[] real")
         with self._ragged_edges:
             arr = StanArray("arr", "real", hist_bins)
             self._make_ragged_start_stop(data_type, "edges")
