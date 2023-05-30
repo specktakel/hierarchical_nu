@@ -6,7 +6,7 @@ from cmdstanpy import CmdStanModel
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 
-from hierarchical_nu.stan.interface import STAN_PATH
+from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
@@ -39,15 +39,22 @@ Emin = Parameter(5e4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
 Emin_det = Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
 
+z = 0.4
+Esrc_min = Parameter(Emin.value * (z + 1.), "Esrc_min", fixed=True)
+Esrc_max = Parameter(Emax.value * (z + 1.), "Esrc_max", fixed=True)
+
+Ediff_min = Parameter(Emin.value, "Ediff_min", fixed=True)
+Ediff_max = Parameter(Emax.value, "Ediff_max", fixed=True)
+
 point_source = PointSource.make_powerlaw_source(
-    "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, 0.4, Emin, Emax
+    "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, z, Esrc_min, Esrc_max
 )
 
 my_sources = Sources()
 my_sources.add(point_source)
 
-my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
-# my_sources.add_atmospheric_component()
+my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Ediff_min, Ediff_max)
+my_sources.add_atmospheric_component()
 
 detector_models = [
     NorthernTracksDetectorModel,
@@ -56,7 +63,8 @@ detector_models = [
     R2021DetectorModel,
 ]
 
-stanc_options = {"include-paths": [STAN_PATH]}
+stanc_options = {"include-paths": [STAN_PATH, STAN_GEN_PATH]}
+
 
 
 def test_stan_sim_interface(output_directory):

@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
 import logging
 import collections
-
+from cycler import cycler
 import ligo.skymap.plot
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
@@ -129,16 +129,21 @@ class Simulation:
 
         if not include_paths:
             include_paths = [STAN_PATH]
-        if self._detector_model_type == R2021DetectorModel:
-            r2021_path = os.path.join(os.getcwd(), ".stan_files")
-            if not r2021_path in include_paths:
-                include_paths.append(r2021_path)
 
         stanc_options = {"include-paths": include_paths}
 
         self._main_sim = CmdStanModel(
             stan_file=self._main_sim_filename,
             stanc_options=stanc_options,
+        )
+
+    def setup_stan_sim(self, exe_file):
+        """
+        Reuse previously compiled model
+        """
+
+        self._main_sim = CmdStanModel(
+            exe_file=exe_file
         )
 
     def run(self, seed=None, verbose=False, **kwargs):
@@ -217,12 +222,22 @@ class Simulation:
 
         self.events.to_file(filename, append=True)
 
-    def show_spectrum(self):
+    def show_spectrum(self, *components: str, scale: str="linear"):
 
+        #hatch_cycle = cycler(hatch=['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'])
+        hatch_cycle = ['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*']
         Esrc = self._sim_output.stan_variable("Esrc")[0]
         E = self._sim_output.stan_variable("E")[0]
+        lam = self._sim_output.stan_variable("Lambda")[0] - 1
+        assert np.all(Esrc >= E)
         Edet = self.events.energies.value
         Emin_det = self._get_min_det_energy().to(u.GeV).value
+
+        N = len(self._sources)
+
+        Esrc_plot = [Esrc[np.nonzero(lam==float(i))] for i in range(N)]
+        E_plot = [E[np.nonzero(lam==float(i))] for i in range(N)]
+        Edet_plot = [Edet[np.nonzero(lam==float(i))] for i in range(N)]
 
         bins = np.logspace(
             np.log10(Emin_det),
@@ -231,14 +246,45 @@ class Simulation:
             base=10,
         )
 
-        fig, ax = plt.subplots()
-        ax.hist(Esrc, bins=bins, label="E at source", alpha=0.5)
-        ax.hist(E, bins=bins, label="E at detector", alpha=0.5)
-        ax.hist(Edet, bins=bins, label="E reconstructed", alpha=0.5)
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax.set_xlabel("E")
-        ax.legend()
+        fig, ax = plt.subplots(3, 1)
+        for c, (source, hatch, _Esrc, _E, _Edet) in enumerate(zip(self._sources, hatch_cycle, Esrc_plot, E_plot, Edet_plot)):
+            
+           
+
+            if c == 0:
+                _bsrc = np.zeros(bins[:-1].shape)
+                label = source.name + " at source"
+                 # This is only needed s.t. flake does not complain
+                _nEsrc = 0
+            else:
+                _bsrc += _nEsrc
+                label = source.name
+
+            _nEsrc, _, _ = ax[0].hist(_Esrc, bins=bins, label=label, bottom=_bsrc, alpha=0.5, hatch=hatch)
+            
+            if c == 0:
+                _b = np.zeros(bins[:-1].shape)
+                label = source.name + " at detector"
+                _nE = 0
+            else:
+                _b += _nE
+                label = source.name
+            _nE, _, _ = ax[1].hist(_E, bins=bins, label=label, bottom=_b, alpha=0.5, hatch=hatch)
+            
+            if c == 0:
+                _bdet = np.zeros(bins[:-1].shape)
+                label = source.name + ", detected"
+                _nEdet = 0
+            else:
+                _bdet += _nEdet
+                label = source.name
+            _nEdet, _, _ = ax[2].hist(_Edet, bins=bins, label=label, bottom=_bdet, alpha=0.5, hatch=hatch)
+
+        for a in ax:
+            a.set_xscale("log")
+            a.set_yscale(scale)
+            a.set_xlabel("E")
+            a.legend()
 
         return fig, ax
 
@@ -407,8 +453,14 @@ class Simulation:
         if self._sources.diffuse:
             sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
 
-        sim_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
-        sim_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+        sim_inputs["Esrc_min"] = Parameter.get_parameter("Esrc_min").value.to(u.GeV).value
+        sim_inputs["Esrc_max"] = Parameter.get_parameter("Esrc_max").value.to(u.GeV).value
+
+        sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
+        sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+
+        sim_inputs["Ediff_min"] = Parameter.get_parameter("Ediff_min").value.to(u.GeV).value
+        sim_inputs["Ediff_max"] = Parameter.get_parameter("Ediff_max").value.to(u.GeV).value
 
         for event_type in self._detector_model_type.event_types:
 
@@ -733,7 +785,9 @@ def _get_expected_Nnu_(
                 flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
                 if shared_src_index:
                     flux = flux * flux_conv_(
-                        src_index, sim_inputs["Esrc_min"] / (1 + sim_inputs["z"][i]), sim_inputs["Esrc_max"] / (1 + sim_inputs["z"][i])
+                        src_index,
+                        sim_inputs["Esrc_min"] / (1 + sim_inputs["z"][i]),
+                        sim_inputs["Esrc_max"] / (1 + sim_inputs["z"][i]),
                     )
                 else:
                     flux = flux * flux_conv_(
@@ -749,7 +803,9 @@ def _get_expected_Nnu_(
                 flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
                 if shared_src_index:
                     flux = flux * flux_conv_(
-                        src_index, sim_inputs["Esrc_min"] / (1 + sim_inputs["z"][i]), sim_inputs["Esrc_max"] / (1 + sim_inputs["z"][i])
+                        src_index,
+                        sim_inputs["Esrc_min"] / (1 + sim_inputs["z"][i]),
+                        sim_inputs["Esrc_max"] / (1 + sim_inputs["z"][i]),
                     )
                 else:
                     flux = flux * flux_conv_(

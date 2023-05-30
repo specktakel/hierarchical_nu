@@ -48,8 +48,8 @@ class ExposureIntegral:
         """
 
         self._sources = sources
-        self._min_src_energy = Parameter.get_parameter("Emin").value
-        self._max_src_energy = Parameter.get_parameter("Emax").value
+        #self._min_src_energy = Parameter.get_parameter("Emin").value
+        #self._max_src_energy = Parameter.get_parameter("Emax").value
         self._n_grid_points = n_grid_points
 
         # Use Emin_det if available, otherwise use per event_type
@@ -153,7 +153,7 @@ class ExposureIntegral:
             cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
 
             integral = source.flux_model.spectral_shape.integral(
-                lower_e_edges * (1 + z), upper_e_edges * (1 + z)
+                lower_e_edges, upper_e_edges
             ).to(integral_unit)
             if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
                 self.effective_area.cosz_bin_edges
@@ -190,8 +190,8 @@ class ExposureIntegral:
             #    dec_upper = np.union1d(dec_lower, self.energy_resolution._declination_bins[1:] * u.rad)
 
             integral = source.flux_model.integral(
-                lower_e_edges[:, np.newaxis] * (1 + z),
-                upper_e_edges[:, np.newaxis] * (1 + z),
+                lower_e_edges[:, np.newaxis],
+                upper_e_edges[:, np.newaxis],
                 dec_lower[np.newaxis, :],
                 dec_upper[np.newaxis, :],
                 0 * u.rad,
@@ -216,7 +216,7 @@ class ExposureIntegral:
                 )
             p_Edet = np.nan_to_num(p_Edet)
 
-        return ((p_Edet * integral.T * aeff.T).T).sum() * (1 + z)
+        return ((p_Edet * integral.T * aeff.T).T).sum()
 
     def _compute_exposure_integral(self):
         """
@@ -254,6 +254,10 @@ class ExposureIntegral:
                 integral_grids_tmp[indices] += self.calculate_rate(
                     source
                 ) / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
+                # essentially my calculation, but from the other end
+                # normalisation of integrated particle flux is taken out 
+                # because it is used as a transformed parameter
+                # remainder is only dependent on gamma and detector
 
             # Reset free parameters to original values
             for par_name in this_free_pars:
@@ -267,64 +271,27 @@ class ExposureIntegral:
 
             self._integral_grid.append(integral_grids_tmp)
 
-    def _compute_energy_detection_factor(self):
+    def _slice_aeff_for_point_sources(self):
         """
-        Loop over sources and calculate Aeff as a function of arrival energy.
+        Return a slice of the effective area at each point source's declination
         """
 
-        epsilon = 1e-5
-        Emin = min(self.effective_area.tE_bin_edges)
-        Emax = max(self.effective_area.tE_bin_edges)
-        self.energy_grid = (
-            10
-            ** np.linspace(
-                np.log10(Emin), np.log10(Emax - epsilon), self._n_grid_points
-            )
-            << u.GeV
-        )
+        logelow = np.log10(self.effective_area.tE_bin_edges[:-1])
+        logehigh = np.log10(self._effective_area.tE_bin_edges[1:])
+
+        ec = np.power(10, (logelow + logehigh) / 2) << u.GeV
 
         self.pdet_grid = []
-
-        for source in self._sources.sources:
-
+        self.pdet_grid.append(ec)
+        for source in self._sources:
             if isinstance(source, PointSource):
-
                 unit_vector = icrs_to_uv(source.dec.value, source.ra.value)
                 cosz = np.cos(np.pi - np.arccos(unit_vector[2]))
                 cosz_bin = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
 
-                # Set to zero if outside cosz range
-                if (cosz < min(self.effective_area.cosz_bin_edges)) or (
-                    cosz >= max(self.effective_area.cosz_bin_edges)
-                ):
+                aeff_slice = self.effective_area.eff_area[:, cosz_bin] << u.m**2
 
-                    pg = np.zeros_like(self.energy_grid)
-
-                else:
-
-                    pg = [
-                        self.effective_area.eff_area[
-                            np.digitize(E.value, self.effective_area.tE_bin_edges) - 1
-                        ][cosz_bin]
-                        for E in self.energy_grid
-                    ]
-                    pg = np.array(pg)
-
-            if isinstance(source, DiffuseSource):
-
-                aeff_vals = np.sum(self.effective_area.eff_area, axis=1)
-
-                pg = [
-                    aeff_vals[
-                        np.digitize(E.value, self.effective_area.tE_bin_edges) - 1
-                    ]
-                    for E in self.energy_grid
-                ]
-                pg = np.array(pg)
-
-            self.pdet_grid.append(pg)
-
-        self.pdet_grid = np.array(self.pdet_grid) + 1e-10  # avoid log(0)
+                self.pdet_grid.append(aeff_slice)
 
     def _compute_c_values(self):
         """
@@ -334,9 +301,6 @@ class ExposureIntegral:
         f, target function: aeff_factor * src_spectrum
         g, envelope function: bbpl envelope used for sampling
         """
-
-        Emin_src = self._min_src_energy.to_value(u.GeV)
-        Emax_src = self._max_src_energy.to_value(u.GeV)
 
         cosz_bin_cens = (
             self.effective_area.cosz_bin_edges[:-1]
@@ -348,50 +312,86 @@ class ExposureIntegral:
         gamma2_scale = self.effective_area.rs_bbpl_params["gamma2_scale"]
 
         c_values = []
-        for source in self._sources.sources:
 
-            Emin = Emin_src / (1 + source.redshift)
-            Emax = Emax_src / (1 + source.redshift)
+        for source in self._sources.sources:
+            
+            # Energy bounds in flux model are already redshift-corrected
+            # and live in the detector frame
+            
+            try:
+                Emin = source.flux_model.spectral_shape._lower_energy.to_value(u.GeV)
+                Emax = source.flux_model.spectral_shape._upper_energy.to_value(u.GeV)
+            except AttributeError:
+                Emin = source.flux_model._lower_energy.to_value(u.GeV)
+                Emax = source.flux_model._upper_energy.to_value(u.GeV)
+
             E_range = 10 ** np.linspace(np.log10(Emin), np.log10(Emax))
 
-            f_values_all = []
-            for cosz in cosz_bin_cens:
-
+            if isinstance(source, PointSource):
+                # Point source has one declination/cosz,
+                # no loop over cosz necessary 
+                cosz = source.cosz
                 idx_cosz = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
                 aeff_values = []
                 for E in E_range:
-
                     idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
                     aeff_values.append(self.effective_area.eff_area[idx_E][idx_cosz])
+                f_values = (
+                    source.flux_model.spectral_shape.pdf(
+                        E_range * u.GeV, Emin * u.GeV, Emax * u.GeV, apply_lim=False
+                    )
+                    * aeff_values
+                )
+                gamma2 = (
+                    gamma2_scale
+                    - source.flux_model.spectral_shape.parameters["index"].value
+                )
+                
+            else:
+                # For diffuse sources, we need to find the largest c value
+                # that is then used at all declinations.
+                # In the case of the atmospheric background,
+                # the distribution is bivariate. We are not allowed to 
+                # pic c-values for each declination separetely
+                # because then we assume independent distributions
+                # at each declination, all "relative information"
+                # is then lost.
+                f_values_all = []
 
-                if isinstance(source.flux_model, AtmosphericNuMuFlux):
+                for cosz in cosz_bin_cens:
+                    idx_cosz = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
+                    aeff_values = []
+                    for E in E_range:
+                        idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
+                        aeff_values.append(self.effective_area.eff_area[idx_E][idx_cosz])
 
                     dec = np.arcsin(-cosz)  # Only for IceCube
-                    atmo_flux_integ_val = source.flux_model.total_flux_int.to(
-                        1 / (u.m**2 * u.s)
-                    ).value
-                    f_values = (
-                        source.flux_model(
-                            E_range * u.GeV, dec * u.rad, 0 * u.rad
-                        ).to_value(1 / (u.GeV * u.s * u.sr * u.m**2))
-                        / atmo_flux_integ_val
-                    ) * aeff_values
-                    gamma2 = gamma2_scale - 3.6
 
-                else:
+                    if isinstance(source.flux_model, AtmosphericNuMuFlux):
 
-                    f_values = (
-                        source.flux_model.spectral_shape.pdf(
-                            E_range * u.GeV, Emin * u.GeV, Emax * u.GeV, apply_lim=False
+                        atmo_flux_integ_val = source.flux_model.total_flux_int.to(
+                            1 / (u.m**2 * u.s)
+                        ).value
+                        f_values = (
+                            source.flux_model(
+                                E_range * u.GeV, dec * u.rad, 0 * u.rad
+                            ).to_value(1 / (u.GeV * u.s * u.sr * u.m**2))
+                            / atmo_flux_integ_val
+                        ) * aeff_values
+                        gamma2 = gamma2_scale - 3.6
+                    else:
+                        f_values = (
+                            source.flux_model.spectral_shape.pdf(
+                                E_range * u.GeV, Emin * u.GeV, Emax * u.GeV, apply_lim=False
+                            )
+                            * aeff_values
                         )
-                        * aeff_values
-                    )
-                    gamma2 = (
-                        gamma2_scale
-                        - source.flux_model.spectral_shape.parameters["index"].value
-                    )
+                        gamma2 = (
+                            gamma2_scale
+                            - source.flux_model.spectral_shape.parameters["index"].value
+                        )
 
-                f_values_all.append(f_values)
+                    f_values_all.append(f_values)
 
             if Emin < Eth and Emax > Eth:
 
@@ -428,8 +428,12 @@ class ExposureIntegral:
                     gamma2,
                     gamma2,
                 )
-
-            c_values_src = [max(f_values / g_values) for f_values in f_values_all]
+            if isinstance(source, PointSource):
+                # Pick the largest
+                c_values_src = max(f_values / g_values)
+            else:
+                # Pick the larget of the largest, encompassing now all declinations.
+                c_values_src = max([max(f_values / g_values) for f_values in f_values_all])
             c_values.append(c_values_src)
 
         self.c_values = c_values
@@ -441,7 +445,9 @@ class ExposureIntegral:
 
         self._compute_exposure_integral()
 
-        self._compute_energy_detection_factor()
+        # self._compute_energy_detection_factor()
+
+        self._slice_aeff_for_point_sources()
 
         self._compute_c_values()
 

@@ -13,6 +13,7 @@ _local_config_path = Path(".")
 _config_name = Path("hnu_config.yml")
 
 _config_file = _config_path / _config_name
+
 # Overwrite global config with local config
 _local_config_file = _local_config_path / _config_name
 
@@ -36,22 +37,26 @@ class ParameterConfig:
     src_index_range: tuple = (1.0, 4.0)
     diff_index: float = 2.5
     diff_index_range: tuple = (1.0, 4.0)
-    L: float = 5e46  # u.erg / u.s
+    L: float = 2e47  # u.erg / u.s
     L_range: tuple = (0, 1e60)
     src_dec: float = 0.  # u.deg
     src_ra: float = 90.  # u.deg
     Enorm: float = 1e5  # u.GeV
     Emin: float = 5e4  # u.GeV
     Emax: float = 1e8  # u.GeV
-    diff_norm: float = 5e-14  # 1 / (u.GeV * u.m**2 * u.s)
-    z: float = 0.43  # cosmological redshift, dimensionless
+    Esrc_min: float = 1.4e5  # u.GeV, value to fix current problems with energy ranges
+    Esrc_max: float = 1.4e8   # u.GeV
+    Ediff_min: float = 5e4  #u.GeV
+    Ediff_max: float = 1e8 # u.GeV
+    diff_norm: float = 2e-13  # 1 / (u.GeV * u.m**2 * u.s)
+    z: float = 0.4  # cosmological redshift, dimensionless
 
     # If True, use same Emin_det for all
     # If False, use separate for tracks and cascades
     Emin_det_eq: bool = False
 
     Emin_det: float = 1e5  # u.GeV
-    Emin_det_tracks: float = 1e5  # u.GeV
+    Emin_det_tracks: float = 6e4  # u.GeV
     Emin_det_cascades: float = 6e4  # u.GeV
 
     # Can be "icecube", "northern_tracks", "cascades", or "r2021"
@@ -60,7 +65,7 @@ class ParameterConfig:
     obs_time: float = 10  # years
 
     # Within-chain parallelisation
-    nshards: int = 1
+    nshards: int = 10
     threads_per_chain: int = nshards
 
 
@@ -94,17 +99,7 @@ class HierarchicalNuConfig:
 # Load default config
 hnu_config: HierarchicalNuConfig = OmegaConf.structured(HierarchicalNuConfig)
 
-
-if not _config_file.is_file() or not _local_config_file.is_file():
-    # Prints should be converted to logger at some point
-    print("No config found, creating new one")
-    _config_path.mkdir(parents=True, exist_ok=True)
-
-    with _config_file.open("w") as f:
-
-        OmegaConf.save(config=hnu_config, f=f.name)
-
-elif _local_config_file.is_file():
+if _local_config_file.is_file():
     print("local config found")
     _local_config = OmegaConf.load(_local_config_file)
 
@@ -121,3 +116,11 @@ elif _config_file.is_file():
         hnu_config,
         _local_config,
     )
+
+else:
+    # Prints should be converted to logger at some point
+    print("No config found, creating new global config from default")
+    _config_path.mkdir(parents=True, exist_ok=True)
+
+    with _config_file.open("w") as f:
+        OmegaConf.save(config=hnu_config, f=f.name)

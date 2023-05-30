@@ -87,6 +87,18 @@ vector get_exposure_weights(vector F, vector eps) {
   return weights;
 }
   
+/**
+ * Integral over power law without normalisation, i.e. \int_x1^x2 x^{-gamma}
+ */
+real Ngamma(real gamma, real n, real x0, real x1, real x2) {
+  real idx = n + 1. - gamma;
+  if (n + 1. == gamma) {
+    return x0^(n+1.) * log(x2/x1);
+  }
+  else {
+    return x0^gamma * (x2^idx - x1^idx) / idx;
+  }
+}
 
 /**
  * Convert from unit vector omega to theta of spherical coordinate system.
@@ -139,6 +151,11 @@ real get_Nex(vector F, vector eps) {
   }
   
   return Nex;
+}
+
+vector get_Nex_vec(vector F, vector eps) {
+
+  return F .* eps;
 }
 
 

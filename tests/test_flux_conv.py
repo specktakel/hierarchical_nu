@@ -1,0 +1,87 @@
+import pytest
+import numpy as np
+from astropy import units as u
+
+from hierarchical_nu.source.cosmology import luminosity_distance
+from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.source.source import Sources, PointSource
+from hierarchical_nu.source.flux_model import integral_power_law
+
+Parameter.clear_registry()
+
+class TestPrecomputation():
+
+    @pytest.fixture
+    def setup_point_source(self):
+        self.redshift = 0.4
+        self.src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
+        self.diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
+        self.L = Parameter(1.0e47 * (u.erg / u.s), "luminosity", fixed=True, 
+                    par_range=(0, 1e60)*(u.erg/u.s))
+        self.diffuse_norm = Parameter(1.0e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+                                par_range=(0, np.inf))
+        self.Emin_src = Parameter(5e4 * u.GeV, "Emin_src", fixed=True)
+        self.Emax_src = Parameter(1e8 * u.GeV, "Emax_src", fixed=True)
+        self.Emin_det = Parameter(6e4 * u.GeV, "Emin_det", fixed=True)
+
+        self.point_source = PointSource.make_powerlaw_source(
+            "your_ad_here",
+            np.deg2rad(5)*u.rad,
+            np.pi*u.rad, 
+            self.L,
+            self.src_index,
+            self.redshift,
+            self.Emin_src,
+            self.Emax_src,
+        )
+
+        self.my_sources = Sources()
+        self.my_sources.add(self.point_source)
+
+
+    @pytest.fixture
+    def setup_diff_source(self):
+        self.diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
+        self.diffuse_norm = Parameter(1.0e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+                                par_range=(0, np.inf))
+        self.Ediff_min = Parameter(1e4 * u.GeV, "Ediff_min", fixed=True)
+        self.Ediff_max = Parameter(1e8 * u.GeV, "Ediff_max", fixed=True)
+
+        # set redshift of diffuse spectrum to zero
+        try:
+            self.my_sources.add_diffuse_component(self.diffuse_norm, 1e5*u.GeV, self.diff_index, self.Ediff_min, self.Ediff_max)
+        except:
+            self.my_sources = Sources()
+            self.my_sources.add_diffuse_component(self.diffuse_norm, 1e5*u.GeV, self.diff_index, self.Ediff_min, self.Ediff_max)
+
+        
+    def test_flux_conversion_diff_source(self, setup_diff_source):
+        F = self.my_sources.diffuse._parameters["norm"].value.copy()
+        F *= integral_power_law(
+            self.diff_index.value,
+            0.,
+            self.Ediff_min.value,
+            self.Ediff_max.value
+        )
+        assert self.my_sources.diffuse.flux_model.total_flux_int.value == pytest.approx(
+            F.value
+        )
+
+
+    def test_flux_conversion_point_source(self, setup_point_source):
+        F = self.L.value / (4 * np.pi * luminosity_distance(0.4)**2)
+        F *= integral_power_law(
+            self.src_index.value,
+            0,
+            self.Emin_src.value / (1 + self.redshift),
+            self.Emax_src.value / (1 + self.redshift)
+        )
+        F /= integral_power_law(
+            self.src_index.value,
+            1,
+            self.Emin_src.value / (1 + self.redshift),
+            self.Emax_src.value / (1 + self.redshift)
+        )
+        assert self.point_source.flux_model.total_flux_int.value == pytest.approx(
+            F.to(1/(u.second * u.meter**2)).value, rel=1e-5
+        )

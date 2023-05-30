@@ -191,6 +191,15 @@ class StanSimInterface(StanInterface):
             self._Esrc_min = ForwardVariableDef("Esrc_min", "real")
             self._Esrc_max = ForwardVariableDef("Esrc_max", "real")
 
+            # Energy range that the detector should consider
+            # Is influenced by parameterisation of energy resolution
+            self._Emin = ForwardVariableDef("Emin", "real")
+            self._Emax = ForwardVariableDef("Emax", "real")
+
+            # Energy range considered for diffuse astrophysical sources, defined at redshift z of shell
+            self._Ediff_min = ForwardVariableDef("Ediff_min", "real")
+            self._Ediff_max = ForwardVariableDef("Ediff_max", "real")
+
             # For tracks, we specify Emin_det, and several parameters for the
             # rejection sampling, denoted by rs_...
             # Separate interpolation grids are also provided for tracks and cascades
@@ -202,13 +211,13 @@ class StanSimInterface(StanInterface):
                 self._rs_bbpl_gamma2_scale_t = ForwardVariableDef(
                     "rs_bbpl_gamma2_scale_t", "real"
                 )
-                self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
+                # self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
                 self._rs_cvals_t = ForwardArrayDef(
-                    "rs_cvals_t", "vector[rs_N_cosz_bins_t]", [f"[{self.sources.N}]"]
+                    "rs_cvals_t", "real", [f"[{self.sources.N}]"]
                 )
-                self._rs_cosz_bin_edges_t = ForwardArrayDef(
-                    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
-                )
+                #self._rs_cosz_bin_edges_t = ForwardArrayDef(
+                #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
+                #)
 
                 if self.sources.diffuse or self.sources.point_source:
                     self._integral_grid_t = ForwardArrayDef(
@@ -226,13 +235,13 @@ class StanSimInterface(StanInterface):
                 self._rs_bbpl_gamma2_scale_c = ForwardVariableDef(
                     "rs_bbpl_gamma2_scale_c", "real"
                 )
-                self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
+                #self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
                 self._rs_cvals_c = ForwardArrayDef(
-                    "rs_cvals_c", "vector[rs_N_cosz_bins_c]", [f"[{self.sources.N}]"]
+                    "rs_cvals_c", "real", [f"[{self.sources.N}]"]
                 )
-                self._rs_cosz_bin_edges_c = ForwardArrayDef(
-                    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
-                )
+                #self._rs_cosz_bin_edges_c = ForwardArrayDef(
+                #    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
+                #)
 
                 if self.sources.diffuse or self.sources.point_source:
                     self._integral_grid_c = ForwardArrayDef(
@@ -395,7 +404,9 @@ class StanSimInterface(StanInterface):
                             self._F[k],
                             "*=",
                             self._flux_conv(
-                                src_index_ref, self._Esrc_min/(1+self._z[k]), self._Esrc_max/(1+self._z[k])
+                                src_index_ref,
+                                self._Esrc_min / (1 + self._z[k]),
+                                self._Esrc_max / (1 + self._z[k])
                             ),
                         ]
                     )
@@ -655,7 +666,6 @@ class StanSimInterface(StanInterface):
         with GeneratedQuantitiesContext():
 
             self._dm_rng = OrderedDict()
-            self._dm_pdf = OrderedDict()
 
             # For different event types, define the detector model in both RNG and PDF
             # mode to have all functions included.
@@ -676,10 +686,6 @@ class StanSimInterface(StanInterface):
                     self._dm_rng[event_type] = self.detector_model_type(
                         mode=DistributionMode.RNG, event_type=event_type
                     )
-                # self._dm_pdf[event_type] = self.detector_model_type(
-                #    mode=DistributionMode.PDF,
-                #    event_type=event_type,
-                # )
 
             # We redefine a bunch of variables from transformed data here, as we would
             # like to access them as outputs from the Stan simulation.
@@ -1019,8 +1025,8 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min
-                                self._Esrc_max_arr << self._Esrc_max
+                                self._Esrc_min_arr << self._Emin
+                                self._Esrc_max_arr << self._Emax
                                 with IfBlockContext(
                                     [
                                         StringExpression(
@@ -1185,12 +1191,14 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min / (
+
+                                self._Esrc_min_arr << self._Ediff_min / (
                                     1 + self._z[self._lam[i]]
                                 )
-                                self._Esrc_max_arr << self._Esrc_max / (
+                                self._Esrc_max_arr << self._Ediff_max / (
                                     1 + self._z[self._lam[i]]
                                 )
+
                                 with IfBlockContext(
                                     [
                                         StringExpression(
@@ -1335,8 +1343,8 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    self._Ediff_min / (1 + self._z[self._lam[i]]),
+                                    self._Ediff_max / (1 + self._z[self._lam[i]]),
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
@@ -1359,8 +1367,8 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min
-                                self._Esrc_max_arr << self._Esrc_max
+                                self._Esrc_min_arr << self._Emin
+                                self._Esrc_max_arr << self._Emax
 
                                 with IfBlockContext(
                                     [
@@ -1530,10 +1538,10 @@ class StanSimInterface(StanInterface):
                         self._f_value << self._src_factor * self._aeff_factor
 
                         # Find the precomputed c_value for this source and cosz
-                        self._idx_cosz << FunctionCall(
-                            [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
-                        )
-                        self._c_value << self._rs_cvals_t[self._lam[i]][self._idx_cosz]
+                        #self._idx_cosz << FunctionCall(
+                        #    [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
+                        #)
+                        self._c_value << self._rs_cvals_t[self._lam[i]]
 
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
@@ -1876,12 +1884,16 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
+                                """
                                 self._Esrc_min_arr << self._Esrc_min / (
                                     1 + self._z[self._lam[i]]
                                 )
                                 self._Esrc_max_arr << self._Esrc_max / (
                                     1 + self._z[self._lam[i]]
                                 )
+                                """
+                                self._Esrc_min_arr << self._Emin
+                                self._Esrc_max_arr << self._Emax
 
                                 with IfBlockContext(
                                     [
@@ -2027,8 +2039,10 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    #self._Esrc_min / (1 + self._z[self._lam[i]]),
+                                    #self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    self._Esrc_min_arr,
+                                    self._Esrc_max_arr,
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
@@ -2044,10 +2058,10 @@ class StanSimInterface(StanInterface):
 
                         self._f_value = self._src_factor * self._aeff_factor
 
-                        self._idx_cosz << FunctionCall(
-                            [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
-                        )
-                        self._c_value << self._rs_cvals_c[self._lam[i]][self._idx_cosz]
+                        #self._idx_cosz << FunctionCall(
+                        #    [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
+                        #)
+                        self._c_value << self._rs_cvals_c[self._lam[i]]
 
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
