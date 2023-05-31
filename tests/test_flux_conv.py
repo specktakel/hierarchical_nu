@@ -44,15 +44,15 @@ class TestPrecomputation():
         self.diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
         self.diffuse_norm = Parameter(1.0e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                                 par_range=(0, np.inf))
-        self.Ediff_min = Parameter(1e4 * u.GeV, "Ediff_min", fixed=True)
-        self.Ediff_max = Parameter(1e8 * u.GeV, "Ediff_max", fixed=True)
+        self.Emin_diff = Parameter(1e4 * u.GeV, "Emin_diff", fixed=True)
+        self.Emax_diff = Parameter(1e8 * u.GeV, "Emax_diff", fixed=True)
 
         # set redshift of diffuse spectrum to zero
         try:
-            self.my_sources.add_diffuse_component(self.diffuse_norm, 1e5*u.GeV, self.diff_index, self.Ediff_min, self.Ediff_max)
+            self.my_sources.add_diffuse_component(self.diffuse_norm, 1e5*u.GeV, self.diff_index, self.Emin_diff, self.Emax_diff)
         except:
             self.my_sources = Sources()
-            self.my_sources.add_diffuse_component(self.diffuse_norm, 1e5*u.GeV, self.diff_index, self.Ediff_min, self.Ediff_max)
+            self.my_sources.add_diffuse_component(self.diffuse_norm, 1e5*u.GeV, self.diff_index, self.Emin_diff, self.Emax_diff)
 
         
     def test_flux_conversion_diff_source(self, setup_diff_source):
@@ -60,8 +60,8 @@ class TestPrecomputation():
         F *= integral_power_law(
             self.diff_index.value,
             0.,
-            self.Ediff_min.value,
-            self.Ediff_max.value
+            self.Emin_diff.value,
+            self.Emax_diff.value
         )
         assert self.my_sources.diffuse.flux_model.total_flux_int.value == pytest.approx(
             F.value

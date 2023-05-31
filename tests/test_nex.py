@@ -27,8 +27,8 @@ class TestNex():
                     par_range=(0, 1e60)*(u.erg/u.s))
         Emin = Parameter(min_energy * u.GeV, "Emin", fixed=True)
         Emax = Parameter(max_energy * u.GeV, "Emax", fixed=True)
-        Emin_src = Parameter(Emin.value*1.4, "Esrc_min", fixed=True)   # correct for redshift
-        Emax_src = Parameter(Emax.value*1.4, "Esrc_max", fixed=True)
+        Emin_src = Parameter(Emin.value*1.4, "Emin_src", fixed=True)   # correct for redshift
+        Emax_src = Parameter(Emax.value*1.4, "Emax_src", fixed=True)
         Emin_det = Parameter(1.e1 * u.GeV, "Emin_det", fixed=True)
 
         ps_hnu = PointSource.make_powerlaw_source("test", np.deg2rad(-30)*u.rad,
@@ -104,10 +104,10 @@ class TestNex():
                                 par_range=(0, np.inf))
         Emin = Parameter(1e5 * u.GeV, "Emin", fixed=True)
         Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
-        Ediff_min = Parameter(1e5 * u.GeV, "Ediff_min", fixed=True)
-        Ediff_max = Parameter(1e8 * u.GeV, "Ediff_max", fixed=True)
-        Emin_src = Parameter(Emin.value*1.4, "Esrc_min", fixed=True)
-        Emax_src = Parameter(Emax.value*1.4, "Esrc_max", fixed=True)
+        Emin_diff = Parameter(1e5 * u.GeV, "Emin_diff", fixed=True)
+        Emax_diff = Parameter(1e8 * u.GeV, "Emax_diff", fixed=True)
+        Emin_src = Parameter(Emin.value*1.4, "Emin_src", fixed=True)
+        Emax_src = Parameter(Emax.value*1.4, "Emax_src", fixed=True)
         Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
         Emin_det = Parameter(1.e1 * u.GeV, "Emin_det", fixed=True)
 
@@ -118,7 +118,7 @@ class TestNex():
         my_sources = Sources()
         my_sources.add(ps_hnu)
         
-        my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Ediff_min, Ediff_max)
+        my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff)
 
         sim = Simulation(my_sources, R2021DetectorModel, 1*u.year)
         sim.precomputation()
