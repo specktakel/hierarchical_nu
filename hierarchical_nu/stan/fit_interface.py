@@ -322,31 +322,31 @@ class StanFitInterface(StanInterface):
                                 aeff_slice_c[k] << StringExpression(["to_vector(real_data[start:end])"])
                                 start << start + aeff_len_c
 
-                    Esrc_min = ForwardVariableDef("Esrc_min", "real")
-                    Esrc_max = ForwardVariableDef("Esrc_max", "real")
+                    Emin_src = ForwardVariableDef("Emin_src", "real")
+                    Emax_src = ForwardVariableDef("Emax_src", "real")
                     Emin = ForwardVariableDef("Emin", "real")
                     Emax = ForwardVariableDef("Emax", "real")
                     if self.sources.diffuse:
-                        Ediff_min = ForwardVariableDef("Ediff_min", "real")
-                        Ediff_max = ForwardVariableDef("Ediff_max", "real")
+                        Emin_diff = ForwardVariableDef("Emin_diff", "real")
+                        Emax_diff = ForwardVariableDef("Emax_diff", "real")
                     Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
                     Emax_at_det = ForwardVariableDef("Emax_at_det", "real")
 
                     end << end + 1
-                    Esrc_min << StringExpression(["real_data[start]"])
+                    Emin_src << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     end << end + 1
-                    Esrc_max << StringExpression(["real_data[start]"])
+                    Emax_src << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     if self.sources.diffuse:
                         end << end + 1
-                        Ediff_min << StringExpression(["real_data[start]"])
+                        Emin_diff << StringExpression(["real_data[start]"])
                         start << start + 1
 
                         end << end + 1
-                        Ediff_max << StringExpression(["real_data[start]"])
+                        Emax_diff << StringExpression(["real_data[start]"])
                         start << start + 1
 
                     end << end + 1
@@ -458,8 +458,8 @@ class StanFitInterface(StanInterface):
                                                     self._src_spectrum_lpdf(
                                                         E[i],
                                                         src_index_ref,
-                                                        Esrc_min / (1 + z[k]),
-                                                        Esrc_max / (1 + z[k]),
+                                                        Emin_src / (1 + z[k]),
+                                                        Emax_src / (1 + z[k]),
                                                         #Emin,
                                                         #Emax,
                                                     ),
@@ -470,9 +470,9 @@ class StanFitInterface(StanInterface):
                                                     #", ",
                                                     #Emin_at_det, 
                                                     #", ",
-                                                    #Esrc_min/(1+z[k]),
+                                                    #Emin_src/(1+z[k]),
                                                     #", ",
-                                                    #Esrc_max/(1+z[k]),
+                                                    #Emax_src/(1+z[k]),
                                                     #", ",
                                                     #Emax_at_det,
                                                     #")"
@@ -547,8 +547,8 @@ class StanFitInterface(StanInterface):
                                                     self._diff_spectrum_lpdf(
                                                         E[i],
                                                         diff_index,
-                                                        Ediff_min / (1. + z[k]),
-                                                        Ediff_max / (1. + z[k]),
+                                                        Emin_diff / (1. + z[k]),
+                                                        Emax_diff / (1. + z[k]),
                                                     ),
                                                 ]
                                             )
@@ -661,8 +661,8 @@ class StanFitInterface(StanInterface):
                                                     self._src_spectrum_lpdf(
                                                         E[i],
                                                         src_index_ref,
-                                                        Esrc_min / (1 + z[k]),
-                                                        Esrc_max / (1 + z[k]),
+                                                        Emin_src / (1 + z[k]),
+                                                        Emax_src / (1 + z[k]),
                                                     ),
                                                 ]
                                             )
@@ -722,8 +722,8 @@ class StanFitInterface(StanInterface):
                                                     self._diff_spectrum_lpdf(
                                                         E[i],
                                                         diff_index,
-                                                        Ediff_min / (1. + z[k]),
-                                                        Ediff_max / (1. + z[k]),
+                                                        Emin_diff / (1. + z[k]),
+                                                        Emax_diff / (1. + z[k]),
                                                     ),
                                                 ]
                                             )
@@ -797,12 +797,12 @@ class StanFitInterface(StanInterface):
             self._kappa = ForwardVariableDef("kappa", "vector[N]")
 
             # Energy range at source
-            self._Esrc_min = ForwardVariableDef("Esrc_min", "real")
-            self._Esrc_max = ForwardVariableDef("Esrc_max", "real")
+            self._Emin_src = ForwardVariableDef("Emin_src", "real")
+            self._Emax_src = ForwardVariableDef("Emax_src", "real")
 
             #Energy range at the diffuse component at redshift z
-            self._Ediff_min = ForwardVariableDef("Ediff_min", "real")
-            self._Ediff_max = ForwardVariableDef("Ediff_max", "real")
+            self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
+            self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
             
             # Energy range at the detector
             self._Emin = ForwardVariableDef("Emin", "real")
@@ -993,15 +993,15 @@ class StanFitInterface(StanInterface):
             self._Emax_at_det << self._Emax
 
             with ForLoopContext(1, self._Ns, "k") as k:
-                with IfBlockContext([self._Esrc_min / (1 + self._z[k]), " < ", self._Emin_at_det]):
-                    self._Emin_at_det << self._Esrc_min / (1 + self._z[k])
-                with IfBlockContext([self._Esrc_max / (1 + self._z[k]), " > ", self._Emax_at_det]):
-                    self._Emax_at_det << self._Esrc_max / (1 + self._z[k])
+                with IfBlockContext([self._Emin_src / (1 + self._z[k]), " < ", self._Emin_at_det]):
+                    self._Emin_at_det << self._Emin_src / (1 + self._z[k])
+                with IfBlockContext([self._Emax_src / (1 + self._z[k]), " > ", self._Emax_at_det]):
+                    self._Emax_at_det << self._Emax_src / (1 + self._z[k])
             if self.sources.diffuse:
-                with IfBlockContext([self._Ediff_min / (1 + self._z[self._Ns+1]), " < ", self._Emin_at_det]):
-                    self._Emin_at_det << self._Ediff_min / (1. + self._z[self._Ns + 1])
-                with IfBlockContext([self._Ediff_max / (1 + self._z[self._Ns+1]), " > ", self._Emax_at_det]):
-                    self._Emax_at_det << self._Ediff_max / (1. + self._z[self._Ns + 1])
+                with IfBlockContext([self._Emin_diff / (1 + self._z[self._Ns+1]), " < ", self._Emin_at_det]):
+                    self._Emin_at_det << self._Emin_diff / (1. + self._z[self._Ns + 1])
+                with IfBlockContext([self._Emax_diff / (1 + self._z[self._Ns+1]), " > ", self._Emax_at_det]):
+                    self._Emax_at_det << self._Emax_diff / (1. + self._z[self._Ns + 1])
 
             if self._nshards not in [0, 1]:
                 self._N_shards_use_this = ForwardVariableDef("N_shards_loop", "int")
@@ -1012,9 +1012,9 @@ class StanFitInterface(StanInterface):
                 # Find size for real_data array
                 sd_events_J = 4    # reco energy, reco dir (unit vector)
                 sd_varpi_Ns = 3    # coords of events in the sky (unit vector)
-                sd_if_diff = 3     # redshift of diffuse component, Ediff_min/max
+                sd_if_diff = 3     # redshift of diffuse component, Emin_diff/max
                 sd_z_Ns = 1        # redshift of PS
-                sd_other = 6       # Esrc_min, Esrc_max, Emin, Emax
+                sd_other = 6       # Emin_src, Emax_src, Emin, Emax
                 #Need Ns * N for spatial loglike, added extra in sd_string
                 if self.sources.atmospheric and "tracks" in self._event_types:
                     sd_other += 1    # no atmo in cascades
@@ -1129,20 +1129,20 @@ class StanFitInterface(StanInterface):
                                 insert_start << insert_start + self._aeff_len_c
 
                     insert_end << insert_end + 1
-                    self.real_data[i, insert_start] << self._Esrc_min
+                    self.real_data[i, insert_start] << self._Emin_src
                     insert_start << insert_start + 1
 
                     insert_end << insert_end + 1
-                    self.real_data[i, insert_start] << self._Esrc_max
+                    self.real_data[i, insert_start] << self._Emax_src
                     insert_start << insert_start + 1
 
                     if self.sources.diffuse:
                         insert_end << insert_end + 1
-                        self.real_data[i, insert_start] << self._Ediff_min
+                        self.real_data[i, insert_start] << self._Emin_diff
                         insert_start << insert_start + 1
 
                         insert_end << insert_end + 1
-                        self.real_data[i, insert_start] << self._Ediff_max
+                        self.real_data[i, insert_start] << self._Emax_diff
                         insert_start << insert_start + 1
 
                     insert_end << insert_end + 1
@@ -1259,7 +1259,7 @@ class StanFitInterface(StanInterface):
             #find largest allowed range in loop over sources
 
             #self._Esrc = ParameterVectorDef(
-            #    "Esrc", "vector", self._N_str, self._Esrc_min, self._Esrc_max
+            #    "Esrc", "vector", self._N_str, self._Emin_src, self._Emax_src
             #)
             self._E = ParameterVectorDef(
                 "E", "vector", self._N_str, self._Emin_at_det, self._Emax_at_det
@@ -1442,7 +1442,7 @@ class StanFitInterface(StanInterface):
                             self._F[k],
                             "*=",
                             self._flux_conv(
-                                src_index_ref, self._Esrc_min/(1+self._z[k]), self._Esrc_max/(1+self._z[k]),
+                                src_index_ref, self._Emin_src/(1+self._z[k]), self._Emax_src/(1+self._z[k]),
                             ),
                         ]
                     )
@@ -1794,8 +1794,8 @@ class StanFitInterface(StanInterface):
                                                 self._src_spectrum_lpdf(
                                                     self._E[i],
                                                     src_index_ref,
-                                                    self._Esrc_min / (1 + self._z[k]),
-                                                    self._Esrc_max / (1 + self._z[k]),
+                                                    self._Emin_src / (1 + self._z[k]),
+                                                    self._Emax_src / (1 + self._z[k]),
                                                     #self._Emin,
                                                     #self._Emax,
                                                 ),
@@ -1806,9 +1806,9 @@ class StanFitInterface(StanInterface):
                                                 #", ",
                                                 #self._Emin_at_det, 
                                                 #", ",
-                                                #self._Esrc_min/(1+self._z[k]),
+                                                #self._Emin_src/(1+self._z[k]),
                                                 #", ",
-                                                #self._Esrc_max/(1+self._z[k]),
+                                                #self._Emax_src/(1+self._z[k]),
                                                 #", ",
                                                 #self._Emax_at_det,
                                                 #")"
@@ -1885,8 +1885,8 @@ class StanFitInterface(StanInterface):
                                                 self._diff_spectrum_lpdf(
                                                     self._E[i],
                                                     self._diff_index,
-                                                    self._Ediff_min / (1. + self._z[k]),
-                                                    self._Ediff_max / (1. + self._z[k]),
+                                                    self._Emin_diff / (1. + self._z[k]),
+                                                    self._Emax_diff / (1. + self._z[k]),
                                                 ),
                                             ]
                                         )
@@ -2004,8 +2004,8 @@ class StanFitInterface(StanInterface):
                                                 self._src_spectrum_lpdf(
                                                     self._E[i],
                                                     src_index_ref,
-                                                    self._Esrc_min / (1 + self._z[k]),
-                                                    self._Esrc_max / (1 + self._z[k]),
+                                                    self._Emin_src / (1 + self._z[k]),
+                                                    self._Emax_src / (1 + self._z[k]),
                                                 ),
                                             ]
                                         )
@@ -2056,8 +2056,8 @@ class StanFitInterface(StanInterface):
                                                 self._diff_spectrum_lpdf(
                                                     self._E[i],
                                                     self._diff_index,
-                                                    self._Ediff_min / (1. + self._z[k]),
-                                                    self._Ediff_max / (1. + self._z[k]),
+                                                    self._Emin_diff / (1. + self._z[k]),
+                                                    self._Emax_diff / (1. + self._z[k]),
                                                 ),
                                             ]
                                         )
@@ -2270,8 +2270,8 @@ class StanFitInterface(StanInterface):
                                                 self._src_spectrum_lpdf(
                                                     self._E[i],
                                                     src_index_ref,
-                                                    self._Esrc_min / (1 + self._z[k]),
-                                                    self._Esrc_max / (1 + self._z[k]),
+                                                    self._Emin_src / (1 + self._z[k]),
+                                                    self._Emax_src / (1 + self._z[k]),
                                                 ),
                                                 #"dbbpl_logpdf(",
                                                 #self._E[i], 
@@ -2280,9 +2280,9 @@ class StanFitInterface(StanInterface):
                                                 #", ",
                                                 #self._Emin_at_det, 
                                                 #", ",
-                                                #self._Esrc_min/(1+self._z[k]),
+                                                #self._Emin_src/(1+self._z[k]),
                                                 #", ",
-                                                #self._Esrc_max/(1+self._z[k]),
+                                                #self._Emax_src/(1+self._z[k]),
                                                 #", ",
                                                 #self._Emax_at_det,
                                                 #")"
@@ -2360,8 +2360,8 @@ class StanFitInterface(StanInterface):
                                                 self._diff_spectrum_lpdf(
                                                     self._E[i],
                                                     self._diff_index,
-                                                    self._Ediff_min / (1. + self._z[k]),
-                                                    self._Ediff_max / (1. + self._z[k]),
+                                                    self._Emin_diff / (1. + self._z[k]),
+                                                    self._Emax_diff / (1. + self._z[k]),
                                                 ),
                                             ]
                                         )
@@ -2513,8 +2513,8 @@ class StanFitInterface(StanInterface):
                                                 self._src_spectrum_lpdf(
                                                     self._E[i],
                                                     src_index_ref,
-                                                    self._Esrc_min / (1 + self._z[k]),
-                                                    self._Esrc_max / (1 + self._z[k]),
+                                                    self._Emin_src / (1 + self._z[k]),
+                                                    self._Emax_src / (1 + self._z[k]),
                                                 ),
                                             ]
                                         )
@@ -2564,8 +2564,8 @@ class StanFitInterface(StanInterface):
                                                 self._diff_spectrum_lpdf(
                                                     self._E[i],
                                                     self._diff_index,
-                                                    self._Ediff_min / (1. + self._z[k]),
-                                                    self._Ediff_max / (1. + self._z[k]),
+                                                    self._Emin_diff / (1. + self._z[k]),
+                                                    self._Emax_diff / (1. + self._z[k]),
                                                 ),
                                             ]
                                         )

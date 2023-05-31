@@ -649,11 +649,11 @@ def _initialise_sources():
     Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
     Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
 
-    Esrc_min = Parameter(parameter_config["Esrc_min"] * u.GeV, "Esrc_min", fixed=True)
-    Esrc_max = Parameter(parameter_config["Esrc_max"] * u.GeV, "Esrc_max", fixed=True)
+    Emin_src = Parameter(parameter_config["Emin_src"] * u.GeV, "Emin_src", fixed=True)
+    Emax_src = Parameter(parameter_config["Emax_src"] * u.GeV, "Emax_src", fixed=True)
 
-    Ediff_min = Parameter(parameter_config["Ediff_min"] * u.GeV, "Ediff_min", fixed=True)
-    Ediff_max = Parameter(parameter_config["Ediff_max"] * u.GeV, "Ediff_max", fixed=True)
+    Emin_diff = Parameter(parameter_config["Emin_diff"] * u.GeV, "Emin_diff", fixed=True)
+    Emax_diff = Parameter(parameter_config["Emax_diff"] * u.GeV, "Emax_diff", fixed=True)
 
     if parameter_config["Emin_det_eq"]:
 
@@ -682,13 +682,13 @@ def _initialise_sources():
         L,
         src_index,
         parameter_config["z"],
-        Esrc_min,
-        Esrc_max,
+        Emin_src,
+        Emax_src,
     )
 
     sources = Sources()
     sources.add(point_source)
-    sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Ediff_min, Ediff_max, 0.)
+    sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.)
     sources.add_atmospheric_component()
 
     return sources

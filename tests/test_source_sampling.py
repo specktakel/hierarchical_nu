@@ -36,11 +36,11 @@ Emin = Parameter(1e2 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
 
 z = 1.
-Esrc_min = Parameter(Emin.value*(1.+z), "Esrc_min", fixed=True)
-Esrc_max = Parameter(Emax.value*(1.+z), "Esrc_max", fixed=True)
+Emin_src = Parameter(Emin.value*(1.+z), "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value*(1.+z), "Emax_src", fixed=True)
 
-Ediff_min = Parameter(Emin.value, "Ediff_min", fixed=True)
-Ediff_max = Parameter(Emax.value, "Ediff_max", fixed=True)
+Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
+Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 
 def make_point_source():
 
@@ -58,8 +58,8 @@ def make_point_source():
         lumi,
         index,
         1,
-        Esrc_min,
-        Esrc_max,
+        Emin_src,
+        Emax_src,
     )
 
     return source
@@ -79,8 +79,8 @@ def make_diffuse_flux():
             diffuse_norm,
             Enorm.value,
             index,
-            Ediff_min.value,
-            Ediff_max.value,
+            Emin_diff.value,
+            Emax_diff.value,
         )
     )
 
