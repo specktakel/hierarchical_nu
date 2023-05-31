@@ -7,9 +7,9 @@ jupyter:
       format_version: '1.3'
       jupytext_version: 1.14.1
   kernelspec:
-    display_name: hierarchical_nu
+    display_name: hi_nu
     language: python
-    name: hierarchical_nu
+    name: python3
 ---
 
 ```python
@@ -36,14 +36,19 @@ from hierarchical_nu.source.source import Sources, PointSource
 # define high-level parameters
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
-diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, 
+diff_index = Parameter(3.7, "diff_index", fixed=False, par_range=(1, 4))
+L = Parameter(5E46 * (u.erg / u.s), "luminosity", fixed=True, 
               par_range=(0, 1E60) * (u.erg/u.s))
 diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
+z = 0.4
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(1E4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
+Emin_src = Parameter(Emin.value * (1 + z), "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value * (1 + z), "Emax_src", fixed=True)
+Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
+Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 ```
 
 ```python
@@ -57,13 +62,13 @@ Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
 # Single PS for testing and usual components
 point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
                                                 np.pi*u.rad, 
-                                                L, src_index, 0.4, Emin, Emax)
+                                                L, src_index, z, Emin_src, Emax_src)
 
 my_sources = Sources()
 my_sources.add(point_source)
 
 # auto diffuse component 
-my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
+my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff) 
 my_sources.add_atmospheric_component() # auto atmo component
 ```
 

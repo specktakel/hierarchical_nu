@@ -6,7 +6,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.5
+      jupytext_version: 1.14.1
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -36,17 +36,19 @@ First set up the high-level parameters. The parameters defined here are singleto
 # define high-level parameters
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
-diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(2.0e47 * (u.erg / u.s), "luminosity", fixed=True, 
-              par_range=(0, 1e60)*(u.erg/u.s))
-diffuse_norm = Parameter(2.0e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+diff_index = Parameter(3.7, "diff_index", fixed=False, par_range=(1, 4))
+L = Parameter(5E46 * (u.erg / u.s), "luminosity", fixed=True, 
+              par_range=(0, 1E60) * (u.erg/u.s))
+diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
-Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
-Emin = Parameter(5e4 * u.GeV, "Emin", fixed=True)
-Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
-Esrc_min = Parameter(Emin.value * 1.4, "Esrc_min", fixed=True)
-Esrc_max = Parameter(Emax.value * 1.4, "Esrc_max", fixed=True)
-Epivot = Parameter(1e5 * u.GeV, "Epivot", fixed=True)
+z = 0.4
+Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
+Emin = Parameter(1E4 * u.GeV, "Emin", fixed=True)
+Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
+Emin_src = Parameter(Emin.value * (1 + z), "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value * (1 + z), "Emax_src", fixed=True)
+Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
+Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 ```
 
 When setting the minimum detected (i.e. reconstructed) energy, there are a few options. If fitting one event type (ie. tracks or cascades), just use `Emin_det`. This is also fine if you are fitting both event types, but want to set the same minimum detected energy. `Emin_det_tracks` and `Emin_det_cascades` are to be used when fitting both event types, but setting different minimum detected energies. 
@@ -64,13 +66,13 @@ Next, we use these high-level parameters to define sources. This can be done for
 # Single PS for testing and usual components
 point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
                                                 np.pi*u.rad, 
-                                                L, src_index, 0.4, Emin, Emax, Epivot)
+                                                L, src_index, z, Emin_src, Emax_src)
 
 my_sources = Sources()
 my_sources.add(point_source)
 
 # auto diffuse component 
-my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
+my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff) 
 my_sources.add_atmospheric_component() # auto atmo component
 ```
 
@@ -105,6 +107,14 @@ Below are shown all the necessary steps to set up and run a simulation for clari
 
 ```python
 sim.precomputation()
+```
+
+```python
+print(sim._get_expected_Nnu(sim._get_sim_inputs()))
+print(sim._expected_Nnu_per_comp)
+```
+
+```python
 sim.generate_stan_code()
 sim.compile_stan_code()
 sim.run(verbose=True, seed=42) 
