@@ -6,7 +6,14 @@ from astropy.coordinates import SkyCoord
 
 from icecube_tools.utils.data import available_irf_periods
 
+from hierarchical_nu.source.parameter import Parameter
+
+import logging
+
 from typing import List
+
+logger = logging.getLogger(__name__)
+
 TRACKS = 0
 CASCADES = 1
 
@@ -156,20 +163,33 @@ class Events:
         :param kwargs: kwargs passed to make an event selection, see icecube_tools's documentation for details
         :return: :class:`hierarchical_nu.events.Events`
         """
-        raise NotImplementedError("Things changed, someone needs to fix this")
+
         from icecube_tools.utils.data import RealEvents
 
         # Borrow from icecube_tools
         events = RealEvents.from_event_files(p)
+
+        # Check if minimum detected energy is currently loaded as parameter
+        try:
+            kwargs["ereco_low"] = Parameter.get_parameter("Emin_det_t").value.to(u.GeV).value
+            logger.warning(f'Overwriting kwargs["ereco_low"] with {kwargs["ereco_low"]*u.GeV}')
+        except ValueError:
+            pass
+        try:
+            kwargs["ereco_low"] = Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+            logger.warning(f'Overwriting kwargs["ereco_low"] with {kwargs["ereco_low"]*u.GeV}')
+        except ValueError:
+            pass
+
         events.restrict(**kwargs)
         # Read in relevant data
-        ra = events.ra[p]
-        dec = events.dec[p]
+        ra = events.ra[p] * u.rad
+        dec = events.dec[p] * u.rad
         reco_energy = events.reco_energy[p] * u.GeV
         period = ra.size * [p]
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = events.ang_err[p] * u.deg
         types = ra.size * [TRACKS]
-        coords = SkyCoord(ra, dec, frame='icrs', unit=u.deg)
+        coords = SkyCoord(ra, dec, frame='icrs')
         return cls(reco_energy, coords, types, ang_err, p)
 
