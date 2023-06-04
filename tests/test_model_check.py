@@ -6,10 +6,6 @@ from hierarchical_nu.utils.config import hnu_config
 from hierarchical_nu.utils.config import _local_config_file
 
 
-def test_initialisation(output_directory):
-    ModelCheck.initialise_env(output_dir=output_directory)
-
-
 def run_model_check(output_directory, random_seed):
     n_jobs = 1
     n_subjobs = 1
@@ -38,6 +34,8 @@ def test_short_run_r2021(output_directory, random_seed):
     with _local_config_file.open("w") as f:
         OmegaConf.save(config=hnu_config, f=f.name)
 
+    ModelCheck.initialise_env(output_dir=output_directory)
+
     model_check = run_model_check(output_directory, random_seed)
 
     # Check diagnostics
@@ -47,6 +45,9 @@ def test_short_run_r2021(output_directory, random_seed):
     # Check visualisations
     for p in [True, False]:
         fig, ax = model_check.compare(show_prior=p)
+
+    # Clear config
+    _local_config_file.unlink()
 
 
 def test_short_run_icecube(output_directory, random_seed):
@@ -56,6 +57,8 @@ def test_short_run_icecube(output_directory, random_seed):
     with _local_config_file.open("w") as f:
         OmegaConf.save(config=hnu_config, f=f.name)
 
+    ModelCheck.initialise_env(output_dir=output_directory)
+
     model_check = run_model_check(output_directory, random_seed)
 
     # Check diagnostics
@@ -65,3 +68,6 @@ def test_short_run_icecube(output_directory, random_seed):
     # Check visualisations
     for p in [True, False]:
         fig, ax = model_check.compare(show_prior=p)
+
+    # Clear config
+    _local_config_file.unlink()
