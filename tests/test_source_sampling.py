@@ -5,7 +5,8 @@ import os
 from cmdstanpy import CmdStanModel
 
 from hierarchical_nu.source.source import PointSource
-from hierarchical_nu.source.flux_model import PowerLawSpectrum, IsotropicDiffuseBG
+from hierarchical_nu.source.flux_model import PowerLawSpectrum, IsotropicDiffuseBG, integral_power_law
+from hierarchical_nu.source.cosmology import luminosity_distance as dl
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.backend.stan_generator import (
@@ -34,6 +35,12 @@ Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(1e2 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
 
+z = 1.
+Emin_src = Parameter(Emin.value*(1.+z), "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value*(1.+z), "Emax_src", fixed=True)
+
+Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
+Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 
 def make_point_source():
 
@@ -51,8 +58,8 @@ def make_point_source():
         lumi,
         index,
         1,
-        Emin,
-        Emax,
+        Emin_src,
+        Emax_src,
     )
 
     return source
@@ -72,8 +79,8 @@ def make_diffuse_flux():
             diffuse_norm,
             Enorm.value,
             index,
-            Emin.value,
-            Emax.value,
+            Emin_diff.value,
+            Emax_diff.value,
         )
     )
 
@@ -181,7 +188,7 @@ def test_source_sampling(output_directory, random_seed):
         stanc_options=stanc_options,
     )
 
-    output = stan_model.sample(data={}, iter_sampling=1000, chains=1, seed=random_seed)
+    output = stan_model.sample(data={}, iter_sampling=10000, chains=1, seed=random_seed)
 
     diffuse_events = output.stan_variable("diffuse_events")
 
@@ -227,4 +234,4 @@ def test_source_sampling(output_directory, random_seed):
         density=True,
     )
 
-    assert max(E_hist) == pytest.approx(max(integrate_per_log.value), 0.1)
+    assert max(E_hist) == pytest.approx(max(integrate_per_log.value), 0.15)

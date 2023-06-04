@@ -33,7 +33,7 @@ class Events:
         coords: SkyCoord,
         types,
         ang_errs: u.deg = None,
-        periods: List[str]=None
+        periods: List[str] = None,
     ):
         """
         Events class for the storage of event observables
@@ -113,7 +113,6 @@ class Events:
             uvs = events_folder["unit_vectors"][()]
             types = events_folder["event_types"][()]
             ang_errs = events_folder["ang_errs"][()] * u.deg
-
         coords = SkyCoord(
             uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
         )
@@ -157,7 +156,7 @@ class Events:
         :param kwargs: kwargs passed to make an event selection, see icecube_tools's documentation for details
         :return: :class:`hierarchical_nu.events.Events`
         """
-
+        raise NotImplementedError("Things changed, someone needs to fix this")
         from icecube_tools.utils.data import RealEvents
 
         # Borrow from icecube_tools

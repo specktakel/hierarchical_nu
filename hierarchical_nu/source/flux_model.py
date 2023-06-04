@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 import astropy.units as u
 import numpy as np
@@ -46,13 +46,6 @@ class SpectralShape(ABC):
     def parameters(self):
         return self._parameters
 
-    @abstractmethod
-    def redshift_factor(self, redshift: float):
-        """
-        Factor that appears when evaluating the spectrum in the local frame
-        """
-        pass
-
     @classmethod
     @abstractmethod
     def make_stan_sampling_func(cls):
@@ -80,13 +73,6 @@ class FluxModel(ABC):
 
     @u.quantity_input
     @abstractmethod
-    def __call__(
-        self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
-        pass
-
-    @u.quantity_input
-    @abstractmethod
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         pass
 
@@ -104,23 +90,6 @@ class FluxModel(ABC):
     @property
     def parameters(self):
         return self._parameters
-
-    @abstractmethod
-    def redshift_factor(self, z: float):
-        pass
-
-    @u.quantity_input
-    @abstractmethod
-    def integral(
-        self,
-        e_low: u.GeV,
-        e_up: u.GeV,
-        dec_low: u.rad,
-        dec_up: u.rad,
-        ra_low: u.rad,
-        ra_up: u.rad,
-    ) -> 1 / (u.m**2 * u.s):
-        pass
 
     @property
     @u.quantity_input
@@ -144,14 +113,6 @@ class PointSourceFluxModel(FluxModel):
         self.dec = dec
         self.ra = ra
 
-    @u.quantity_input
-    def __call__(
-        self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
-        if (dec == self.dec) and (ra == self.ra):
-            return self._spectral_shape(energy) / (4 * np.pi * u.sr)
-        return 0
-
     @staticmethod
     def _is_in_bounds(value: float, bounds: Tuple[float, float]):
         return bounds[0] <= value <= bounds[1]
@@ -163,32 +124,6 @@ class PointSourceFluxModel(FluxModel):
     @property
     def energy_bounds(self):
         return self._spectral_shape.energy_bounds
-
-    @u.quantity_input
-    def integral(
-        self,
-        e_low: u.GeV,
-        e_up: u.GeV,
-        dec_low: u.rad,
-        dec_up: u.rad,
-        ra_low: u.rad,
-        ra_up: u.rad,
-    ) -> 1 / (u.m**2 * u.s):
-        if not self._is_in_bounds(self.dec, (dec_low, dec_up)):
-            return 0
-        if not self._is_in_bounds(self.ra, ra_low, ra_up):
-            return 0
-
-        ra_int = ra_up - ra_low
-        dec_int = (np.sin(dec_up) - np.sin(dec_low)) * u.rad
-
-        int = (
-            self._spectral_shape.integral(e_low, e_up)
-            * ra_int
-            * dec_int
-            / (4 * np.pi * u.sr)
-        )
-        return int
 
     @u.quantity_input
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
@@ -203,9 +138,6 @@ class PointSourceFluxModel(FluxModel):
     @u.quantity_input
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
         return self._spectral_shape.total_flux_density
-
-    def redshift_factor(self, z: float):
-        return self._spectral_shape.redshift_factor(z)
 
     def make_stan_sampling_func(self, f_name: str) -> UserDefinedFunction:
         shape_rng = self._spectral_shape.make_stan_sampling_func()
@@ -234,12 +166,6 @@ class IsotropicDiffuseBG(FluxModel):
         self._parameters = spectral_shape.parameters
 
     @u.quantity_input
-    def __call__(
-        self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
-        return self._spectral_shape(energy) / (4 * np.pi * u.sr)
-
-    @u.quantity_input
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         return self._spectral_shape(energy)
 
@@ -252,9 +178,6 @@ class IsotropicDiffuseBG(FluxModel):
     @u.quantity_input
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
         return self._spectral_shape.total_flux_density
-
-    def redshift_factor(self, z: float):
-        return self._spectral_shape.redshift_factor(z)
 
     @property
     def spectral_shape(self):
@@ -323,6 +246,7 @@ class PowerLawSpectrum(SpectralShape):
     ):
         """
         Power law flux models.
+        Lives in the detector frame.
 
         normalisation: float
             Flux normalisation [GeV^-1 m^-2 s^-1]
@@ -355,20 +279,16 @@ class PowerLawSpectrum(SpectralShape):
 
         par.value = par_value
 
-    def redshift_factor(self, z: float):
-        index = self._parameters["index"].value
-        return np.power(1 + z, 1 - index)
-
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
         """
-        dN/dEdAdt.
+        dN/(dEdAdt).
         """
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value
 
         if (energy < self._lower_energy) or (energy > self._upper_energy):
-            return 0.0 << norm.unit
+            return 0.0 * norm
         else:
             return norm * np.power(energy / self._normalisation_energy, -index)
 
@@ -444,12 +364,13 @@ class PowerLawSpectrum(SpectralShape):
 
         if index == 2:
             # special case
-            int_norm = norm / (np.power(self._normalisation_energy, -index))
+            int_norm = norm * np.power(self._normalisation_energy, index)
             return int_norm * (np.log(upper / lower))
 
         # Pull out the units here because astropy screwes this up sometimes
-        int_norm = norm / (
-            np.power(self._normalisation_energy / u.GeV, -index) * (2 - index)
+        int_norm = (norm 
+                    * np.power(self._normalisation_energy / u.GeV, index)
+                    / (2 - index)
         )
         return (
             int_norm
@@ -580,6 +501,394 @@ class PowerLawSpectrum(SpectralShape):
             ReturnStatement([f1 / f2])
 
         return func
+    
+
+class TwiceBrokenPowerLaw(SpectralShape):
+    """
+    Power law shape
+    """
+
+    @u.quantity_input
+    def __init__(
+        self,
+        normalisation: Parameter,
+        normalisation_energy: u.GeV,
+        index: Parameter,
+        lower_energy: u.GeV = 1e2 * u.GeV,
+        upper_energy: u.GeV = np.inf * u.GeV,
+        *args,
+        **kwargs
+    ):
+        """
+        Power law flux models.
+        Lives in the detector frame.
+
+        normalisation: float
+            Flux normalisation [GeV^-1 m^-2 s^-1]
+        normalisation_energy: float
+            Energy at which flux is normalised [GeV].
+        index: float
+            Spectral index of the power law, is defined s.t. x^(-index) is used
+        lower_energy: float
+            Lower energy bound [GeV].
+        upper_energy: float
+            Upper energy bound [GeV], unbounded by default.
+        """
+
+        super().__init__()
+        print("This is workin progress, be careful")
+        self._e0 = Parameter.get_parameter("Emin").value
+        self._e3 = Parameter.get_parameter("Emax").value
+        self._normalisation_energy = normalisation_energy
+        self._lower_energy = lower_energy
+        self._upper_energy = upper_energy
+        self._index0 = -4.
+        self._index2 = 6.
+        self._parameters = {"norm": normalisation, "index": index}
+
+    @property
+    def I0(self):
+        return self._piecewise_integral(self._e0, self._lower_energy, self._index0)
+    
+    @property
+    def I1(self):
+        return self._piecewise_integral(
+            self._lower_energy,
+            self._upper_energy,
+            self._parameters["index"].value
+        ) * self.N1
+
+    @property
+    def I2(self):
+        return self._piecewise_integral(
+            self._upper_energy,
+            self._e3,
+            self._index2
+        ) * self.N2
+    
+    @property
+    def N1(self):
+        """
+        Normalisation factor, defined s.t. the broken power law has no jumps but only kinks
+        """
+
+        return np.power(self._lower_energy / self._normalisation_energy, self._parameters["index"].value - self._index0)
+    
+    @property
+    def N2(self):
+        return self.N1 * np.power(self._upper_energy / self._normalisation_energy, self._index2 - self._parameters["index"].value)
+    
+    @property
+    def Itot(self):
+        return self.I1 + self.I2 + self.I3
+    
+    @property
+    def norm_factor(self):
+        return 
+
+    @u.quantity_input
+    def _piecewise_integral(self, x1: u.GeV, x2: u.GeV, gamma: float):
+        """
+        Returns the dimensionless integral x^(-gamma) dx
+        """
+
+        if x2 <= x1:
+            return 0.
+        if gamma != 1.:
+            return (np.power(x2 / u.GeV, 1. - gamma) / np.power(x1 / u.GeV, 1. - gamma)) / (1. - gamma) / \
+                np.power(self._normalisation_energy / u.GeV, -gamma)
+        else:
+            return np.log((x2 / u.GeV) / (x1 / u.GeV)) * self._normalisation_energy / u.GeV
+
+    @property
+    def energy_bounds(self):
+        return (self._lower_energy, self._upper_energy)
+    
+    def set_parameter(self, par_name: str, par_value: float):
+        if par_name not in self._parameters:
+            raise ValueError("Parameter name {} not found".format(par_name))
+        par = self._parameters[par_name]
+        if not (par.par_range[0] <= self._par_value <= par.par_range[1]):
+            raise ValueError("Parameter {} is out of bounds".format(par_name))
+
+        par.value = par_value
+
+    @u.quantity_input
+    def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
+        """
+        dN/(dEdAdt).
+        """
+        norm = self._parameters["norm"].value
+        index = self._parameters["index"].value
+        index0 = self._index0
+        index2 = self._index2
+        norm_energy = self._normalisation_energy
+
+        # Go through all parts of the broken power law
+        if (energy >= self._e0) and (energy < self._lower_energy):
+            return np.power(energy / norm_energy, - index0) / self.norm_norm * norm
+        elif energy >= self._lower_energy and energy <= self._upper_energy:
+            return np.power(energy / norm_energy, -index) * self.N1 / self.norm_norm * norm
+        elif energy > self._upper_energy and energy <= self._e3:
+            return np.power(energy / norm_energy, - index2) * self.N2 / self.norm_norm * norm
+        else:
+            return 0 * norm
+        
+    @property
+    def norm_norm(self):
+        """
+        Please propose a better name for this method
+        Find the part of the broken power law in which normalisation_energy lies
+        and return its Nx factor.
+        """
+
+        norm = self._parameters["norm"].value
+        index = self._parameters["index"].value
+        index0 = self._index0
+        index2 = self._index2
+        norm_energy = self._normalisation_energy
+
+        # Go through all parts of the broken power law
+        if (norm_energy >= self._e0) and (norm_energy < self._lower_energy):
+            return 1.
+        elif norm_energy >= self._lower_energy and norm_energy <= self._upper_energy:
+            return self.N1
+        elif norm_energy > self._upper_energy and norm_energy <= self._e3:
+            return self.N2
+        else:
+            raise ValueError("Norm energy is outside of the spectrum's energy range")
+
+
+    @u.quantity_input
+    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
+        r"""
+        \int spectrum dE over finite energy bounds.
+
+        Arguments:
+            lower: float
+                [GeV]
+            upper: float
+                [GeV]
+        """
+
+        norm = self._parameters["norm"].value
+        index = self._parameters["index"].value
+
+        # Check edge cases
+        lower[
+            ((lower < self._e0) & (upper > self._e0))
+        ] = self._e0
+        upper[
+            ((lower < self._e3) & (upper > self._e3))
+        ] = self._e3
+
+
+        #TODO make something sensible with the breaks in the spectrum
+        if index == 1:
+            # special case
+            int_norm = norm / (np.power(self._normalisation_energy, -index))
+            output = int_norm * (np.log(upper / lower))
+        else:
+
+            # Pull out the units here because astropy screwes this up sometimes
+            int_norm = norm / (
+                np.power(self._normalisation_energy / u.GeV, -index) * (1 - index)
+            )
+            output = (
+                int_norm
+                * (
+                    np.power(upper / u.GeV, 1 - index)
+                    - np.power(lower / u.GeV, 1 - index)
+                )
+                * u.GeV
+            )
+
+        # Correct if outside bounds
+        output[(upper <= self._e3)] = 0.0 * 1 / (u.m**2 * u.s)
+        output[(lower >= self._e0)] = 0.0 * 1 / (u.m**2 * u.s)
+
+        return output
+
+    def _integral(self, lower, upper):
+        norm = self._parameters["norm"].value.value
+        index = self._parameters["index"].value
+
+        e0 = self._normalisation_energy.value
+
+        if index == 1:
+            # special case
+            int_norm = norm / (np.power(e0, -index))
+            return int_norm * (np.log(upper / lower))
+
+        # Pull out the units here because astropy screwes this up sometimes
+        int_norm = norm / (np.power(e0, -index) * (1 - index))
+        return int_norm * (np.power(upper, 1 - index) - np.power(lower, 1 - index))
+
+    @property
+    @u.quantity_input
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
+        norm = self._parameters["norm"].value
+        index = self._parameters["index"].value  # diff flux * energy
+        lower, upper = self._lower_energy, self._upper_energy
+
+        if index == 2:
+            # special case
+            int_norm = norm * np.power(self._normalisation_energy, index)
+            return int_norm * (np.log(upper / lower))
+
+        # Pull out the units here because astropy screwes this up sometimes
+        int_norm = (norm 
+                    * np.power(self._normalisation_energy / u.GeV, index)
+                    / (2 - index)
+        )
+        return (
+            int_norm
+            * (np.power(upper / u.GeV, 2 - index) - np.power(lower / u.GeV, 2 - index))
+            * u.GeV**2
+        )
+
+    def sample(self, N):
+        """
+        Sample energies from the power law.
+        Uses inverse transform sampling.
+
+        :param min_energy: Minimum energy to sample from [GeV].
+        :param N: Number of samples.
+        """
+
+        index = self._parameters["index"].value
+        self.power_law = BoundedPowerLaw(
+            index,
+            self._lower_energy.to_value(u.GeV),
+            self._upper_energy.to_value(u.GeV),
+        )
+
+        return self.power_law.samples(N)
+
+    @u.quantity_input
+    def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV, apply_lim: bool = True):
+        """
+        Return PDF.
+        """
+
+        E_input = E.to_value(u.GeV)
+        Emin_input = Emin.to_value(u.GeV)
+        Emax_input = Emax.to_value(u.GeV)
+        index = self._parameters["index"].value
+
+        self.power_law = BoundedPowerLaw(
+            index,
+            Emin_input,
+            Emax_input,
+        )
+
+        return self.power_law.pdf(E_input, apply_lim=apply_lim)
+
+    @classmethod
+    def make_stan_sampling_func(cls, f_name) -> UserDefinedFunction:
+        func = UserDefinedFunction(
+            f_name, ["alpha", "e_low", "e_up"], ["real", "real", "real"], "real"
+        )
+
+        with func:
+            uni_sample = ForwardVariableDef("uni_sample", "real")
+            norm = ForwardVariableDef("norm", "real")
+            alpha = StringExpression(["alpha"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
+
+            norm << (1 - alpha) / (e_up ** (1 - alpha) - e_low ** (1 - alpha))
+
+            uni_sample << FunctionCall([0, 1], "uniform_rng")
+            ReturnStatement(
+                [
+                    (uni_sample * (1 - alpha) / norm + e_low ** (1 - alpha))
+                    ** (1 / (1 - alpha))
+                ]
+            )
+
+        return func
+
+    @classmethod
+    def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
+        func = UserDefinedFunction(
+            f_name,
+            ["E", "alpha", "e_low", "e_up"],
+            ["real", "real", "real", "real"],
+            "real",
+        )
+
+        with func:
+
+            alpha = StringExpression(["alpha"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
+            E = StringExpression(["E"])
+
+            N = ForwardVariableDef("N", "real")
+            p = ForwardVariableDef("p", "real")
+
+            with IfBlockContext([StringExpression([alpha, " == ", 1.0])]):
+                N << 1.0 / (FunctionCall([e_up], "log") - FunctionCall([e_low], "log"))
+            with ElseBlockContext():
+                N << (1.0 - alpha) / (e_up ** (1.0 - alpha) - e_low ** (1.0 - alpha))
+
+            p << N * FunctionCall([E, alpha * -1], "pow")
+
+            ReturnStatement([FunctionCall([p], "log")])
+
+        return func
+
+    @classmethod
+    def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
+        """
+        Factor to convert from total_flux_density to total_flux_int.
+        """
+
+        func = UserDefinedFunction(
+            f_name, ["alpha", "e_low", "e_up"], ["real", "real", "real"], "real"
+        )
+
+        with func:
+            f1 = ForwardVariableDef("f1", "real")
+            f2 = ForwardVariableDef("f2", "real")
+
+            alpha = StringExpression(["alpha"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
+
+            with IfBlockContext([StringExpression([alpha, " == ", 1.0])]):
+                f1 << FunctionCall([e_up], "log") - FunctionCall([e_low], "log")
+            with ElseBlockContext():
+                f1 << (1 / (1 - alpha)) * (e_up ** (1 - alpha) - e_low ** (1 - alpha))
+
+            with IfBlockContext([StringExpression([alpha, " == ", 2.0])]):
+                f2 << FunctionCall([e_up], "log") - FunctionCall([e_low], "log")
+            with ElseBlockContext():
+                f2 << (1 / (2 - alpha)) * (e_up ** (2 - alpha) - e_low ** (2 - alpha))
+
+            ReturnStatement([f1 / f2])
+
+        return func
+    
+
+
+@u.quantity_input
+def integral_power_law(gamma: float, n: Union[float, int], x1: u.GeV, x2: u.GeV, x0: u.GeV = 1e5*u.GeV):
+    """
+    Implements expectation value (up to normalisation
+    of the distribution) over power law/pareto distribution of the form
+    <x^n> = \int_{x1}^{x2} (x/x_0)^{-\gamma} x^n dx
+
+    Is used for flux conversion from energy to numbers.
+
+    Should in the end replace flux_conv_
+    """
+
+    if gamma != n + 1.:
+        return np.power(x0, gamma) * (np.power(x2, n + 1 - gamma) - np.power(x1, n + 1 - gamma)) / (n + 1 - gamma)
+    else:
+        return np.power(x0, n+1) * np.log(x2 / x1)
 
 
 def flux_conv_(alpha, e_low, e_up):

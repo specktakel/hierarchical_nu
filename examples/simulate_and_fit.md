@@ -36,14 +36,19 @@ First set up the high-level parameters. The parameters defined here are singleto
 # define high-level parameters
 Parameter.clear_registry()
 src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
-diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(1.0e47 * (u.erg / u.s), "luminosity", fixed=True, 
-              par_range=(0, 1e60)*(u.erg/u.s))
-diffuse_norm = Parameter(1.0e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+diff_index = Parameter(3.7, "diff_index", fixed=False, par_range=(1, 4))
+L = Parameter(5E46 * (u.erg / u.s), "luminosity", fixed=True, 
+              par_range=(0, 1E60) * (u.erg/u.s))
+diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
-Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
-Emin = Parameter(5e4 * u.GeV, "Emin", fixed=True)
-Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
+z = 0.4
+Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
+Emin = Parameter(1E4 * u.GeV, "Emin", fixed=True)
+Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
+Emin_src = Parameter(Emin.value * (1 + z), "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value * (1 + z), "Emax_src", fixed=True)
+Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
+Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 ```
 
 When setting the minimum detected (i.e. reconstructed) energy, there are a few options. If fitting one event type (ie. tracks or cascades), just use `Emin_det`. This is also fine if you are fitting both event types, but want to set the same minimum detected energy. `Emin_det_tracks` and `Emin_det_cascades` are to be used when fitting both event types, but setting different minimum detected energies. 
@@ -61,13 +66,13 @@ Next, we use these high-level parameters to define sources. This can be done for
 # Single PS for testing and usual components
 point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
                                                 np.pi*u.rad, 
-                                                L, src_index, 0.4, Emin, Emax)
+                                                L, src_index, z, Emin_src, Emax_src)
 
 my_sources = Sources()
 my_sources.add(point_source)
 
 # auto diffuse component 
-my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
+my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff) 
 my_sources.add_atmospheric_component() # auto atmo component
 ```
 
@@ -92,7 +97,7 @@ from hierarchical_nu.detector.r2021 import R2021DetectorModel
 In order to go from sources to a simulation, we need to specify an observation time and a detector model. The detector model defines the effective area, energy resolution and angular resolution to be simulated. The currently implemented options are `NorthernTracksDetectorModel`, `CascadesDetectorModel` and `IceCubeDetectorModel`. The `IceCubeDetectorModel` is really a wrapper around the models for tracks and cascades, for an easy interface. The models should be used in conjunction with the correct `Edet_min`, as described above.
 
 ```python
-obs_time = 10 * u.year
+obs_time = 5 * u.year
 #sim = Simulation(my_sources, CascadesDetectorModel, obs_time)
 #sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
 sim = Simulation(my_sources, R2021DetectorModel, obs_time)
@@ -102,16 +107,29 @@ Below are shown all the necessary steps to set up and run a simulation for clari
 
 ```python
 sim.precomputation()
+```
+
+```python
+print(sim._get_expected_Nnu(sim._get_sim_inputs()))
+print(sim._expected_Nnu_per_comp)
+```
+
+```python
 sim.generate_stan_code()
 sim.compile_stan_code()
 sim.run(verbose=True, seed=42) 
 sim.save("output/test_sim_file.h5")
+# for already compiled models that should be re-loaded there is a special method:
+# sim.setup_stan_sim(".stan_files/sim_code")
+# which takes the filename of the compiled model as sole argument
+# source selection should macht up with the compiled model, otherwise cmdstanpy will complain
 ```
 
 We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~90 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
 
 ```python
-fig, ax = sim.show_spectrum()
+fig, axs = sim.show_spectrum()
+# fig, axs = show_spectrum(scale="log")  displays plots with y axis on a log scale
 ```
 
 ```python
@@ -133,7 +151,7 @@ We can start setting up the fit by loading the events from the output of our sim
 
 ```python
 events = Events.from_file("output/test_sim_file.h5")
-obs_time = 10 * u.year
+obs_time = 5 * u.year
 ```
 
 We can also define priors using the `Priors` interface. Here, we use the default uninformative priors, except for on the atmospheric flux, which we assume to be well known.
@@ -149,16 +167,21 @@ priors.atmospheric_flux = LogNormalPrior(mu=np.log(atmo_flux), sigma=0.1)
 ```python
 #fit = StanFit(my_sources, CascadesDetectorModel, events, obs_time, priors=priors)
 #fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time, priors=priors)
-fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time, priors=priors)
+#fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time, priors=priors)
+fit = StanFit(my_sources, R2021DetectorModel, events, obs_time, priors=priors, nshards=10)
+# optional keyword nshards=5 or other integer, activates multithreading
 ```
 
 Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes around 5 min on one core.
+
+Sometimes the MCMC needs a little help getting started, for this we can set `inits={"L": 1e50, "src_index": 2.3}` and other model parameters in `fit.run()` with a value to start from.
 
 ```python
 fit.precomputation()
 fit.generate_stan_code()
 fit.compile_stan_code()
 fit.run(show_progress=True, seed=42)
+# fit.setup_stan_fit(".stan_files/model_code")   # will re-load compiled model
 ```
 
 Some methods are included for basic plots, but the `fit._fit_output` is a `CmdStanMCMC` object that can be passed to `arviz` for fancier options.
@@ -182,10 +205,20 @@ sim_info = SimInfo.from_file("output/test_sim_file.h5")
 fig = fit.corner_plot(truths=sim_info.truths)
 ```
 
-Similarly, we can use the simulation info to check the classification of individual events. We shouldn't be concerned if things are slighty off, particularly between the two background components. 
+Similarly, we can use the simulation info to check the classification of individual events. We shouldn't be concerned if things are slighty off, particularly between the two background components. The method returns a list of wrongly assosciated events, along with the assumed and correct classification.
 
 ```python
-fit.check_classification(sim_info.outputs)
+wrong, assumed, correct = fit.check_classification(sim_info.outputs)
+```
+
+With this information we can update the simulated spectrum and see at which energies, e.g., the background components are competing for events.
+
+```python
+fig, axs = sim.show_spectrum()
+for et, er in zip(events.true_energies[wrong].value, events.energies[wrong].value):
+    axs[1].axvline(et, 0.9, 1, color="black")   # at detector
+    axs[2].axvline(er, 0.9, 1, color="black")   # reconstructed
+
 ```
 
 ```python
@@ -196,6 +229,13 @@ ax.hist(fit._fit_output.stan_variable("Nex_atmo"), alpha=0.5)
 ax.axvline(sim._expected_Nnu_per_comp[0], color="blue")
 ax.axvline(sim._expected_Nnu_per_comp[1], color="orange")
 ax.axvline(sim._expected_Nnu_per_comp[2], color="green")
+ax.axvline(np.sum(events.lambdas==0.), color="blue", ls='--')
+ax.axvline(np.sum(events.lambdas==1.), color="orange", ls='--')
+ax.axvline(np.sum(events.lambdas==2.), color="green", ls='--')
+```
+
+```python
+my_sources.sources[0].name
 ```
 
 ```python

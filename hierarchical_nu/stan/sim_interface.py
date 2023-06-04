@@ -188,8 +188,17 @@ class StanSimInterface(StanInterface):
                 )
 
             # The energy range is specified at the source
-            self._Esrc_min = ForwardVariableDef("Esrc_min", "real")
-            self._Esrc_max = ForwardVariableDef("Esrc_max", "real")
+            self._Emin_src = ForwardVariableDef("Emin_src", "real")
+            self._Emax_src = ForwardVariableDef("Emax_src", "real")
+
+            # Energy range that the detector should consider
+            # Is influenced by parameterisation of energy resolution
+            self._Emin = ForwardVariableDef("Emin", "real")
+            self._Emax = ForwardVariableDef("Emax", "real")
+
+            # Energy range considered for diffuse astrophysical sources, defined at redshift z of shell
+            self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
+            self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
 
             # For tracks, we specify Emin_det, and several parameters for the
             # rejection sampling, denoted by rs_...
@@ -202,13 +211,13 @@ class StanSimInterface(StanInterface):
                 self._rs_bbpl_gamma2_scale_t = ForwardVariableDef(
                     "rs_bbpl_gamma2_scale_t", "real"
                 )
-                self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
+                # self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
                 self._rs_cvals_t = ForwardArrayDef(
-                    "rs_cvals_t", "vector[rs_N_cosz_bins_t]", [f"[{self.sources.N}]"]
+                    "rs_cvals_t", "real", [f"[{self.sources.N}]"]
                 )
-                self._rs_cosz_bin_edges_t = ForwardArrayDef(
-                    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
-                )
+                #self._rs_cosz_bin_edges_t = ForwardArrayDef(
+                #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
+                #)
 
                 if self.sources.diffuse or self.sources.point_source:
                     self._integral_grid_t = ForwardArrayDef(
@@ -226,13 +235,13 @@ class StanSimInterface(StanInterface):
                 self._rs_bbpl_gamma2_scale_c = ForwardVariableDef(
                     "rs_bbpl_gamma2_scale_c", "real"
                 )
-                self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
+                #self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
                 self._rs_cvals_c = ForwardArrayDef(
-                    "rs_cvals_c", "vector[rs_N_cosz_bins_c]", [f"[{self.sources.N}]"]
+                    "rs_cvals_c", "real", [f"[{self.sources.N}]"]
                 )
-                self._rs_cosz_bin_edges_c = ForwardArrayDef(
-                    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
-                )
+                #self._rs_cosz_bin_edges_c = ForwardArrayDef(
+                #    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
+                #)
 
                 if self.sources.diffuse or self.sources.point_source:
                     self._integral_grid_c = ForwardArrayDef(
@@ -395,7 +404,9 @@ class StanSimInterface(StanInterface):
                             self._F[k],
                             "*=",
                             self._flux_conv(
-                                src_index_ref, self._Esrc_min/(1+self._z[k]), self._Esrc_max/(1+self._z[k])
+                                src_index_ref,
+                                self._Emin_src / (1 + self._z[k]),
+                                self._Emax_src / (1 + self._z[k])
                             ),
                         ]
                     )
@@ -655,7 +666,6 @@ class StanSimInterface(StanInterface):
         with GeneratedQuantitiesContext():
 
             self._dm_rng = OrderedDict()
-            self._dm_pdf = OrderedDict()
 
             # For different event types, define the detector model in both RNG and PDF
             # mode to have all functions included.
@@ -676,10 +686,6 @@ class StanSimInterface(StanInterface):
                     self._dm_rng[event_type] = self.detector_model_type(
                         mode=DistributionMode.RNG, event_type=event_type
                     )
-                # self._dm_pdf[event_type] = self.detector_model_type(
-                #    mode=DistributionMode.PDF,
-                #    event_type=event_type,
-                # )
 
             # We redefine a bunch of variables from transformed data here, as we would
             # like to access them as outputs from the Stan simulation.
@@ -704,8 +710,8 @@ class StanSimInterface(StanInterface):
             self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
             self._E = ForwardVariableDef("E", "vector[N]")
             self._Edet = ForwardVariableDef("Edet", "vector[N]")
-            self._Esrc_min_arr = ForwardVariableDef("Esrc_min_arr", "real")
-            self._Esrc_max_arr = ForwardVariableDef("Esrc_max_arr", "real")
+            self._Emin_src_arr = ForwardVariableDef("Emin_src_arr", "real")
+            self._Emax_src_arr = ForwardVariableDef("Emax_src_arr", "real")
             self._rs_bbpl_Eth_tmp = ForwardVariableDef("rs_bbpl_Eth_tmp", "real")
 
             # The cos(zenith) corresponding to each omega and assuming South Pole detector
@@ -837,10 +843,10 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min / (
+                                self._Emin_src_arr << self._Emin_src / (
                                     1 + self._z[self._lam[i]]
                                 )
-                                self._Esrc_max_arr << self._Esrc_max / (
+                                self._Emax_src_arr << self._Emax_src / (
                                     1 + self._z[self._lam[i]]
                                 )
 
@@ -849,11 +855,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -865,9 +871,9 @@ class StanSimInterface(StanInterface):
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_t,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._gamma2,
                                         ],
@@ -878,9 +884,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_t,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._gamma2,
                                         ],
@@ -892,11 +898,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 "<=",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -909,14 +915,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._rs_bbpl_gamma1_t,
                                         ],
@@ -927,9 +933,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._rs_bbpl_gamma1_t,
                                         ],
@@ -941,11 +947,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 ">=",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -958,14 +964,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -976,9 +982,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -989,8 +995,8 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._src_spectrum_lpdf(
                                     self._E[i],
                                     src_index_ref,
-                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    self._Emin_src / (1 + self._z[self._lam[i]]),
+                                    self._Emax_src / (1 + self._z[self._lam[i]]),
                                 )
 
                                 # It is log, to take the exp()
@@ -1019,18 +1025,18 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min
-                                self._Esrc_max_arr << self._Esrc_max
+                                self._Emin_src_arr << self._Emin
+                                self._Emax_src_arr << self._Emax
                                 with IfBlockContext(
                                     [
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -1042,9 +1048,9 @@ class StanSimInterface(StanInterface):
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_t,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._gamma2,
                                         ],
@@ -1055,9 +1061,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_t,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._gamma2,
                                         ],
@@ -1069,11 +1075,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 "<=",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -1086,14 +1092,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._rs_bbpl_gamma1_t,
                                         ],
@@ -1104,9 +1110,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._rs_bbpl_gamma1_t,
                                         ],
@@ -1118,11 +1124,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 ">=",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -1135,14 +1141,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -1153,9 +1159,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -1185,22 +1191,24 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min / (
+
+                                self._Emin_src_arr << self._Emin_diff / (
                                     1 + self._z[self._lam[i]]
                                 )
-                                self._Esrc_max_arr << self._Esrc_max / (
+                                self._Emax_src_arr << self._Emax_diff / (
                                     1 + self._z[self._lam[i]]
                                 )
+
                                 with IfBlockContext(
                                     [
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -1212,9 +1220,9 @@ class StanSimInterface(StanInterface):
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_t,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._gamma2,
                                         ],
@@ -1225,9 +1233,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_t,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._gamma2,
                                         ],
@@ -1239,11 +1247,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 "<=",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -1256,14 +1264,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._rs_bbpl_gamma1_t,
                                         ],
@@ -1274,9 +1282,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._rs_bbpl_gamma1_t,
                                         ],
@@ -1288,11 +1296,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 ">=",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -1305,14 +1313,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -1323,9 +1331,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -1335,8 +1343,8 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    self._Emin_diff / (1 + self._z[self._lam[i]]),
+                                    self._Emax_diff / (1 + self._z[self._lam[i]]),
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
@@ -1359,19 +1367,19 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min
-                                self._Esrc_max_arr << self._Esrc_max
+                                self._Emin_src_arr << self._Emin
+                                self._Emax_src_arr << self._Emax
 
                                 with IfBlockContext(
                                     [
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -1383,9 +1391,9 @@ class StanSimInterface(StanInterface):
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_t,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._gamma2,
                                         ],
@@ -1396,9 +1404,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_t,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._gamma2,
                                         ],
@@ -1410,11 +1418,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 "<=",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -1427,14 +1435,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._rs_bbpl_gamma1_t,
                                         ],
@@ -1445,9 +1453,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_t,
                                             self._rs_bbpl_gamma1_t,
                                         ],
@@ -1459,11 +1467,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 ">=",
                                                 self._rs_bbpl_Eth_t,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_t,
                                                 ")",
@@ -1476,14 +1484,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -1494,9 +1502,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -1530,10 +1538,10 @@ class StanSimInterface(StanInterface):
                         self._f_value << self._src_factor * self._aeff_factor
 
                         # Find the precomputed c_value for this source and cosz
-                        self._idx_cosz << FunctionCall(
-                            [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
-                        )
-                        self._c_value << self._rs_cvals_t[self._lam[i]][self._idx_cosz]
+                        #self._idx_cosz << FunctionCall(
+                        #    [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
+                        #)
+                        self._c_value << self._rs_cvals_t[self._lam[i]]
 
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
@@ -1698,10 +1706,10 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min / (
+                                self._Emin_src_arr << self._Emin_src / (
                                     1 + self._z[self._lam[i]]
                                 )
-                                self._Esrc_max_arr << self._Esrc_max / (
+                                self._Emax_src_arr << self._Emax_src / (
                                     1 + self._z[self._lam[i]]
                                 )
 
@@ -1710,11 +1718,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_c,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_c,
                                                 ")",
@@ -1726,9 +1734,9 @@ class StanSimInterface(StanInterface):
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_c,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_c,
                                             self._gamma2,
                                         ],
@@ -1739,9 +1747,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_c,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_c,
                                             self._gamma2,
                                         ],
@@ -1753,11 +1761,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_c,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 "<=",
                                                 self._rs_bbpl_Eth_c,
                                                 ")",
@@ -1770,14 +1778,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_c,
                                             self._rs_bbpl_gamma1_c,
                                         ],
@@ -1788,9 +1796,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_c,
                                             self._rs_bbpl_gamma1_c,
                                         ],
@@ -1802,11 +1810,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 ">=",
                                                 self._rs_bbpl_Eth_c,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_c,
                                                 ")",
@@ -1819,14 +1827,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -1837,9 +1845,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -1849,8 +1857,8 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._src_spectrum_lpdf(
                                     self._E[i],
                                     src_index_ref,
-                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    self._Emin_src / (1 + self._z[self._lam[i]]),
+                                    self._Emax_src / (1 + self._z[self._lam[i]]),
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
@@ -1876,23 +1884,27 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Esrc_min_arr << self._Esrc_min / (
+                                """
+                                self._Emin_src_arr << self._Emin_src / (
                                     1 + self._z[self._lam[i]]
                                 )
-                                self._Esrc_max_arr << self._Esrc_max / (
+                                self._Emax_src_arr << self._Emax_src / (
                                     1 + self._z[self._lam[i]]
                                 )
+                                """
+                                self._Emin_src_arr << self._Emin
+                                self._Emax_src_arr << self._Emax
 
                                 with IfBlockContext(
                                     [
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_c,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_c,
                                                 ")",
@@ -1904,9 +1916,9 @@ class StanSimInterface(StanInterface):
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_c,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_c,
                                             self._gamma2,
                                         ],
@@ -1917,9 +1929,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_c,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_c,
                                             self._gamma2,
                                         ],
@@ -1931,11 +1943,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 "<",
                                                 self._rs_bbpl_Eth_c,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 "<=",
                                                 self._rs_bbpl_Eth_c,
                                                 ")",
@@ -1948,14 +1960,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_c,
                                             self._rs_bbpl_gamma1_c,
                                         ],
@@ -1966,9 +1978,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._rs_bbpl_gamma1_c,
                                             self._rs_bbpl_gamma1_c,
                                         ],
@@ -1980,11 +1992,11 @@ class StanSimInterface(StanInterface):
                                         StringExpression(
                                             [
                                                 "(",
-                                                self._Esrc_min_arr,
+                                                self._Emin_src_arr,
                                                 ">=",
                                                 self._rs_bbpl_Eth_c,
                                                 ") && (",
-                                                self._Esrc_max_arr,
+                                                self._Emax_src_arr,
                                                 ">",
                                                 self._rs_bbpl_Eth_c,
                                                 ")",
@@ -1997,14 +2009,14 @@ class StanSimInterface(StanInterface):
                                     # Modify to power law
                                     (
                                         self._rs_bbpl_Eth_tmp
-                                        << self._Esrc_min_arr
-                                        + (self._Esrc_max_arr - self._Esrc_min_arr) / 2
+                                        << self._Emin_src_arr
+                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
                                     )
                                     self._E[i] << FunctionCall(
                                         [
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -2015,9 +2027,9 @@ class StanSimInterface(StanInterface):
                                     self._g_value << FunctionCall(
                                         [
                                             self._E[i],
-                                            self._Esrc_min_arr,
+                                            self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
-                                            self._Esrc_max_arr,
+                                            self._Emax_src_arr,
                                             self._gamma2,
                                             self._gamma2,
                                         ],
@@ -2027,8 +2039,10 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    self._Esrc_min / (1 + self._z[self._lam[i]]),
-                                    self._Esrc_max / (1 + self._z[self._lam[i]]),
+                                    #self._Emin_src / (1 + self._z[self._lam[i]]),
+                                    #self._Emax_src / (1 + self._z[self._lam[i]]),
+                                    self._Emin_src_arr,
+                                    self._Emax_src_arr,
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
@@ -2044,10 +2058,10 @@ class StanSimInterface(StanInterface):
 
                         self._f_value = self._src_factor * self._aeff_factor
 
-                        self._idx_cosz << FunctionCall(
-                            [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
-                        )
-                        self._c_value << self._rs_cvals_c[self._lam[i]][self._idx_cosz]
+                        #self._idx_cosz << FunctionCall(
+                        #    [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
+                        #)
+                        self._c_value << self._rs_cvals_c[self._lam[i]]
 
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])

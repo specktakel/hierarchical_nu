@@ -38,9 +38,10 @@ class ModelCheck:
         if priors:
 
             self.priors = priors
+            print("Found priors")
 
         else:
-
+            print("Loading priors from config")
             prior_config = hnu_config["prior_config"]
             priors = Priors()
             priors.luminosity = self.make_prior(prior_config["L"])
@@ -51,11 +52,11 @@ class ModelCheck:
             self.priors = priors
 
         if truths:
-
+            print("Found true values")
             self.truths = truths
 
         else:
-
+            print("Loading true values from config")
             # Config
             file_config = hnu_config["file_config"]
             parameter_config = hnu_config["parameter_config"]
@@ -71,14 +72,14 @@ class ModelCheck:
             )
 
             self._obs_time = parameter_config["obs_time"] * u.year
-            self._nshards = parameter_config["nshards"]
+            # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
 
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
             self._exposure_integral = sim._exposure_integral
-            sim.set_stan_filename(file_config["sim_filename"])
-            sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
+            #sim.set_stan_filename(file_config["sim_filename"])
+            #sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
@@ -110,16 +111,7 @@ class ModelCheck:
             self.truths["Nex_atmo"] = Nex_per_comp[2]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
             self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
-
-            """
-            self.priors.atmospheric_flux = NormalPrior(
-                mu=atmo_bg.flux_model.total_flux_int.to(flux_unit),
-                sigma=atmo_bg.flux_model.total_flux_int.to(flux_unit))
-            self.priors.diffuse_flux = NormalPrior(
-                mu=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value, 
-                sigma=self._sources.diffuse.flux_model.total_flux_int.to(flux_unit).value,
-            )
-            """
+            
         self._default_var_names = [key for key in self.truths]
         self._default_var_names.append("Fs")
 
@@ -236,11 +228,19 @@ class ModelCheck:
             for key, value in self.truths.items():
                 truths_folder.create_dataset(key, data=value)
 
+            sim_folder = f.create_group("sim")
+
             for i, res in enumerate(self._results):
                 folder = f.create_group("results_%i" % i)
 
                 for key, value in res.items():
-                    folder.create_dataset(key, data=value)
+                    if key != "Lambda":
+                        folder.create_dataset(key, data=value)
+                    else:
+                        sim_folder.create_dataset("sim_%i" % i, data=np.vstack(value))
+                
+                
+            
 
         self.priors.addto(filename, "priors")
 
@@ -270,6 +270,7 @@ class ModelCheck:
             with h5py.File(filename, "r") as f:
 
                 truths_folder = f["truths"]
+                sim_folder = f["sim"]
                 for key, value in truths_folder.items():
                     file_truths[key] = value[()]
 
@@ -282,15 +283,18 @@ class ModelCheck:
                     )
 
                 n_jobs = len(
-                    [key for key in f if (key != "truths" and key != "priors")]
+                    [key for key in f if (key != "truths" and key != "priors" and key != "sim")]
                 )
+                sim = {}
                 for i in range(n_jobs):
                     job_folder = f["results_%i" % i]
                     for res_key in job_folder:
                         results[res_key].extend(job_folder[res_key][()])
+                    sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
 
         output = cls(truths, priors)
         output.results = results
+        output.sim_Lambdas = sim
 
         return output
 
@@ -322,7 +326,6 @@ class ModelCheck:
         for v, var_name in enumerate(var_names):
 
             if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo" or var_name == "Fs":
-
                 bins = np.geomspace(
                     np.min(np.array(self.results[var_name])[~mask]),
                     np.max(np.array(self.results[var_name])[~mask]),
@@ -360,6 +363,24 @@ class ModelCheck:
                         bins=bins,
                         lw=1.0,
                     )
+
+                    if var_name == "Nex_src":
+                        for val in self.sim_Lambdas.values():
+                            # Overplot the actual number of events for each component
+                            for line in val:
+                                ax[v].axvline(line[0], ls='-', c='red', lw=0.3)
+
+                    elif var_name == "Nex_diff":
+                        for val in self.sim_Lambdas.values():
+                            # Overplot the actual number of events for each component
+                            for line in val:
+                                ax[v].axvline(line[1], ls='-', c='red', lw=0.3)
+
+                    elif var_name == "Nex_atmo":
+                        for val in self.sim_Lambdas.values():
+                            # Overplot the actual number of events for each component
+                            for line in val:
+                                ax[v].axvline(line[2], ls='-', c='red', lw=0.3)
 
                     max_value = n.max() if \
                         n.max() > max_value else max_value
@@ -465,6 +486,7 @@ class ModelCheck:
 
         outputs["diagnostics_ok"] = []
         outputs["run_time"] = []
+        outputs["Lambda"] = []
 
         for i, s in enumerate(subjob_seeds):
 
@@ -477,14 +499,19 @@ class ModelCheck:
                     self._sources, self._detector_model_type, self._obs_time
                 )
                 sim.precomputation(self._exposure_integral)
-                sim.set_stan_filename(file_config["sim_filename"])
-                sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
+                #sim.set_stan_filename(file_config["sim_filename"])
+                #sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
+                sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
             sim.run(seed=s, verbose=True)
             self.sim = sim
 
-            lam = sim._sim_output.stan_variable("Lambda")[0]
-            sim_output = {}
-            sim_output["Lambda"] = lam
+            lambd = sim._sim_output.stan_variable("Lambda").squeeze()
+            ps = np.sum(lambd == 1.)
+            diff = np.sum(lambd == 2.)
+            atmo = np.sum(lambd == 3.)
+            lam = np.array([ps, diff, atmo])
+            #sim_output = {}
+            #sim_output["Lambda"] = lam
 
             self.events = sim.events
 
@@ -497,11 +524,12 @@ class ModelCheck:
                     sim.events,
                     self._obs_time,
                     priors=self.priors,
-                    nshards=self._nshards,
+                    nshards=self._threads_per_chain,
                 )
                 fit.precomputation()
-                fit.set_stan_filename(file_config["fit_filename"])
-                fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
+                #fit.set_stan_filename(file_config["fit_filename"])
+                #fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
+                fit.setup_stan_fit(os.path.splitext(file_config["fit_filename"])[0])
 
             else:
                 fit.events = sim.events
@@ -521,6 +549,7 @@ class ModelCheck:
             run_time = time.time() - start_time
             sys.stderr.write("time: %.5f\n" % run_time)
             outputs["run_time"].append(run_time)
+            outputs["Lambda"].append(lam)
 
             for key in self._default_var_names:
                 outputs[key].append(fit._fit_output.stan_variable(key))
@@ -620,6 +649,12 @@ def _initialise_sources():
     Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
     Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
 
+    Emin_src = Parameter(parameter_config["Emin_src"] * u.GeV, "Emin_src", fixed=True)
+    Emax_src = Parameter(parameter_config["Emax_src"] * u.GeV, "Emax_src", fixed=True)
+
+    Emin_diff = Parameter(parameter_config["Emin_diff"] * u.GeV, "Emin_diff", fixed=True)
+    Emax_diff = Parameter(parameter_config["Emax_diff"] * u.GeV, "Emax_diff", fixed=True)
+
     if parameter_config["Emin_det_eq"]:
 
         Emin_det = Parameter(
@@ -647,13 +682,13 @@ def _initialise_sources():
         L,
         src_index,
         parameter_config["z"],
-        Emin,
-        Emax,
+        Emin_src,
+        Emax_src,
     )
 
     sources = Sources()
     sources.add(point_source)
-    sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index)
+    sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.)
     sources.add_atmospheric_component()
 
     return sources

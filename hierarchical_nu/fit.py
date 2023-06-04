@@ -53,6 +53,7 @@ class StanFit:
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
         self._nshards = nshards
+        self._priors = priors
 
         self._sources.organise()
 
@@ -172,6 +173,13 @@ class StanFit:
             stanc_options={"include-paths": include_paths},
             cpp_options={"STAN_THREADS": True},
         )
+
+    def setup_stan_fit(self, filename):
+        """
+        Create stan model from already compiled file
+        """
+        
+        self._fit = CmdStanModel(exe_file=filename)
 
     def run(
         self,
@@ -342,6 +350,9 @@ class StanFit:
             source_labels.append("atmo")
 
         wrong = []
+        assumed = []
+        correct = []
+
         for i in range(len(prob_each_src)):
 
             classified = np.where(prob_each_src[i] == np.max(prob_each_src[i]))[0][
@@ -372,7 +383,8 @@ class StanFit:
                     print("P(atmo) = %.6f" % prob_each_src[i][Ns])
 
                 print("The correct component is", source_labels[int(event_labels[i])])
-                print()
+                correct.append(source_labels[int(event_labels[i])])
+                assumed.append(event_labels[i])
 
         if not wrong:
             print("All events are correctly classified")
@@ -381,6 +393,8 @@ class StanFit:
                 "A total of %i events out of %i are misclassified"
                 % (len(wrong), len(event_labels))
             )
+
+        return wrong, assumed, correct
 
     def _get_event_classifications(self):
 
@@ -444,13 +458,18 @@ class StanFit:
         fit_inputs["D"] = D
         fit_inputs["varpi"] = src_pos
 
-        fit_inputs["Esrc_min"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
-        fit_inputs["Esrc_max"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+        fit_inputs["Emin_src"] = Parameter.get_parameter("Emin_src").value.to(u.GeV).value
+        fit_inputs["Emax_src"] = Parameter.get_parameter("Emax_src").value.to(u.GeV).value
+
+        fit_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
+        fit_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+
+        fit_inputs["Emin_diff"] = Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
+        fit_inputs["Emax_diff"] = Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
 
         fit_inputs["T"] = self._observation_time.to(u.s).value
 
         event_type = self._detector_model_type.event_types[0]
-        fit_inputs["E_grid"] = self._exposure_integral[event_type].energy_grid.value
 
         fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
 
@@ -466,11 +485,29 @@ class StanFit:
                 event_type
             ].par_grids[key]
 
+            #Inputs for priors of point sources
+            fit_inputs["src_index_mu"] = self._priors.src_index.mu
+            fit_inputs["src_index_sigma"] = self._priors.src_index.sigma
+            if self._priors.luminosity.name in ["normal", "lognormal"]:
+                fit_inputs["lumi_mu"] = self._priors.luminosity.mu
+                fit_inputs["lumi_sigma"] = self._priors.luminosity.sigma
+            elif self._priors.luminosity.name == "pareto":
+                fit_inputs["lumi_xmin"] = self._priors.luminosity.xmin
+                fit_inputs["lumi_alpha"] = self._priors.luminosity.alpha
+            else:
+                raise ValueError("No other prior type for luminosity implemented")
+
         if self._sources.diffuse:
 
             fit_inputs["diff_index_grid"] = self._exposure_integral[
                 event_type
             ].par_grids["diff_index"]
+
+            #Priors for diffuse model
+            fit_inputs["f_diff_mu"] = self._priors.diffuse_flux.mu
+            fit_inputs["f_diff_sigma"] = self._priors.diffuse_flux.sigma
+            fit_inputs["diff_index_mu"] = self._priors.diff_index.mu
+            fit_inputs["diff_index_sigma"] = self._priors.diff_index.sigma
 
         if "tracks" in self._stan_interface._event_types:
 
@@ -479,9 +516,13 @@ class StanFit:
                 for _ in self._exposure_integral["tracks"].integral_grid
             ]
 
-            fit_inputs["Pdet_grid_t"] = np.array(
-                self._exposure_integral["tracks"].pdet_grid
-            )
+            if self._sources.point_source:
+                fit_inputs["aeff_egrid_t"] = self._exposure_integral["tracks"].pdet_grid[0].to(u.GeV).value.tolist()
+                fit_inputs["aeff_slice_t"] = [
+                    _.to(u.m**2).value.tolist() for _ in self._exposure_integral["tracks"].pdet_grid[1:]
+                ]
+                fit_inputs["aeff_len_t"] = len(self._exposure_integral["tracks"].pdet_grid[0].to(u.GeV).value.tolist())
+
 
         if "cascades" in self._stan_interface._event_types:
 
@@ -489,10 +530,13 @@ class StanFit:
                 _.to(u.m**2).value.tolist()
                 for _ in self._exposure_integral["cascades"].integral_grid
             ]
-
-            fit_inputs["Pdet_grid_c"] = np.array(
-                self._exposure_integral["cascades"].pdet_grid
-            )
+            
+            if self._sources.point_source:
+                fit_inputs["aeff_egrid_c"] = self._exposure_integral["cascades"].pdet_grid[0].to(u.GeV).value.tolist()
+                fit_inputs["aeff_slice_c"] = [
+                    _.to(u.m**2).value.tolist() for _ in self._exposure_integral["cascades"].pdet_grid[1:]
+                ]
+                fit_inputs["aeff_len_c"] = len(self._exposure_integral["cascades"].pdet_grid[0].to(u.GeV).value.tolist())
 
         if self._sources.atmospheric:
 
@@ -502,6 +546,10 @@ class StanFit:
                 .to(u.m**2)
                 .value
             )
+
+            #Priors for atmo model
+            fit_inputs["f_atmo_mu"] = self._priors.atmospheric_flux.mu
+            fit_inputs["f_atmo_sigma"] = self._priors.atmospheric_flux.sigma
 
         # To work with cmdstanpy serialization
         fit_inputs = {

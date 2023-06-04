@@ -43,13 +43,15 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
 
         self.theta_points = theta_points
 
-        cos_theta_grid = np.linspace(-1, 1, self.theta_points)
+        self.cos_theta_grid = np.linspace(-1, 1, self.theta_points)
 
-        spl_evals = np.empty((self.theta_points, len(log_energy_grid)))
+        self.log_energy_grid = log_energy_grid
 
-        for i, cos_theta in enumerate(cos_theta_grid):
+        self._spl_evals = np.empty((self.theta_points, len(log_energy_grid)))
 
-            spl_evals[i] = splined_flux(cos_theta, log_energy_grid).squeeze()
+        for i, cos_theta in enumerate(self.cos_theta_grid):
+
+            self._spl_evals[i] = splined_flux(cos_theta, log_energy_grid).squeeze()
 
         with self:
 
@@ -62,10 +64,10 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
                 "vals_cos_theta_high", "vector[%i]" % len(log_energy_grid)
             )
 
-            spl_evals_stan = StanArray("AtmosphericNuMuFluxGrid", "real", spl_evals)
+            self._spl_evals_stan = StanArray("AtmosphericNuMuFluxGrid", "real", self._spl_evals)
 
-            cos_theta_grid_stan = StanArray("cos_theta_grid", "real", cos_theta_grid)
-            log_energy_grid_stan = StanArray("log_energy_grid", "real", log_energy_grid)
+            cos_theta_grid_stan = StanArray("cos_theta_grid", "real", self.cos_theta_grid)
+            log_energy_grid_stan = StanArray("log_energy_grid", "real", self.log_energy_grid)
 
             truncated_e = TruncatedParameterization(
                 "true_energy", 10 ** log_energy_grid[0], 10 ** log_energy_grid[-1]
@@ -83,10 +85,10 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             # StringExpression(["print(\"cos_theta_bin_index = \",",cos_theta_bin_index,")"])
 
             vals_cos_theta_low << FunctionCall(
-                [spl_evals_stan[cos_theta_bin_index]], "to_vector"
+                [self._spl_evals_stan[cos_theta_bin_index]], "to_vector"
             )
             vals_cos_theta_high << FunctionCall(
-                [spl_evals_stan[cos_theta_bin_index + 1]], "to_vector"
+                [self._spl_evals_stan[cos_theta_bin_index + 1]], "to_vector"
             )
 
             vect_log_e_grid = FunctionCall([log_energy_grid_stan], "to_vector")
@@ -177,8 +179,8 @@ class AtmosphericNuMuFlux(FluxModel):
 
     def make_stan_function(self, energy_points=100, theta_points=50):
         log_energy_grid = np.linspace(
-            np.log10(self.EMIN / u.GeV).value,
-            np.log10(self.EMAX / u.GeV).value,
+            np.log10(self._lower_energy / u.GeV).value,
+            np.log10(self._upper_energy / u.GeV).value,
             energy_points,
         )
 

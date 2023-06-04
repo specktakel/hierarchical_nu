@@ -6,7 +6,9 @@ import numpy as np
 from .flux_model import (
     PointSourceFluxModel,
     PowerLawSpectrum,
+    TwiceBrokenPowerLaw,
     IsotropicDiffuseBG,
+    integral_power_law,
 )
 from .atmospheric_flux import AtmosphericNuMuFlux
 from .cosmology import luminosity_distance
@@ -40,14 +42,6 @@ class Source(ABC):
         self, energy: u.GeV, dec: u.rad, ra: u.rad
     ) -> 1 / (u.GeV * u.m ** 2 * u.s * u.sr):
         return self._flux_model(energy, dec, ra)
-
-    @abstractmethod
-    def redshift_factor(self, z: float):
-        """
-        Needs to be implemented in subclass.
-        Factor that appears when evaluating the flux in the local frame
-        """
-        pass
 
 
 class PointSource(Source):
@@ -104,6 +98,8 @@ class PointSource(Source):
     ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
+        Luminosity and all energies given as arguments/parameters live in the source frame
+        and are converted to detector frame internally.
 
         Parameters:
             name: str
@@ -121,14 +117,17 @@ class PointSource(Source):
                 Lower energy bound
             upper: Parameter
                 Upper energy bound
+        All parameters are taken to be defined in the source frame.
         """
 
         total_flux = luminosity.value / (
             4 * np.pi * luminosity_distance(redshift) ** 2
-        )  # here flux is W / m^2
+        )  # here flux is W / m^2, lives in the detector frame
 
         # Each source has an independent normalization, thus use the source name as identifier
+        # Normalisation to dN/(dEdtdA)
         norm = Parameter(
+            # is defined at the detector!
             1 / (u.GeV * u.s * u.m ** 2),
             "{}_norm".format(name),
             fixed=False,
@@ -136,9 +135,80 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
-        shape = PowerLawSpectrum(norm, 1e5 * u.GeV, index, lower.value, upper.value)
+        shape = PowerLawSpectrum(
+            norm,
+            1e5 * u.GeV,
+            index,
+            lower.value / (1 + redshift),
+            upper.value / (1 + redshift),
+        )
         total_power = shape.total_flux_density
+        norm.value *= total_flux / total_power
+        norm.value = norm.value.to(1 / (u.GeV * u.m ** 2 * u.s))
+        norm.fixed = True
+        return cls(name, dec, ra, redshift, shape, luminosity)
 
+    @classmethod
+    @u.quantity_input
+    def make_twicebroken_powerlaw_source(
+        cls,
+        name: str,
+        dec: u.rad,
+        ra: u.rad,
+        luminosity: Parameter,
+        index: Parameter,
+        redshift: float,
+        lower: Parameter,
+        upper: Parameter,
+        pivot: Parameter,
+    ):
+        """
+        Factory class for creating sources with powerlaw spectrum and given luminosity.
+        Luminosity and all energies given as arguments/parameters live in the source frame
+        and are converted to detector frame internally.
+
+        Parameters:
+            name: str
+                Source name
+            dec: u.rad,
+                Declination of the source
+            ra: u.rad,
+                Right Ascension of the source
+            luminosity: Parameter,
+                luminosity
+            index: Parameter
+                Spectral index
+            redshift: float
+            lower: Parameter
+                Lower energy bound
+            upper: Parameter
+                Upper energy bound
+        All parameters are taken to be defined in the source frame.
+        """
+        # raise NotImplementedError
+        total_flux = luminosity.value / (
+            4 * np.pi * luminosity_distance(redshift) ** 2
+        )  # here flux is W / m^2, lives in the detector frame
+
+        # Each source has an independent normalization, thus use the source name as identifier
+        # Normalisation to dN/(dEdtdA)
+        norm = Parameter(
+            # is defined at the detector!
+            1 / (u.GeV * u.s * u.m ** 2),
+            "{}_norm".format(name),
+            fixed=False,
+            par_range=(0, np.inf),
+            scale=ParScale.log,
+        )
+
+        shape = PowerLawSpectrum(
+            norm,
+            pivot.value / (1 + redshift),
+            index,
+            lower.value / (1 + redshift),
+            upper.value / (1 + redshift),
+        )
+        total_power = shape.total_flux_density
         norm.value *= total_flux / total_power
         norm.value = norm.value.to(1 / (u.GeV * u.m ** 2 * u.s))
         norm.fixed = True
@@ -152,7 +222,7 @@ class PointSource(Source):
         upper_energy: Parameter,
         include_undetected: bool = False,
     ):
-        """
+        """        
         Factory for power law sources defined in
         HDF5 files ( update: output from popsynth).
 
@@ -254,9 +324,10 @@ class PointSource(Source):
     @property
     def dec(self):
         return self._dec
-
+    
     @dec.setter
-    def dec(self, value):
+    @u.quantity_input
+    def dec(self, value: u.rad):
         self._dec = value
 
     @property
@@ -264,9 +335,16 @@ class PointSource(Source):
         return self._ra
 
     @ra.setter
-    def ra(self, value):
+    @u.quantity_input
+    def ra(self, value: u.rad):
         self._ra = value
 
+    @property
+    def cosz(self):
+        # only valid for IceCube
+        # TODO: move to detector model
+        return np.cos(self._dec.value + np.pi / 2)
+    
     @property
     def redshift(self):
         return self._redshift
@@ -275,9 +353,6 @@ class PointSource(Source):
     def redshift(self, value):
         self._redshift = value
 
-    def redshift_factor(self, z: float):
-        return self._flux_model.redshift_factor(z)
-
     @property
     @u.quantity_input
     def luminosity(self) -> u.erg / u.s:
@@ -285,6 +360,8 @@ class PointSource(Source):
 
     @luminosity.setter
     @u.quantity_input
+    # TODO add calculation for fluxes etc.
+    # needs to be defined in the source frame
     def luminosity(self, value: u.erg / u.s):
         self._luminosity = value
 
@@ -315,9 +392,6 @@ class DiffuseSource(Source):
     def redshift(self, value):
         self._redshift = value
 
-    def redshift_factor(self, z: float):
-        return self._flux_model.redshift_factor(z)
-
 
 class Sources:
     """
@@ -332,6 +406,9 @@ class Sources:
 
         # Initialise the source list
         self._sources = []
+
+    def __len__(self):
+        return self.N
 
     @property
     def sources(self):
@@ -374,6 +451,8 @@ class Sources:
         flux_norm: Parameter,
         norm_energy: u.GeV,
         diff_index: Parameter,
+        lower: Parameter,
+        upper: Parameter,
         z: float = 0,
     ):
         """
@@ -386,14 +465,13 @@ class Sources:
         :param flux_norm: The flux normalization for this component
         :param norm_energy: The energy at which the flux norm is defined
         :param diff_index: The index of the power law spectrum
+        :param lower: Lower energy bound of spectrum, defined at z
+        :param upper: Upper energy bound of spectrum, defined at z
         :param z: The redshift of the background shell
         """
 
-        Emin = Parameter.get_parameter("Emin")
-        Emax = Parameter.get_parameter("Emax")
-
         spectral_shape = PowerLawSpectrum(
-            flux_norm, norm_energy, diff_index, Emin.value, Emax.value
+            flux_norm, norm_energy, diff_index, lower.value / (1. + z), upper.value / (1. + z)
         )
         flux_model = IsotropicDiffuseBG(spectral_shape)
 

@@ -269,13 +269,13 @@ class HistogramSampler():
         """
 
         logger.debug("Making histograms.")
-        self._ragged_hist = UserDefinedFunction("{}_get_ragged_hist".format(data_type), ["idx"], ["int"], "real[]")
+        self._ragged_hist = UserDefinedFunction("{}_get_ragged_hist".format(data_type), ["idx"], ["int"], "array[] real")
         with self._ragged_hist:
             arr = StanArray("arr", "real", hist_values)
             self._make_ragged_start_stop(data_type, "vals")
             ReturnStatement(["arr[start:stop]"])
 
-        self._ragged_edges = UserDefinedFunction("{}_get_ragged_edges".format(data_type), ["idx"], ["int"], "real[]")
+        self._ragged_edges = UserDefinedFunction("{}_get_ragged_edges".format(data_type), ["idx"], ["int"], "array[] real")
         with self._ragged_edges:
             arr = StanArray("arr", "real", hist_bins)
             self._make_ragged_start_stop(data_type, "edges")
@@ -423,7 +423,7 @@ class R2021EffectiveArea(EffectiveArea):
 
         if self.CACHE_FNAME in Cache:
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
-                data = np.load(fr)
+                data = np.load(fr, allow_pickle=True)
                 eff_area = data["eff_area"]
                 tE_bin_edges = data["tE_bin_edges"]
                 cosz_bin_edges = data["cosz_bin_edges"]
@@ -434,8 +434,9 @@ class R2021EffectiveArea(EffectiveArea):
             #cut the arrays short because of numerical issues in precomputation.py
             aeff = EffectiveArea.from_dataset("20210126", IRF_PERIOD)
             # 1st axis: energy, 2nd axis: cosz
-            eff_area = aeff.values[:-5]
-            tE_bin_edges = aeff.true_energy_bins[:-5]
+            eff_area = aeff.values
+            # Deleting zero-entries above 1e9GeV is done in icecube_tools
+            tE_bin_edges = aeff.true_energy_bins
             cosz_bin_edges = aeff.cos_zenith_bins
 
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
@@ -737,7 +738,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             if self.CACHE_FNAME_LOGNORM in Cache and not self._rewrite:
                 logger.info("Loading energy lognorm data from file.")
                 with Cache.open(self.CACHE_FNAME_LOGNORM, "rb") as fr:
-                    data = np.load(fr)
+                    data = np.load(fr, allow_pickle=True)
                     self._eres = data["eres"]
                     self._tE_bin_edges = data["tE_bin_edges"]
                     #self._rE_bin_edges = data["rE_bin_edges"]
@@ -907,7 +908,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 logger.info("Loading energy pdf data from file.")
                 
                 with Cache.open(self.CACHE_FNAME_HISTOGRAM, "rb") as fr:
-                    data = np.load(fr)
+                    data = np.load(fr, allow_pickle=True)
                     self._ereco_cum_num_vals = data["cum_num_of_values"]
                     self._ereco_cum_num_edges = data["cum_num_of_bins"]
                     self._ereco_num_vals = data["num_of_values"]
@@ -1498,7 +1499,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
             if self.CACHE_FNAME in Cache and not self._rewrite:
                 logger.info("Loading angular data from file.")
                 with Cache.open(self.CACHE_FNAME, "rb") as fr:
-                    data = np.load(fr)
+                    data = np.load(fr, allow_pickle=True)
                     self._psf_cum_num_edges = data["psf_cum_num_edges"]
                     self._psf_cum_num_vals = data["psf_cum_num_vals"]
                     self._psf_num_vals = data["psf_num_vals"]
