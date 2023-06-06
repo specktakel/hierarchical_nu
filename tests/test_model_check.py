@@ -53,6 +53,11 @@ def test_short_run_r2021(output_directory, random_seed):
 def test_short_run_icecube(output_directory, random_seed):
     # Edit configuration and save
     hnu_config["parameter_config"]["detector_model_type"] = "icecube"
+    hnu_config["parameter_config"]["src_index"] = 2.0
+    hnu_config["parameter_config"]["L"] = 1e47
+    hnu_config["parameter_config"]["diff_norm"] = 1e-13
+    hnu_config["parameter_config"]["Emin_det_tracks"] = 1e5
+    hnu_config["parameter_config"]["obs_time"] = 1
 
     with _local_config_file.open("w") as f:
         OmegaConf.save(config=hnu_config, f=f.name)
