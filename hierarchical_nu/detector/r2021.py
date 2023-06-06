@@ -27,6 +27,7 @@ from ..backend import (
     DistributionMode,
     LognormalMixture,
     ForLoopContext,
+    WhileLoopContext,
     ForwardVariableDef,
     ForwardArrayDef,
     ForwardVectorDef,
@@ -490,6 +491,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         self.irf = R2021IRF.from_period(IRF_PERIOD)
         self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(IRF_PERIOD, np.linspace(1, 9, 25))
+        self._ereco_cuts = self._icecube_tools_eres._ereco_limits
+        self._aeff_dec_bins = self._icecube_tools_eres.declination_bins_aeff
         self.gen_type = gen_type
         self.mode = mode
         self._rewrite = rewrite
@@ -538,10 +541,13 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 "real",
             )
 
+            
+
         # Actual code generation
         # Differ between lognorm and histogram
         if self.gen_type == "lognorm":
             logger.info("Generating stan code using lognorm")
+            logger.warning("Further sampling of PSF and ang_err will probably fail, you have been warned. Yes, that means you!")
             with self:
                 # self._poly_params_mu should have shape (3, n_components, poly_deg+1)
                 # 3 from declination
@@ -715,7 +721,32 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 else:
                     # Throw everything in one line for readability
                     # Hands the appropriate values and bins to histogram_rng, returning a sample from the histogram
-                    ReturnStatement([FunctionCall([FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"), FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "histogram_rng")])
+
+                    #TODO add loop here to sample until Ereco passes the data cuts in the southern sky
+                    ereco_cuts = StanArray("ereco_cuts", "real", self._ereco_cuts)
+                    aeff_dec_bins = StanArray("aeff_dec_bins", "real", self._aeff_dec_bins)
+                    aeff_dec_idx = ForwardVariableDef("aeff_dec_idx", "int")
+                    aeff_dec_idx << FunctionCall([declination, aeff_dec_bins], "binary_search")
+                    ereco = ForwardVariableDef("ereco", "real")
+                    with WhileLoopContext([1]):
+                        ereco << FunctionCall(
+                            [
+                                FunctionCall(
+                                    [ereco_hist_idx],
+                                    "ereco_get_ragged_hist"
+                                ),
+                                FunctionCall(
+                                    [ereco_hist_idx],
+                                    "ereco_get_ragged_edges"
+                                )
+                            ],
+                            "histogram_rng"
+                        )
+                        # Apply lower energy cut, Ereco_sim >= Ereco_data at the appropriate Aeff declination bin
+                        # Only apply this lower limit
+                        with IfBlockContext([ereco, " >= ", ereco_cuts[aeff_dec_idx, 1]]):
+                            StringExpression(["break"])
+                    ReturnStatement([ereco])
 
 
     def setup(self) -> None:
