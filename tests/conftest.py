@@ -11,14 +11,12 @@ from hierarchical_nu.utils.cache import Cache
 
 @pytest.fixture(scope="session", autouse=True)
 def cache_setup():
-
     cache_dir = Path(__file__).parent.resolve() / "cache_files"
     Cache.set_cache_dir(cache_dir)
 
 
 @pytest.fixture(scope="session")
 def output_directory(tmpdir_factory):
-
     directory = tmpdir_factory.mktemp("output")
 
     return directory
@@ -26,8 +24,7 @@ def output_directory(tmpdir_factory):
 
 @pytest.fixture(scope="session")
 def random_seed():
-
-    seed = 42
+    seed = 100
 
     return seed
 
