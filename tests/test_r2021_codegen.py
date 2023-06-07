@@ -45,6 +45,7 @@ class TestR2021():
             mode=DistributionMode.RNG,
             rewrite=True,
             gen_type="histogram",
+            ereco_cuts=False,
             path=output_directory)
 
         with StanFileGenerator(file_name) as code_gen:
@@ -74,7 +75,6 @@ class TestR2021():
                 reco_dir << StringExpression(["pre_event[1:3]"])
         code_gen.generate_single_file()
         return code_gen.filename
-
 
     @pytest.fixture
     def model_file(self, output_directory):
@@ -117,7 +117,6 @@ class TestR2021():
         code_gen.generate_single_file()
         return code_gen.filename
 
-
     def test_file_generation_r2021(self, output_directory):
 
         R2021DetectorModel.generate_code(
@@ -134,7 +133,6 @@ class TestR2021():
             path=output_directory
         )
 
-
     @pytest.fixture
     def test_samples(self, sim_file, random_seed):
         num_samples = 1000
@@ -150,7 +148,6 @@ class TestR2021():
             stan_file=sim_file,
             stanc_options=stanc_options,
         )
-
         
         phi = 0
         theta = np.array([3*np.pi/4, np.pi/2, np.pi/4])
@@ -188,7 +185,6 @@ class TestR2021():
                 assert n == pytest.approx(irf.reco_energy[c_e, c_d].pdf(irf.reco_energy_bins[c_e, c_d][:-1]+0.01), abs=0.2)
 
         return samples
-
 
     def test_everything(self, test_samples, model_file, random_seed):
         # Generate model for fitting
@@ -230,4 +226,4 @@ class TestR2021():
                 assert true_energy.min() < e
 
                 assert true_energy.max() > e
-        
+      
