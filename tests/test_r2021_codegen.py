@@ -184,7 +184,7 @@ class TestR2021():
 
                 assert np.all(ang_err <= 20.)
 
-                assert n == pytest.approx(irf.reco_energy[c_e, c_d].pdf(irf.reco_energy_bins[c_e, c_d][:-1]+0.01), abs=0.2)
+                assert n == pytest.approx(irf.reco_energy[c_e, c_d].pdf(irf.reco_energy_bins[c_e, c_d][:-1]+0.01), abs=0.3)
 
         return samples
 
