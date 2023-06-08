@@ -505,7 +505,7 @@ class Simulation:
             cz_max = max(
                 self._exposure_integral["tracks"].effective_area._cosz_bin_edges
             )
-            sim_inputs["v_lim"] = ((np.cos(np.pi - np.arccos(cz_max)) + 1) / 2) + 1e-6
+            sim_inputs["v_lim"] = ((np.cos(np.pi - np.arccos(cz_max)) + 1) / 2) + 1e-2
         else:
             sim_inputs["v_lim"] = 0.0
 
