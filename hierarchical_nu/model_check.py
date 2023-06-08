@@ -34,9 +34,7 @@ class ModelCheck:
     """
 
     def __init__(self, truths=None, priors=None):
-
         if priors:
-
             self.priors = priors
             print("Found priors")
 
@@ -78,8 +76,8 @@ class ModelCheck:
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
             self._exposure_integral = sim._exposure_integral
-            #sim.set_stan_filename(file_config["sim_filename"])
-            #sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
+            # sim.set_stan_filename(file_config["sim_filename"])
+            # sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
@@ -111,7 +109,7 @@ class ModelCheck:
             self.truths["Nex_atmo"] = Nex_per_comp[2]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
             self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
-            
+
         self._default_var_names = [key for key in self.truths]
         self._default_var_names.append("Fs")
 
@@ -127,7 +125,6 @@ class ModelCheck:
             raise ValueError("Currently no other prior implemented")
         return prior
 
-
     @staticmethod
     def initialise_env(output_dir, priors: Priors = Priors()):
         """
@@ -137,7 +134,7 @@ class ModelCheck:
         * Runs MCEq for atmo flux if needed
         * Generates and compiles necessary Stan files
         Only need to run once before calling ModelCheck(...).run()
-        """        
+        """
 
         # Config
         parameter_config = hnu_config["parameter_config"]
@@ -170,14 +167,13 @@ class ModelCheck:
         # Generate fit Stan file
         nshards = parameter_config["nshards"]
         fit_name = file_config["fit_filename"][:-5]
-        
+
         priors = Priors()
         priors.luminosity = ModelCheck.make_prior(prior_config["L"])
         priors.src_index = ModelCheck.make_prior(prior_config["src_index"])
         priors.atmospheric_flux = ModelCheck.make_prior(prior_config["atmo_flux"])
         priors.diffuse_flux = ModelCheck.make_prior(prior_config["diff_flux"])
         priors.diff_index = ModelCheck.make_prior(prior_config["diff_index"])
-
 
         stan_fit_interface = StanFitInterface(
             fit_name,
@@ -213,7 +209,6 @@ class ModelCheck:
             os.makedirs(output_dir)
 
     def parallel_run(self, n_jobs=1, n_subjobs=1, seed=None, **kwargs):
-
         job_seeds = [(seed + job) * 10 for job in range(n_jobs)]
 
         self._results = Parallel(n_jobs=n_jobs, backend="loky")(
@@ -221,9 +216,7 @@ class ModelCheck:
         )
 
     def save(self, filename):
-
         with h5py.File(filename, "w") as f:
-
             truths_folder = f.create_group("truths")
             for key, value in self.truths.items():
                 truths_folder.create_dataset(key, data=value)
@@ -238,15 +231,11 @@ class ModelCheck:
                         folder.create_dataset(key, data=value)
                     else:
                         sim_folder.create_dataset("sim_%i" % i, data=np.vstack(value))
-                
-                
-            
 
         self.priors.addto(filename, "priors")
 
     @classmethod
     def load(cls, filename_list):
-
         with h5py.File(filename_list[0], "r") as f:
             job_folder = f["results_0"]
             _result_names = [key for key in job_folder]
@@ -260,15 +249,12 @@ class ModelCheck:
 
         file_truths = {}
         for filename in filename_list:
-
             file_priors = Priors.from_group(filename, "priors")
 
             if not priors:
-
                 priors = file_priors
 
             with h5py.File(filename, "r") as f:
-
                 truths_folder = f["truths"]
                 sim_folder = f["sim"]
                 for key, value in truths_folder.items():
@@ -283,7 +269,11 @@ class ModelCheck:
                     )
 
                 n_jobs = len(
-                    [key for key in f if (key != "truths" and key != "priors" and key != "sim")]
+                    [
+                        key
+                        for key in f
+                        if (key != "truths" and key != "priors" and key != "sim")
+                    ]
                 )
                 sim = {}
                 for i in range(n_jobs):
@@ -306,8 +296,8 @@ class ModelCheck:
         nbins: int = 50,
         mask_results: Union[None, np.ndarray] = None,
         alpha=0.1,
+        show_N: bool = False,
     ):
-
         if not var_names:
             var_names = self._default_var_names
 
@@ -324,8 +314,12 @@ class ModelCheck:
         fig, ax = plt.subplots(N, figsize=(5, N * 3))
 
         for v, var_name in enumerate(var_names):
-
-            if var_name == "L" or var_name == "F_diff" or var_name == "F_atmo" or var_name == "Fs":
+            if (
+                var_name == "L"
+                or var_name == "F_diff"
+                or var_name == "F_atmo"
+                or var_name == "Fs"
+            ):
                 bins = np.geomspace(
                     np.min(np.array(self.results[var_name])[~mask]),
                     np.max(np.array(self.results[var_name])[~mask]),
@@ -339,7 +333,6 @@ class ModelCheck:
                 ax[v].set_xscale("log")
 
             else:
-
                 prior_supp = np.linspace(
                     np.min(self.results[var_name]),
                     np.max(self.results[var_name]),
@@ -350,10 +343,9 @@ class ModelCheck:
                     np.max(np.array(self.results[var_name])[~mask]),
                     nbins,
                 )
-            max_value = 0            
+            max_value = 0
 
             for i in range(len(self.results[var_name])):
-                
                 if i not in mask_results:
                     n, bins, _ = ax[v].hist(
                         self.results[var_name][i],
@@ -364,49 +356,47 @@ class ModelCheck:
                         lw=1.0,
                     )
 
-                    if var_name == "Nex_src":
+                    if show_N and var_name == "Nex_src":
                         for val in self.sim_Lambdas.values():
                             # Overplot the actual number of events for each component
                             for line in val:
-                                ax[v].axvline(line[0], ls='-', c='red', lw=0.3)
+                                ax[v].axvline(line[0], ls="-", c="red", lw=0.3)
 
-                    elif var_name == "Nex_diff":
+                    elif show_N and var_name == "Nex_diff":
                         for val in self.sim_Lambdas.values():
                             # Overplot the actual number of events for each component
                             for line in val:
-                                ax[v].axvline(line[1], ls='-', c='red', lw=0.3)
+                                ax[v].axvline(line[1], ls="-", c="red", lw=0.3)
 
-                    elif var_name == "Nex_atmo":
+                    elif show_N and var_name == "Nex_atmo":
                         for val in self.sim_Lambdas.values():
                             # Overplot the actual number of events for each component
                             for line in val:
-                                ax[v].axvline(line[2], ls='-', c='red', lw=0.3)
+                                ax[v].axvline(line[2], ls="-", c="red", lw=0.3)
 
-                    max_value = n.max() if \
-                        n.max() > max_value else max_value
+                    max_value = n.max() if n.max() > max_value else max_value
 
             if show_prior:
-
                 N = len(self.results[var_name][0]) * 100
                 xmin, xmax = ax[v].get_xlim()
 
-                if "f_" in var_name and not "diff" in var_name:   # yikes
-
+                if "f_" in var_name and not "diff" in var_name:  # yikes
                     prior_samples = uniform(0, 1).rvs(N)
                     prior_density = uniform(0, 1).pdf(prior_supp)
                     plot = True
 
                 elif "Nex" in var_name:
-
                     plot = False
 
                 elif "index" in var_name:
                     prior_density = self.priors.to_dict()[var_name].pdf(prior_supp)
                     plot = True
-                
+
                 elif not "Fs" in var_name:
                     prior_samples = self.priors.to_dict()[var_name].sample(N)
-                    prior_density = self.priors.to_dict()[var_name].pdf_logspace(prior_supp)
+                    prior_density = self.priors.to_dict()[var_name].pdf_logspace(
+                        prior_supp
+                    )
                     plot = True
                 else:
                     plot = False
@@ -414,22 +404,22 @@ class ModelCheck:
                 if plot:
                     ax[v].plot(
                         prior_supp,
-                        prior_density / prior_density.max() * max_value / 2.,
+                        prior_density / prior_density.max() * max_value / 2.0,
                         color="k",
                         alpha=0.5,
                         lw=2,
                         label="Prior",
                     )
                     ax[v].hist(
-                    prior_samples,
-                    color="k",
-                    alpha=0.5,
-                    histtype="step",
-                    bins=bins,
-                    lw=2,
-                    weights=np.tile(0.01, len(prior_samples)),
-                    label="Prior samples",
-                )
+                        prior_samples,
+                        color="k",
+                        alpha=0.5,
+                        histtype="step",
+                        bins=bins,
+                        lw=2,
+                        weights=np.tile(0.01, len(prior_samples)),
+                        label="Prior samples",
+                    )
             try:
                 ax[v].axvline(
                     self.truths[var_name], color="k", linestyle="-", label="Truth"
@@ -453,14 +443,12 @@ class ModelCheck:
         ind_not_ok = np.where(diagnostics_array == 0)[0]
 
         if len(ind_not_ok) > 0:
-
             print(
                 "%.2f percent of fits have issues!"
                 % (len(ind_not_ok) / len(diagnostics_array) * 100)
             )
 
         else:
-
             print("No issues found")
 
         return ind_not_ok
@@ -489,7 +477,6 @@ class ModelCheck:
         outputs["Lambda"] = []
 
         for i, s in enumerate(subjob_seeds):
-
             sys.stderr.write("Run %i\n" % i)
 
             # Simulation
@@ -499,19 +486,19 @@ class ModelCheck:
                     self._sources, self._detector_model_type, self._obs_time
                 )
                 sim.precomputation(self._exposure_integral)
-                #sim.set_stan_filename(file_config["sim_filename"])
-                #sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
+                # sim.set_stan_filename(file_config["sim_filename"])
+                # sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
                 sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
             sim.run(seed=s, verbose=True)
             self.sim = sim
 
             lambd = sim._sim_output.stan_variable("Lambda").squeeze()
-            ps = np.sum(lambd == 1.)
-            diff = np.sum(lambd == 2.)
-            atmo = np.sum(lambd == 3.)
+            ps = np.sum(lambd == 1.0)
+            diff = np.sum(lambd == 2.0)
+            atmo = np.sum(lambd == 3.0)
             lam = np.array([ps, diff, atmo])
-            #sim_output = {}
-            #sim_output["Lambda"] = lam
+            # sim_output = {}
+            # sim_output["Lambda"] = lam
 
             self.events = sim.events
 
@@ -527,8 +514,8 @@ class ModelCheck:
                     nshards=self._threads_per_chain,
                 )
                 fit.precomputation()
-                #fit.set_stan_filename(file_config["fit_filename"])
-                #fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
+                # fit.set_stan_filename(file_config["fit_filename"])
+                # fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
                 fit.setup_stan_fit(os.path.splitext(file_config["fit_filename"])[0])
 
             else:
@@ -567,25 +554,19 @@ class ModelCheck:
 
     @staticmethod
     def _get_dm_from_config(dm_key):
-
         if dm_key == "northern_tracks":
-
             dm = NorthernTracksDetectorModel
 
         elif dm_key == "cascades":
-
             dm = CascadesDetectorModel
 
         elif dm_key == "icecube":
-
             dm = IceCubeDetectorModel
 
         elif dm_key == "r2021":
-
             dm = R2021DetectorModel
 
         else:
-
             raise ValueError("Detector model key in config not recognised")
 
         return dm
@@ -597,27 +578,23 @@ class ModelCheck:
         """
 
         try:
-
             prior = self.priors.to_dict()[var_name]
 
             prior_func = prior.pdf
 
         except:
-
             if var_name == "f_arr" or var_name == "f_arr_astro":
 
                 def prior_func(f):
                     return uniform(0, 1).pdf(f)
 
             else:
-
                 raise ValueError("var_name not recognised")
 
         return prior_func
 
 
 def _initialise_sources():
-
     parameter_config = hnu_config["parameter_config"]
 
     Parameter.clear_registry()
@@ -652,17 +629,19 @@ def _initialise_sources():
     Emin_src = Parameter(parameter_config["Emin_src"] * u.GeV, "Emin_src", fixed=True)
     Emax_src = Parameter(parameter_config["Emax_src"] * u.GeV, "Emax_src", fixed=True)
 
-    Emin_diff = Parameter(parameter_config["Emin_diff"] * u.GeV, "Emin_diff", fixed=True)
-    Emax_diff = Parameter(parameter_config["Emax_diff"] * u.GeV, "Emax_diff", fixed=True)
+    Emin_diff = Parameter(
+        parameter_config["Emin_diff"] * u.GeV, "Emin_diff", fixed=True
+    )
+    Emax_diff = Parameter(
+        parameter_config["Emax_diff"] * u.GeV, "Emax_diff", fixed=True
+    )
 
     if parameter_config["Emin_det_eq"]:
-
         Emin_det = Parameter(
             parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
         )
 
     else:
-
         Emin_det_tracks = Parameter(
             parameter_config["Emin_det_tracks"] * u.GeV,
             "Emin_det_tracks",
@@ -688,7 +667,9 @@ def _initialise_sources():
 
     sources = Sources()
     sources.add(point_source)
-    sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.)
+    sources.add_diffuse_component(
+        diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
+    )
     sources.add_atmospheric_component()
 
     return sources
