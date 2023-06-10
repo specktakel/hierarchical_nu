@@ -160,14 +160,15 @@ class Events:
         """
         Load events from the 2021 data release
         :param p: string of period to be loaded.
-        :param kwargs: kwargs passed to make an event selection, see icecube_tools's documentation for details
+        :param kwargs: kwargs passed to make an event selection, see `icecube_tools` documentation for details
         :return: :class:`hierarchical_nu.events.Events`
         """
 
         from icecube_tools.utils.data import RealEvents
 
         # Borrow from icecube_tools
-        events = RealEvents.from_event_files(p)
+        use_all = kwargs.pop("use_all", True)
+        events = RealEvents.from_event_files(p, use_all=use_all)
 
         # Check if minimum detected energy is currently loaded as parameter
         try:

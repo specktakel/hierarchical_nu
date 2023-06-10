@@ -9,9 +9,9 @@ def test_read():
     periods = ["IC86_II"]
 
     for p in periods:
-        it_ev = RealEvents.from_event_files(p)
+        it_ev = RealEvents.from_event_files(p, use_all=True)
         it_ev.restrict(ereco_low=5e4)
-        hnu_ev = Events.from_ev_file(p, ereco_low=5e4)
+        hnu_ev = Events.from_ev_file(p, ereco_low=5e4, use_all=True)
 
         # assert energy and some angles to check if rad/deg is correct
         assert np.isclose(it_ev.reco_energy[p][0], hnu_ev.energies[0].to(u.GeV).value)
