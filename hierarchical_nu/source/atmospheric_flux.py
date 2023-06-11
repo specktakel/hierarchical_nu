@@ -32,7 +32,6 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
         log_energy_grid,
         theta_points: int = 50,
     ):
-
         UserDefinedFunction.__init__(
             self,
             "AtmosphericNumuFlux",
@@ -50,11 +49,9 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
         self._spl_evals = np.empty((self.theta_points, len(log_energy_grid)))
 
         for i, cos_theta in enumerate(self.cos_theta_grid):
-
             self._spl_evals[i] = splined_flux(cos_theta, log_energy_grid).squeeze()
 
         with self:
-
             cos_theta = ForwardVariableDef("cos_theta", "real")
             cos_theta_bin_index = ForwardVariableDef("cos_theta_bin_index", "int")
             vals_cos_theta_low = ForwardVariableDef(
@@ -64,10 +61,16 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
                 "vals_cos_theta_high", "vector[%i]" % len(log_energy_grid)
             )
 
-            self._spl_evals_stan = StanArray("AtmosphericNuMuFluxGrid", "real", self._spl_evals)
+            self._spl_evals_stan = StanArray(
+                "AtmosphericNuMuFluxGrid", "real", self._spl_evals
+            )
 
-            cos_theta_grid_stan = StanArray("cos_theta_grid", "real", self.cos_theta_grid)
-            log_energy_grid_stan = StanArray("log_energy_grid", "real", self.log_energy_grid)
+            cos_theta_grid_stan = StanArray(
+                "cos_theta_grid", "real", self.cos_theta_grid
+            )
+            log_energy_grid_stan = StanArray(
+                "log_energy_grid", "real", self.log_energy_grid
+            )
 
             truncated_e = TruncatedParameterization(
                 "true_energy", 10 ** log_energy_grid[0], 10 ** log_energy_grid[-1]
@@ -120,7 +123,6 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
 
 
 class AtmosphericNuMuFlux(FluxModel):
-
     CACHE_FNAME = "mceq_flux.pickle"
     EMAX = 1e9 * u.GeV
     EMIN = 1 * u.GeV
@@ -225,11 +227,14 @@ class AtmosphericNuMuFlux(FluxModel):
             print("Error in spline evaluation. Are the evaluation points ordered?")
             raise e
 
+        # Correct if outside bounds
+        result.T[energy < self._lower_energy.to_value(u.GeV)] = 0.0
+        result.T[energy > self._upper_energy.to_value(u.GeV)] = 0.0
+
         return np.squeeze(result)
 
     @u.quantity_input
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
-
         energy = (energy / u.GeV).value
 
         def _integral(energy):
@@ -299,6 +304,14 @@ class AtmosphericNuMuFlux(FluxModel):
 
         vect_int = np.vectorize(_integral)
 
+        # Check edge cases
+        e_low[
+            ((e_low < self._lower_energy) & (e_up > self._lower_energy))
+        ] = self._lower_energy
+        e_up[
+            ((e_low < self._upper_energy) & (e_up > self._upper_energy))
+        ] = self._upper_energy
+
         e_low = (e_low / u.GeV).value
         e_up = (e_up / u.GeV).value
         dec_low = (dec_low / u.rad).value
@@ -311,5 +324,4 @@ class AtmosphericNuMuFlux(FluxModel):
         )
 
     def make_stan_sampling_func(cls, f_name):
-
         raise NotImplementedError()

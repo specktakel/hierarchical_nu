@@ -90,7 +90,6 @@ class StanSimInterface(StanInterface):
         """
 
         with FunctionsContext():
-
             # Include all the specified files
             for include_file in self._includes:
                 _ = Include(include_file)
@@ -98,7 +97,6 @@ class StanSimInterface(StanInterface):
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
             if self.sources.point_source:
-
                 self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
                     "src_spectrum_logpdf"
                 )
@@ -109,7 +107,6 @@ class StanSimInterface(StanInterface):
 
             # If we have diffuse sources, include the shape of their PDF
             if self.sources.diffuse:
-
                 self._diff_spectrum_lpdf = self._diff_spectrum.make_stan_lpdf_func(
                     "diff_spectrum_logpdf"
                 )
@@ -117,7 +114,6 @@ class StanSimInterface(StanInterface):
             # If we have atmospheric sources, include the atmospheric flux table
             # the density of the grid in theta (ie. declination) is specified here
             if self.sources.atmospheric:
-
                 atmo_flux_model = self.sources.atmospheric.flux_model
 
                 # Increasing theta points too much makes compilation very slow
@@ -132,7 +128,6 @@ class StanSimInterface(StanInterface):
         """
 
         with DataContext():
-
             # Useful strings depending on the total number of sources
             # Ns is the number of point sources
             self._Ns = ForwardVariableDef("Ns", "int")
@@ -141,11 +136,9 @@ class StanSimInterface(StanInterface):
             self._Ns_2p_str = ["[", self._Ns, "+2]"]
 
             if self.sources.diffuse:
-
                 N_int_str = self._Ns_1p_str
 
             else:
-
                 N_int_str = self._Ns_str
 
             # True directions of point sources as a unit vector
@@ -157,13 +150,11 @@ class StanSimInterface(StanInterface):
             # For diffuse and point sources, we have an interpolation grid
             # for the integral of expected number of events to pass
             if self.sources.diffuse or self.sources.point_source:
-
                 self._Ngrid = ForwardVariableDef("Ngrid", "int")
 
             # Diffuse sources have a redshift (default z=0) a spectral index,
             # and a grid over this index for the interpolation mentioned above
             if self.sources.diffuse:
-
                 self._z = ForwardVariableDef("z", "vector[Ns+1]")
                 self._diff_index = ForwardVariableDef("diff_index", "real")
                 self._diff_index_grid = ForwardVariableDef(
@@ -171,13 +162,11 @@ class StanSimInterface(StanInterface):
                 )
 
             else:
-
                 self._z = ForwardVariableDef("z", "vector[Ns]")
 
             # Point sources can have shared/individual spectral indices, and
             # a grid over the spectral index is also passed, as for diffuse sources.
             if self.sources.point_source:
-
                 if self._shared_src_index:
                     self._src_index = ForwardVariableDef("src_index", "real")
                 else:
@@ -204,7 +193,6 @@ class StanSimInterface(StanInterface):
             # rejection sampling, denoted by rs_...
             # Separate interpolation grids are also provided for tracks and cascades
             if "tracks" in self._event_types:
-
                 self._Emin_det_t = ForwardVariableDef("Emin_det_t", "real")
                 self._rs_bbpl_Eth_t = ForwardVariableDef("rs_bbpl_Eth_t", "real")
                 self._rs_bbpl_gamma1_t = ForwardVariableDef("rs_bbpl_gamma1_t", "real")
@@ -215,9 +203,9 @@ class StanSimInterface(StanInterface):
                 self._rs_cvals_t = ForwardArrayDef(
                     "rs_cvals_t", "real", [f"[{self.sources.N}]"]
                 )
-                #self._rs_cosz_bin_edges_t = ForwardArrayDef(
+                # self._rs_cosz_bin_edges_t = ForwardArrayDef(
                 #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
-                #)
+                # )
 
                 if self.sources.diffuse or self.sources.point_source:
                     self._integral_grid_t = ForwardArrayDef(
@@ -228,20 +216,19 @@ class StanSimInterface(StanInterface):
             # parameters and interpolation grids are needed due to the different
             # shape of the effective area.
             if "cascades" in self._event_types:
-
                 self._Emin_det_c = ForwardVariableDef("Emin_det_c", "real")
                 self._rs_bbpl_Eth_c = ForwardVariableDef("rs_bbpl_Eth_c", "real")
                 self._rs_bbpl_gamma1_c = ForwardVariableDef("rs_bbpl_gamma1_c", "real")
                 self._rs_bbpl_gamma2_scale_c = ForwardVariableDef(
                     "rs_bbpl_gamma2_scale_c", "real"
                 )
-                #self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
+                # self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
                 self._rs_cvals_c = ForwardArrayDef(
                     "rs_cvals_c", "real", [f"[{self.sources.N}]"]
                 )
-                #self._rs_cosz_bin_edges_c = ForwardArrayDef(
+                # self._rs_cosz_bin_edges_c = ForwardArrayDef(
                 #    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
-                #)
+                # )
 
                 if self.sources.diffuse or self.sources.point_source:
                     self._integral_grid_c = ForwardArrayDef(
@@ -251,18 +238,15 @@ class StanSimInterface(StanInterface):
             # We define the necessary source input parameters depending on
             # what kind of sources we have
             if self.sources.point_source:
-
                 if self._shared_luminosity:
                     self._L = ForwardVariableDef("L", "real")
                 else:
                     self._L = ForwardVariableDef("L", "vector[Ns]")
 
             if self.sources.diffuse:
-
                 self._F_diff = ForwardVariableDef("F_diff", "real")
 
             if self.sources.atmospheric:
-
                 self._F_atmo = ForwardVariableDef("F_atmo", "real")
 
                 self._atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
@@ -280,29 +264,24 @@ class StanSimInterface(StanInterface):
         """
 
         with TransformedDataContext():
-
             # Decide how many flux entries, F, we have
             if self.sources.diffuse and self.sources.atmospheric:
-
                 self._F = ForwardVariableDef("F", "vector[Ns+2]")
 
                 N_tot_t = "[Ns+2]"
                 N_tot_c = "[Ns+1]"
 
             elif self.sources.diffuse or self.sources.atmospheric:
-
                 self._F = ForwardVariableDef("F", "vector[Ns+1]")
 
                 N_tot_t = N_tot_c = "[Ns+1]"
 
             else:
-
                 self._F = ForwardVariableDef("F", "vector[Ns]")
 
                 N_tot_t = N_tot_c = "[Ns]"
 
             if "tracks" in self._event_types:
-
                 # Define track type as in package
                 self._track_type = ForwardVariableDef("track_type", "int")
                 self._track_type << TRACKS
@@ -322,7 +301,6 @@ class StanSimInterface(StanInterface):
                 self._N_t = ForwardVariableDef("N_t", "int")
 
             if "cascades" in self._event_types:
-
                 # Define cascade type as in package
                 self._cascade_type = ForwardVariableDef("cascade_type", "int")
                 self._cascade_type << CASCADES
@@ -372,9 +350,7 @@ class StanSimInterface(StanInterface):
             self._Nex_src << 0.0
 
             if self.sources.point_source:
-
                 with ForLoopContext(1, self._Ns, "k") as k:
-
                     if self._shared_luminosity:
                         L_ref = self._L
                     else:
@@ -406,7 +382,7 @@ class StanSimInterface(StanInterface):
                             self._flux_conv(
                                 src_index_ref,
                                 self._Emin_src / (1 + self._z[k]),
-                                self._Emax_src / (1 + self._z[k])
+                                self._Emax_src / (1 + self._z[k]),
                             ),
                         ]
                     )
@@ -426,16 +402,13 @@ class StanSimInterface(StanInterface):
             # For each source, calculate the exposure for different
             # event types
             if self.sources.point_source:
-
                 with ForLoopContext(1, self._Ns, "k") as k:
-
                     if self._shared_src_index:
                         src_index_ref = self._src_index
                     else:
                         src_index_ref = self._src_index[k]
 
                     if "tracks" in self._event_types:
-
                         (
                             self._eps_t[k]
                             << FunctionCall(
@@ -454,7 +427,6 @@ class StanSimInterface(StanInterface):
                         )
 
                     if "cascades" in self._event_types:
-
                         (
                             self._eps_c[k]
                             << FunctionCall(
@@ -475,9 +447,7 @@ class StanSimInterface(StanInterface):
             # Calculate the exposure for diffuse/atmospheric sources
             # For cascades, we assume no atmo component
             if self.sources.diffuse and self.sources.atmospheric:
-
                 if "tracks" in self._event_types:
-
                     (
                         self._eps_t[self._Ns + 1]
                         << FunctionCall(
@@ -502,7 +472,6 @@ class StanSimInterface(StanInterface):
                     self._Nex_atmo << self._F[self._Ns + 2] * self._eps_t[self._Ns + 2]
 
                 if "cascades" in self._event_types:
-
                     (
                         self._eps_c[self._Ns + 1]
                         << FunctionCall(
@@ -522,9 +491,7 @@ class StanSimInterface(StanInterface):
                     )
 
             elif self.sources.diffuse:
-
                 if "tracks" in self._event_types:
-
                     (
                         self._eps_t[self._Ns + 1]
                         << FunctionCall(
@@ -544,7 +511,6 @@ class StanSimInterface(StanInterface):
                     )
 
                 if "cascades" in self._event_types:
-
                     (
                         self._eps_c[self._Ns + 1]
                         << FunctionCall(
@@ -564,17 +530,14 @@ class StanSimInterface(StanInterface):
                     )
 
             elif self.sources.atmospheric and "tracks" in self._event_types:
-
                 self._eps_t[self._Ns + 1] << self._atmo_integ_val * self._T
 
                 self._Nex_atmo << self._F[self._Ns + 1] * self._eps_t[self._Ns + 1]
 
                 if "cascades" in self._event_types:
-
                     self._eps_c[self._Ns + 1] << 0.0
 
             if self.sources.atmospheric:
-
                 self._atmo_flux_integ_val = ForwardVariableDef(
                     "atmo_flux_integ_val", "real"
                 )
@@ -589,37 +552,32 @@ class StanSimInterface(StanInterface):
             # This will be used to sample the labels
             # Also sample the number of events
             if "tracks" in self._event_types:
-
                 self._Nex_t << FunctionCall([self._F, self._eps_t], "get_Nex")
                 self._w_exposure_t << FunctionCall(
                     [self._F, self._eps_t], "get_exposure_weights"
                 )
-                
+
                 self._N_t << StringExpression(["poisson_rng(", self._Nex_t, ")"])
 
             if "cascades" in self._event_types:
-
                 self._Nex_c << FunctionCall([self._F, self._eps_c], "get_Nex")
                 self._w_exposure_c << FunctionCall(
                     [self._F, self._eps_c], "get_exposure_weights"
                 )
-                
+
                 self._N_c << StringExpression(["poisson_rng(", self._Nex_c, ")"])
 
             if "tracks" in self._event_types and "cascades" in self._event_types:
-
                 self._Nex_src << self._Nex_src_t + self._Nex_src_c
                 self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
                 self._N << self._N_t + self._N_c
 
             elif "tracks" in self._event_types:
-
                 self._Nex_src << self._Nex_src_t
                 self._Nex_diff << self._Nex_diff_t
                 self._N << self._N_t
 
             elif "cascades" in self._event_types:
-
                 self._Nex_src << self._Nex_src_c
                 self._Nex_diff << self._Nex_diff_c
                 self._Nex_atmo << 0.0
@@ -664,7 +622,6 @@ class StanSimInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
-
             self._dm_rng = OrderedDict()
 
             # For different event types, define the detector model in both RNG and PDF
@@ -753,11 +710,9 @@ class StanSimInterface(StanInterface):
 
             # Here we start the sampling, first fo tracks and then cascades.
             if "tracks" in self._event_types:
-
                 # For each event, we rejection sample the true energy and direction
                 # and then directly sample the detected properties
                 with ForLoopContext(1, self._N_t, "i") as i:
-
                     self._event_type[i] << self._track_type
 
                     # Sample source label
@@ -772,7 +727,6 @@ class StanSimInterface(StanInterface):
 
                     # While not accepted
                     with WhileLoopContext([StringExpression([self._accept != 1])]):
-
                         # Used for rejection sampling
                         self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
 
@@ -780,36 +734,29 @@ class StanSimInterface(StanInterface):
                         with IfBlockContext(
                             [StringExpression([self._lam[i], " <= ", self._Ns])]
                         ):
-
                             self._omega << self._varpi[self._lam[i]]
 
                         # Otherwise, sample uniformly over sphere, considering v_lim
                         if self.sources.atmospheric and not self.sources.diffuse:
-
                             with ElseIfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-
                                 self._omega << FunctionCall(
                                     [1, self._v_lim], "sphere_lim_rng"
                                 )
 
                         elif self.sources.diffuse:
-
                             with ElseIfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-
                                 self._omega << FunctionCall(
                                     [1, self._v_lim], "sphere_lim_rng"
                                 )
 
                         if self.sources.atmospheric and self._sources.diffuse:
-
                             with ElseIfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
-
                                 self._omega << FunctionCall(
                                     [1, self._v_lim], "sphere_lim_rng"
                                 )
@@ -821,11 +768,9 @@ class StanSimInterface(StanInterface):
                         # Calculate the envelope for rejection sampling and the shape of
                         # the source spectrum for the various source components
                         if self.sources.point_source:
-
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
-
                                 if self._shared_src_index:
                                     src_index_ref = self._src_index
                                 else:
@@ -867,7 +812,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
@@ -910,7 +854,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -959,7 +902,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -1011,11 +953,9 @@ class StanSimInterface(StanInterface):
 
                         # Treat the atmospheric and diffuse components similarly
                         if self.sources.atmospheric and not self.sources.diffuse:
-
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-
                                 # Assume fixed index of ~3.6 for atmo to get reasonable
                                 # envelope function
                                 self._gamma2 << self._rs_bbpl_gamma2_scale_t - 3.6
@@ -1044,7 +984,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
@@ -1087,7 +1026,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -1136,7 +1074,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -1176,11 +1113,9 @@ class StanSimInterface(StanInterface):
                                 self._Esrc[i] << self._E[i]
 
                         elif self.sources.diffuse:
-
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-
                                 (
                                     self._gamma2
                                     << self._rs_bbpl_gamma2_scale_t - self._diff_index
@@ -1216,7 +1151,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
@@ -1259,7 +1193,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -1308,7 +1241,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -1355,11 +1287,9 @@ class StanSimInterface(StanInterface):
                                 )
 
                         if self.sources.diffuse and self.sources.atmospheric:
-
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
-
                                 self._gamma2 << self._rs_bbpl_gamma2_scale_t - 3.6
 
                                 # Handle energy thresholds
@@ -1387,7 +1317,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
@@ -1430,7 +1359,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -1479,7 +1407,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -1526,11 +1453,9 @@ class StanSimInterface(StanInterface):
                             self.detector_model_type == NorthernTracksDetectorModel
                             or self.detector_model_type == IceCubeDetectorModel
                         ):
-
                             with IfBlockContext(
                                 [StringExpression([self._cosz[i], ">= 0.1"])]
                             ):
-
                                 self._aeff_factor << 0
 
                         # Calculate quantities for rejection sampling
@@ -1538,9 +1463,9 @@ class StanSimInterface(StanInterface):
                         self._f_value << self._src_factor * self._aeff_factor
 
                         # Find the precomputed c_value for this source and cosz
-                        #self._idx_cosz << FunctionCall(
+                        # self._idx_cosz << FunctionCall(
                         #    [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
-                        #)
+                        # )
                         self._c_value << self._rs_cvals_t[self._lam[i]]
 
                         # Debugging when sampling gets stuck
@@ -1549,7 +1474,6 @@ class StanSimInterface(StanInterface):
                         with IfBlockContext(
                             [StringExpression([self._ntrials, "< 1000000"])]
                         ):
-
                             # Here is the rejection sampling criterion
                             with IfBlockContext(
                                 [
@@ -1563,7 +1487,6 @@ class StanSimInterface(StanInterface):
                                     )
                                 ]
                             ):
-
                                 self._detected << 1
 
                                 if self.detector_model_type == R2021DetectorModel:
@@ -1608,7 +1531,6 @@ class StanSimInterface(StanInterface):
                                     )
 
                             with ElseBlockContext():
-
                                 self._detected << 0
 
                             # Also apply the threshold on possible detected energies
@@ -1627,13 +1549,11 @@ class StanSimInterface(StanInterface):
                                     )
                                 ]
                             ):
-
                                 # Accept this sample!
                                 self._accept << 1
 
                         # Debugging
                         with ElseBlockContext():
-
                             # If sampler gets stuck, print a warning message and move on.
                             self._accept << 1
 
@@ -1643,17 +1563,13 @@ class StanSimInterface(StanInterface):
 
             # Repeat as above for cascades! For detailed comments see tracks, approach is identical.
             if "cascades" in self._event_types:
-
                 if "tracks" in self._event_types:
-
                     N_start = "N_t+1"
 
                 else:
-
                     N_start = 1
 
                 with ForLoopContext(N_start, self._N, "i") as i:
-
                     self._event_type[i] << self._cascade_type
 
                     self._lam[i] << FunctionCall(
@@ -1665,14 +1581,12 @@ class StanSimInterface(StanInterface):
                     self._ntrials << 0
 
                     with WhileLoopContext([StringExpression([self._accept != 1])]):
-
                         self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
 
                         # Sample position
                         with IfBlockContext(
                             [StringExpression([self._lam[i], " <= ", self._Ns])]
                         ):
-
                             self._omega << self._varpi[self._lam[i]]
 
                         with ElseIfBlockContext(
@@ -1686,11 +1600,9 @@ class StanSimInterface(StanInterface):
 
                         # Energy spectrum
                         if self.sources.point_source:
-
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
-
                                 if self._shared_src_index:
                                     src_index_ref = self._src_index
                                 else:
@@ -1730,7 +1642,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
@@ -1773,7 +1684,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -1822,7 +1732,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -1869,11 +1778,9 @@ class StanSimInterface(StanInterface):
                                 )
 
                         if self.sources.diffuse:
-
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-
                                 (
                                     self._gamma2
                                     << self._rs_bbpl_gamma2_scale_c - self._diff_index
@@ -1912,7 +1819,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     self._E[i] << FunctionCall(
                                         [
@@ -1955,7 +1861,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -2004,7 +1909,6 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-
                                     # Sample a true energy from the envelope function
                                     # Modify to power law
                                     (
@@ -2039,8 +1943,8 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    #self._Emin_src / (1 + self._z[self._lam[i]]),
-                                    #self._Emax_src / (1 + self._z[self._lam[i]]),
+                                    # self._Emin_src / (1 + self._z[self._lam[i]]),
+                                    # self._Emax_src / (1 + self._z[self._lam[i]]),
                                     self._Emin_src_arr,
                                     self._Emax_src_arr,
                                 )
@@ -2058,9 +1962,9 @@ class StanSimInterface(StanInterface):
 
                         self._f_value = self._src_factor * self._aeff_factor
 
-                        #self._idx_cosz << FunctionCall(
+                        # self._idx_cosz << FunctionCall(
                         #    [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
-                        #)
+                        # )
                         self._c_value << self._rs_cvals_c[self._lam[i]]
 
                         # Debugging when sampling gets stuck
@@ -2069,7 +1973,6 @@ class StanSimInterface(StanInterface):
                         with IfBlockContext(
                             [StringExpression([self._ntrials, "< 1000000"])]
                         ):
-
                             with IfBlockContext(
                                 [
                                     StringExpression(
@@ -2082,7 +1985,6 @@ class StanSimInterface(StanInterface):
                                     )
                                 ]
                             ):
-
                                 self._detected << 1
                                 # effective area veto for possibly empty true_energy bins overcome,
                                 # Detection effects
@@ -2102,7 +2004,6 @@ class StanSimInterface(StanInterface):
                                 )
 
                             with ElseBlockContext():
-
                                 self._detected << 0
 
                             # Energy threshold
@@ -2121,12 +2022,10 @@ class StanSimInterface(StanInterface):
                                     )
                                 ]
                             ):
-
                                 self._accept << 1
 
                         # Debugging
                         with ElseBlockContext():
-
                             self._accept << 1
 
                             StringExpression(
