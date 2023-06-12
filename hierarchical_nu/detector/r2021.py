@@ -27,6 +27,7 @@ from ..backend import (
     DistributionMode,
     LognormalMixture,
     ForLoopContext,
+    WhileLoopContext,
     ForwardVariableDef,
     ForwardArrayDef,
     ForwardVectorDef,
@@ -478,6 +479,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         gen_type: str = "histogram",
         make_plots: bool = False,
         n_components: int = 3,
+        ereco_cuts: bool = True,
     ) -> None:
         """
         Instantiate class.
@@ -486,10 +488,15 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                        if there are no cached files they will be generated either way
         :param gen_type: "histogram" or "lognorm": Which type should be used for simulation/fitting
         :param make_plots: bool, true if plots of parameterisation in case of lognorm should be made
+        :param n_components: int, specifies how many components the lognormal mixture should have
+        :param ereco_cuts: bool, if True simulated events below Ereco of the data in the sampled Aeff dec bin are discarded
         """
 
         self.irf = R2021IRF.from_period(IRF_PERIOD)
         self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(IRF_PERIOD, np.linspace(1, 9, 25))
+        self._make_ereco_cuts = ereco_cuts
+        self._ereco_cuts = self._icecube_tools_eres._ereco_limits
+        self._aeff_dec_bins = self._icecube_tools_eres.declination_bins_aeff
         self.gen_type = gen_type
         self.mode = mode
         self._rewrite = rewrite
@@ -538,10 +545,13 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 "real",
             )
 
+            
+
         # Actual code generation
         # Differ between lognorm and histogram
         if self.gen_type == "lognorm":
             logger.info("Generating stan code using lognorm")
+            logger.warning("Further sampling of PSF and ang_err will probably fail, you have been warned. Yes, that means you!")
             with self:
                 # self._poly_params_mu should have shape (3, n_components, poly_deg+1)
                 # 3 from declination
@@ -713,9 +723,51 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         ReturnStatement([FunctionCall([return_value], "log")])
                 
                 else:
-                    # Throw everything in one line for readability
-                    # Hands the appropriate values and bins to histogram_rng, returning a sample from the histogram
-                    ReturnStatement([FunctionCall([FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"), FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges")], "histogram_rng")])
+                    # Discard all events below lowest Ereco of data in the respective Aeff declination bin,
+                    # Sample until an event passes the cut, return this Ereco
+                    if self._make_ereco_cuts:
+                        ereco_cuts = StanArray("ereco_cuts", "real", self._ereco_cuts)
+                        aeff_dec_bins = StanArray("aeff_dec_bins", "real", self._aeff_dec_bins)
+                        aeff_dec_idx = ForwardVariableDef("aeff_dec_idx", "int")
+                        aeff_dec_idx << FunctionCall([declination, aeff_dec_bins], "binary_search")
+                    
+                    ereco = ForwardVariableDef("ereco", "real")
+
+                    if self._make_ereco_cuts:
+                        with WhileLoopContext([1]):
+                            ereco << FunctionCall(
+                                [
+                                    FunctionCall(
+                                        [ereco_hist_idx],
+                                        "ereco_get_ragged_hist"
+                                    ),
+                                    FunctionCall(
+                                        [ereco_hist_idx],
+                                        "ereco_get_ragged_edges"
+                                    )
+                                ],
+                                "histogram_rng"
+                            )
+                            # Apply lower energy cut, Ereco_sim >= Ereco_data at the appropriate Aeff declination bin
+                            # Only apply this lower limit
+                            with IfBlockContext([ereco, " >= ", ereco_cuts[aeff_dec_idx, 1]]):
+                                StringExpression(["break"])
+                    else:
+                        ereco << FunctionCall(
+                                [
+                                    FunctionCall(
+                                        [ereco_hist_idx],
+                                        "ereco_get_ragged_hist"
+                                    ),
+                                    FunctionCall(
+                                        [ereco_hist_idx],
+                                        "ereco_get_ragged_edges"
+                                    )
+                                ],
+                                "histogram_rng"
+                            )
+                    ReturnStatement([ereco])
+
 
 
     def setup(self) -> None:
@@ -758,7 +810,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             else:
                 logger.info("Re-doing energy lognorm data and saving files.")
                 
-                
+                self._dec_minuits = []
                 for c_dec, (dec_low, dec_high) in enumerate(
                     zip(self._declination_bins[:-1], self._declination_bins[1:])
                 ):
@@ -815,9 +867,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 
                     # Fit lognormal mixture to pdf(reco|true) for each true energy bin
                     # do not rebin -> rebin=1
-                    fit_params_temp, rebin_tE_binc = self._fit_energy_res(
+                    fit_params_temp, rebin_tE_binc, minuits = self._fit_energy_res(
                         tE_binc, rE_binc, eres, self._n_components, rebin=1
                     )
+                    self._dec_minuits.append(minuits)
                     #check for label switching
                     fit_params = np.zeros_like(fit_params_temp)
                     for c, params in enumerate(fit_params_temp):
@@ -1050,6 +1103,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         # Lognormal mixture
         model = self.make_fit_model(n_components)
 
+        minuits = []
         # Fitting loop
         for index in range(len(rebin_tE_binc)):
 
@@ -1094,6 +1148,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 m.limits = limits
                 #m.scipy(method="SLSQP")
                 m.migrad()
+                minuits.append(m)
                 # Fit using simple least squares
                 #res = least_squares(
                 #    residuals,
@@ -1121,7 +1176,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         fit_params = np.asarray(fit_params)
         # print(fit_params)
-        return fit_params, rebin_tE_binc
+        return fit_params, rebin_tE_binc, minuits
 
 
     def _fit_polynomial(
@@ -1572,16 +1627,19 @@ class R2021DetectorModel(DetectorModel):
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
-        event_type: str="tracks",
-        rewrite: bool=False,
-        gen_type: str="lognorm"
+        event_type: str = "tracks",
+        rewrite: bool = False,
+        make_plots: bool = False,
+        gen_type: str = "lognorm",
+        n_components: int = 3,
+        ereco_cuts: bool = True,
     ) -> None:
 
         super().__init__(mode, event_type="tracks")
 
         self._angular_resolution = R2021AngularResolution(mode, rewrite)
 
-        self._energy_resolution = R2021EnergyResolution(mode, rewrite, gen_type)
+        self._energy_resolution = R2021EnergyResolution(mode, rewrite, gen_type, make_plots, n_components, ereco_cuts)
 
         self._eff_area = R2021EffectiveArea(mode)
 
@@ -1603,7 +1661,10 @@ class R2021DetectorModel(DetectorModel):
         cls,
         mode: DistributionMode, 
         rewrite: bool = False,
+        make_plots: bool = False,
         gen_type: str = "histogram",
+        n_components: int = 3,
+        ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH
     ) -> None:
         """
@@ -1632,7 +1693,7 @@ class R2021DetectorModel(DetectorModel):
                 cls.logger.info("Generating r2021 stan code.")
 
         with StanGenerator() as cg:
-            instance = cls(mode=mode, rewrite=rewrite, gen_type=gen_type)
+            instance = cls(mode=mode, rewrite=rewrite, gen_type=gen_type, make_plots=make_plots, n_components=n_components, ereco_cuts=ereco_cuts)
             instance.effective_area.generate_code()
             instance.angular_resolution.generate_code()
             instance.energy_resolution.generate_code()
