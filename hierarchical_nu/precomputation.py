@@ -365,7 +365,7 @@ class ExposureIntegral:
                             source.flux_model(
                                 E_range * u.GeV, dec * u.rad, 0 * u.rad
                             ).to_value(1 / (u.GeV * u.s * u.sr * u.m**2))
-                            / atmo_flux_integ_val
+                            / (atmo_flux_integ_val / 10)  # Quick fix for E > 1e3
                         ) * aeff_values
                         gamma2 = gamma2_scale - 3.6
                     else:
@@ -424,6 +424,12 @@ class ExposureIntegral:
                 # Pick the larget of the largest, encompassing now all declinations.
                 c_values_src = max(
                     [max(f_values / g_values) for f_values in f_values_all]
+                )
+
+            if c_values_src < 1:
+                raise ValueError(
+                    "Acceptance probability for source %s is > 1 (1/c = %.2f). Try using a larger Emin or changing the envelope for rejection sampling. "
+                    % (source.name, 1 / c_values_src)
                 )
 
             c_values.append(c_values_src)
