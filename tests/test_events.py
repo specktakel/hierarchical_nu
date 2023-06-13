@@ -14,7 +14,6 @@ def test_read():
         it_ev.restrict(ereco_low=5e4)
         hnu_ev = Events.from_ev_file(p, ereco_low=5e4, use_all=True)
 
-        print(hnu_ev.N, it_ev.N, it_ev.N_restricted)
         assert hnu_ev.N == it_ev.N_restricted[p]
 
         # assert energy and some angles to check if rad/deg is correct
