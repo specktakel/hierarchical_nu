@@ -233,16 +233,14 @@ class StanSimInterface(StanInterface):
                 #)
 
                 if self.sources.diffuse:
-
-                    if self.sources.diffuse and self.sources.point_source:
-                        self._integral_grid_t = ForwardArrayDef(
-                            "integral_grid_t", "vector[Ngrid]", self._Ns_1p_str
-                        )
+                    self._integral_grid_t = ForwardArrayDef(
+                        "integral_grid_t", "vector[Ngrid]", self._Ns_1p_str
+                    )
                     
-                    else:
-                        self._integral_grid_t = ForwardArrayDef(
-                            "integral_grid_t", "vector[Ngrid]", self._Ns_str
-                        )
+                else:
+                    self._integral_grid_t = ForwardArrayDef(
+                        "integral_grid_t", "vector[Ngrid]", self._Ns_str
+                    )
                     
 
                 if self._force_N:
