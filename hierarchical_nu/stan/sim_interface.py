@@ -149,8 +149,12 @@ class StanSimInterface(StanInterface):
             self._Ns_1p_str = ["[", self._Ns, "+1]"]
             self._Ns_2p_str = ["[", self._Ns, "+2]"]
 
-            if self.sources.diffuse:
+            if self.sources.diffuse and self.sources.atmospheric:
 
+                N_int_str = self._Ns_2p_str
+            
+            elif self.sources.diffuse or self.sources.atmospheric:
+                
                 N_int_str = self._Ns_1p_str
 
             else:
@@ -228,10 +232,18 @@ class StanSimInterface(StanInterface):
                 #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
                 #)
 
-                if self.sources.diffuse or self.sources.point_source:
-                    self._integral_grid_t = ForwardArrayDef(
-                        "integral_grid_t", "vector[Ngrid]", N_int_str
-                    )
+                if self.sources.diffuse:
+
+                    if self.sources.diffuse and self.sources.point_source:
+                        self._integral_grid_t = ForwardArrayDef(
+                            "integral_grid_t", "vector[Ngrid]", self._Ns_1p_str
+                        )
+                    
+                    else:
+                        self._integral_grid_t = ForwardArrayDef(
+                            "integral_grid_t", "vector[Ngrid]", self._Ns_str
+                        )
+                    
 
                 if self._force_N:
                     self._forced_N_t = ForwardArrayDef("forced_N_t", "int", N_int_str)
@@ -248,9 +260,16 @@ class StanSimInterface(StanInterface):
                     "rs_bbpl_gamma2_scale_c", "real"
                 )
                 #self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
-                self._rs_cvals_c = ForwardArrayDef(
-                    "rs_cvals_c", "real", N_int_str
-                )
+                if self.sources.diffuse and self.sources.point_source:
+                    self._rs_cvals_c = ForwardArrayDef(
+                        "rs_cvals_c", "real", self._Ns_1p_str
+                    )
+                
+                else:
+                    self._rs_cvals_c = ForwardArrayDef(
+                        "rs_cvals_c", "real", self._Ns_str
+                    )
+
                 #self._rs_cosz_bin_edges_c = ForwardArrayDef(
                 #    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
                 #)
@@ -261,7 +280,8 @@ class StanSimInterface(StanInterface):
                     )
 
                 if self._force_N:
-                    self._forced_N_c = ForwardArrayDef("forced_N_c", "int", N_int_str)
+                    # Ns+1 should always do the job
+                    self._forced_N_c = ForwardArrayDef("forced_N_c", "int", self._Ns_1p_str)
 
             # We define the necessary source input parameters depending on
             # what kind of sources we have
