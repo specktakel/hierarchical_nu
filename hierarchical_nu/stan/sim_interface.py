@@ -222,7 +222,7 @@ class StanSimInterface(StanInterface):
                 )
                 # self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
                 self._rs_cvals_t = ForwardArrayDef(
-                    "rs_cvals_t", "real", [f"[{self.sources.N}]"]
+                    "rs_cvals_t", "real", N_int_str
                 )
                 #self._rs_cosz_bin_edges_t = ForwardArrayDef(
                 #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
@@ -234,7 +234,7 @@ class StanSimInterface(StanInterface):
                     )
 
                 if self._force_N:
-                    self._forced_N_t = ForwardArrayDef("forced_N_t", "int", ["[", len(self.sources), "]"])
+                    self._forced_N_t = ForwardArrayDef("forced_N_t", "int", N_int_str)
 
             # Similarly, we do the same for cascades. Different rejection sampling
             # parameters and interpolation grids are needed due to the different
@@ -249,7 +249,7 @@ class StanSimInterface(StanInterface):
                 )
                 #self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
                 self._rs_cvals_c = ForwardArrayDef(
-                    "rs_cvals_c", "real", [f"[{self.sources.N}]"]
+                    "rs_cvals_c", "real", N_int_str
                 )
                 #self._rs_cosz_bin_edges_c = ForwardArrayDef(
                 #    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
@@ -261,7 +261,7 @@ class StanSimInterface(StanInterface):
                     )
 
                 if self._force_N:
-                    self._forced_N_c = ForwardArrayDef("forced_N_c", "int", ["[", len(self.sources), "]"])
+                    self._forced_N_c = ForwardArrayDef("forced_N_c", "int", N_int_str)
 
             # We define the necessary source input parameters depending on
             # what kind of sources we have
