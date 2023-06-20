@@ -280,8 +280,12 @@ class StanSimInterface(StanInterface):
                     )
 
                 if self._force_N:
-                    # Ns+1 should always do the job
-                    self._forced_N_c = ForwardArrayDef("forced_N_c", "int", self._Ns_1p_str)
+                    if self.sources.diffuse:
+                        self._forced_N_c = ForwardArrayDef("forced_N_c", "int", self._Ns_1p_str)
+
+                    else:
+                        self._forced_N_c = ForwardArrayDef("forced_N_c", "int", self._Ns_str)
+
 
             # We define the necessary source input parameters depending on
             # what kind of sources we have
