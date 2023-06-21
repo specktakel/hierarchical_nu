@@ -273,9 +273,13 @@ class StanSimInterface(StanInterface):
                 #    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
                 #)
                 # Ns (+1 if diffuse)
-                if self.sources.diffuse or self.sources.point_source:
+                if self.sources.diffuse:
                     self._integral_grid_c = ForwardArrayDef(
-                        "integral_grid_c", "vector[Ngrid]", N_int_str
+                        "integral_grid_c", "vector[Ngrid]", ["[Ns+1]"]
+                    )
+                else:
+                    self._integral_grid_c = ForwardArrayDef(
+                        "integral_grid_c", "vector[Ngrid]", ["[Ns]"]
                     )
 
                 if self._force_N:
