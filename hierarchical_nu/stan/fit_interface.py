@@ -233,17 +233,17 @@ class StanFitInterface(StanInterface):
                     if self._shared_src_index:
                         src_index = ForwardVariableDef("src_index", "real")
                         src_index << StringExpression(["global[1]"])
-                        idx = 2
+                        idx = "2"
                     else:
                         src_index = ForwardVariableDef("src_index", "vector[Ns]")
                         src_index << StringExpression(["global[1:Ns]"])
-                        idx = len(self.sources._point_source) + 1
+                        idx = "Ns+1"
 
                     # Get diffuse index
                     if self.sources.diffuse:
                         diff_index = ForwardVariableDef("diff_index", "real")
                         diff_index << StringExpression(["global[", idx, "]"])
-                        idx += 1
+                        idx += "+1"
 
                     logF = ForwardVariableDef("logF", "vector[Ns_tot]")
                     logF << StringExpression(["global[", idx, ":]"])
@@ -1687,15 +1687,15 @@ class StanFitInterface(StanInterface):
             if self._nshards not in [0, 1]:
                 if self._shared_src_index:
                     self._global_pars[1] << self._src_index
-                    idx = 2
+                    idx = "2"
                 else:
                     self._global_pars[1 : self._Ns] << self._src_index
-                    idx = len(self.sources._point_source) + 1
+                    idx = "Ns+1"
                 if self.sources.diffuse:
                     self._global_pars[idx] << self._diff_index
-                    idx += 1
+                    idx += "+1"
 
-                self._global_pars[idx : idx + self.sources.N - 1] << self._logF
+                self._global_pars[idx : idx + "+size(logF)-1"] << self._logF
                 # Likelihood is evaluated in `lp_reduce`
 
             else:

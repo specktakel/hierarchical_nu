@@ -149,13 +149,24 @@ class StanSimInterface(StanInterface):
             self._Ns_1p_str = ["[", self._Ns, "+1]"]
             self._Ns_2p_str = ["[", self._Ns, "+2]"]
 
-            if self.sources.diffuse:
+            if self.sources.diffuse and self.sources.atmospheric:
 
+                N_int_str = self._Ns_2p_str
+            
+            elif self.sources.diffuse or self.sources.atmospheric:
+                
                 N_int_str = self._Ns_1p_str
 
             else:
 
                 N_int_str = self._Ns_str
+
+            if self.sources.atmospheric and self.sources.diffuse:
+                    dim = self._Ns_2p_str
+            elif self.sources.diffuse or self.sources.atmospheric:
+                dim = self._Ns_1p_str
+            else:
+                dim = self._Ns_str 
 
             # True directions of point sources as a unit vector
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
@@ -221,20 +232,27 @@ class StanSimInterface(StanInterface):
                     "rs_bbpl_gamma2_scale_t", "real"
                 )
                 # self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
+                # entry for each component
                 self._rs_cvals_t = ForwardArrayDef(
-                    "rs_cvals_t", "real", [f"[{self.sources.N}]"]
+                    "rs_cvals_t", "real", dim
                 )
                 #self._rs_cosz_bin_edges_t = ForwardArrayDef(
                 #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
                 #)
 
-                if self.sources.diffuse or self.sources.point_source:
+                if self.sources.diffuse:
                     self._integral_grid_t = ForwardArrayDef(
-                        "integral_grid_t", "vector[Ngrid]", N_int_str
+                        "integral_grid_t", "vector[Ngrid]", self._Ns_1p_str
                     )
+                    
+                else:
+                    self._integral_grid_t = ForwardArrayDef(
+                        "integral_grid_t", "vector[Ngrid]", self._Ns_str
+                    )
+                    
 
                 if self._force_N:
-                    self._forced_N_t = ForwardArrayDef("forced_N_t", "int", ["[", len(self.sources), "]"])
+                    self._forced_N_t = ForwardArrayDef("forced_N_t", "int", dim)
 
             # Similarly, we do the same for cascades. Different rejection sampling
             # parameters and interpolation grids are needed due to the different
@@ -249,19 +267,24 @@ class StanSimInterface(StanInterface):
                 )
                 #self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
                 self._rs_cvals_c = ForwardArrayDef(
-                    "rs_cvals_c", "real", [f"[{self.sources.N}]"]
+                    "rs_cvals_c", "real", dim
                 )
                 #self._rs_cosz_bin_edges_c = ForwardArrayDef(
                 #    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
                 #)
-
-                if self.sources.diffuse or self.sources.point_source:
+                # Ns (+1 if diffuse)
+                if self.sources.diffuse:
                     self._integral_grid_c = ForwardArrayDef(
-                        "integral_grid_c", "vector[Ngrid]", N_int_str
+                        "integral_grid_c", "vector[Ngrid]", ["[Ns+1]"]
+                    )
+                else:
+                    self._integral_grid_c = ForwardArrayDef(
+                        "integral_grid_c", "vector[Ngrid]", ["[Ns]"]
                     )
 
                 if self._force_N:
-                    self._forced_N_c = ForwardArrayDef("forced_N_c", "int", ["[", len(self.sources), "]"])
+                    # Ns (+1 if diffuse +1 if atmo, although atmo entry is set to zero)
+                    self._forced_N_c = ForwardArrayDef("forced_N_c", "int", dim)
 
             # We define the necessary source input parameters depending on
             # what kind of sources we have

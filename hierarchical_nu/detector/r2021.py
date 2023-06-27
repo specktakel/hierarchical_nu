@@ -455,7 +455,7 @@ class R2021EffectiveArea(EffectiveArea):
         self._rs_bbpl_params = {}
         self._rs_bbpl_params["threshold_energy"] = 5e4  # GeV
         self._rs_bbpl_params["gamma1"] = -0.8
-        self._rs_bbpl_params["gamma2_scale"] = 1.2
+        self._rs_bbpl_params["gamma2_scale"] = 0.6
 
         
 
