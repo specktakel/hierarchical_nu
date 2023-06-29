@@ -7,7 +7,6 @@ from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
 import logging
 import collections
-from cycler import cycler
 import ligo.skymap.plot
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
@@ -27,6 +26,10 @@ from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 
 
+sim_logger = logging.getLogger(__name__)
+sim_logger.setLevel(logging.DEBUG)
+
+
 class Simulation:
     """
     To set up and run simulations.
@@ -38,6 +41,7 @@ class Simulation:
         sources: Sources,
         detector_model: DetectorModel,
         observation_time: u.year,
+        N: dict = {},
     ):
         """
         To set up and run simulations.
@@ -51,10 +55,29 @@ class Simulation:
 
         self._exposure_integral = collections.OrderedDict()
 
+        if N:
+
+            for event_type in self._detector_model_type.event_types:
+                assert len(N[event_type]) == len(sources)
+                
+                if "cascades" in self._detector_model_type.event_types and \
+                    self._sources.atmospheric:
+
+                    if N["cascades"][-1] != 0:
+                        sim_logger.warning("Setting atmospheric cascade events to zero")
+                        N["cascades"][-1] = 0
+                        
+            self._force_N = True
+            self._N = N
+        
+        else:
+
+            self._force_N = False
+
         stan_file_name = os.path.join(STAN_GEN_PATH, "sim_code")
 
         self._stan_interface = StanSimInterface(
-            stan_file_name, self._sources, self._detector_model_type
+            stan_file_name, self._sources, self._detector_model_type, force_N=self._force_N,
         )
 
         # Silence log output
@@ -399,11 +422,19 @@ class Simulation:
                     for _ in self._exposure_integral["tracks"].integral_grid
                 ]
 
+                if self._force_N:
+                    
+                    sim_inputs["forced_N_t"] = self._N["tracks"]
+
             if event_type == "cascades":
                 sim_inputs["integral_grid_c"] = [
                     _.to(u.m**2).value.tolist()
                     for _ in self._exposure_integral["cascades"].integral_grid
                 ]
+
+                if self._force_N:
+                    
+                    sim_inputs["forced_N_c"] = self._N["cascades"]
 
         if self._sources.atmospheric:
             sim_inputs["atmo_integ_val"] = (

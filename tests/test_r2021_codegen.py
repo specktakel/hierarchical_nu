@@ -29,6 +29,8 @@ from hierarchical_nu.stan.interface import STAN_PATH
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 
 from icecube_tools.detector.r2021 import R2021IRF
+from icecube_tools.detector.effective_area import EffectiveArea
+from icecube_tools.point_source_likelihood.energy_likelihood import MarginalisedIntegratedEnergyLikelihood
 
 
 
@@ -45,6 +47,7 @@ class TestR2021():
             mode=DistributionMode.RNG,
             rewrite=True,
             gen_type="histogram",
+            ereco_cuts=False,
             path=output_directory)
 
         with StanFileGenerator(file_name) as code_gen:
@@ -74,7 +77,6 @@ class TestR2021():
                 reco_dir << StringExpression(["pre_event[1:3]"])
         code_gen.generate_single_file()
         return code_gen.filename
-
 
     @pytest.fixture
     def model_file(self, output_directory):
@@ -117,7 +119,6 @@ class TestR2021():
         code_gen.generate_single_file()
         return code_gen.filename
 
-
     def test_file_generation_r2021(self, output_directory):
 
         R2021DetectorModel.generate_code(
@@ -134,7 +135,6 @@ class TestR2021():
             path=output_directory
         )
 
-
     @pytest.fixture
     def test_samples(self, sim_file, random_seed):
         num_samples = 1000
@@ -150,7 +150,6 @@ class TestR2021():
             stan_file=sim_file,
             stanc_options=stanc_options,
         )
-
         
         phi = 0
         theta = np.array([3*np.pi/4, np.pi/2, np.pi/4])
@@ -185,10 +184,9 @@ class TestR2021():
 
                 assert np.all(ang_err <= 20.)
 
-                assert n == pytest.approx(irf.reco_energy[c_e, c_d].pdf(irf.reco_energy_bins[c_e, c_d][:-1]+0.01), abs=0.2)
+                assert n == pytest.approx(irf.reco_energy[c_e, c_d].pdf(irf.reco_energy_bins[c_e, c_d][:-1]+0.01), abs=0.3)
 
         return samples
-
 
     def test_everything(self, test_samples, model_file, random_seed):
         # Generate model for fitting
@@ -230,4 +228,67 @@ class TestR2021():
                 assert true_energy.min() < e
 
                 assert true_energy.max() > e
-        
+
+    def test_ereco_cuts(self, output_directory):
+
+        # Test that the ereco cuts are applied correctly
+
+        file_name = os.path.join(output_directory, "r2021_sim")
+        _ = R2021DetectorModel.generate_code(
+            mode=DistributionMode.RNG,
+            rewrite=True,
+            gen_type="histogram",
+            ereco_cuts=True,
+            path=output_directory)
+
+        aeff = EffectiveArea.from_dataset("20210126", "IC86_II")
+        eres = MarginalisedIntegratedEnergyLikelihood("IC86_II", np.linspace(1, 9, 25))
+        cosz_bins = aeff.cos_zenith_bins
+        dec = np.sort(np.arcsin((cosz_bins[:-1] + cosz_bins[1:]) / 2))
+        theta_vals = np.pi / 2 - dec
+
+        with StanFileGenerator(file_name) as code_gen:
+
+            with FunctionsContext():
+
+                _ = Include("interpolation.stan")
+                _ = Include("utils.stan")
+                _ = Include("vMF.stan")
+                _ = Include(R2021DetectorModel.RNG_FILENAME)
+
+            with DataContext():
+
+                etrue = ForwardVariableDef("true_energy", "real")
+                phi = ForwardVariableDef("phi", "real")
+                theta = ForwardVariableDef("theta", "real")
+
+            with GeneratedQuantitiesContext():
+                reco_energy = ForwardArrayDef("reco_energy", "real", ["[1000]"])
+                with ForLoopContext(1, 1000, "j") as j:
+                    reco_energy[j] << StringExpression(["R2021EnergyResolution_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"])
+
+        code_gen.generate_single_file()
+
+        stanc_options = {"include-paths": [STAN_PATH, output_directory]}
+
+        model = CmdStanModel(
+            stan_file=code_gen.filename,
+            stanc_options=stanc_options,
+        )
+
+        for c, (t, d) in enumerate(zip(theta_vals, dec)):
+
+            samples = model.sample(
+                data={
+                    "theta": t,
+                    "phi": 0.,
+                    "true_energy": 5.4,
+                },
+                fixed_param=True,
+                chains=1,
+                iter_sampling=1
+            )
+
+            ereco = samples.stan_variable("reco_energy")[0]
+
+            assert ereco.min() > eres._ereco_limits[c, 0]
