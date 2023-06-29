@@ -1108,7 +1108,7 @@ class StanSimInterface(StanInterface):
                                 (
                                     self._src_factor
                                     << self._atmo_flux(self._E[i], self._omega)
-                                    / (self._atmo_flux_integ_val / 10)
+                                    / self._atmo_flux_integ_val
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
 
@@ -1441,7 +1441,7 @@ class StanSimInterface(StanInterface):
                                 (
                                     self._src_factor
                                     << self._atmo_flux(self._E[i], self._omega)
-                                    / (self._atmo_flux_integ_val / 10)
+                                    / self._atmo_flux_integ_val
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
 
