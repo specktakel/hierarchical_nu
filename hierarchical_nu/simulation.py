@@ -86,7 +86,6 @@ class Simulation:
 
         # Check for unsupported combinations
         if sources.atmospheric and detector_model.event_types == ["cascades"]:
-
             raise NotImplementedError(
                 "AtmosphericNuMuFlux currently only implemented "
                 + "for use with NorthernTracksDetectorModel or "
@@ -98,7 +97,6 @@ class Simulation:
             and sources.N == 1
             and "cascades" in detector_model.event_types
         ):
-
             raise NotImplementedError(
                 "AtmosphericNuMuFlux as the only source component "
                 + "for IceCubeDetectorModel is not implemented. Just use "
@@ -127,9 +125,7 @@ class Simulation:
         """
 
         if not exposure_integral:
-
             for event_type in self._detector_model_type.event_types:
-
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
                     self._detector_model_type,
@@ -137,19 +133,15 @@ class Simulation:
                 )
 
         else:
-
             self._exposure_integral = exposure_integral
 
     def generate_stan_code(self):
-
         self._main_sim_filename = self._stan_interface.generate()
 
     def set_stan_filename(self, sim_filename):
-
         self._main_sim_filename = sim_filename
 
     def compile_stan_code(self, include_paths=None):
-
         if not include_paths:
             include_paths = [STAN_PATH]
 
@@ -165,12 +157,9 @@ class Simulation:
         Reuse previously compiled model
         """
 
-        self._main_sim = CmdStanModel(
-            exe_file=exe_file
-        )
+        self._main_sim = CmdStanModel(exe_file=exe_file)
 
     def run(self, seed=None, verbose=False, **kwargs):
-
         self._sim_inputs = self._get_sim_inputs(seed)
 
         self._expected_Nnu = self._get_expected_Nnu(self._sim_inputs)
@@ -195,7 +184,6 @@ class Simulation:
         self.events = Events(*self._extract_sim_output())
 
     def _extract_sim_output(self):
-
         energies = self._sim_output.stan_variable("Edet")[0] * u.GeV
         dirs = self._sim_output.stan_variable("event")[0]
         coords = SkyCoord(
@@ -216,9 +204,7 @@ class Simulation:
         return energies, coords, event_types, ang_errs
 
     def save(self, filename):
-
         with h5py.File(filename, "w") as f:
-
             sim_folder = f.create_group("sim")
 
             inputs_folder = sim_folder.create_group("inputs")
@@ -228,7 +214,6 @@ class Simulation:
             outputs_folder = sim_folder.create_group("outputs")
             N = len(self._sim_output.stan_variable("Edet")[0])
             for key, value in self._sim_output.stan_variables().items():
-
                 if key == "event":
                     reshaped_events = value[0].reshape((3, N)).T
                     outputs_folder.create_dataset(key, data=reshaped_events)
@@ -245,10 +230,9 @@ class Simulation:
 
         self.events.to_file(filename, append=True)
 
-    def show_spectrum(self, *components: str, scale: str="linear"):
-
-        #hatch_cycle = cycler(hatch=['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'])
-        hatch_cycle = ['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*']
+    def show_spectrum(self, *components: str, scale: str = "linear"):
+        # hatch_cycle = cycler(hatch=['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'])
+        hatch_cycle = ["/", "\\", "|", "-", "+", "x", "o", "O", ".", "*"]
         Esrc = self._sim_output.stan_variable("Esrc")[0]
         E = self._sim_output.stan_variable("E")[0]
         lam = self._sim_output.stan_variable("Lambda")[0] - 1
@@ -258,9 +242,9 @@ class Simulation:
 
         N = len(self._sources)
 
-        Esrc_plot = [Esrc[np.nonzero(lam==float(i))] for i in range(N)]
-        E_plot = [E[np.nonzero(lam==float(i))] for i in range(N)]
-        Edet_plot = [Edet[np.nonzero(lam==float(i))] for i in range(N)]
+        Esrc_plot = [Esrc[np.nonzero(lam == float(i))] for i in range(N)]
+        E_plot = [E[np.nonzero(lam == float(i))] for i in range(N)]
+        Edet_plot = [Edet[np.nonzero(lam == float(i))] for i in range(N)]
 
         bins = np.logspace(
             np.log10(Emin_det),
@@ -270,21 +254,22 @@ class Simulation:
         )
 
         fig, ax = plt.subplots(3, 1)
-        for c, (source, hatch, _Esrc, _E, _Edet) in enumerate(zip(self._sources, hatch_cycle, Esrc_plot, E_plot, Edet_plot)):
-            
-           
-
+        for c, (source, hatch, _Esrc, _E, _Edet) in enumerate(
+            zip(self._sources, hatch_cycle, Esrc_plot, E_plot, Edet_plot)
+        ):
             if c == 0:
                 _bsrc = np.zeros(bins[:-1].shape)
                 label = source.name + " at source"
-                 # This is only needed s.t. flake does not complain
+                # This is only needed s.t. flake does not complain
                 _nEsrc = 0
             else:
                 _bsrc += _nEsrc
                 label = source.name
 
-            _nEsrc, _, _ = ax[0].hist(_Esrc, bins=bins, label=label, bottom=_bsrc, alpha=0.5, hatch=hatch)
-            
+            _nEsrc, _, _ = ax[0].hist(
+                _Esrc, bins=bins, label=label, bottom=_bsrc, alpha=0.5, hatch=hatch
+            )
+
             if c == 0:
                 _b = np.zeros(bins[:-1].shape)
                 label = source.name + " at detector"
@@ -292,8 +277,10 @@ class Simulation:
             else:
                 _b += _nE
                 label = source.name
-            _nE, _, _ = ax[1].hist(_E, bins=bins, label=label, bottom=_b, alpha=0.5, hatch=hatch)
-            
+            _nE, _, _ = ax[1].hist(
+                _E, bins=bins, label=label, bottom=_b, alpha=0.5, hatch=hatch
+            )
+
             if c == 0:
                 _bdet = np.zeros(bins[:-1].shape)
                 label = source.name + ", detected"
@@ -301,7 +288,9 @@ class Simulation:
             else:
                 _bdet += _nEdet
                 label = source.name
-            _nEdet, _, _ = ax[2].hist(_Edet, bins=bins, label=label, bottom=_bdet, alpha=0.5, hatch=hatch)
+            _nEdet, _, _ = ax[2].hist(
+                _Edet, bins=bins, label=label, bottom=_bdet, alpha=0.5, hatch=hatch
+            )
 
         for a in ax:
             a.set_xscale("log")
@@ -324,12 +313,10 @@ class Simulation:
         N_src_ev = sum([lam.count(_) for _ in range(Ns)])
 
         if self._sources.atmospheric and not self._sources.diffuse:
-
             N_bg_ev = 0
             N_atmo_ev = lam.count(Ns)
 
         else:
-
             N_bg_ev = lam.count(Ns)
             N_atmo_ev = lam.count(Ns + 1)
 
@@ -379,7 +366,6 @@ class Simulation:
         self.run()
 
     def _get_sim_inputs(self, seed=None):
-
         sim_inputs = {}
 
         redshift = [
@@ -407,9 +393,7 @@ class Simulation:
         sim_inputs["varpi"] = src_pos
 
         for event_type in self._detector_model_type.event_types:
-
             if self._sources.point_source:
-
                 if self._shared_src_index:
                     key = "src_index"
                 else:
@@ -424,7 +408,6 @@ class Simulation:
                 ].par_grids[key]
 
             if self._sources.diffuse:
-
                 sim_inputs["Ngrid"] = len(
                     self._exposure_integral[event_type].par_grids["diff_index"]
                 )
@@ -434,7 +417,6 @@ class Simulation:
                 ].par_grids["diff_index"]
 
             if event_type == "tracks":
-
                 sim_inputs["integral_grid_t"] = [
                     _.to(u.m**2).value.tolist()
                     for _ in self._exposure_integral["tracks"].integral_grid
@@ -445,7 +427,6 @@ class Simulation:
                     sim_inputs["forced_N_t"] = self._N["tracks"]
 
             if event_type == "cascades":
-
                 sim_inputs["integral_grid_c"] = [
                     _.to(u.m**2).value.tolist()
                     for _ in self._exposure_integral["cascades"].integral_grid
@@ -456,7 +437,6 @@ class Simulation:
                     sim_inputs["forced_N_c"] = self._N["cascades"]
 
         if self._sources.atmospheric:
-
             sim_inputs["atmo_integ_val"] = (
                 self._exposure_integral["tracks"]
                 .integral_fixed_vals[0]
@@ -467,15 +447,12 @@ class Simulation:
         sim_inputs["T"] = self._observation_time.to(u.s).value
 
         if self._sources.point_source:
-
             # Check for shared src_index parameter
             if self._shared_src_index:
-
                 sim_inputs["src_index"] = Parameter.get_parameter("src_index").value
 
             # Otherwise look for individual ps_%i_src_index parameters
             else:
-
                 sim_inputs["src_index"] = [
                     Parameter.get_parameter("ps_%i_src_index" % i).value
                     for i in range(sim_inputs["Ns"])
@@ -484,29 +461,33 @@ class Simulation:
         if self._sources.diffuse:
             sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
 
-        sim_inputs["Emin_src"] = Parameter.get_parameter("Emin_src").value.to(u.GeV).value
-        sim_inputs["Emax_src"] = Parameter.get_parameter("Emax_src").value.to(u.GeV).value
+        sim_inputs["Emin_src"] = (
+            Parameter.get_parameter("Emin_src").value.to(u.GeV).value
+        )
+        sim_inputs["Emax_src"] = (
+            Parameter.get_parameter("Emax_src").value.to(u.GeV).value
+        )
 
         sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
 
-        sim_inputs["Emin_diff"] = Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
-        sim_inputs["Emax_diff"] = Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
+        sim_inputs["Emin_diff"] = (
+            Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
+        )
+        sim_inputs["Emax_diff"] = (
+            Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
+        )
 
         for event_type in self._detector_model_type.event_types:
-
             effective_area = self._exposure_integral[event_type].effective_area
 
             if event_type == "tracks":
-
                 try:
-
                     sim_inputs["Emin_det_t"] = (
                         Parameter.get_parameter("Emin_det").value.to(u.GeV).value
                     )
 
                 except ValueError:
-
                     sim_inputs["Emin_det_t"] = (
                         Parameter.get_parameter("Emin_det_tracks").value.to(u.GeV).value
                     )
@@ -525,15 +506,12 @@ class Simulation:
                 sim_inputs["rs_cvals_t"] = self._exposure_integral[event_type].c_values
 
             if event_type == "cascades":
-
                 try:
-
                     sim_inputs["Emin_det_c"] = (
                         Parameter.get_parameter("Emin_det").value.to(u.GeV).value
                     )
 
                 except ValueError:
-
                     sim_inputs["Emin_det_c"] = (
                         Parameter.get_parameter("Emin_det_cascades")
                         .value.to(u.GeV)
@@ -558,7 +536,7 @@ class Simulation:
             cz_max = max(
                 self._exposure_integral["tracks"].effective_area._cosz_bin_edges
             )
-            sim_inputs["v_lim"] = (np.cos(np.pi - np.arccos(cz_max)) + 1) / 2
+            sim_inputs["v_lim"] = ((np.cos(np.pi - np.arccos(cz_max)) + 1) / 2) + 1e-2
         else:
             sim_inputs["v_lim"] = 0.0
 
@@ -579,17 +557,14 @@ class Simulation:
         lumi_units = u.GeV / u.s
 
         if self._sources.point_source:
-
             # Check for shared luminosity parameter
             if self._shared_luminosity:
-
                 sim_inputs["L"] = (
                     Parameter.get_parameter("luminosity").value.to(lumi_units).value
                 )
 
             # Otherwise, look for individual ps_%i_luminsoity parameters
             else:
-
                 sim_inputs["L"] = [
                     Parameter.get_parameter("ps_%i_luminosity" % i)
                     .value.to(lumi_units)
@@ -616,9 +591,7 @@ class Simulation:
         Nex_t = Nex_c = np.zeros(self._sources.N)
 
         for event_type in self._detector_model_type.event_types:
-
             if event_type == "tracks":
-
                 integral_grid_t = sim_inputs_["integral_grid_t"]
                 Nex_t = _get_expected_Nnu_(
                     sim_inputs_,
@@ -631,7 +604,6 @@ class Simulation:
                 )
 
             if event_type == "cascades":
-
                 integral_grid_c = sim_inputs_["integral_grid_c"]
                 sim_inputs_["atmo_integ_val"] = 0
                 Nex_c = _get_expected_Nnu_(
@@ -656,7 +628,6 @@ class Simulation:
 
     @classmethod
     def from_file(cls, filename):
-
         raise NotImplementedError()
 
     def _get_min_det_energy(event_type=None):
@@ -670,11 +641,9 @@ class Simulation:
         """
 
         try:
-
             Emin_det = Parameter.get_parameter("Emin_det").value
 
         except ValueError:
-
             Emin_det_t = Parameter.get_parameter("Emin_det_tracks").value
 
             Emin_det_c = Parameter.get_parameter("Emin_det_cascades").value
@@ -701,11 +670,9 @@ class SimInfo:
 
     @classmethod
     def from_file(cls, filename):
-
         inputs = {}
         outputs = {}
         with h5py.File(filename, "r") as f:
-
             inputs_folder = f["sim/inputs"]
             source_folder = f["sim/source"]
             outputs_folder = f["sim/outputs"]
@@ -714,19 +681,15 @@ class SimInfo:
             diff = False
             ps = False
             for key in inputs_folder:
-
                 inputs[key] = inputs_folder[key][()]
 
                 if key == "F_atmo":
-
                     atmo = True
 
                 if key == "F_diff":
-
                     diff = True
 
                 if key == "L":
-
                     ps = True
 
             for key in source_folder:
@@ -738,17 +701,14 @@ class SimInfo:
         truths = {}
 
         if ps:
-
             truths["L"] = inputs["L"]
             truths["src_index"] = inputs["src_index"]
 
         if diff:
-
             truths["F_diff"] = inputs["F_diff"]
             truths["diff_index"] = inputs["diff_index"]
 
         if atmo:
-
             truths["F_atmo"] = inputs["F_atmo"]
 
         truths["Ftot"] = inputs["total_flux_int"]
@@ -809,9 +769,7 @@ def _get_expected_Nnu_(
     F = []
 
     if point_source:
-
         if shared_luminosity:
-
             for i, d in enumerate(sim_inputs["D"]):
                 flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
                 if shared_src_index:
@@ -823,13 +781,12 @@ def _get_expected_Nnu_(
                 else:
                     flux = flux * flux_conv_(
                         src_index_list[i],
-                        sim_inputs["Emin_src"]  / (1 + sim_inputs["z"][i]),
-                        sim_inputs["Emax_src"]  / (1 + sim_inputs["z"][i]),
+                        sim_inputs["Emin_src"] / (1 + sim_inputs["z"][i]),
+                        sim_inputs["Emax_src"] / (1 + sim_inputs["z"][i]),
                     )
                 F.append(flux)
 
         else:
-
             for i, (d, l) in enumerate(zip(sim_inputs["D"], sim_inputs["L"])):
                 flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
                 if shared_src_index:
