@@ -77,6 +77,7 @@ class ExposureIntegral:
             dm = detector_model(event_type=event_type)
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
+            self._dm = dm
 
         self._parameter_source_map = defaultdict(list)
         self._source_parameter_map = defaultdict(list)
@@ -143,6 +144,9 @@ class ExposureIntegral:
         if isinstance(source, PointSource):
             # For point sources the integral over the space angle is trivial
 
+            # Assume that the source is inside the ROI
+            # TODO add check at some poin
+
             dec = source.dec
             cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
 
@@ -170,8 +174,8 @@ class ExposureIntegral:
             p_Edet = np.nan_to_num(p_Edet)
 
         else:
-            lower_cz_edges = self.effective_area.cosz_bin_edges[:-1]
-            upper_cz_edges = self.effective_area.cosz_bin_edges[1:]
+            lower_cz_edges = self.effective_area.cosz_bin_edges[:-1].copy()
+            upper_cz_edges = self.effective_area.cosz_bin_edges[1:].copy()
 
             # Switch upper and lower since zen -> dec induces a -1
             dec_lower = np.arccos(upper_cz_edges) * u.rad - np.pi / 2 * u.rad
@@ -181,13 +185,42 @@ class ExposureIntegral:
             #    dec_lower = np.union1d(dec_lower, self.energy_resolution._declination_bins[:-1] * u.rad)
             #    dec_upper = np.union1d(dec_lower, self.energy_resolution._declination_bins[1:] * u.rad)
 
+            """
+            RA_min = self._dm.__ROI["RA_min"]
+            RA_max = self._dm.__ROI["RA_max"]
+            DEC_min = self._dm.__ROI["DEC_min"]
+            DEC_max = self._dm.__ROI["DEC_max"]
+            """
+
+            """
+            try:
+                bandwidth = self._dm.__ROI["bandwidth"]
+            except KeyError:
+                bandwidth = 2.0 * np.pi * u.rad
+            """
+            RA_min = 0.0 * u.rad
+            RA_max = 2.0 * np.pi * u.rad
+            DEC_min = -np.pi * u.rad
+            DEC_max = np.pi * u.rad
+
+            dec_min_idx = np.digitize(DEC_min, dec_lower) - 1
+            dec_max_idx = np.digitize(DEC_max, dec_upper) - 1
+
+            # For lower dec lim, let dec_lower = dec_upper s.t. integral evaluates to zero
+            # arbitrary value as filler
+            dec_lower[: dec_min_idx + 1] = DEC_min
+            dec_upper[: dec_min_idx + 1] = DEC_min
+
+            dec_lower[dec_max_idx + 2 :] = DEC_max
+            dec_upper[dec_max_idx + 1 :] = DEC_max
+
             integral = source.flux_model.integral(
                 lower_e_edges[:, np.newaxis],
                 upper_e_edges[:, np.newaxis],
                 dec_lower[np.newaxis, :],
                 dec_upper[np.newaxis, :],
-                0 * u.rad,
-                2 * np.pi * u.rad,
+                RA_min,
+                RA_max,
             ).to(integral_unit)
 
             aeff = np.array(self.effective_area.eff_area, copy=True) << (u.m**2)

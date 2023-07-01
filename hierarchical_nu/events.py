@@ -23,7 +23,13 @@ IC79 = 2
 IC86_I = 3
 IC86_II = 4
 
-periods = {"IC40": IC40, "IC59": IC59, "IC79": IC79, "IC86_I": IC86_I, "IC86_II": IC86_II}
+periods = {
+    "IC40": IC40,
+    "IC59": IC59,
+    "IC79": IC79,
+    "IC86_I": IC86_I,
+    "IC86_II": IC86_II,
+}
 
 # Translate IRF period into integer from 0 to 4 (IC40 to IC86_II)
 
@@ -69,9 +75,7 @@ class Events:
         if periods is not None:
             self._periods = periods
 
-
     def remove(self, i):
-
         self._energies = np.delete(self._energies, i)
         self._coords = np.delete(self._coords, i)
         self._unit_vectors = np.delete(self._unit_vectors, i, axis=0)
@@ -81,39 +85,31 @@ class Events:
 
     @property
     def energies(self):
-
         return self._energies
 
     @property
     def coords(self):
-
         return self._coords
 
     @property
     def unit_vectors(self):
-
         return self._unit_vectors
 
     @property
     def types(self):
-
         return self._types
 
     @property
     def ang_errs(self):
-
         return self._ang_errs
 
     @property
     def kappas(self):
-
         return 1.38 / self._ang_errs.to(u.rad).value ** 2
 
     @classmethod
     def from_file(cls, filename):
-
         with h5py.File(filename, "r") as f:
-
             events_folder = f["events"]
 
             energies = events_folder["energies"][()] * u.GeV
@@ -127,7 +123,6 @@ class Events:
         return cls(energies, coords, types, ang_errs)
 
     def to_file(self, filename, append=False):
-
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs"]
         self._file_values = [
             self.energies.to(u.GeV).value,
@@ -138,23 +133,18 @@ class Events:
 
         if append:
             with h5py.File(filename, "r+") as f:
-
                 event_folder = f.create_group("events")
 
                 for key, value in zip(self._file_keys, self._file_values):
-
                     event_folder.create_dataset(key, data=value)
 
         else:
             with h5py.File(filename, "w") as f:
-
                 event_folder = f.create_group("events")
 
                 for key, value in zip(self._file_keys, self._file_values):
-
                     event_folder.create_dataset(key, data=value)
 
-                
     @classmethod
     def from_ev_file(cls, p: str, **kwargs):
         """
@@ -172,13 +162,21 @@ class Events:
 
         # Check if minimum detected energy is currently loaded as parameter
         try:
-            kwargs["ereco_low"] = Parameter.get_parameter("Emin_det_t").value.to(u.GeV).value
-            logger.warning(f'Overwriting kwargs["ereco_low"] with {kwargs["ereco_low"]*u.GeV}')
+            kwargs["ereco_low"] = (
+                Parameter.get_parameter("Emin_det_t").value.to(u.GeV).value
+            )
+            logger.warning(
+                f'Overwriting kwargs["ereco_low"] with {kwargs["ereco_low"]*u.GeV}'
+            )
         except ValueError:
             pass
         try:
-            kwargs["ereco_low"] = Parameter.get_parameter("Emin_det").value.to(u.GeV).value
-            logger.warning(f'Overwriting kwargs["ereco_low"] with {kwargs["ereco_low"]*u.GeV}')
+            kwargs["ereco_low"] = (
+                Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+            )
+            logger.warning(
+                f'Overwriting kwargs["ereco_low"] with {kwargs["ereco_low"]*u.GeV}'
+            )
         except ValueError:
             pass
 
@@ -191,6 +189,5 @@ class Events:
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = events.ang_err[p] * u.deg
         types = ra.size * [TRACKS]
-        coords = SkyCoord(ra, dec, frame='icrs')
+        coords = SkyCoord(ra, dec, frame="icrs")
         return cls(reco_energy, coords, types, ang_err, p)
-
