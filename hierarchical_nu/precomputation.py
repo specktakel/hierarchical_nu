@@ -180,6 +180,7 @@ class ExposureIntegral:
             # Switch upper and lower since zen -> dec induces a -1
             dec_lower = np.arccos(upper_cz_edges) * u.rad - np.pi / 2 * u.rad
             dec_upper = np.arccos(lower_cz_edges) * u.rad - np.pi / 2 * u.rad
+
             # make union with irf bins, at one point I might actually do this
             # if isinstance(self.energy_resolution, R2021EnergyResolution):
             #    dec_lower = np.union1d(dec_lower, self.energy_resolution._declination_bins[:-1] * u.rad)
@@ -199,20 +200,17 @@ class ExposureIntegral:
                 bandwidth = 2.0 * np.pi * u.rad
             """
             RA_min = 0.0 * u.rad
-            RA_max = 2.0 * np.pi * u.rad
-            DEC_min = -np.pi * u.rad
-            DEC_max = np.pi * u.rad
+            RA_max = 1.0 * np.pi * u.rad
+            DEC_min = -np.pi / 2 * u.rad
+            DEC_max = np.pi / 2 * u.rad
 
-            dec_min_idx = np.digitize(DEC_min, dec_lower) - 1
-            dec_max_idx = np.digitize(DEC_max, dec_upper) - 1
+            dec_upper[np.nonzero(dec_upper <= DEC_min)] = DEC_min
+            dec_lower[np.nonzero(dec_lower <= DEC_min)] = DEC_min
+
+            dec_lower[np.nonzero(dec_lower >= DEC_max)] = DEC_max
+            dec_upper[np.nonzero(dec_upper >= DEC_max)] = DEC_max
 
             # For lower dec lim, let dec_lower = dec_upper s.t. integral evaluates to zero
-            # arbitrary value as filler
-            dec_lower[: dec_min_idx + 1] = DEC_min
-            dec_upper[: dec_min_idx + 1] = DEC_min
-
-            dec_lower[dec_max_idx + 2 :] = DEC_max
-            dec_upper[dec_max_idx + 1 :] = DEC_max
 
             integral = source.flux_model.integral(
                 lower_e_edges[:, np.newaxis],
