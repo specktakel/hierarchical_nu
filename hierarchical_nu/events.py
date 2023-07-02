@@ -7,6 +7,7 @@ from astropy.coordinates import SkyCoord
 from icecube_tools.utils.data import available_irf_periods
 
 from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.utils.roi import ROI
 
 import logging
 
@@ -180,7 +181,19 @@ class Events:
         except ValueError:
             pass
 
-        events.restrict(**kwargs)
+        try:
+            roi = ROI.STACK[0]
+        except IndexError:
+            roi = ROI()
+
+        # add cuts to kwargs
+        ra_low = roi.RA_min.to_value(u.rad)
+        ra_high = roi.RA_max.to_value(u.rad)
+        dec_low = roi.DEC_min.to_value(u.rad)
+        dec_high = roi.DEC_max.to_value(u.rad)
+        events.restrict(
+            ra_low=ra_low, ra_high=ra_high, dec_low=dec_low, dec_high=dec_high, **kwargs
+        )
         # Read in relevant data
         ra = events.ra[p] * u.rad
         dec = events.dec[p] * u.rad

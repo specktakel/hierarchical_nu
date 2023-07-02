@@ -19,6 +19,7 @@ from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import ParScale, Parameter
 from hierarchical_nu.backend.stan_generator import StanGenerator
 from hierarchical_nu.detector.r2021 import R2021EnergyResolution
+from hierarchical_nu.utils.roi import ROI
 
 m_to_cm = 100  # cm
 
@@ -186,23 +187,14 @@ class ExposureIntegral:
             #    dec_lower = np.union1d(dec_lower, self.energy_resolution._declination_bins[:-1] * u.rad)
             #    dec_upper = np.union1d(dec_lower, self.energy_resolution._declination_bins[1:] * u.rad)
 
-            """
-            RA_min = self._dm.__ROI["RA_min"]
-            RA_max = self._dm.__ROI["RA_max"]
-            DEC_min = self._dm.__ROI["DEC_min"]
-            DEC_max = self._dm.__ROI["DEC_max"]
-            """
-
-            """
             try:
-                bandwidth = self._dm.__ROI["bandwidth"]
-            except KeyError:
-                bandwidth = 2.0 * np.pi * u.rad
-            """
-            RA_min = 0.0 * u.rad
-            RA_max = 1.0 * np.pi * u.rad
-            DEC_min = -np.pi / 2 * u.rad
-            DEC_max = np.pi / 2 * u.rad
+                roi = ROI.STACK[0]
+            except IndexError:
+                roi = ROI()
+            RA_min = roi.RA_min
+            RA_max = roi.RA_max
+            DEC_min = roi.DEC_min
+            DEC_max = roi.DEC_max
 
             dec_upper[np.nonzero(dec_upper <= DEC_min)] = DEC_min
             dec_lower[np.nonzero(dec_lower <= DEC_min)] = DEC_min

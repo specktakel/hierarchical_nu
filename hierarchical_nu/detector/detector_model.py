@@ -535,29 +535,15 @@ class DetectorModel(metaclass=ABCMeta):
     Abstract base class for detector models.
     """
 
-    # Stores RA_min, RA_max, DEC_min, DEC_max for ROI
-    # if empty assume 4pi sky is used
-    # Maybe use bandwidth around PS?
-    __ROI = {}
-
     @u.quantity_input
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
         event_type=None,
-        RA_min=0.0 * u.rad,
-        RA_max=2.0 * np.pi * u.rad,
-        DEC_min=-np.pi * u.rad,
-        DEC_max=np.pi * u.rad,
     ):
         self._mode = mode
 
         self._event_type = event_type
-
-        DetectorModel.__ROI["RA_min"] = RA_min
-        DetectorModel.__ROI["RA_max"] = RA_max
-        DetectorModel.__ROI["DEC_min"] = DEC_min
-        DetectorModel.__ROI["DEC_max"] = DEC_max
 
     @property
     def effective_area(self):
