@@ -37,6 +37,7 @@ def test_range():
 
 
 def test_precomputation():
+    Parameter.clear_registry()
     roi = ROI()
     src_index = Parameter(2.3, "src_index", par_range=(1.5, 3.6))
     L = Parameter(
