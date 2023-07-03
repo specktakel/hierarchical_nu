@@ -102,3 +102,6 @@ def test_precomputation():
     assert pytest.approx(np.array(cut["integral_grid_t"][0])) == np.array(
         default["integral_grid_t"][0]
     )
+
+    # cleanup s.t. following tests are not affected
+    roi = ROI()
