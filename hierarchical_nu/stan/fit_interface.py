@@ -102,6 +102,12 @@ class StanFitInterface(StanInterface):
 
         self._atmo_flux_theta_points = atmo_flux_theta_points
 
+        # Include integral for normalisation to PDF
+        if self.sources.atmospheric:
+            self._atmo_flux_integral = self._atmo_flux.total_flux_int.to(
+                1 / (u.m**2 * u.s)
+            ).value
+
         self._get_par_ranges()
 
         assert isinstance(nshards, int)
@@ -178,11 +184,6 @@ class StanFitInterface(StanInterface):
                     energy_points=self._atmo_flux_energy_points,
                     theta_points=self._atmo_flux_theta_points,
                 )
-
-                # Include integral for normalisation to PDF
-                self._atmo_flux_integral = self._atmo_flux.total_flux_int.to(
-                    1 / (u.m**2 * u.s)
-                ).value
 
             if self._nshards not in [0, 1]:
                 # Create a function to be used in map_rect in the model block
@@ -303,6 +304,14 @@ class StanFitInterface(StanInterface):
                         z = ForwardVariableDef("z", "vector[Ns]")
                         z << StringExpression(["to_vector(real_data[start:end])"])
                         start << start + Ns
+
+                    if self.sources.atmospheric:
+                        atmo_integrated_flux = ForwardVariableDef(
+                            "atmo_interated_flux", "real"
+                        )
+                        end << end + 1
+                        atmo_integrated_flux << StringExpression(["real_data[start]"])
+                        start << start + 1
 
                     if self.sources.point_source:
                         spatial_loglike = ForwardArrayDef(
@@ -623,7 +632,7 @@ class StanFitInterface(StanInterface):
                                                                 E[i],
                                                                 omega_det[i],
                                                             )
-                                                            / self._atmo_flux_integral
+                                                            / atmo_integrated_flux
                                                         ],
                                                         "log",
                                                     ),
@@ -906,6 +915,9 @@ class StanFitInterface(StanInterface):
             # Don't need a grid for atmo as spectral shape is fixed, so pass single value.
             if self.sources.atmospheric:
                 self._atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
+                self._atmo_integrated_flux = ForwardVariableDef(
+                    "atmo_integrated_flux", "real"
+                )
 
             if self._sources.point_source:
                 self._stan_prior_src_index_mu = ForwardVariableDef(
@@ -1048,6 +1060,7 @@ class StanFitInterface(StanInterface):
                 sd_other = 6  # Emin_src, Emax_src, Emin, Emax
                 # Need Ns * N for spatial loglike, added extra in sd_string
                 if self.sources.atmospheric and "tracks" in self._event_types:
+                    # atmo_integrated_flux, why was this here before? not used as far as I can see
                     sd_other += 1  # no atmo in cascades
                 sd_string = f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other} + J*Ns"
                 if self.sources.diffuse:
@@ -1123,6 +1136,11 @@ class StanFitInterface(StanInterface):
                             [self._z], "to_array_1d"
                         )
                         insert_start << insert_start + self._Ns
+
+                    if self.sources.atmospheric:
+                        insert_end << insert_end + 1
+                        self.real_data[i, insert_start] << self._atmo_integrated_flux
+                        insert_start << insert_start + 1
 
                     if self.sources.point_source:
                         with ForLoopContext(1, self._Ns, "k") as k:
@@ -1941,7 +1959,7 @@ class StanFitInterface(StanInterface):
                                                             self._E[i],
                                                             self._omega_det[i],
                                                         )
-                                                        / self._atmo_flux_integral
+                                                        / self._atmo_integrated_flux
                                                     ],
                                                     "log",
                                                 ),
@@ -2443,7 +2461,7 @@ class StanFitInterface(StanInterface):
                                                             self._E[i],
                                                             self._omega_det[i],
                                                         )
-                                                        / self._atmo_flux_integral
+                                                        / self._atmo_integrated_flux
                                                     ],
                                                     "log",
                                                 ),
