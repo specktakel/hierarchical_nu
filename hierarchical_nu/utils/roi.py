@@ -63,7 +63,7 @@ class ROI:
             raise ValueError("RA must be between 0 and 2pi.")
         if val > self._RA_max:
             logger.warning(
-                f"RA_min is greater than RA_max={self._RA_max}. Event selection will wrap at 0/2pi."
+                f"RA_min is greater than RA_max={self._RA_max:.2f}. Event selection will wrap at 0/2pi."
             )
         self._RA_min = val
 
@@ -74,7 +74,7 @@ class ROI:
             raise ValueError("RA must be between 0 and 2 pi.")
         if val < self._RA_min:
             logger.warning(
-                f"RA_max is smaller than RA_min={self._RA_min}. Event selection will wrap at 0/2pi."
+                f"RA_max is smaller than RA_min={self._RA_min:.2f}. Event selection will wrap at 0/2pi."
             )
         self._RA_max = val
 

@@ -91,8 +91,8 @@ def test_precomputation():
 
     default = sim._get_sim_inputs()
 
-    roi = ROI(RA_min=1.0 * np.pi * u.rad)
-
+    # test RA wrapping from 270 degrees to 90 degrees
+    roi = ROI(RA_max=np.deg2rad(90) * u.rad, RA_min=np.deg2rad(270) * u.rad)
     sim.precomputation()
     cut = sim._get_sim_inputs()
 

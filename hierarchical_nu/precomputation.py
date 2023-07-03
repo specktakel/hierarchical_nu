@@ -196,6 +196,11 @@ class ExposureIntegral:
             DEC_min = roi.DEC_min
             DEC_max = roi.DEC_max
 
+            if RA_max < RA_min:
+                RA_diff = 2 * np.pi * u.rad + RA_max - RA_min
+            else:
+                RA_diff = RA_max - RA_min
+
             dec_upper[np.nonzero(dec_upper <= DEC_min)] = DEC_min
             dec_lower[np.nonzero(dec_lower <= DEC_min)] = DEC_min
 
@@ -209,8 +214,8 @@ class ExposureIntegral:
                 upper_e_edges[:, np.newaxis],
                 dec_lower[np.newaxis, :],
                 dec_upper[np.newaxis, :],
-                RA_min,
-                RA_max,
+                0 * u.rad,
+                RA_diff,
             ).to(integral_unit)
 
             aeff = np.array(self.effective_area.eff_area, copy=True) << (u.m**2)
