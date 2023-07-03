@@ -7,7 +7,7 @@ import numpy as np
 
 import logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class ROI:
@@ -59,15 +59,23 @@ class ROI:
     @RA_min.setter
     @u.quantity_input
     def RA_min(self, val: u.rad):
-        if val < 0.0 * u.rad or val > self._RA_max:
-            raise ValueError("RA must be between 0 and 2pi and min < max.")
+        if val < 0.0 * u.rad:
+            raise ValueError("RA must be between 0 and 2pi.")
+        if val > self._RA_max:
+            logger.warning(
+                f"RA_min is greater than RA_max={self._RA_max}. Event selection will wrap at 0/2pi."
+            )
         self._RA_min = val
 
     @RA_max.setter
     @u.quantity_input
     def RA_max(self, val: u.rad):
-        if val > 2.0 * np.pi * u.rad or val < self._RA_min:
-            raise ValueError("RA must be between 0 and 2 pi and min < max.")
+        if val > 2.0 * np.pi * u.rad:
+            raise ValueError("RA must be between 0 and 2 pi.")
+        if val < self._RA_min:
+            logger.warning(
+                f"RA_max is smaller than RA_min={self._RA_min}. Event selection will wrap at 0/2pi."
+            )
         self._RA_max = val
 
     @DEC_min.setter
