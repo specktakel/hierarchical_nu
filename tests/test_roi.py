@@ -16,6 +16,21 @@ def test_event_selection():
     assert events.coords.z.min() >= 0.0
 
 
+def test_event_selection_wrap(caplog):
+    roi = ROI(RA_min=np.deg2rad(350) * u.rad, RA_max=np.deg2rad(10) * u.rad)
+    events = Events.from_ev_file("IC86_II")
+    events.coords.representation_type = "spherical"
+    ra = events.coords.ra.rad
+    mask = np.nonzero((ra >= np.pi))
+    ra[mask] -= 2 * np.pi
+
+    assert pytest.approx(np.average(ra), abs=1e-3) == 0.0
+
+    assert "RA_min is greater than RA_max" in caplog.text
+
+    assert "RA_max is smaller than RA_min" in caplog.text
+
+
 def test_range():
     with pytest.raises(ValueError):
         roi = ROI(DEC_max=3 * u.rad)
