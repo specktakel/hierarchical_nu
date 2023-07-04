@@ -56,28 +56,30 @@ class Simulation:
         self._exposure_integral = collections.OrderedDict()
 
         if N:
-
             for event_type in self._detector_model_type.event_types:
                 assert len(N[event_type]) == len(sources)
-                
-                if "cascades" in self._detector_model_type.event_types and \
-                    self._sources.atmospheric:
 
+                if (
+                    "cascades" in self._detector_model_type.event_types
+                    and self._sources.atmospheric
+                ):
                     if N["cascades"][-1] != 0:
                         sim_logger.warning("Setting atmospheric cascade events to zero")
                         N["cascades"][-1] = 0
-                        
+
             self._force_N = True
             self._N = N
-        
-        else:
 
+        else:
             self._force_N = False
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "sim_code")
 
         self._stan_interface = StanSimInterface(
-            stan_file_name, self._sources, self._detector_model_type, force_N=self._force_N,
+            stan_file_name,
+            self._sources,
+            self._detector_model_type,
+            force_N=self._force_N,
         )
 
         # Silence log output
@@ -115,6 +117,8 @@ class Simulation:
             self._shared_src_index = True
         except ValueError:
             self._shared_src_index = False
+
+        self.events = None
 
     def precomputation(
         self,
@@ -181,25 +185,37 @@ class Simulation:
 
         self._sim_output = sim_output
 
-        self.events = Events(*self._extract_sim_output())
+        energies, coords, event_types, ang_errs = self._extract_sim_output()
+
+        # Check for detected events
+        if len(energies) != 0:
+            self.events = Events(energies, coords, event_types, ang_errs)
 
     def _extract_sim_output(self):
-        energies = self._sim_output.stan_variable("Edet")[0] * u.GeV
-        dirs = self._sim_output.stan_variable("event")[0]
-        coords = SkyCoord(
-            dirs.T[0],
-            dirs.T[1],
-            dirs.T[2],
-            representation_type="cartesian",
-            frame="icrs",
-        )
-        event_types = self._sim_output.stan_variable("event_type")[0]
-        event_types = [int(_) for _ in event_types]
+        try:
+            energies = self._sim_output.stan_variable("Edet")[0] * u.GeV
+            dirs = self._sim_output.stan_variable("event")[0]
+            coords = SkyCoord(
+                dirs.T[0],
+                dirs.T[1],
+                dirs.T[2],
+                representation_type="cartesian",
+                frame="icrs",
+            )
+            event_types = self._sim_output.stan_variable("event_type")[0]
+            event_types = [int(_) for _ in event_types]
 
-        # Kappa parameter of VMF distribution
-        kappa = self._sim_output.stan_variable("kappa")[0]
-        # Equivalent 1 sigma errors in deg
-        ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
+            # Kappa parameter of VMF distribution
+            kappa = self._sim_output.stan_variable("kappa")[0]
+            # Equivalent 1 sigma errors in deg
+            ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
+
+        except ValueError:
+            # No detected events
+            energies = [] * u.GeV
+            coords = []
+            event_types = []
+            ang_errs = [] * u.deg
 
         return energies, coords, event_types, ang_errs
 
@@ -423,7 +439,6 @@ class Simulation:
                 ]
 
                 if self._force_N:
-                    
                     sim_inputs["forced_N_t"] = self._N["tracks"]
 
             if event_type == "cascades":
@@ -433,7 +448,6 @@ class Simulation:
                 ]
 
                 if self._force_N:
-                    
                     sim_inputs["forced_N_c"] = self._N["cascades"]
 
         if self._sources.atmospheric:

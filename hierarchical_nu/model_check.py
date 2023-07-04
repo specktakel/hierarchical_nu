@@ -346,7 +346,7 @@ class ModelCheck:
             max_value = 0
 
             for i in range(len(self.results[var_name])):
-                if i not in mask_results:
+                if i not in mask_results and len(self.results[var_name] != 0):
                     n, bins, _ = ax[v].hist(
                         self.results[var_name][i],
                         color="#017B76",
@@ -500,6 +500,10 @@ class ModelCheck:
             # sim_output = {}
             # sim_output["Lambda"] = lam
 
+            # Skip if no detected events
+            if not sim.events:
+                continue
+
             self.events = sim.events
 
             # Fit
@@ -545,6 +549,7 @@ class ModelCheck:
                 outputs[key].append(fit._fit_output.method_variables()[key])
 
             diagnostics_output_str = fit._fit_output.diagnose()
+
             if "no problems detected" in diagnostics_output_str:
                 outputs["diagnostics_ok"].append(1)
             else:
