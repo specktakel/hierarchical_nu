@@ -8,6 +8,9 @@ from cmdstanpy import CmdStanModel
 import logging
 import collections
 import ligo.skymap.plot
+
+from icecube_tools.utils.vMF import get_theta_p
+
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.utils.plotting import SphericalCircle
@@ -56,28 +59,30 @@ class Simulation:
         self._exposure_integral = collections.OrderedDict()
 
         if N:
-
             for event_type in self._detector_model_type.event_types:
                 assert len(N[event_type]) == len(sources)
-                
-                if "cascades" in self._detector_model_type.event_types and \
-                    self._sources.atmospheric:
 
+                if (
+                    "cascades" in self._detector_model_type.event_types
+                    and self._sources.atmospheric
+                ):
                     if N["cascades"][-1] != 0:
                         sim_logger.warning("Setting atmospheric cascade events to zero")
                         N["cascades"][-1] = 0
-                        
+
             self._force_N = True
             self._N = N
-        
-        else:
 
+        else:
             self._force_N = False
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "sim_code")
 
         self._stan_interface = StanSimInterface(
-            stan_file_name, self._sources, self._detector_model_type, force_N=self._force_N,
+            stan_file_name,
+            self._sources,
+            self._detector_model_type,
+            force_N=self._force_N,
         )
 
         # Silence log output
@@ -199,7 +204,7 @@ class Simulation:
         # Kappa parameter of VMF distribution
         kappa = self._sim_output.stan_variable("kappa")[0]
         # Equivalent 1 sigma errors in deg
-        ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
+        ang_errs = get_theta_p(kappa, p=0.683) * u.deg
 
         return energies, coords, event_types, ang_errs
 
@@ -423,7 +428,6 @@ class Simulation:
                 ]
 
                 if self._force_N:
-                    
                     sim_inputs["forced_N_t"] = self._N["tracks"]
 
             if event_type == "cascades":
@@ -433,7 +437,6 @@ class Simulation:
                 ]
 
                 if self._force_N:
-                    
                     sim_inputs["forced_N_c"] = self._N["cascades"]
 
         if self._sources.atmospheric:
