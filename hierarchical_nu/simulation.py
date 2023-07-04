@@ -535,16 +535,9 @@ class Simulation:
         except IndexError:
             roi = ROI()
 
-        if (
-            self._detector_model_type == NorthernTracksDetectorModel
-            or self._detector_model_type == IceCubeDetectorModel
-        ):
-            pass
+        v_lim_low = (np.cos(-roi.DEC_min.to_value(u.rad) + np.pi / 2) + 1.0) / 2
+        v_lim_high = (np.cos(-roi.DEC_max.to_value(u.rad) + np.pi / 2) + 1.0) / 2
 
-        sim_inputs["RA_min"] = roi.RA_min.to_value(u.rad)
-        sim_inputs["RA_max"] = roi.RA_max.to_value(u.rad)
-        sim_inputs["DEC_min"] = roi.DEC_min.to_value(u.rad)
-        sim_inputs["DEC_max"] = roi.DEC_max.to_value(u.rad)
         if (
             self._detector_model_type == NorthernTracksDetectorModel
             or self._detector_model_type == IceCubeDetectorModel
@@ -558,12 +551,10 @@ class Simulation:
             cz_max = max(
                 self._exposure_integral["tracks"].effective_area._cosz_bin_edges
             )
-            v_lim_low = ((np.cos(np.pi - np.arccos(cz_max)) + 1) / 2) + 1e-2
+            v_lim_low_detector = ((np.cos(np.pi - np.arccos(cz_max)) + 1) / 2) + 1e-2
 
-        else:
-            v_lim_low = (np.cos(-roi.DEC_min.to_value(u.rad) + np.pi / 2) + 1.0) / 2
-
-        v_lim_high = (np.cos(-roi.DEC_max.to_value(u.rad) + np.pi / 2) + 1.0) / 2
+            if v_lim_low_detector > v_lim_low:
+                v_lim_low = v_lim_low_detector
 
         assert v_lim_high > v_lim_low
 
