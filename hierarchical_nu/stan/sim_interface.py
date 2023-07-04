@@ -56,7 +56,7 @@ class StanSimInterface(StanInterface):
             "vMF.stan",
             "rejection_sampling.stan",
         ],
-        force_N: bool = False
+        force_N: bool = False,
     ):
         """
         An interface for generating the Stan simulation code.
@@ -89,7 +89,7 @@ class StanSimInterface(StanInterface):
 
         if force_N:
             self._force_N = True
-        
+
         else:
             self._force_N = False
 
@@ -145,22 +145,20 @@ class StanSimInterface(StanInterface):
             self._Ns_2p_str = ["[", self._Ns, "+2]"]
 
             if self.sources.diffuse and self.sources.atmospheric:
-
                 N_int_str = self._Ns_2p_str
-            
+
             elif self.sources.diffuse or self.sources.atmospheric:
-                
                 N_int_str = self._Ns_1p_str
 
             else:
                 N_int_str = self._Ns_str
 
             if self.sources.atmospheric and self.sources.diffuse:
-                    dim = self._Ns_2p_str
+                dim = self._Ns_2p_str
             elif self.sources.diffuse or self.sources.atmospheric:
                 dim = self._Ns_1p_str
             else:
-                dim = self._Ns_str 
+                dim = self._Ns_str
 
             # True directions of point sources as a unit vector
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
@@ -222,9 +220,7 @@ class StanSimInterface(StanInterface):
                 )
                 # self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
                 # entry for each component
-                self._rs_cvals_t = ForwardArrayDef(
-                    "rs_cvals_t", "real", dim
-                )
+                self._rs_cvals_t = ForwardArrayDef("rs_cvals_t", "real", dim)
                 # self._rs_cosz_bin_edges_t = ForwardArrayDef(
                 #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
                 # )
@@ -233,12 +229,11 @@ class StanSimInterface(StanInterface):
                     self._integral_grid_t = ForwardArrayDef(
                         "integral_grid_t", "vector[Ngrid]", self._Ns_1p_str
                     )
-                    
+
                 else:
                     self._integral_grid_t = ForwardArrayDef(
                         "integral_grid_t", "vector[Ngrid]", self._Ns_str
                     )
-                    
 
                 if self._force_N:
                     self._forced_N_t = ForwardArrayDef("forced_N_t", "int", dim)
@@ -254,12 +249,10 @@ class StanSimInterface(StanInterface):
                     "rs_bbpl_gamma2_scale_c", "real"
                 )
                 # self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
-                self._rs_cvals_c = ForwardArrayDef(
-                    "rs_cvals_c", "real", dim
-                )
+                self._rs_cvals_c = ForwardArrayDef("rs_cvals_c", "real", dim)
                 # self._rs_cosz_bin_edges_c = ForwardArrayDef(
                 #    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
-                #)
+                # )
                 # Ns (+1 if diffuse)
                 if self.sources.diffuse:
                     self._integral_grid_c = ForwardArrayDef(
@@ -292,7 +285,10 @@ class StanSimInterface(StanInterface):
 
             # v_lim sets the edge of the uniform sampling on a sphere, for example,
             # for Northern skies only. See sphere_lim_rng.
-            self._v_lim = ForwardVariableDef("v_lim", "real")
+            self._v_low = ForwardVariableDef("v_low", "real")
+            self._v_high = ForwardVariableDef("v_high", "real")
+            self._u_low = ForwardVariableDef("u_low", "real")
+            self._u_high = ForwardVariableDef("u_high", "real")
 
             # The observation time
             self._T = ForwardVariableDef("T", "real")
@@ -596,15 +592,13 @@ class StanSimInterface(StanInterface):
                     [self._F, self._eps_t], "get_exposure_weights"
                 )
 
-                # If we passed the `force_N` keyword we ignore the exposure weighting 
+                # If we passed the `force_N` keyword we ignore the exposure weighting
                 # and sample a fixed amount of events
                 if self._force_N:
-
                     self._N_t << StringExpression(["sum(", self._forced_N_t, ")"])
 
                 # Else sample Poisson random variable with the expected number of events as parameter
                 else:
-
                     self._N_t << StringExpression(["poisson_rng(", self._Nex_t, ")"])
 
             if "cascades" in self._event_types:
@@ -614,11 +608,9 @@ class StanSimInterface(StanInterface):
                 )
 
                 if self._force_N:
-
                     self._N_c << StringExpression(["sum(", self._forced_N_c, ")"])
 
                 else:
-                
                     self._N_c << StringExpression(["poisson_rng(", self._Nex_c, ")"])
 
             if "tracks" in self._event_types and "cascades" in self._event_types:
@@ -749,7 +741,9 @@ class StanSimInterface(StanInterface):
             self._idx_cosz = ForwardVariableDef("idx_cosz", "int")
             self._gamma2 = ForwardVariableDef("gamma2", "real")
             if self._force_N:
-                self._currently_sampling = InstantVariableDef("currently_sampling", "int", [1])
+                self._currently_sampling = InstantVariableDef(
+                    "currently_sampling", "int", [1]
+                )
 
             if "tracks" in self._event_types:
                 Nex_t_sim = ForwardVariableDef("Nex_t_sim", "real")
@@ -766,10 +760,10 @@ class StanSimInterface(StanInterface):
 
             # Here we start the sampling, first fo tracks and then cascades.
             if "tracks" in self._event_types:
-
                 if self._force_N:
-                
-                    self._forced_N_t_sampled = InstantVariableDef("sampled_N_t", "int", [0])
+                    self._forced_N_t_sampled = InstantVariableDef(
+                        "sampled_N_t", "int", [0]
+                    )
 
                 # For each event, we rejection sample the true energy and direction
                 # and then directly sample the detected properties
@@ -779,28 +773,26 @@ class StanSimInterface(StanInterface):
                     # Sample source label
                     # If we force N, proceed to sample the given number of events for each source
                     if self._force_N:
-
                         with IfBlockContext(
                             [
                                 self._forced_N_t_sampled,
                                 " < ",
-                                self._forced_N_t[self._currently_sampling]
+                                self._forced_N_t[self._currently_sampling],
                             ]
                         ):
-
                             self._lam[i] << self._currently_sampling
                             StringExpression([self._forced_N_t_sampled, " += 1"])
-                        
-                        with ElseBlockContext():
 
+                        with ElseBlockContext():
                             StringExpression([self._currently_sampling, " += 1"])
 
-                            with IfBlockContext([self._currently_sampling, " > size(", self._F, ")"]):
+                            with IfBlockContext(
+                                [self._currently_sampling, " > size(", self._F, ")"]
+                            ):
                                 # Might as well be break statement
                                 StringExpression(["continue"])
 
                             with ElseBlockContext():
-
                                 self._lam[i] << self._currently_sampling
                                 self._forced_N_t_sampled << 1
 
@@ -834,7 +826,14 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
                                 self._omega << FunctionCall(
-                                    [1, self._v_lim], "sphere_lim_rng"
+                                    [
+                                        1,
+                                        self._v_low,
+                                        self._v_high,
+                                        self._u_low,
+                                        self._u_high,
+                                    ],
+                                    "sphere_lim_rng",
                                 )
 
                         elif self.sources.diffuse:
@@ -842,7 +841,14 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
                                 self._omega << FunctionCall(
-                                    [1, self._v_lim], "sphere_lim_rng"
+                                    [
+                                        1,
+                                        self._v_low,
+                                        self._v_high,
+                                        self._u_low,
+                                        self._u_high,
+                                    ],
+                                    "sphere_lim_rng",
                                 )
 
                         if self.sources.atmospheric and self._sources.diffuse:
@@ -850,7 +856,14 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
                                 self._omega << FunctionCall(
-                                    [1, self._v_lim], "sphere_lim_rng"
+                                    [
+                                        1,
+                                        self._v_low,
+                                        self._v_high,
+                                        self._u_low,
+                                        self._u_high,
+                                    ],
+                                    "sphere_lim_rng",
                                 )
 
                         self._cosz[i] << FunctionCall(
@@ -1655,14 +1668,12 @@ class StanSimInterface(StanInterface):
 
             # Repeat as above for cascades! For detailed comments see tracks, approach is identical.
             if "cascades" in self._event_types:
-
                 self._forced_N_c_sampled = InstantVariableDef("sampled_N_c", "int", [0])
 
                 if "tracks" in self._event_types:
                     N_start = "N_t+1"
 
                     if self._force_N:
-
                         self._currently_sampling << 1
 
                 else:
@@ -1673,33 +1684,30 @@ class StanSimInterface(StanInterface):
 
                     # Sample source label
                     if self._force_N:
-
                         with IfBlockContext(
                             [
                                 self._forced_N_c_sampled,
                                 " < ",
-                                self._forced_N_c[self._currently_sampling]
+                                self._forced_N_c[self._currently_sampling],
                             ]
                         ):
-
                             self._lam[i] << self._currently_sampling
                             StringExpression([self._forced_N_c_sampled, " += 1"])
-                        
-                        with ElseBlockContext():
 
+                        with ElseBlockContext():
                             StringExpression([self._currently_sampling, " += 1"])
 
-                            with IfBlockContext([self._currently_sampling, " > size(", self._F, ")"]):
+                            with IfBlockContext(
+                                [self._currently_sampling, " > size(", self._F, ")"]
+                            ):
                                 # Might as well be break statement
                                 StringExpression(["continue"])
 
                             with ElseBlockContext():
-
                                 self._lam[i] << self._currently_sampling
                                 self._forced_N_c_sampled << 1
 
                     else:
-
                         self._lam[i] << FunctionCall(
                             [self._w_exposure_c], "categorical_rng"
                         )

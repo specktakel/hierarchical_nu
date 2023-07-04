@@ -112,13 +112,33 @@ vector sphere_rng(real radius) {
  * a certain radius. The v_lim option can be used to limit the
  * possible theta values.
  */
-vector sphere_lim_rng(real radius, real v_lim) {
+vector sphere_lim_rng(real radius, real v_low, real v_high, real u_low, real u_high) {
 
   vector[3] result;
-  real u = uniform_rng(0, 1);
-  real v = uniform_rng(v_lim, 1);
+  real u;
+  if (u_low < u_high) {
+    u = uniform_rng(u_low, u_high);
+  }
+  else {
+    real p;
+    int outcome;
+    // probability for sampling from 0 to u_high
+    p = u_high / (u_high + 1.0 - u_low);
+    outcome = bernoulli_rng(p);
+    // labels in following if-statement are swapped
+    if (outcome) {
+      // "success", sample from 0 to u_high
+      u = uniform_rng(0, u_high);
+    }
+    else {
+      // "fail", sample from u_low to 1.
+      u = uniform_rng(u_low, 1.0);
+    }
+  }
+  real v = uniform_rng(v_low, v_high);
 
   real phi = 2 * pi() * u;
+  // maps random [0, 1] to [-1, +1] which is codomain of cos(theta)
   real theta = acos(2 * v - 1);
 
   result[1] = radius * sin(theta) * cos(phi);

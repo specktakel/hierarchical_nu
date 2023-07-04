@@ -21,6 +21,7 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, flux_conv_
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.events import Events, TRACKS
+from hierarchical_nu.utils.roi import ROI
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
@@ -56,28 +57,30 @@ class Simulation:
         self._exposure_integral = collections.OrderedDict()
 
         if N:
-
             for event_type in self._detector_model_type.event_types:
                 assert len(N[event_type]) == len(sources)
-                
-                if "cascades" in self._detector_model_type.event_types and \
-                    self._sources.atmospheric:
 
+                if (
+                    "cascades" in self._detector_model_type.event_types
+                    and self._sources.atmospheric
+                ):
                     if N["cascades"][-1] != 0:
                         sim_logger.warning("Setting atmospheric cascade events to zero")
                         N["cascades"][-1] = 0
-                        
+
             self._force_N = True
             self._N = N
-        
-        else:
 
+        else:
             self._force_N = False
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "sim_code")
 
         self._stan_interface = StanSimInterface(
-            stan_file_name, self._sources, self._detector_model_type, force_N=self._force_N,
+            stan_file_name,
+            self._sources,
+            self._detector_model_type,
+            force_N=self._force_N,
         )
 
         # Silence log output
@@ -423,7 +426,6 @@ class Simulation:
                 ]
 
                 if self._force_N:
-                    
                     sim_inputs["forced_N_t"] = self._N["tracks"]
 
             if event_type == "cascades":
@@ -433,7 +435,6 @@ class Simulation:
                 ]
 
                 if self._force_N:
-                    
                     sim_inputs["forced_N_c"] = self._N["cascades"]
 
         if self._sources.atmospheric:
@@ -528,17 +529,48 @@ class Simulation:
                 sim_inputs["rs_N_cosz_bins_c"] = len(effective_area.cosz_bin_edges) - 1
                 sim_inputs["rs_cosz_bin_edges_c"] = effective_area.cosz_bin_edges
                 sim_inputs["rs_cvals_c"] = self._exposure_integral[event_type].c_values
+
+        try:
+            roi = ROI.STACK[0]
+        except IndexError:
+            roi = ROI()
+
         if (
             self._detector_model_type == NorthernTracksDetectorModel
             or self._detector_model_type == IceCubeDetectorModel
         ):
+            pass
+
+        sim_inputs["RA_min"] = roi.RA_min.to_value(u.rad)
+        sim_inputs["RA_max"] = roi.RA_max.to_value(u.rad)
+        sim_inputs["DEC_min"] = roi.DEC_min.to_value(u.rad)
+        sim_inputs["DEC_max"] = roi.DEC_max.to_value(u.rad)
+        if (
+            self._detector_model_type == NorthernTracksDetectorModel
+            or self._detector_model_type == IceCubeDetectorModel
+        ):
+            # acos(2 * v - 1) = theta -> v = cos(theta) + 1 / 2
+            # v from 0 to 1
             # Only sample from Northern hemisphere
+
+            # theta from 0 (north) to pi (south), dec from pi/2 (north) to -pi/2 (south)
+            # theta = -dec + pi/2
             cz_max = max(
                 self._exposure_integral["tracks"].effective_area._cosz_bin_edges
             )
-            sim_inputs["v_lim"] = ((np.cos(np.pi - np.arccos(cz_max)) + 1) / 2) + 1e-2
+            v_lim_low = ((np.cos(np.pi - np.arccos(cz_max)) + 1) / 2) + 1e-2
+
         else:
-            sim_inputs["v_lim"] = 0.0
+            v_lim_low = (np.cos(-roi.DEC_min.to_value(u.rad) + np.pi / 2) + 1.0) / 2
+
+        v_lim_high = (np.cos(-roi.DEC_max.to_value(u.rad) + np.pi / 2) + 1.0) / 2
+
+        assert v_lim_high > v_lim_low
+
+        sim_inputs["v_low"] = v_lim_low
+        sim_inputs["v_high"] = v_lim_high
+        sim_inputs["u_low"] = roi.RA_min.to_value(u.rad) / (2.0 * np.pi)
+        sim_inputs["u_high"] = roi.RA_max.to_value(u.rad) / (2.0 * np.pi)
 
         flux_units = 1 / (u.m**2 * u.s)
 
