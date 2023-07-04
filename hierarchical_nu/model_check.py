@@ -346,7 +346,7 @@ class ModelCheck:
             max_value = 0
 
             for i in range(len(self.results[var_name])):
-                if i not in mask_results and len(self.results[var_name] != 0):
+                if i not in mask_results and len(self.results[var_name]) != 0:
                     n, bins, _ = ax[v].hist(
                         self.results[var_name][i],
                         color="#017B76",
