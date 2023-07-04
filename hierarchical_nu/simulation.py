@@ -8,6 +8,9 @@ from cmdstanpy import CmdStanModel
 import logging
 import collections
 import ligo.skymap.plot
+
+from icecube_tools.utils.vMF import get_theta_p
+
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.utils.plotting import SphericalCircle
@@ -208,7 +211,7 @@ class Simulation:
             # Kappa parameter of VMF distribution
             kappa = self._sim_output.stan_variable("kappa")[0]
             # Equivalent 1 sigma errors in deg
-            ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
+            ang_errs = get_theta_p(kappa, p=0.683) * u.deg
 
         except ValueError:
             # No detected events
