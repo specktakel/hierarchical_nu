@@ -1728,7 +1728,16 @@ class StanSimInterface(StanInterface):
                         with ElseIfBlockContext(
                             [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                         ):
-                            self._omega << FunctionCall([1, 0], "sphere_lim_rng")
+                            self._omega << FunctionCall(
+                                [
+                                    1,
+                                    self._v_low,
+                                    self._v_high,
+                                    self._u_low,
+                                    self._u_high,
+                                ],
+                                "sphere_lim_rng",
+                            )
 
                         self._cosz[i] << FunctionCall(
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
