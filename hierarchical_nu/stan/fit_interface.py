@@ -102,12 +102,6 @@ class StanFitInterface(StanInterface):
 
         self._atmo_flux_theta_points = atmo_flux_theta_points
 
-        # Include integral for normalisation to PDF
-        if self.sources.atmospheric:
-            self._atmo_flux_integral = self._atmo_flux.total_flux_int.to(
-                1 / (u.m**2 * u.s)
-            ).value
-
         self._get_par_ranges()
 
         assert isinstance(nshards, int)
@@ -307,7 +301,7 @@ class StanFitInterface(StanInterface):
 
                     if self.sources.atmospheric:
                         atmo_integrated_flux = ForwardVariableDef(
-                            "atmo_interated_flux", "real"
+                            "atmo_integrated_flux", "real"
                         )
                         end << end + 1
                         atmo_integrated_flux << StringExpression(["real_data[start]"])
@@ -1057,7 +1051,7 @@ class StanFitInterface(StanInterface):
                 sd_varpi_Ns = 3  # coords of events in the sky (unit vector)
                 sd_if_diff = 3  # redshift of diffuse component, Emin_diff/max
                 sd_z_Ns = 1  # redshift of PS
-                sd_other = 6  # Emin_src, Emax_src, Emin, Emax
+                sd_other = 6  # Emin_src, Emax_src, Emin, Emax, Emin_at_det, Emax_at_det
                 # Need Ns * N for spatial loglike, added extra in sd_string
                 if self.sources.atmospheric and "tracks" in self._event_types:
                     # atmo_integrated_flux, why was this here before? not used as far as I can see
