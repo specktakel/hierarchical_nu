@@ -4,6 +4,8 @@ import os
 import pytest
 from cmdstanpy import CmdStanModel
 
+from icecube_tools.utils.vMF import get_theta_p
+
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.backend.stan_generator import (
     GeneratedQuantitiesContext,
@@ -20,7 +22,7 @@ from hierarchical_nu.backend.stan_generator import (
 from hierarchical_nu.backend.variable_definitions import (
     ForwardVariableDef,
     ForwardArrayDef,
-    ParameterDef
+    ParameterDef,
 )
 from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
@@ -30,16 +32,15 @@ from hierarchical_nu.stan.interface import STAN_GEN_PATH
 
 from icecube_tools.detector.r2021 import R2021IRF
 from icecube_tools.detector.effective_area import EffectiveArea
-from icecube_tools.point_source_likelihood.energy_likelihood import MarginalisedIntegratedEnergyLikelihood
+from icecube_tools.point_source_likelihood.energy_likelihood import (
+    MarginalisedIntegratedEnergyLikelihood,
+)
 
 
-
-
-class TestR2021():
-
+class TestR2021:
     @pytest.fixture
     def sim_file(self, output_directory):
-        #Generate code s.t. samples can be compared to icecube_tools
+        # Generate code s.t. samples can be compared to icecube_tools
 
         file_name = os.path.join(output_directory, "r2021_sim")
 
@@ -48,29 +49,34 @@ class TestR2021():
             rewrite=True,
             gen_type="histogram",
             ereco_cuts=False,
-            path=output_directory)
+            path=output_directory,
+        )
 
         with StanFileGenerator(file_name) as code_gen:
-
             with FunctionsContext():
-
                 _ = Include("interpolation.stan")
                 _ = Include("utils.stan")
                 _ = Include("vMF.stan")
                 _ = Include(R2021DetectorModel.RNG_FILENAME)
 
             with DataContext():
-
                 etrue = ForwardVariableDef("true_energy", "real")
                 phi = ForwardVariableDef("phi", "real")
                 theta = ForwardVariableDef("theta", "real")
 
             with GeneratedQuantitiesContext():
-
                 reco_energy = ForwardVariableDef("reco_energy", "real")
-                reco_energy << StringExpression(["R2021EnergyResolution_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"])
+                reco_energy << StringExpression(
+                    [
+                        "R2021EnergyResolution_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                    ]
+                )
                 pre_event = ForwardVariableDef("pre_event", "vector[4]")
-                pre_event << StringExpression(["R2021AngularResolution_rng(true_energy, reco_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"])
+                pre_event << StringExpression(
+                    [
+                        "R2021AngularResolution_rng(true_energy, reco_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                    ]
+                )
                 kappa = ForwardVariableDef("kappa", "real")
                 reco_dir = ForwardVariableDef("reco_dir", "vector[3]")
                 kappa << StringExpression(["pre_event[4]"])
@@ -86,33 +92,34 @@ class TestR2021():
             mode=DistributionMode.PDF,
             rewrite=True,
             gen_type="lognorm",
-            path=output_directory
+            path=output_directory,
         )
 
         with StanFileGenerator(file_name) as code_gen:
-
             with FunctionsContext():
-
                 _ = Include("interpolation.stan")
                 _ = Include("utils.stan")
                 _ = Include("vMF.stan")
                 _ = Include(R2021DetectorModel.PDF_FILENAME)
 
             with DataContext():
-
                 size = ForwardVariableDef("size", "int")
                 ereco = ForwardArrayDef("reco_energy", "real", ["[", size, "]"])
                 phi = ForwardVariableDef("phi", "real")
                 theta = ForwardVariableDef("theta", "real")
-                
+
             with ParametersContext():
                 true_energy = ParameterDef("true_energy", "real", 2.25, 8.75)
 
             with TransformedParametersContext():
                 lp = ForwardArrayDef("lp", "real", ["[", size, "]"])
                 with ForLoopContext(1, size, "i") as i:
-                    lp[i] << StringExpression(["R2021EnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"])
-                
+                    lp[i] << StringExpression(
+                        [
+                            "R2021EnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                        ]
+                    )
+
             with ModelContext():
                 StringExpression(["target += log_sum_exp(lp)"])
 
@@ -120,19 +127,18 @@ class TestR2021():
         return code_gen.filename
 
     def test_file_generation_r2021(self, output_directory):
-
         R2021DetectorModel.generate_code(
             mode=DistributionMode.PDF,
             rewrite=False,
             gen_type="lognorm",
-            path=output_directory
+            path=output_directory,
         )
 
         R2021DetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=False,
             gen_type="histogram",
-            path=output_directory
+            path=output_directory,
         )
 
     @pytest.fixture
@@ -141,29 +147,25 @@ class TestR2021():
 
         irf = R2021IRF.from_period("IC86_II")
 
-        samples = np.zeros((irf.true_energy_values.size, irf.declination_bins.size-1, num_samples))
+        samples = np.zeros(
+            (irf.true_energy_values.size, irf.declination_bins.size - 1, num_samples)
+        )
 
         stanc_options = {"include-paths": [STAN_PATH, os.path.dirname(sim_file)]}
-        #model_file = os.path.join(model_dir, "r2021")
+        # model_file = os.path.join(model_dir, "r2021")
         # Compile model
         stan_model = CmdStanModel(
             stan_file=sim_file,
             stanc_options=stanc_options,
         )
-        
+
         phi = 0
-        theta = np.array([3*np.pi/4, np.pi/2, np.pi/4])
+        theta = np.array([3 * np.pi / 4, np.pi / 2, np.pi / 4])
         etrue = irf.true_energy_values
 
         for c_e, e in enumerate(etrue):
             for c_d, t in enumerate(theta):
-
-
-                data = {
-                    "theta": t,
-                    "phi": phi,
-                    "true_energy": e
-                }
+                data = {"theta": t, "phi": phi, "true_energy": e}
 
                 output = stan_model.sample(
                     data=data,
@@ -173,25 +175,32 @@ class TestR2021():
                 )
 
                 e_res = output.stan_variable("reco_energy")
-                n, bins = np.histogram(e_res, irf.reco_energy_bins[c_e, c_d], density=True)
+                n, bins = np.histogram(
+                    e_res, irf.reco_energy_bins[c_e, c_d], density=True
+                )
 
                 samples[c_e, c_d, :] = e_res
                 kappa = output.stan_variable("kappa")
                 p = 0.5
-                ang_err = np.rad2deg(np.sqrt((-2 / kappa) * np.log(1 - p)))
+                ang_err = get_theta_p(kappa, p=p)
 
                 assert np.all(ang_err >= 0.2)
 
-                assert np.all(ang_err <= 20.)
+                assert np.all(ang_err <= 20.0)
 
-                assert n == pytest.approx(irf.reco_energy[c_e, c_d].pdf(irf.reco_energy_bins[c_e, c_d][:-1]+0.01), abs=0.3)
+                assert n == pytest.approx(
+                    irf.reco_energy[c_e, c_d].pdf(
+                        irf.reco_energy_bins[c_e, c_d][:-1] + 0.01
+                    ),
+                    abs=0.3,
+                )
 
         return samples
 
     def test_everything(self, test_samples, model_file, random_seed):
         # Generate model for fitting
         stanc_options = {"include-paths": [STAN_PATH, os.path.dirname(model_file)]}
-        #model_file = os.path.join(model_dir, "r2021")
+        # model_file = os.path.join(model_dir, "r2021")
         # Compile model
         stan_model = CmdStanModel(
             stan_file=model_file,
@@ -200,19 +209,17 @@ class TestR2021():
 
         irf = R2021IRF.from_period("IC86_II")
         phi = 0
-        theta = np.array([3*np.pi/4])#, np.pi/2, np.pi/4])
+        theta = np.array([3 * np.pi / 4])  # , np.pi/2, np.pi/4])
         etrue = irf.true_energy_values
         size = 100
-        num_samples=1000
+        num_samples = 1000
         for c_e, e in enumerate(etrue[1:-1], 1):
             for c_d, t in enumerate(theta):
-
-
                 data = {
                     "theta": t,
                     "phi": phi,
                     "reco_energy": np.random.choice(test_samples[c_e, c_d], size),
-                    "size": size
+                    "size": size,
                 }
 
                 output = stan_model.sample(
@@ -220,7 +227,7 @@ class TestR2021():
                     iter_sampling=num_samples,
                     chains=1,
                     seed=random_seed,
-                    inits={"true_energy": e}
+                    inits={"true_energy": e},
                 )
 
                 true_energy = output.stan_variable("true_energy")
@@ -230,7 +237,6 @@ class TestR2021():
                 assert true_energy.max() > e
 
     def test_ereco_cuts(self, output_directory):
-
         # Test that the ereco cuts are applied correctly
 
         file_name = os.path.join(output_directory, "r2021_sim")
@@ -239,7 +245,8 @@ class TestR2021():
             rewrite=True,
             gen_type="histogram",
             ereco_cuts=True,
-            path=output_directory)
+            path=output_directory,
+        )
 
         aeff = EffectiveArea.from_dataset("20210126", "IC86_II")
         eres = MarginalisedIntegratedEnergyLikelihood("IC86_II", np.linspace(1, 9, 25))
@@ -248,16 +255,13 @@ class TestR2021():
         theta_vals = np.pi / 2 - dec
 
         with StanFileGenerator(file_name) as code_gen:
-
             with FunctionsContext():
-
                 _ = Include("interpolation.stan")
                 _ = Include("utils.stan")
                 _ = Include("vMF.stan")
                 _ = Include(R2021DetectorModel.RNG_FILENAME)
 
             with DataContext():
-
                 etrue = ForwardVariableDef("true_energy", "real")
                 phi = ForwardVariableDef("phi", "real")
                 theta = ForwardVariableDef("theta", "real")
@@ -265,7 +269,11 @@ class TestR2021():
             with GeneratedQuantitiesContext():
                 reco_energy = ForwardArrayDef("reco_energy", "real", ["[1000]"])
                 with ForLoopContext(1, 1000, "j") as j:
-                    reco_energy[j] << StringExpression(["R2021EnergyResolution_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"])
+                    reco_energy[j] << StringExpression(
+                        [
+                            "R2021EnergyResolution_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                        ]
+                    )
 
         code_gen.generate_single_file()
 
@@ -277,16 +285,15 @@ class TestR2021():
         )
 
         for c, (t, d) in enumerate(zip(theta_vals, dec)):
-
             samples = model.sample(
                 data={
                     "theta": t,
-                    "phi": 0.,
+                    "phi": 0.0,
                     "true_energy": 5.4,
                 },
                 fixed_param=True,
                 chains=1,
-                iter_sampling=1
+                iter_sampling=1,
             )
 
             ereco = samples.stan_variable("reco_energy")[0]
