@@ -5,6 +5,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from icecube_tools.utils.data import available_irf_periods
+from icecube_tools.utils.vMF import get_kappa
 
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.utils.roi import ROI
@@ -106,7 +107,7 @@ class Events:
 
     @property
     def kappas(self):
-        return 1.38 / self._ang_errs.to(u.rad).value ** 2
+        return get_kappa(self._ang_errs.to_value(u.deg), p=0.683)
 
     @classmethod
     def from_file(cls, filename):

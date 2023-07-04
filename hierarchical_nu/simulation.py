@@ -8,6 +8,9 @@ from cmdstanpy import CmdStanModel
 import logging
 import collections
 import ligo.skymap.plot
+
+from icecube_tools.utils.vMF import get_theta_p
+
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.utils.plotting import SphericalCircle
@@ -119,6 +122,8 @@ class Simulation:
         except ValueError:
             self._shared_src_index = False
 
+        self.events = None
+
     def precomputation(
         self,
         exposure_integral: collections.OrderedDict = None,
@@ -184,25 +189,37 @@ class Simulation:
 
         self._sim_output = sim_output
 
-        self.events = Events(*self._extract_sim_output())
+        energies, coords, event_types, ang_errs = self._extract_sim_output()
+
+        # Check for detected events
+        if len(energies) != 0:
+            self.events = Events(energies, coords, event_types, ang_errs)
 
     def _extract_sim_output(self):
-        energies = self._sim_output.stan_variable("Edet")[0] * u.GeV
-        dirs = self._sim_output.stan_variable("event")[0]
-        coords = SkyCoord(
-            dirs.T[0],
-            dirs.T[1],
-            dirs.T[2],
-            representation_type="cartesian",
-            frame="icrs",
-        )
-        event_types = self._sim_output.stan_variable("event_type")[0]
-        event_types = [int(_) for _ in event_types]
+        try:
+            energies = self._sim_output.stan_variable("Edet")[0] * u.GeV
+            dirs = self._sim_output.stan_variable("event")[0]
+            coords = SkyCoord(
+                dirs.T[0],
+                dirs.T[1],
+                dirs.T[2],
+                representation_type="cartesian",
+                frame="icrs",
+            )
+            event_types = self._sim_output.stan_variable("event_type")[0]
+            event_types = [int(_) for _ in event_types]
 
-        # Kappa parameter of VMF distribution
-        kappa = self._sim_output.stan_variable("kappa")[0]
-        # Equivalent 1 sigma errors in deg
-        ang_errs = np.rad2deg(np.sqrt(1.38 / kappa)) * u.deg
+            # Kappa parameter of VMF distribution
+            kappa = self._sim_output.stan_variable("kappa")[0]
+            # Equivalent 1 sigma errors in deg
+            ang_errs = get_theta_p(kappa, p=0.683) * u.deg
+
+        except ValueError:
+            # No detected events
+            energies = [] * u.GeV
+            coords = []
+            event_types = []
+            ang_errs = [] * u.deg
 
         return energies, coords, event_types, ang_errs
 
