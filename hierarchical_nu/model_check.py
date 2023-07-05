@@ -276,15 +276,18 @@ class ModelCheck:
                     ]
                 )
                 sim = {}
+                sim_N = []
                 for i in range(n_jobs):
                     job_folder = f["results_%i" % i]
                     for res_key in job_folder:
                         results[res_key].extend(job_folder[res_key][()])
-                    sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
+                    # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
+                    sim_N.extend(sim_folder["sim_%i" % i][()])
 
         output = cls(truths, priors)
         output.results = results
         output.sim_Lambdas = sim
+        output.sim_N = sim_N
 
         return output
 
@@ -515,8 +518,6 @@ class ModelCheck:
                     nshards=self._threads_per_chain,
                 )
                 fit.precomputation()
-                # fit.set_stan_filename(file_config["fit_filename"])
-                # fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
                 fit.setup_stan_fit(os.path.splitext(file_config["fit_filename"])[0])
 
             else:
