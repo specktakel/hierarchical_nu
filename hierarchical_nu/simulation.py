@@ -194,6 +194,8 @@ class Simulation:
         # Check for detected events
         if len(energies) != 0:
             self.events = Events(energies, coords, event_types, ang_errs)
+        else:
+            self.events = None
 
     def _extract_sim_output(self):
         try:
