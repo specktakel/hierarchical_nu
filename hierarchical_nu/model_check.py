@@ -486,23 +486,20 @@ class ModelCheck:
                     self._sources, self._detector_model_type, self._obs_time
                 )
                 sim.precomputation(self._exposure_integral)
-                # sim.set_stan_filename(file_config["sim_filename"])
-                # sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
                 sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
+
             sim.run(seed=s, verbose=True)
             self.sim = sim
+
+            # Skip if no detected events
+            if not sim.events:
+                continue
 
             lambd = sim._sim_output.stan_variable("Lambda").squeeze()
             ps = np.sum(lambd == 1.0)
             diff = np.sum(lambd == 2.0)
             atmo = np.sum(lambd == 3.0)
             lam = np.array([ps, diff, atmo])
-            # sim_output = {}
-            # sim_output["Lambda"] = lam
-
-            # Skip if no detected events
-            if not sim.events:
-                continue
 
             self.events = sim.events
 
