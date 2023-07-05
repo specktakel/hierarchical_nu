@@ -8,6 +8,7 @@ from icecube_tools.utils.data import available_irf_periods
 from icecube_tools.utils.vMF import get_kappa
 
 from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.utils.roi import ROI
 
 import logging
 
@@ -181,14 +182,48 @@ class Events:
         except ValueError:
             pass
 
+        try:
+            roi = ROI.STACK[0]
+        except IndexError:
+            roi = ROI()
+
+        # add cuts to kwargs
+        ra_low = roi.RA_min.to_value(u.rad)
+        ra_high = roi.RA_max.to_value(u.rad)
+        dec_low = roi.DEC_min.to_value(u.rad)
+        dec_high = roi.DEC_max.to_value(u.rad)
         events.restrict(**kwargs)
         # Read in relevant data
         ra = events.ra[p] * u.rad
         dec = events.dec[p] * u.rad
         reco_energy = events.reco_energy[p] * u.GeV
         period = ra.size * [p]
+
+        if roi.RA_min > roi.RA_max:
+            mask = np.nonzero(
+                (
+                    (dec <= roi.DEC_max)
+                    & (dec >= roi.DEC_min)
+                    & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                )
+            )
+        else:
+            mask = np.nonzero(
+                (
+                    (dec <= roi.DEC_max)
+                    & (dec >= roi.DEC_min)
+                    & (ra >= roi.RA_min)
+                    & (ra <= roi.RA_max)
+                )
+            )
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = events.ang_err[p] * u.deg
-        types = ra.size * [TRACKS]
+        types = np.array(ra.size * [TRACKS])
         coords = SkyCoord(ra, dec, frame="icrs")
-        return cls(reco_energy, coords, types, ang_err, p)
+        return cls(
+            reco_energy[mask],
+            coords[mask],
+            types[mask],
+            ang_err[mask],
+            p,
+        )

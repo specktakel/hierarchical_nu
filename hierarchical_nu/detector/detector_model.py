@@ -163,8 +163,9 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         """
         Lognormal mixture with n_components.
         """
-        #s is width of lognormal
-        #scale is ~expectation value
+
+        # s is width of lognormal
+        # scale is ~expectation value
         def _model(x, pars):
             result = 0
             for i in range(n_components):
@@ -220,7 +221,6 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
 
         # Fitting loop
         for index in range(len(rebin_tE_binc)):
-
             rebin_tE_binc[index] = (
                 0.5 * (tE_binc[[index * rebin, rebin * (index + 1) - 1]]).sum()
             )
@@ -230,7 +230,6 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
             e_reso = e_reso.sum(axis=0)
 
             if e_reso.sum() > 0:
-
                 # Normalize to prob. density / bin
                 e_reso = e_reso / (e_reso.sum() * log10_bin_width)
 
@@ -269,7 +268,6 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 fit_params.append(this_fit_pars)
 
             else:
-
                 fit_params.append(np.zeros(2 * n_components))
 
         fit_params = np.asarray(fit_params)
@@ -289,7 +287,6 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         """
 
         def find_nearest_idx(array, value):
-
             array = np.asarray(array)
             idx = (np.abs(array - value)).argmin()
             return idx
@@ -328,12 +325,10 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         xs = np.linspace(*np.log10(self._poly_limits), num=100)
 
         if self._poly_params_mu is None:
-
             raise RuntimeError("Run setup() first")
 
         # Plot polynomial fits for each mixture component.
         for comp in range(self._n_components):
-
             params_mu = self._poly_params_mu[comp]
             axs[0].plot(xs, np.poly1d(params_mu)(xs), label="poly, mean")
             axs[0].plot(
@@ -382,7 +377,6 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         plot_energies = [1e5, 3e5, 5e5, 8e5, 1e6, 3e6, 5e6, 8e6]  # GeV
 
         if self._poly_params_mu is None:
-
             raise RuntimeError("Run setup() first")
 
         # Find true energy bins for the chosen plotting energies
@@ -403,12 +397,10 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         fl_ax = axs.ravel()
 
         for i, p_i in enumerate(plot_indices):
-
             log_plot_e = np.log10(plot_energies[i])
 
             model_params: List[float] = []
             for comp in range(self.n_components):
-
                 mu = np.poly1d(self._poly_params_mu[comp])(log_plot_e)
                 sigma = np.poly1d(self._poly_params_sd[comp])(log_plot_e)
                 model_params += [mu, sigma]
@@ -417,7 +409,7 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
                 e_reso = self._eres[
                     int(p_i / rebin) * rebin : (int(p_i / rebin) + 1) * rebin
                 ]
-                #normalisation of e_reso in case it's not normalised yet
+                # normalisation of e_reso in case it's not normalised yet
                 e_reso = e_reso.sum(axis=0) / (e_reso.sum() * log10_bin_width)
                 res = fit_params[param_indices[i]]
 
@@ -446,7 +438,9 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         return fig
 
     @u.quantity_input
-    def prob_Edet_above_threshold(self, true_energy: u.GeV, threshold_energy: u.GeV, dec: u.rad = 0. * u.rad):
+    def prob_Edet_above_threshold(
+        self, true_energy: u.GeV, threshold_energy: u.GeV, dec: u.rad = 0.0 * u.rad
+    ):
         """
         P(Edet > Edet_min | E) for use in precomputation.
         """
@@ -463,7 +457,6 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         model_params: List[float] = []
 
         for comp in range(self.n_components):
-
             mu = np.poly1d(self.poly_params_mu[comp])(
                 np.log10(energy_trunc.to(u.GeV).value)
             )
@@ -542,12 +535,12 @@ class DetectorModel(metaclass=ABCMeta):
     Abstract base class for detector models.
     """
 
+    @u.quantity_input
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
         event_type=None,
     ):
-
         self._mode = mode
 
         self._event_type = event_type
@@ -558,7 +551,7 @@ class DetectorModel(metaclass=ABCMeta):
 
     @abstractmethod
     def _get_effective_area(self):
-        return self.__get_effective_area()
+        return self._get_effective_area()
 
     @property
     def energy_resolution(self):
