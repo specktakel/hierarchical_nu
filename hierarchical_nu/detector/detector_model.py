@@ -5,6 +5,7 @@ This module contains classes for modelling detectors
 from abc import ABCMeta, abstractmethod
 import numpy as np
 from scipy import stats
+from scipy.interpolate import RegularGridInterpolator
 from typing import List
 from astropy import units as u
 
@@ -32,6 +33,23 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
     The effective areas can depend on multiple quantities (ie. energy,
     direction, time, ..)
     """
+
+    def _make_spline(self):
+        log_tE_lower_bin_edges = np.log10(self._tE_bin_edges[:-1])
+        log_tE_upper_bin_edges = np.log10(self._tE_bin_edges[1:])
+        log_tE_bin_c = (log_tE_lower_bin_edges + log_tE_upper_bin_edges) / 2
+
+        cosz_lower = self._cosz_bin_edges[:-1]
+        cosz_upper = self._cosz_bin_edges[1:]
+        cosz_c = (cosz_lower + cosz_upper) / 2
+
+        self._eff_area_spline = RegularGridInterpolator(
+            (log_tE_bin_c, cosz_c),
+            self._eff_area,
+            bounds_error=False,
+            fill_value=0.0,
+            method="linear",
+        )
 
     @abstractmethod
     def setup(self) -> None:
@@ -82,6 +100,14 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         """
 
         return self._rs_bbpl_params
+
+    @property
+    def eff_area_spline(self):
+        """
+        2D spline of effective area.
+        """
+
+        return self._eff_area_spline
 
 
 class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):

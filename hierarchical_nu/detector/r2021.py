@@ -409,7 +409,7 @@ class R2021EffectiveArea(EffectiveArea):
 
         self.setup()
 
-        super().__init__()
+        self._make_spline()
 
     def generate_code(self):
         super().__init__(
