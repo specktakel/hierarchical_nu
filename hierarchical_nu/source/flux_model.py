@@ -166,6 +166,12 @@ class IsotropicDiffuseBG(FluxModel):
         self._parameters = spectral_shape.parameters
 
     @u.quantity_input
+    def __call__(
+        self, energy: u.GeV, dec: u.rad, ra: u.rad
+    ) -> 1 / (u.GeV * u.s * u.m**2 * u.sr):
+        return self._spectral_shape(energy) / (4.0 * np.pi * u.sr)
+
+    @u.quantity_input
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         return self._spectral_shape(energy)
 
@@ -197,7 +203,6 @@ class IsotropicDiffuseBG(FluxModel):
         ra_low: u.rad,
         ra_up: u.rad,
     ) -> 1 / (u.m**2 * u.s):
-
         ra_int = ra_up - ra_low
         dec_int = (np.sin(dec_up) - np.sin(dec_low)) * u.rad
 
@@ -286,7 +291,14 @@ class PowerLawSpectrum(SpectralShape):
         """
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value
-
+        if isinstance(energy, np.ndarray):
+            output = np.zeros_like(energy.value) * norm
+            output[
+                np.nonzero(
+                    ((energy <= self._upper_energy) | (energy >= self._lower_energy))
+                )
+            ] = norm * np.power(energy / self._normalisation_energy, -index)
+            return output
         if (energy < self._lower_energy) or (energy > self._upper_energy):
             return 0.0 * norm
         else:
@@ -320,7 +332,6 @@ class PowerLawSpectrum(SpectralShape):
             int_norm = norm / (np.power(self._normalisation_energy, -index))
             output = int_norm * (np.log(upper / lower))
         else:
-
             # Pull out the units here because astropy screwes this up sometimes
             int_norm = norm / (
                 np.power(self._normalisation_energy / u.GeV, -index) * (1 - index)
@@ -368,9 +379,8 @@ class PowerLawSpectrum(SpectralShape):
             return int_norm * (np.log(upper / lower))
 
         # Pull out the units here because astropy screwes this up sometimes
-        int_norm = (norm 
-                    * np.power(self._normalisation_energy / u.GeV, index)
-                    / (2 - index)
+        int_norm = (
+            norm * np.power(self._normalisation_energy / u.GeV, index) / (2 - index)
         )
         return (
             int_norm
@@ -450,7 +460,6 @@ class PowerLawSpectrum(SpectralShape):
         )
 
         with func:
-
             alpha = StringExpression(["alpha"])
             e_low = StringExpression(["e_low"])
             e_up = StringExpression(["e_up"])
@@ -501,7 +510,7 @@ class PowerLawSpectrum(SpectralShape):
             ReturnStatement([f1 / f2])
 
         return func
-    
+
 
 class TwiceBrokenPowerLaw(SpectralShape):
     """
@@ -542,49 +551,55 @@ class TwiceBrokenPowerLaw(SpectralShape):
         self._normalisation_energy = normalisation_energy
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
-        self._index0 = -4.
-        self._index2 = 6.
+        self._index0 = -4.0
+        self._index2 = 6.0
         self._parameters = {"norm": normalisation, "index": index}
 
     @property
     def I0(self):
         return self._piecewise_integral(self._e0, self._lower_energy, self._index0)
-    
+
     @property
     def I1(self):
-        return self._piecewise_integral(
-            self._lower_energy,
-            self._upper_energy,
-            self._parameters["index"].value
-        ) * self.N1
+        return (
+            self._piecewise_integral(
+                self._lower_energy, self._upper_energy, self._parameters["index"].value
+            )
+            * self.N1
+        )
 
     @property
     def I2(self):
-        return self._piecewise_integral(
-            self._upper_energy,
-            self._e3,
-            self._index2
-        ) * self.N2
-    
+        return (
+            self._piecewise_integral(self._upper_energy, self._e3, self._index2)
+            * self.N2
+        )
+
     @property
     def N1(self):
         """
         Normalisation factor, defined s.t. the broken power law has no jumps but only kinks
         """
 
-        return np.power(self._lower_energy / self._normalisation_energy, self._parameters["index"].value - self._index0)
-    
+        return np.power(
+            self._lower_energy / self._normalisation_energy,
+            self._parameters["index"].value - self._index0,
+        )
+
     @property
     def N2(self):
-        return self.N1 * np.power(self._upper_energy / self._normalisation_energy, self._index2 - self._parameters["index"].value)
-    
+        return self.N1 * np.power(
+            self._upper_energy / self._normalisation_energy,
+            self._index2 - self._parameters["index"].value,
+        )
+
     @property
     def Itot(self):
         return self.I1 + self.I2 + self.I3
-    
+
     @property
     def norm_factor(self):
-        return 
+        return
 
     @u.quantity_input
     def _piecewise_integral(self, x1: u.GeV, x2: u.GeV, gamma: float):
@@ -593,17 +608,22 @@ class TwiceBrokenPowerLaw(SpectralShape):
         """
 
         if x2 <= x1:
-            return 0.
-        if gamma != 1.:
-            return (np.power(x2 / u.GeV, 1. - gamma) / np.power(x1 / u.GeV, 1. - gamma)) / (1. - gamma) / \
-                np.power(self._normalisation_energy / u.GeV, -gamma)
+            return 0.0
+        if gamma != 1.0:
+            return (
+                (np.power(x2 / u.GeV, 1.0 - gamma) / np.power(x1 / u.GeV, 1.0 - gamma))
+                / (1.0 - gamma)
+                / np.power(self._normalisation_energy / u.GeV, -gamma)
+            )
         else:
-            return np.log((x2 / u.GeV) / (x1 / u.GeV)) * self._normalisation_energy / u.GeV
+            return (
+                np.log((x2 / u.GeV) / (x1 / u.GeV)) * self._normalisation_energy / u.GeV
+            )
 
     @property
     def energy_bounds(self):
         return (self._lower_energy, self._upper_energy)
-    
+
     def set_parameter(self, par_name: str, par_value: float):
         if par_name not in self._parameters:
             raise ValueError("Parameter name {} not found".format(par_name))
@@ -626,14 +646,21 @@ class TwiceBrokenPowerLaw(SpectralShape):
 
         # Go through all parts of the broken power law
         if (energy >= self._e0) and (energy < self._lower_energy):
-            return np.power(energy / norm_energy, - index0) / self.norm_norm * norm
+            return np.power(energy / norm_energy, -index0) / self.norm_norm * norm
         elif energy >= self._lower_energy and energy <= self._upper_energy:
-            return np.power(energy / norm_energy, -index) * self.N1 / self.norm_norm * norm
+            return (
+                np.power(energy / norm_energy, -index) * self.N1 / self.norm_norm * norm
+            )
         elif energy > self._upper_energy and energy <= self._e3:
-            return np.power(energy / norm_energy, - index2) * self.N2 / self.norm_norm * norm
+            return (
+                np.power(energy / norm_energy, -index2)
+                * self.N2
+                / self.norm_norm
+                * norm
+            )
         else:
             return 0 * norm
-        
+
     @property
     def norm_norm(self):
         """
@@ -650,14 +677,13 @@ class TwiceBrokenPowerLaw(SpectralShape):
 
         # Go through all parts of the broken power law
         if (norm_energy >= self._e0) and (norm_energy < self._lower_energy):
-            return 1.
+            return 1.0
         elif norm_energy >= self._lower_energy and norm_energy <= self._upper_energy:
             return self.N1
         elif norm_energy > self._upper_energy and norm_energy <= self._e3:
             return self.N2
         else:
             raise ValueError("Norm energy is outside of the spectrum's energy range")
-
 
     @u.quantity_input
     def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
@@ -675,21 +701,15 @@ class TwiceBrokenPowerLaw(SpectralShape):
         index = self._parameters["index"].value
 
         # Check edge cases
-        lower[
-            ((lower < self._e0) & (upper > self._e0))
-        ] = self._e0
-        upper[
-            ((lower < self._e3) & (upper > self._e3))
-        ] = self._e3
+        lower[((lower < self._e0) & (upper > self._e0))] = self._e0
+        upper[((lower < self._e3) & (upper > self._e3))] = self._e3
 
-
-        #TODO make something sensible with the breaks in the spectrum
+        # TODO make something sensible with the breaks in the spectrum
         if index == 1:
             # special case
             int_norm = norm / (np.power(self._normalisation_energy, -index))
             output = int_norm * (np.log(upper / lower))
         else:
-
             # Pull out the units here because astropy screwes this up sometimes
             int_norm = norm / (
                 np.power(self._normalisation_energy / u.GeV, -index) * (1 - index)
@@ -737,9 +757,8 @@ class TwiceBrokenPowerLaw(SpectralShape):
             return int_norm * (np.log(upper / lower))
 
         # Pull out the units here because astropy screwes this up sometimes
-        int_norm = (norm 
-                    * np.power(self._normalisation_energy / u.GeV, index)
-                    / (2 - index)
+        int_norm = (
+            norm * np.power(self._normalisation_energy / u.GeV, index) / (2 - index)
         )
         return (
             int_norm
@@ -819,7 +838,6 @@ class TwiceBrokenPowerLaw(SpectralShape):
         )
 
         with func:
-
             alpha = StringExpression(["alpha"])
             e_low = StringExpression(["e_low"])
             e_up = StringExpression(["e_up"])
@@ -870,11 +888,12 @@ class TwiceBrokenPowerLaw(SpectralShape):
             ReturnStatement([f1 / f2])
 
         return func
-    
 
 
 @u.quantity_input
-def integral_power_law(gamma: float, n: Union[float, int], x1: u.GeV, x2: u.GeV, x0: u.GeV = 1e5*u.GeV):
+def integral_power_law(
+    gamma: float, n: Union[float, int], x1: u.GeV, x2: u.GeV, x0: u.GeV = 1e5 * u.GeV
+):
     """
     Implements expectation value (up to normalisation
     of the distribution) over power law/pareto distribution of the form
@@ -885,14 +904,17 @@ def integral_power_law(gamma: float, n: Union[float, int], x1: u.GeV, x2: u.GeV,
     Should in the end replace flux_conv_
     """
 
-    if gamma != n + 1.:
-        return np.power(x0, gamma) * (np.power(x2, n + 1 - gamma) - np.power(x1, n + 1 - gamma)) / (n + 1 - gamma)
+    if gamma != n + 1.0:
+        return (
+            np.power(x0, gamma)
+            * (np.power(x2, n + 1 - gamma) - np.power(x1, n + 1 - gamma))
+            / (n + 1 - gamma)
+        )
     else:
-        return np.power(x0, n+1) * np.log(x2 / x1)
+        return np.power(x0, n + 1) * np.log(x2 / x1)
 
 
 def flux_conv_(alpha, e_low, e_up):
-
     if alpha == 1.0:
         f1 = np.log(e_up) - np.log(e_low)
     else:
