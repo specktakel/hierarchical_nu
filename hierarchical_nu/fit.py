@@ -275,8 +275,8 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
-    def save(self, filename):
-        if os.path.exists(filename):
+    def save(self, filename, overwrite: bool = False):
+        if os.path.exists(filename) and not overwrite:
             raise FileExistsError(f"File {filename} already exists.")
 
         with h5py.File(filename, "w") as f:

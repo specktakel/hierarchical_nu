@@ -223,9 +223,9 @@ class Simulation:
 
         return energies, coords, event_types, ang_errs
 
-    def save(self, filename):
-        if os.path.exists(filename):
-            raise FileExistsError(f"File {filename} already exists.")
+    def save(self, filename, overwrite: bool = False):
+        if os.path.exists(filename) and not overwrite:
+            raise FileExistsError(f"File {filename} already exists.")
 
         with h5py.File(filename, "w") as f:
             sim_folder = f.create_group("sim")
