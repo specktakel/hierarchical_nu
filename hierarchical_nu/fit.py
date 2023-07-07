@@ -175,7 +175,7 @@ class StanFit:
         seed: int = None,
         show_progress: bool = False,
         threads_per_chain: Union[int, None] = None,
-        **kwargs
+        **kwargs,
     ):
         # Use threads_per_chain = nshards as default
         if not threads_per_chain and self._nshards > 0:
@@ -190,7 +190,7 @@ class StanFit:
             seed=seed,
             show_progress=show_progress,
             threads_per_chain=threads_per_chain,
-            **kwargs
+            **kwargs,
         )
 
     def setup_and_run(
@@ -200,7 +200,7 @@ class StanFit:
         seed: int = None,
         show_progress: bool = False,
         include_paths: List[str] = None,
-        **kwargs
+        **kwargs,
     ):
         self.precomputation()
         self.generate_stan_code()
@@ -210,7 +210,7 @@ class StanFit:
             chains=chains,
             seed=seed,
             show_progress=show_progress,
-            **kwargs
+            **kwargs,
         )
 
     def plot_trace(self, var_names=None, **kwargs):
@@ -275,10 +275,9 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
-    def save(self, filename):
-        """
-        TODO: Add overwrite check.
-        """
+    def save(self, filename, overwrite: bool = False):
+        if os.path.exists(filename) and not overwrite:
+            raise FileExistsError(f"File {filename} already exists.")
 
         with h5py.File(filename, "w") as f:
             fit_folder = f.create_group("fit")
@@ -290,6 +289,8 @@ class StanFit:
 
             for key, value in self._fit_output.stan_variables().items():
                 outputs_folder.create_dataset(key, data=value)
+
+            outputs_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
 
     @classmethod
     def from_file(cls, filename):
