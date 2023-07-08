@@ -204,7 +204,9 @@ class AtmosphericNuMuFlux(FluxModel):
         cosz = np.atleast_1d(-np.sin(dec))
 
         try:
-            result = np.power(10, self._flux_spline(cosz, np.log10(energy / u.GeV)))
+            result = np.power(
+                10, self._flux_spline(cosz, np.log10(energy / u.GeV), grid=False)
+            )
         except ValueError as e:
             print("Error in spline evaluation. Are the evaluation points ordered?")
             raise e
@@ -222,7 +224,7 @@ class AtmosphericNuMuFlux(FluxModel):
         cosz = np.atleast_1d(-np.sin(dec))
 
         try:
-            result = np.power(10, self._flux_spline(cosz, np.log10(energy)))
+            result = np.power(10, self._flux_spline(cosz, np.log10(energy), grid=False))
         except ValueError as e:
             print("Error in spline evaluation. Are the evaluation points ordered?")
             raise e

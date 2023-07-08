@@ -140,6 +140,14 @@ class ExposureIntegral:
         upper_e_edges = self.effective_area.tE_bin_edges[1:] << u.GeV
         e_cen = (lower_e_edges + upper_e_edges) / 2
 
+        E_min = lower_e_edges[0]
+        E_max = upper_e_edges[-1]
+
+        log_E_space = np.linspace(np.log10(E_min.value), np.log10(E_max.value), 200)
+        log_E_c = log_E_space[:-1] + np.diff(log_E_space) / 2
+        E_c = np.power(10, log_E_c) * u.GeV
+        d_E = np.diff(np.power(10, log_E_space)) * u.GeV
+
         integral_unit = 1 / (u.m**2 * u.s)
 
         if isinstance(source, PointSource):
@@ -175,17 +183,14 @@ class ExposureIntegral:
             p_Edet = np.nan_to_num(p_Edet)
 
         else:
+            # try to ignore this, fill value is zero outside of range covered by IRF
+            # so we can just always use the ROI's angles
+
+            # try 200 points over -1, 1 in cosz, i.e. 100 points per hemisphere (i.e. 99.5 evaluations per hemisphere)
             lower_cz_edges = self.effective_area.cosz_bin_edges[:-1].copy()
             upper_cz_edges = self.effective_area.cosz_bin_edges[1:].copy()
 
-            # Switch upper and lower since zen -> dec induces a -1
-            dec_lower = np.arccos(upper_cz_edges) * u.rad - np.pi / 2 * u.rad
-            dec_upper = np.arccos(lower_cz_edges) * u.rad - np.pi / 2 * u.rad
-
-            # make union with irf bins, at one point I might actually do this
-            # if isinstance(self.energy_resolution, R2021EnergyResolution):
-            #    dec_lower = np.union1d(dec_lower, self.energy_resolution._declination_bins[:-1] * u.rad)
-            #    dec_upper = np.union1d(dec_lower, self.energy_resolution._declination_bins[1:] * u.rad)
+            points_per_cosz = 100
 
             try:
                 roi = ROI.STACK[0]
@@ -196,19 +201,51 @@ class ExposureIntegral:
             DEC_min = roi.DEC_min
             DEC_max = roi.DEC_max
 
+            cosz_min = -np.sin(DEC_max)
+            cosz_max = -np.sin(DEC_min)
+
+            cosz_edges = np.linspace(
+                cosz_min, cosz_max, int((cosz_max - cosz_min) / 2 * 100)
+            )
+            print(cosz_edges)
+            cosz_c = cosz_edges[:-1] + np.diff(cosz_edges) / 2
+            dec_c = -np.arcsin(cosz_c) << u.rad
+
             if RA_max < RA_min:
                 RA_diff = 2 * np.pi * u.rad + RA_max - RA_min
             else:
                 RA_diff = RA_max - RA_min
 
-            dec_upper[np.nonzero(dec_upper <= DEC_min)] = DEC_min
-            dec_lower[np.nonzero(dec_lower <= DEC_min)] = DEC_min
+            d_omega = np.diff(cosz_edges) * RA_diff * u.sr
 
-            dec_lower[np.nonzero(dec_lower >= DEC_max)] = DEC_max
-            dec_upper[np.nonzero(dec_upper >= DEC_max)] = DEC_max
+            log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
+            E_grid, dec_grid = np.meshgrid(E_c, dec_c)
 
-            # For lower dec lim, let dec_lower = dec_upper s.t. integral evaluates to zero
+            aeff_vals = (
+                self._effective_area.eff_area_spline(
+                    np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
+                ).reshape(log_E_grid.shape)
+                * u.m**2
+            )
 
+            flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
+
+            if isinstance(self.energy_resolution, R2021EnergyResolution):
+                p_Edet = np.zeros_like(E_grid)
+                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                    e_cen, self._min_det_energy, dec
+                )
+
+            else:
+                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                    e_cen, self._min_det_energy
+                )
+            p_Edet = np.nan_to_num(p_Edet)
+
+            output = np.sum(
+                np.sum(aeff_vals * flux_vals * p_Edet * d_omega, axis=0) * d_E, axis=0
+            )
+            """
             integral = source.flux_model.integral(
                 lower_e_edges[:, np.newaxis],
                 upper_e_edges[:, np.newaxis],
@@ -217,25 +254,9 @@ class ExposureIntegral:
                 0 * u.rad,
                 RA_diff,
             ).to(integral_unit)
+            """
 
-            aeff = np.array(self.effective_area.eff_area, copy=True) << (u.m**2)
-
-            if isinstance(self.energy_resolution, R2021EnergyResolution):
-                p_Edet = np.zeros((dec_upper.size, e_cen.size))
-                for c, (dec_l, dec_h) in enumerate(zip(dec_lower, dec_upper)):
-                    dec = (dec_l + dec_h) / 2
-                    self.energy_resolution.set_fit_params(dec.value)
-                    p_Edet[c] = self.energy_resolution.prob_Edet_above_threshold(
-                        e_cen, self._min_det_energy, dec
-                    )
-
-            else:
-                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    e_cen, self._min_det_energy
-                )
-            p_Edet = np.nan_to_num(p_Edet)
-
-        return ((p_Edet * integral.T * aeff.T).T).sum()
+        return output
 
     def _compute_exposure_integral(self):
         """
