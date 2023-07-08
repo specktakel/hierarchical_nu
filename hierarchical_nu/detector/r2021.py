@@ -1052,37 +1052,45 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         energy_trunc[energy_trunc < self._pdet_limits[0]] = self._pdet_limits[0]
         energy_trunc[energy_trunc > self._pdet_limits[1]] = self._pdet_limits[1]
         energy_trunc = energy_trunc * u.GeV
-
-        model = self.make_cumulative_model(self.n_components)
-
-        prob = np.zeros_like(energy_trunc)
-        model_params: List[float] = []
-
-        for comp in range(self.n_components):
-            mu = np.poly1d(self.poly_params_mu[comp])(
-                np.log10(energy_trunc.to(u.GeV).value)
-            )
-            sigma = np.poly1d(self.poly_params_sd[comp])(
-                np.log10(energy_trunc.to(u.GeV).value)
-            )
-            model_params += [mu, sigma]
         dec = np.atleast_1d(dec)
-        # get limits done in icecube_tools
+
+        # Limits of Ereco in dec binning of effective area
         dec_idx = (
             np.digitize(dec.value, self._icecube_tools_eres.declination_bins_aeff) - 1
         )
-        # are in log10(E/GeV)
-        e_low = np.power(10, self._icecube_tools_eres._ereco_limits[dec_idx, 0]) * u.GeV
+        # Get the according IRF dec bins (there are only 3)
+        irf_dec_idx = np.digitize(dec.to_value(u.rad), self._declination_bins) - 1
 
-        ethr_low = lower_threshold_energy.to(u.GeV)
-        e_low[ethr_low > e_low] = ethr_low
-        # lower_threshold_energy = (
-        #    ethr_low * u.GeV
-        #    if ethr_low > np.power(10, e_low)
-        #    else np.power(10, e_low) * u.GeV
-        # )
-        # ethr_high = upper_threshold_energy.to(u.GeV).value
-        prob = 1 - model(np.log10(e_low.to(u.GeV).value), model_params)
+        # Create output array
+        prob = np.zeros(energy_trunc.shape)
+
+        for c, d in enumerate(self._declination_bins[:-1]):
+            # Otherwise we will cause errors
+            if c not in irf_dec_idx:
+                continue
+            self.set_fit_params(d + 0.01)
+
+            model = self.make_cumulative_model(self.n_components)
+
+            model_params: List[float] = []
+
+            for comp in range(self.n_components):
+                mu = np.poly1d(self._poly_params_mu[comp])(
+                    np.log10(energy_trunc[irf_dec_idx == c].to(u.GeV).value)
+                )
+                sigma = np.poly1d(self._poly_params_sd[comp])(
+                    np.log10(energy_trunc[irf_dec_idx == c].to(u.GeV).value)
+                )
+                model_params += [mu, sigma]
+
+            # Limits are in log10(E/GeV)
+            e_low = self._icecube_tools_eres._ereco_limits[
+                dec_idx[np.nonzero(irf_dec_idx == c)], 0
+            ]
+            ethr_low = np.log10(lower_threshold_energy.to_value(u.GeV))
+            # print(ethr_low)
+            e_low[ethr_low > e_low] = ethr_low
+            prob[irf_dec_idx == c] = 1.0 - model(e_low, model_params)
 
         return prob
 
