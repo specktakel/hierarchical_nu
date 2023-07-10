@@ -293,11 +293,12 @@ class PowerLawSpectrum(SpectralShape):
         index = self._parameters["index"].value
         if isinstance(energy, np.ndarray):
             output = np.zeros_like(energy.value) * norm
-            output[
-                np.nonzero(
-                    ((energy <= self._upper_energy) | (energy >= self._lower_energy))
-                )
-            ] = norm * np.power(energy / self._normalisation_energy, -index)
+            mask = np.nonzero(
+                ((energy <= self._upper_energy) | (energy >= self._lower_energy))
+            )
+            output[mask] = norm * np.power(
+                energy[mask] / self._normalisation_energy, -index
+            )
             return output
         if (energy < self._lower_energy) or (energy > self._upper_energy):
             return 0.0 * norm

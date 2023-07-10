@@ -207,7 +207,6 @@ class ExposureIntegral:
             cosz_edges = np.linspace(
                 cosz_min, cosz_max, int((cosz_max - cosz_min) / 2 * 100)
             )
-            print(cosz_edges)
             cosz_c = cosz_edges[:-1] + np.diff(cosz_edges) / 2
             dec_c = -np.arcsin(cosz_c) << u.rad
 
@@ -216,7 +215,7 @@ class ExposureIntegral:
             else:
                 RA_diff = RA_max - RA_min
 
-            d_omega = np.diff(cosz_edges) * RA_diff * u.sr
+            d_omega = np.diff(cosz_edges) * RA_diff.to_value(u.rad) * u.sr
 
             log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
             E_grid, dec_grid = np.meshgrid(E_c, dec_c)
@@ -233,17 +232,20 @@ class ExposureIntegral:
             if isinstance(self.energy_resolution, R2021EnergyResolution):
                 p_Edet = np.zeros_like(E_grid)
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    e_cen, self._min_det_energy, dec
+                    E_grid, self._min_det_energy, dec_grid
                 )
 
             else:
+                # TODO: fix
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                     e_cen, self._min_det_energy
                 )
             p_Edet = np.nan_to_num(p_Edet)
 
             output = np.sum(
-                np.sum(aeff_vals * flux_vals * p_Edet * d_omega, axis=0) * d_E, axis=0
+                np.sum(aeff_vals * flux_vals * p_Edet * d_omega[:, np.newaxis], axis=0)
+                * d_E,
+                axis=0,
             )
             """
             integral = source.flux_model.integral(
