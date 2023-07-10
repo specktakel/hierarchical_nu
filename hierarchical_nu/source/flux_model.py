@@ -294,7 +294,7 @@ class PowerLawSpectrum(SpectralShape):
         if isinstance(energy, np.ndarray):
             output = np.zeros_like(energy.value) * norm
             mask = np.nonzero(
-                ((energy <= self._upper_energy) | (energy >= self._lower_energy))
+                ((energy <= self._upper_energy) & (energy >= self._lower_energy))
             )
             output[mask] = norm * np.power(
                 energy[mask] / self._normalisation_energy, -index

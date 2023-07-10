@@ -136,6 +136,15 @@ class ExposureIntegral:
     def calculate_rate(self, source):
         z = source.redshift
 
+        try:
+            roi = ROI.STACK[0]
+        except IndexError:
+            roi = ROI()
+        RA_min = roi.RA_min
+        RA_max = roi.RA_max
+        DEC_min = roi.DEC_min
+        DEC_max = roi.DEC_max
+
         lower_e_edges = self.effective_area.tE_bin_edges[:-1] << u.GeV
         upper_e_edges = self.effective_area.tE_bin_edges[1:] << u.GeV
         e_cen = (lower_e_edges + upper_e_edges) / 2
@@ -159,28 +168,30 @@ class ExposureIntegral:
             dec = source.dec
             cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
 
+            """
             integral = source.flux_model.spectral_shape.integral(
                 lower_e_edges, upper_e_edges
             ).to(integral_unit)
+            """
+            flux_vals = source.flux_model.spectral_shape(E_c)
             if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
                 self.effective_area.cosz_bin_edges
             ):
-                aeff = np.zeros(len(lower_e_edges)) << (u.m**2)
+                aeff_vals = np.zeros(E_c.shape) << (u.m**2)
 
             else:
-                aeff = (
-                    self.effective_area.eff_area[
-                        :, np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
-                    ]
-                    * u.m**2
-                )
-            if isinstance(self.energy_resolution, R2021EnergyResolution):
-                self.energy_resolution.set_fit_params(dec.value)
+                aeff_vals = self.effective_area.eff_area_spline(
+                    np.vstack(
+                        (np.log10(E_c.to_value(u.GeV)), np.full(E_c.shape, cosz))
+                    ).T,
+                ) << (u.m**2)
 
             p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                e_cen, self._min_det_energy, dec
+                E_c, self._min_det_energy, np.full(E_c.shape, dec) * u.rad
             )
             p_Edet = np.nan_to_num(p_Edet)
+
+            output = np.sum(aeff_vals * flux_vals * p_Edet * d_E)
 
         else:
             # try to ignore this, fill value is zero outside of range covered by IRF
@@ -191,15 +202,6 @@ class ExposureIntegral:
             upper_cz_edges = self.effective_area.cosz_bin_edges[1:].copy()
 
             points_per_cosz = 100
-
-            try:
-                roi = ROI.STACK[0]
-            except IndexError:
-                roi = ROI()
-            RA_min = roi.RA_min
-            RA_max = roi.RA_max
-            DEC_min = roi.DEC_min
-            DEC_max = roi.DEC_max
 
             cosz_min = -np.sin(DEC_max)
             cosz_max = -np.sin(DEC_min)
