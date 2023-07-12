@@ -223,7 +223,7 @@ class StanFit:
         if not var_names:
             var_names = self._def_var_names
 
-        arviz.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+        return arviz.plot_trace(self._fit_output, var_names=var_names, **kwargs)
 
     def corner_plot(self, var_names=None, truths=None):
         """
