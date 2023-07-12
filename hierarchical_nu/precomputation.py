@@ -342,7 +342,6 @@ class ExposureIntegral:
                 Emax = source.flux_model._upper_energy.to_value(u.GeV)
 
             E_range = 10 ** np.linspace(np.log10(Emin), np.log10(Emax))
-            print(E_range)
 
             if isinstance(source, PointSource):
                 # Point source has one declination/cosz,
@@ -350,10 +349,8 @@ class ExposureIntegral:
                 cosz = source.cosz
                 idx_cosz = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
                 aeff_values = []
-                print(self.effective_area.tE_bin_edges)
                 for E in E_range:
                     idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
-                    print(E, idx_E)
                     aeff_values.append(self.effective_area.eff_area[idx_E][idx_cosz])
                 f_values = (
                     source.flux_model.spectral_shape.pdf(
@@ -382,7 +379,6 @@ class ExposureIntegral:
                     aeff_values = []
                     for E in E_range:
                         idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
-                        print(E, idx_E)
                         aeff_values.append(
                             self.effective_area.eff_area[idx_E][idx_cosz]
                         )
