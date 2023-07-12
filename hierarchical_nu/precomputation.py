@@ -136,8 +136,8 @@ class ExposureIntegral:
     def calculate_rate(self, source):
         z = source.redshift
 
-        lower_e_edges = self.effective_area.tE_bin_edges[:-1] << u.GeV
-        upper_e_edges = self.effective_area.tE_bin_edges[1:] << u.GeV
+        lower_e_edges = self.effective_area.tE_bin_edges[:-1].copy() << u.GeV
+        upper_e_edges = self.effective_area.tE_bin_edges[1:].copy() << u.GeV
         e_cen = (lower_e_edges + upper_e_edges) / 2
 
         integral_unit = 1 / (u.m**2 * u.s)
@@ -342,6 +342,7 @@ class ExposureIntegral:
                 Emax = source.flux_model._upper_energy.to_value(u.GeV)
 
             E_range = 10 ** np.linspace(np.log10(Emin), np.log10(Emax))
+            print(E_range)
 
             if isinstance(source, PointSource):
                 # Point source has one declination/cosz,
@@ -349,8 +350,10 @@ class ExposureIntegral:
                 cosz = source.cosz
                 idx_cosz = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
                 aeff_values = []
+                print(self.effective_area.tE_bin_edges)
                 for E in E_range:
                     idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
+                    print(E, idx_E)
                     aeff_values.append(self.effective_area.eff_area[idx_E][idx_cosz])
                 f_values = (
                     source.flux_model.spectral_shape.pdf(
@@ -379,6 +382,7 @@ class ExposureIntegral:
                     aeff_values = []
                     for E in E_range:
                         idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
+                        print(E, idx_E)
                         aeff_values.append(
                             self.effective_area.eff_area[idx_E][idx_cosz]
                         )
