@@ -3,6 +3,7 @@ import h5py
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
 
 from icecube_tools.utils.data import available_irf_periods
 from icecube_tools.utils.vMF import get_kappa
@@ -39,6 +40,7 @@ periods = {
 class Events:
     """
     Events class for the storage of event observables
+    TODO: add MJD and data season keywords optionally to the save and load methods
     """
 
     @u.quantity_input
@@ -47,7 +49,8 @@ class Events:
         energies: u.GeV,
         coords: SkyCoord,
         types,
-        ang_errs: u.deg = None,
+        ang_errs: u.deg,
+        mjd: Time = None,
         periods: List[str] = None,
     ):
         """
@@ -59,6 +62,8 @@ class Events:
         self.N = len(energies)
 
         self._energies = energies
+
+        self._mjd = mjd
 
         coords.representation_type = "spherical"
         self._coords = coords
@@ -83,6 +88,7 @@ class Events:
         self._unit_vectors = np.delete(self._unit_vectors, i, axis=0)
         self._types = np.delete(self._types, i)
         self._ang_errs = np.delete(self._ang_errs, i)
+        self._mjd = np.delete(self._mjd, i)
         self.N -= 1
 
     @property
@@ -108,6 +114,10 @@ class Events:
     @property
     def kappas(self):
         return get_kappa(self._ang_errs.to_value(u.deg), p=0.683)
+
+    @property
+    def mjd(self):
+        return self._mjd
 
     @classmethod
     def from_file(cls, filename):
@@ -148,7 +158,7 @@ class Events:
                     event_folder.create_dataset(key, data=value)
 
     @classmethod
-    def from_ev_file(cls, p: str, **kwargs):
+    def from_ev_file(cls, p: str, Emin_det: u.GeV = 1 * u.GeV, **kwargs):
         """
         Load events from the 2021 data release
         :param p: string of period to be loaded.
@@ -164,21 +174,15 @@ class Events:
 
         # Check if minimum detected energy is currently loaded as parameter
         try:
-            kwargs["ereco_low"] = (
-                Parameter.get_parameter("Emin_det_t").value.to(u.GeV).value
-            )
-            logger.warning(
-                f'Overwriting kwargs["ereco_low"] with {kwargs["ereco_low"]*u.GeV}'
-            )
+            Emin_det = Parameter.get_parameter("Emin_det_t").value.to(u.GeV)
+            logger.warning(f"Overwriting Emin_det with {Emin_det}")
         except ValueError:
             pass
         try:
-            kwargs["ereco_low"] = (
-                Parameter.get_parameter("Emin_det").value.to(u.GeV).value
-            )
-            logger.warning(
-                f'Overwriting kwargs["ereco_low"] with {kwargs["ereco_low"]*u.GeV}'
-            )
+            Emin_det = kwargs["ereco_low"] = Parameter.get_parameter(
+                "Emin_det"
+            ).value.to(u.GeV)
+            logger.warning(f"Overwriting Emin_det with {Emin_det}")
         except ValueError:
             pass
 
@@ -192,12 +196,15 @@ class Events:
         ra_high = roi.RA_max.to_value(u.rad)
         dec_low = roi.DEC_min.to_value(u.rad)
         dec_high = roi.DEC_max.to_value(u.rad)
-        events.restrict(**kwargs)
+        MJD_min = roi.MJD_min
+        MJD_max = roi.MJD_max
+        # events.restrict(**kwargs) # Do this completely in hnu, icecube_tools lacks the RA-wrapping right now, TODO...
         # Read in relevant data
         ra = events.ra[p] * u.rad
         dec = events.dec[p] * u.rad
         reco_energy = events.reco_energy[p] * u.GeV
         period = ra.size * [p]
+        mjd = events.mjd[p]
 
         if roi.RA_min > roi.RA_max:
             mask = np.nonzero(
@@ -205,6 +212,9 @@ class Events:
                     (dec <= roi.DEC_max)
                     & (dec >= roi.DEC_min)
                     & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                    & (reco_energy >= Emin_det)
+                    & (mjd.mjd >= MJD_min)
+                    & (mjd.mjd <= MJD_max)
                 )
             )
         else:
@@ -214,16 +224,21 @@ class Events:
                     & (dec >= roi.DEC_min)
                     & (ra >= roi.RA_min)
                     & (ra <= roi.RA_max)
+                    & (reco_energy >= Emin_det)
+                    & (mjd >= MJD_min)
+                    & (mjd <= MJD_max)
                 )
             )
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = events.ang_err[p] * u.deg
         types = np.array(ra.size * [TRACKS])
         coords = SkyCoord(ra, dec, frame="icrs")
+        mjd = Time(mjd, format="mjd")
         return cls(
             reco_energy[mask],
             coords[mask],
             types[mask],
             ang_err[mask],
+            mjd[mask],
             p,
         )
