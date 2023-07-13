@@ -177,25 +177,17 @@ class Events:
             Emin_det = Parameter.get_parameter("Emin_det_t").value.to(u.GeV)
             logger.warning(f"Overwriting Emin_det with {Emin_det}")
         except ValueError:
-            pass
-        try:
-            Emin_det = kwargs["ereco_low"] = Parameter.get_parameter(
-                "Emin_det"
-            ).value.to(u.GeV)
-            logger.warning(f"Overwriting Emin_det with {Emin_det}")
-        except ValueError:
-            pass
+            try:
+                Emin_det = Parameter.get_parameter("Emin_det").value.to(u.GeV)
+                logger.warning(f"Overwriting Emin_det with {Emin_det}")
+            except ValueError:
+                pass
 
         try:
             roi = ROI.STACK[0]
         except IndexError:
             roi = ROI()
 
-        # add cuts to kwargs
-        ra_low = roi.RA_min.to_value(u.rad)
-        ra_high = roi.RA_max.to_value(u.rad)
-        dec_low = roi.DEC_min.to_value(u.rad)
-        dec_high = roi.DEC_max.to_value(u.rad)
         MJD_min = roi.MJD_min
         MJD_max = roi.MJD_max
         # events.restrict(**kwargs) # Do this completely in hnu, icecube_tools lacks the RA-wrapping right now, TODO...
