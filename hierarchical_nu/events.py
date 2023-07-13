@@ -40,7 +40,6 @@ periods = {
 class Events:
     """
     Events class for the storage of event observables
-    TODO: add MJD and data season keywords optionally to the save and load methods
     """
 
     @u.quantity_input
@@ -88,7 +87,8 @@ class Events:
         self._unit_vectors = np.delete(self._unit_vectors, i, axis=0)
         self._types = np.delete(self._types, i)
         self._ang_errs = np.delete(self._ang_errs, i)
-        self._mjd = np.delete(self._mjd, i)
+        if self._mjd:
+            self._mjd = np.delete(self._mjd, i)
         self.N -= 1
 
     @property
@@ -128,20 +128,32 @@ class Events:
             uvs = events_folder["unit_vectors"][()]
             types = events_folder["event_types"][()]
             ang_errs = events_folder["ang_errs"][()] * u.deg
+            try:
+                mjd = events_folder["mjd"][()]
+            except KeyError:
+                mjd = None
         coords = SkyCoord(
             uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
         )
+        if mjd is not None:
+            time = Time(mjd, format="mjd")
+        else:
+            time = mjd
 
-        return cls(energies, coords, types, ang_errs)
+        return cls(energies, coords, types, ang_errs, time)
 
     def to_file(self, filename, append=False):
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs"]
+        if self._mjd:
+            self._file_keys += ["mjd"]
         self._file_values = [
             self.energies.to(u.GeV).value,
             self.unit_vectors,
             self.types,
             self.ang_errs.to(u.deg).value,
         ]
+        if self._mjd:
+            self._file_values += [self.mjd.mjd]
 
         if append:
             with h5py.File(filename, "r+") as f:
