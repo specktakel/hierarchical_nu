@@ -205,8 +205,8 @@ class Events:
                     & (dec >= roi.DEC_min)
                     & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
                     & (reco_energy >= Emin_det)
-                    & (mjd.mjd >= MJD_min)
-                    & (mjd.mjd <= MJD_max)
+                    & (mjd >= MJD_min)
+                    & (mjd <= MJD_max)
                 )
             )
         else:
