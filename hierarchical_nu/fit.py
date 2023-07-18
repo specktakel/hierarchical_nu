@@ -115,6 +115,17 @@ class StanFit:
         self._exposure_integral = collections.OrderedDict()
 
     @property
+    def priors(self):
+        return self._priors
+
+    @priors.setter
+    def priors(self, p):
+        if isinstance(p, Priors):
+            self._priors = p
+        else:
+            raise ValueError("Priors must be instance of Priors.")
+
+    @property
     def events(self):
         return self._events
 
