@@ -49,7 +49,7 @@ class Events:
         coords: SkyCoord,
         types,
         ang_errs: u.deg,
-        mjd: Time = None,
+        mjd: Time,
         periods: List[str] = None,
     ):
         """
@@ -87,8 +87,7 @@ class Events:
         self._unit_vectors = np.delete(self._unit_vectors, i, axis=0)
         self._types = np.delete(self._types, i)
         self._ang_errs = np.delete(self._ang_errs, i)
-        if self._mjd:
-            self._mjd = np.delete(self._mjd, i)
+        self._mjd = np.delete(self._mjd, i)
         self.N -= 1
 
     @property
@@ -128,17 +127,18 @@ class Events:
             uvs = events_folder["unit_vectors"][()]
             types = events_folder["event_types"][()]
             ang_errs = events_folder["ang_errs"][()] * u.deg
+
+            # For backwards compatibility
             try:
                 mjd = events_folder["mjd"][()]
             except KeyError:
-                mjd = [None] * len(energies)
+                mjd = [99.0] * len(energies)
+
         coords = SkyCoord(
             uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
         )
-        if mjd is not None:
-            time = Time(mjd, format="mjd")
-        else:
-            time = mjd
+
+        time = Time(mjd, format="mjd")
 
         coords.representation_type = "spherical"
 
@@ -176,17 +176,14 @@ class Events:
         )
 
     def to_file(self, filename, append=False):
-        self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs"]
-        if self._mjd:
-            self._file_keys += ["mjd"]
+        self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]
         self._file_values = [
             self.energies.to(u.GeV).value,
             self.unit_vectors,
             self.types,
             self.ang_errs.to(u.deg).value,
+            self.mjd.mjd,
         ]
-        if self._mjd:
-            self._file_values += [self.mjd.mjd]
 
         if append:
             with h5py.File(filename, "r+") as f:

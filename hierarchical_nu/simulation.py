@@ -2,6 +2,7 @@ import numpy as np
 import os
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
 import h5py
 from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
@@ -191,9 +192,12 @@ class Simulation:
 
         energies, coords, event_types, ang_errs = self._extract_sim_output()
 
+        # Create filler MJD values, we are only doing time-averaged simulations
+        mjd = Time([99.0] * len(energies), format="mjd")
+
         # Check for detected events
         if len(energies) != 0:
-            self.events = Events(energies, coords, event_types, ang_errs)
+            self.events = Events(energies, coords, event_types, ang_errs, mjd)
 
     def _extract_sim_output(self):
         try:
