@@ -131,7 +131,7 @@ class Events:
             try:
                 mjd = events_folder["mjd"][()]
             except KeyError:
-                mjd = None
+                mjd = [None] * len(energies)
         coords = SkyCoord(
             uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
         )
@@ -140,7 +140,40 @@ class Events:
         else:
             time = mjd
 
-        return cls(energies, coords, types, ang_errs, time)
+        coords.representation_type = "spherical"
+
+        ra = coords.ra.rad * u.rad
+        dec = coords.dec.rad * u.rad
+
+        coords.representation_type = "cartesian"
+
+        try:
+            roi = ROI.STACK[0]
+        except IndexError:
+            roi = ROI()
+
+        # TODO add reco energy cut for all event types
+        if roi.RA_min > roi.RA_max:
+            mask = np.nonzero(
+                (
+                    (dec <= roi.DEC_max)
+                    & (dec >= roi.DEC_min)
+                    & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                )
+            )
+        else:
+            mask = np.nonzero(
+                (
+                    (dec <= roi.DEC_max)
+                    & (dec >= roi.DEC_min)
+                    & (ra >= roi.RA_min)
+                    & (ra <= roi.RA_max)
+                )
+            )
+
+        return cls(
+            energies[mask], coords[mask], types[mask], ang_errs[mask], time[mask]
+        )
 
     def to_file(self, filename, append=False):
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs"]
