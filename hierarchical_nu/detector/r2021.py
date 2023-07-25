@@ -1037,6 +1037,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         true_energy: u.GeV,
         lower_threshold_energy: u.GeV,
         dec: u.rad,
+        upper_threshold_energy=None,
     ):
         """
         P(Edet > Edet_min | E) for use in precomputation.
@@ -1044,6 +1045,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         based on the detected events. Per declination,
         find lowest and highest reconstructed energy
         and restrict the threshold energy by the found values.
+        Optional argument upper_threshold_energy used for debugging and diagnostic plots
         """
         # self.set_fit_params(dec.value)
         # Truncate input energies to safe range
@@ -1053,6 +1055,18 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         energy_trunc[energy_trunc > self._pdet_limits[1]] = self._pdet_limits[1]
         energy_trunc = energy_trunc * u.GeV
         dec = np.atleast_1d(dec)
+
+        if len(energy_trunc.shape) > 0 and len(lower_threshold_energy.shape) == 0:
+            # print("blowing up lower threshold")
+            lower_threshold_energy = (
+                np.full(energy_trunc.shape, lower_threshold_energy.to_value(u.GeV))
+                * u.GeV
+            )
+        else:
+            lower_threshold_energy = np.atleast_1d(lower_threshold_energy)
+
+        if upper_threshold_energy is not None:
+            upper_threshold_energy = np.atleast_1d(upper_threshold_energy)
 
         # Limits of Ereco in dec binning of effective area
         dec_idx = (
@@ -1087,10 +1101,18 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             e_low = self._icecube_tools_eres._ereco_limits[
                 dec_idx[np.nonzero(irf_dec_idx == c)], 0
             ]
-            ethr_low = np.log10(lower_threshold_energy.to_value(u.GeV))
+            ethr_low = np.log10(
+                lower_threshold_energy[irf_dec_idx == c].to_value(u.GeV)
+            )
             # print(ethr_low)
-            e_low[ethr_low > e_low] = ethr_low
-            prob[irf_dec_idx == c] = 1.0 - model(e_low, model_params)
+            e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
+            if upper_threshold_energy is None:
+                prob[irf_dec_idx == c] = 1.0 - model(e_low, model_params)
+            else:
+                prob[irf_dec_idx == c] = model(
+                    np.log10(upper_threshold_energy[irf_dec_idx == c].to_value(u.GeV)),
+                    model_params,
+                ) - model(e_low, model_params)
 
         return prob
 
