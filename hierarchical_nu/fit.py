@@ -19,7 +19,7 @@ from hierarchical_nu.detector.detector_model import DetectorModel
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
-from hierarchical_nu.priors import Priors
+from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -299,7 +299,34 @@ class StanFit:
         make plots and run classification check.
         """
 
-        raise NotImplementedError()
+        priors_dict = {}
+
+        fit_inputs = {}
+
+        with h5py.File(filename, "r") as f:
+            if "fit" not in f.keys():
+                raise ValueError("File is not a saved hierarchical_nu fit.")
+
+            for k, v in f["fit/inputs"].items():
+                if "mu" in k or "sigma" in k:
+                    priors_dict[k] = v[()]
+
+        priors = Priors()
+        priors.luminosity = LogNormalPrior(
+            mu=priors_dict["lumi_mu"], sigma=priors_dict["lumi_sigma"]
+        )
+        priors.src_index = NormalPrior(
+            mu=priors_dict["src_index_mu"], sigma=priors_dict["src_index_sigma"]
+        )
+        priors.diff_index = NormalPrior(
+            mu=priors_dict["diff_index_mu"], sigma=priors_dict["diff_index_sigma"]
+        )
+        priors.atmospheric_flux = LogNormalPrior(
+            mu=priors_dict["f_atmo_mu"], sigma=priors_dict["f_atmo_sigma"]
+        )
+        priors.diffuse_flux = LogNormalPrior(
+            mu=priors_dict["f_diff_mu"], sigma=priors_dict["f_diff_sigma"]
+        )
 
     def check_classification(self, sim_outputs):
         """
