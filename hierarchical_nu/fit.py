@@ -7,6 +7,10 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from typing import List, Union
 import corner
+import matplotlib.pyplot as plt
+from matplotlib import colors
+import matplotlib.cm as cm
+import ligo.skymap.plot
 
 from math import ceil, floor
 
@@ -233,7 +237,7 @@ class StanFit:
         if not var_names:
             var_names = self._def_var_names
 
-        arviz.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+        return arviz.plot_trace(self._fit_output, var_names=var_names, **kwargs)
 
     def corner_plot(self, var_names=None, truths=None):
         """
@@ -323,6 +327,107 @@ class StanFit:
         samples = np.column_stack(samples_list)
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
+
+    def plot_energy_posterior(self):
+        """
+        Plot energy posteriors in log10-space.
+        Color corresponds to association to point source presumed
+        to be in self.sources[0]
+        TODO: make compatible with multiple PS
+        """
+
+        ev_class = np.array(self._get_event_classifications())
+
+        axs = self.plot_trace(
+            var_names=["E"], transform=lambda x: np.log10(x), show=False
+        )
+
+        min = 0.0
+        max = 1.0
+        norm = colors.Normalize(min, max, clip=True)
+        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        color = mapper.to_rgba(ev_class[:, 0])
+
+        fig, ax = plt.subplots()
+        for c, line in enumerate(axs[0, 0].lines):
+            ax.plot(
+                np.power(10, line.get_data()[0]),
+                line.get_data()[1],
+                color=color[c],
+                zorder=ev_class[c, 0] + 1,
+            )
+        _, yhigh = ax.get_ylim()
+        ax.set_xscale("log")
+
+        ax_reco = ax.twiny()
+        ax_reco.set_xscale("log")
+        ax_reco.set_xlim(ax.get_xlim())
+        ax_reco.vlines(
+            self.events.energies.to_value(u.GeV), 0.9 * yhigh, yhigh, color=color
+        )
+        ax_reco.set_xlabel(r"$\hat E~[\text{GeV}]$")
+
+        ax.set_xlabel(r"$E~[\text{GeV}]$")
+        ax.set_ylabel("pdf")
+        fig.colorbar(mapper, label="PS association probability")
+
+        return fig, ax
+
+    @u.quantity_input
+    def plot_roi(self, source_coords: SkyCoord, radius=5.0 * u.deg):
+        """
+        Create plot of the ROI.
+        Events are colour-coded dots, color corresponding
+        to the association probability to the point source proposed.
+        Assumes there is a point source in self.sources[0].
+        Size of events are meaningless.
+        """
+
+        ev_class = np.array(self._get_event_classifications())
+        min = 0.0
+        max = 1.0
+        norm = colors.Normalize(min, max, clip=True)
+        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        color = mapper.to_rgba(ev_class[:, 0])
+
+        events = self.events
+        events.coords.representation_type = "spherical"
+        # we are working in degrees here
+        fig, ax = plt.subplots(
+            subplot_kw={
+                "projection": "astro degrees zoom",
+                "center": source_coords,
+                "radius": f"{radius.to_value(u.deg)} deg",
+            }
+        )
+
+        ax.scatter(
+            source_coords.ra.deg,
+            source_coords.dec.deg,
+            marker="x",
+            color="black",
+            zorder=10,
+            alpha=0.4,
+            transform=ax.get_transform("icrs"),
+        )
+
+        for c, (colour, coord) in enumerate(zip(color, events.coords)):
+            ax.scatter(
+                coord.ra.deg,
+                coord.dec.deg,
+                color=colour,
+                alpha=0.4,
+                zorder=ev_class[c, 0] + 1,
+                transform=ax.get_transform("icrs"),
+            )
+
+        ax.set_xlabel("RA")
+        ax.set_ylabel("DEC")
+        cbar = fig.colorbar(mapper)
+        cbar.set_label("TXS association probability")
+        ax.grid()
+
+        return fig, ax
 
     def save(self, filename, overwrite: bool = False):
         if os.path.exists(filename) and not overwrite:
