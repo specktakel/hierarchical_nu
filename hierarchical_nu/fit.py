@@ -4,12 +4,19 @@ import h5py
 import logging
 import collections
 from astropy import units as u
+from astropy.coordinates import SkyCoord
 from typing import List, Union
 import corner
+import matplotlib.pyplot as plt
+from matplotlib import colors
+import matplotlib.cm as cm
+import ligo.skymap.plot
 
 from math import ceil, floor
 
 from cmdstanpy import CmdStanModel
+
+from icecube_tools.utils.vMF import get_theta_p
 
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
 from hierarchical_nu.source.parameter import Parameter
@@ -19,10 +26,14 @@ from hierarchical_nu.detector.detector_model import DetectorModel
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
-from hierarchical_nu.priors import Priors
+from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class StanFit:
@@ -59,15 +70,18 @@ class StanFit:
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
 
-        self._stan_interface = StanFitInterface(
-            stan_file_name,
-            self._sources,
-            self._detector_model_type,
-            priors=priors,
-            nshards=nshards,
-            atmo_flux_energy_points=atmo_flux_energy_points,
-            atmo_flux_theta_points=atmo_flux_theta_points,
-        )
+        if sources.N != 0:
+            self._stan_interface = StanFitInterface(
+                stan_file_name,
+                self._sources,
+                self._detector_model_type,
+                priors=priors,
+                nshards=nshards,
+                atmo_flux_energy_points=atmo_flux_energy_points,
+                atmo_flux_theta_points=atmo_flux_theta_points,
+            )
+        else:
+            logger.debug("Reloading previous results.")
 
         # Check for unsupported combinations
         if sources.atmospheric and detector_model.event_types == ["cascades"]:
@@ -89,8 +103,8 @@ class StanFit:
             )
 
         # Silence log output
-        logger = logging.getLogger("hierarchical_nu.backend.code_generator")
-        logger.propagate = False
+        logger_code_gen = logging.getLogger("hierarchical_nu.backend.code_generator")
+        logger_code_gen.propagate = False
 
         # For use with plot methods
         self._def_var_names = []
@@ -273,27 +287,66 @@ class StanFit:
         if not var_names:
             var_names = self._def_var_names
 
-        chain = self._fit_output.stan_variables()
+        try:
+            chain = self._fit_output.stan_variables()
+            stan = True
+        except AttributeError:
+            chain = self._fit_output
+            stan = False
 
         # Organise samples
         samples_list = []
         label_list = []
 
         for key in var_names:
-            if len(np.shape(chain[key])) > 1:
-                for i, s in enumerate(chain[key].T):
-                    samples_list.append(s)
+            if stan:
+                if len(np.shape(chain[key])) > 1:
+                    # This is for array-like variables, e.g. multiple PS
+                    # having their own entry in src_index
+                    for i, s in enumerate(chain[key].T):
+                        samples_list.append(s)
+                        if key == "L" or key == "src_index":
+                            label = "ps_%i_" % i + key
+                        else:
+                            label = key
 
-                    if key == "L" or key == "src_index":
-                        label = "ps_%i_" % i + key
-                    else:
-                        label = key
+                        label_list.append(label)
 
-                    label_list.append(label)
+                else:
+                    samples_list.append(chain[key])
+                    label_list.append(key)
 
             else:
-                samples_list.append(chain[key])
-                label_list.append(key)
+                # check for len(np.shape(chain[key]) > 2 because extra dim for chains
+                # would be, e.g. for 3 sources, (chains, iter_sampling, 3)
+                if len(np.shape(chain[key])) > 2:
+                    for i in range(np.shape(chain[key][-1])):
+                        if key == "L" or key == "src_index":
+                            label = "ps_%i_" % i + key
+                        else:
+                            label = key
+                        samples_list.append(
+                            chain[key][:, :, i].reshape(
+                                (
+                                    self._fit_meta["iter_sampling"]
+                                    * self._fit_meta["chains"],
+                                    1,
+                                )
+                            )
+                        )
+                        label_list.append(label)
+
+                else:
+                    samples_list.append(
+                        chain[key].reshape(
+                            (
+                                self._fit_meta["iter_sampling"]
+                                * self._fit_meta["chains"],
+                                1,
+                            )
+                        )
+                    )
+                    label_list.append(key)
 
         # Organise truths
         if truths:
@@ -314,6 +367,107 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
+    def plot_energy_posterior(self):
+        """
+        Plot energy posteriors in log10-space.
+        Color corresponds to association to point source presumed
+        to be in self.sources[0]
+        TODO: make compatible with multiple PS
+        """
+
+        ev_class = np.array(self._get_event_classifications())
+
+        axs = self.plot_trace(
+            var_names=["E"], transform=lambda x: np.log10(x), show=False
+        )
+
+        min = 0.0
+        max = 1.0
+        norm = colors.Normalize(min, max, clip=True)
+        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        color = mapper.to_rgba(ev_class[:, 0])
+
+        fig, ax = plt.subplots()
+        for c, line in enumerate(axs[0, 0].lines):
+            ax.plot(
+                np.power(10, line.get_data()[0]),
+                line.get_data()[1],
+                color=color[c],
+                zorder=ev_class[c, 0] + 1,
+            )
+        _, yhigh = ax.get_ylim()
+        ax.set_xscale("log")
+
+        ax_reco = ax.twiny()
+        ax_reco.set_xscale("log")
+        ax_reco.set_xlim(ax.get_xlim())
+        ax_reco.vlines(
+            self.events.energies.to_value(u.GeV), 0.9 * yhigh, yhigh, color=color
+        )
+        ax_reco.set_xlabel(r"$\hat E~[\text{GeV}]$")
+
+        ax.set_xlabel(r"$E~[\text{GeV}]$")
+        ax.set_ylabel("pdf")
+        fig.colorbar(mapper, label="PS association probability")
+
+        return fig, ax
+
+    @u.quantity_input
+    def plot_roi(self, source_coords: SkyCoord, radius=5.0 * u.deg):
+        """
+        Create plot of the ROI.
+        Events are colour-coded dots, color corresponding
+        to the association probability to the point source proposed.
+        Assumes there is a point source in self.sources[0].
+        Size of events are meaningless.
+        """
+
+        ev_class = np.array(self._get_event_classifications())
+        min = 0.0
+        max = 1.0
+        norm = colors.Normalize(min, max, clip=True)
+        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        color = mapper.to_rgba(ev_class[:, 0])
+
+        events = self.events
+        events.coords.representation_type = "spherical"
+        # we are working in degrees here
+        fig, ax = plt.subplots(
+            subplot_kw={
+                "projection": "astro degrees zoom",
+                "center": source_coords,
+                "radius": f"{radius.to_value(u.deg)} deg",
+            }
+        )
+
+        ax.scatter(
+            source_coords.ra.deg,
+            source_coords.dec.deg,
+            marker="x",
+            color="black",
+            zorder=10,
+            alpha=0.4,
+            transform=ax.get_transform("icrs"),
+        )
+
+        for c, (colour, coord) in enumerate(zip(color, events.coords)):
+            ax.scatter(
+                coord.ra.deg,
+                coord.dec.deg,
+                color=colour,
+                alpha=0.4,
+                zorder=ev_class[c, 0] + 1,
+                transform=ax.get_transform("icrs"),
+            )
+
+        ax.set_xlabel("RA")
+        ax.set_ylabel("DEC")
+        cbar = fig.colorbar(mapper)
+        cbar.set_label("TXS association probability")
+        ax.grid()
+
+        return fig, ax
+
     def save(self, filename, overwrite: bool = False):
         if os.path.exists(filename) and not overwrite:
             raise FileExistsError(f"File {filename} already exists.")
@@ -322,6 +476,7 @@ class StanFit:
             fit_folder = f.create_group("fit")
             inputs_folder = fit_folder.create_group("inputs")
             outputs_folder = fit_folder.create_group("outputs")
+            meta_folder = fit_folder.create_group("meta")
 
             for key, value in self._fit_inputs.items():
                 inputs_folder.create_dataset(key, data=value)
@@ -329,7 +484,14 @@ class StanFit:
             for key, value in self._fit_output.stan_variables().items():
                 outputs_folder.create_dataset(key, data=value)
 
-            outputs_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
+            # Save some metadata for debugging, easier loading from file
+            meta_folder.create_dataset("divergences", data=self._fit_output.divergences)
+            meta_folder.create_dataset("chains", data=self._fit_output.chains)
+            meta_folder.create_dataset(
+                "iter_sampling", data=self._fit_output._iter_sampling
+            )
+            meta_folder.create_dataset("runset", data=str(self._fit_output.runset))
+            meta_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
 
     @classmethod
     def from_file(cls, filename):
@@ -338,7 +500,99 @@ class StanFit:
         make plots and run classification check.
         """
 
-        raise NotImplementedError()
+        priors_dict = {}
+
+        fit_inputs = {}
+        fit_outputs = {}
+        fit_meta = {}
+
+        with h5py.File(filename, "r") as f:
+            if "fit" not in f.keys():
+                raise ValueError("File is not a saved hierarchical_nu fit.")
+
+            for k, v in f["fit/meta"].items():
+                fit_meta[k] = v[()]
+
+            for k, v in f["fit/inputs"].items():
+                if "mu" in k or "sigma" in k:
+                    priors_dict[k] = v[()]
+
+                fit_inputs[k] = v[()]
+
+            for k, v in f["fit/outputs"].items():
+                # Add extra dimension for number of chains
+                if k == "local_pars" or k == "global_pars":
+                    continue
+
+                temp = v[()]
+                if len(temp.shape) == 1:
+                    # non-vector variable
+                    fit_outputs[k] = temp.reshape(
+                        (fit_meta["chains"], fit_meta["iter_sampling"])
+                    )
+                else:
+                    # Reshape to chains x draws x dim
+                    fit_outputs[k] = temp.reshape(
+                        (
+                            fit_meta["chains"],
+                            fit_meta["iter_sampling"],
+                            *temp.shape[1:],
+                        )
+                    )
+
+        obs_time = fit_inputs["T"] * u.s
+
+        priors = Priors()
+        priors.luminosity = LogNormalPrior(
+            mu=priors_dict["lumi_mu"], sigma=priors_dict["lumi_sigma"]
+        )
+        priors.src_index = NormalPrior(
+            mu=priors_dict["src_index_mu"], sigma=priors_dict["src_index_sigma"]
+        )
+        priors.diff_index = NormalPrior(
+            mu=priors_dict["diff_index_mu"], sigma=priors_dict["diff_index_sigma"]
+        )
+        priors.atmospheric_flux = LogNormalPrior(
+            mu=priors_dict["f_atmo_mu"], sigma=priors_dict["f_atmo_sigma"]
+        )
+        priors.diffuse_flux = LogNormalPrior(
+            mu=priors_dict["f_diff_mu"], sigma=priors_dict["f_diff_sigma"]
+        )
+
+        energies = fit_inputs["Edet"] << u.GeV
+        sky_coords = SkyCoord(
+            fit_inputs["omega_det"], frame="icrs", representation_type="cartesian"
+        )
+        types = fit_inputs["event_type"]
+        kappas = fit_inputs["kappa"]
+        ang_errs = get_theta_p(kappas, p=0.683) << u.deg
+        events = Events(energies, sky_coords, types, ang_errs)
+
+        fit = cls(Sources(), DetectorModel, events, obs_time, priors)
+
+        fit._fit_output = fit_outputs
+        fit._fit_inputs = fit_inputs
+        fit._fit_meta = fit_meta
+
+        if "src_index_grid" in fit_inputs.keys():
+            fit._def_var_names.append("L")
+            fit._def_var_names.append("src_index")
+
+        if "diff_index_grid" in fit_inputs.keys():
+            fit._def_var_names.append("F_diff")
+            fit._def_var_names.append("diff_index")
+
+        if "atmo_integ_val" in fit_inputs.keys():
+            fit._def_var_names.append("F_atmo")
+
+        if "src_index_grid" in fit_inputs.keys() and (
+            "atmo_integ_val" in fit_inputs.keys()
+            or "diff_index_grid" in fit_inputs.keys()
+        ):
+            fit._def_var_names.append("f_arr")
+            fit._def_var_names.append("f_det")
+
+        return fit
 
     def check_classification(self, sim_outputs):
         """
@@ -407,7 +661,21 @@ class StanFit:
         return wrong, assumed, correct
 
     def _get_event_classifications(self):
-        logprob = self._fit_output.stan_variable("lp").transpose(1, 2, 0)
+        try:
+            logprob = self._fit_output.stan_variable("lp").transpose(1, 2, 0)
+        except AttributeError:
+            # We are in a reloaded state and _fit_output is a dictionary
+            # also the shape is "wrong" for transpose()
+            logprob = (
+                self._fit_output["lp"]
+                .reshape(
+                    (
+                        self._fit_meta["chains"] * self._fit_meta["iter_sampling"],
+                        *self._fit_output["lp"].shape[2:],
+                    )
+                )
+                .transpose(1, 2, 0)
+            )
 
         n_comps = np.shape(logprob)[1]
 
