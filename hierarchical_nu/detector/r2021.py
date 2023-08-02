@@ -964,7 +964,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 # self._rE_bin_edges = rE_bin_edges
                 if self.make_plots:
                     for c, dec in enumerate(self._declination_bins[:-1]):
-                        self.set_fit_params(dec + 0.01)
+                        self.set_fit_params((dec + 0.01) * u.rad)
                         fig = self.plot_fit_params(
                             self._fit_params, self._rebin_tE_binc[c]
                         )
@@ -1043,7 +1043,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         find lowest and highest reconstructed energy
         and restrict the threshold energy by the found values.
         """
-        # self.set_fit_params(dec.value)
+        self.set_fit_params(dec)
         # Truncate input energies to safe range
         energy_trunc = true_energy.to(u.GeV).value
         energy_trunc[energy_trunc < self._pdet_limits[0]] = self._pdet_limits[0]
@@ -1420,11 +1420,12 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         cls(DistributionMode.PDF, rewrite=True)
         cls(DistributionMode.RNG, rewrite=True)
 
-    def set_fit_params(self, dec) -> None:
+    @u.quantity_input
+    def set_fit_params(self, dec: u.rad) -> None:
         """
         Used in `sim_interface.py`
         """
-        dec_idx = np.digitize(dec, self._declination_bins) - 1
+        dec_idx = np.digitize(dec.to_value(u.rad), self._declination_bins) - 1
         if dec == np.pi / 2:
             dec_idx -= 1
 
