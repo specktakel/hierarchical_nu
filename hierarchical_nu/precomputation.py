@@ -136,8 +136,8 @@ class ExposureIntegral:
     def calculate_rate(self, source):
         z = source.redshift
 
-        lower_e_edges = self.effective_area.tE_bin_edges[:-1] << u.GeV
-        upper_e_edges = self.effective_area.tE_bin_edges[1:] << u.GeV
+        lower_e_edges = self.effective_area.tE_bin_edges[:-1].copy() << u.GeV
+        upper_e_edges = self.effective_area.tE_bin_edges[1:].copy() << u.GeV
         e_cen = (lower_e_edges + upper_e_edges) / 2
 
         integral_unit = 1 / (u.m**2 * u.s)

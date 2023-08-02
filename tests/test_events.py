@@ -12,7 +12,7 @@ def test_read():
     for p in periods:
         it_ev = RealEvents.from_event_files(p, use_all=True)
         it_ev.restrict(ereco_low=5e4)
-        hnu_ev = Events.from_ev_file(p, ereco_low=5e4, use_all=True)
+        hnu_ev = Events.from_ev_file(p, Emin_det=5e4 * u.GeV, use_all=True)
 
         assert hnu_ev.N == it_ev.N_restricted[p]
 

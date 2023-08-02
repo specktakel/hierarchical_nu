@@ -129,6 +129,17 @@ class StanFit:
         self._exposure_integral = collections.OrderedDict()
 
     @property
+    def priors(self):
+        return self._priors
+
+    @priors.setter
+    def priors(self, p):
+        if isinstance(p, Priors):
+            self._priors = p
+        else:
+            raise ValueError("Priors must be instance of Priors.")
+
+    @property
     def events(self):
         return self._events
 
@@ -238,6 +249,34 @@ class StanFit:
             var_names = self._def_var_names
 
         return arviz.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+
+    def plot_trace_and_priors(self, var_names=None, **kwargs):
+        """
+        Trace plot and overplot the used priors.
+        """
+
+        axs = self.plot_trace(var_names=var_names, show=False, **kwargs)
+
+        if not var_names:
+            var_names = self._def_var_names
+
+        priors_dict = self._priors.to_dict()
+
+        for ax_double in axs:
+            name = ax_double[0].get_title()
+            # check if there is a prior available for the variable
+            try:
+                # If so, get it and plot it
+                prior = priors_dict[name]
+                ax = ax_double[0]
+
+                supp = ax.get_xlim()
+                x = np.linspace(*supp, 1000)
+                ax.plot(x, prior.pdf(x), color="black", alpha=0.4, zorder=0)
+            except:
+                pass
+
+        return axs
 
     def corner_plot(self, var_names=None, truths=None):
         """

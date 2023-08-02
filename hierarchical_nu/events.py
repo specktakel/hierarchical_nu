@@ -3,6 +3,7 @@ import h5py
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
 
 from icecube_tools.utils.data import available_irf_periods
 from icecube_tools.utils.vMF import get_kappa
@@ -47,7 +48,8 @@ class Events:
         energies: u.GeV,
         coords: SkyCoord,
         types,
-        ang_errs: u.deg = None,
+        ang_errs: u.deg,
+        mjd: Time,
         periods: List[str] = None,
     ):
         """
@@ -59,6 +61,8 @@ class Events:
         self.N = len(energies)
 
         self._energies = energies
+
+        self._mjd = mjd
 
         coords.representation_type = "spherical"
         self._coords = coords
@@ -83,6 +87,7 @@ class Events:
         self._unit_vectors = np.delete(self._unit_vectors, i, axis=0)
         self._types = np.delete(self._types, i)
         self._ang_errs = np.delete(self._ang_errs, i)
+        self._mjd = np.delete(self._mjd, i)
         self.N -= 1
 
     @property
@@ -109,6 +114,10 @@ class Events:
     def kappas(self):
         return get_kappa(self._ang_errs.to_value(u.deg), p=0.683)
 
+    @property
+    def mjd(self):
+        return self._mjd
+
     @classmethod
     def from_file(cls, filename):
         with h5py.File(filename, "r") as f:
@@ -118,87 +127,32 @@ class Events:
             uvs = events_folder["unit_vectors"][()]
             types = events_folder["event_types"][()]
             ang_errs = events_folder["ang_errs"][()] * u.deg
+
+            # For backwards compatibility
+            try:
+                mjd = events_folder["mjd"][()]
+            except KeyError:
+                mjd = [99.0] * len(energies)
+
         coords = SkyCoord(
             uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
         )
 
-        return cls(energies, coords, types, ang_errs)
+        time = Time(mjd, format="mjd")
 
-    def to_file(self, filename, append=False):
-        self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs"]
-        self._file_values = [
-            self.energies.to(u.GeV).value,
-            self.unit_vectors,
-            self.types,
-            self.ang_errs.to(u.deg).value,
-        ]
+        coords.representation_type = "spherical"
 
-        if append:
-            with h5py.File(filename, "r+") as f:
-                event_folder = f.create_group("events")
+        ra = coords.ra.rad * u.rad
+        dec = coords.dec.rad * u.rad
 
-                for key, value in zip(self._file_keys, self._file_values):
-                    event_folder.create_dataset(key, data=value)
-
-        else:
-            with h5py.File(filename, "w") as f:
-                event_folder = f.create_group("events")
-
-                for key, value in zip(self._file_keys, self._file_values):
-                    event_folder.create_dataset(key, data=value)
-
-    @classmethod
-    def from_ev_file(cls, p: str, **kwargs):
-        """
-        Load events from the 2021 data release
-        :param p: string of period to be loaded.
-        :param kwargs: kwargs passed to make an event selection, see `icecube_tools` documentation for details
-        :return: :class:`hierarchical_nu.events.Events`
-        """
-
-        from icecube_tools.utils.data import RealEvents
-
-        # Borrow from icecube_tools
-        use_all = kwargs.pop("use_all", True)
-        events = RealEvents.from_event_files(p, use_all=use_all)
-
-        # Check if minimum detected energy is currently loaded as parameter
-        try:
-            kwargs["ereco_low"] = (
-                Parameter.get_parameter("Emin_det_t").value.to(u.GeV).value
-            )
-            logger.warning(
-                f'Overwriting kwargs["ereco_low"] with {kwargs["ereco_low"]*u.GeV}'
-            )
-        except ValueError:
-            pass
-        try:
-            kwargs["ereco_low"] = (
-                Parameter.get_parameter("Emin_det").value.to(u.GeV).value
-            )
-            logger.warning(
-                f'Overwriting kwargs["ereco_low"] with {kwargs["ereco_low"]*u.GeV}'
-            )
-        except ValueError:
-            pass
+        coords.representation_type = "cartesian"
 
         try:
             roi = ROI.STACK[0]
         except IndexError:
             roi = ROI()
 
-        # add cuts to kwargs
-        ra_low = roi.RA_min.to_value(u.rad)
-        ra_high = roi.RA_max.to_value(u.rad)
-        dec_low = roi.DEC_min.to_value(u.rad)
-        dec_high = roi.DEC_max.to_value(u.rad)
-        events.restrict(**kwargs)
-        # Read in relevant data
-        ra = events.ra[p] * u.rad
-        dec = events.dec[p] * u.rad
-        reco_energy = events.reco_energy[p] * u.GeV
-        period = ra.size * [p]
-
+        # TODO add reco energy cut for all event types
         if roi.RA_min > roi.RA_max:
             mask = np.nonzero(
                 (
@@ -216,14 +170,109 @@ class Events:
                     & (ra <= roi.RA_max)
                 )
             )
+
+        return cls(
+            energies[mask], coords[mask], types[mask], ang_errs[mask], time[mask]
+        )
+
+    def to_file(self, filename, append=False):
+        self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]
+        self._file_values = [
+            self.energies.to(u.GeV).value,
+            self.unit_vectors,
+            self.types,
+            self.ang_errs.to(u.deg).value,
+            self.mjd.mjd,
+        ]
+
+        if append:
+            with h5py.File(filename, "r+") as f:
+                event_folder = f.create_group("events")
+
+                for key, value in zip(self._file_keys, self._file_values):
+                    event_folder.create_dataset(key, data=value)
+
+        else:
+            with h5py.File(filename, "w") as f:
+                event_folder = f.create_group("events")
+
+                for key, value in zip(self._file_keys, self._file_values):
+                    event_folder.create_dataset(key, data=value)
+
+    @classmethod
+    def from_ev_file(cls, p: str, Emin_det: u.GeV = 1 * u.GeV, **kwargs):
+        """
+        Load events from the 2021 data release
+        :param p: string of period to be loaded.
+        :param kwargs: kwargs passed to make an event selection, see `icecube_tools` documentation for details
+        :return: :class:`hierarchical_nu.events.Events`
+        """
+
+        from icecube_tools.utils.data import RealEvents
+
+        # Borrow from icecube_tools
+        use_all = kwargs.pop("use_all", True)
+        events = RealEvents.from_event_files(p, use_all=use_all)
+
+        # Check if minimum detected energy is currently loaded as parameter
+        try:
+            Emin_det = Parameter.get_parameter("Emin_det_t").value.to(u.GeV)
+            logger.warning(f"Overwriting Emin_det with {Emin_det}")
+        except ValueError:
+            try:
+                Emin_det = Parameter.get_parameter("Emin_det").value.to(u.GeV)
+                logger.warning(f"Overwriting Emin_det with {Emin_det}")
+            except ValueError:
+                pass
+
+        try:
+            roi = ROI.STACK[0]
+        except IndexError:
+            roi = ROI()
+
+        MJD_min = roi.MJD_min
+        MJD_max = roi.MJD_max
+        # events.restrict(**kwargs) # Do this completely in hnu, icecube_tools lacks the RA-wrapping right now, TODO...
+        # Read in relevant data
+        ra = events.ra[p] * u.rad
+        dec = events.dec[p] * u.rad
+        reco_energy = events.reco_energy[p] * u.GeV
+        period = ra.size * [p]
+        mjd = events.mjd[p]
+
+        if roi.RA_min > roi.RA_max:
+            mask = np.nonzero(
+                (
+                    (dec <= roi.DEC_max)
+                    & (dec >= roi.DEC_min)
+                    & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                    & (reco_energy >= Emin_det)
+                    & (mjd >= MJD_min)
+                    & (mjd <= MJD_max)
+                )
+            )
+        else:
+            mask = np.nonzero(
+                (
+                    (dec <= roi.DEC_max)
+                    & (dec >= roi.DEC_min)
+                    & (ra >= roi.RA_min)
+                    & (ra <= roi.RA_max)
+                    & (reco_energy >= Emin_det)
+                    & (mjd >= MJD_min)
+                    & (mjd <= MJD_max)
+                )
+            )
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = events.ang_err[p] * u.deg
         types = np.array(ra.size * [TRACKS])
         coords = SkyCoord(ra, dec, frame="icrs")
+        mjd = Time(mjd, format="mjd")
         return cls(
             reco_energy[mask],
             coords[mask],
             types[mask],
             ang_err[mask],
+            mjd[mask],
             p,
         )

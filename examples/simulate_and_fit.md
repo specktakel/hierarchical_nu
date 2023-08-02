@@ -109,6 +109,8 @@ Below are shown all the necessary steps to set up and run a simulation for clari
 sim.precomputation()
 ```
 
+To print the number of expected events, call the following methods.
+
 ```python
 print(sim._get_expected_Nnu(sim._get_sim_inputs()))
 print(sim._expected_Nnu_per_comp)
@@ -118,22 +120,17 @@ print(sim._expected_Nnu_per_comp)
 sim.generate_stan_code()
 sim.compile_stan_code()
 sim.run(verbose=True, seed=42) 
-sim.save("output/test_sim_file.h5")
-# for already compiled models that should be re-loaded there is a special method:
-# sim.setup_stan_sim(".stan_files/sim_code")
-# which takes the filename of the compiled model as sole argument
-# source selection should macht up with the compiled model, otherwise cmdstanpy will complain
+sim.save("output/test_sim_file.h5", overwrite=True)
 ```
 
-We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~90 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
+For already compiled models that should be re-loaded there is a special method `sim.setup_stan_sim(".stan_files/sim_code")` which takes the filename of the compiled model as sole argument. Source selection should macht up with the compiled model, otherwise cmdstanpy will complain. The `save` method (also the one of the fit) has a keyword `overwrite` which needs to be set to `True`. Otherwise, if a file of the specified name already exsists, an exception is raised.
+
+
+We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~50 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
 
 ```python
 fig, axs = sim.show_spectrum()
-# fig, axs = show_spectrum(scale="log")  displays plots with y axis on a log scale
-```
-
-```python
-fig, ax = sim.show_skymap()
+# fig, axs = sim.show_spectrum(scale="log")  displays plots with y axis on a log scale
 ```
 
 ## Fit 
@@ -172,7 +169,10 @@ fit = StanFit(my_sources, R2021DetectorModel, events, obs_time, priors=priors, n
 # optional keyword nshards=5 or other integer, activates multithreading
 ```
 
-Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes around 5 min on one core.
+The kwarg `nshards` accepts integer numbers. Any number greater than 1 will cause the model to be compiled with multithreading. This leads to a different model code, where the data is split up in shards. For each shard one thread is used to calculate the loglikelihood, which in the end is summed up and added to stan's `target`. Using `nshards=1` or not specifying it at all will compile a 'normal' model code without multithreading.
+
+
+Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes around 5 min on one core (or roughly one minute on 10 cores).
 
 Sometimes the MCMC needs a little help getting started, for this we can set `inits={"L": 1e50, "src_index": 2.3}` and other model parameters in `fit.run()` with a value to start from.
 
@@ -187,11 +187,17 @@ fit.run(show_progress=True, seed=42)
 Some methods are included for basic plots, but the `fit._fit_output` is a `CmdStanMCMC` object that can be passed to `arviz` for fancier options.
 
 ```python
-fit.plot_trace()
+axs = fit.plot_trace()
+```
+
+We can also overplot the used priors (if there are priors available for the variables) by calling a different method. Both return a list of axes.
+
+```python
+axs = fit.plot_trace_and_priors()
 ```
 
 ```python
-fit.save("output/test.h5")
+fit.save("output/test.h5", overwrite=True)
 ```
 
 We can check the results of the fit against the known true values from the above simulation. The `SimInfo` class pulls the interesting information out of our saved simulation for this purpose. 
@@ -215,7 +221,8 @@ With this information we can update the simulated spectrum and see at which ener
 
 ```python
 fig, axs = sim.show_spectrum()
-for et, er in zip(events.true_energies[wrong].value, events.energies[wrong].value):
+for es, et, er in zip(sim._sim_output.stan_variable("Esrc")[0][wrong], sim._sim_output.stan_variable("E")[0][wrong], events.energies[wrong].value):
+    axs[0].axvline(et, 0.9, 1, color="black")   # at source
     axs[1].axvline(et, 0.9, 1, color="black")   # at detector
     axs[2].axvline(er, 0.9, 1, color="black")   # reconstructed
 
@@ -229,13 +236,9 @@ ax.hist(fit._fit_output.stan_variable("Nex_atmo"), alpha=0.5)
 ax.axvline(sim._expected_Nnu_per_comp[0], color="blue")
 ax.axvline(sim._expected_Nnu_per_comp[1], color="orange")
 ax.axvline(sim._expected_Nnu_per_comp[2], color="green")
-ax.axvline(np.sum(events.lambdas==0.), color="blue", ls='--')
-ax.axvline(np.sum(events.lambdas==1.), color="orange", ls='--')
-ax.axvline(np.sum(events.lambdas==2.), color="green", ls='--')
-```
-
-```python
-my_sources.sources[0].name
+ax.axvline(np.sum(sim._sim_output.stan_variable("Lambda")[0]==1.), color="blue", ls='--')
+ax.axvline(np.sum(sim._sim_output.stan_variable("Lambda")[0]==2.), color="orange", ls='--')
+ax.axvline(np.sum(sim._sim_output.stan_variable("Lambda")[0]==3.), color="green", ls='--')
 ```
 
 ```python
