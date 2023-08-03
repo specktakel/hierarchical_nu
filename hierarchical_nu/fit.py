@@ -4,6 +4,7 @@ import h5py
 import logging
 import collections
 from astropy import units as u
+from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from typing import List, Union
 import corner
@@ -378,7 +379,10 @@ class StanFit:
         ev_class = np.array(self._get_event_classifications())
 
         axs = self.plot_trace(
-            var_names=["E"], transform=lambda x: np.log10(x), show=False
+            var_names=["E"],
+            transform=lambda x: np.log10(x),
+            show=False,
+            combined=True
         )
 
         min = 0.0
@@ -493,6 +497,8 @@ class StanFit:
             meta_folder.create_dataset("runset", data=str(self._fit_output.runset))
             meta_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
 
+        self.events.to_file(filename, append=True)
+
     @classmethod
     def from_file(cls, filename):
         """
@@ -559,14 +565,7 @@ class StanFit:
             mu=priors_dict["f_diff_mu"], sigma=priors_dict["f_diff_sigma"]
         )
 
-        energies = fit_inputs["Edet"] << u.GeV
-        sky_coords = SkyCoord(
-            fit_inputs["omega_det"], frame="icrs", representation_type="cartesian"
-        )
-        types = fit_inputs["event_type"]
-        kappas = fit_inputs["kappa"]
-        ang_errs = get_theta_p(kappas, p=0.683) << u.deg
-        events = Events(energies, sky_coords, types, ang_errs)
+        events = Events.from_file(filename)
 
         fit = cls(Sources(), DetectorModel, events, obs_time, priors)
 
