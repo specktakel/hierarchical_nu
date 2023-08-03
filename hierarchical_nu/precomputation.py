@@ -240,12 +240,16 @@ class ExposureIntegral:
             else:
                 # TODO: fix
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    e_cen, self._min_det_energy
+                    E_c, self._min_det_energy
                 )
+                p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
             p_Edet = np.nan_to_num(p_Edet)
 
             output = np.sum(
-                np.sum(aeff_vals * flux_vals * p_Edet * d_omega[:, np.newaxis], axis=0)
+                np.sum(
+                    aeff_vals * flux_vals * p_Edet * d_omega[:, np.newaxis],
+                    axis=0,
+                )
                 * d_E,
                 axis=0,
             )
