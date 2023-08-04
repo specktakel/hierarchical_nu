@@ -3,6 +3,7 @@ Implements ROI with cuts on sky region for analysis
 """
 
 import astropy.units as u
+from astropy.time import Time
 import numpy as np
 
 import logging
@@ -24,11 +25,15 @@ class ROI:
         RA_max=2.0 * np.pi * u.rad,
         DEC_min=-np.pi / 2 * u.rad,
         DEC_max=np.pi / 2 * u.rad,
+        MJD_min=0.0,
+        MJD_max=np.inf,
     ):
         self._RA_min = RA_min
         self._RA_max = RA_max
         self._DEC_min = DEC_min
         self._DEC_max = DEC_max
+        self._MJD_min = MJD_min
+        self._MJD_max = MJD_max
 
         self.check_boundaries()
 
@@ -55,6 +60,14 @@ class ROI:
     @property
     def DEC_max(self):
         return self._DEC_max
+
+    @property
+    def MJD_min(self):
+        return self._MJD_min
+
+    @property
+    def MJD_max(self):
+        return self._MJD_max
 
     @RA_min.setter
     @u.quantity_input

@@ -145,8 +145,9 @@ class ExposureIntegral:
         DEC_min = roi.DEC_min
         DEC_max = roi.DEC_max
 
-        lower_e_edges = self.effective_area.tE_bin_edges[:-1] << u.GeV
-        upper_e_edges = self.effective_area.tE_bin_edges[1:] << u.GeV
+        lower_e_edges = self.effective_area.tE_bin_edges[:-1].copy() << u.GeV
+        upper_e_edges = self.effective_area.tE_bin_edges[1:].copy() << u.GeV
+
         e_cen = (lower_e_edges + upper_e_edges) / 2
 
         E_min = lower_e_edges[0]
@@ -238,7 +239,6 @@ class ExposureIntegral:
                 )
 
             else:
-                # TODO: fix
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                     E_c, self._min_det_energy
                 )
@@ -253,16 +253,6 @@ class ExposureIntegral:
                 * d_E,
                 axis=0,
             )
-            """
-            integral = source.flux_model.integral(
-                lower_e_edges[:, np.newaxis],
-                upper_e_edges[:, np.newaxis],
-                dec_lower[np.newaxis, :],
-                dec_upper[np.newaxis, :],
-                0 * u.rad,
-                RA_diff,
-            ).to(integral_unit)
-            """
 
         return output
 

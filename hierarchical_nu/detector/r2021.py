@@ -966,7 +966,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 # self._rE_bin_edges = rE_bin_edges
                 if self.make_plots:
                     for c, dec in enumerate(self._declination_bins[:-1]):
-                        self.set_fit_params(dec + 0.01)
+                        self.set_fit_params((dec + 0.01) * u.rad)
+
                         fig = self.plot_fit_params(
                             self._fit_params, self._rebin_tE_binc[c]
                         )
@@ -1047,7 +1048,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         and restrict the threshold energy by the found values.
         Optional argument upper_threshold_energy used for debugging and diagnostic plots
         """
-        # self.set_fit_params(dec.value)
+        self.set_fit_params(dec)
         # Truncate input energies to safe range
         energy_trunc = true_energy.to(u.GeV).value
         energy_trunc = np.atleast_1d(energy_trunc)
@@ -1070,7 +1071,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         # Limits of Ereco in dec binning of effective area
         dec_idx = (
-            np.digitize(dec.value, self._icecube_tools_eres.declination_bins_aeff) - 1
+            np.digitize(
+                dec.to_value(u.rad), self._icecube_tools_eres.declination_bins_aeff
+            )
+            - 1
         )
         # Get the according IRF dec bins (there are only 3)
         irf_dec_idx = np.digitize(dec.to_value(u.rad), self._declination_bins) - 1
@@ -1082,7 +1086,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             # Otherwise we will cause errors
             if c not in irf_dec_idx:
                 continue
-            self.set_fit_params(d + 0.01)
+            self.set_fit_params((d + 0.01) * u.rad)
 
             model = self.make_cumulative_model(self.n_components)
 
@@ -1104,6 +1108,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             ethr_low = np.log10(
                 lower_threshold_energy[irf_dec_idx == c].to_value(u.GeV)
             )
+
             # print(ethr_low)
             e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
             if upper_threshold_energy is None:
@@ -1453,11 +1458,12 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         cls(DistributionMode.PDF, rewrite=True)
         cls(DistributionMode.RNG, rewrite=True)
 
-    def set_fit_params(self, dec) -> None:
+    @u.quantity_input
+    def set_fit_params(self, dec: u.rad) -> None:
         """
         Used in `sim_interface.py`
         """
-        dec_idx = np.digitize(dec, self._declination_bins) - 1
+        dec_idx = np.digitize(dec.to_value(u.rad), self._declination_bins) - 1
         if dec == np.pi / 2:
             dec_idx -= 1
 

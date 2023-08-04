@@ -14,6 +14,7 @@ def test_event_selection():
     roi = ROI(DEC_min=0.0 * u.rad)
     events = Events.from_ev_file("IC86_II")
     assert events.coords.z.min() >= 0.0
+    roi = ROI()
 
 
 def test_event_selection_wrap(caplog):
@@ -30,10 +31,13 @@ def test_event_selection_wrap(caplog):
 
     assert "RA_max is smaller than RA_min" in caplog.text
 
+    roi = ROI()
+
 
 def test_range():
     with pytest.raises(ValueError):
         roi = ROI(DEC_max=3 * u.rad)
+    roi = ROI()
 
 
 def test_precomputation():
