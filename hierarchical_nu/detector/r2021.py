@@ -1048,7 +1048,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         and restrict the threshold energy by the found values.
         Optional argument upper_threshold_energy used for debugging and diagnostic plots
         """
-        self.set_fit_params(dec)
+        # self.set_fit_params(dec)
         # Truncate input energies to safe range
         energy_trunc = true_energy.to(u.GeV).value
         energy_trunc = np.atleast_1d(energy_trunc)
