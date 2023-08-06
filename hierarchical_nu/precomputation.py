@@ -181,10 +181,13 @@ class ExposureIntegral:
                 aeff_vals = np.zeros(E_c.shape) << (u.m**2)
 
             else:
-                aeff_vals = self.effective_area.eff_area_spline(
-                    np.vstack(
-                        (np.log10(E_c.to_value(u.GeV)), np.full(E_c.shape, cosz))
-                    ).T,
+                aeff_vals = np.power(
+                    10,
+                    self.effective_area.eff_area_spline(
+                        np.vstack(
+                            (np.log10(E_c.to_value(u.GeV)), np.full(E_c.shape, cosz))
+                        ).T,
+                    ),
                 ) << (u.m**2)
 
             p_Edet = self.energy_resolution.prob_Edet_above_threshold(
@@ -224,8 +227,11 @@ class ExposureIntegral:
             E_grid, dec_grid = np.meshgrid(E_c, dec_c)
 
             aeff_vals = (
-                self._effective_area.eff_area_spline(
-                    np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
+                np.power(
+                    10,
+                    self._effective_area.eff_area_spline(
+                        np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
+                    ),
                 ).reshape(log_E_grid.shape)
                 * u.m**2
             )

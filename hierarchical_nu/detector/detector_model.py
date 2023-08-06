@@ -45,9 +45,9 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
 
         self._eff_area_spline = RegularGridInterpolator(
             (log_tE_bin_c, cosz_c),
-            self._eff_area,
+            np.log10(self._eff_area),
             bounds_error=False,
-            fill_value=0.0,
+            fill_value=-10,
             method="linear",
         )
 
