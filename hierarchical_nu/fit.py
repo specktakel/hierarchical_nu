@@ -368,31 +368,14 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
-    def plot_energy_posterior(self):
-        """
-        Plot energy posteriors in log10-space.
-        Color corresponds to association to point source presumed
-        to be in self.sources[0]
-        TODO: make compatible with multiple PS
-        """
-
+    def _plot_energy_posterior(self, input_axs, ax):
         ev_class = np.array(self._get_event_classifications())
 
-        axs = self.plot_trace(
-            var_names=["E"],
-            transform=lambda x: np.log10(x),
-            show=False,
-            combined=True
-        )
-
-        min = 0.0
-        max = 1.0
-        norm = colors.Normalize(min, max, clip=True)
+        norm = colors.Normalize(0.0, 1.0, clip=True)
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
         color = mapper.to_rgba(ev_class[:, 0])
 
-        fig, ax = plt.subplots()
-        for c, line in enumerate(axs[0, 0].lines):
+        for c, line in enumerate(input_axs[0, 0].lines):
             ax.plot(
                 np.power(10, line.get_data()[0]),
                 line.get_data()[1],
@@ -402,30 +385,57 @@ class StanFit:
         _, yhigh = ax.get_ylim()
         ax.set_xscale("log")
 
-        ax_reco = ax.twiny()
-        ax_reco.set_xscale("log")
-        ax_reco.set_xlim(ax.get_xlim())
-        ax_reco.vlines(
-            self.events.energies.to_value(u.GeV), 0.9 * yhigh, yhigh, color=color
-        )
-        ax_reco.set_xlabel(r"$\hat E~[\text{GeV}]$")
+        for c, line in enumerate(input_axs[0, 0].lines):
+            ax.vlines(
+                self.events.energies[c].to_value(u.GeV),
+                yhigh,
+                1.05 * yhigh,
+                color=color[c],
+                lw=1,
+                zorder=ev_class[c, 0] + 1,
+            )
+            if ev_class[c, 0] > 0.1:
+                # if we have more than 40% association prob, link both lines up
+                x, y = input_axs[0, 0].lines[c].get_data()
+                idx_posterior = np.argmax(y)
+                ax.plot(
+                    [
+                        np.power(10, x[idx_posterior]),
+                        self.events.energies[c].to_value(u.GeV),
+                    ],
+                    [y[idx_posterior], yhigh],
+                    lw=0.5,
+                    color="black",
+                    ls="--",
+                )
+
+        ax.text(1e7, yhigh, "$\hat E$")
 
         ax.set_xlabel(r"$E~[\text{GeV}]$")
         ax.set_ylabel("pdf")
+
+        return ax, mapper
+
+    def plot_energy_posterior(self):
+        """
+        Plot energy posteriors in log10-space.
+        Color corresponds to association to point source presumed
+        to be in self.sources[0]
+        TODO: make compatible with multiple PS
+        """
+
+        axs = self.plot_trace(
+            var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
+        )
+
+        fig, ax = plt.subplots(dpi=150)
+
+        ax, mapper = self._plot_energy_posterior(axs, ax)
         fig.colorbar(mapper, label="PS association probability")
 
         return fig, ax
 
-    @u.quantity_input
-    def plot_roi(self, source_coords: SkyCoord, radius=5.0 * u.deg):
-        """
-        Create plot of the ROI.
-        Events are colour-coded dots, color corresponding
-        to the association probability to the point source proposed.
-        Assumes there is a point source in self.sources[0].
-        Size of events are meaningless.
-        """
-
+    def _plot_roi(self, source_coords, ax):
         ev_class = np.array(self._get_event_classifications())
         min = 0.0
         max = 1.0
@@ -435,14 +445,6 @@ class StanFit:
 
         events = self.events
         events.coords.representation_type = "spherical"
-        # we are working in degrees here
-        fig, ax = plt.subplots(
-            subplot_kw={
-                "projection": "astro degrees zoom",
-                "center": source_coords,
-                "radius": f"{radius.to_value(u.deg)} deg",
-            }
-        )
 
         ax.scatter(
             source_coords.ra.deg,
@@ -466,9 +468,71 @@ class StanFit:
 
         ax.set_xlabel("RA")
         ax.set_ylabel("DEC")
-        cbar = fig.colorbar(mapper)
-        cbar.set_label("TXS association probability")
         ax.grid()
+
+        return ax
+
+    @u.quantity_input
+    def plot_roi(self, source_coords: SkyCoord, radius=5.0 * u.deg):
+        """
+        Create plot of the ROI.
+        Events are colour-coded dots, color corresponding
+        to the association probability to the point source proposed.
+        Assumes there is a point source in self.sources[0].
+        Size of events are meaningless.
+        """
+
+        # we are working in degrees here
+        fig, ax = plt.subplots(
+            subplot_kw={
+                "projection": "astro degrees zoom",
+                "center": source_coords,
+                "radius": f"{radius.to_value(u.deg)} deg",
+            },
+            dpi=150
+        )
+
+        ax = self._plot_roi(source_coords, ax)
+
+        return fig, ax
+
+    @u.quantity_input
+    def plot_energy_and_roi(self, source_coords: SkyCoord, radius=5 * u.deg):
+        fig = plt.figure(dpi=150, figsize=(8, 3))
+        gs = fig.add_gridspec(
+            1,
+            2,
+            width_ratios=(0.8, 1.0),
+            left=0.05,
+            right=0.95,
+            bottom=0.05,
+            top=0.95,
+            wspace=0.13,
+            hspace=0.05,
+        )
+
+        ax = fig.add_subplot(gs[0, 1])
+
+        axs = self.plot_trace(
+            var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
+        )
+
+        ax, mapper = self._plot_energy_posterior(axs, ax)
+
+        ax.set_xlabel(r"$E~[\text{GeV}]$")
+        ax.yaxis.set_ticklabels([])
+        ax.yaxis.set_ticks([])
+        ax.set_ylabel("posterior pdf")
+        fig.colorbar(mapper, label="PS association probability", ax=ax)
+
+        ax = fig.add_subplot(
+            gs[0, 0],
+            projection="astro degrees zoom",
+            center=source_coords,
+            radius=f"{radius.to_value(u.deg)} deg",
+        )
+
+        ax = self._plot_roi(source_coords, ax)
 
         return fig, ax
 
