@@ -2,6 +2,7 @@ import numpy as np
 import os
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
 import h5py
 from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
@@ -191,6 +192,9 @@ class Simulation:
 
         energies, coords, event_types, ang_errs = self._extract_sim_output()
 
+        # Create filler MJD values, we are only doing time-averaged simulations
+        mjd = Time([99.0] * len(energies), format="mjd")
+
         # Check for detected events
         if len(energies) != 0:
             self.events = Events(energies, coords, event_types, ang_errs)
@@ -225,7 +229,10 @@ class Simulation:
 
         return energies, coords, event_types, ang_errs
 
-    def save(self, filename):
+    def save(self, filename, overwrite: bool = False):
+        if os.path.exists(filename) and not overwrite:
+            raise FileExistsError(f"File {filename} already exists.")
+
         with h5py.File(filename, "w") as f:
             sim_folder = f.create_group("sim")
 

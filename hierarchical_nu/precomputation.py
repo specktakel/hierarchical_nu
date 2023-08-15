@@ -136,8 +136,8 @@ class ExposureIntegral:
     def calculate_rate(self, source):
         z = source.redshift
 
-        lower_e_edges = self.effective_area.tE_bin_edges[:-1] << u.GeV
-        upper_e_edges = self.effective_area.tE_bin_edges[1:] << u.GeV
+        lower_e_edges = self.effective_area.tE_bin_edges[:-1].copy() << u.GeV
+        upper_e_edges = self.effective_area.tE_bin_edges[1:].copy() << u.GeV
         e_cen = (lower_e_edges + upper_e_edges) / 2
 
         integral_unit = 1 / (u.m**2 * u.s)
@@ -166,8 +166,6 @@ class ExposureIntegral:
                     ]
                     * u.m**2
                 )
-            if isinstance(self.energy_resolution, R2021EnergyResolution):
-                self.energy_resolution.set_fit_params(dec.value)
 
             p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                 e_cen, self._min_det_energy, dec
@@ -224,7 +222,6 @@ class ExposureIntegral:
                 p_Edet = np.zeros((dec_upper.size, e_cen.size))
                 for c, (dec_l, dec_h) in enumerate(zip(dec_lower, dec_upper)):
                     dec = (dec_l + dec_h) / 2
-                    self.energy_resolution.set_fit_params(dec.value)
                     p_Edet[c] = self.energy_resolution.prob_Edet_above_threshold(
                         e_cen, self._min_det_energy, dec
                     )

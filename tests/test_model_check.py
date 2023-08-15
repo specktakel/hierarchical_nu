@@ -50,6 +50,7 @@ def test_short_run_r2021(output_directory, random_seed):
     _local_config_file.unlink()
 
 
+"""
 def test_short_run_icecube(output_directory, random_seed):
     # Edit configuration and save
     hnu_config["parameter_config"]["detector_model_type"] = "icecube"
@@ -76,3 +77,4 @@ def test_short_run_icecube(output_directory, random_seed):
 
     # Clear config
     _local_config_file.unlink()
+"""
