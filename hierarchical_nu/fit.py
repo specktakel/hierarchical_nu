@@ -368,12 +368,13 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
-    def _plot_energy_posterior(self, input_axs, ax):
+    def _plot_energy_posterior(self, input_axs, ax, source_idx):
         ev_class = np.array(self._get_event_classifications())
+        assoc_prob = ev_class[:, source_idx]
 
         norm = colors.Normalize(0.0, 1.0, clip=True)
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
-        color = mapper.to_rgba(ev_class[:, 0])
+        color = mapper.to_rgba(assoc_prob)
 
         for c, line in enumerate(input_axs[0, 0].lines):
             ax.plot(
@@ -392,9 +393,9 @@ class StanFit:
                 1.05 * yhigh,
                 color=color[c],
                 lw=1,
-                zorder=ev_class[c, 0] + 1,
+                zorder=assoc_prob[c] + 1,
             )
-            if ev_class[c, 0] > 0.1:
+            if assoc_prob[c] > 0.1:
                 # if we have more than 40% association prob, link both lines up
                 x, y = input_axs[0, 0].lines[c].get_data()
                 idx_posterior = np.argmax(y)
@@ -416,7 +417,7 @@ class StanFit:
 
         return ax, mapper
 
-    def plot_energy_posterior(self):
+    def plot_energy_posterior(self, source_idx: int = 0):
         """
         Plot energy posteriors in log10-space.
         Color corresponds to association to point source presumed
@@ -430,18 +431,20 @@ class StanFit:
 
         fig, ax = plt.subplots(dpi=150)
 
-        ax, mapper = self._plot_energy_posterior(axs, ax)
-        fig.colorbar(mapper, label="PS association probability")
+        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx)
+        fig.colorbar(mapper, ax=ax, label="association probability to {source_idx:n}")
 
         return fig, ax
 
-    def _plot_roi(self, source_coords, ax, radius):
+    def _plot_roi(self, source_coords, ax, radius, source_idx):
         ev_class = np.array(self._get_event_classifications())
+        assoc_prob = ev_class[:, source_idx]
+
         min = 0.0
         max = 1.0
         norm = colors.Normalize(min, max, clip=True)
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
-        color = mapper.to_rgba(ev_class[:, 0])
+        color = mapper.to_rgba(assoc_prob)
 
         events = self.events
         events.coords.representation_type = "spherical"
@@ -464,7 +467,7 @@ class StanFit:
                 coord.dec.deg,
                 color=colour,
                 alpha=0.4,
-                zorder=ev_class[c, 0] + 1,
+                zorder=assoc_prob[c] + 1,
                 transform=ax.get_transform("icrs"),
             )
 
@@ -472,10 +475,10 @@ class StanFit:
         ax.set_ylabel("DEC")
         ax.grid()
 
-        return ax
+        return ax, mapper
 
     @u.quantity_input
-    def plot_roi(self, radius=5.0 * u.deg):
+    def plot_roi(self, radius=5.0 * u.deg, source_idx: int = 0):
         """
         Create plot of the ROI.
         Events are colour-coded dots, color corresponding
@@ -501,12 +504,13 @@ class StanFit:
             dpi=150,
         )
 
-        ax = self._plot_roi(source_coords, ax, radius)
+        ax, mapper = self._plot_roi(source_coords, ax, radius, source_idx)
+        fig.colorbar(mapper, ax=ax, label=f"association probability to {source_idx:n}")
 
         return fig, ax
 
     @u.quantity_input
-    def plot_energy_and_roi(self, radius=5 * u.deg):
+    def plot_energy_and_roi(self, radius=5 * u.deg, source_idx: int = 0):
         fig = plt.figure(dpi=150, figsize=(8, 3))
         gs = fig.add_gridspec(
             1,
@@ -526,13 +530,13 @@ class StanFit:
             var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
         )
 
-        ax, mapper = self._plot_energy_posterior(axs, ax)
+        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx)
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.yaxis.set_ticklabels([])
         ax.yaxis.set_ticks([])
         ax.set_ylabel("posterior pdf")
-        fig.colorbar(mapper, label="PS association probability", ax=ax)
+        fig.colorbar(mapper, label=f"association probability to {source_idx:n}", ax=ax)
 
         try:
             ra = self._sources.point_source[0].ra
@@ -548,7 +552,7 @@ class StanFit:
             radius=f"{radius.to_value(u.deg)} deg",
         )
 
-        ax = self._plot_roi(source_coords, ax, radius)
+        ax, _ = self._plot_roi(source_coords, ax, radius, source_idx)
 
         return fig, ax
 
