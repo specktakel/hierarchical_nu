@@ -435,7 +435,7 @@ class StanFit:
 
         return fig, ax
 
-    def _plot_roi(self, source_coords, ax):
+    def _plot_roi(self, source_coords, ax, radius):
         ev_class = np.array(self._get_event_classifications())
         min = 0.0
         max = 1.0
@@ -445,7 +445,9 @@ class StanFit:
 
         events = self.events
         events.coords.representation_type = "spherical"
-
+        sep = events.coords.separation(source_coords).deg
+        mask = sep < radius.to_value(u.deg) * 1.41
+        # sloppy, don't know how to do that rn
         ax.scatter(
             source_coords.ra.deg,
             source_coords.dec.deg,
@@ -456,7 +458,7 @@ class StanFit:
             transform=ax.get_transform("icrs"),
         )
 
-        for c, (colour, coord) in enumerate(zip(color, events.coords)):
+        for c, (colour, coord) in enumerate(zip(color[mask], events.coords[mask])):
             ax.scatter(
                 coord.ra.deg,
                 coord.dec.deg,
@@ -499,7 +501,7 @@ class StanFit:
             dpi=150,
         )
 
-        ax = self._plot_roi(source_coords, ax)
+        ax = self._plot_roi(source_coords, ax, radius)
 
         return fig, ax
 
@@ -546,7 +548,7 @@ class StanFit:
             radius=f"{radius.to_value(u.deg)} deg",
         )
 
-        ax = self._plot_roi(source_coords, ax)
+        ax = self._plot_roi(source_coords, ax, radius)
 
         return fig, ax
 
