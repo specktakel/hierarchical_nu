@@ -19,7 +19,7 @@ from cmdstanpy import CmdStanModel
 
 from icecube_tools.utils.vMF import get_theta_p
 
-from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
+from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_to_icrs
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
@@ -411,7 +411,7 @@ class StanFit:
 
         ax.text(1e7, yhigh, "$\hat E$")
 
-        ax.set_xlabel(r"$E~[\text{GeV}]$")
+        ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
 
         return ax, mapper
@@ -473,7 +473,7 @@ class StanFit:
         return ax
 
     @u.quantity_input
-    def plot_roi(self, source_coords: SkyCoord, radius=5.0 * u.deg):
+    def plot_roi(self, radius=5.0 * u.deg):
         """
         Create plot of the ROI.
         Events are colour-coded dots, color corresponding
@@ -481,6 +481,13 @@ class StanFit:
         Assumes there is a point source in self.sources[0].
         Size of events are meaningless.
         """
+
+        try:
+            ra = self._sources.point_source[0].ra
+            dec = self._sources.point_source[0].dec
+        except IndexError:
+            ra, dec = uv_to_icrs(self._fit_inputs["varpi"][0])
+        source_coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         # we are working in degrees here
         fig, ax = plt.subplots(
@@ -497,7 +504,7 @@ class StanFit:
         return fig, ax
 
     @u.quantity_input
-    def plot_energy_and_roi(self, source_coords: SkyCoord, radius=5 * u.deg):
+    def plot_energy_and_roi(self, radius=5 * u.deg):
         fig = plt.figure(dpi=150, figsize=(8, 3))
         gs = fig.add_gridspec(
             1,
@@ -519,11 +526,18 @@ class StanFit:
 
         ax, mapper = self._plot_energy_posterior(axs, ax)
 
-        ax.set_xlabel(r"$E~[\text{GeV}]$")
+        ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.yaxis.set_ticklabels([])
         ax.yaxis.set_ticks([])
         ax.set_ylabel("posterior pdf")
         fig.colorbar(mapper, label="PS association probability", ax=ax)
+
+        try:
+            ra = self._sources.point_source[0].ra
+            dec = self._sources.point_source[0].dec
+        except IndexError:
+            ra, dec = uv_to_icrs(self._fit_inputs["varpi"][0])
+        source_coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         ax = fig.add_subplot(
             gs[0, 0],
@@ -580,8 +594,12 @@ class StanFit:
             if "fit" not in f.keys():
                 raise ValueError("File is not a saved hierarchical_nu fit.")
 
-            for k, v in f["fit/meta"].items():
-                fit_meta[k] = v[()]
+            try:
+                for k, v in f["fit/meta"].items():
+                    fit_meta[k] = v[()]
+            except KeyError:
+                fit_meta["chains"] = 1
+                fit_meta["iter_sampling"] = 1000
 
             for k, v in f["fit/inputs"].items():
                 if "mu" in k or "sigma" in k:
