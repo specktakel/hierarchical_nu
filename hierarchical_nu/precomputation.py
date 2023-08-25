@@ -133,9 +133,7 @@ class ExposureIntegral:
     def integral_fixed_vals(self):
         return self._integral_fixed_vals
 
-    def calculate_rate(self, source):
-        z = source.redshift
-
+    def calculate_rate(self, source, Ebins=None):
         try:
             roi = ROI.STACK[0]
         except IndexError:
@@ -145,10 +143,15 @@ class ExposureIntegral:
         DEC_min = roi.DEC_min
         DEC_max = roi.DEC_max
 
-        lower_e_edges = self.effective_area.tE_bin_edges[:-1].copy() << u.GeV
-        upper_e_edges = self.effective_area.tE_bin_edges[1:].copy() << u.GeV
+        # Emin determined as `Parameter` instance is accounted for
+        # in the spectral shapes of the individual sources
+        if Ebins is None:
+            lower_e_edges = self.effective_area.tE_bin_edges[:-1].copy() << u.GeV
+            upper_e_edges = self.effective_area.tE_bin_edges[1:].copy() << u.GeV
 
-        e_cen = (lower_e_edges + upper_e_edges) / 2
+        else:
+            lower_e_edges = Ebins[:-1] << u.GeV
+            upper_e_edges = Ebins[1:] << u.GeV
 
         E_min = lower_e_edges[0]
         E_max = upper_e_edges[-1]
@@ -157,8 +160,6 @@ class ExposureIntegral:
         log_E_c = log_E_space[:-1] + np.diff(log_E_space) / 2
         E_c = np.power(10, log_E_c) * u.GeV
         d_E = np.diff(np.power(10, log_E_space)) * u.GeV
-
-        integral_unit = 1 / (u.m**2 * u.s)
 
         if isinstance(source, PointSource):
             # For point sources the integral over the space angle is trivial
@@ -201,18 +202,13 @@ class ExposureIntegral:
             # try to ignore this, fill value is zero outside of range covered by IRF
             # so we can just always use the ROI's angles
 
-            # try 200 points over -1, 1 in cosz, i.e. 100 points per hemisphere (i.e. 99.5 evaluations per hemisphere)
-            lower_cz_edges = self.effective_area.cosz_bin_edges[:-1].copy()
-            upper_cz_edges = self.effective_area.cosz_bin_edges[1:].copy()
-
-            points_per_cosz = 100
-
             cosz_min = -np.sin(DEC_max)
             cosz_max = -np.sin(DEC_min)
 
-            cosz_edges = np.linspace(
-                cosz_min, cosz_max, int((cosz_max - cosz_min) / 2 * 100)
-            )
+            num_of_points = int((cosz_max - cosz_min) * 500)
+            if num_of_points < 50:
+                num_of_points = 50
+            cosz_edges = np.linspace(cosz_min, cosz_max, num_of_points)
             cosz_c = cosz_edges[:-1] + np.diff(cosz_edges) / 2
             dec_c = -np.arcsin(cosz_c) << u.rad
 
@@ -259,6 +255,9 @@ class ExposureIntegral:
                 * d_E,
                 axis=0,
             )
+
+            if output == 0.0 / u.s:
+                print(aeff_vals, p_Edet, flux_vals, d_omega, cosz_edges)
 
         return output
 
