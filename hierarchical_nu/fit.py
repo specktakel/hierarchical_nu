@@ -19,7 +19,7 @@ from cmdstanpy import CmdStanModel
 
 from icecube_tools.utils.vMF import get_theta_p
 
-from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
+from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_to_icrs
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
@@ -368,12 +368,13 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
-    def _plot_energy_posterior(self, input_axs, ax):
+    def _plot_energy_posterior(self, input_axs, ax, source_idx):
         ev_class = np.array(self._get_event_classifications())
+        assoc_prob = ev_class[:, source_idx]
 
         norm = colors.Normalize(0.0, 1.0, clip=True)
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
-        color = mapper.to_rgba(ev_class[:, 0])
+        color = mapper.to_rgba(assoc_prob)
 
         for c, line in enumerate(input_axs[0, 0].lines):
             ax.plot(
@@ -392,9 +393,9 @@ class StanFit:
                 1.05 * yhigh,
                 color=color[c],
                 lw=1,
-                zorder=ev_class[c, 0] + 1,
+                zorder=assoc_prob[c] + 1,
             )
-            if ev_class[c, 0] > 0.1:
+            if assoc_prob[c] > 0.1:
                 # if we have more than 40% association prob, link both lines up
                 x, y = input_axs[0, 0].lines[c].get_data()
                 idx_posterior = np.argmax(y)
@@ -411,12 +412,12 @@ class StanFit:
 
         ax.text(1e7, yhigh, "$\hat E$")
 
-        ax.set_xlabel(r"$E~[\text{GeV}]$")
+        ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
 
         return ax, mapper
 
-    def plot_energy_posterior(self):
+    def plot_energy_posterior(self, source_idx: int = 0):
         """
         Plot energy posteriors in log10-space.
         Color corresponds to association to point source presumed
@@ -435,16 +436,22 @@ class StanFit:
 
         return fig, ax
 
-    def _plot_roi(self, source_coords, ax):
+    def _plot_roi(self, source_coords, ax, radius, source_idx):
         ev_class = np.array(self._get_event_classifications())
+        assoc_prob = ev_class[:, source_idx]
+
         min = 0.0
         max = 1.0
         norm = colors.Normalize(min, max, clip=True)
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
-        color = mapper.to_rgba(ev_class[:, 0])
+        color = mapper.to_rgba(assoc_prob)
 
         events = self.events
         events.coords.representation_type = "spherical"
+
+        sep = events.coords.separation(source_coords).deg
+        mask = sep < radius.to_value(u.deg) * 1.41
+        # sloppy, don't know how to do that rn
 
         ax.scatter(
             source_coords.ra.deg,
@@ -456,13 +463,13 @@ class StanFit:
             transform=ax.get_transform("icrs"),
         )
 
-        for c, (colour, coord) in enumerate(zip(color, events.coords)):
+        for c, (colour, coord) in enumerate(zip(color[mask], events.coords[mask])):
             ax.scatter(
                 coord.ra.deg,
                 coord.dec.deg,
                 color=colour,
                 alpha=0.4,
-                zorder=ev_class[c, 0] + 1,
+                zorder=assoc_prob[c] + 1,
                 transform=ax.get_transform("icrs"),
             )
 
@@ -473,7 +480,7 @@ class StanFit:
         return ax
 
     @u.quantity_input
-    def plot_roi(self, source_coords: SkyCoord, radius=5.0 * u.deg):
+    def plot_roi(self, radius=5.0 * u.deg, source_idx: int = 0):
         """
         Create plot of the ROI.
         Events are colour-coded dots, color corresponding
@@ -482,6 +489,13 @@ class StanFit:
         Size of events are meaningless.
         """
 
+        try:
+            ra = self._sources.point_source[0].ra
+            dec = self._sources.point_source[0].dec
+        except IndexError:
+            ra, dec = uv_to_icrs(self._fit_inputs["varpi"][0])
+        source_coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
+
         # we are working in degrees here
         fig, ax = plt.subplots(
             subplot_kw={
@@ -489,15 +503,16 @@ class StanFit:
                 "center": source_coords,
                 "radius": f"{radius.to_value(u.deg)} deg",
             },
-            dpi=150
+            dpi=150,
         )
 
-        ax = self._plot_roi(source_coords, ax)
+        ax, mapper = self._plot_roi(source_coords, ax, radius, source_idx)
+        fig.colorbar(mapper, ax=ax, label=f"association probability to {source_idx:n}")
 
         return fig, ax
 
     @u.quantity_input
-    def plot_energy_and_roi(self, source_coords: SkyCoord, radius=5 * u.deg):
+    def plot_energy_and_roi(self, radius=5 * u.deg, source_idx: int = 0):
         fig = plt.figure(dpi=150, figsize=(8, 3))
         gs = fig.add_gridspec(
             1,
@@ -517,13 +532,20 @@ class StanFit:
             var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
         )
 
-        ax, mapper = self._plot_energy_posterior(axs, ax)
+        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx)
 
-        ax.set_xlabel(r"$E~[\text{GeV}]$")
+        ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.yaxis.set_ticklabels([])
         ax.yaxis.set_ticks([])
         ax.set_ylabel("posterior pdf")
-        fig.colorbar(mapper, label="PS association probability", ax=ax)
+        fig.colorbar(mapper, label=f"association probability to {source_idx:n}", ax=ax)
+
+        try:
+            ra = self._sources.point_source[0].ra
+            dec = self._sources.point_source[0].dec
+        except IndexError:
+            ra, dec = uv_to_icrs(self._fit_inputs["varpi"][0])
+        source_coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         ax = fig.add_subplot(
             gs[0, 0],
@@ -532,7 +554,7 @@ class StanFit:
             radius=f"{radius.to_value(u.deg)} deg",
         )
 
-        ax = self._plot_roi(source_coords, ax)
+        ax, _ = self._plot_roi(source_coords, ax, radius, source_idx)
 
         return fig, ax
 
@@ -580,8 +602,12 @@ class StanFit:
             if "fit" not in f.keys():
                 raise ValueError("File is not a saved hierarchical_nu fit.")
 
-            for k, v in f["fit/meta"].items():
-                fit_meta[k] = v[()]
+            try:
+                for k, v in f["fit/meta"].items():
+                    fit_meta[k] = v[()]
+            except KeyError:
+                fit_meta["chains"] = 1
+                fit_meta["iter_sampling"] = 1000
 
             for k, v in f["fit/inputs"].items():
                 if "mu" in k or "sigma" in k:
