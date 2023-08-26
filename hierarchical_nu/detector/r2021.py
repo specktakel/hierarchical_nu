@@ -65,7 +65,7 @@ Classes implement organisation of data and stan code generation.
 """
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 Cache.set_cache_dir(".cache")
 
 IRF_PERIOD = "IC86_II"
