@@ -1,15 +1,19 @@
 import numpy as np
 import h5py
 
+import matplotlib.pyplot as plt
+from matplotlib import colors
+import matplotlib.cm as cm
+
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
-from icecube_tools.utils.data import available_irf_periods
 from icecube_tools.utils.vMF import get_kappa
 
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.utils.roi import ROI
+from hierarchical_nu.utils.plotting import SphericalCircle
 
 import logging
 
@@ -276,3 +280,55 @@ class Events:
             mjd[mask],
             p,
         )
+
+    @u.quantity_input
+    def plot_energy(self, center_coords: SkyCoord, radius: 3 * u.deg):
+        fig, ax = plt.subplots(
+            subplot_kw={
+                "projection": "astro degrees zoom",
+                "center": center_coords,
+                "radius": f"{radius.to_value(u.deg)} deg",
+            },
+            dpi=150,
+        )
+
+        logNorm = colors.LogNorm(
+            self.energies.to_value(u.GeV).min(),
+            self.energies.to_value(u.GeV).max(),
+            clip=True,
+        )
+        linNorm = colors.Normalize(
+            self.energies.to_value(u.GeV).min(),
+            self.energies.to_value(u.GeV).max(),
+            clip=True,
+        )
+
+        mapper = cm.ScalarMappable(norm=logNorm, cmap=cm.viridis_r)
+        color = mapper.to_rgba(self.energies.to_value(u.GeV))
+
+        self.coords.representation_type = "spherical"
+        for r, d, c, e, energy in zip(
+            self.coords.icrs.ra,
+            self.coords.icrs.dec,
+            color,
+            self.ang_errs,
+            np.log10(self.energies.to_value(u.GeV)),
+        ):
+            circle = SphericalCircle(
+                (r, d),
+                e,
+                edgecolor=c,
+                alpha=0.5,
+                transform=ax.get_transform("icrs"),
+                zorder=linNorm(energy) + 1,
+                facecolor="None",
+            )
+
+            ax.add_patch(circle)
+
+        ax.set_xlabel("RA")
+        ax.set_ylabel("DEC")
+
+        fig.colorbar(mapper, ax=ax, label=r"$\hat E~[\mathrm{GeV}]$")
+
+        return fig, ax

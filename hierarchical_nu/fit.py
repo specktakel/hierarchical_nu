@@ -17,8 +17,6 @@ from math import ceil, floor
 
 from cmdstanpy import CmdStanModel
 
-from icecube_tools.utils.vMF import get_theta_p
-
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_to_icrs
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
@@ -28,6 +26,7 @@ from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
+from hierarchical_nu.utils.plotting import SphericalCircle
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -368,7 +367,7 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
-    def _plot_energy_posterior(self, input_axs, ax, source_idx):
+    def _plot_energy_posterior(self, input_axs, ax, source_idx, radius=None):
         ev_class = np.array(self._get_event_classifications())
         assoc_prob = ev_class[:, source_idx]
 
@@ -376,12 +375,28 @@ class StanFit:
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
         color = mapper.to_rgba(assoc_prob)
 
+        if radius is not None:
+            try:
+                ra = self._sources.point_source[0].ra
+                dec = self._sources.point_source[0].dec
+            except IndexError:
+                ra, dec = uv_to_icrs(self._fit_inputs["varpi"][0])
+            source_coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
+            events = self.events
+            events.coords.representation_type = "spherical"
+            sep = events.coords.separation(source_coords).deg
+            mask = sep < radius.to_value(u.deg) * 1.41
+        else:
+            mask = np.ones(assoc_prob.shape[0])
+
         for c, line in enumerate(input_axs[0, 0].lines):
+            if not mask[c]:
+                continue
             ax.plot(
                 np.power(10, line.get_data()[0]),
                 line.get_data()[1],
                 color=color[c],
-                zorder=ev_class[c, 0] + 1,
+                zorder=assoc_prob[c] + 1,
             )
         _, yhigh = ax.get_ylim()
         ax.set_xscale("log")
@@ -396,6 +411,8 @@ class StanFit:
                 zorder=assoc_prob[c] + 1,
             )
             if assoc_prob[c] > 0.1:
+                if not mask[c]:
+                    continue
                 # if we have more than 40% association prob, link both lines up
                 x, y = input_axs[0, 0].lines[c].get_data()
                 idx_posterior = np.argmax(y)
@@ -432,7 +449,7 @@ class StanFit:
         fig, ax = plt.subplots(dpi=150)
 
         ax, mapper = self._plot_energy_posterior(axs, ax, source_idx)
-        fig.colorbar(mapper, ax=ax, label="association probability to {source_idx:n}")
+        fig.colorbar(mapper, ax=ax, label=f"association probability to {source_idx:n}")
 
         return fig, ax
 
