@@ -9,6 +9,9 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
+import ligo.skymap.plot
+
+
 from icecube_tools.utils.vMF import get_kappa
 
 from hierarchical_nu.source.parameter import Parameter
