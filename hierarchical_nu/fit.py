@@ -12,12 +12,11 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.cm as cm
 import ligo.skymap.plot
+import arviz as av
 
 from math import ceil, floor
 
 from cmdstanpy import CmdStanModel
-
-from icecube_tools.utils.vMF import get_theta_p
 
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_to_icrs
 from hierarchical_nu.source.parameter import Parameter
@@ -28,6 +27,7 @@ from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
+from hierarchical_nu.utils.plotting import SphericalCircle
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -239,17 +239,25 @@ class StanFit:
             **kwargs,
         )
 
+    def get_src_position(self):
+        try:
+            ra = self._sources.point_source[0].ra
+            dec = self._sources.point_source[0].dec
+        except IndexError:
+            ra, dec = uv_to_icrs(self._fit_inputs["varpi"][0])
+        source_coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
+
+        return source_coords
+
     def plot_trace(self, var_names=None, **kwargs):
         """
         Trace plot using list of stan parameter keys.
         """
 
-        import arviz
-
         if not var_names:
             var_names = self._def_var_names
 
-        return arviz.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+        return av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
 
     def plot_trace_and_priors(self, var_names=None, **kwargs):
         """
@@ -381,7 +389,7 @@ class StanFit:
                 np.power(10, line.get_data()[0]),
                 line.get_data()[1],
                 color=color[c],
-                zorder=ev_class[c, 0] + 1,
+                zorder=assoc_prob[c] + 1,
             )
         _, yhigh = ax.get_ylim()
         ax.set_xscale("log")
@@ -395,8 +403,8 @@ class StanFit:
                 lw=1,
                 zorder=assoc_prob[c] + 1,
             )
-            if assoc_prob[c] > 0.1:
-                # if we have more than 40% association prob, link both lines up
+            if assoc_prob[c] > 0.2:
+                # if we have more than 20% association prob, link both lines up
                 x, y = input_axs[0, 0].lines[c].get_data()
                 idx_posterior = np.argmax(y)
                 ax.plot(
@@ -431,8 +439,8 @@ class StanFit:
 
         fig, ax = plt.subplots(dpi=150)
 
-        ax, mapper = self._plot_energy_posterior(axs, ax)
-        fig.colorbar(mapper, label="PS association probability")
+        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx)
+        fig.colorbar(mapper, ax=ax, label=f"association probability to {source_idx:n}")
 
         return fig, ax
 
@@ -489,12 +497,7 @@ class StanFit:
         Size of events are meaningless.
         """
 
-        try:
-            ra = self._sources.point_source[0].ra
-            dec = self._sources.point_source[0].dec
-        except IndexError:
-            ra, dec = uv_to_icrs(self._fit_inputs["varpi"][0])
-        source_coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
+        source_coords = self.get_src_position()
 
         # we are working in degrees here
         fig, ax = plt.subplots(
@@ -532,6 +535,8 @@ class StanFit:
             var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
         )
 
+        source_coords = self.get_src_position()
+
         ax, mapper = self._plot_energy_posterior(axs, ax, source_idx)
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -539,13 +544,6 @@ class StanFit:
         ax.yaxis.set_ticks([])
         ax.set_ylabel("posterior pdf")
         fig.colorbar(mapper, label=f"association probability to {source_idx:n}", ax=ax)
-
-        try:
-            ra = self._sources.point_source[0].ra
-            dec = self._sources.point_source[0].dec
-        except IndexError:
-            ra, dec = uv_to_icrs(self._fit_inputs["varpi"][0])
-        source_coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         ax = fig.add_subplot(
             gs[0, 0],
