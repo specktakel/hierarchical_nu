@@ -147,7 +147,7 @@ class AtmosphericNuMuFlux(FluxModel):
                 # High-energy hadronic interaction model
                 interaction_model="SIBYLL23C",
                 # cosmic ray flux at the top of the atmosphere
-                primary_model=(crf.HillasGaisser2012, "H3a"),
+                primary_model=(crf.HillasGaisser2012, "H4a"),
                 # zenith angle
                 theta_deg=0.0,
             )

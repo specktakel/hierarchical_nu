@@ -285,7 +285,9 @@ class StanFit:
             except:
                 pass
 
-        return axs
+        fig = axs.flatten()[0].get_figure()
+
+        return fig, axs
 
     def corner_plot(self, var_names=None, truths=None):
         """
@@ -485,7 +487,7 @@ class StanFit:
         ax.set_ylabel("DEC")
         ax.grid()
 
-        return ax
+        return ax, mapper
 
     @u.quantity_input
     def plot_roi(self, radius=5.0 * u.deg, source_idx: int = 0):
