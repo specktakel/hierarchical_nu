@@ -235,7 +235,7 @@ class ExposureIntegral:
             flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
 
             if isinstance(self.energy_resolution, R2021EnergyResolution):
-                p_Edet = np.zeros_like(E_grid)
+                # p_Edet = np.zeros_like(E_grid)
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                     E_grid, self._min_det_energy, dec_grid
                 )
@@ -317,8 +317,8 @@ class ExposureIntegral:
         Return a slice of the effective area at each point source's declination
         """
 
-        logelow = np.log10(self.effective_area.tE_bin_edges[:-1])
-        logehigh = np.log10(self._effective_area.tE_bin_edges[1:])
+        logelow = np.log10(self.effective_area.tE_bin_edges[:-1].copy())
+        logehigh = np.log10(self._effective_area.tE_bin_edges[1:].copy())
 
         ec = np.power(10, (logelow + logehigh) / 2) << u.GeV
 
@@ -330,7 +330,9 @@ class ExposureIntegral:
                 cosz = np.cos(np.pi - np.arccos(unit_vector[2]))
                 cosz_bin = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
 
-                aeff_slice = self.effective_area.eff_area[:, cosz_bin] << u.m**2
+                aeff_slice = (
+                    self.effective_area.eff_area[:, cosz_bin].copy() << u.m**2
+                )
 
                 self.pdet_grid.append(aeff_slice)
 
@@ -375,6 +377,11 @@ class ExposureIntegral:
                 aeff_values = []
                 for E in E_range:
                     idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
+                    if (
+                        np.isclose(E, Emax)
+                        and idx_E == self.effective_area.tE_bin_edges.size - 1
+                    ):
+                        idx_E -= 1
                     aeff_values.append(self.effective_area.eff_area[idx_E][idx_cosz])
                 f_values = (
                     source.flux_model.spectral_shape.pdf(
@@ -403,6 +410,11 @@ class ExposureIntegral:
                     aeff_values = []
                     for E in E_range:
                         idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
+                        if (
+                            np.isclose(E, Emax)
+                            and idx_E == self.effective_area.tE_bin_edges.size - 1
+                        ):
+                            idx_E -= 1
                         aeff_values.append(
                             self.effective_area.eff_area[idx_E][idx_cosz]
                         )
