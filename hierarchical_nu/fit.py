@@ -376,11 +376,16 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
-    def _plot_energy_posterior(self, input_axs, ax, source_idx):
+    def _plot_energy_posterior(self, input_axs, ax, source_idx, color_scale):
         ev_class = np.array(self._get_event_classifications())
         assoc_prob = ev_class[:, source_idx]
 
-        norm = colors.Normalize(0.0, 1.0, clip=True)
+        if color_scale == "lin":
+            norm = colors.Normalize(0.0, 1.0, clip=True)
+        elif color_scale == "log":
+            norm = colors.LogNorm(1e-8, 1.0, clip=True)
+        else:
+            raise ValueError("No other scale supported")
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
         color = mapper.to_rgba(assoc_prob)
 
@@ -425,7 +430,7 @@ class StanFit:
 
         return ax, mapper
 
-    def plot_energy_posterior(self, source_idx: int = 0):
+    def plot_energy_posterior(self, source_idx: int = 0, color_scale: str = "lin"):
         """
         Plot energy posteriors in log10-space.
         Color corresponds to association to point source presumed
@@ -439,18 +444,23 @@ class StanFit:
 
         fig, ax = plt.subplots(dpi=150)
 
-        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx)
+        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx, color_scale)
         fig.colorbar(mapper, ax=ax, label=f"association probability to {source_idx:n}")
 
         return fig, ax
 
-    def _plot_roi(self, source_coords, ax, radius, source_idx):
+    def _plot_roi(self, source_coords, ax, radius, source_idx, color_scale):
         ev_class = np.array(self._get_event_classifications())
         assoc_prob = ev_class[:, source_idx]
 
         min = 0.0
         max = 1.0
-        norm = colors.Normalize(min, max, clip=True)
+        if color_scale == "lin":
+            norm = colors.Normalize(min, max, clip=True)
+        elif color_scale == "log":
+            norm = colors.LogNorm(1e-8, max, clip=True)
+        else:
+            raise ValueError("No other scale supported")
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
         color = mapper.to_rgba(assoc_prob)
 
@@ -486,7 +496,9 @@ class StanFit:
         return ax, mapper
 
     @u.quantity_input
-    def plot_roi(self, radius=5.0 * u.deg, source_idx: int = 0):
+    def plot_roi(
+        self, radius=5.0 * u.deg, source_idx: int = 0, color_scale: str = "lin"
+    ):
         """
         Create plot of the ROI.
         Events are colour-coded dots, color corresponding
@@ -507,13 +519,15 @@ class StanFit:
             dpi=150,
         )
 
-        ax, mapper = self._plot_roi(source_coords, ax, radius, source_idx)
+        ax, mapper = self._plot_roi(source_coords, ax, radius, source_idx, color_scale)
         fig.colorbar(mapper, ax=ax, label=f"association probability to {source_idx:n}")
 
         return fig, ax
 
     @u.quantity_input
-    def plot_energy_and_roi(self, radius=5 * u.deg, source_idx: int = 0):
+    def plot_energy_and_roi(
+        self, radius=5 * u.deg, source_idx: int = 0, color_scale: str = "lin"
+    ):
         fig = plt.figure(dpi=150, figsize=(8, 3))
         gs = fig.add_gridspec(
             1,
@@ -535,7 +549,7 @@ class StanFit:
 
         source_coords = self.get_src_position()
 
-        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx)
+        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx, color_scale)
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.yaxis.set_ticklabels([])
@@ -550,7 +564,7 @@ class StanFit:
             radius=f"{radius.to_value(u.deg)} deg",
         )
 
-        ax, _ = self._plot_roi(source_coords, ax, radius, source_idx)
+        ax, _ = self._plot_roi(source_coords, ax, radius, source_idx, color_scale)
 
         return fig, ax
 
