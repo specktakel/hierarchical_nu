@@ -278,10 +278,18 @@ class StanFit:
                 # If so, get it and plot it
                 prior = priors_dict[name]
                 ax = ax_double[0]
-
                 supp = ax.get_xlim()
                 x = np.linspace(*supp, 1000)
-                ax.plot(x, prior.pdf(x), color="black", alpha=0.4, zorder=0)
+
+                if "transform" in kwargs.keys():
+                    # Assumes that the only sensible transformation is log10
+                    pdf = prior.pdf_logspace
+                    ax.plot(x, pdf(np.power(10, x)), color="black", alpha=0.4, zorder=0)
+
+                else:
+                    pdf = prior.pdf
+                    ax.plot(x, pdf(x), color="black", alpha=0.4, zorder=0)
+
             except:
                 pass
 
@@ -408,7 +416,7 @@ class StanFit:
                 lw=1,
                 zorder=assoc_prob[c] + 1,
             )
-            if assoc_prob[c] > 0.2:
+            if assoc_prob[c] > 0.1:
                 # if we have more than 20% association prob, link both lines up
                 x, y = input_axs[0, 0].lines[c].get_data()
                 idx_posterior = np.argmax(y)
