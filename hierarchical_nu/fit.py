@@ -15,6 +15,7 @@ import ligo.skymap.plot
 import arviz as av
 
 from math import ceil, floor
+from time import time
 
 from cmdstanpy import CmdStanModel
 
@@ -257,14 +258,17 @@ class StanFit:
         if not var_names:
             var_names = self._def_var_names
 
-        return av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+        axs = av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+        fig = axs.flatten()[0].get_figure()
+
+        return fig, axs
 
     def plot_trace_and_priors(self, var_names=None, **kwargs):
         """
         Trace plot and overplot the used priors.
         """
 
-        axs = self.plot_trace(var_names=var_names, show=False, **kwargs)
+        fig, axs = self.plot_trace(var_names=var_names, show=False, **kwargs)
 
         if not var_names:
             var_names = self._def_var_names
@@ -293,7 +297,7 @@ class StanFit:
             except:
                 pass
 
-        return axs
+        return fig, axs
 
     def corner_plot(self, var_names=None, truths=None):
         """
@@ -578,7 +582,11 @@ class StanFit:
 
     def save(self, filename, overwrite: bool = False):
         if os.path.exists(filename) and not overwrite:
-            raise FileExistsError(f"File {filename} already exists.")
+            logger.warning(f"File {filename} already exists.")
+            file = os.path.splitext(filename)[0]
+            ext = os.path.splitext(filename)[1]
+            file += f"_{int(time())}"
+            filename = file + ext
 
         with h5py.File(filename, "w") as f:
             fit_folder = f.create_group("fit")
