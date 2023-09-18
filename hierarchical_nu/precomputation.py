@@ -223,13 +223,14 @@ class ExposureIntegral:
             E_grid, dec_grid = np.meshgrid(E_c, dec_c)
 
             aeff_vals = (
-                np.power(
-                    10,
-                    self._effective_area.eff_area_spline(
-                        np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
-                    ),
+                # np.power(
+                #    10,
+                self._effective_area.eff_area_spline(
+                    np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
                 ).reshape(log_E_grid.shape)
                 * u.m**2
+                # ).reshape(log_E_grid.shape)
+                # * u.m**2
             )
 
             flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
@@ -237,8 +238,10 @@ class ExposureIntegral:
             if isinstance(self.energy_resolution, R2021EnergyResolution):
                 # p_Edet = np.zeros_like(E_grid)
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    E_grid, self._min_det_energy, dec_grid
-                )
+                    E_grid.flatten(),
+                    self._min_det_energy,
+                    dec_grid.flatten(),
+                ).reshape(E_grid.shape)
 
             else:
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(

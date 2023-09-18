@@ -37,7 +37,12 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
     def _make_spline(self):
         log_tE_lower_bin_edges = np.log10(self._tE_bin_edges[:-1])
         log_tE_upper_bin_edges = np.log10(self._tE_bin_edges[1:])
-        log_tE_bin_c = (log_tE_lower_bin_edges + log_tE_upper_bin_edges) / 2
+        log_tE_bin_c = np.concatenate(
+            (
+                np.array([log_tE_lower_bin_edges[0]]),
+                (log_tE_lower_bin_edges + log_tE_upper_bin_edges) / 2,
+            ),
+        )
 
         cosz_lower = self._cosz_bin_edges[:-1]
         cosz_upper = self._cosz_bin_edges[1:]
@@ -45,9 +50,9 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
 
         self._eff_area_spline = RegularGridInterpolator(
             (log_tE_bin_c, cosz_c),
-            np.log10(self._eff_area),
+            np.concatenate((np.atleast_2d(self.eff_area[0, :]), self.eff_area), axis=0),
             bounds_error=False,
-            fill_value=-10,
+            fill_value=0,
             method="linear",
         )
 
