@@ -256,9 +256,6 @@ class ExposureIntegral:
                 axis=0,
             )
 
-            if output == 0.0 / u.s:
-                print(aeff_vals, p_Edet, flux_vals, d_omega, cosz_edges)
-
         return output
 
     def _compute_exposure_integral(self):
