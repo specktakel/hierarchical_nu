@@ -46,11 +46,22 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
 
         cosz_lower = self._cosz_bin_edges[:-1]
         cosz_upper = self._cosz_bin_edges[1:]
-        cosz_c = (cosz_lower + cosz_upper) / 2
+        cosz_c = np.concatenate(
+            (np.array([cosz_lower[0]]), (cosz_lower + cosz_upper) / 2)
+        )
+
+        # Duplicate slice at lowest energy
+        to_be_splined_aeff = np.concatenate(
+            (np.atleast_2d(self.eff_area[0, :]), self.eff_area), axis=0
+        )
+        # Duplicate slice at cosz=-1 (vertical upgoing)
+        to_be_splined_aeff = np.concatenate(
+            (np.atleast_2d(to_be_splined_aeff[:, 0]).T, to_be_splined_aeff), axis=1
+        )
 
         self._eff_area_spline = RegularGridInterpolator(
             (log_tE_bin_c, cosz_c),
-            np.concatenate((np.atleast_2d(self.eff_area[0, :]), self.eff_area), axis=0),
+            to_be_splined_aeff,
             bounds_error=False,
             fill_value=0,
             method="linear",
