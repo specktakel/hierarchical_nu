@@ -152,7 +152,9 @@ class AtmosphericNuMuFlux(FluxModel):
                 theta_deg=0.0,
             )
 
-            theta_grid = np.degrees(np.arccos(np.linspace(0, 1, self.THETA_BINS)))
+            theta_grid = np.degrees(np.arccos(np.linspace(-1, 1, self.THETA_BINS)))
+            mceq.set_density_model(("MSIS00_IC", ("South Pole", "December")))
+
             numu_fluxes = []
             for theta in theta_grid:
                 mceq.set_theta_deg(theta)
@@ -162,16 +164,12 @@ class AtmosphericNuMuFlux(FluxModel):
                     (mceq.get_solution("numu") + mceq.get_solution("antinumu"))
                 )
 
-            theta_grid_2 = np.degrees(np.arccos(np.linspace(-1, 0, self.THETA_BINS)))[
-                :-1
-            ]
-            numu_fluxes = numu_fluxes[::-1][:-1] + numu_fluxes
-
             emask = (mceq.e_grid < self.EMAX / u.GeV) & (
                 mceq.e_grid > self.EMIN / u.GeV
             )
+
             splined_flux = scipy.interpolate.RectBivariateSpline(
-                np.cos(np.radians(np.concatenate((theta_grid_2, theta_grid)))),
+                np.cos(np.radians(theta_grid)),
                 np.log10(mceq.e_grid[emask]),
                 np.log10(numu_fluxes)[:, emask],
             )
