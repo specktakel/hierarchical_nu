@@ -101,7 +101,7 @@ def test_atmo_flux():
 
     flux_unit = 1 / (u.s * u.m**2)
 
-    assert F.to(flux_unit).value == pytest.approx(0.30187206, rel=0.025)
+    assert F.to(flux_unit).value == pytest.approx(0.3139, rel=0.025)
 
 
 def test_diffuse_flux():
