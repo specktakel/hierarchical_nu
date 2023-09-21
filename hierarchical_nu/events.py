@@ -15,7 +15,7 @@ import ligo.skymap.plot
 from icecube_tools.utils.vMF import get_kappa
 
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.utils.roi import ROI
+from hierarchical_nu.utils.roi import ROI, RectangularROI, CircularROI
 from hierarchical_nu.utils.plotting import SphericalCircle
 
 import logging
@@ -255,13 +255,39 @@ class Events:
         types = np.array(ra.size * [TRACKS])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        mask = np.nonzero(
-            (coords.separation(roi.center).deg * u.deg < roi.radius)
-            & (mjd >= roi.MJD_min)
-            & (mjd <= roi.MJD_max)
-            & (reco_energy > Emin_det)
-        )
+        if isinstance(roi, CircularROI):
+            mask = np.nonzero(
+                (coords.separation(roi.center).deg * u.deg < roi.radius)
+                & (mjd >= roi.MJD_min)
+                & (mjd <= roi.MJD_max)
+                & (reco_energy > Emin_det)
+            )
+        elif isinstance(roi, RectangularROI):
+            if roi.RA_min > roi.RA_max:
+                mask = np.nonzero(
+                    (
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                        & (reco_energy >= Emin_det)
+                        & (mjd >= roi.MJD_min)
+                        & (mjd <= roi.MJD_max)
+                    )
+                )
+            else:
+                mask = np.nonzero(
+                    (
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & (ra >= roi.RA_min)
+                        & (ra <= roi.RA_max)
+                        & (reco_energy >= Emin_det)
+                        & (mjd >= roi.MJD_min)
+                        & (mjd <= roi.MJD_max)
+                    )
+                )
         mjd = Time(mjd, format="mjd")
+
         return cls(
             reco_energy[mask],
             coords[mask],

@@ -557,7 +557,7 @@ class Simulation:
         try:
             roi = ROI.STACK[0]
         except IndexError:
-            roi = ROI()
+            raise ValueError("An ROI is needed at this point.")
 
         v_lim_low = (np.cos(-roi.DEC_min.to_value(u.rad) + np.pi / 2) + 1.0) / 2
         v_lim_high = (np.cos(-roi.DEC_max.to_value(u.rad) + np.pi / 2) + 1.0) / 2
