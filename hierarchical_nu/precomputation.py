@@ -251,7 +251,7 @@ class ExposureIntegral:
                     )
                     p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
 
-            elif isinstance(roi):
+            elif isinstance(roi, RectangularROI):
                 RA_min = roi.RA_min
                 RA_max = roi.RA_max
                 DEC_min = roi.DEC_min
@@ -303,6 +303,7 @@ class ExposureIntegral:
                         E_c, self._min_det_energy
                     )
                     p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
+                d_omega = np.repeat(np.expand_dims(d_omega, 1), p_Edet.shape[1], axis=1)
 
             p_Edet = np.nan_to_num(p_Edet)
 

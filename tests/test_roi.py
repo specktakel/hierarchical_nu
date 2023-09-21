@@ -61,10 +61,9 @@ def test_event_selection_wrap(caplog):
     assert "RA_max is smaller than RA_min" in caplog.text
 
 
-"""
 def test_precomputation():
     Parameter.clear_registry()
-    roi = ROI()
+    roi = RectangularROI()
     src_index = Parameter(2.3, "src_index", par_range=(1.5, 3.6))
     L = Parameter(
         1e47 * u.erg / u.s,
@@ -118,7 +117,7 @@ def test_precomputation():
     default = sim._get_sim_inputs()
 
     # test RA wrapping from 270 degrees to 90 degrees
-    roi = ROI(RA_max=np.deg2rad(90) * u.rad, RA_min=np.deg2rad(270) * u.rad)
+    roi = RectangularROI(RA_max=np.deg2rad(90) * u.rad, RA_min=np.deg2rad(270) * u.rad)
     sim.precomputation()
     cut = sim._get_sim_inputs()
 
@@ -128,7 +127,3 @@ def test_precomputation():
     assert pytest.approx(np.array(cut["integral_grid_t"][0])) == np.array(
         default["integral_grid_t"][0]
     )
-
-    # cleanup s.t. following tests are not affected
-    roi = ROI()
-"""
