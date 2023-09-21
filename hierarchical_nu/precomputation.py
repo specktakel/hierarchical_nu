@@ -193,75 +193,117 @@ class ExposureIntegral:
                 roi = ROI.STACK[0]
             except IndexError:
                 ValueError("An ROI is needed at this point.")
-            # try to ignore this, fill value is zero outside of range covered by IRF
-            # so we can just always use the ROI's angles
 
-            # TODO implement circularised ROI
-            # idea: use dense healpy grid which in theory is equally spaced on the sky
-            # 4pi / number of points is surface element
-            # evaluate all necessary quantities at each point and weigh them with the surface element
-            # resolutionshould be below the angular scale of the detector
-            # for the aeff there are 50 bins equally spaced in sin(dec)
             if isinstance(roi, CircularROI):
-                pass
+                # Make healpy pixel grid
+                NSIDE = 128
+                NPIX = hp.nside2npix(NSIDE)
+                # Surface element
+                d_omega = 4 * np.pi / NPIX * u.sr
+
+                ra, dec = hp.pix2ang(
+                    nside=NSIDE, ipix=list(range(NPIX)), nest=True, lonlat=True
+                )
+
+                coords = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
+
+                # Create mask with pixels inside the ROI
+                mask = roi.center.separation(coords).deg * u.deg < roi.radius.to(u.deg)
+
+                pixels = coords[mask]
+
+                ra = pixels.ra.rad * u.rad
+                dec = pixels.dec.rad * u.rad
+
+                # Assume that indexing is faster than calculating stuff
+                # only calculate at the unique declinations and sort values afterwards
+                dec_c = np.unique(dec)
+                # cos(z) = -sin(dec)
+                cosz_c = -np.sin(dec_c.to_value(u.rad))
+
+                log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
+                E_grid, dec_grid = np.meshgrid(E_c, dec_c)
+
+                aeff_vals = (
+                    # np.power(
+                    #    10,
+                    self._effective_area.eff_area_spline(
+                        np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
+                    ).reshape(log_E_grid.shape)
+                    * u.m**2
+                    # ).reshape(log_E_grid.shape)
+                    # * u.m**2
+                )
+
+                flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
+
+                if isinstance(self.energy_resolution, R2021EnergyResolution):
+                    # p_Edet = np.zeros_like(E_grid)
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        E_grid.flatten(),
+                        self._min_det_energy,
+                        dec_grid.flatten(),
+                    ).reshape(E_grid.shape)
+
+                else:
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        E_c, self._min_det_energy
+                    )
+                    p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
 
             elif isinstance(roi):
-                pass
-            # Make healpy pixel grid
-            NSIDE = 128
-            NPIX = hp.nside2npix(NSIDE)
-            # Surface element
-            d_omega = 4 * np.pi / NPIX * u.sr
+                RA_min = roi.RA_min
+                RA_max = roi.RA_max
+                DEC_min = roi.DEC_min
+                DEC_max = roi.DEC_max
 
-            ra, dec = hp.pix2ang(
-                nside=NSIDE, ipix=list(range(NPIX)), nest=True, lonlat=True
-            )
+                cosz_min = -np.sin(DEC_max)
+                cosz_max = -np.sin(DEC_min)
 
-            coords = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
+                num_of_points = int((cosz_max - cosz_min) * 500)
+                if num_of_points < 50:
+                    num_of_points = 50
+                cosz_edges = np.linspace(cosz_min, cosz_max, num_of_points)
+                cosz_c = cosz_edges[:-1] + np.diff(cosz_edges) / 2
+                dec_c = -np.arcsin(cosz_c) << u.rad
 
-            # Create mask with pixels inside the ROI
-            mask = roi.center.separation(coords).deg * u.deg < roi.radius.to(u.deg)
+                if RA_max < RA_min:
+                    RA_diff = 2 * np.pi * u.rad + RA_max - RA_min
+                else:
+                    RA_diff = RA_max - RA_min
 
-            pixels = coords[mask]
+                d_omega = np.diff(cosz_edges) * RA_diff.to_value(u.rad) * u.sr
 
-            ra = pixels.ra.rad * u.rad
-            dec = pixels.dec.rad * u.rad
+                log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
+                E_grid, dec_grid = np.meshgrid(E_c, dec_c)
 
-            # Assume that indexing is faster than calculating stuff
-            # only calculate at the unique declinations and sort values afterwards
-            dec_c = np.unique(dec)
-            # cos(z) = -sin(dec)
-            cosz_c = -np.sin(dec_c.to_value(u.rad))
-
-            log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
-            E_grid, dec_grid = np.meshgrid(E_c, dec_c)
-
-            aeff_vals = (
-                # np.power(
-                #    10,
-                self._effective_area.eff_area_spline(
-                    np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
-                ).reshape(log_E_grid.shape)
-                * u.m**2
-                # ).reshape(log_E_grid.shape)
-                # * u.m**2
-            )
-
-            flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
-
-            if isinstance(self.energy_resolution, R2021EnergyResolution):
-                # p_Edet = np.zeros_like(E_grid)
-                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    E_grid.flatten(),
-                    self._min_det_energy,
-                    dec_grid.flatten(),
-                ).reshape(E_grid.shape)
-
-            else:
-                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    E_c, self._min_det_energy
+                aeff_vals = (
+                    # np.power(
+                    #    10,
+                    self._effective_area.eff_area_spline(
+                        np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
+                    ).reshape(log_E_grid.shape)
+                    * u.m**2
+                    # ).reshape(log_E_grid.shape)
+                    # * u.m**2
                 )
-                p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
+
+                flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
+
+                if isinstance(self.energy_resolution, R2021EnergyResolution):
+                    # p_Edet = np.zeros_like(E_grid)
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        E_grid.flatten(),
+                        self._min_det_energy,
+                        dec_grid.flatten(),
+                    ).reshape(E_grid.shape)
+
+                else:
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        E_c, self._min_det_energy
+                    )
+                    p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
+
             p_Edet = np.nan_to_num(p_Edet)
 
             output = np.sum(
