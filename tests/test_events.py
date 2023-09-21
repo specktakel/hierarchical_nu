@@ -1,14 +1,18 @@
 from icecube_tools.utils.data import RealEvents
 from hierarchical_nu.events import Events
 from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.utils.roi import ROI
 
 from astropy import units as u
+from astropy.coordinates import SkyCoord
 import numpy as np
 
 
 def test_read():
     periods = ["IC86_II"]
     Parameter.clear_registry()
+
+    roi = ROI(SkyCoord(ra=0 * u.deg, dec=0 * u.deg, frame="icrs"), radius=180 * u.deg)
     for p in periods:
         it_ev = RealEvents.from_event_files(p, use_all=True)
         it_ev.restrict(ereco_low=5e4)

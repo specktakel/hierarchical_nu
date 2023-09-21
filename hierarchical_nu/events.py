@@ -207,7 +207,12 @@ class Events:
                     event_folder.create_dataset(key, data=value)
 
     @classmethod
-    def from_ev_file(cls, p: str, Emin_det: u.GeV = 1 * u.GeV, **kwargs):
+    def from_ev_file(
+        cls,
+        p: str,
+        Emin_det: u.GeV = 1 * u.GeV,
+        **kwargs,
+    ):
         """
         Load events from the 2021 data release
         :param p: string of period to be loaded.
@@ -235,10 +240,8 @@ class Events:
         try:
             roi = ROI.STACK[0]
         except IndexError:
-            roi = ROI()
+            raise ValueError("No ROI on stack.")
 
-        MJD_min = roi.MJD_min
-        MJD_max = roi.MJD_max
         # events.restrict(**kwargs) # Do this completely in hnu, icecube_tools lacks the RA-wrapping right now, TODO...
         # Read in relevant data
         ra = events.ra[p] * u.rad
@@ -247,33 +250,17 @@ class Events:
         period = ra.size * [p]
         mjd = events.mjd[p]
 
-        if roi.RA_min > roi.RA_max:
-            mask = np.nonzero(
-                (
-                    (dec <= roi.DEC_max)
-                    & (dec >= roi.DEC_min)
-                    & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                    & (reco_energy >= Emin_det)
-                    & (mjd >= MJD_min)
-                    & (mjd <= MJD_max)
-                )
-            )
-        else:
-            mask = np.nonzero(
-                (
-                    (dec <= roi.DEC_max)
-                    & (dec >= roi.DEC_min)
-                    & (ra >= roi.RA_min)
-                    & (ra <= roi.RA_max)
-                    & (reco_energy >= Emin_det)
-                    & (mjd >= MJD_min)
-                    & (mjd <= MJD_max)
-                )
-            )
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = events.ang_err[p] * u.deg
         types = np.array(ra.size * [TRACKS])
-        coords = SkyCoord(ra, dec, frame="icrs")
+        coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
+
+        mask = np.nonzero(
+            (coords.separation(roi.center).deg * u.deg < roi.radius)
+            & (mjd >= roi.MJD_min)
+            & (mjd <= roi.MJD_max)
+            & (reco_energy > Emin_det)
+        )
         mjd = Time(mjd, format="mjd")
         return cls(
             reco_energy[mask],

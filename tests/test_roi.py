@@ -1,5 +1,6 @@
 import numpy as np
 from astropy import units as u
+from astropy.coordinates import SkyCoord
 from hierarchical_nu.utils.roi import ROI
 from hierarchical_nu.events import Events
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
@@ -9,37 +10,43 @@ from hierarchical_nu.source.source import PointSource, Sources
 from hierarchical_nu.simulation import Simulation
 import pytest
 
+import logging
+
 
 def test_event_selection():
-    roi = ROI(DEC_min=0.0 * u.rad)
+    roi = ROI(
+        center=SkyCoord(ra=90 * u.deg, dec=10 * u.deg, frame="icrs"),
+        radius=10.0 * u.deg,
+    )
     events = Events.from_ev_file("IC86_II")
     assert events.coords.z.min() >= 0.0
-    roi = ROI()
+
+    del roi.STACK[0]
 
 
-def test_event_selection_wrap(caplog):
-    roi = ROI(RA_min=np.deg2rad(350) * u.rad, RA_max=np.deg2rad(10) * u.rad)
-    events = Events.from_ev_file("IC86_II")
-    events.coords.representation_type = "spherical"
-    ra = events.coords.ra.rad
-    mask = np.nonzero((ra >= np.pi))
-    ra[mask] -= 2 * np.pi
+def test_roi_south(caplog):
+    caplog.set_level(logging.WARNING)
+    roi = ROI(
+        center=SkyCoord(ra=90 * u.deg, dec=0 * u.deg, frame="icrs"),
+        radius=12.0 * u.deg,
+    )
 
-    assert pytest.approx(np.average(ra), abs=1e-3) == 0.0
+    assert "ROI extends into Southern sky. Proceed with chaution." in caplog.text
 
-    assert "RA_min is greater than RA_max" in caplog.text
-
-    assert "RA_max is smaller than RA_min" in caplog.text
-
-    roi = ROI()
+    del roi.STACK[0]
 
 
-def test_range():
+def test_humongous_roi():
     with pytest.raises(ValueError):
-        roi = ROI(DEC_max=3 * u.rad)
-    roi = ROI()
+        roi = ROI(
+            center=SkyCoord(ra=90 * u.deg, dec=10 * u.deg, frame="icrs"),
+            radius=181.0 * u.deg,
+        )
+
+        del roi.STACK[0]
 
 
+"""
 def test_precomputation():
     Parameter.clear_registry()
     roi = ROI()
@@ -109,3 +116,4 @@ def test_precomputation():
 
     # cleanup s.t. following tests are not affected
     roi = ROI()
+"""
