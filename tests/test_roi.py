@@ -61,7 +61,7 @@ def test_event_selection_wrap(caplog):
     assert "RA_max is smaller than RA_min" in caplog.text
 
 
-def test_precomputation():
+def test_rectangular_precomputation():
     Parameter.clear_registry()
     roi = RectangularROI()
     src_index = Parameter(2.3, "src_index", par_range=(1.5, 3.6))
@@ -127,3 +127,47 @@ def test_precomputation():
     assert pytest.approx(np.array(cut["integral_grid_t"][0])) == np.array(
         default["integral_grid_t"][0]
     )
+
+
+def test_compare_precomputation():
+    Parameter.clear_registry()
+    z = 0.3
+    diff_index = Parameter(2.3, "diff_index", par_range=(1.5, 3.6))
+    diffuse_norm = Parameter(
+        1e-13 / (u.GeV * u.m**2 * u.s),
+        "diffuse_norm",
+        fixed=True,
+        par_range=(0.0, 1e-8),
+    )
+    Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
+    Emin = Parameter(1e4 * u.GeV, "Emin", fixed=True)
+    Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
+    Emin_src = Parameter(Emin.value * (1 + z), "Emin_src", fixed=True)
+    Emax_src = Parameter(Emax.value * (1 + z), "Emax_src", fixed=True)
+    Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
+    Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
+
+    Emin_det = Parameter(2e2 * u.GeV, "Emin_det", fixed=True)
+
+    my_sources = Sources()
+
+    # auto diffuse component
+    my_sources.add_diffuse_component(
+        diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
+    )
+    my_sources.add_atmospheric_component()
+    sim = Simulation(my_sources, R2021DetectorModel, 5 * u.year)
+
+    roi = RectangularROI(DEC_min=np.deg2rad(-5) * u.rad)
+    sim.precomputation()
+    _ = sim._get_expected_Nnu(sim._get_sim_inputs())
+    Nex_rectangle = sim._expected_Nnu_per_comp
+
+    roi = CircularROI(
+        SkyCoord(ra=90 * u.deg, dec=90 * u.deg), radius=np.deg2rad(95) * u.rad
+    )
+    sim.precomputation()
+    _ = sim._get_expected_Nnu(sim._get_sim_inputs())
+    Nex_circular = sim._expected_Nnu_per_comp
+    assert Nex_rectangle[0] == pytest.approx(Nex_circular[0], rel=0.02)
+    assert Nex_rectangle[1] == pytest.approx(Nex_circular[1], rel=0.0005)
