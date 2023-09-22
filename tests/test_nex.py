@@ -2,6 +2,8 @@ import numpy as np
 import astropy.units as u
 import pytest
 
+from hierarchical_nu.utils.roi import RectangularROI
+
 
 indices = np.linspace(1.8, 3.6, 10, endpoint=True)
 
@@ -9,6 +11,8 @@ min_energy = 1e5
 max_energy = 1e8
 norm_energy = 1e5
 diff_norm = 1.0e-13 / u.GeV / u.m**2 / u.s
+
+roi = RectangularROI()
 
 
 class TestNex:

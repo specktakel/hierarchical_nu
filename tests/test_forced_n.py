@@ -11,9 +11,13 @@ from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 from hierarchical_nu.simulation import Simulation
+from hierarchical_nu.utils.roi import RectangularROI
+
 
 def test_N():
     Parameter.clear_registry()
+
+    roi = RectangularROI(DEC_min=-5 * u.deg)
 
     src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 
@@ -38,23 +42,37 @@ def test_N():
     Emin_det = Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
 
     z = 0.4
-    Emin_src = Parameter(Emin.value * (z + 1.), "Emin_src", fixed=True)
-    Emax_src = Parameter(Emax.value * (z + 1.), "Emax_src", fixed=True)
+    Emin_src = Parameter(Emin.value * (z + 1.0), "Emin_src", fixed=True)
+    Emax_src = Parameter(Emax.value * (z + 1.0), "Emax_src", fixed=True)
 
     Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
     Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 
     point_source = PointSource.make_powerlaw_source(
-        "test", np.deg2rad(5) * u.rad, np.pi * u.rad, L, src_index, z, Emin_src, Emax_src
+        "test",
+        np.deg2rad(5) * u.rad,
+        np.pi * u.rad,
+        L,
+        src_index,
+        z,
+        Emin_src,
+        Emax_src,
     )
 
     my_sources = Sources()
     my_sources.add(point_source)
 
-    my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff)
+    my_sources.add_diffuse_component(
+        diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
+    )
     my_sources.add_atmospheric_component()
 
-    sim = Simulation(my_sources, IceCubeDetectorModel, 5*u.year, N={"cascades": [2, 3, 2], "tracks":[1, 2, 3]})
+    sim = Simulation(
+        my_sources,
+        IceCubeDetectorModel,
+        5 * u.year,
+        N={"cascades": [2, 3, 2], "tracks": [1, 2, 3]},
+    )
 
     sim.precomputation()
 
@@ -67,12 +85,14 @@ def test_N():
     assert np.all(
         np.isclose(
             sim._sim_output.stan_variable("Lambda"),
-            np.array([[1., 2., 2., 3., 3., 3., 1., 1., 2., 2., 2.]])
+            np.array([[1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0]]),
         )
     )
 
+
 def test_multi_ps_n():
     Parameter.clear_registry()
+    roi = RectangularROI(DEC_min=-5 * u.deg)
 
     src_index_0 = Parameter(2.0, "ps_0_src_index", fixed=False, par_range=(1, 4))
     src_index_1 = Parameter(2.0, "ps_1_src_index", fixed=False, par_range=(1, 4))
@@ -107,22 +127,43 @@ def test_multi_ps_n():
     Emin_det = Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
 
     z = 0.4
-    Emin_src = Parameter(Emin.value * (z + 1.), "Emin_src", fixed=True)
-    Emax_src = Parameter(Emax.value * (z + 1.), "Emax_src", fixed=True)
+    Emin_src = Parameter(Emin.value * (z + 1.0), "Emin_src", fixed=True)
+    Emax_src = Parameter(Emax.value * (z + 1.0), "Emax_src", fixed=True)
 
     Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
     Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 
     point_source_0 = PointSource.make_powerlaw_source(
-        "test_0", np.deg2rad(5) * u.rad, np.pi * u.rad, L_0, src_index_0, z, Emin_src, Emax_src
+        "test_0",
+        np.deg2rad(5) * u.rad,
+        np.pi * u.rad,
+        L_0,
+        src_index_0,
+        z,
+        Emin_src,
+        Emax_src,
     )
 
     point_source_1 = PointSource.make_powerlaw_source(
-        "test_1", np.deg2rad(25) * u.rad, np.pi * u.rad, L_1, src_index_1, z, Emin_src, Emax_src
+        "test_1",
+        np.deg2rad(25) * u.rad,
+        np.pi * u.rad,
+        L_1,
+        src_index_1,
+        z,
+        Emin_src,
+        Emax_src,
     )
 
     point_source_2 = PointSource.make_powerlaw_source(
-        "test_2", np.deg2rad(45) * u.rad, np.pi * u.rad, L_2, src_index_2, z, Emin_src, Emax_src
+        "test_2",
+        np.deg2rad(45) * u.rad,
+        np.pi * u.rad,
+        L_2,
+        src_index_2,
+        z,
+        Emin_src,
+        Emax_src,
     )
 
     my_sources = Sources()
@@ -133,7 +174,7 @@ def test_multi_ps_n():
         my_sources,
         IceCubeDetectorModel,
         5 * u.year,
-        N={"tracks": [1, 2], "cascades": [2, 1]}
+        N={"tracks": [1, 2], "cascades": [2, 1]},
     )
     sim.precomputation()
     sim.generate_stan_code()

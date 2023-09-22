@@ -13,6 +13,7 @@ from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
 from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
+from hierarchical_nu.utils.roi import RectangularROI
 
 # Set up sources
 Parameter.clear_registry()
@@ -40,8 +41,8 @@ Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
 Emin_det = Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
 
 z = 0.4
-Emin_src = Parameter(Emin.value * (z + 1.), "Emin_src", fixed=True)
-Emax_src = Parameter(Emax.value * (z + 1.), "Emax_src", fixed=True)
+Emin_src = Parameter(Emin.value * (z + 1.0), "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value * (z + 1.0), "Emax_src", fixed=True)
 
 Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
 Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
@@ -53,7 +54,9 @@ point_source = PointSource.make_powerlaw_source(
 my_sources = Sources()
 my_sources.add(point_source)
 
-my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff)
+my_sources.add_diffuse_component(
+    diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
+)
 my_sources.add_atmospheric_component()
 
 detector_models = [
@@ -65,14 +68,13 @@ detector_models = [
 
 stanc_options = {"include-paths": [STAN_PATH, STAN_GEN_PATH]}
 
+roi = RectangularROI(DEC_min=-5 * u.deg)
 
 
 def test_stan_sim_interface(output_directory):
-
     file_name = os.path.join(output_directory, "test_sim_interface")
 
     for dm in detector_models:
-
         interface = StanSimInterface(file_name, my_sources, dm)
 
         # Generate Stan code
@@ -83,13 +85,10 @@ def test_stan_sim_interface(output_directory):
 
 
 def test_stan_fit_interface(output_directory):
-
     file_name = os.path.join(output_directory, "test_fit_interface")
 
     for dm in detector_models:
-
         for nshards in [1, 2]:
-
             interface = StanFitInterface(file_name, my_sources, dm, nshards=nshards)
 
             # Generate Stan code
