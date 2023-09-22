@@ -38,6 +38,8 @@ from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.source.source import Sources
 
+from hierarchical_nu.utils.roi import ROI, CircularROI
+
 
 class StanSimInterface(StanInterface):
     """
@@ -289,6 +291,15 @@ class StanSimInterface(StanInterface):
             self._v_high = ForwardVariableDef("v_high", "real")
             self._u_low = ForwardVariableDef("u_low", "real")
             self._u_high = ForwardVariableDef("u_high", "real")
+
+            # If we have a circular ROI, set center point and radius
+            try:
+                self._roi = ROI.STACK[0]
+            except IndexError:
+                raise ValueError("An ROI is needed at this point.")
+            if isinstance(self._roi, CircularROI):
+                self._roi_center = ForwardVariableDef("roi_center", "unit_vector[3]")
+                self._roi_radius = ForwardVariableDef("roi_radius", "real")
 
             # The observation time
             self._T = ForwardVariableDef("T", "real")
@@ -571,17 +582,6 @@ class StanSimInterface(StanInterface):
 
                 if "cascades" in self._event_types:
                     self._eps_c[self._Ns + 1] << 0.0
-
-            if self.sources.atmospheric:
-                self._atmo_flux_integ_val = ForwardVariableDef(
-                    "atmo_flux_integ_val", "real"
-                )
-                (
-                    self._atmo_flux_integ_val
-                    << self._sources.atmospheric_flux.total_flux_int.to(
-                        1 / (u.m**2 * u.s)
-                    ).value
-                )
 
             # Get the relative exposure weights of all sources
             # This will be used to sample the labels
@@ -1213,7 +1213,7 @@ class StanSimInterface(StanInterface):
                                 (
                                     self._src_factor
                                     << self._atmo_flux(self._E[i], self._omega)
-                                    / self._atmo_flux_integ_val
+                                    / self._F_atmo
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
 
@@ -1546,7 +1546,7 @@ class StanSimInterface(StanInterface):
                                 (
                                     self._src_factor
                                     << self._atmo_flux(self._E[i], self._omega)
-                                    / self._atmo_flux_integ_val
+                                    / self._F_atmo
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
 
@@ -1592,8 +1592,6 @@ class StanSimInterface(StanInterface):
                                     )
                                 ]
                             ):
-                                self._detected << 1
-
                                 if self.detector_model_type == R2021DetectorModel:
                                     # return of energy resolution is log_10(E/GeV)
 
@@ -1634,6 +1632,20 @@ class StanSimInterface(StanInterface):
                                             "tracks"
                                         ].angular_resolution.kappa()
                                     )
+
+                                if isinstance(self._roi, CircularROI):
+                                    with IfBlockContext(
+                                        ["ang_sep(event[i], roi_center) <= roi_radius"]
+                                    ):
+                                        self._detected << 1
+                                    with ElseBlockContext():
+                                        self._detected << 0
+                                else:
+                                    self._detected << 1
+
+                                # Insert condition for the sample to be inside the ROI,
+                                # should also apply to the rectangular ROI as events
+                                # can be recontructed outside at large ang err
 
                             with ElseBlockContext():
                                 self._detected << 0
