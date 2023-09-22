@@ -71,7 +71,7 @@ class CircularROI(ROI):
             ROI.STACK = [self]
         else:
             ROI.STACK = [self]
-
+        self._center.representation_type = "spherical"
         if self._center.dec.deg - self._radius.to_value(u.deg) < -10.0:
             logger.warning("ROI extends into Southern sky. Proceed with chaution.")
 
@@ -88,6 +88,7 @@ class CircularROI(ROI):
         is maximised by varying the declination.
         Twice the angular separation at its maximum evaluates to the ROI width in RA.
         """
+        self._center.representation_type = "spherical"
         epsilon = np.deg2rad(0.01)
         res = minimize_scalar(
             ROI_width,
@@ -113,6 +114,7 @@ class CircularROI(ROI):
 
     @property
     def DEC_min(self):
+        self._center.representation_type = "spherical"
         dec_min = self.center.dec.rad * u.drad - self.radius.to(u.rad)
         if dec_min < -np.pi / 2 * u.rad:
             return -np.pi / 2 * u.rad
@@ -121,6 +123,7 @@ class CircularROI(ROI):
 
     @property
     def DEC_max(self):
+        self._center.representation_type = "spherical"
         dec_max = self.center.dec.rad * u.rad + self.radius.to(u.rad)
         if dec_max > np.pi / 2 * u.rad:
             return np.pi / 2 * u.rad
@@ -129,6 +132,7 @@ class CircularROI(ROI):
 
     @property
     def RA_min(self):
+        self._center.representation_type = "spherical"
         # If either pole is inside the ROI, RA_min/max are 0 and 2pi, respectively
         if (
             self.center.dec.deg * u.deg - self.radius.to(u.deg) < -90.0 * u.deg
@@ -146,6 +150,7 @@ class CircularROI(ROI):
 
     @property
     def RA_max(self):
+        self._center.representation_type = "spherical"
         if (
             self.center.dec.deg * u.deg - self.radius.to(u.deg) < -90.0 * u.deg
             or self.center.dec.deg * u.deg + self.radius.to(u.deg) > 90.0 * u.deg
