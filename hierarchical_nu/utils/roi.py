@@ -6,6 +6,7 @@ import astropy.units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 import numpy as np
+from scipy.optimize import minimize_scalar
 from abc import ABC, abstractmethod
 
 import logging
@@ -77,6 +78,31 @@ class CircularROI(ROI):
         if self._radius.to(u.deg) > 180.0 * u.deg:
             raise ValueError("Radii larger than 180 degrees are not sensible.")
 
+    def _get_roi_width(self):
+        """
+        The widest point in RA of a circle on a sphere
+        does generally not coincide with the line of constant latitude/declination
+        crossing the circle's center point.
+        The angular separation between points on the ROI boundary (i.e. a small circle)
+        and the central line of constant longitude/RA crossing the ROI's center point
+        is maximised by varying the declination.
+        Twice the angular separation at its maximum evaluates to the ROI width in RA.
+        """
+        epsilon = np.deg2rad(0.01)
+        res = minimize_scalar(
+            ROI_width,
+            args=(self.radius.to_value(u.rad), self.center.dec.rad),
+            bounds=(
+                self.center.dec.rad - self.radius.to_value(u.rad) + epsilon,
+                self.center.dec.rad + self.radius.to_value(u.rad) - epsilon,
+            ),
+            method="bounded",
+            options={"xatol": 1e-5, "maxiter": int(1e5)},
+        )
+        if not res.success:
+            raise ValueError("Couldn't determine RA width of ROI")
+        return np.abs(res.fun * u.rad)
+
     @property
     def center(self):
         return self._center
@@ -87,19 +113,52 @@ class CircularROI(ROI):
 
     @property
     def DEC_min(self):
-        return self.center.dec.deg * u.deg - self.radius.to(u.deg)
+        dec_min = self.center.dec.rad * u.drad - self.radius.to(u.rad)
+        if dec_min < -np.pi / 2 * u.rad:
+            return -np.pi / 2 * u.rad
+        else:
+            return dec_min
 
     @property
     def DEC_max(self):
-        return self.center.dec.deg * u.deg + self.radius.to(u.deg)
+        dec_max = self.center.dec.rad * u.rad + self.radius.to(u.rad)
+        if dec_max > np.pi / 2 * u.rad:
+            return np.pi / 2 * u.rad
+        else:
+            return dec_max
 
     @property
     def RA_min(self):
-        return self.center.ra.deg * u.deg - self.radius.to(u.deg)
+        # If either pole is inside the ROI, RA_min/max are 0 and 2pi, respectively
+        if (
+            self.center.dec.deg * u.deg - self.radius.to(u.deg) < -90.0 * u.deg
+            or self.center.dec.deg * u.deg + self.radius.to(u.deg) > 90.0 * u.deg
+        ):
+            return 0.0 * u.rad
+        else:
+            RA_width = self._get_roi_width()
+            min = self.center.ra.rad * u.rad - RA_width.to(u.rad)
+            # Check for wrapping at 2pi/0
+            if min < 0 * u.rad:
+                return min + 2.0 * np.pi * u.rad
+            else:
+                return min
 
     @property
     def RA_max(self):
-        return self.center.ra.deg * u.deg + self.radius.to(u.deg)
+        if (
+            self.center.dec.deg * u.deg - self.radius.to(u.deg) < -90.0 * u.deg
+            or self.center.dec.deg * u.deg + self.radius.to(u.deg) > 90.0 * u.deg
+        ):
+            return 2.0 * np.pi * u.rad
+        else:
+            RA_width = self._get_roi_width()
+            max = self.center.ra.rad * u.rad + RA_width.to(u.rad)
+            # Check for wrapping at 2pi/0
+            if max > 2.0 * np.pi * u.rad:
+                return max - 2.0 * np.pi * u.rad
+            else:
+                return max
 
 
 class RectangularROI(ROI):
@@ -202,3 +261,14 @@ class RectangularROI(ROI):
         self.RA_max = self._RA_max
         self.DEC_min = self._DEC_min
         self.DEC_max = self._DEC_max
+
+
+def ROI_width(d1, radius, d2):
+    """
+    Returns ROI width as function of declination.
+    Only sensibly defined within the ROI of radius `radius`
+    """
+
+    return -np.arccos(
+        (np.cos(radius) - np.sin(d1) * np.sin(d2)) / (np.cos(d1) * np.cos(d2))
+    )
