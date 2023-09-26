@@ -285,7 +285,7 @@ class Events:
         )
 
     @u.quantity_input
-    def plot_energy(self, center_coords: SkyCoord, radius: 3 * u.deg):
+    def plot_energy(self, center_coords: SkyCoord, radius: 3 * u.deg, lw: float = 1.0):
         fig, ax = plt.subplots(
             subplot_kw={
                 "projection": "astro degrees zoom",
@@ -325,6 +325,7 @@ class Events:
                 transform=ax.get_transform("icrs"),
                 zorder=linNorm(energy) + 1,
                 facecolor="None",
+                lw=lw,
             )
 
             ax.add_patch(circle)
