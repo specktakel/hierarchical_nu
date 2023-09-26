@@ -147,12 +147,14 @@ class AtmosphericNuMuFlux(FluxModel):
                 # High-energy hadronic interaction model
                 interaction_model="SIBYLL23C",
                 # cosmic ray flux at the top of the atmosphere
-                primary_model=(crf.HillasGaisser2012, "H3a"),
+                primary_model=(crf.HillasGaisser2012, "H4a"),
                 # zenith angle
                 theta_deg=0.0,
             )
 
-            theta_grid = np.degrees(np.arccos(np.linspace(0, 1, self.THETA_BINS)))
+            theta_grid = np.degrees(np.arccos(np.linspace(-1, 1, self.THETA_BINS)))
+            mceq.set_density_model(("MSIS00_IC", ("South Pole", "December")))
+
             numu_fluxes = []
             for theta in theta_grid:
                 mceq.set_theta_deg(theta)
@@ -162,16 +164,12 @@ class AtmosphericNuMuFlux(FluxModel):
                     (mceq.get_solution("numu") + mceq.get_solution("antinumu"))
                 )
 
-            theta_grid_2 = np.degrees(np.arccos(np.linspace(-1, 0, self.THETA_BINS)))[
-                :-1
-            ]
-            numu_fluxes = numu_fluxes[::-1][:-1] + numu_fluxes
-
             emask = (mceq.e_grid < self.EMAX / u.GeV) & (
                 mceq.e_grid > self.EMIN / u.GeV
             )
+
             splined_flux = scipy.interpolate.RectBivariateSpline(
-                np.cos(np.radians(np.concatenate((theta_grid_2, theta_grid)))),
+                np.cos(np.radians(theta_grid)),
                 np.log10(mceq.e_grid[emask]),
                 np.log10(numu_fluxes)[:, emask],
             )
@@ -204,7 +202,9 @@ class AtmosphericNuMuFlux(FluxModel):
         cosz = np.atleast_1d(-np.sin(dec))
 
         try:
-            result = np.power(10, self._flux_spline(cosz, np.log10(energy / u.GeV)))
+            result = np.power(
+                10, self._flux_spline(cosz, np.log10(energy / u.GeV), grid=False)
+            )
         except ValueError as e:
             print("Error in spline evaluation. Are the evaluation points ordered?")
             raise e
@@ -222,7 +222,7 @@ class AtmosphericNuMuFlux(FluxModel):
         cosz = np.atleast_1d(-np.sin(dec))
 
         try:
-            result = np.power(10, self._flux_spline(cosz, np.log10(energy)))
+            result = np.power(10, self._flux_spline(cosz, np.log10(energy), grid=False))
         except ValueError as e:
             print("Error in spline evaluation. Are the evaluation points ordered?")
             raise e

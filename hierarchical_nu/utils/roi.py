@@ -38,9 +38,9 @@ class ROI:
         self.check_boundaries()
 
         if ROI.STACK:
-            logger.warning(
-                "Only one ROI allowed at a time. Deleting previous instance.\n"
-            )
+            # logger.warning(
+            #    "Only one ROI allowed at a time. Deleting previous instance.\n"
+            # )
             ROI.STACK = [self]
         else:
             ROI.STACK.append(self)
@@ -73,7 +73,8 @@ class ROI:
     @u.quantity_input
     def RA_min(self, val: u.rad):
         if val < 0.0 * u.rad:
-            raise ValueError("RA must be between 0 and 2pi.")
+            #     raise ValueError("RA must be between 0 and 2pi.")
+            val += 2 * np.pi * u.rad
         if val > self._RA_max:
             logger.warning(
                 f"RA_min is greater than RA_max={self._RA_max:.2f}. Event selection will wrap at 0/2pi."
@@ -84,7 +85,8 @@ class ROI:
     @u.quantity_input
     def RA_max(self, val: u.rad):
         if val > 2.0 * np.pi * u.rad:
-            raise ValueError("RA must be between 0 and 2 pi.")
+            # raise ValueError("RA must be between 0 and 2 pi.")
+            val -= 2 * np.pi * u.rad
         if val < self._RA_min:
             logger.warning(
                 f"RA_max is smaller than RA_min={self._RA_min:.2f}. Event selection will wrap at 0/2pi."

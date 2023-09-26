@@ -46,7 +46,6 @@ class NorthernTracksEffectiveArea(EffectiveArea):
     CACHE_FNAME = "aeff_tracks.npz"
 
     def __init__(self) -> None:
-
         super().__init__(
             "NorthernTracksEffectiveArea",
             ["true_energy", "true_dir"],
@@ -55,6 +54,8 @@ class NorthernTracksEffectiveArea(EffectiveArea):
         )
 
         self.setup()
+
+        self._make_spline()
 
         # Define Stan interface.
         with self:
@@ -69,7 +70,6 @@ class NorthernTracksEffectiveArea(EffectiveArea):
             _ = ReturnStatement([hist("true_energy", cos_dir)])
 
     def setup(self) -> None:
-
         if self.CACHE_FNAME in Cache:
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
                 data = np.load(fr)
@@ -77,11 +77,9 @@ class NorthernTracksEffectiveArea(EffectiveArea):
                 tE_bin_edges = data["tE_bin_edges"]
                 cosz_bin_edges = data["cosz_bin_edges"]
         else:
-
             import h5py  # type: ignore
 
             with h5py.File(self.DATA_PATH, "r") as f:
-
                 aeff_numu = f["2010/nu_mu/area"][()]
                 aeff_numubar = f["2010/nu_mu_bar/area"][()]
 
@@ -125,7 +123,9 @@ class NorthernTracksEnergyResolution(EnergyResolution):
 
     CACHE_FNAME = "energy_reso_tracks.npz"
 
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF, make_plots: bool = False) -> None:
+    def __init__(
+        self, mode: DistributionMode = DistributionMode.PDF, make_plots: bool = False
+    ) -> None:
         """
         Args:
             inputs: List[TExpression]
@@ -155,7 +155,6 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         lognorm = LognormalMixture(mixture_name, self.n_components, self._mode)
 
         if mode == DistributionMode.PDF:
-
             super().__init__(
                 "NorthernTracksEnergyResolution",
                 ["true_energy", "reco_energy"],
@@ -164,7 +163,6 @@ class NorthernTracksEnergyResolution(EnergyResolution):
             )
 
         elif mode == DistributionMode.RNG:
-
             super().__init__(
                 "NorthernTracksEnergyResolution_rng",
                 ["true_energy"],
@@ -175,12 +173,10 @@ class NorthernTracksEnergyResolution(EnergyResolution):
             mixture_name = "nt_energy_res_mix_rng"
 
         else:
-
             RuntimeError("mode must be DistributionMode.PDF or DistributionMode.RNG")
 
         # Define Stan interface.
         with self:
-
             truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
 
@@ -241,10 +237,8 @@ class NorthernTracksEnergyResolution(EnergyResolution):
                 ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
 
     def setup(self) -> None:
-
         # Check cache
         if self.CACHE_FNAME in Cache:
-
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
                 data = np.load(fr)
                 eres = data["eres"]
@@ -256,11 +250,9 @@ class NorthernTracksEnergyResolution(EnergyResolution):
 
         # Or load from file
         else:
-
             import h5py
 
             with h5py.File(self.DATA_PATH, "r") as f:
-
                 aeff_numu = f["2010/nu_mu/area"][()]
                 aeff_numubar = f["2010/nu_mu_bar/area"][()]
 
@@ -301,7 +293,6 @@ class NorthernTracksEnergyResolution(EnergyResolution):
 
             # Save polynomial
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
-
                 np.savez(
                     fr,
                     eres=eres,
@@ -363,9 +354,7 @@ class NorthernTracksAngularResolution(AngularResolution):
     CACHE_FNAME = "angular_reso_tracks.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
-
         if mode == DistributionMode.PDF:
-
             super().__init__(
                 "NorthernTracksAngularResolution",
                 ["true_energy", "true_dir", "reco_dir"],
@@ -374,7 +363,6 @@ class NorthernTracksAngularResolution(AngularResolution):
             )
 
         else:
-
             super().__init__(
                 "NorthernTracksAngularResolution_rng",
                 ["true_energy", "true_dir"],
@@ -392,7 +380,6 @@ class NorthernTracksAngularResolution(AngularResolution):
 
         # Define Stan interface
         with self:
-
             # Clip true energy
             clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
 
@@ -414,7 +401,6 @@ class NorthernTracksAngularResolution(AngularResolution):
             ReturnStatement([vmf])
 
     def kappa(self):
-
         clipped_e = TruncatedParameterization("E[i]", self._Emin, self._Emax)
 
         clipped_log_e = LogParameterization(clipped_e)
@@ -428,10 +414,8 @@ class NorthernTracksAngularResolution(AngularResolution):
         return kappa
 
     def setup(self) -> None:
-
         # Check cache
         if self.CACHE_FNAME in Cache:
-
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
                 data = np.load(fr)
                 self._kappa_grid = data["kappa_grid"]
@@ -442,10 +426,8 @@ class NorthernTracksAngularResolution(AngularResolution):
                 self._poly_limits = (self._Emin, self._Emax)
 
         else:
-
             # Load input data and fit polynomial
             if not os.path.exists(self.DATA_PATH):
-
                 raise RuntimeError(self.DATA_PATH, "is not a valid path")
 
             data = pd.read_csv(
@@ -497,7 +479,6 @@ class NorthernTracksDetectorModel(DetectorModel):
         mode: DistributionMode = DistributionMode.PDF,
         event_type=None,
     ):
-
         super().__init__(mode, event_type="tracks")
 
         ang_res = NorthernTracksAngularResolution(mode)
@@ -506,7 +487,7 @@ class NorthernTracksDetectorModel(DetectorModel):
         energy_res = NorthernTracksEnergyResolution(mode)
         self._energy_resolution = energy_res
 
-        #if mode == DistributionMode.PDF:
+        # if mode == DistributionMode.PDF:
         self._eff_area = NorthernTracksEffectiveArea()
 
     def _get_effective_area(self):
@@ -522,7 +503,6 @@ class NorthernTracksDetectorModel(DetectorModel):
 # Testing.
 # @TODO: This needs updating.
 if __name__ == "__main__":
-
     e_true_name = "e_true"
     e_reco_name = "e_reco"
     true_dir_name = "true_dir"
@@ -542,7 +522,6 @@ if __name__ == "__main__":
     import pystan
 
     with StanGenerator() as cg:
-
         with FunctionsContext() as fc:
             Include("utils.stan")
             Include("vMF.stan")

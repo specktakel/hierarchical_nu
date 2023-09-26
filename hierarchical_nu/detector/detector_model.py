@@ -5,6 +5,7 @@ This module contains classes for modelling detectors
 from abc import ABCMeta, abstractmethod
 import numpy as np
 from scipy import stats
+from scipy.interpolate import RegularGridInterpolator
 from typing import List
 from astropy import units as u
 
@@ -32,6 +33,39 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
     The effective areas can depend on multiple quantities (ie. energy,
     direction, time, ..)
     """
+
+    def _make_spline(self):
+        log_tE_lower_bin_edges = np.log10(self._tE_bin_edges[:-1])
+        log_tE_upper_bin_edges = np.log10(self._tE_bin_edges[1:])
+        log_tE_bin_c = np.concatenate(
+            (
+                np.array([log_tE_lower_bin_edges[0]]),
+                (log_tE_lower_bin_edges + log_tE_upper_bin_edges) / 2,
+            ),
+        )
+
+        cosz_lower = self._cosz_bin_edges[:-1]
+        cosz_upper = self._cosz_bin_edges[1:]
+        cosz_c = np.concatenate(
+            (np.array([cosz_lower[0]]), (cosz_lower + cosz_upper) / 2)
+        )
+
+        # Duplicate slice at lowest energy
+        to_be_splined_aeff = np.concatenate(
+            (np.atleast_2d(self.eff_area[0, :]), self.eff_area), axis=0
+        )
+        # Duplicate slice at cosz=-1 (vertical upgoing)
+        to_be_splined_aeff = np.concatenate(
+            (np.atleast_2d(to_be_splined_aeff[:, 0]).T, to_be_splined_aeff), axis=1
+        )
+
+        self._eff_area_spline = RegularGridInterpolator(
+            (log_tE_bin_c, cosz_c),
+            to_be_splined_aeff,
+            bounds_error=False,
+            fill_value=0,
+            method="linear",
+        )
 
     @abstractmethod
     def setup(self) -> None:
@@ -82,6 +116,14 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         """
 
         return self._rs_bbpl_params
+
+    @property
+    def eff_area_spline(self):
+        """
+        2D spline of effective area.
+        """
+
+        return self._eff_area_spline
 
 
 class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):

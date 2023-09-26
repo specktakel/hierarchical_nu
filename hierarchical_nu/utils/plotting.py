@@ -37,7 +37,6 @@ class SphericalCircle(PathPatch):
     """
 
     def __init__(self, center, radius, resolution=100, vertex_unit=u.degree, **kwargs):
-
         # Extract longitude/latitude, either from a tuple of two quantities, or
         # a single 2-element Quantity.
 
@@ -48,8 +47,16 @@ class SphericalCircle(PathPatch):
         # 	longitude = -360. * u.deg + longitude.to(u.deg)
 
         # Start off by generating the circle around the North pole
-        lon = np.linspace(0.0, 2 * np.pi, resolution + 1)[:-1] * u.radian
-        lat = np.repeat(0.5 * np.pi - radius.to_value(u.radian), resolution) * u.radian
+        _lon = np.linspace(0.0, 2 * np.pi, resolution + 1)[:-1] * u.radian
+        _lat = np.repeat(0.5 * np.pi - radius.to_value(u.radian), resolution) * u.radian
+
+        lon = np.zeros((_lon.size + 1)) << u.radian
+        lat = np.zeros((_lat.size + 1)) << u.radian
+
+        lon[:-1] = _lon
+        lon[-1] = _lon[0]
+        lat[:-1] = _lat
+        lat[-1] = _lat[0]
 
         lon, lat = _rotate_polygon(lon, lat, longitude, latitude)
 
@@ -77,11 +84,9 @@ class SphericalCircle(PathPatch):
 
 
 def compute_xyz(ra, dec, radius=100):
-
     out = np.zeros((len(ra), 3))
 
     for i, (r, d) in enumerate(zip(ra, dec)):
-
         out[i, 0] = np.cos(d) * np.cos(r)
         out[i, 1] = np.cos(d) * np.sin(r)
         out[i, 2] = np.sin(d)
@@ -90,7 +95,6 @@ def compute_xyz(ra, dec, radius=100):
 
 
 def get_lon_lat(center, theta, radius=1, resolution=100):
-
     longitude, latitude = center
 
     # #longitude values restricted on domain of (-180,180]
@@ -108,7 +112,6 @@ def get_lon_lat(center, theta, radius=1, resolution=100):
 
 
 def get_3d_circle(center, theta, radius, resolution=100):
-
     lon, lat = get_lon_lat(center, theta, radius, resolution)
 
     return compute_xyz(lon, lat, radius)

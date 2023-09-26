@@ -40,7 +40,7 @@ class Source(ABC):
     @u.quantity_input
     def flux(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.m ** 2 * u.s * u.sr):
+    ) -> 1 / (u.GeV * u.m**2 * u.s * u.sr):
         return self._flux_model(energy, dec, ra)
 
 
@@ -69,7 +69,6 @@ class PointSource(Source):
         *args,
         **kwargs
     ):
-
         super().__init__(name)
         self._dec = dec
         self._ra = ra
@@ -128,7 +127,7 @@ class PointSource(Source):
         # Normalisation to dN/(dEdtdA)
         norm = Parameter(
             # is defined at the detector!
-            1 / (u.GeV * u.s * u.m ** 2),
+            1 / (u.GeV * u.s * u.m**2),
             "{}_norm".format(name),
             fixed=False,
             par_range=(0, np.inf),
@@ -144,7 +143,7 @@ class PointSource(Source):
         )
         total_power = shape.total_flux_density
         norm.value *= total_flux / total_power
-        norm.value = norm.value.to(1 / (u.GeV * u.m ** 2 * u.s))
+        norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
         norm.fixed = True
         return cls(name, dec, ra, redshift, shape, luminosity)
 
@@ -194,7 +193,7 @@ class PointSource(Source):
         # Normalisation to dN/(dEdtdA)
         norm = Parameter(
             # is defined at the detector!
-            1 / (u.GeV * u.s * u.m ** 2),
+            1 / (u.GeV * u.s * u.m**2),
             "{}_norm".format(name),
             fixed=False,
             par_range=(0, np.inf),
@@ -210,7 +209,7 @@ class PointSource(Source):
         )
         total_power = shape.total_flux_density
         norm.value *= total_flux / total_power
-        norm.value = norm.value.to(1 / (u.GeV * u.m ** 2 * u.s))
+        norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
         norm.fixed = True
         return cls(name, dec, ra, redshift, shape, luminosity)
 
@@ -222,7 +221,7 @@ class PointSource(Source):
         upper_energy: Parameter,
         include_undetected: bool = False,
     ):
-        """        
+        """
         Factory for power law sources defined in
         HDF5 files ( update: output from popsynth).
 
@@ -236,7 +235,6 @@ class PointSource(Source):
 
         # Load values
         with h5py.File(file_name, "r") as f:
-
             luminosities = f["luminosities"][()] * (u.erg / u.s)
 
             spectral_indices = f["auxiliary_quantities/spectral_index/obs_values"][()]
@@ -251,7 +249,6 @@ class PointSource(Source):
 
         # Apply selection
         if not include_undetected:
-
             luminosities = luminosities[selection]
 
             spectral_indices = spectral_indices[selection]
@@ -274,15 +271,12 @@ class PointSource(Source):
                 redshifts,
             )
         ):
-
             # Check for shared luminosity parameter
             try:
-
                 luminosity = Parameter.get_parameter("luminosity")
 
             # Else, create individual ps_%i_luminosity parameters
             except ValueError:
-
                 luminosity = Parameter(
                     L,
                     "ps_%i_luminosity" % i,
@@ -292,12 +286,10 @@ class PointSource(Source):
 
             # Check for shared src_index parameter
             try:
-
                 src_index = Parameter.get_parameter("src_index")
 
             # Else, create individual ps_%i_src_index parameters
             except ValueError:
-
                 src_index = Parameter(
                     index,
                     "ps_%i_src_index" % i,
@@ -324,7 +316,7 @@ class PointSource(Source):
     @property
     def dec(self):
         return self._dec
-    
+
     @dec.setter
     @u.quantity_input
     def dec(self, value: u.rad):
@@ -344,7 +336,7 @@ class PointSource(Source):
         # only valid for IceCube
         # TODO: move to detector model
         return np.cos(self._dec.value + np.pi / 2)
-    
+
     @property
     def redshift(self):
         return self._redshift
@@ -378,7 +370,6 @@ class DiffuseSource(Source):
     """
 
     def __init__(self, name: str, redshift: float, flux_model, *args, **kwargs):
-
         super().__init__(name)
         self._redshift = redshift
         self._flux_model = flux_model
@@ -400,7 +391,6 @@ class Sources:
     """
 
     def __init__(self):
-
         # Number of source components
         self.N = 0
 
@@ -416,7 +406,6 @@ class Sources:
 
     @sources.setter
     def sources(self, value):
-
         if not isinstance(value, list):
             raise ValueError(str(value) + " is not a list")
 
@@ -471,7 +460,11 @@ class Sources:
         """
 
         spectral_shape = PowerLawSpectrum(
-            flux_norm, norm_energy, diff_index, lower.value / (1. + z), upper.value / (1. + z)
+            flux_norm,
+            norm_energy,
+            diff_index,
+            lower.value / (1.0 + z),
+            upper.value / (1.0 + z),
         )
         flux_model = IsotropicDiffuseBG(spectral_shape)
 
@@ -487,7 +480,6 @@ class Sources:
 
         z = []
         for source in self.sources:
-
             if isinstance(source, PointSource):
                 z.append(source.redshift)
 
@@ -500,13 +492,11 @@ class Sources:
 
         types = []
         for source in self.sources:
-
             if isinstance(source, PointSource):
                 types.append(type(source.flux_model.spectral_shape))
 
         # Check all the same
         if not types[1:] == types[:-1]:
-
             raise ValueError("Not all point sources have the same spectral_shape")
 
         self._point_source_spectrum = types[0]
@@ -552,7 +542,7 @@ class Sources:
         from sources.
         """
 
-        flux_units = 1 / (u.m ** 2 * u.s)
+        flux_units = 1 / (u.m**2 * u.s)
 
         point_source_ints = (
             sum(
@@ -575,7 +565,7 @@ class Sources:
         contribution.
         """
 
-        flux_units = 1 / (u.m ** 2 * u.s)
+        flux_units = 1 / (u.m**2 * u.s)
 
         point_source_ints = (
             sum(
@@ -589,11 +579,9 @@ class Sources:
         )
 
         if self.diffuse:
-
             diff_ints = self.diffuse.flux_model.total_flux_int.to(flux_units)
 
         else:
-
             diff_ints = 0 << flux_units
 
         return point_source_ints / (point_source_ints + diff_ints)
@@ -612,99 +600,78 @@ class Sources:
         self._atmospheric = None
 
         for source in self.sources:
-
             if isinstance(source, PointSource):
-
                 self._point_source.append(source)
 
             elif isinstance(source, DiffuseSource):
-
                 if isinstance(source.flux_model, IsotropicDiffuseBG):
-
                     self._diffuse = source
 
                 elif isinstance(source.flux_model, AtmosphericNuMuFlux):
-
                     self._atmospheric = source
 
         if self._point_source:
-
             self._get_point_source_spectrum()
 
         new_list = self._point_source.copy()
 
         if self._diffuse:
-
             new_list.append(self._diffuse)
 
         if self._atmospheric:
-
             new_list.append(self._atmospheric)
 
         self.sources = new_list
 
     @property
     def point_source(self):
-
         self.organise()
 
         return self._point_source
 
     @property
     def point_source_spectrum(self):
-
         self.organise()
 
         if self._point_source:
-
             return self._point_source_spectrum
 
         else:
-
             raise ValueError("No point sources in  source list")
 
     @property
     def diffuse(self):
-
         self.organise()
 
         return self._diffuse
 
     @property
     def diffuse_spectrum(self):
-
         self.organise()
 
         if self._diffuse:
-
             return self._diffuse.flux_model.spectral_shape
 
         else:
-
             raise ValueError("No diffuse background in source list")
 
     @property
     def atmospheric(self):
-
         self.organise()
 
         return self._atmospheric
 
     @property
     def atmospheric_flux(self):
-
         self.organise()
 
         return self._atmospheric.flux_model
 
     def __iter__(self):
-
         for source in self._sources:
-
             yield source
 
     def __getitem__(self, key):
-
         return self._sources[key]
 
     def save(self, file_name):
@@ -730,16 +697,20 @@ def uv_to_icrs(unit_vector):
     """
 
     if len(np.shape(unit_vector)) > 1:
-
         theta = np.arccos(unit_vector.T[2])
 
-        phi = np.arctan(unit_vector.T[1] / unit_vector.T[0])
+        phi = np.arctan2(unit_vector.T[1], unit_vector.T[0])
+        # Convert to [0, 2pi)
+        phi[phi < 0] += 2 * np.pi
 
     else:
-
         theta = np.arccos(unit_vector[2])
 
-        phi = np.arccos(unit_vector[1] / unit_vector[0])
+        phi = np.arctan2(unit_vector[1], unit_vector[0])
+
+        # Convert to [0, 2pi)
+        if phi < 0:
+            phi += 2 * np.pi
     ra, dec = spherical_to_icrs(theta, phi)
 
     return ra, dec
@@ -766,5 +737,4 @@ def spherical_to_icrs(theta, phi):
 
 
 def lists_to_tuple(list1, list2):
-
     return [(list1[i], list2[i]) for i in range(0, len(list1))]
