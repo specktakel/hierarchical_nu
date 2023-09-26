@@ -3,6 +3,7 @@
 # from tokenize import String
 from typing import Sequence, Tuple, Iterable, List
 import os
+from itertools import product
 
 # import pandas as pd
 import numpy as np
@@ -409,6 +410,8 @@ class R2021EffectiveArea(EffectiveArea):
 
         self.setup()
 
+        self._make_spline()
+
     def generate_code(self):
         super().__init__(
             "R2021EffectiveArea",
@@ -523,7 +526,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self._declination_bins = self.irf.declination_bins
 
         # For prob_Edet_above_threshold
-        self._pdet_limits = (1e1, 1e8)
+        self._pdet_limits = (1e2, 1e8)
 
         self._n_components = n_components
         self.setup()
@@ -965,6 +968,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 if self.make_plots:
                     for c, dec in enumerate(self._declination_bins[:-1]):
                         self.set_fit_params((dec + 0.01) * u.rad)
+
                         fig = self.plot_fit_params(
                             self._fit_params, self._rebin_tE_binc[c]
                         )
@@ -1035,6 +1039,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         true_energy: u.GeV,
         lower_threshold_energy: u.GeV,
         dec: u.rad,
+        upper_threshold_energy=None,
     ):
         """
         P(Edet > Edet_min | E) for use in precomputation.
@@ -1042,44 +1047,124 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         based on the detected events. Per declination,
         find lowest and highest reconstructed energy
         and restrict the threshold energy by the found values.
+        Optional argument upper_threshold_energy used for debugging and diagnostic plots
         """
-        self.set_fit_params(dec)
+        # self.set_fit_params(dec)
         # Truncate input energies to safe range
         energy_trunc = true_energy.to(u.GeV).value
+        energy_trunc = np.atleast_1d(energy_trunc)
         energy_trunc[energy_trunc < self._pdet_limits[0]] = self._pdet_limits[0]
         energy_trunc[energy_trunc > self._pdet_limits[1]] = self._pdet_limits[1]
         energy_trunc = energy_trunc * u.GeV
+        dec = np.atleast_1d(dec)
 
-        model = self.make_cumulative_model(self.n_components)
+        assert dec.shape == energy_trunc.shape
 
-        prob = np.zeros_like(energy_trunc)
-        model_params: List[float] = []
-
-        for comp in range(self.n_components):
-            mu = np.poly1d(self.poly_params_mu[comp])(
-                np.log10(energy_trunc.to(u.GeV).value)
+        if len(energy_trunc.shape) > 0 and len(lower_threshold_energy.shape) == 0:
+            lower_threshold_energy = (
+                np.full(energy_trunc.shape, lower_threshold_energy.to_value(u.GeV))
+                * u.GeV
             )
-            sigma = np.poly1d(self.poly_params_sd[comp])(
-                np.log10(energy_trunc.to(u.GeV).value)
+        else:
+            lower_threshold_energy = np.atleast_1d(lower_threshold_energy)
+
+        assert energy_trunc.shape == lower_threshold_energy.shape
+
+        if upper_threshold_energy is not None:
+            upper_threshold_energy = np.atleast_1d(upper_threshold_energy)
+
+        # Limits of Ereco in dec binning of effective area
+        idx_dec_aeff = np.digitize(dec.to_value(u.rad), self._aeff_dec_bins) - 1
+        # Get the according IRF dec bins (there are only 3)
+        idx_dec_eres = np.digitize(dec.to_value(u.rad), self._declination_bins) - 1
+        idx_dec_aeff[
+            np.nonzero(
+                (idx_dec_aeff == self._aeff_dec_bins.size - 1)
+                & (np.isclose(dec.to_value(u.rad), self._aeff_dec_bins[-1]))
             )
-            model_params += [mu, sigma]
+        ] -= 1
 
-        # get limits done in icecube_tools
-        dec_idx = (
-            np.digitize(dec.value, self._icecube_tools_eres.declination_bins_aeff) - 1
+        idx_tE = (
+            np.digitize(
+                np.log10(energy_trunc.to_value(u.GeV)), self.irf.true_energy_bins
+            )
+            - 1
         )
-        # are in log10(E/GeV)
-        e_low = self._icecube_tools_eres._ereco_limits[dec_idx, 0]
-        # e_high = self._icecube_tools_eres._ereco_limits[dec_idx, 1]
 
-        ethr_low = lower_threshold_energy.to(u.GeV).value
-        lower_threshold_energy = (
-            ethr_low * u.GeV
-            if ethr_low > np.power(10, e_low)
-            else np.power(10, e_low) * u.GeV
-        )
-        # ethr_high = upper_threshold_energy.to(u.GeV).value
-        prob = 1 - model(np.log10(lower_threshold_energy.to(u.GeV).value), model_params)
+        # Create output array
+        prob = np.zeros(energy_trunc.shape)
+
+        ## Make strongest limits on ereco_low
+        # limits from exp data selection
+        e_low = self._icecube_tools_eres._ereco_limits[idx_dec_aeff, 0]
+        # make log of input value
+        ethr_low = np.log10(lower_threshold_energy.to_value(u.GeV))
+        # apply stronger limit
+        e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
+
+        for cE, cD in product(
+            range(self.irf.true_energy_bins.size - 1),
+            range(self.irf.declination_bins.size - 1),
+        ):
+            if cE not in idx_tE and cD not in idx_dec_eres:
+                continue
+
+            if upper_threshold_energy is None:
+                prob[
+                    (cE == idx_tE) & (cD == idx_dec_eres)
+                ] = 1.0 - self.irf.reco_energy[cE, cD].cdf(
+                    e_low[(cE == idx_tE) & (cD == idx_dec_eres)]
+                )
+            else:
+                pdf = self.irf.reco_energy[cE, cD]
+                prob[(cE == idx_tE) & (cD == idx_dec_eres)] = pdf.cdf(
+                    np.log10(upper_threshold_energy.to_value(u.GeV))[
+                        (cE == idx_tE) & (cD == idx_dec_eres)
+                    ]
+                ) - pdf.cdf(e_low[(cE == idx_tE) & (cD == idx_dec_eres)])
+        '''
+        for c, d in enumerate(self._declination_bins[:-1]):
+            # Otherwise we will cause errors
+            if c not in irf_dec_idx:
+                continue
+            self.set_fit_params((d + 0.01) * u.rad)
+
+            """
+            model = self.make_cumulative_model(self.n_components)
+
+            model_params: List[float] = []
+
+            for comp in range(self.n_components):
+                mu = np.poly1d(self._poly_params_mu[comp])(
+                    np.log10(energy_trunc[irf_dec_idx == c].to(u.GeV).value)
+                )
+                sigma = np.poly1d(self._poly_params_sd[comp])(
+                    np.log10(energy_trunc[irf_dec_idx == c].to(u.GeV).value)
+                )
+                model_params += [mu, sigma]
+            """
+            # Limits are in log10(E/GeV)
+            e_low = self._icecube_tools_eres._ereco_limits[
+                dec_idx[np.nonzero(irf_dec_idx == c)], 0
+            ]
+            ethr_low = np.log10(
+                lower_threshold_energy[irf_dec_idx == c].to_value(u.GeV)
+            )
+
+            # print(ethr_low)
+            e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
+            if upper_threshold_energy is None:
+                # prob[irf_dec_idx == c] = 1.0 - model(e_low, model_params)
+                for c_e, E in enumerate(energy_trunc[]):   # check indexing
+                    idx_E = np.digitize(np.log10(E.to_value(u.GeV)), self.irf.true_energy_bins) - 1
+                    prob[irf_dec_idx == c] = 1.0 - self.irf.reco_energy[idx_E, c].cdf(np.array[])
+            else:
+                # prob[irf_dec_idx == c] = model(
+                #    np.log10(upper_threshold_energy[irf_dec_idx == c].to_value(u.GeV)),
+                #    model_params,
+                # ) - model(e_low, model_params)
+                pass
+        '''
 
         return prob
 

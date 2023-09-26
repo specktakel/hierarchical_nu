@@ -297,6 +297,8 @@ class StanFit:
             except:
                 pass
 
+        fig = axs.flatten()[0].get_figure()
+
         return fig, axs
 
     def corner_plot(self, var_names=None, truths=None):
@@ -478,9 +480,11 @@ class StanFit:
 
         events = self.events
         events.coords.representation_type = "spherical"
+
         sep = events.coords.separation(source_coords).deg
         mask = sep < radius.to_value(u.deg) * 1.41
         # sloppy, don't know how to do that rn
+
         ax.scatter(
             source_coords.ra.deg,
             source_coords.dec.deg,
