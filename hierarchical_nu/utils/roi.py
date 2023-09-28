@@ -78,6 +78,9 @@ class CircularROI(ROI):
         if self._radius.to(u.deg) > 180.0 * u.deg:
             raise ValueError("Radii larger than 180 degrees are not sensible.")
 
+    def __repr__(self):
+        return f"CircularROI, center RA={self._center.ra.deg:.1f}°, DEC={self._center.dec.deg:.1f}°, radius={self._radius.to_value(u.deg):.1f}°"
+
     def _get_roi_width(self):
         """
         The widest point in RA of a circle on a sphere
@@ -266,6 +269,9 @@ class RectangularROI(ROI):
         self.RA_max = self._RA_max
         self.DEC_min = self._DEC_min
         self.DEC_max = self._DEC_max
+
+    def __repr__(self):
+        return f"RectangularROI, DEC=[{self.DEC_min.to_value(u.deg):.1f}°, {self.DEC_max.to_value(u.deg):.1f}°], RA=[{self.RA_min.to_value(u.deg):.1f}°, {self.RA_max.to_value(u.deg):.1f}°]"
 
 
 def ROI_width(d1, radius, d2):
