@@ -2,7 +2,12 @@ import numpy as np
 import astropy.units as u
 import pytest
 
+from hierarchical_nu.utils.roi import RectangularROI, ROI, CircularROI
 
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 indices = np.linspace(1.8, 3.6, 10, endpoint=True)
 
 min_energy = 1e5
@@ -48,7 +53,8 @@ class TestNex:
 
         my_sources = Sources()
         my_sources.add(ps_hnu)
-
+        roi = RectangularROI()
+        logger.warning(roi)
         sim = Simulation(my_sources, R2021DetectorModel, 1 * u.year)
         sim.precomputation()
 
@@ -151,7 +157,8 @@ class TestNex:
         my_sources.add_diffuse_component(
             diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
         )
-
+        roi = RectangularROI()
+        logger.warning(roi)
         sim = Simulation(my_sources, R2021DetectorModel, 1 * u.year)
         sim.precomputation()
         Nex_ps_hnu = []
