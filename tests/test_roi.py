@@ -12,18 +12,23 @@ import pytest
 
 import logging
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
+
 
 def test_circular_event_selection():
     roi = CircularROI(
         center=SkyCoord(ra=90 * u.deg, dec=10 * u.deg, frame="icrs"),
         radius=10.0 * u.deg,
     )
+    logger.warning(roi)
     events = Events.from_ev_file("IC86_II")
     assert events.coords.z.min() >= 0.0
 
 
 def test_rectangular_event_selection():
     roi = RectangularROI(DEC_min=0.0 * u.rad)
+    logger.warning(roi)
     events = Events.from_ev_file("IC86_II")
     assert events.coords.z.min() >= 0.0
 
