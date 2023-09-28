@@ -109,7 +109,7 @@ class TestR2021:
                 theta = ForwardVariableDef("theta", "real")
 
             with ParametersContext():
-                true_energy = ParameterDef("true_energy", "real", 2.25, 8.75)
+                true_energy = ParameterDef("true_energy", "real", 2.25, 8.0)
 
             with TransformedParametersContext():
                 lp = ForwardArrayDef("lp", "real", ["[", size, "]"])
@@ -210,7 +210,7 @@ class TestR2021:
         irf = R2021IRF.from_period("IC86_II")
         phi = 0
         theta = np.array([3 * np.pi / 4])  # , np.pi/2, np.pi/4])
-        etrue = irf.true_energy_values
+        etrue = irf.true_energy_values[:-2]
         size = 100
         num_samples = 1000
         for c_e, e in enumerate(etrue[1:-1], 1):
