@@ -45,19 +45,24 @@ class CascadesEffectiveArea(EffectiveArea):
 
     CACHE_FNAME = "aeff_cascades.npz"
 
-    def __init__(self) -> None:
-        super().__init__(
-            "CascadesEffectiveArea",
-            ["true_energy", "true_dir"],
-            ["real", "vector"],
-            "real",
-        )
+    NAME = "CascadesEffectiveArea"
 
+    def __init__(self) -> None:
+        self._func_name = self.NAME
         self.setup()
 
         self._make_spline()
 
         # Define Stan interface
+
+    def generate_code(self):
+        super().__init__(
+            self._func_name,
+            ["true_energy", "true_dir"],
+            ["real", "vector"],
+            "real",
+        )
+
         with self:
             hist = TwoDimHistInterpolation(
                 self._eff_area,
@@ -118,6 +123,9 @@ class CascadesEnergyResolution(EnergyResolution):
 
     CACHE_FNAME = "energy_reso_cascades.npz"
 
+    PDF_NAME = "CascadeEnergyResolution"
+    RNG_NAME = "CascadeEnergyResolution_rng"
+
     def __init__(
         self, mode: DistributionMode = DistributionMode.PDF, make_plots: bool = False
     ) -> None:
@@ -130,7 +138,7 @@ class CascadesEnergyResolution(EnergyResolution):
         are then fit with a polynomial for fast interpolation and evaluation.
         """
 
-        self._mode = mode
+        self.mode = mode
 
         # Parameters of polynomials for lognormal mu and sd
         self._poly_params_mu: Sequence = []
@@ -150,25 +158,24 @@ class CascadesEnergyResolution(EnergyResolution):
 
         if mode == DistributionMode.PDF:
             mixture_name = "c_energy_res_mix"
+            self._func_name = self.PDF_NAME
         elif mode == DistributionMode.RNG:
             mixture_name = "c_energy_res_mix_rng"
+            self._func_name = self.RNG_NAME
         else:
             RuntimeError("This should never happen")
 
-        lognorm = LognormalMixture(mixture_name, self._n_components, self._mode)
-
-        if mode == DistributionMode.PDF:
+    def generate_code(self):
+        if self.mode == DistributionMode.PDF:
             super().__init__(
-                "CascadeEnergyResolution",
+                self.PDF_NAME,
                 ["true_energy", "reco_energy"],
                 ["real", "real"],
                 "real",
             )
 
-        elif mode == DistributionMode.RNG:
-            super().__init__(
-                "CascadeEnergyResolution_rng", ["true_energy"], ["real"], "real"
-            )
+        elif self.mode == DistributionMode.RNG:
+            super().__init__(self.RNG_NAME, ["true_energy"], ["real"], "real")
             mixture_name = "nt_energy_res_mix_rng"
 
         else:
@@ -178,6 +185,8 @@ class CascadesEnergyResolution(EnergyResolution):
 
         with self:
             # Define parametrization in Stan.
+            lognorm = LognormalMixture(mixture_name, self._n_components, self.mode)
+
             truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
 
@@ -227,10 +236,10 @@ class CascadesEnergyResolution(EnergyResolution):
             log_mu_vec = FunctionCall([log_mu], "to_vector")
             sigma_vec = FunctionCall([sigma], "to_vector")
 
-            if mode == DistributionMode.PDF:
+            if self.mode == DistributionMode.PDF:
                 log_reco_e = LogParameterization("reco_energy")
                 ReturnStatement([lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
-            elif mode == DistributionMode.RNG:
+            elif self.mode == DistributionMode.RNG:
                 ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
 
     def setup(self) -> None:
@@ -329,23 +338,11 @@ class CascadesAngularResolution(AngularResolution):
 
     CACHE_FNAME = "angular_reso_cascades.npz"
 
+    PDF_NAME = "CascadesAngularResolution"
+    RNG_NAME = "CascadesAngularResolution_rng"
+
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
-        if mode == DistributionMode.PDF:
-            super().__init__(
-                "CascadesAngularResolution",
-                ["true_energy", "true_dir", "reco_dir"],
-                ["real", "vector", "vector"],
-                "real",
-            )
-
-        else:
-            super().__init__(
-                "CascadesAngularResolution_rng",
-                ["true_energy", "true_dir"],
-                ["real", "vector"],
-                "vector",
-            )
-
+        self.mode = mode
         self._kappa_grid: np.ndarray = None
         self._Egrid: np.ndarray = None
         self._poly_params: Sequence = []
@@ -354,7 +351,27 @@ class CascadesAngularResolution(AngularResolution):
 
         self.setup()
 
-        # Define Stan interface
+        if self.mode == DistributionMode.PDF:
+            self._func_name = self.PDF_NAME
+        else:
+            self._func_name = self.RNG_NAME
+
+    def generate_code(self):
+        if self.mode == DistributionMode.PDF:
+            super().__init__(
+                self._func_name,
+                ["true_energy", "true_dir", "reco_dir"],
+                ["real", "vector", "vector"],
+                "real",
+            )
+
+        else:
+            super().__init__(
+                self._func_name,
+                ["true_energy", "true_dir"],
+                ["real", "vector"],
+                "vector",
+            )
         with self:
             # Clip true energy
             clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
@@ -365,12 +382,12 @@ class CascadesAngularResolution(AngularResolution):
                 clipped_log_e, self._poly_params, "CascadesAngularResolutionPolyCoeffs"
             )
 
-            if mode == DistributionMode.PDF:
+            if self.mode == DistributionMode.PDF:
                 # VMF expects x_obs, x_true
-                vmf = VMFParameterization(["reco_dir", "true_dir"], kappa, mode)
+                vmf = VMFParameterization(["reco_dir", "true_dir"], kappa, self.mode)
 
-            elif mode == DistributionMode.RNG:
-                vmf = VMFParameterization(["true_dir"], kappa, mode)
+            elif self.mode == DistributionMode.RNG:
+                vmf = VMFParameterization(["true_dir"], kappa, self.mode)
 
             ReturnStatement([vmf])
 
@@ -445,6 +462,11 @@ class CascadesDetectorModel(DetectorModel):
     """
 
     event_types = ["cascades"]
+
+    PDF_NAME = "CascadesIRF"
+
+    RNG_FILENAME = "cascades_rng.stan"
+    PDF_FILENAME = "cascades_pdf.stan"
 
     def __init__(
         self,

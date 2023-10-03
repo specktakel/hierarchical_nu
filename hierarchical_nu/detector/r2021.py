@@ -414,7 +414,7 @@ class R2021EffectiveArea(EffectiveArea):
 
     def generate_code(self):
         super().__init__(
-            "R2021EffectiveArea",
+            self._func_name,
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real",

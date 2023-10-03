@@ -7,6 +7,7 @@ import numpy as np
 from scipy import stats
 from scipy.interpolate import RegularGridInterpolator
 from typing import List
+import os
 from astropy import units as u
 
 from ..utils.cache import Cache
@@ -17,7 +18,9 @@ from ..backend import (
     StringExpression,
     FunctionCall,
     ReturnStatement,
+    StanGenerator,
 )
+from ..stan.interface import STAN_GEN_PATH
 
 from ..utils.fitting_tools import Residuals
 
@@ -142,6 +145,14 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         """
 
         return self._eff_area_spline
+
+    @abstractmethod
+    def generate_code(self):
+        """
+        Generates stan code.
+        """
+
+        pass
 
 
 class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
@@ -529,6 +540,14 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
 
         return prob
 
+    @abstractmethod
+    def generate_code(self):
+        """
+        Generates stan code.
+        """
+
+        pass
+
 
 class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
     """
@@ -589,6 +608,14 @@ class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
 
         pass
 
+    @abstractmethod
+    def generate_code(self):
+        """
+        Generates stan code.
+        """
+
+        pass
+
 
 class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
     """
@@ -601,7 +628,7 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
         mode: DistributionMode = DistributionMode.PDF,
         event_type=None,
     ):
-        self._mode = mode
+        self.mode = mode
 
         self._event_type = event_type
 
@@ -632,6 +659,48 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
     @property
     def event_type(self):
         return self._event_type
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        path: str = STAN_GEN_PATH,
+        rewrite: bool = False,
+        **kwargs
+    ):
+        try:
+            files = os.listdir(path)
+        except FileNotFoundError:
+            files = []
+            os.makedirs(path)
+        finally:
+            if not rewrite:
+                if mode == DistributionMode.PDF and cls.PDF_FILENAME in files:
+                    return os.path.join(path, cls.PDF_FILENAME)
+                elif mode == DistributionMode.RNG and cls.RNG_FILENAME in files:
+                    return os.path.join(path, cls.RNG_FILENAME)
+
+            else:
+                cls.logger.info("Generating r2021 stan code.")
+
+        with StanGenerator() as cg:
+            instance = cls(mode=mode, **kwargs)
+            instance.effective_area.generate_code()
+            instance.angular_resolution.generate_code()
+            instance.energy_resolution.generate_code()
+            code = cg.generate()
+        code = code.removeprefix("functions\n{")
+        code = code.removesuffix("\n}\n")
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        if mode == DistributionMode.PDF:
+            with open(os.path.join(path, cls.PDF_FILENAME), "w+") as f:
+                f.write(code)
+            return os.path.join(path, cls.PDF_FILENAME)
+        else:
+            with open(os.path.join(path, cls.RNG_FILENAME), "w+") as f:
+                f.write(code)
+            return os.path.join(path, cls.RNG_FILENAME)
 
     def generate_pdf_code(self):
         super().__init__(

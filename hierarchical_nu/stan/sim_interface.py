@@ -73,12 +73,9 @@ class StanSimInterface(StanInterface):
         :param N: dict with keys "tracks" and/or "cascades". Value needs to be a list of length `len(sources)`
         """
 
-        if detector_model_type == R2021DetectorModel:
-            if "r2021_rng.stan" not in includes:
-                includes.append("r2021_rng.stan")
-            R2021DetectorModel.generate_code(
-                DistributionMode.RNG, rewrite=False, gen_type="histogram"
-            )
+        if detector_model_type.RNG_FILENAME not in includes:
+            includes.append(detector_model_type.RNG_FILENAME)
+        detector_model_type.generate_code(DistributionMode.RNG, rewrite=False)
 
         super().__init__(
             output_file=output_file,

@@ -48,18 +48,19 @@ class NorthernTracksEffectiveArea(EffectiveArea):
     NAME = "NorthernTracksEffectiveArea"
 
     def __init__(self) -> None:
+        self.setup()
+
+        self._func_name = "NorthernTracksEffectiveArea"
+
+        self._make_spline()
+
+    def generate_code(self):
         super().__init__(
             self.NAME,
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real",
         )
-
-        self.setup()
-
-        self._make_spline()
-
-        # Define Stan interface.
         with self:
             hist = TwoDimHistInterpolation(
                 self._eff_area,
@@ -137,7 +138,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
                 First item is true energy, second item is reco energy
         """
 
-        self._mode = mode
+        self.mode = mode
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
         self._poly_limits: Tuple[float, float] = (float("nan"), float("nan"))
@@ -152,24 +153,25 @@ class NorthernTracksEnergyResolution(EnergyResolution):
 
         if mode == DistributionMode.PDF:
             mixture_name = "nt_energy_res_mix"
+            self._func_name = self.PDF_NAME
         elif mode == DistributionMode.RNG:
             mixture_name = "nt_energy_res_mix_rng"
+            self._func_name = self.RNG_NAME
         else:
             RuntimeError("This should never happen")
 
-        lognorm = LognormalMixture(mixture_name, self.n_components, self._mode)
-
-        if mode == DistributionMode.PDF:
+    def generate_code(self):
+        if self.mode == DistributionMode.PDF:
             super().__init__(
-                self.PDF_NAME,
+                self._func_name,
                 ["true_energy", "reco_energy"],
                 ["real", "real"],
                 "real",
             )
 
-        elif mode == DistributionMode.RNG:
+        elif self.mode == DistributionMode.RNG:
             super().__init__(
-                self.RNG_NAME,
+                self._func_name,
                 ["true_energy"],
                 ["real"],
                 "real",
@@ -182,6 +184,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
 
         # Define Stan interface.
         with self:
+            lognorm = LognormalMixture(mixture_name, self.n_components, self.mode)
             truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
 
@@ -235,10 +238,10 @@ class NorthernTracksEnergyResolution(EnergyResolution):
             log_mu_vec = FunctionCall([log_mu], "to_vector")
             sigma_vec = FunctionCall([sigma], "to_vector")
 
-            if mode == DistributionMode.PDF:
+            if self.mode == DistributionMode.PDF:
                 log_reco_e = LogParameterization("reco_energy")
                 ReturnStatement([lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
-            elif mode == DistributionMode.RNG:
+            elif self.mode == DistributionMode.RNG:
                 ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
 
     def setup(self) -> None:
@@ -362,7 +365,21 @@ class NorthernTracksAngularResolution(AngularResolution):
     RNG_NAME = "NorthernTracksAngularResolution_rng"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
-        if mode == DistributionMode.PDF:
+        self.mode = mode
+        if self.mode == DistributionMode.PDF:
+            self._func_name = self.PDF_NAME
+        elif self.mode == DistributionMode.RNG:
+            self._func_name = self.RNG_NAME
+        self._kappa_grid: np.ndarray = None
+        self._Egrid: np.ndarray = None
+        self._poly_params: Sequence = []
+        self._Emin: float = float("nan")
+        self._Emax: float = float("nan")
+
+        self.setup()
+
+    def generate_code(self):
+        if self.mode == DistributionMode.PDF:
             super().__init__(
                 self.PDF_NAME,
                 ["true_energy", "true_dir", "reco_dir"],
@@ -378,15 +395,6 @@ class NorthernTracksAngularResolution(AngularResolution):
                 "vector",
             )
 
-        self._kappa_grid: np.ndarray = None
-        self._Egrid: np.ndarray = None
-        self._poly_params: Sequence = []
-        self._Emin: float = float("nan")
-        self._Emax: float = float("nan")
-
-        self.setup()
-
-        # Define Stan interface
         with self:
             # Clip true energy
             clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
@@ -399,12 +407,12 @@ class NorthernTracksAngularResolution(AngularResolution):
                 "NorthernTracksAngularResolutionPolyCoeffs",
             )
 
-            if mode == DistributionMode.PDF:
+            if self.mode == DistributionMode.PDF:
                 # VMF expects x_obs, x_true
-                vmf = VMFParameterization(["reco_dir", "true_dir"], kappa, mode)
+                vmf = VMFParameterization(["reco_dir", "true_dir"], kappa, self.mode)
 
-            elif mode == DistributionMode.RNG:
-                vmf = VMFParameterization(["true_dir"], kappa, mode)
+            elif self.mode == DistributionMode.RNG:
+                vmf = VMFParameterization(["true_dir"], kappa, self.mode)
 
             ReturnStatement([vmf])
 
@@ -483,6 +491,9 @@ class NorthernTracksDetectorModel(DetectorModel):
     event_types = ["tracks"]
 
     PDF_NAME = "NorthernTracksIRF"
+
+    RNG_FILENAME = "northern_tracks_rng.stan"
+    PDF_FILENAME = "northern_tracks_pdf.stan"
 
     def __init__(
         self,
