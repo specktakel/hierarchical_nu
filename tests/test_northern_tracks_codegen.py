@@ -19,15 +19,14 @@ from hierarchical_nu.backend.variable_definitions import (
 from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
 
+from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.stan.interface import STAN_PATH
 
 
 def test_file_generation_northern_tracks(output_directory):
-
     file_name = os.path.join(output_directory, "northern_tracks")
 
     with StanFileGenerator(file_name) as code_gen:
-
         _ = NorthernTracksDetectorModel(mode=DistributionMode.PDF)
 
         _ = NorthernTracksDetectorModel(mode=DistributionMode.RNG)
@@ -36,7 +35,6 @@ def test_file_generation_northern_tracks(output_directory):
 
 
 def generate_distribution_test_code(output_directory):
-
     file_name = os.path.join(output_directory, "nt_distributions")
 
     e_true_name = "e_trues"
@@ -44,16 +42,19 @@ def generate_distribution_test_code(output_directory):
     true_dir_name = "true_dirs"
     reco_zenith_name = "reco_zeniths"
 
+    _ = NorthernTracksDetectorModel.generate_code(
+        mode=DistributionMode.PDF,
+        path=output_directory,
+    )
+
     with StanFileGenerator(file_name) as code_gen:
-
         with FunctionsContext():
-
             _ = Include("interpolation.stan")
             _ = Include("utils.stan")
             _ = Include("vMF.stan")
+            _ = Include("northern_tracks_pdf.stan")
 
         with DataContext():
-
             array_length = ForwardVariableDef("n", "int")
             array_length_str = ["[", array_length, "]"]
 
@@ -63,7 +64,6 @@ def generate_distribution_test_code(output_directory):
             reco_zenith = ForwardArrayDef(reco_zenith_name, "real", array_length_str)
 
         with GeneratedQuantitiesContext():
-
             ntd = NorthernTracksDetectorModel()
 
             array_length_2d_str = ["[", array_length, ",", array_length, "]"]
@@ -76,9 +76,7 @@ def generate_distribution_test_code(output_directory):
             true_dir_ang_res << StringExpression("[sin(pi()/2), 0, cos(pi()/2)]'")
 
             with ForLoopContext(1, array_length, "i") as i:
-
                 with ForLoopContext(1, array_length, "j") as j:
-
                     eff_area_result[i][j] << ntd.effective_area(
                         e_trues[i], true_dirs[j]
                     )
@@ -96,7 +94,6 @@ def generate_distribution_test_code(output_directory):
 
 
 def test_distributions_northern_tracks(output_directory, random_seed):
-
     model_file = generate_distribution_test_code(output_directory)
 
     stanc_options = {"include-paths": [STAN_PATH]}
@@ -151,25 +148,25 @@ def test_distributions_northern_tracks(output_directory, random_seed):
 
 
 def generate_rv_test_code(output_directory):
-
     rng_file_name = os.path.join(output_directory, "nt_rng")
     pdf_file_name = os.path.join(output_directory, "nt_pdf")
 
+    _ = NorthernTracksDetectorModel.generate_code(
+        DistributionMode.RNG, path=output_directory
+    )
+
     with StanFileGenerator(rng_file_name) as code_gen_rng:
-
         with FunctionsContext():
-
             Include("interpolation.stan")
             Include("utils.stan")
             Include("vMF.stan")
+            Include("northern_tracks_rng.stan")
 
             with DataContext():
-
                 true_energy = ForwardVariableDef("true_energy", "real")
                 true_dir = ForwardVariableDef("true_dir", "vector[3]")
 
             with GeneratedQuantitiesContext():
-
                 ntd_rng = NorthernTracksDetectorModel(mode=DistributionMode.RNG)
                 rec_energy = ForwardVariableDef("rec_energy", "real")
                 rec_dir = ForwardVariableDef("rec_dir", "vector[3]")
@@ -179,21 +176,22 @@ def generate_rv_test_code(output_directory):
 
         code_gen_rng.generate_single_file()
 
+    _ = NorthernTracksDetectorModel.generate_code(
+        DistributionMode.PDF, path=output_directory
+    )
+
     with StanFileGenerator(pdf_file_name) as code_gen_pdf:
-
         with FunctionsContext():
-
             Include("interpolation.stan")
             Include("utils.stan")
             Include("vMF.stan")
+            Include("northern_tracks_pdf.stan")
 
         with DataContext():
-
             true_energy = ForwardVariableDef("true_energy", "real")
             e_recos = ForwardArrayDef("e_recos", "real", ["[100]"])
 
         with GeneratedQuantitiesContext():
-
             e_res_result = ForwardArrayDef("e_res", "real", ["[100]"])
             ntd_pdf = NorthernTracksDetectorModel(mode=DistributionMode.PDF)
 
@@ -206,7 +204,6 @@ def generate_rv_test_code(output_directory):
 
 
 def test_rv_generation(output_directory, random_seed):
-
     # Get Stan files
     rng_file_name, pdf_file_name = generate_rv_test_code(output_directory)
 

@@ -152,10 +152,8 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         self.setup()
 
         if mode == DistributionMode.PDF:
-            mixture_name = "nt_energy_res_mix"
             self._func_name = self.PDF_NAME
         elif mode == DistributionMode.RNG:
-            mixture_name = "nt_energy_res_mix_rng"
             self._func_name = self.RNG_NAME
         else:
             RuntimeError("This should never happen")
@@ -168,6 +166,8 @@ class NorthernTracksEnergyResolution(EnergyResolution):
                 ["real", "real"],
                 "real",
             )
+
+            mixture_name = "nt_energy_res_mix"
 
         elif self.mode == DistributionMode.RNG:
             super().__init__(
