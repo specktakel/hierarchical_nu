@@ -80,14 +80,9 @@ class StanFitInterface(StanInterface):
         :param nshards: Number of shards for multithreading, defaults to zero
         """
 
-        if (
-            detector_model_type == R2021DetectorModel
-            and "r2021_pdf.stan" not in includes
-        ):
-            includes.append("r2021_pdf.stan")
-            R2021DetectorModel.generate_code(
-                DistributionMode.PDF, rewrite=False, gen_type="lognorm"
-            )
+        if detector_model_type.PDF_FILENAME not in includes:
+            includes.append(detector_model_type.PDF_FILENAME)
+        detector_model_type.generate_code(DistributionMode.PDF, rewrite=False)
 
         super().__init__(
             output_file=output_file,

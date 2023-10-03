@@ -47,7 +47,6 @@ class TestR2021:
         _ = R2021DetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=True,
-            gen_type="histogram",
             ereco_cuts=False,
             path=output_directory,
         )
@@ -91,7 +90,6 @@ class TestR2021:
         _ = R2021DetectorModel.generate_code(
             mode=DistributionMode.PDF,
             rewrite=True,
-            gen_type="lognorm",
             path=output_directory,
         )
 
@@ -130,14 +128,12 @@ class TestR2021:
         R2021DetectorModel.generate_code(
             mode=DistributionMode.PDF,
             rewrite=False,
-            gen_type="lognorm",
             path=output_directory,
         )
 
         R2021DetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=False,
-            gen_type="histogram",
             path=output_directory,
         )
 
@@ -243,7 +239,6 @@ class TestR2021:
         _ = R2021DetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=True,
-            gen_type="histogram",
             ereco_cuts=True,
             path=output_directory,
         )

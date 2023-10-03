@@ -24,7 +24,7 @@ logger.setLevel(logging.WARNING)
 detector_models = [
     NorthernTracksDetectorModel,
     CascadesDetectorModel,
-    IceCubeDetectorModel,
+    # IceCubeDetectorModel,
     R2021DetectorModel,
 ]
 

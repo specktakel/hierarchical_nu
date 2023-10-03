@@ -490,7 +490,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        gen_type: str = "histogram",
+        # gen_type: str = "histogram",
         make_plots: bool = False,
         n_components: int = 3,
         ereco_cuts: bool = True,
@@ -513,11 +513,16 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self._make_ereco_cuts = ereco_cuts
         self._ereco_cuts = self._icecube_tools_eres._ereco_limits
         self._aeff_dec_bins = self._icecube_tools_eres.declination_bins_aeff
-        self.gen_type = gen_type
+        self.mode = mode
+        if self.mode == DistributionMode.PDF:
+            self._func_name = "R2021EnergyResolution"
+            self.gen_type = "lognorm"
+        elif self.mode == DistributionMode.RNG:
+            self._func_name = "R2021EnergyResolution_rng"
+            self.gen_type = "histogram"
         self.mode = mode
         self._rewrite = rewrite
         logger.info("Forced energy rewriting: {}".format(rewrite))
-        self.mode = mode
         self.make_plots = make_plots
         self._poly_params_mu: Sequence = []
         self._poly_params_sd: Sequence = []
@@ -530,12 +535,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         self._n_components = n_components
         self.setup()
-
-        # mis-use inheritence without initialising parent class
-        if self.mode == DistributionMode.PDF:
-            self._func_name = "R2021EnergyResolution"
-        elif self.mode == DistributionMode.RNG:
-            self._func_name = "R2021EnergyResolution_rng"
 
     def generate_code(self) -> None:
         """
@@ -1803,7 +1802,7 @@ class R2021DetectorModel(DetectorModel):
         self._angular_resolution = R2021AngularResolution(mode, rewrite)
 
         self._energy_resolution = R2021EnergyResolution(
-            mode, rewrite, gen_type, make_plots, n_components, ereco_cuts
+            mode, rewrite, make_plots, n_components, ereco_cuts
         )
 
         self._eff_area = R2021EffectiveArea(mode)
@@ -1856,7 +1855,6 @@ class R2021DetectorModel(DetectorModel):
             instance = cls(
                 mode=mode,
                 rewrite=rewrite,
-                gen_type=gen_type,
                 make_plots=make_plots,
                 n_components=n_components,
                 ereco_cuts=ereco_cuts,
