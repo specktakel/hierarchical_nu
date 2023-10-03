@@ -45,9 +45,11 @@ class NorthernTracksEffectiveArea(EffectiveArea):
 
     CACHE_FNAME = "aeff_tracks.npz"
 
+    NAME = "NorthernTracksEffectiveArea"
+
     def __init__(self) -> None:
         super().__init__(
-            "NorthernTracksEffectiveArea",
+            self.NAME,
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real",
@@ -123,6 +125,9 @@ class NorthernTracksEnergyResolution(EnergyResolution):
 
     CACHE_FNAME = "energy_reso_tracks.npz"
 
+    RNG_NAME = "NorthernTracksEnergyResolution_rng"
+    PDF_NAME = "NorthernTracksEnergyResolution"
+
     def __init__(
         self, mode: DistributionMode = DistributionMode.PDF, make_plots: bool = False
     ) -> None:
@@ -156,7 +161,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
 
         if mode == DistributionMode.PDF:
             super().__init__(
-                "NorthernTracksEnergyResolution",
+                self.PDF_NAME,
                 ["true_energy", "reco_energy"],
                 ["real", "real"],
                 "real",
@@ -164,7 +169,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
 
         elif mode == DistributionMode.RNG:
             super().__init__(
-                "NorthernTracksEnergyResolution_rng",
+                self.RNG_NAME,
                 ["true_energy"],
                 ["real"],
                 "real",
@@ -353,10 +358,13 @@ class NorthernTracksAngularResolution(AngularResolution):
 
     CACHE_FNAME = "angular_reso_tracks.npz"
 
+    PDF_NAME = "NorthernTracksAngularResolution"
+    RNG_NAME = "NorthernTracksAngularResolution_rng"
+
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
         if mode == DistributionMode.PDF:
             super().__init__(
-                "NorthernTracksAngularResolution",
+                self.PDF_NAME,
                 ["true_energy", "true_dir", "reco_dir"],
                 ["real", "vector", "vector"],
                 "real",
@@ -364,7 +372,7 @@ class NorthernTracksAngularResolution(AngularResolution):
 
         else:
             super().__init__(
-                "NorthernTracksAngularResolution_rng",
+                self.RNG_NAME,
                 ["true_energy", "true_dir"],
                 ["real", "vector"],
                 "vector",
@@ -473,6 +481,8 @@ class NorthernTracksDetectorModel(DetectorModel):
     """
 
     event_types = ["tracks"]
+
+    PDF_NAME = "NorthernTracksIRF"
 
     def __init__(
         self,

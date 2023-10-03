@@ -13,6 +13,10 @@ from ..utils.cache import Cache
 from ..backend import (
     UserDefinedFunction,
     DistributionMode,
+    ForwardVariableDef,
+    StringExpression,
+    FunctionCall,
+    ReturnStatement,
 )
 
 from ..utils.fitting_tools import Residuals
@@ -21,6 +25,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 Cache.set_cache_dir(".cache")
+
+
+class DetectorModelContainer:
+    def __init__(self, *dm):
+        self._dm = []
+        for d in dm:
+            self._dm.append(d)
+
+    def __len__(self):
+        return len(self._dm)
+
+    def __iter__(self):
+        for d in self._dm:
+            yield d
 
 
 class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
@@ -572,7 +590,7 @@ class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
         pass
 
 
-class DetectorModel(metaclass=ABCMeta):
+class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
     """
     Abstract base class for detector models.
     """
@@ -614,3 +632,31 @@ class DetectorModel(metaclass=ABCMeta):
     @property
     def event_type(self):
         return self._event_type
+
+    def generate_pdf_code(self):
+        super().__init__(
+            self.PDF_NAME,
+            ["true_energy", "detected_energy", "omega_det"],
+            ["real", "real", "vector[3]"],
+            "tuple(real, real)",
+        )
+        with self:
+            # need to write a function that returns a tuple of energy likelihood and Aeff
+            return_this = ForwardVariableDef("return_this", "tuple(real, real)")
+            StringExpression(
+                [
+                    return_this,
+                    ".1 = ",
+                    self.energy_resolution("true_energy", "detected_energy"),
+                ]
+            )
+
+            StringExpression(
+                [
+                    return_this,
+                    ".2 = ",
+                    self.effective_area("true_energy", "omega_det"),
+                ]
+            )
+
+            ReturnStatement([return_this])
