@@ -176,7 +176,7 @@ class CascadesEnergyResolution(EnergyResolution):
 
         elif self.mode == DistributionMode.RNG:
             super().__init__(self.RNG_NAME, ["true_energy"], ["real"], "real")
-            mixture_name = "nt_energy_res_mix_rng"
+            mixture_name = "c_energy_res_mix_rng"
 
         else:
             RuntimeError(
