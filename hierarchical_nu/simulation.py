@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from typing import Union, List
+from typing import Union, List, Dict
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
@@ -46,9 +46,7 @@ class Simulation:
         self,
         sources: Sources,
         event_types: Union[str, List[str]],
-        observation_time: Union[
-            u.quantity.Quantity[u.year], List[u.quantity.Quantity[u.year]]
-        ],
+        observation_time: Dict[str, u.quantity.Quantity[u.year]],
         N: dict = {},
     ):
         """
@@ -419,7 +417,19 @@ class Simulation:
         sim_inputs["D"] = D
         sim_inputs["varpi"] = src_pos
 
-        for event_type in self._event_types:
+        integral_grid = []
+        atmo_integ_val = []
+        Emin_det = []
+        rs_cvals = []
+        rs_bbpl_Eth = []
+        rs_bbpl_gamma1 = []
+        rs_bbpl_gamma2_scale = []
+        forced_N = []
+        obs_time = []
+
+        for c, event_type in enumerate(self._event_types):
+            if self._force_N:
+                forced_N.append(self._N[event_type])
             if self._sources.point_source:
                 if self._shared_src_index:
                     key = "src_index"
@@ -434,6 +444,7 @@ class Simulation:
                     event_type
                 ].par_grids[key]
 
+            # Weird that this is inside the loop over event types
             if self._sources.diffuse:
                 sim_inputs["Ngrid"] = len(
                     self._exposure_integral[event_type].par_grids["diff_index"]
@@ -443,33 +454,25 @@ class Simulation:
                     event_type
                 ].par_grids["diff_index"]
 
-            if event_type == "tracks":
-                sim_inputs["integral_grid_t"] = [
+            integral_grid.append(
+                [
                     _.to(u.m**2).value.tolist()
-                    for _ in self._exposure_integral["tracks"].integral_grid
+                    for _ in self._exposure_integral[event_type].integral_grid
                 ]
-
-                if self._force_N:
-                    sim_inputs["forced_N_t"] = self._N["tracks"]
-
-            if event_type == "cascades":
-                sim_inputs["integral_grid_c"] = [
-                    _.to(u.m**2).value.tolist()
-                    for _ in self._exposure_integral["cascades"].integral_grid
-                ]
-
-                if self._force_N:
-                    sim_inputs["forced_N_c"] = self._N["cascades"]
-
-        if self._sources.atmospheric:
-            sim_inputs["atmo_integ_val"] = (
-                self._exposure_integral["tracks"]
-                .integral_fixed_vals[0]
-                .to(u.m**2)
-                .value
             )
 
-        sim_inputs["T"] = self._observation_time.to(u.s).value
+            if self._sources.atmospheric:
+                if event_type != CAS:
+                    atmo_integ_val.append(
+                        self._exposure_integral[event_type]
+                        .integral_fixed_vals[0]
+                        .to(u.m**2)
+                        .value
+                    )
+            else:
+                atmo_integ_val.append(0.0)
+
+            obs_time.append(self._observation_time[event_type].to(u.s).value)
 
         if self._sources.point_source:
             # Check for shared src_index parameter
@@ -503,56 +506,26 @@ class Simulation:
             Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
         )
 
-        for event_type in self._detector_model_type.event_types:
+        for event_type in self._event_types:
             effective_area = self._exposure_integral[event_type].effective_area
 
-            if event_type == "tracks":
-                try:
-                    sim_inputs["Emin_det_t"] = (
-                        Parameter.get_parameter("Emin_det").value.to(u.GeV).value
-                    )
+            try:
+                Emin_det.append(
+                    Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+                )
 
-                except ValueError:
-                    sim_inputs["Emin_det_t"] = (
-                        Parameter.get_parameter("Emin_det_tracks").value.to(u.GeV).value
-                    )
+            except ValueError:
+                Emin_det.append(
+                    Parameter.get_parameter(f"Emin_det_{event_type}")
+                    .value.to(u.GeV)
+                    .value
+                )
 
-                # Rejection sampling
-                sim_inputs["rs_bbpl_Eth_t"] = effective_area.rs_bbpl_params[
-                    "threshold_energy"
-                ]
-                sim_inputs["rs_bbpl_gamma1_t"] = effective_area.rs_bbpl_params["gamma1"]
-                sim_inputs["rs_bbpl_gamma2_scale_t"] = effective_area.rs_bbpl_params[
-                    "gamma2_scale"
-                ]
-
-                sim_inputs["rs_N_cosz_bins_t"] = len(effective_area.cosz_bin_edges) - 1
-                sim_inputs["rs_cosz_bin_edges_t"] = effective_area.cosz_bin_edges
-                sim_inputs["rs_cvals_t"] = self._exposure_integral[event_type].c_values
-
-            if event_type == "cascades":
-                try:
-                    sim_inputs["Emin_det_c"] = (
-                        Parameter.get_parameter("Emin_det").value.to(u.GeV).value
-                    )
-
-                except ValueError:
-                    sim_inputs["Emin_det_c"] = (
-                        Parameter.get_parameter("Emin_det_cascades")
-                        .value.to(u.GeV)
-                        .value
-                    )
-
-                sim_inputs["rs_bbpl_Eth_c"] = effective_area.rs_bbpl_params[
-                    "threshold_energy"
-                ]
-                sim_inputs["rs_bbpl_gamma1_c"] = effective_area.rs_bbpl_params["gamma1"]
-                sim_inputs["rs_bbpl_gamma2_scale_c"] = effective_area.rs_bbpl_params[
-                    "gamma2_scale"
-                ]
-                sim_inputs["rs_N_cosz_bins_c"] = len(effective_area.cosz_bin_edges) - 1
-                sim_inputs["rs_cosz_bin_edges_c"] = effective_area.cosz_bin_edges
-                sim_inputs["rs_cvals_c"] = self._exposure_integral[event_type].c_values
+            # Rejection sampling
+            rs_bbpl_Eth.append(effective_area.rs_bbpl_params["threshold_energy"])
+            rs_bbpl_gamma1.append(effective_area.rs_bbpl_params["gamma1"])
+            rs_bbpl_gamma2_scale.append(effective_area.rs_bbpl_params["gamma2_scale"])
+            rs_cvals.append(self._exposure_integral[event_type].c_values)
 
         try:
             roi = ROI.STACK[0]
@@ -562,25 +535,20 @@ class Simulation:
         v_lim_low = (np.cos(-roi.DEC_min.to_value(u.rad) + np.pi / 2) + 1.0) / 2
         v_lim_high = (np.cos(-roi.DEC_max.to_value(u.rad) + np.pi / 2) + 1.0) / 2
 
-        if (
-            self._detector_model_type == NorthernTracksDetectorModel
-            or self._detector_model_type == IceCubeDetectorModel
-        ):
+        if NT in self._event_types:
             # acos(2 * v - 1) = theta -> v = cos(theta) + 1 / 2
             # v from 0 to 1
             # Only sample from Northern hemisphere
 
             # theta from 0 (north) to pi (south), dec from pi/2 (north) to -pi/2 (south)
             # theta = -dec + pi/2
-            cz_max = max(
-                self._exposure_integral["tracks"].effective_area._cosz_bin_edges
-            )
+            cz_max = max(self._exposure_integral[NT].effective_area._cosz_bin_edges)
             v_lim_low_detector = ((np.cos(np.pi - np.arccos(cz_max)) + 1) / 2) + 1e-2
 
             if v_lim_low_detector > v_lim_low:
                 v_lim_low = v_lim_low_detector
 
-        assert v_lim_high > v_lim_low
+            assert v_lim_high > v_lim_low
 
         sim_inputs["v_low"] = v_lim_low
         sim_inputs["v_high"] = v_lim_high
@@ -625,6 +593,17 @@ class Simulation:
                     .value
                     for i in range(sim_inputs["Ns"])
                 ]
+
+        sim_inputs["integral_grid"] = integral_grid
+        sim_inputs["atmo_integ_val"] = atmo_integ_val
+        sim_inputs["Emin_det"] = Emin_det
+        sim_inputs["rs_cvals"] = rs_cvals
+        sim_inputs["rs_bbpl_Eth"] = rs_bbpl_Eth
+        sim_inputs["rs_bbpl_gamma1"] = rs_bbpl_gamma1
+        sim_inputs["rs_bbpl_gamma2_scale"] = rs_bbpl_gamma2_scale
+        sim_inputs["T"] = obs_time
+        if self._force_N:
+            sim_inputs["forced_N"] = forced_N
 
         # Remove np.ndarrays for use with cmdstanpy
         sim_inputs = {
