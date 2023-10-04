@@ -21,7 +21,7 @@ class StanInterface(object, metaclass=ABCMeta):
         self,
         output_file,
         sources,
-        detector_model_type,
+        event_types,
         includes=["interpolation.stan", "utils.stan"],
     ):
         """
@@ -39,9 +39,7 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._get_source_info()
 
-        self._detector_model_type = detector_model_type
-
-        self._event_types = self._detector_model_type.event_types
+        self._event_types = event_types
 
         self._check_output_dir()
 
@@ -59,7 +57,6 @@ class StanInterface(object, metaclass=ABCMeta):
         self._shared_src_index = True
 
         if self.sources.point_source:
-
             self._ps_spectrum = self.sources.point_source_spectrum
 
             try:
@@ -75,11 +72,9 @@ class StanInterface(object, metaclass=ABCMeta):
                 self._shared_src_index = False
 
         if self.sources.diffuse:
-
             self._diff_spectrum = self.sources.diffuse_spectrum
 
         if self.sources.atmospheric:
-
             self._atmo_flux = self.sources.atmospheric_flux
 
     def _check_output_dir(self):
@@ -88,45 +83,35 @@ class StanInterface(object, metaclass=ABCMeta):
         """
 
         if not os.path.isdir(STAN_GEN_PATH):
-
             os.makedirs(STAN_GEN_PATH)
 
     @abstractmethod
     def _functions(self):
-
         pass
 
     @abstractmethod
     def _data(self):
-
         pass
 
     def _transformed_data(self):
-
         pass
 
     def _parameters(self):
-
         pass
 
     def _transformed_parameters(self):
-
         pass
 
     def _model(self):
-
         pass
 
     def _generated_quantities(self):
-
         pass
 
     def generate(self):
-
         self._code_gen = StanFileGenerator(self._output_file)
 
         with self._code_gen:
-
             self._functions()
 
             self._data()
@@ -147,20 +132,21 @@ class StanInterface(object, metaclass=ABCMeta):
 
     @property
     def includes(self):
-
         return self._includes
 
     @property
     def output_file(self):
-
         return self._output_file
 
     @property
     def sources(self):
-
         return self._sources
 
     @property
-    def detector_model_type(self):
+    def event_types(self):
+        return self._event_types
 
-        return self._detector_model_type
+    # @property
+    # def detector_model_type(self):
+    #
+    #    return self._detector_model_type

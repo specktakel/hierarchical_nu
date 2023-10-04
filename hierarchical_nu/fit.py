@@ -25,6 +25,7 @@ from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.detector_model import DetectorModel
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
+from hierarchical_nu.detector.icecube import IceCube, NT, CAS
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
@@ -47,7 +48,7 @@ class StanFit:
     def __init__(
         self,
         sources: Sources,
-        detector_model: DetectorModel,
+        event_types: Union[str, List[str]],
         events: Events,
         observation_time: u.year,
         priors: Priors = Priors(),
@@ -61,7 +62,10 @@ class StanFit:
         """
 
         self._sources = sources
-        self._detector_model_type = detector_model
+        # self._detector_model_type = detector_model
+        if isinstance(event_types, str):
+            event_types = [event_types]
+        self._event_types = event_types
         self._events = events
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
@@ -76,7 +80,7 @@ class StanFit:
             self._stan_interface = StanFitInterface(
                 stan_file_name,
                 self._sources,
-                self._detector_model_type,
+                self._event_types,
                 priors=priors,
                 nshards=nshards,
                 atmo_flux_energy_points=atmo_flux_energy_points,
@@ -85,19 +89,16 @@ class StanFit:
         else:
             logger.debug("Reloading previous results.")
 
+        # TODO how to solve this? The IRF knows this and returns negative_infinity() for this combination
         # Check for unsupported combinations
-        if sources.atmospheric and detector_model.event_types == ["cascades"]:
+        if sources.atmospheric and self._event_types == [CAS]:
             raise NotImplementedError(
                 "AtmosphericNuMuFlux currently only implemented "
                 + "for use with NorthernTracksDetectorModel or "
                 + "IceCubeDetectorModel"
             )
 
-        if (
-            sources.atmospheric
-            and sources.N == 1
-            and "cascades" in detector_model.event_types
-        ):
+        if sources.atmospheric and sources.N == 1 and CAS in self._event_types:
             raise NotImplementedError(
                 "AtmosphericNuMuFlux as the only source component "
                 + "for IceCubeDetectorModel is not implemented. Just use "
@@ -157,12 +158,11 @@ class StanFit:
         exposure_integral: collections.OrderedDict = None,
     ):
         if not exposure_integral:
-            for event_type in self._detector_model_type.event_types:
+            for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
-                    self._detector_model_type,
+                    event_type,
                     n_grid_points=self._n_grid_points,
-                    event_type=event_type,
                 )
 
         else:

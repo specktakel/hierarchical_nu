@@ -33,7 +33,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.events import TRACKS, CASCADES
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.icecube import IceCube
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.source.source import Sources
@@ -50,7 +50,7 @@ class StanSimInterface(StanInterface):
         self,
         output_file: str,
         sources: Sources,
-        detector_model_type: DetectorModel,
+        event_types: List[str],  # TODO make class
         atmo_flux_theta_points: int = 30,
         includes: List[str] = [
             "interpolation.stan",
@@ -73,14 +73,16 @@ class StanSimInterface(StanInterface):
         :param N: dict with keys "tracks" and/or "cascades". Value needs to be a list of length `len(sources)`
         """
 
-        if detector_model_type.RNG_FILENAME not in includes:
-            includes.append(detector_model_type.RNG_FILENAME)
-        detector_model_type.generate_code(DistributionMode.RNG, rewrite=False)
+        for et in event_types:
+            detector_model_type = IceCube(et, DistributionMode.RNG)
+            if detector_model_type.RNG_FILENAME not in includes:
+                includes.append(detector_model_type.RNG_FILENAME)
+            detector_model_type.generate_code(DistributionMode.RNG, rewrite=False)
 
         super().__init__(
             output_file=output_file,
             sources=sources,
-            detector_model_type=detector_model_type,
+            event_types=event_types,
             includes=includes,
         )
 

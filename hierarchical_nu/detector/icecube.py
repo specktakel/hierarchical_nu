@@ -1,19 +1,30 @@
-from ..backend import DistributionMode, StanGenerator
+from ..backend import DistributionMode
 from .northern_tracks import (
-    NorthernTracksAngularResolution,
-    NorthernTracksEnergyResolution,
-    NorthernTracksEffectiveArea,
     NorthernTracksDetectorModel,
 )
 from .cascades import (
-    CascadesAngularResolution,
-    CascadesEnergyResolution,
-    CascadesEffectiveArea,
     CascadesDetectorModel,
 )
-from .detector_model import DetectorModel
+from .r2021 import R2021DetectorModel
+
+NT = "northern_tracks"
+CAS = "cascades"
+IC40 = "IC40"
+IC59 = "IC59"
+IC79 = "IC79"
+IC86_I = "IC86_I"
+IC86_II = "IC86_II"
+
+# DETECTORS = [NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II]
+# Dictionary of currently supported detector configs
+DETECTOR_DICT = {NT: NorthernTracksDetectorModel, CAS: CascadesDetectorModel}
 
 
+def IceCube(detector, mode: DistributionMode = DistributionMode.PDF):
+    return DETECTOR_DICT[detector](mode)
+
+
+'''
 class IceCubeDetectorModel(DetectorModel):
     """
     Unified interface to detector models for both track and
@@ -63,3 +74,4 @@ class IceCubeDetectorModel(DetectorModel):
 
     def _get_angular_resolution(self):
         return self._angular_resolution
+'''

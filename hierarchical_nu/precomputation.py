@@ -22,6 +22,7 @@ from hierarchical_nu.source.parameter import ParScale, Parameter
 from hierarchical_nu.backend.stan_generator import StanGenerator
 from hierarchical_nu.detector.r2021 import R2021EnergyResolution
 from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
+from hierarchical_nu.detector.icecube import IceCube, NT, CAS
 
 m_to_cm = 100  # cm
 
@@ -39,7 +40,6 @@ class ExposureIntegral:
         sources: Sources,
         detector_model,
         n_grid_points: int = 50,
-        event_type=None,
     ):
         """
         Handles calculation of the exposure integral.
@@ -60,16 +60,16 @@ class ExposureIntegral:
             self._min_det_energy = Parameter.get_parameter("Emin_det").value
 
         except ValueError:
-            if event_type == "tracks":
-                self._min_det_energy = Parameter.get_parameter("Emin_det_tracks").value
-
-            elif event_type == "cascades":
+            if detector_model == CAS:
                 self._min_det_energy = Parameter.get_parameter(
                     "Emin_det_cascades"
                 ).value
 
+            elif detector_model in [NT]:
+                self._min_det_energy = Parameter.get_parameter("Emin_det_tracks").value
+
             else:
-                raise ValueError("event_type not recognised")
+                raise ValueError("Detector model not recognised")
 
         # Silence log output
         logger = logging.getLogger("hierarchical_nu.backend.code_generator")
@@ -77,7 +77,7 @@ class ExposureIntegral:
 
         # Instantiate the given Detector class to access values
         with StanGenerator():
-            dm = detector_model(event_type=event_type)
+            dm = IceCube(detector_model)
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
             self._dm = dm

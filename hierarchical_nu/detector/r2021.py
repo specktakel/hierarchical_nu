@@ -1782,6 +1782,8 @@ class R2021DetectorModel(DetectorModel):
     RNG_FILENAME = "r2021_rng.stan"
     PDF_FILENAME = "r2021_pdf.stan"
 
+    PDF_NAME = "R2021IRF"
+
     event_types = ["tracks"]
 
     logger = logging.getLogger(__name__ + ".R2021DetectorModel")

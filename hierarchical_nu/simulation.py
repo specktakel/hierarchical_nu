@@ -1,5 +1,6 @@
 import numpy as np
 import os
+from typing import Union, List
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
@@ -17,7 +18,7 @@ from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.utils.plotting import SphericalCircle
 
 from hierarchical_nu.detector.detector_model import DetectorModel
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.icecube import IceCube, CAS, NT
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
@@ -44,8 +45,10 @@ class Simulation:
     def __init__(
         self,
         sources: Sources,
-        detector_model: DetectorModel,
-        observation_time: u.year,
+        event_types: Union[str, List[str]],
+        observation_time: Union[
+            u.quantity.Quantity[u.year], List[u.quantity.Quantity[u.year]]
+        ],
         N: dict = {},
     ):
         """
@@ -53,7 +56,12 @@ class Simulation:
         """
 
         self._sources = sources
-        self._detector_model_type = detector_model
+        if isinstance(event_types, str):
+            event_types = [event_types]
+        if isinstance(observation_time, u.quantity.Quantity):
+            observation_time = [observation_time]
+        assert len(event_types) == len(observation_time)
+        self._event_types = event_types
         self._observation_time = observation_time
 
         self._sources.organise()
@@ -61,16 +69,13 @@ class Simulation:
         self._exposure_integral = collections.OrderedDict()
 
         if N:
-            for event_type in self._detector_model_type.event_types:
+            for event_type in self._event_types:
                 assert len(N[event_type]) == len(sources)
 
-                if (
-                    "cascades" in self._detector_model_type.event_types
-                    and self._sources.atmospheric
-                ):
-                    if N["cascades"][-1] != 0:
+                if CAS in self._event_types and self._sources.atmospheric:
+                    if N[CAS][-1] != 0:
                         sim_logger.warning("Setting atmospheric cascade events to zero")
-                        N["cascades"][-1] = 0
+                        N[CAS][-1] = 0
 
             self._force_N = True
             self._N = N
@@ -83,7 +88,7 @@ class Simulation:
         self._stan_interface = StanSimInterface(
             stan_file_name,
             self._sources,
-            self._detector_model_type,
+            self._event_types,
             force_N=self._force_N,
         )
 
@@ -92,18 +97,14 @@ class Simulation:
         logger.propagate = False
 
         # Check for unsupported combinations
-        if sources.atmospheric and detector_model.event_types == ["cascades"]:
+        if sources.atmospheric and self._event_types == [CAS]:
             raise NotImplementedError(
                 "AtmosphericNuMuFlux currently only implemented "
                 + "for use with NorthernTracksDetectorModel or "
                 + "IceCubeDetectorModel"
             )
 
-        if (
-            sources.atmospheric
-            and sources.N == 1
-            and "cascades" in detector_model.event_types
-        ):
+        if sources.atmospheric and sources.N == 1 and CAS in self._event_types:
             raise NotImplementedError(
                 "AtmosphericNuMuFlux as the only source component "
                 + "for IceCubeDetectorModel is not implemented. Just use "
@@ -134,11 +135,10 @@ class Simulation:
         """
 
         if not exposure_integral:
-            for event_type in self._detector_model_type.event_types:
+            for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
-                    self._detector_model_type,
-                    event_type=event_type,
+                    event_type,
                 )
 
         else:
@@ -419,7 +419,7 @@ class Simulation:
         sim_inputs["D"] = D
         sim_inputs["varpi"] = src_pos
 
-        for event_type in self._detector_model_type.event_types:
+        for event_type in self._event_types:
             if self._sources.point_source:
                 if self._shared_src_index:
                     key = "src_index"

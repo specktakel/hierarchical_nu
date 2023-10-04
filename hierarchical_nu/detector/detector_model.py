@@ -158,6 +158,10 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
 class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
     """
     Abstract base class defining the energy resolution interface.
+
+    Signature for __call__ of UserDefinedFunction for DistributionMode.PDF is
+    log10(Etrue): real, log10(Edet): real, omega_det: unit_vector[3]
+    even if some parameter might not be used
     """
 
     @abstractmethod
@@ -617,7 +621,7 @@ class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
         pass
 
 
-class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
+class DetectorModel(metaclass=ABCMeta):
     """
     Abstract base class for detector models.
     """
@@ -701,31 +705,3 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
             with open(os.path.join(path, cls.RNG_FILENAME), "w+") as f:
                 f.write(code)
             return os.path.join(path, cls.RNG_FILENAME)
-
-    def generate_pdf_code(self):
-        super().__init__(
-            self.PDF_NAME,
-            ["true_energy", "detected_energy", "omega_det"],
-            ["real", "real", "vector[3]"],
-            "tuple(real, real)",
-        )
-        with self:
-            # need to write a function that returns a tuple of energy likelihood and Aeff
-            return_this = ForwardVariableDef("return_this", "tuple(real, real)")
-            StringExpression(
-                [
-                    return_this,
-                    ".1 = ",
-                    self.energy_resolution("true_energy", "detected_energy"),
-                ]
-            )
-
-            StringExpression(
-                [
-                    return_this,
-                    ".2 = ",
-                    self.effective_area("true_energy", "omega_det"),
-                ]
-            )
-
-            ReturnStatement([return_this])

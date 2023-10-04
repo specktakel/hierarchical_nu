@@ -20,6 +20,7 @@ from ..backend import (
     StanArray,
     StringExpression,
     TwoDimHistInterpolation,
+    UserDefinedFunction,
 )
 from .detector_model import (
     EffectiveArea,
@@ -162,8 +163,8 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 self._func_name,
-                ["true_energy", "reco_energy"],
-                ["real", "real"],
+                ["true_energy", "reco_energy", "omega_det"],
+                ["real", "real", "vector"],
                 "real",
             )
 
@@ -185,8 +186,11 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         # Define Stan interface.
         with self:
             lognorm = LognormalMixture(mixture_name, self.n_components, self.mode)
-            truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
-            log_trunc_e = LogParameterization(truncated_e)
+            log_trunc_e = TruncatedParameterization(
+                "true_energy",
+                np.log10(self._poly_limits[0]),
+                np.log10(self._poly_limits[1]),
+            )
 
             mu_poly_coeffs = StanArray(
                 "NorthernTracksEnergyResolutionMuPolyCoeffs",
@@ -239,8 +243,9 @@ class NorthernTracksEnergyResolution(EnergyResolution):
             sigma_vec = FunctionCall([sigma], "to_vector")
 
             if self.mode == DistributionMode.PDF:
-                log_reco_e = LogParameterization("reco_energy")
-                ReturnStatement([lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
+                ReturnStatement(
+                    [lognorm("reco_energy", log_mu_vec, sigma_vec, weights)]
+                )
             elif self.mode == DistributionMode.RNG:
                 ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
 
@@ -478,7 +483,7 @@ class NorthernTracksAngularResolution(AngularResolution):
                 )
 
 
-class NorthernTracksDetectorModel(DetectorModel):
+class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
     """
     Implements the detector model for the NT sample
 
@@ -495,11 +500,7 @@ class NorthernTracksDetectorModel(DetectorModel):
     RNG_FILENAME = "northern_tracks_rng.stan"
     PDF_FILENAME = "northern_tracks_pdf.stan"
 
-    def __init__(
-        self,
-        mode: DistributionMode = DistributionMode.PDF,
-        event_type=None,
-    ):
+    def __init__(self, mode: DistributionMode = DistributionMode.PDF):
         super().__init__(mode, event_type="tracks")
 
         ang_res = NorthernTracksAngularResolution(mode)
@@ -519,6 +520,46 @@ class NorthernTracksDetectorModel(DetectorModel):
 
     def _get_angular_resolution(self):
         return self._angular_resolution
+
+    def generate_pdf_function_code(self, sources):
+        """
+        Generate a wrapper for the IRF.
+        Should give for all source components the event likelihood,
+        including negative infinity if a model component cannot produce
+        the requested event.
+        """
+
+        ps = len(sources.point_source)
+        diffuse = bool(sources.diffuse)
+        atmospheric = bool(sources.atmospheric)
+        UserDefinedFunction.__init__(
+            self,
+            self.PDF_NAME,
+            ["true_energy", "detected_energy", "omega_det", "src_pos"],
+            ["real", "real", "vector", "vector"],
+            "array[] real",
+        )
+        with self:
+            # need to write a function that returns a tuple of energy likelihood and Aeff
+            return_this = ForwardArrayDef("return_this", "real", ["[4]"])
+            return_this[1] << self.energy_resolution(
+                "true_energy", "detected_energy", "src_pos"
+            )
+
+            return_this[2] << self.energy_resolution(
+                "true_energy", "detected_energy", "omega_det"
+            )
+
+            return_this[3] << FunctionCall(
+                [
+                    self.effective_area("true_energy", "omega_det"),
+                ],
+                "log",
+            )
+
+            return_this[4] << return_this[3]
+
+            ReturnStatement([return_this])
 
 
 # Testing.
