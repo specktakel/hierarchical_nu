@@ -156,10 +156,13 @@ class StanSimInterface(StanInterface):
 
             if self.sources.atmospheric and self.sources.diffuse:
                 dim = self._Ns_2p_str
+                Ns_string = "Ns+2"
             elif self.sources.diffuse or self.sources.atmospheric:
                 dim = self._Ns_1p_str
+                Ns_string = "Ns+1"
             else:
                 dim = self._Ns_str
+                Ns_string = "Ns"
 
             # True directions of point sources as a unit vector
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
@@ -211,62 +214,36 @@ class StanSimInterface(StanInterface):
 
             # For tracks, we specify Emin_det, and several parameters for the
             # rejection sampling, denoted by rs_...
-            # Separate interpolation grids are also provided for tracks and cascades
-            if "tracks" in self._event_types:
-                self._Emin_det_t = ForwardVariableDef("Emin_det_t", "real")
-                self._rs_bbpl_Eth_t = ForwardVariableDef("rs_bbpl_Eth_t", "real")
-                self._rs_bbpl_gamma1_t = ForwardVariableDef("rs_bbpl_gamma1_t", "real")
-                self._rs_bbpl_gamma2_scale_t = ForwardVariableDef(
-                    "rs_bbpl_gamma2_scale_t", "real"
+            # Separate interpolation grids are also provided for all event types
+
+            # Store number of event types in Net
+            Net = len(self._event_types)
+
+            self._Emin_det = ForwardArrayDef("Emin_det", "real", ["[", Net, "]"])
+            self._rs_bbpl_Eth = ForwardArrayDef("rs_bbpl_Eth", "real", ["[", Net, "]"])
+            self._rs_bbpl_gamma1 = ForwardArrayDef(
+                "rs_bbpl_gamma1", "real", ["[", Net, "]"]
+            )
+            self._rs_bbpl_gamma2_scale = ForwardArrayDef(
+                "rs_bbpl_gamma2_scale", "real", ["[", Net, "]"]
+            )
+            # self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
+            # entry for each component
+            self._rs_cvals = ForwardArrayDef(
+                "rs_cvals", "real", ["[", Net, ",", Ns_string, "]"]
+            )
+            # self._rs_cosz_bin_edges_t = ForwardArrayDef(
+            #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
+            # )
+
+            self._integral_grid = ForwardArrayDef(
+                "integral_grid", "vector[Ngrid]", ["[", Net, ",", Ns_string, "]"]
+            )
+
+            if self._force_N:
+                self._forced_N = ForwardArrayDef(
+                    "forced_N", "int", ["[", Net, ",", Ns_string, "]"]
                 )
-                # self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
-                # entry for each component
-                self._rs_cvals_t = ForwardArrayDef("rs_cvals_t", "real", dim)
-                # self._rs_cosz_bin_edges_t = ForwardArrayDef(
-                #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
-                # )
-
-                if self.sources.diffuse:
-                    self._integral_grid_t = ForwardArrayDef(
-                        "integral_grid_t", "vector[Ngrid]", self._Ns_1p_str
-                    )
-
-                else:
-                    self._integral_grid_t = ForwardArrayDef(
-                        "integral_grid_t", "vector[Ngrid]", self._Ns_str
-                    )
-
-                if self._force_N:
-                    self._forced_N_t = ForwardArrayDef("forced_N_t", "int", dim)
-
-            # Similarly, we do the same for cascades. Different rejection sampling
-            # parameters and interpolation grids are needed due to the different
-            # shape of the effective area.
-            if "cascades" in self._event_types:
-                self._Emin_det_c = ForwardVariableDef("Emin_det_c", "real")
-                self._rs_bbpl_Eth_c = ForwardVariableDef("rs_bbpl_Eth_c", "real")
-                self._rs_bbpl_gamma1_c = ForwardVariableDef("rs_bbpl_gamma1_c", "real")
-                self._rs_bbpl_gamma2_scale_c = ForwardVariableDef(
-                    "rs_bbpl_gamma2_scale_c", "real"
-                )
-                # self._rs_N_cosz_bins_c = ForwardVariableDef("rs_N_cosz_bins_c", "int")
-                self._rs_cvals_c = ForwardArrayDef("rs_cvals_c", "real", dim)
-                # self._rs_cosz_bin_edges_c = ForwardArrayDef(
-                #    "rs_cosz_bin_edges_c", "real", ["[rs_N_cosz_bins_c + 1]"]
-                # )
-                # Ns (+1 if diffuse)
-                if self.sources.diffuse:
-                    self._integral_grid_c = ForwardArrayDef(
-                        "integral_grid_c", "vector[Ngrid]", ["[Ns+1]"]
-                    )
-                else:
-                    self._integral_grid_c = ForwardArrayDef(
-                        "integral_grid_c", "vector[Ngrid]", ["[Ns]"]
-                    )
-
-                if self._force_N:
-                    # Ns (+1 if diffuse +1 if atmo, although atmo entry is set to zero)
-                    self._forced_N_c = ForwardArrayDef("forced_N_c", "int", dim)
 
             # We define the necessary source input parameters depending on
             # what kind of sources we have
@@ -282,7 +259,9 @@ class StanSimInterface(StanInterface):
             if self.sources.atmospheric:
                 self._F_atmo = ForwardVariableDef("F_atmo", "real")
 
-                self._atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
+                self._atmo_integ_val = ForwardArrayDef(
+                    "atmo_integ_val", "real", ["[", Net, "]"]
+                )
 
             # v_lim sets the edge of the uniform sampling on a sphere, for example,
             # for Northern skies only. See sphere_lim_rng.
@@ -301,7 +280,7 @@ class StanSimInterface(StanInterface):
                 self._roi_radius = ForwardVariableDef("roi_radius", "real")
 
             # The observation time
-            self._T = ForwardVariableDef("T", "real")
+            self._T = ForwardArrayDef("T", "real", ["[", Net, "]"])
 
     def _transformed_data(self):
         """
