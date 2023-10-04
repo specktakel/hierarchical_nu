@@ -515,6 +515,7 @@ class StanSimInterface(StanInterface):
             # This will be used to sample the labels
             # Also sample the number of events
             # if "tracks" in self._event_types:
+
             with ForLoopContext(1, self._Net_stan, "i") as i:
                 self._Nex[i] << FunctionCall([self._F, self._eps[i]], "get_Nex")
                 self._w_exposure[i] << FunctionCall(
