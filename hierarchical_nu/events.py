@@ -24,14 +24,13 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
-TRACKS = 0
-CASCADES = 1
-
-IC40 = 0
-IC59 = 1
-IC79 = 2
-IC86_I = 3
-IC86_II = 4
+NT = 0
+CAS = 1
+IC40 = 2
+IC59 = 3
+IC79 = 4
+IC86_I = 5
+IC86_II = 6
 
 periods = {
     "IC40": IC40,
@@ -63,7 +62,15 @@ class Events:
         Events class for the storage of event observables
         """
 
-        self._recognised_types = [TRACKS, CASCADES]
+        self._recognised_types = [
+            NT,
+            CAS,
+            IC40,
+            IC59,
+            IC79,
+            IC86_I,
+            IC86_II,
+        ]
 
         self.N = len(energies)
 
@@ -252,7 +259,7 @@ class Events:
 
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = events.ang_err[p] * u.deg
-        types = np.array(ra.size * [TRACKS])
+        types = np.array(ra.size * [IC86_II])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         if isinstance(roi, CircularROI):
