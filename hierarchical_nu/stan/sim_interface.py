@@ -31,7 +31,7 @@ from hierarchical_nu.backend.variable_definitions import (
 from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
 
-from hierarchical_nu.events import TRACKS, CASCADES
+from hierarchical_nu.events import NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.icecube import IceCube
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
@@ -216,33 +216,35 @@ class StanSimInterface(StanInterface):
             # rejection sampling, denoted by rs_...
             # Separate interpolation grids are also provided for all event types
 
-            # Store number of event types in Net
-            Net = len(self._event_types)
+            # Store number of event types in self._Net
+            self._Net = len(self._event_types)
 
-            self._Emin_det = ForwardArrayDef("Emin_det", "real", ["[", Net, "]"])
-            self._rs_bbpl_Eth = ForwardArrayDef("rs_bbpl_Eth", "real", ["[", Net, "]"])
+            self._Emin_det = ForwardArrayDef("Emin_det", "real", ["[", self._Net, "]"])
+            self._rs_bbpl_Eth = ForwardArrayDef(
+                "rs_bbpl_Eth", "real", ["[", self._Net, "]"]
+            )
             self._rs_bbpl_gamma1 = ForwardArrayDef(
-                "rs_bbpl_gamma1", "real", ["[", Net, "]"]
+                "rs_bbpl_gamma1", "real", ["[", self._Net, "]"]
             )
             self._rs_bbpl_gamma2_scale = ForwardArrayDef(
-                "rs_bbpl_gamma2_scale", "real", ["[", Net, "]"]
+                "rs_bbpl_gamma2_scale", "real", ["[", self._Net, "]"]
             )
             # self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
             # entry for each component
             self._rs_cvals = ForwardArrayDef(
-                "rs_cvals", "real", ["[", Net, ",", Ns_string, "]"]
+                "rs_cvals", "real", ["[", self._Net, ",", Ns_string, "]"]
             )
             # self._rs_cosz_bin_edges_t = ForwardArrayDef(
             #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
             # )
 
             self._integral_grid = ForwardArrayDef(
-                "integral_grid", "vector[Ngrid]", ["[", Net, ",", Ns_string, "]"]
+                "integral_grid", "vector[Ngrid]", ["[", self._Net, ",", Ns_string, "]"]
             )
 
             if self._force_N:
                 self._forced_N = ForwardArrayDef(
-                    "forced_N", "int", ["[", Net, ",", Ns_string, "]"]
+                    "forced_N", "int", ["[", self._Net, ",", Ns_string, "]"]
                 )
 
             # We define the necessary source input parameters depending on
@@ -260,7 +262,7 @@ class StanSimInterface(StanInterface):
                 self._F_atmo = ForwardVariableDef("F_atmo", "real")
 
                 self._atmo_integ_val = ForwardArrayDef(
-                    "atmo_integ_val", "real", ["[", Net, "]"]
+                    "atmo_integ_val", "real", ["[", self._Net, "]"]
                 )
 
             # v_lim sets the edge of the uniform sampling on a sphere, for example,
@@ -280,7 +282,7 @@ class StanSimInterface(StanInterface):
                 self._roi_radius = ForwardVariableDef("roi_radius", "real")
 
             # The observation time
-            self._T = ForwardArrayDef("T", "real", ["[", Net, "]"])
+            self._T = ForwardArrayDef("T", "real", ["[", self._Net, "]"])
 
     def _transformed_data(self):
         """
@@ -292,56 +294,44 @@ class StanSimInterface(StanInterface):
             if self.sources.diffuse and self.sources.atmospheric:
                 self._F = ForwardVariableDef("F", "vector[Ns+2]")
 
-                N_tot_t = "[Ns+2]"
-                N_tot_c = "[Ns+1]"
+                N_tot = "[Ns+2]"
 
             elif self.sources.diffuse or self.sources.atmospheric:
                 self._F = ForwardVariableDef("F", "vector[Ns+1]")
 
-                N_tot_t = N_tot_c = "[Ns+1]"
+                N_tot = "[Ns+1]"
 
             else:
                 self._F = ForwardVariableDef("F", "vector[Ns]")
 
-                N_tot_t = N_tot_c = "[Ns]"
+                N_tot = "[Ns]"
 
-            if "tracks" in self._event_types:
-                # Define track type as in package
-                self._track_type = ForwardVariableDef("track_type", "int")
-                self._track_type << TRACKS
+            self._et_stan = ForwardArrayDef("event_types", "int", ["[", self._Net, "]"])
+            self._Net_stan = ForwardVariableDef("Net", "int")
+            self._Net_stan << StringExpression(["size(event_types)"])
 
-                # Relative exposure weights of sources for tracks
-                self._w_exposure_t = ForwardVariableDef(
-                    "w_exposure_t", "simplex" + N_tot_t
-                )
+            # TODO: this is ugly, fix it when implementing classes for the NT, CAS etc. to keep track of this
+            idx = 1
+            if NT in self._event_types:
+                self._et_stan[idx] << 0
+                idx += 1
+            if CAS in self._event_types:
+                self._et_stan[idx] << 1
+                idx += 1
 
-                # Exposure of sources for tracks
-                self._eps_t = ForwardVariableDef("eps_t", "vector" + N_tot_t)
+            # Relative exposure weights of sources for tracks
+            self._w_exposure = ForwardArrayDef(
+                "w_exposure", "simplex" + N_tot, ["[", self._Net, "]"]
+            )
 
-                # Expected number of events for tracks
-                self._Nex_t = ForwardVariableDef("Nex_t", "real")
+            # Exposure of sources for tracks
+            self._eps = ForwardArrayDef("eps", "vector" + N_tot, ["[", self._Net, "]"])
 
-                # Sampled number of events for tracks
-                self._N_t = ForwardVariableDef("N_t", "int")
+            # Expected number of events for tracks
+            self._Nex = ForwardArrayDef("Nex", "real", ["[", self._Net, "]"])
 
-            if "cascades" in self._event_types:
-                # Define cascade type as in package
-                self._cascade_type = ForwardVariableDef("cascade_type", "int")
-                self._cascade_type << CASCADES
-
-                # Relative exposure weights of sources for cascades
-                self._w_exposure_c = ForwardVariableDef(
-                    "w_exposure_c", "simplex" + N_tot_c
-                )
-
-                # Exposure of sources for cascades
-                self._eps_c = ForwardVariableDef("eps_c", "vector" + N_tot_c)
-
-                # Expected number of events for cascades
-                self._Nex_c = ForwardVariableDef("Nex_c", "real")
-
-                # Sampled number of events for cascades
-                self._N_c = ForwardVariableDef("N_c", "int")
+            # Sampled number of events for tracks
+            self._N_comp = ForwardArrayDef("N_comp", "int", ["[", self._Net, "]"])
 
             # Total flux
             self._Ftot = ForwardVariableDef("Ftot", "real")
@@ -357,20 +347,25 @@ class StanSimInterface(StanInterface):
             self._f_det_astro_ = ForwardVariableDef("f_det_astro_", "real")
 
             # Expected number of events from different source components
-            self._Nex_src_t = ForwardVariableDef("Nex_src_t", "real")
-            self._Nex_src_c = ForwardVariableDef("Nex_src_c", "real")
+            self._Nex_src_comp = ForwardArrayDef(
+                "Nex_src_comp", "real", ["[", self._Net, "]"]
+            )
             self._Nex_src = ForwardVariableDef("Nex_src", "real")
-            self._Nex_diff_t = ForwardVariableDef("Nex_diff_t", "real")
-            self._Nex_diff_c = ForwardVariableDef("Nex_diff_c", "real")
-            self._Nex_diff = ForwardVariableDef("Nex_diff", "real")
+            self._Nex_diff_comp = ForwardArrayDef(
+                "Nex_diff_comp", "real", ["[", self._Net, "]"]
+            )
+            self._Nex_diff = ForwardVariableDef("Nex_diff_sum", "real")
+            self._Nex_atmo_comp = ForwardArrayDef(
+                "Nex_atmo_comp", "real", ["[", self._Net, "]"]
+            )
             self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
 
             # Sampled total number of events
             self._N = ForwardVariableDef("N", "int")
 
             self._F_src << 0.0
-            self._Nex_src_t << 0.0
-            self._Nex_src_c << 0.0
+            with ForLoopContext(1, self._Net_stan, "i") as i:
+                self._Nex_src_comp[i] << 0.0
             self._Nex_src << 0.0
 
             if self.sources.point_source:
@@ -432,180 +427,120 @@ class StanSimInterface(StanInterface):
                     else:
                         src_index_ref = self._src_index[k]
 
-                    if "tracks" in self._event_types:
+                    # if "tracks" in self._event_types:
+                    with ForLoopContext(1, self._Net_stan, "i") as i:
                         (
-                            self._eps_t[k]
+                            self._eps[i, k]
                             << FunctionCall(
                                 [
                                     self._src_index_grid,
-                                    self._integral_grid_t[k],
+                                    self._integral_grid[i, k],
                                     src_index_ref,
                                 ],
                                 "interpolate",
                             )
-                            * self._T
+                            * self._T[i]
                         )
 
                         StringExpression(
-                            [self._Nex_src_t, "+=", self._F[k] * self._eps_t[k]]
-                        )
-
-                    if "cascades" in self._event_types:
-                        (
-                            self._eps_c[k]
-                            << FunctionCall(
-                                [
-                                    self._src_index_grid,
-                                    self._integral_grid_c[k],
-                                    src_index_ref,
-                                ],
-                                "interpolate",
-                            )
-                            * self._T
-                        )
-
-                        StringExpression(
-                            [self._Nex_src_c, "+=", self._F[k] * self._eps_c[k]]
+                            [self._Nex_src_comp[i], "+=", self._F[k] * self._eps[i, k]]
                         )
 
             # Calculate the exposure for diffuse/atmospheric sources
             # For cascades, we assume no atmo component
             if self.sources.diffuse and self.sources.atmospheric:
-                if "tracks" in self._event_types:
+                with ForLoopContext(1, self._Net_stan, "i") as i:
+                    # if "tracks" in self._event_types:
                     (
-                        self._eps_t[self._Ns + 1]
+                        self._eps[i, self._Ns + 1]
                         << FunctionCall(
                             [
                                 self._diff_index_grid,
-                                self._integral_grid_t[self._Ns + 1],
+                                self._integral_grid[i, self._Ns + 1],
                                 self._diff_index,
                             ],
                             "interpolate",
                         )
-                        * self._T
+                        * self._T[i]
                     )
 
                     (
-                        self._Nex_diff_t
-                        << self._F[self._Ns + 1] * self._eps_t[self._Ns + 1]
+                        self._Nex_diff_comp[i]
+                        << self._F[self._Ns + 1] * self._eps[i, self._Ns + 1]
                     )
 
                     # no interpolation needed for atmo as spectral shape is fixed
-                    self._eps_t[self._Ns + 2] << self._atmo_integ_val * self._T
-
-                    self._Nex_atmo << self._F[self._Ns + 2] * self._eps_t[self._Ns + 2]
-
-                if "cascades" in self._event_types:
-                    (
-                        self._eps_c[self._Ns + 1]
-                        << FunctionCall(
-                            [
-                                self._diff_index_grid,
-                                self._integral_grid_c[self._Ns + 1],
-                                self._diff_index,
-                            ],
-                            "interpolate",
-                        )
-                        * self._T
-                    )
+                    self._eps[i, self._Ns + 2] << self._atmo_integ_val[i] * self._T[i]
 
                     (
-                        self._Nex_diff_c
-                        << self._F[self._Ns + 1] * self._eps_c[self._Ns + 1]
+                        self._Nex_atmo[i]
+                        << self._F[self._Ns + 2] * self._eps[i, self._Ns + 2]
                     )
 
             elif self.sources.diffuse:
-                if "tracks" in self._event_types:
+                with ForLoopContext(1, self._Net_stan, "i") as i:
+                    # if "tracks" in self._event_types:
                     (
-                        self._eps_t[self._Ns + 1]
+                        self._eps[i, self._Ns + 1]
                         << FunctionCall(
                             [
                                 self._diff_index_grid,
-                                self._integral_grid_t[self._Ns + 1],
+                                self._integral_grid[i, self._Ns + 1],
                                 self._diff_index,
                             ],
                             "interpolate",
                         )
-                        * self._T
+                        * self._T[i]
                     )
 
                     (
-                        self._Nex_diff_t
-                        << self._F[self._Ns + 1] * self._eps_t[self._Ns + 1]
-                    )
-
-                if "cascades" in self._event_types:
-                    (
-                        self._eps_c[self._Ns + 1]
-                        << FunctionCall(
-                            [
-                                self._diff_index_grid,
-                                self._integral_grid_c[self._Ns + 1],
-                                self._diff_index,
-                            ],
-                            "interpolate",
-                        )
-                        * self._T
-                    )
-
-                    (
-                        self._Nex_diff_c
-                        << self._F[self._Ns + 1] * self._eps_c[self._Ns + 1]
+                        self._Nex_diff_comp[i]
+                        << self._F[self._Ns + 1] * self._eps[i, self._Ns + 1]
                     )
 
             elif self.sources.atmospheric and "tracks" in self._event_types:
-                self._eps_t[self._Ns + 1] << self._atmo_integ_val * self._T
+                with ForLoopContext(1, self._Net_stan, "i") as i:
+                    self._eps[i, self._Ns + 1] << self._atmo_integ_val[i] * self._T[i]
 
-                self._Nex_atmo << self._F[self._Ns + 1] * self._eps_t[self._Ns + 1]
+                    (
+                        self._Nex_atmo[i]
+                        << self._F[self._Ns + 1] * self._eps[i, self._Ns + 1]
+                    )
 
-                if "cascades" in self._event_types:
-                    self._eps_c[self._Ns + 1] << 0.0
+                # This should already be included in precomputation through atmo_integ_val being 0 for cascades
+                # if "cascades" in self._event_types:
+                #     self._eps_c[self._Ns + 1] << 0.0
 
             # Get the relative exposure weights of all sources
             # This will be used to sample the labels
             # Also sample the number of events
-            if "tracks" in self._event_types:
-                self._Nex_t << FunctionCall([self._F, self._eps_t], "get_Nex")
-                self._w_exposure_t << FunctionCall(
-                    [self._F, self._eps_t], "get_exposure_weights"
+            # if "tracks" in self._event_types:
+            with ForLoopContext(1, self._Net_stan, "i") as i:
+                self._Nex[i] << FunctionCall([self._F, self._eps[i]], "get_Nex")
+                self._w_exposure[i] << FunctionCall(
+                    [self._F, self._eps[i]], "get_exposure_weights"
                 )
 
                 # If we passed the `force_N` keyword we ignore the exposure weighting
                 # and sample a fixed amount of events
                 if self._force_N:
-                    self._N_t << StringExpression(["sum(", self._forced_N_t, ")"])
+                    self._N_comp[i] << StringExpression(
+                        ["sum(", self._forced_N[i], ")"]
+                    )
 
                 # Else sample Poisson random variable with the expected number of events as parameter
                 else:
-                    self._N_t << StringExpression(["poisson_rng(", self._Nex_t, ")"])
+                    self._N_comp[i] << StringExpression(
+                        ["poisson_rng(", self._Nex[i], ")"]
+                    )
 
-            if "cascades" in self._event_types:
-                self._Nex_c << FunctionCall([self._F, self._eps_c], "get_Nex")
-                self._w_exposure_c << FunctionCall(
-                    [self._F, self._eps_c], "get_exposure_weights"
-                )
-
-                if self._force_N:
-                    self._N_c << StringExpression(["sum(", self._forced_N_c, ")"])
-
-                else:
-                    self._N_c << StringExpression(["poisson_rng(", self._Nex_c, ")"])
-
-            if "tracks" in self._event_types and "cascades" in self._event_types:
-                self._Nex_src << self._Nex_src_t + self._Nex_src_c
-                self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
-                self._N << self._N_t + self._N_c
-
-            elif "tracks" in self._event_types:
-                self._Nex_src << self._Nex_src_t
-                self._Nex_diff << self._Nex_diff_t
-                self._N << self._N_t
-
-            elif "cascades" in self._event_types:
-                self._Nex_src << self._Nex_src_c
-                self._Nex_diff << self._Nex_diff_c
-                self._Nex_atmo << 0.0
-                self._N << self._N_c
+            # if "tracks" in self._event_types and "cascades" in self._event_types:
+            # self._Nex_src << self._Nex_src_t + self._Nex_src_c
+            self._Nex_src << StringExpression(["sum(", self._Nex_src_comp, ")"])
+            # self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
+            self._Nex_diff << StringExpression(["sum(", self._Nex_diff_comp, ")"])
+            # self._N << self._N_t + self._N_c
+            self._N << StringExpression(["sum(", self._N_comp, ")"])
 
             # Calculate the fractional association for different assumptions
             if self.sources.diffuse and self.sources.atmospheric:
