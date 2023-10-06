@@ -1488,18 +1488,22 @@ class StanSimInterface(StanInterface):
                                     / self._F_atmo
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
-                        for c, (event_type_python, event_type_stan) in enumerate(
-                            zip(self._event_types, [NT, CAS])
-                        ):
+
+                        for c, event_type_python in enumerate(self._event_types):
                             with IfBlockContext(
-                                [self._event_type[i], " == ", event_type_stan]
+                                [
+                                    self._event_type[i],
+                                    " == ",
+                                    Refrigerator.python2stan(event_type_python),
+                                ]
                             ):
                                 self._aeff_factor << self._dm_rng[
                                     event_type_python
                                 ].effective_area(self._E[i], self._omega)
 
-                        # StringExpression(['print("Aeff: ", aeff_factor)'])
-                        # StringExpression(['print("energy: ", E[i])'])
+                        StringExpression(['print("Aeff: ", aeff_factor)'])
+                        StringExpression(['print("energy: ", E[i])'])
+                        StringExpression(['print("et: ", event_type[i])'])
                         """
                         # I feel like this is accounted for already elsewhere
                         if (
@@ -1563,7 +1567,7 @@ class StanSimInterface(StanInterface):
                                     ):
                                         self._detected << 1
                                     with ElseBlockContext():
-                                        self._detected << 0
+                                        self._detected << 1
                                 else:
                                     self._detected << 1
 
@@ -1572,7 +1576,7 @@ class StanSimInterface(StanInterface):
                                 # can be recontructed outside at large ang err
 
                             with ElseBlockContext():
-                                self._detected << 0
+                                self._detected << 1
 
                             # Also apply the threshold on possible detected energies
                             with IfBlockContext(
@@ -1593,7 +1597,7 @@ class StanSimInterface(StanInterface):
                                 # Accept this sample!
                                 self._accept << 1
                             with ElseBlockContext():
-                                self._accept << 0
+                                self._accept << 1
 
                         # Debugging
                         with ElseBlockContext():
