@@ -22,9 +22,11 @@ from hierarchical_nu.source.parameter import ParScale, Parameter
 from hierarchical_nu.backend.stan_generator import StanGenerator
 from hierarchical_nu.detector.r2021 import R2021EnergyResolution
 from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
-from hierarchical_nu.detector.icecube import IceCube, NT, CAS
+from hierarchical_nu.detector.icecube import IceCube, Refrigerator
 
 m_to_cm = 100  # cm
+NT = Refrigerator.PYTHON_NT
+CAS = Refrigerator.PYTHON_CAS
 
 
 class ExposureIntegral:

@@ -18,14 +18,14 @@ from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.utils.plotting import SphericalCircle
 
 from hierarchical_nu.detector.detector_model import DetectorModel
-from hierarchical_nu.detector.icecube import IceCube, CAS, NT
+from hierarchical_nu.detector.icecube import IceCube, Refrigerator
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, flux_conv_
 from hierarchical_nu.source.cosmology import luminosity_distance
-from hierarchical_nu.events import Events, TRACKS
+from hierarchical_nu.events import Events
 from hierarchical_nu.utils.roi import ROI, RectangularROI, CircularROI
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
@@ -34,6 +34,12 @@ from hierarchical_nu.stan.sim_interface import StanSimInterface
 
 sim_logger = logging.getLogger(__name__)
 sim_logger.setLevel(logging.DEBUG)
+
+NT = Refrigerator.PYTHON_NT
+CAS = Refrigerator.PYTHON_CAS
+
+S_NT = Refrigerator.STAN_NT
+S_CAS = Refrigerator.STAN_CAS
 
 
 class Simulation:
@@ -358,7 +364,7 @@ class Simulation:
         ):
             color = label_cmap[int(l)]
 
-            if t == TRACKS:
+            if t == S_NT:
                 e = e * track_zoom  # to make tracks visible
 
             circle = SphericalCircle(
@@ -469,8 +475,8 @@ class Simulation:
                         .to(u.m**2)
                         .value
                     )
-            else:
-                atmo_integ_val.append(0.0)
+                else:
+                    atmo_integ_val.append(0.0)
 
             obs_time.append(self._observation_time[event_type].to(u.s).value)
 
@@ -605,6 +611,10 @@ class Simulation:
         if self._force_N:
             sim_inputs["forced_N"] = forced_N
 
+        sim_inputs["event_types"] = [
+            Refrigerator.python2stan(_) for _ in self._event_types
+        ]
+
         # Remove np.ndarrays for use with cmdstanpy
         sim_inputs = {
             k: v if not isinstance(v, np.ndarray) else v.tolist()
@@ -621,43 +631,27 @@ class Simulation:
 
         sim_inputs_ = sim_inputs.copy()
 
-        Nex_t = Nex_c = np.zeros(self._sources.N)
+        Nex_et = np.zeros((len(self._event_types), self._sources.N))
+        print(Nex_et.shape)
+        for c, event_type in enumerate(self._event_types):
+            print(c)
+            integral_grid = sim_inputs_["integral_grid"][c]
+            Nex_et[c] = _get_expected_Nnu_(
+                c,
+                sim_inputs_,
+                integral_grid,
+                self._sources.point_source,
+                self._sources.diffuse,
+                self._sources.atmospheric,
+                self._shared_luminosity,
+                self._shared_src_index,
+            )
 
-        for event_type in self._detector_model_type.event_types:
-            if event_type == "tracks":
-                integral_grid_t = sim_inputs_["integral_grid_t"]
-                Nex_t = _get_expected_Nnu_(
-                    sim_inputs_,
-                    integral_grid_t,
-                    self._sources.point_source,
-                    self._sources.diffuse,
-                    self._sources.atmospheric,
-                    self._shared_luminosity,
-                    self._shared_src_index,
-                )
+        self._Nex_et = Nex_et
+        # Nnu per source component
+        self._expected_Nnu_per_comp = np.sum(self._Nex_et, axis=0)
 
-            if event_type == "cascades":
-                integral_grid_c = sim_inputs_["integral_grid_c"]
-                sim_inputs_["atmo_integ_val"] = 0
-                Nex_c = _get_expected_Nnu_(
-                    sim_inputs_,
-                    integral_grid_c,
-                    self._sources.point_source,
-                    self._sources.diffuse,
-                    self._sources.atmospheric,
-                    self._shared_luminosity,
-                    self._shared_src_index,
-                )
-
-        Nex = Nex_t + Nex_c
-
-        self._Nex_t = Nex_t
-
-        self._Nex_c = Nex_c
-
-        self._expected_Nnu_per_comp = Nex
-
-        return sum(Nex)
+        return np.sum(self._Nex_et)
 
     @classmethod
     def from_file(cls, filename):
@@ -754,6 +748,7 @@ class SimInfo:
 
 
 def _get_expected_Nnu_(
+    c,
     sim_inputs,
     integral_grid,
     point_source=False,
@@ -795,9 +790,9 @@ def _get_expected_Nnu_(
         eps.append(np.interp(diff_index, diff_index_grid, integral_grid[Ns]))
 
     if atmospheric:
-        eps.append(sim_inputs["atmo_integ_val"])
+        eps.append(sim_inputs["atmo_integ_val"][c])
 
-    eps = np.array(eps) * sim_inputs["T"]
+    eps = np.array(eps) * sim_inputs["T"][c]
 
     F = []
 
@@ -842,4 +837,4 @@ def _get_expected_Nnu_(
     if atmospheric:
         F.append(sim_inputs["F_atmo"])
 
-    return eps * F
+    return eps * np.array(F)

@@ -17,6 +17,7 @@ from icecube_tools.utils.vMF import get_kappa
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.utils.roi import ROI, RectangularROI, CircularROI
 from hierarchical_nu.utils.plotting import SphericalCircle
+from hierarchical_nu.detector.icecube import Refrigerator
 
 import logging
 
@@ -24,21 +25,6 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
-NT = 0
-CAS = 1
-IC40 = 2
-IC59 = 3
-IC79 = 4
-IC86_I = 5
-IC86_II = 6
-
-periods = {
-    "IC40": IC40,
-    "IC59": IC59,
-    "IC79": IC79,
-    "IC86_I": IC86_I,
-    "IC86_II": IC86_II,
-}
 
 # Translate IRF period into integer from 0 to 4 (IC40 to IC86_II)
 
@@ -62,15 +48,7 @@ class Events:
         Events class for the storage of event observables
         """
 
-        self._recognised_types = [
-            NT,
-            CAS,
-            IC40,
-            IC59,
-            IC79,
-            IC86_I,
-            IC86_II,
-        ]
+        self._recognised_types = [_ for _ in Refrigerator.stan_detectors]
 
         self.N = len(energies)
 
@@ -259,7 +237,7 @@ class Events:
 
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = events.ang_err[p] * u.deg
-        types = np.array(ra.size * [IC86_II])
+        types = np.array(ra.size * [Refrigerator.STAN_IC86_II])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         if isinstance(roi, CircularROI):

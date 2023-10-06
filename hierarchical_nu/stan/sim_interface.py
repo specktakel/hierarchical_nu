@@ -31,14 +31,19 @@ from hierarchical_nu.backend.variable_definitions import (
 from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
 
-from hierarchical_nu.events import NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II
+# from hierarchical_nu.events import NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II
+
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
-from hierarchical_nu.detector.icecube import IceCube
+from hierarchical_nu.detector.icecube import IceCube, Refrigerator
 from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.source.source import Sources
 
 from hierarchical_nu.utils.roi import ROI, CircularROI
+
+
+NT = Refrigerator.STAN_NT
+CAS = Refrigerator.STAN_CAS
 
 
 class StanSimInterface(StanInterface):
@@ -498,7 +503,7 @@ class StanSimInterface(StanInterface):
                         << self._F[self._Ns + 1] * self._eps[i, self._Ns + 1]
                     )
 
-            elif self.sources.atmospheric and "tracks" in self._event_types:
+            elif self.sources.atmospheric and NT in self._event_types:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
                     self._eps[i, self._Ns + 1] << self._atmo_integ_val[i] * self._T[i]
 
@@ -588,22 +593,10 @@ class StanSimInterface(StanInterface):
             # mode to have all functions included.
             # This will add to the functions section of the Stan file automatically.
             for event_type in self._event_types:
-                if (
-                    self.detector_model_type == R2021DetectorModel
-                    and event_type == TRACKS
-                ):
-                    self._dm_rng[event_type] = self.detector_model_type(
-                        mode=DistributionMode.RNG,
-                        event_type=event_type,
-                        gen_type="histogram",
-                        rewrite=False,
-                    )
+                self._dm_rng[event_type] = IceCube(mode=DistributionMode.RNG)
 
-                else:
-                    self._dm_rng[event_type] = self.detector_model_type(
-                        mode=DistributionMode.RNG, event_type=event_type
-                    )
-
+            self._loop_start = ForwardVariableDef("loop_start", "int")
+            self._loop_end = ForwardVariableDef("loop_end", "int")
             # We redefine a bunch of variables from transformed data here, as we would
             # like to access them as outputs from the Stan simulation.
             self._f_arr = ForwardVariableDef("f_arr", "real")
@@ -636,7 +629,7 @@ class StanSimInterface(StanInterface):
 
             # Detected directions as unit vectors for each event
             self._event = ForwardArrayDef("event", "unit_vector[3]", self._N_str)
-            self._pre_event = ForwardVectorDef("pre_event", [4])
+            self._pre_event = ForwardVectorDef("pre_event", [5])
 
             # Variables for rejection sampling
             # Rejection sampling is based on a broken power law envelope,
@@ -654,18 +647,12 @@ class StanSimInterface(StanInterface):
             self._c_value = ForwardVariableDef("c_value", "real")
             self._idx_cosz = ForwardVariableDef("idx_cosz", "int")
             self._gamma2 = ForwardVariableDef("gamma2", "real")
+
+            # Label for the currently sampled source component, starts obviously with 1
             if self._force_N:
                 self._currently_sampling = InstantVariableDef(
                     "currently_sampling", "int", [1]
                 )
-
-            if "tracks" in self._event_types:
-                Nex_t_sim = ForwardVariableDef("Nex_t_sim", "real")
-                Nex_t_sim << self._Nex_t
-
-            if "cascades" in self._event_types:
-                Nex_c_sim = ForwardVariableDef("Nex_c_sim", "real")
-                Nex_c_sim << self._Nex_c
 
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
 
@@ -673,33 +660,42 @@ class StanSimInterface(StanInterface):
             self._kappa = ForwardVariableDef("kappa", "vector[N]")
 
             # Here we start the sampling, first fo tracks and then cascades.
-            if "tracks" in self._event_types:
+            # if "tracks" in self._event_types:
+            with ForLoopContext(1, self._Net_stan, "j") as j:
                 if self._force_N:
-                    self._forced_N_t_sampled = InstantVariableDef(
-                        "sampled_N_t", "int", [0]
+                    # Counts the events sampled of each source components
+                    # Counter is reset after the required number is reached
+                    self._forced_N_sampled = InstantVariableDef("sampled_N", "int", [0])
+                self._loop_end << self._N_comp[j]
+                with IfBlockContext([j, " == ", 1]):
+                    self._loop_start << 1
+                with ElseBlockContext():
+                    self._loop_start << StringExpression(
+                        ["sum(", self._N_comp[1 : j - 1], ") + 1"]
                     )
+                self._loop_end << StringExpression(["sum(", self._N_comp[1:j], ")"])
 
                 # For each event, we rejection sample the true energy and direction
                 # and then directly sample the detected properties
-                with ForLoopContext(1, self._N_t, "i") as i:
-                    self._event_type[i] << self._track_type
+                with ForLoopContext(self._loop_start, self._loop_end, "i") as i:
+                    self._event_type[i] << self._et_stan[j]
 
                     # Sample source label
                     # If we force N, proceed to sample the given number of events for each source
                     if self._force_N:
                         with IfBlockContext(
                             [
-                                self._forced_N_t_sampled,
+                                self._forced_N_sampled,
                                 " < ",
-                                self._forced_N_t[self._currently_sampling],
+                                self._forced_N[j, self._currently_sampling],
                             ]
                         ):
                             self._lam[i] << self._currently_sampling
-                            StringExpression([self._forced_N_t_sampled, " += 1"])
+                            StringExpression([self._forced_N_sampled, " += 1"])
 
                         with ElseBlockContext():
                             StringExpression([self._currently_sampling, " += 1"])
-
+                            # The fuck did I do here? TODO understand what the fuck I did here
                             with IfBlockContext(
                                 [self._currently_sampling, " > size(", self._F, ")"]
                             ):
@@ -708,14 +704,14 @@ class StanSimInterface(StanInterface):
 
                             with ElseBlockContext():
                                 self._lam[i] << self._currently_sampling
-                                self._forced_N_t_sampled << 1
+                                self._forced_N_sampled << 1
 
                         # make loop checking how many events are already sampled for a certain type
 
                     # Otherwise, use the exposure weights to determine the event label
                     else:
                         self._lam[i] << FunctionCall(
-                            [self._w_exposure_t], "categorical_rng"
+                            [self._w_exposure[j]], "categorical_rng"
                         )
 
                     # Reset rejection
@@ -799,7 +795,7 @@ class StanSimInterface(StanInterface):
                                 # source spectrum. This is to make things more efficient.
                                 (
                                     self._gamma2
-                                    << self._rs_bbpl_gamma2_scale_t - src_index_ref
+                                    << self._rs_bbpl_gamma2_scale[j] - src_index_ref
                                 )
 
                                 # Handle energy thresholds
@@ -821,11 +817,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -835,9 +831,9 @@ class StanSimInterface(StanInterface):
                                     self._E[i] << FunctionCall(
                                         [
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_t,
+                                            self._rs_bbpl_Eth[j],
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
                                             self._gamma2,
                                         ],
                                         "bbpl_rng",
@@ -848,9 +844,9 @@ class StanSimInterface(StanInterface):
                                         [
                                             self._E[i],
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_t,
+                                            self._rs_bbpl_Eth[j],
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
                                             self._gamma2,
                                         ],
                                         "bbpl_pdf",
@@ -863,11 +859,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 "<=",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -885,8 +881,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
+                                            self._rs_bbpl_gamma1[j],
                                         ],
                                         "bbpl_rng",
                                     )
@@ -898,8 +894,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
+                                            self._rs_bbpl_gamma1[j],
                                         ],
                                         "bbpl_pdf",
                                     )
@@ -911,11 +907,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 ">=",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -977,7 +973,7 @@ class StanSimInterface(StanInterface):
                             ):
                                 # Assume fixed index of ~3.6 for atmo to get reasonable
                                 # envelope function
-                                self._gamma2 << self._rs_bbpl_gamma2_scale_t - 3.6
+                                self._gamma2 << self._rs_bbpl_gamma2_scale[j] - 3.6
 
                                 # Handle energy thresholds
                                 # 3 cases:
@@ -993,11 +989,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -1007,9 +1003,9 @@ class StanSimInterface(StanInterface):
                                     self._E[i] << FunctionCall(
                                         [
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_t,
+                                            self._rs_bbpl_Eth[j],
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
                                             self._gamma2,
                                         ],
                                         "bbpl_rng",
@@ -1020,9 +1016,9 @@ class StanSimInterface(StanInterface):
                                         [
                                             self._E[i],
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_t,
+                                            self._rs_bbpl_Eth[j],
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
                                             self._gamma2,
                                         ],
                                         "bbpl_pdf",
@@ -1035,11 +1031,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 "<=",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -1057,8 +1053,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
+                                            self._rs_bbpl_gamma1[j],
                                         ],
                                         "bbpl_rng",
                                     )
@@ -1070,8 +1066,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
+                                            self._rs_bbpl_gamma1[j],
                                         ],
                                         "bbpl_pdf",
                                     )
@@ -1083,11 +1079,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 ">=",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -1137,7 +1133,7 @@ class StanSimInterface(StanInterface):
                             ):
                                 (
                                     self._gamma2
-                                    << self._rs_bbpl_gamma2_scale_t - self._diff_index
+                                    << self._rs_bbpl_gamma2_scale[j] - self._diff_index
                                 )
 
                                 # Handle energy thresholds
@@ -1160,11 +1156,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -1174,9 +1170,9 @@ class StanSimInterface(StanInterface):
                                     self._E[i] << FunctionCall(
                                         [
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_t,
+                                            self._rs_bbpl_Eth[j],
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
                                             self._gamma2,
                                         ],
                                         "bbpl_rng",
@@ -1187,9 +1183,9 @@ class StanSimInterface(StanInterface):
                                         [
                                             self._E[i],
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_t,
+                                            self._rs_bbpl_Eth[j],
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
                                             self._gamma2,
                                         ],
                                         "bbpl_pdf",
@@ -1202,11 +1198,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 "<=",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -1224,8 +1220,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
+                                            self._rs_bbpl_gamma1[j],
                                         ],
                                         "bbpl_rng",
                                     )
@@ -1237,8 +1233,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
+                                            self._rs_bbpl_gamma1[j],
                                         ],
                                         "bbpl_pdf",
                                     )
@@ -1250,11 +1246,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 ">=",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -1309,7 +1305,7 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
-                                self._gamma2 << self._rs_bbpl_gamma2_scale_t - 3.6
+                                self._gamma2 << self._rs_bbpl_gamma2_scale[j] - 3.6
 
                                 # Handle energy thresholds
                                 # 3 cases:
@@ -1326,11 +1322,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -1340,9 +1336,9 @@ class StanSimInterface(StanInterface):
                                     self._E[i] << FunctionCall(
                                         [
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_t,
+                                            self._rs_bbpl_Eth[j],
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
                                             self._gamma2,
                                         ],
                                         "bbpl_rng",
@@ -1353,9 +1349,9 @@ class StanSimInterface(StanInterface):
                                         [
                                             self._E[i],
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_t,
+                                            self._rs_bbpl_Eth[j],
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
                                             self._gamma2,
                                         ],
                                         "bbpl_pdf",
@@ -1368,11 +1364,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 "<=",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -1390,8 +1386,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
+                                            self._rs_bbpl_gamma1[j],
                                         ],
                                         "bbpl_rng",
                                     )
@@ -1403,8 +1399,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_t,
-                                            self._rs_bbpl_gamma1_t,
+                                            self._rs_bbpl_gamma1[j],
+                                            self._rs_bbpl_gamma1[j],
                                         ],
                                         "bbpl_pdf",
                                     )
@@ -1416,11 +1412,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 ">=",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth_t,
+                                                self._rs_bbpl_Eth[j],
                                                 ")",
                                             ]
                                         )
@@ -1463,11 +1459,18 @@ class StanSimInterface(StanInterface):
                                     / self._F_atmo
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
+                        for c, (event_type_python, event_type_stan) in enumerate(
+                            zip(self._event_types, [NT, CAS])
+                        ):
+                            with IfBlockContext(
+                                [self._event_type[i], " == ", event_type_stan]
+                            ):
+                                self._aeff_factor << self._dm_rng[
+                                    event_type_python
+                                ].effective_area(self._E[i], self._omega)
 
-                        self._aeff_factor << self._dm_rng["tracks"].effective_area(
-                            self._E[i], self._omega
-                        )
-
+                        """
+                        # I feel like this is accounted for already elsewhere
                         if (
                             self.detector_model_type == NorthernTracksDetectorModel
                             or self.detector_model_type == IceCubeDetectorModel
@@ -1476,7 +1479,7 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._cosz[i], ">= 0.1"])]
                             ):
                                 self._aeff_factor << 0
-
+                        """
                         # Calculate quantities for rejection sampling
                         # Value of the distribution that we want to sample from
                         self._f_value << self._src_factor * self._aeff_factor
@@ -1485,7 +1488,7 @@ class StanSimInterface(StanInterface):
                         # self._idx_cosz << FunctionCall(
                         #    [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
                         # )
-                        self._c_value << self._rs_cvals_t[self._lam[i]]
+                        self._c_value << self._rs_cvals[j, self._lam[i]]
 
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
@@ -1506,46 +1509,23 @@ class StanSimInterface(StanInterface):
                                     )
                                 ]
                             ):
-                                if self.detector_model_type == R2021DetectorModel:
-                                    # return of energy resolution is log_10(E/GeV)
+                                for c, (
+                                    event_type_python,
+                                    event_type_stan,
+                                ) in enumerate(zip(self._event_types, [NT, CAS])):
+                                    with IfBlockContext(
+                                        [self._event_type[i], " == ", event_type_stan]
+                                    ):
+                                        self._pre_event << self._dm_rng[
+                                            event_type_python
+                                        ](
+                                            FunctionCall([self._E[i]], "log10"),
+                                            self._omega,
+                                        )
 
-                                    self._Edet[i] << 10 ** self._dm_rng[
-                                        "tracks"
-                                    ].energy_resolution(
-                                        FunctionCall([self._E[i]], "log10"), self._omega
-                                    )
-
-                                else:
-                                    self._Edet[i] << 10 ** self._dm_rng[
-                                        "tracks"
-                                    ].energy_resolution(self._E[i])
-
-                                # Detection effects
-                                if self.detector_model_type == R2021DetectorModel:
-                                    # both energies are E/GeV, angular_resolution does log internally
-
-                                    self._pre_event << self._dm_rng[
-                                        "tracks"
-                                    ].angular_resolution(
-                                        FunctionCall([self._E[i]], "log10"),
-                                        FunctionCall([self._Edet[i]], "log10"),
-                                        self._omega,
-                                    )
-                                    self._event[i] << StringExpression(
-                                        ["pre_event[1:3]"]
-                                    )
-                                    self._kappa[i] << StringExpression(["pre_event[4]"])
-
-                                else:
-                                    self._event[i] << self._dm_rng[
-                                        "tracks"
-                                    ].angular_resolution(self._E[i], self._omega)
-                                    (
-                                        self._kappa[i]
-                                        << self._dm_rng[
-                                            "tracks"
-                                        ].angular_resolution.kappa()
-                                    )
+                                self._Edet[i] << self._pre_event[1]
+                                self._event[i] << self._pre_event[2:4]
+                                self._kappa[i] << self._pre_event[5]
 
                                 if isinstance(self._roi, CircularROI):
                                     with IfBlockContext(
@@ -1572,7 +1552,7 @@ class StanSimInterface(StanInterface):
                                             "(",
                                             self._Edet[i],
                                             " >= ",
-                                            self._Emin_det_t,
+                                            self._Emin_det[j],
                                             ") && (",
                                             self._detected == 1,
                                             ")",
@@ -1586,517 +1566,6 @@ class StanSimInterface(StanInterface):
                         # Debugging
                         with ElseBlockContext():
                             # If sampler gets stuck, print a warning message and move on.
-                            self._accept << 1
-
-                            StringExpression(
-                                ['print("problem component: ", ', self._lam[i], ");\n"]
-                            )
-
-            # Repeat as above for cascades! For detailed comments see tracks, approach is identical.
-            if "cascades" in self._event_types:
-                self._forced_N_c_sampled = InstantVariableDef("sampled_N_c", "int", [0])
-
-                if "tracks" in self._event_types:
-                    N_start = "N_t+1"
-
-                    if self._force_N:
-                        self._currently_sampling << 1
-
-                else:
-                    N_start = 1
-
-                with ForLoopContext(N_start, self._N, "i") as i:
-                    self._event_type[i] << self._cascade_type
-
-                    # Sample source label
-                    if self._force_N:
-                        with IfBlockContext(
-                            [
-                                self._forced_N_c_sampled,
-                                " < ",
-                                self._forced_N_c[self._currently_sampling],
-                            ]
-                        ):
-                            self._lam[i] << self._currently_sampling
-                            StringExpression([self._forced_N_c_sampled, " += 1"])
-
-                        with ElseBlockContext():
-                            StringExpression([self._currently_sampling, " += 1"])
-
-                            with IfBlockContext(
-                                [self._currently_sampling, " > size(", self._F, ")"]
-                            ):
-                                # Might as well be break statement
-                                StringExpression(["continue"])
-
-                            with ElseBlockContext():
-                                self._lam[i] << self._currently_sampling
-                                self._forced_N_c_sampled << 1
-
-                    else:
-                        self._lam[i] << FunctionCall(
-                            [self._w_exposure_c], "categorical_rng"
-                        )
-
-                    self._accept << 0
-                    self._detected << 0
-                    self._ntrials << 0
-
-                    with WhileLoopContext([StringExpression([self._accept != 1])]):
-                        self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
-
-                        # Sample position
-                        with IfBlockContext(
-                            [StringExpression([self._lam[i], " <= ", self._Ns])]
-                        ):
-                            self._omega << self._varpi[self._lam[i]]
-
-                        with ElseIfBlockContext(
-                            [StringExpression([self._lam[i], " == ", self._Ns + 1])]
-                        ):
-                            self._omega << FunctionCall(
-                                [
-                                    1,
-                                    self._v_low,
-                                    self._v_high,
-                                    self._u_low,
-                                    self._u_high,
-                                ],
-                                "sphere_lim_rng",
-                            )
-
-                        self._cosz[i] << FunctionCall(
-                            [FunctionCall([self._omega], "omega_to_zenith")], "cos"
-                        )
-
-                        # Energy spectrum
-                        if self.sources.point_source:
-                            with IfBlockContext(
-                                [StringExpression([self._lam[i], " <= ", self._Ns])]
-                            ):
-                                if self._shared_src_index:
-                                    src_index_ref = self._src_index
-                                else:
-                                    src_index_ref = self._src_index[self._lam[i]]
-
-                                (
-                                    self._gamma2
-                                    << self._rs_bbpl_gamma2_scale_c - src_index_ref
-                                )
-
-                                # Handle energy thresholds
-                                # 3 cases:
-                                # Emin < Eth and Emax > Eth - use broken pl
-                                # Emin < Eth and Emax <= Eth - use pl
-                                # Emin >= Eth and Emax > Eth - use pl
-                                self._Emin_src_arr << self._Emin_src / (
-                                    1 + self._z[self._lam[i]]
-                                )
-                                self._Emax_src_arr << self._Emax_src / (
-                                    1 + self._z[self._lam[i]]
-                                )
-
-                                with IfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth_c,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth_c,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_c,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_c,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_c,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_c,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth_c,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                "<=",
-                                                self._rs_bbpl_Eth_c,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_c,
-                                            self._rs_bbpl_gamma1_c,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_c,
-                                            self._rs_bbpl_gamma1_c,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                ">=",
-                                                self._rs_bbpl_Eth_c,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth_c,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                self._src_factor << self._src_spectrum_lpdf(
-                                    self._E[i],
-                                    src_index_ref,
-                                    self._Emin_src / (1 + self._z[self._lam[i]]),
-                                    self._Emax_src / (1 + self._z[self._lam[i]]),
-                                )
-                                self._src_factor << FunctionCall(
-                                    [self._src_factor], "exp"
-                                )
-
-                                self._Esrc[i] << self._E[i] * (
-                                    1 + self._z[self._lam[i]]
-                                )
-
-                        if self.sources.diffuse:
-                            with IfBlockContext(
-                                [StringExpression([self._lam[i], " == ", self._Ns + 1])]
-                            ):
-                                (
-                                    self._gamma2
-                                    << self._rs_bbpl_gamma2_scale_c - self._diff_index
-                                )
-
-                                # Handle energy thresholds
-                                # 3 cases:
-                                # Emin < Eth and Emax > Eth - use broken pl
-                                # Emin < Eth and Emax <= Eth - use pl
-                                # Emin >= Eth and Emax > Eth - use pl
-                                """
-                                self._Emin_src_arr << self._Emin_src / (
-                                    1 + self._z[self._lam[i]]
-                                )
-                                self._Emax_src_arr << self._Emax_src / (
-                                    1 + self._z[self._lam[i]]
-                                )
-                                """
-                                self._Emin_src_arr << self._Emin
-                                self._Emax_src_arr << self._Emax
-
-                                with IfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth_c,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth_c,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_c,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_c,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_c,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_c,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth_c,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                "<=",
-                                                self._rs_bbpl_Eth_c,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_c,
-                                            self._rs_bbpl_gamma1_c,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1_c,
-                                            self._rs_bbpl_gamma1_c,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                ">=",
-                                                self._rs_bbpl_Eth_c,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth_c,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                self._src_factor << self._diff_spectrum_lpdf(
-                                    self._E[i],
-                                    self._diff_index,
-                                    # self._Emin_src / (1 + self._z[self._lam[i]]),
-                                    # self._Emax_src / (1 + self._z[self._lam[i]]),
-                                    self._Emin_src_arr,
-                                    self._Emax_src_arr,
-                                )
-                                self._src_factor << FunctionCall(
-                                    [self._src_factor], "exp"
-                                )
-
-                                self._Esrc[i] << self._E[i] * (
-                                    1 + self._z[self._lam[i]]
-                                )
-
-                        self._aeff_factor << self._dm_rng["cascades"].effective_area(
-                            self._E[i], self._omega
-                        )
-
-                        self._f_value = self._src_factor * self._aeff_factor
-
-                        # self._idx_cosz << FunctionCall(
-                        #    [self._cosz[i], self._rs_cosz_bin_edges_c], "binary_search"
-                        # )
-                        self._c_value << self._rs_cvals_c[self._lam[i]]
-
-                        # Debugging when sampling gets stuck
-                        StringExpression([self._ntrials, " += ", 1])
-
-                        with IfBlockContext(
-                            [StringExpression([self._ntrials, "< 1000000"])]
-                        ):
-                            with IfBlockContext(
-                                [
-                                    StringExpression(
-                                        [
-                                            self._u_samp,
-                                            " < ",
-                                            self._f_value
-                                            / (self._c_value * self._g_value),
-                                        ]
-                                    )
-                                ]
-                            ):
-                                self._detected << 1
-                                # effective area veto for possibly empty true_energy bins overcome,
-                                # Detection effects
-                                # Calculate quantities for rejection sampling
-                                self._Edet[i] << 10 ** self._dm_rng[
-                                    "cascades"
-                                ].energy_resolution(self._E[i])
-
-                                self._event[i] << self._dm_rng[
-                                    "cascades"
-                                ].angular_resolution(self._E[i], self._omega)
-                                (
-                                    self._kappa[i]
-                                    << self._dm_rng[
-                                        "cascades"
-                                    ].angular_resolution.kappa()
-                                )
-
-                            with ElseBlockContext():
-                                self._detected << 0
-
-                            # Energy threshold
-                            with IfBlockContext(
-                                [
-                                    StringExpression(
-                                        [
-                                            "(",
-                                            self._Edet[i],
-                                            " >= ",
-                                            self._Emin_det_c,
-                                            ") && (",
-                                            self._detected == 1,
-                                            ")",
-                                        ]
-                                    )
-                                ]
-                            ):
-                                self._accept << 1
-
-                        # Debugging
-                        with ElseBlockContext():
                             self._accept << 1
 
                             StringExpression(
