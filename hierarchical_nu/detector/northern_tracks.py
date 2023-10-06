@@ -57,7 +57,7 @@ class NorthernTracksEffectiveArea(EffectiveArea):
 
     def generate_code(self):
         super().__init__(
-            self.NAME,
+            self._func_name,
             ["true_energy", "true_dir"],
             ["real", "vector"],
             "real",
@@ -509,6 +509,10 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
     def __init__(self, mode: DistributionMode = DistributionMode.PDF):
         super().__init__(mode, event_type="tracks")
 
+        if self.mode == DistributionMode.PDF:
+            self._func_name = self.PDF_NAME
+        elif self.mode == DistributionMode.RNG:
+            self._func_name = self.RNG_NAME
         ang_res = NorthernTracksAngularResolution(mode)
         self._angular_resolution = ang_res
 
@@ -543,7 +547,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
         # Temporarily, 4th entry is effective area for atmospheric component
         UserDefinedFunction.__init__(
             self,
-            self.PDF_NAME,
+            self._func_name,
             ["true_energy", "detected_energy", "omega_det", "src_pos"],
             ["real", "real", "vector", "vector"],
             "array[] real",
@@ -578,7 +582,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
 
         UserDefinedFunction.__init__(
             self,
-            self.RNG_NAME,
+            self._func_name,
             ["true_energy", "omega"],
             ["real", "vector"],
             "vector",
@@ -586,7 +590,9 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
 
         with self:
             return_this = ForwardVariableDef("return_this", "vector[5]")
-            return_this[1] << self.energy_resolution("log10(true_energy)")
+            return_this[1] << FunctionCall(
+                [10.0, self.energy_resolution("log10(true_energy)")], "pow"
+            )
             return_this[2:5] << self.angular_resolution("log10(true_energy)", "omega")
             ReturnStatement([return_this])
 

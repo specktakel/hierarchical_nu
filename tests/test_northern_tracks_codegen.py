@@ -272,7 +272,7 @@ def test_rv_generation(output_directory, random_seed):
         seed=random_seed,
     )
 
-    reco_energy_samples = output_rng.stan_variable("rec_energy")
+    reco_energy_samples = np.log10(output_rng.stan_variable("rec_energy"))
     reco_dir_samples = output_rng.stan_variable("rec_dir")
 
     reco_energy_pdf = np.exp(output_pdf.stan_variable("e_res")[0])
@@ -314,7 +314,7 @@ def test_rv_generation(output_directory, random_seed):
         seed=random_seed,
     )
 
-    reco_energy_samples = output_rng.stan_variable("rec_energy")
+    reco_energy_samples = np.log10(output_rng.stan_variable("rec_energy"))
     reco_dir_samples = output_rng.stan_variable("rec_dir")
 
     reco_energy_pdf = np.exp(output_pdf.stan_variable("e_res")[0])

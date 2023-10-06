@@ -632,9 +632,7 @@ class Simulation:
         sim_inputs_ = sim_inputs.copy()
 
         Nex_et = np.zeros((len(self._event_types), self._sources.N))
-        print(Nex_et.shape)
         for c, event_type in enumerate(self._event_types):
-            print(c)
             integral_grid = sim_inputs_["integral_grid"][c]
             Nex_et[c] = _get_expected_Nnu_(
                 c,

@@ -109,6 +109,16 @@ class StanSimInterface(StanInterface):
             for include_file in self._includes:
                 _ = Include(include_file)
 
+            self._dm = OrderedDict()
+
+            for event_type in self._event_types:
+                # Include the PDF mode of the detector model
+                self._dm[event_type] = IceCube(
+                    event_type,
+                    mode=DistributionMode.RNG,
+                )
+                self._dm[event_type].generate_rng_function_code()
+
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
             if self.sources.point_source:
@@ -150,24 +160,17 @@ class StanSimInterface(StanInterface):
             self._Ns_1p_str = ["[", self._Ns, "+1]"]
             self._Ns_2p_str = ["[", self._Ns, "+2]"]
 
-            if self.sources.diffuse and self.sources.atmospheric:
-                N_int_str = self._Ns_2p_str
-
-            elif self.sources.diffuse or self.sources.atmospheric:
-                N_int_str = self._Ns_1p_str
-
-            else:
-                N_int_str = self._Ns_str
-
             if self.sources.atmospheric and self.sources.diffuse:
-                dim = self._Ns_2p_str
                 Ns_string = "Ns+2"
             elif self.sources.diffuse or self.sources.atmospheric:
-                dim = self._Ns_1p_str
                 Ns_string = "Ns+1"
             else:
-                dim = self._Ns_str
                 Ns_string = "Ns"
+
+            if self.sources.diffuse:
+                Ns_string_int_grid = "Ns+1"
+            else:
+                Ns_string_int_grid = "Ns"
 
             # True directions of point sources as a unit vector
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
@@ -244,7 +247,9 @@ class StanSimInterface(StanInterface):
             # )
 
             self._integral_grid = ForwardArrayDef(
-                "integral_grid", "vector[Ngrid]", ["[", self._Net, ",", Ns_string, "]"]
+                "integral_grid",
+                "vector[Ngrid]",
+                ["[", self._Net, ",", Ns_string_int_grid, "]"],
             )
 
             if self._force_N:
@@ -317,11 +322,8 @@ class StanSimInterface(StanInterface):
 
             # TODO: this is ugly, fix it when implementing classes for the NT, CAS etc. to keep track of this
             idx = 1
-            if NT in self._event_types:
-                self._et_stan[idx] << 0
-                idx += 1
-            if CAS in self._event_types:
-                self._et_stan[idx] << 1
+            for et in self._event_types:
+                self._et_stan[idx] << Refrigerator.python2stan(et)
                 idx += 1
 
             # Relative exposure weights of sources for tracks
@@ -352,18 +354,21 @@ class StanSimInterface(StanInterface):
             self._f_det_astro_ = ForwardVariableDef("f_det_astro_", "real")
 
             # Expected number of events from different source components
-            self._Nex_src_comp = ForwardArrayDef(
-                "Nex_src_comp", "real", ["[", self._Net, "]"]
-            )
-            self._Nex_src = ForwardVariableDef("Nex_src", "real")
-            self._Nex_diff_comp = ForwardArrayDef(
-                "Nex_diff_comp", "real", ["[", self._Net, "]"]
-            )
-            self._Nex_diff = ForwardVariableDef("Nex_diff_sum", "real")
-            self._Nex_atmo_comp = ForwardArrayDef(
-                "Nex_atmo_comp", "real", ["[", self._Net, "]"]
-            )
-            self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
+            if self.sources.point_source:
+                self._Nex_src_comp = ForwardArrayDef(
+                    "Nex_src_comp", "real", ["[", self._Net, "]"]
+                )
+                self._Nex_src = ForwardVariableDef("Nex_src", "real")
+            if self.sources.diffuse:
+                self._Nex_diff_comp = ForwardArrayDef(
+                    "Nex_diff_comp", "real", ["[", self._Net, "]"]
+                )
+                self._Nex_diff = ForwardVariableDef("Nex_diff", "real")
+            if self.sources.atmospheric:
+                self._Nex_atmo_comp = ForwardArrayDef(
+                    "Nex_atmo_comp", "real", ["[", self._Net, "]"]
+                )
+                self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
 
             # Sampled total number of events
             self._N = ForwardVariableDef("N", "int")
@@ -457,11 +462,11 @@ class StanSimInterface(StanInterface):
                 with ForLoopContext(1, self._Net_stan, "i") as i:
                     # if "tracks" in self._event_types:
                     (
-                        self._eps[i, self._Ns + 1]
+                        self._eps[i, "Ns+1"]
                         << FunctionCall(
                             [
                                 self._diff_index_grid,
-                                self._integral_grid[i, self._Ns + 1],
+                                self._integral_grid[i, "Ns + 1"],
                                 self._diff_index,
                             ],
                             "interpolate",
@@ -471,26 +476,26 @@ class StanSimInterface(StanInterface):
 
                     (
                         self._Nex_diff_comp[i]
-                        << self._F[self._Ns + 1] * self._eps[i, self._Ns + 1]
+                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
                     )
 
                     # no interpolation needed for atmo as spectral shape is fixed
-                    self._eps[i, self._Ns + 2] << self._atmo_integ_val[i] * self._T[i]
+                    self._eps[i, "Ns + 2"] << self._atmo_integ_val[i] * self._T[i]
 
                     (
-                        self._Nex_atmo[i]
-                        << self._F[self._Ns + 2] * self._eps[i, self._Ns + 2]
+                        self._Nex_atmo_comp[i]
+                        << self._F["Ns + 2"] * self._eps[i, "Ns + 2"]
                     )
 
             elif self.sources.diffuse:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
                     # if "tracks" in self._event_types:
                     (
-                        self._eps[i, self._Ns + 1]
+                        self._eps[i, "Ns + 1"]
                         << FunctionCall(
                             [
                                 self._diff_index_grid,
-                                self._integral_grid[i, self._Ns + 1],
+                                self._integral_grid[i, "Ns + 1"],
                                 self._diff_index,
                             ],
                             "interpolate",
@@ -500,16 +505,16 @@ class StanSimInterface(StanInterface):
 
                     (
                         self._Nex_diff_comp[i]
-                        << self._F[self._Ns + 1] * self._eps[i, self._Ns + 1]
+                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
                     )
 
             elif self.sources.atmospheric and NT in self._event_types:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
-                    self._eps[i, self._Ns + 1] << self._atmo_integ_val[i] * self._T[i]
+                    self._eps[i, "Ns + 1"] << self._atmo_integ_val[i] * self._T[i]
 
                     (
-                        self._Nex_atmo[i]
-                        << self._F[self._Ns + 1] * self._eps[i, self._Ns + 1]
+                        self._Nex_atmo_comp[i]
+                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
                     )
 
                 # This should already be included in precomputation through atmo_integ_val being 0 for cascades
@@ -543,21 +548,36 @@ class StanSimInterface(StanInterface):
             # if "tracks" in self._event_types and "cascades" in self._event_types:
             # self._Nex_src << self._Nex_src_t + self._Nex_src_c
             self._Nex_src << StringExpression(["sum(", self._Nex_src_comp, ")"])
-            # self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
-            self._Nex_diff << StringExpression(["sum(", self._Nex_diff_comp, ")"])
+            if self.sources.diffuse:
+                # self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
+                self._Nex_diff << StringExpression(["sum(", self._Nex_diff_comp, ")"])
+            if self.sources.atmospheric:
+                self._Nex_atmo << StringExpression(["sum(", self._Nex_atmo_comp, ")"])
             # self._N << self._N_t + self._N_c
             self._N << StringExpression(["sum(", self._N_comp, ")"])
+            StringExpression(["print(N)"])
+            StringExpression(["print(Nex_src_comp)"])
+            StringExpression(["print(Nex_src)"])
+            # StringExpression(["print(Nex_diff_comp)"])
+            # StringExpression(["print(Nex_diff)"])
+            # StringExpression(["print(Nex_atmo_comp)"])
+            # StringExpression(["print(Nex_atmo)"])
+            StringExpression(["print(N_comp)"])
 
             # Calculate the fractional association for different assumptions
             if self.sources.diffuse and self.sources.atmospheric:
                 self._Ftot << self._F_src + self._F_diff + self._F_atmo
+                StringExpression(["print(Ftot)"])
                 self._f_arr_astro_ << StringExpression(
                     [self._F_src, "/", self._F_src + self._F_diff]
                 )
+                StringExpression(["print(f_arr_astro_)"])
                 self._f_det_ << self._Nex_src / (
                     self._Nex_src + self._Nex_diff + self._Nex_atmo
                 )
+                StringExpression(["print(f_det_)"])
                 self._f_det_astro_ << self._Nex_src / (self._Nex_src + self._Nex_diff)
+                StringExpression(["print(f_det_astro_)"])
 
             elif self.sources.diffuse:
                 self._Ftot << self._F_src + self._F_diff
@@ -580,6 +600,7 @@ class StanSimInterface(StanInterface):
                 self._f_det_astro_ << 1.0
 
             self._f_arr_ << StringExpression([self._F_src, "/", self._Ftot])
+            StringExpression(["print(f_arr_)"])
 
     def _generated_quantities(self):
         """
@@ -587,13 +608,16 @@ class StanSimInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
+            StringExpression(['print("generating quantities")'])
             self._dm_rng = OrderedDict()
 
             # For different event types, define the detector model in both RNG and PDF
             # mode to have all functions included.
             # This will add to the functions section of the Stan file automatically.
             for event_type in self._event_types:
-                self._dm_rng[event_type] = IceCube(mode=DistributionMode.RNG)
+                self._dm_rng[event_type] = IceCube(
+                    event_type, mode=DistributionMode.RNG
+                )
 
             self._loop_start = ForwardVariableDef("loop_start", "int")
             self._loop_end = ForwardVariableDef("loop_end", "int")
@@ -662,6 +686,7 @@ class StanSimInterface(StanInterface):
             # Here we start the sampling, first fo tracks and then cascades.
             # if "tracks" in self._event_types:
             with ForLoopContext(1, self._Net_stan, "j") as j:
+                StringExpression(["print(j)"])
                 if self._force_N:
                     # Counts the events sampled of each source components
                     # Counter is reset after the required number is reached
@@ -671,13 +696,17 @@ class StanSimInterface(StanInterface):
                     self._loop_start << 1
                 with ElseBlockContext():
                     self._loop_start << StringExpression(
-                        ["sum(", self._N_comp[1 : j - 1], ") + 1"]
+                        ["sum(", self._N_comp[1:"j - 1"], ") + 1"]
                     )
                 self._loop_end << StringExpression(["sum(", self._N_comp[1:j], ")"])
+
+                StringExpression(["print(loop_start)"])
+                StringExpression(["print(loop_end)"])
 
                 # For each event, we rejection sample the true energy and direction
                 # and then directly sample the detected properties
                 with ForLoopContext(self._loop_start, self._loop_end, "i") as i:
+                    StringExpression(["print(i)"])
                     self._event_type[i] << self._et_stan[j]
 
                     # Sample source label
@@ -1469,6 +1498,8 @@ class StanSimInterface(StanInterface):
                                     event_type_python
                                 ].effective_area(self._E[i], self._omega)
 
+                        # StringExpression(['print("Aeff: ", aeff_factor)'])
+                        # StringExpression(['print("energy: ", E[i])'])
                         """
                         # I feel like this is accounted for already elsewhere
                         if (
@@ -1488,8 +1519,7 @@ class StanSimInterface(StanInterface):
                         # self._idx_cosz << FunctionCall(
                         #    [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
                         # )
-                        self._c_value << self._rs_cvals[j, self._lam[i]]
-
+                        self._c_value << self._rs_cvals[j][self._lam[i]]
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
 
@@ -1519,7 +1549,7 @@ class StanSimInterface(StanInterface):
                                         self._pre_event << self._dm_rng[
                                             event_type_python
                                         ](
-                                            FunctionCall([self._E[i]], "log10"),
+                                            self._E[i],
                                             self._omega,
                                         )
 
@@ -1562,6 +1592,8 @@ class StanSimInterface(StanInterface):
                             ):
                                 # Accept this sample!
                                 self._accept << 1
+                            with ElseBlockContext():
+                                self._accept << 0
 
                         # Debugging
                         with ElseBlockContext():
