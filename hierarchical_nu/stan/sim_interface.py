@@ -508,7 +508,7 @@ class StanSimInterface(StanInterface):
                         << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
                     )
 
-            elif self.sources.atmospheric and NT in self._event_types:
+            elif self.sources.atmospheric:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
                     self._eps[i, "Ns + 1"] << self._atmo_integ_val[i] * self._T[i]
 
