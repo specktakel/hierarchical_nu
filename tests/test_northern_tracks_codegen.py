@@ -11,6 +11,7 @@ from hierarchical_nu.backend.stan_generator import (
     Include,
     ForLoopContext,
     StanFileGenerator,
+    StanGenerator,
     FunctionCall,
 )
 from hierarchical_nu.backend.variable_definitions import (
@@ -31,6 +32,14 @@ def test_file_generation_northern_tracks(output_directory):
     _ = NorthernTracksDetectorModel.generate_code(
         mode=DistributionMode.RNG, path=output_directory, rewrite=True
     )
+
+    with StanGenerator() as gc:
+        with FunctionsContext():
+            ntd_pdf = NorthernTracksDetectorModel()
+            ntd_pdf.generate_pdf_function_code()
+
+            ntd_rng = NorthernTracksDetectorModel(DistributionMode.RNG)
+            ntd_rng.generate_rng_function_code()
 
 
 def generate_distribution_test_code(output_directory):
