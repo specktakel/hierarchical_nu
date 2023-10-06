@@ -19,6 +19,7 @@ from ..backend import (
     FunctionCall,
     ReturnStatement,
     StanGenerator,
+    ForwardArrayDef,
 )
 from ..stan.interface import STAN_GEN_PATH
 
@@ -28,20 +29,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 Cache.set_cache_dir(".cache")
-
-
-class DetectorModelContainer:
-    def __init__(self, *dm):
-        self._dm = []
-        for d in dm:
-            self._dm.append(d)
-
-    def __len__(self):
-        return len(self._dm)
-
-    def __iter__(self):
-        for d in self._dm:
-            yield d
 
 
 class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
@@ -621,7 +608,7 @@ class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
         pass
 
 
-class DetectorModel(metaclass=ABCMeta):
+class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
     """
     Abstract base class for detector models.
     """
@@ -684,8 +671,8 @@ class DetectorModel(metaclass=ABCMeta):
                 elif mode == DistributionMode.RNG and cls.RNG_FILENAME in files:
                     return os.path.join(path, cls.RNG_FILENAME)
 
-            else:
-                cls.logger.info("Generating r2021 stan code.")
+            # else:
+            #     cls.logger.info("Generating IRF stan code.")
 
         with StanGenerator() as cg:
             instance = cls(mode=mode, **kwargs)
@@ -705,3 +692,26 @@ class DetectorModel(metaclass=ABCMeta):
             with open(os.path.join(path, cls.RNG_FILENAME), "w+") as f:
                 f.write(code)
             return os.path.join(path, cls.RNG_FILENAME)
+
+        @abstractmethod
+        def generate_pdf_function_code(self):
+            """
+            Generate wrapper function for PDF.
+            Needs to have signature
+            real log10(Etrue / GeV), real log10(Ereco / GeV), vector[3] true_dir, vector[3] reco_dir
+            """
+            pass
+
+        @abstractmethod
+        def generate_rng_function_code(self):
+            """
+            Generate wrapper function for RNG.
+            Needs to have signature
+            real log10(Etrue / GeV), vector[3] omega
+            Needs to have return type
+            array[5] real
+            with entries
+            1 log10(Ereco / GeV)
+            2:4 reconstructed direction, unit vector
+            5 kappa
+            """

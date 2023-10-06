@@ -163,8 +163,8 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 self._func_name,
-                ["true_energy", "reco_energy", "omega_det"],
-                ["real", "real", "vector"],
+                ["true_energy", "reco_energy"],
+                ["real", "real"],
                 "real",
             )
 
@@ -402,11 +402,12 @@ class NorthernTracksAngularResolution(AngularResolution):
 
         with self:
             # Clip true energy
-            clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
+            kappa = ForwardVariableDef("kappa", "real")
+            clipped_log_e = TruncatedParameterization(
+                "log10(true_energy)", np.log10(self._Emin), np.log10(self._Emax)
+            )
 
-            clipped_log_e = LogParameterization(clipped_e)
-
-            kappa = PolynomialParameterization(
+            kappa << PolynomialParameterization(
                 clipped_log_e,
                 self._poly_params,
                 "NorthernTracksAngularResolutionPolyCoeffs",
@@ -415,11 +416,15 @@ class NorthernTracksAngularResolution(AngularResolution):
             if self.mode == DistributionMode.PDF:
                 # VMF expects x_obs, x_true
                 vmf = VMFParameterization(["reco_dir", "true_dir"], kappa, self.mode)
+                ReturnStatement([vmf])
 
             elif self.mode == DistributionMode.RNG:
+                pre_event = ForwardVariableDef("pre_event", "vector[4]")
                 vmf = VMFParameterization(["true_dir"], kappa, self.mode)
+                pre_event[1:3] << vmf
+                pre_event[4] << kappa
 
-            ReturnStatement([vmf])
+                ReturnStatement([pre_event])
 
     def kappa(self):
         clipped_e = TruncatedParameterization("E[i]", self._Emin, self._Emax)
@@ -495,7 +500,8 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
 
     event_types = ["tracks"]
 
-    PDF_NAME = "NorthernTracksIRF"
+    PDF_NAME = "NorthernTracksPDF"
+    RNG_NAME = "NorthernTracks_rng"
 
     RNG_FILENAME = "northern_tracks_rng.stan"
     PDF_FILENAME = "northern_tracks_pdf.stan"
@@ -521,7 +527,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
     def _get_angular_resolution(self):
         return self._angular_resolution
 
-    def generate_pdf_function_code(self, sources):
+    def generate_pdf_function_code(self):
         """
         Generate a wrapper for the IRF.
         Should give for all source components the event likelihood,
@@ -529,9 +535,11 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
         the requested event.
         """
 
-        ps = len(sources.point_source)
-        diffuse = bool(sources.diffuse)
-        atmospheric = bool(sources.atmospheric)
+        # TODO make this somehow the same signature across all detector models that exist
+        # Cascades should return negative infinity for atmo
+        # ps = len(sources.point_source)
+        # diffuse = bool(sources.diffuse)
+        # atmospheric = bool(sources.atmospheric)
         UserDefinedFunction.__init__(
             self,
             self.PDF_NAME,
@@ -543,12 +551,10 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
             # need to write a function that returns a tuple of energy likelihood and Aeff
             return_this = ForwardArrayDef("return_this", "real", ["[4]"])
             return_this[1] << self.energy_resolution(
-                "true_energy", "detected_energy", "src_pos"
+                "log10(true_energy)", "log10(detected_energy)"
             )
 
-            return_this[2] << self.energy_resolution(
-                "true_energy", "detected_energy", "omega_det"
-            )
+            return_this[2] << return_this[1]
 
             return_this[3] << FunctionCall(
                 [
@@ -559,6 +565,28 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
 
             return_this[4] << return_this[3]
 
+            ReturnStatement([return_this])
+
+    def generate_rng_function_code(self):
+        """
+        Generate a wrapper for the IRF.
+        Should give for all source components the event likelihood,
+        including negative infinity if a model component cannot produce
+        the requested event.
+        """
+
+        UserDefinedFunction.__init__(
+            self,
+            self.RNG_NAME,
+            ["true_energy", "omega"],
+            ["real", "vector"],
+            "vector",
+        )
+
+        with self:
+            return_this = ForwardVariableDef("return_this", "vector[5]")
+            return_this[1] << self.energy_resolution("log10(true_energy)")
+            return_this[2:5] << self.angular_resolution("log10(true_energy)", "omega")
             ReturnStatement([return_this])
 
 
