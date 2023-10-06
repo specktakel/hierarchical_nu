@@ -157,25 +157,25 @@ class CascadesEnergyResolution(EnergyResolution):
         self.setup()
 
         if mode == DistributionMode.PDF:
-            mixture_name = "c_energy_res_mix"
             self._func_name = self.PDF_NAME
         elif mode == DistributionMode.RNG:
-            mixture_name = "c_energy_res_mix_rng"
             self._func_name = self.RNG_NAME
         else:
             RuntimeError("This should never happen")
 
     def generate_code(self):
         if self.mode == DistributionMode.PDF:
+            mixture_name = "c_energy_res_mix"
+
             super().__init__(
                 self.PDF_NAME,
-                ["true_energy", "reco_energy", "omega_det"],
-                ["real", "real", "vector"],
+                ["log_true_energy", "log_reco_energy"],
+                ["real", "real"],
                 "real",
             )
 
         elif self.mode == DistributionMode.RNG:
-            super().__init__(self.RNG_NAME, ["true_energy"], ["real"], "real")
+            super().__init__(self.RNG_NAME, ["log_true_energy"], ["real"], "real")
             mixture_name = "c_energy_res_mix_rng"
 
         else:
@@ -188,7 +188,7 @@ class CascadesEnergyResolution(EnergyResolution):
             lognorm = LognormalMixture(mixture_name, self._n_components, self.mode)
 
             log_trunc_e = TruncatedParameterization(
-                "true_energy",
+                "log_true_energy",
                 np.log10(self._poly_limits[0]),
                 np.log10(self._poly_limits[1]),
             )
@@ -241,7 +241,7 @@ class CascadesEnergyResolution(EnergyResolution):
 
             if self.mode == DistributionMode.PDF:
                 ReturnStatement(
-                    [lognorm("reco_energy", log_mu_vec, sigma_vec, weights)]
+                    [lognorm("log_reco_energy", log_mu_vec, sigma_vec, weights)]
                 )
             elif self.mode == DistributionMode.RNG:
                 ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
@@ -364,7 +364,7 @@ class CascadesAngularResolution(AngularResolution):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 self._func_name,
-                ["true_energy", "true_dir", "reco_dir"],
+                ["log_true_energy", "true_dir", "reco_dir"],
                 ["real", "vector", "vector"],
                 "real",
             )
@@ -372,15 +372,15 @@ class CascadesAngularResolution(AngularResolution):
         else:
             super().__init__(
                 self._func_name,
-                ["true_energy", "true_dir"],
+                ["log_true_energy", "true_dir"],
                 ["real", "vector"],
                 "vector",
             )
         with self:
             # Clip true energy
-            clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
-
-            clipped_log_e = LogParameterization(clipped_e)
+            clipped_log_e = TruncatedParameterization(
+                "log_true_energy", np.log10(self._Emin), np.log10(self._Emax)
+            )
 
             kappa = PolynomialParameterization(
                 clipped_log_e, self._poly_params, "CascadesAngularResolutionPolyCoeffs"
@@ -389,11 +389,15 @@ class CascadesAngularResolution(AngularResolution):
             if self.mode == DistributionMode.PDF:
                 # VMF expects x_obs, x_true
                 vmf = VMFParameterization(["reco_dir", "true_dir"], kappa, self.mode)
+                ReturnStatement([vmf])
 
             elif self.mode == DistributionMode.RNG:
+                pre_event = ForwardVariableDef("pre_event", "vector[4]")
                 vmf = VMFParameterization(["true_dir"], kappa, self.mode)
+                pre_event[1:3] << vmf
+                pre_event[4] << kappa
 
-            ReturnStatement([vmf])
+                ReturnStatement([pre_event])
 
     def kappa(self):
         clipped_e = TruncatedParameterization("E[i]", self._Emin, self._Emax)
@@ -468,6 +472,7 @@ class CascadesDetectorModel(DetectorModel):
     event_types = ["cascades"]
 
     PDF_NAME = "CascadesIRF"
+    RNG_NAME = "Cascades_rng"
 
     RNG_FILENAME = "cascades_rng.stan"
     PDF_FILENAME = "cascades_pdf.stan"
@@ -492,7 +497,7 @@ class CascadesDetectorModel(DetectorModel):
     def _get_angular_resolution(self):
         return self._angular_resolution
 
-    def generate_pdf_function_code(self, sources):
+    def generate_pdf_function_code(self):
         """
         Generate a wrapper for the IRF.
         Should give for all source components the event likelihood,
@@ -500,9 +505,8 @@ class CascadesDetectorModel(DetectorModel):
         the requested event.
         """
 
-        ps = len(sources.point_source)
-        diffuse = bool(sources.diffuse)
-        atmospheric = bool(sources.atmospheric)
+        # TODO return negative infinty for atmo component
+        # temporarily, 4th entry is effective area for atmospheric component
         UserDefinedFunction.__init__(
             self,
             self.PDF_NAME,
@@ -514,11 +518,11 @@ class CascadesDetectorModel(DetectorModel):
             # need to write a function that returns a tuple of energy likelihood and Aeff
             return_this = ForwardArrayDef("return_this", "real", ["[4]"])
             return_this[1] << self.energy_resolution(
-                "true_energy", "detected_energy", "src_pos"
+                "log10(true_energy)", "log10(detected_energy)", "src_pos"
             )
 
             return_this[2] << self.energy_resolution(
-                "true_energy", "detected_energy", "omega_det"
+                "log10(true_energy)", "log10(detected_energy)", "omega_det"
             )
 
             return_this[3] << FunctionCall(
@@ -529,6 +533,28 @@ class CascadesDetectorModel(DetectorModel):
             )
 
             return_this[4] << "negative_infinity()"
+            ReturnStatement([return_this])
+
+    def generate_rng_function_code(self):
+        """
+        Generate a wrapper for the IRF.
+        Should give for all source components the event likelihood,
+        including negative infinity if a model component cannot produce
+        the requested event.
+        """
+
+        UserDefinedFunction.__init__(
+            self,
+            self.RNG_NAME,
+            ["true_energy", "omega"],
+            ["real", "vector"],
+            "vector",
+        )
+
+        with self:
+            return_this = ForwardVariableDef("return_this", "vector[5]")
+            return_this[1] << self.energy_resolution("true_energy")
+            return_this[2:5] << self.angular_resolution("true_energy", "omega")
             ReturnStatement([return_this])
 
 
