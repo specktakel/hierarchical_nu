@@ -163,7 +163,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 self._func_name,
-                ["true_energy", "reco_energy"],
+                ["log_true_energy", "log_reco_energy"],
                 ["real", "real"],
                 "real",
             )
@@ -173,7 +173,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         elif self.mode == DistributionMode.RNG:
             super().__init__(
                 self._func_name,
-                ["true_energy"],
+                ["log_true_energy"],
                 ["real"],
                 "real",
             )
@@ -187,7 +187,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
         with self:
             lognorm = LognormalMixture(mixture_name, self.n_components, self.mode)
             log_trunc_e = TruncatedParameterization(
-                "true_energy",
+                "log_true_energy",
                 np.log10(self._poly_limits[0]),
                 np.log10(self._poly_limits[1]),
             )
@@ -244,7 +244,7 @@ class NorthernTracksEnergyResolution(EnergyResolution):
 
             if self.mode == DistributionMode.PDF:
                 ReturnStatement(
-                    [lognorm("reco_energy", log_mu_vec, sigma_vec, weights)]
+                    [lognorm("log_reco_energy", log_mu_vec, sigma_vec, weights)]
                 )
             elif self.mode == DistributionMode.RNG:
                 ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
@@ -387,7 +387,7 @@ class NorthernTracksAngularResolution(AngularResolution):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 self.PDF_NAME,
-                ["true_energy", "true_dir", "reco_dir"],
+                ["log_true_energy", "true_dir", "reco_dir"],
                 ["real", "vector", "vector"],
                 "real",
             )
@@ -395,7 +395,7 @@ class NorthernTracksAngularResolution(AngularResolution):
         else:
             super().__init__(
                 self.RNG_NAME,
-                ["true_energy", "true_dir"],
+                ["log_true_energy", "true_dir"],
                 ["real", "vector"],
                 "vector",
             )
@@ -404,7 +404,7 @@ class NorthernTracksAngularResolution(AngularResolution):
             # Clip true energy
             kappa = ForwardVariableDef("kappa", "real")
             clipped_log_e = TruncatedParameterization(
-                "log10(true_energy)", np.log10(self._Emin), np.log10(self._Emax)
+                "log_true_energy", np.log10(self._Emin), np.log10(self._Emax)
             )
 
             kappa << PolynomialParameterization(

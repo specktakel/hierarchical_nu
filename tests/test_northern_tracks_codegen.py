@@ -89,7 +89,7 @@ def generate_distribution_test_code(output_directory):
                     eff_area_result[i][j] << FunctionCall([pdf_return[3]], "exp")
                     e_res_result[i][j] << pdf_return[1]
                     ang_res_result[i][j] << ntd_pdf.angular_resolution(
-                        e_trues[i],
+                        FunctionCall([e_trues[i]], "log10"),
                         true_dir_ang_res,
                         reco_dir_ang_res,
                     )
