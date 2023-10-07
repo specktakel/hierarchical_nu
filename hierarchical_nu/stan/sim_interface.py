@@ -673,8 +673,9 @@ class StanSimInterface(StanInterface):
 
             # Label for the currently sampled source component, starts obviously with 1
             if self._force_N:
-                self._currently_sampling = InstantVariableDef(
-                    "currently_sampling", "int", [1]
+                self._currently_sampling = ForwardVariableDef(
+                    "currently_sampling",
+                    "int",
                 )
 
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
@@ -701,6 +702,8 @@ class StanSimInterface(StanInterface):
 
                 StringExpression(["print(loop_start)"])
                 StringExpression(["print(loop_end)"])
+                if self._force_N:
+                    self._currently_sampling << 1
 
                 # For each event, we rejection sample the true energy and direction
                 # and then directly sample the detected properties
@@ -728,6 +731,7 @@ class StanSimInterface(StanInterface):
                                 [self._currently_sampling, " > size(", self._F, ")"]
                             ):
                                 # Might as well be break statement
+                                self._currently_sampling << 1
                                 StringExpression(["continue"])
 
                             with ElseBlockContext():
@@ -1586,11 +1590,11 @@ class StanSimInterface(StanInterface):
                                     StringExpression(
                                         [
                                             "(",
+                                            self._detected == 1,
+                                            ") && (",
                                             self._Edet[i],
                                             " >= ",
                                             self._Emin_det[j],
-                                            ") && (",
-                                            self._detected == 1,
                                             ")",
                                         ]
                                     )
