@@ -706,7 +706,7 @@ class StanSimInterface(StanInterface):
                 # For each event, we rejection sample the true energy and direction
                 # and then directly sample the detected properties
                 with ForLoopContext(self._loop_start, self._loop_end, "i") as i:
-                    StringExpression(["print(i)"])
+                    # StringExpression(["print(i)"])
                     self._event_type[i] << self._et_stan[j]
 
                     # Sample source label
@@ -1501,9 +1501,9 @@ class StanSimInterface(StanInterface):
                                     event_type_python
                                 ].effective_area(self._E[i], self._omega)
 
-                        StringExpression(['print("Aeff: ", aeff_factor)'])
-                        StringExpression(['print("energy: ", E[i])'])
-                        StringExpression(['print("et: ", event_type[i])'])
+                        # StringExpression(['print("Aeff: ", aeff_factor)'])
+                        # StringExpression(['print("energy: ", E[i])'])
+                        # StringExpression(['print("et: ", event_type[i])'])
                         """
                         # I feel like this is accounted for already elsewhere
                         if (
