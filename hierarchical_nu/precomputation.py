@@ -52,6 +52,7 @@ class ExposureIntegral:
         :param DetectorModel: A DetectorModel class.
         """
 
+        self._detector_model = detector_model
         self._sources = sources
         # self._min_src_energy = Parameter.get_parameter("Emin").value
         # self._max_src_energy = Parameter.get_parameter("Emax").value
@@ -310,10 +311,16 @@ class ExposureIntegral:
 
         for k, source in enumerate(self._sources.sources):
             if not self._source_parameter_map[source]:
-                self._integral_fixed_vals.append(
-                    self.calculate_rate(source)
-                    / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
-                )
+                if (
+                    isinstance(source.flux_model, AtmosphericNuMuFlux)
+                    and self._detector_model == CAS
+                ):
+                    self._integral_fixed_vals.append(0.0 * u.m**2)
+                else:
+                    self._integral_fixed_vals.append(
+                        self.calculate_rate(source)
+                        / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
+                    )
                 continue
 
             this_free_pars = self._source_parameter_map[source]

@@ -63,7 +63,7 @@ class Simulation:
         if isinstance(event_types, str):
             event_types = [event_types]
         if isinstance(observation_time, u.quantity.Quantity):
-            observation_time = [observation_time]
+            observation_time = {event_types[0]: observation_time}
         assert len(event_types) == len(observation_time)
         self._event_types = event_types
         self._observation_time = observation_time
@@ -468,15 +468,12 @@ class Simulation:
             )
 
             if self._sources.atmospheric:
-                if event_type != CAS:
-                    atmo_integ_val.append(
-                        self._exposure_integral[event_type]
-                        .integral_fixed_vals[0]
-                        .to(u.m**2)
-                        .value
-                    )
-                else:
-                    atmo_integ_val.append(0.0)
+                atmo_integ_val.append(
+                    self._exposure_integral[event_type]
+                    .integral_fixed_vals[0]
+                    .to(u.m**2)
+                    .value
+                )
 
             obs_time.append(self._observation_time[event_type].to(u.s).value)
 

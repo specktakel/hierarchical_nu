@@ -40,20 +40,13 @@ from hierarchical_nu.backend.variable_definitions import (
 from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
 
-from hierarchical_nu.events import TRACKS, CASCADES
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources
 
-from hierarchical_nu.detector.icecube import (
-    IceCube,
-    NT,
-    CAS,
-    IC40,
-    IC59,
-    IC79,
-    IC86_I,
-    IC86_II,
-)
+from hierarchical_nu.detector.icecube import IceCube, Refrigerator
+
+NT = Refrigerator.PYTHON_NT
+CAS = Refrigerator.PYTHON_CAS
 
 
 class StanFitInterface(StanInterface):
