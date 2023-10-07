@@ -693,25 +693,25 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
                 f.write(code)
             return os.path.join(path, cls.RNG_FILENAME)
 
-        @abstractmethod
-        def generate_pdf_function_code(self):
-            """
-            Generate wrapper function for PDF.
-            Needs to have signature
-            real log10(Etrue / GeV), real log10(Ereco / GeV), vector[3] true_dir, vector[3] reco_dir
-            """
-            pass
+    @abstractmethod
+    def generate_pdf_function_code(self):
+        """
+        Generate wrapper function for PDF.
+        Needs to have signature
+        Etrue / GeV, real Ereco / GeV, vector[3] true_dir, vector[3] reco_dir
+        """
+        pass
 
-        @abstractmethod
-        def generate_rng_function_code(self):
-            """
-            Generate wrapper function for RNG.
-            Needs to have signature
-            real log10(Etrue / GeV), vector[3] omega
-            Needs to have return type
-            array[5] real
-            with entries
-            1 log10(Ereco / GeV)
-            2:4 reconstructed direction, unit vector
-            5 kappa
-            """
+    @abstractmethod
+    def generate_rng_function_code(self):
+        """
+        Generate wrapper function for RNG.
+        Needs to have signature
+        real Etrue / GeV, vector[3] omega
+        Needs to have return type
+        array[5] real
+        with entries
+        1 log10(Ereco / GeV)
+        2:4 reconstructed direction, unit vector
+        5 kappa
+        """

@@ -320,7 +320,6 @@ class StanSimInterface(StanInterface):
             self._Net_stan = ForwardVariableDef("Net", "int")
             self._Net_stan << StringExpression(["size(event_types)"])
 
-            # TODO: this is ugly, fix it when implementing classes for the NT, CAS etc. to keep track of this
             idx = 1
             for et in self._event_types:
                 self._et_stan[idx] << Refrigerator.python2stan(et)
