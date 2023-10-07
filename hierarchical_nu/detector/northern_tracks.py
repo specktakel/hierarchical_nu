@@ -531,7 +531,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
     def _get_angular_resolution(self):
         return self._angular_resolution
 
-    def generate_pdf_function_code(self):
+    def generate_pdf_function_code(self, sources):
         """
         Generate a wrapper for the IRF.
         Should give for all source components the event likelihood,
@@ -545,6 +545,15 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
         # diffuse = bool(sources.diffuse)
         # atmospheric = bool(sources.atmospheric)
         # Temporarily, 4th entry is effective area for atmospheric component
+
+        if sources.point_source:
+            # assume only one for now
+            pass
+        if sources.diffuse:
+            pass
+        if sources.atmospheric:
+            pass
+
         UserDefinedFunction.__init__(
             self,
             self._func_name,
@@ -554,21 +563,28 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
         )
         with self:
             # need to write a function that returns a tuple of energy likelihood and Aeff
-            return_this = ForwardArrayDef("return_this", "real", ["[4]"])
+            return_this = ForwardArrayDef("return_this", "real", ["[5]"])
             return_this[1] << self.energy_resolution(
                 "log10(true_energy)", "log10(detected_energy)"
             )
 
             return_this[2] << return_this[1]
-
+            # TODO substitute this with the aeff slice at some point
             return_this[3] << FunctionCall(
+                [
+                    self.effective_area("true_energy", "src_pos"),
+                ],
+                "log",
+            )
+
+            return_this[4] << FunctionCall(
                 [
                     self.effective_area("true_energy", "omega_det"),
                 ],
                 "log",
             )
 
-            return_this[4] << return_this[3]
+            return_this[5] << return_this[4]
 
             ReturnStatement([return_this])
 
