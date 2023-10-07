@@ -793,6 +793,18 @@ class StanFitInterface(StanInterface):
             self._N = ForwardVariableDef("N", "int")
             self._N_str = ["[", self._N, "]"]
 
+            if self.sources.atmospheric and self.sources.diffuse:
+                Ns_string = "Ns+2"
+            elif self.sources.diffuse or self.sources.atmospheric:
+                Ns_string = "Ns+1"
+            else:
+                Ns_string = "Ns"
+
+            if self.sources.diffuse:
+                Ns_string_int_grid = "Ns+1"
+            else:
+                Ns_string_int_grid = "Ns"
+
             if self._nshards not in [0, 1]:
                 # Number of shards for multi-threading
                 self._N_shards = ForwardVariableDef("N_shards", "int")
@@ -844,7 +856,7 @@ class StanFitInterface(StanInterface):
             self._Ngrid = ForwardVariableDef("Ngrid", "int")
 
             # Observation time
-            self._T = ForwardVariableDef("T", "real")
+            self._T = ForwardArrayDef("T", "real", ["[", self._Net, "]"])
 
             # Redshift
             if self.sources.diffuse:
@@ -870,35 +882,11 @@ class StanFitInterface(StanInterface):
                         "diff_index_grid", "vector[Ngrid]"
                     )
 
-                if "tracks" in self._event_types:
-                    self._integral_grid_t = ForwardArrayDef(
-                        "integral_grid_t", "vector[Ngrid]", N_int_str
-                    )
-
-                if "cascades" in self._event_types:
-                    self._integral_grid_c = ForwardArrayDef(
-                        "integral_grid_c", "vector[Ngrid]", N_int_str
-                    )
-
-            # Aeff interpolation points for point sources
-            if self.sources.point_source:
-                if "tracks" in self._event_types:
-                    self._aeff_len_t = ForwardVariableDef("aeff_len_t", "int")
-                    self._aeff_slice_t = ForwardArrayDef(
-                        "aeff_slice_t", f"vector[aeff_len_t]", self._Ns_str
-                    )
-                    self._aeff_egrid_t = ForwardVariableDef(
-                        "aeff_egrid_t", "vector[aeff_len_t]"
-                    )
-
-                if "cascades" in self._event_types:
-                    self._aeff_len_c = ForwardVariableDef("aeff_len_c", "int")
-                    self._aeff_slice_c = ForwardArrayDef(
-                        "aeff_slice_c", f"vector[aeff_len_c]", self._Ns_str
-                    )
-                    self._aeff_egrid_c = ForwardVariableDef(
-                        "aeff_egrid_c", "vector[aeff_len_c]"
-                    )
+                self._integral_grid = ForwardArrayDef(
+                    "integral_grid",
+                    "vector[Ngrid]",
+                    ["[", self._Net, ",", Ns_string_int_grid, "]"],
+                )
 
             if self.sources.diffuse and self.sources.atmospheric:
                 N_pdet_str = self._Ns_2p_str
@@ -911,7 +899,9 @@ class StanFitInterface(StanInterface):
 
             # Don't need a grid for atmo as spectral shape is fixed, so pass single value.
             if self.sources.atmospheric:
-                self._atmo_integ_val = ForwardVariableDef("atmo_integ_val", "real")
+                self._atmo_integ_val = ForwardArrayDef(
+                    "atmo_integ_val", "real", ["[", self._Net, "]"]
+                )
                 self._atmo_integrated_flux = ForwardVariableDef(
                     "atmo_integrated_flux", "real"
                 )
@@ -981,13 +971,14 @@ class StanFitInterface(StanInterface):
                             ]
                         )
 
-            if "tracks" in self._event_types:
-                self._track_type = ForwardVariableDef("track_type", "int")
-                self._track_type << TRACKS
+            self._et_stan = ForwardArrayDef("event_types", "int", ["[", self._Net, "]"])
+            self._Net_stan = ForwardVariableDef("Net", "int")
+            self._Net_stan << StringExpression(["size(event_types)"])
 
-            if "cascades" in self._event_types:
-                self._cascade_type = ForwardVariableDef("cascade_type", "int")
-                self._cascade_type << CASCADES
+            idx = 1
+            for et in self._event_types:
+                self._et_stan[idx] << Refrigerator.python2stan(et)
+                idx += 1
 
             # Find out how many cascade and how many track events in data
             if "cascades" in self._event_types and "tracks" in self._event_types:

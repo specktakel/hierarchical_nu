@@ -224,9 +224,6 @@ class StanSimInterface(StanInterface):
             # rejection sampling, denoted by rs_...
             # Separate interpolation grids are also provided for all event types
 
-            # Store number of event types in self._Net
-            self._Net = len(self._event_types)
-
             self._Emin_det = ForwardArrayDef("Emin_det", "real", ["[", self._Net, "]"])
             self._rs_bbpl_Eth = ForwardArrayDef(
                 "rs_bbpl_Eth", "real", ["[", self._Net, "]"]

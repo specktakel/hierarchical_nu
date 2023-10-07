@@ -41,6 +41,9 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._event_types = event_types
 
+        # Store number of event types in self._Net
+        self._Net = len(self._event_types)
+
         self._check_output_dir()
 
     def _get_source_info(self):
