@@ -480,6 +480,11 @@ class CascadesDetectorModel(DetectorModel):
     def __init__(self, mode: DistributionMode = DistributionMode.PDF):
         super().__init__(mode, event_type="cascades")
 
+        if self.mode == DistributionMode.PDF:
+            self._func_name = self.PDF_NAME
+        elif self.mode == DistributionMode.RNG:
+            self._func_name = self.RNG_NAME
+
         ang_res = CascadesAngularResolution(mode)
         self._angular_resolution = ang_res
 
@@ -509,7 +514,7 @@ class CascadesDetectorModel(DetectorModel):
         # temporarily, 4th entry is effective area for atmospheric component
         UserDefinedFunction.__init__(
             self,
-            self.PDF_NAME,
+            self._func_name,
             ["true_energy", "detected_energy", "omega_det", "src_pos"],
             ["real", "real", "vector", "vector"],
             "array[] real",
@@ -553,8 +558,10 @@ class CascadesDetectorModel(DetectorModel):
 
         with self:
             return_this = ForwardVariableDef("return_this", "vector[5]")
-            return_this[1] << self.energy_resolution("true_energy")
-            return_this[2:5] << self.angular_resolution("true_energy", "omega")
+            return_this[1] << FunctionCall(
+                [10.0, self.energy_resolution("log10(true_energy)")], "pow"
+            )
+            return_this[2:5] << self.angular_resolution("log10(true_energy)", "omega")
             ReturnStatement([return_this])
 
 
