@@ -1542,20 +1542,24 @@ class StanFitInterface(StanInterface):
 
             elif self.sources.diffuse:
                 # if "tracks" in self._event_types:
-                (
-                    self._eps[i, "Ns + 1"]
-                    << FunctionCall(
-                        [
-                            self._diff_index_grid,
-                            self._integral_grid[i, "Ns + 1"],
-                            self._diff_index,
-                        ],
-                        "interpolate",
+                with ForLoopContext(1, self._Net_stan, "i") as i:
+                    (
+                        self._eps[i, "Ns + 1"]
+                        << FunctionCall(
+                            [
+                                self._diff_index_grid,
+                                self._integral_grid[i, "Ns + 1"],
+                                self._diff_index,
+                            ],
+                            "interpolate",
+                        )
+                        * self._T[i]
                     )
-                    * self._T[i]
-                )
 
-                (self._Nex_diff_comp[i] << self._F["Ns + 1"] * self._eps[i, "Ns + 1"])
+                    (
+                        self._Nex_diff_comp[i]
+                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
+                    )
 
             elif self.sources.atmospheric:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
