@@ -181,10 +181,10 @@ class StanFit:
     def compile_stan_code(self, include_paths=None):
         if not include_paths:
             include_paths = [STAN_PATH]
-        if self._detector_model_type == R2021DetectorModel:
-            r2021_path = os.path.join(os.getcwd(), ".stan_files")
-            if not r2021_path in include_paths:
-                include_paths.append(r2021_path)
+        # if self._detector_model_type == R2021DetectorModel:
+        #    r2021_path = os.path.join(os.getcwd(), ".stan_files")
+        #    if not r2021_path in include_paths:
+        #        include_paths.append(r2021_path)
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename,

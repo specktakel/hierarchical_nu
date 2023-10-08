@@ -471,7 +471,7 @@ class CascadesDetectorModel(DetectorModel):
 
     event_types = ["cascades"]
 
-    PDF_NAME = "CascadesIRF"
+    PDF_NAME = "CascadesPDF"
     RNG_NAME = "Cascades_rng"
 
     RNG_FILENAME = "cascades_rng.stan"

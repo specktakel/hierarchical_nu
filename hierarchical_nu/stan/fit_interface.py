@@ -975,10 +975,8 @@ class StanFitInterface(StanInterface):
             self._Net_stan = ForwardVariableDef("Net", "int")
             self._Net_stan << StringExpression(["size(event_types)"])
 
-            idx = 1
-            for et in self._event_types:
-                self._et_stan[idx] << Refrigerator.python2stan(et)
-                idx += 1
+            for c, et in enumerate(self._event_types, 1):
+                self._et_stan[c] << Refrigerator.python2stan(et)
 
             self._N_et_data = ForwardArrayDef("N_et_data", "int", ["[", self._Net, "]"])
 
@@ -987,7 +985,7 @@ class StanFitInterface(StanInterface):
                 self._N_et_data[i] << 0
 
             with ForLoopContext(1, self._N, "k") as k:
-                for c, event_type_python in enumerate(self._event_types):
+                for c, event_type_python in enumerate(self._event_types, 1):
                     with IfBlockContext(
                         [
                             self._event_type[k],
@@ -1307,22 +1305,24 @@ class StanFitInterface(StanInterface):
         with TransformedParametersContext():
             # Expected number of events for different source components (atmo, diff, src) and detector components (_comp)
             self._Nex = ForwardVariableDef("Nex", "real")
-            self._Nex_comp = ForwardArrayDef("Nex_comp", "real", "[", self._Net, "]")
-            self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
-            self._Nex_atmo_comp = ForwardArrayDef(
-                "Nex_atmo_comp", "real", "[", self._Net, "]"
-            )
-            self._Nex_src = ForwardVariableDef("Nex_src", "real")
-            self._Nex_src_comp = ForwardArrayDef(
-                "Nex_src_comp", "real", "[", self._Net, "]"
-            )
-            self._Nex_atmo_comp = ForwardArrayDef(
-                "Nex_atmo_comp", "real", "[", self._Net, "]"
-            )
-            self._Nex_diff = ForwardVariableDef("Nex_diff", "real")
-            self._Nex_diff_comp = ForwardArrayDef(
-                "Nex_diff_comp", "real", "[", self._Net, "]"
-            )
+            self._Nex_comp = ForwardArrayDef("Nex_comp", "real", ["[", self._Net, "]"])
+            if self.sources.atmospheric:
+                self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
+                self._Nex_atmo_comp = ForwardArrayDef(
+                    "Nex_atmo_comp", "real", ["[", self._Net, "]"]
+                )
+            if self.sources.point_source:
+                self._Nex_src = ForwardVariableDef("Nex_src", "real")
+                self._Nex_src_comp = ForwardArrayDef(
+                    "Nex_src_comp", "real", ["[", self._Net, "]"]
+                )
+                with ForLoopContext(1, self._Net_stan, "i") as i:
+                    self._Nex_src_comp[i] << 0
+            if self.sources.diffuse:
+                self._Nex_diff = ForwardVariableDef("Nex_diff", "real")
+                self._Nex_diff_comp = ForwardArrayDef(
+                    "Nex_diff_comp", "real", ["[", self._Net, "]"]
+                )
 
             # Total flux
             self._Ftot = ForwardVariableDef("Ftot", "real")
@@ -1374,11 +1374,11 @@ class StanFitInterface(StanInterface):
             # TODO make source-list dependent
             self._irf_return = ForwardArrayDef("irf_return", "real", ["[5]"])
 
-            self._eres_src << ForwardVariableDef("eres_src", "real")
-            self._eres_diff << ForwardVariableDef("eres_diff", "real")
-            self._aeff_src << ForwardVariableDef("aeff_src", "real")
-            self._aeff_diff << ForwardVariableDef("aeff_diff", "real")
-            self._aeff_atmo << ForwardVariableDef("aeff_atmo", "real")
+            self._eres_src = ForwardVariableDef("eres_src", "real")
+            self._eres_diff = ForwardVariableDef("eres_diff", "real")
+            self._aeff_src = ForwardVariableDef("aeff_src", "real")
+            self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
+            self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
             """
             if "cascades" in self._event_types and "tracks" in self._event_types:
                 self._logp_c = ForwardVariableDef("logp_c", "real")
@@ -1436,8 +1436,6 @@ class StanFitInterface(StanInterface):
 
             self._F_src << 0.0
             self._Nex_src << 0.0
-            if self.sources.atmospheric:
-                self._Nex_atmo << 0.0
 
             # For each source, calculate the number flux and update F, logF
             if self.sources.point_source:
@@ -1648,13 +1646,15 @@ class StanFitInterface(StanInterface):
                     self._lp[i] << self._logF
 
                     # Tracks
-                    for c, (event_type_stan, event_type_python) in enumerate(
-                        zip([self._track_type, self._cascade_type], self._event_types)
-                    ):
+                    for c, (event_type_python) in enumerate(self._event_types):
                         with IfBlockContext(
                             [
                                 StringExpression(
-                                    [self._event_type[i], " == ", event_type_stan]
+                                    [
+                                        self._event_type[i],
+                                        " == ",
+                                        Refrigerator.python2stan(event_type_python),
+                                    ]
                                 )
                             ]
                         ):
@@ -1707,7 +1707,7 @@ class StanFitInterface(StanInterface):
                                     [
                                         self._lp[i][k],
                                         " += ",
-                                        self._eres_ps,
+                                        self._eres_src,
                                     ]
                                 )
 
