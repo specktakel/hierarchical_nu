@@ -878,9 +878,9 @@ class StanFit:
         atmo_integ_val = []
         obs_time = []
         # TODO add these to the code generation part of the detector models and include in pdf function
-        aeff_egrid = []
-        aeff_slice = []
-        aeff_len = []
+        # aeff_egrid = []
+        # aeff_slice = []
+        # aeff_len = []
 
         for c, event_type in enumerate(self._event_types):
             obs_time.append(self._observation_time[event_type].to(u.s).value)
@@ -943,7 +943,7 @@ class StanFit:
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
             )
-
+            """
             if self._sources.point_source:
                 aeff_egrid.append(
                     self._exposure_integral[event_type]
@@ -965,6 +965,7 @@ class StanFit:
                         .value.tolist()
                     )
                 )
+            """
 
             if self._sources.atmospheric:
                 atmo_integ_val.append(
@@ -977,9 +978,9 @@ class StanFit:
         fit_inputs["integral_grid"] = integral_grid
         fit_inputs["atmo_integ_val"] = atmo_integ_val
         fit_inputs["T"] = obs_time
-        fit_inputs["aeff_egrid"] = aeff_egrid
-        fit_inputs["aeff_slice"] = aeff_slice
-        fit_inputs["aeff_len"] = aeff_len
+        # fit_inputs["aeff_egrid"] = aeff_egrid
+        # fit_inputs["aeff_slice"] = aeff_slice
+        # fit_inputs["aeff_len"] = aeff_len
         # To work with cmdstanpy serialization
         fit_inputs = {
             k: v if not isinstance(v, np.ndarray) else v.tolist()

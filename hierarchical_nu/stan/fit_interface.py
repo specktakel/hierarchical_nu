@@ -19,6 +19,7 @@ from hierarchical_nu.backend.stan_generator import (
     ForLoopContext,
     IfBlockContext,
     ElseBlockContext,
+    ElseIfBlockContext,
     ModelContext,
     FunctionCall,
     UserDefinedFunction,
@@ -1651,7 +1652,11 @@ class StanFitInterface(StanInterface):
 
                     # Tracks
                     for c, (event_type_python) in enumerate(self._event_types):
-                        with IfBlockContext(
+                        if c == 0:
+                            context = IfBlockContext
+                        else:
+                            context = ElseIfBlockContext
+                        with context(
                             [
                                 StringExpression(
                                     [
@@ -1672,11 +1677,11 @@ class StanFitInterface(StanInterface):
                                 self._varpi[1],
                             )
 
-                            self._eres_src << self._irf_return[1]
-                            self._eres_diff << self._irf_return[2]
-                            self._aeff_src << self._irf_return[3]
-                            self._aeff_diff << self._irf_return[4]
-                            self._aeff_atmo << self._irf_return[5]
+                    self._eres_src << self._irf_return[1]
+                    self._eres_diff << self._irf_return[2]
+                    self._aeff_src << self._irf_return[3]
+                    self._aeff_diff << self._irf_return[4]
+                    self._aeff_atmo << self._irf_return[5]
                     # Sum over sources => evaluate and store components
                     with ForLoopContext(1, n_comps_max, "k") as k:
                         # Point source components
