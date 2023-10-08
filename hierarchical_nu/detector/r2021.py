@@ -546,7 +546,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             self.mixture_name = "r2021_energy_res_mix"
             super().__init__(
                 self._func_name,
-                ["true_energy", "reco_energy", "omega"],
+                ["log_true_energy", "log_reco_energy", "omega"],
                 ["real", "real", "vector"],
                 "real",
             )
@@ -554,7 +554,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             self.mixture_name = "r2021_energy_res_mix_rng"
             super().__init__(
                 self._func_name,
-                ["true_energy", "omega"],
+                ["log_true_energy", "omega"],
                 ["real", "vector"],
                 "real",
             )
@@ -632,7 +632,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     self.mixture_name, self.n_components, self.mode
                 )
                 log_trunc_e = TruncatedParameterization(
-                    "true_energy",
+                    "log_true_energy",
                     "log10(poly_limits[dec_ind, 1])",
                     "log10(poly_limits[dec_ind, 2])",
                 )
@@ -688,7 +688,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                 if self.mode == DistributionMode.PDF:
                     ReturnStatement(
-                        [lognorm("reco_energy", log_mu_vec, sigma_vec, weights)]
+                        [lognorm("log_reco_energy", log_mu_vec, sigma_vec, weights)]
                     )
                 else:
                     ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
@@ -725,7 +725,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                 ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
-                etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
+                etrue_idx << FunctionCall(["log_true_energy"], "etrue_lookup")
 
                 if self.mode == DistributionMode.PDF:
                     with IfBlockContext(["etrue_idx == 0 || etrue_idx > 14"]):
@@ -739,7 +739,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     ereco_idx = ForwardVariableDef("ereco_idx", "int")
                     ereco_idx << FunctionCall(
                         [
-                            "reco_energy",
+                            "log_reco_energy",
                             FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges"),
                         ],
                         "binary_search",
@@ -1579,7 +1579,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         else:
             super().__init__(
                 "R2021AngularResolution_rng",
-                ["true_energy", "reco_energy", "true_dir"],
+                ["log_true_energy", "log_reco_energy", "true_dir"],
                 ["real", "real", "vector"],
                 "vector",
             )
@@ -1639,7 +1639,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
 
                 # Re-uses lookup functions from energy resolution
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
-                etrue_idx << FunctionCall(["true_energy"], "etrue_lookup")
+                etrue_idx << FunctionCall(["log_true_energy"], "etrue_lookup")
 
                 declination = ForwardVariableDef("declination", "real")
                 declination << FunctionCall(["true_dir"], "omega_to_dec")
@@ -1653,7 +1653,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 ereco_idx = ForwardVariableDef("ereco_idx", "int")
                 ereco_idx << FunctionCall(
                     [
-                        "reco_energy",
+                        "log_reco_energy",
                         FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges"),
                     ],
                     "binary_search",
@@ -1877,3 +1877,88 @@ class R2021DetectorModel(DetectorModel):
             with open(os.path.join(path, cls.RNG_FILENAME), "w+") as f:
                 f.write(code)
             return os.path.join(path, cls.RNG_FILENAME)
+
+    def generate_pdf_function_code(self, sources):
+        """
+        Generate a wrapper for the IRF.
+        Should give for all source components the event likelihood,
+        including negative infinity if a model component cannot produce
+        the requested event.
+        """
+
+        # TODO make this somehow the same signature across all detector models that exist
+        # Cascades should return negative infinity for atmo
+        # ps = len(sources.point_source)
+        # diffuse = bool(sources.diffuse)
+        # atmospheric = bool(sources.atmospheric)
+        # Temporarily, 4th entry is effective area for atmospheric component
+
+        if sources.point_source:
+            # assume only one for now
+            pass
+        if sources.diffuse:
+            pass
+        if sources.atmospheric:
+            pass
+
+        UserDefinedFunction.__init__(
+            self,
+            self._func_name,
+            ["true_energy", "detected_energy", "omega_det", "src_pos"],
+            ["real", "real", "vector", "vector"],
+            "array[] real",
+        )
+        with self:
+            # need to write a function that returns a tuple of energy likelihood and Aeff
+            return_this = ForwardArrayDef("return_this", "real", ["[5]"])
+            return_this[1] << self.energy_resolution(
+                "log10(true_energy)", "log10(detected_energy)", "src_pos"
+            )
+
+            return_this[2] << self.energy_resolution(
+                "log10(true_energy)", "log10(detected_energy)", "omega_det"
+            )
+            # TODO substitute this with the aeff slice at some point
+            return_this[3] << FunctionCall(
+                [
+                    self.effective_area("true_energy", "src_pos"),
+                ],
+                "log",
+            )
+
+            return_this[4] << FunctionCall(
+                [
+                    self.effective_area("true_energy", "omega_det"),
+                ],
+                "log",
+            )
+
+            return_this[5] << return_this[4]
+
+            ReturnStatement([return_this])
+
+    def generate_rng_function_code(self):
+        """
+        Generate a wrapper for the IRF.
+        Should give for all source components the event likelihood,
+        including negative infinity if a model component cannot produce
+        the requested event.
+        """
+
+        UserDefinedFunction.__init__(
+            self,
+            self._func_name,
+            ["true_energy", "omega"],
+            ["real", "vector"],
+            "vector",
+        )
+
+        with self:
+            return_this = ForwardVariableDef("return_this", "vector[5]")
+            return_this[1] << FunctionCall(
+                [10.0, self.energy_resolution("log10(true_energy)")], "pow"
+            )
+            return_this[2:5] << self.angular_resolution(
+                "log10(true_energy)", "log10(return_this[1])", "omega"
+            )
+            ReturnStatement([return_this])
