@@ -1782,7 +1782,8 @@ class R2021DetectorModel(DetectorModel):
     RNG_FILENAME = "r2021_rng.stan"
     PDF_FILENAME = "r2021_pdf.stan"
 
-    PDF_NAME = "R2021IRF"
+    PDF_NAME = "R2021PDF"
+    RNG_NAME = "R2021_rng"
 
     event_types = ["tracks"]
 
@@ -1800,6 +1801,11 @@ class R2021DetectorModel(DetectorModel):
         ereco_cuts: bool = True,
     ) -> None:
         super().__init__(mode, event_type="tracks")
+
+        if mode == DistributionMode.PDF:
+            self._func_name = self.PDF_NAME
+        elif mode == DistributionMode.RNG:
+            self._func_name = self.RNG_NAME
 
         self._angular_resolution = R2021AngularResolution(mode, rewrite)
 

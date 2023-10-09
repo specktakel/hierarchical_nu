@@ -80,6 +80,7 @@ class ChilledGoods:
 DETECTOR_DICT = {
     Refrigerator.PYTHON_NT: NorthernTracksDetectorModel,
     Refrigerator.PYTHON_CAS: CascadesDetectorModel,
+    Refrigerator.PYTHON_IC86_II: R2021DetectorModel,
 }
 
 

@@ -262,7 +262,7 @@ class StanFitInterface(StanInterface):
 
                     # Unpack event types (track or cascade)
                     event_type = ForwardArrayDef("event_type", "int", ["[N]"])
-                    event_type << StringExpression(["int_data[7:6+N]"])
+                    event_type << StringExpression(["int_data[5:4+N]"])
 
                     Edet = ForwardVariableDef("Edet", "vector[N]")
                     Edet << FunctionCall(["real_data[start:end]"], "to_vector")
@@ -439,7 +439,7 @@ class StanFitInterface(StanInterface):
                                 [
                                     StringExpression(
                                         [
-                                            self._event_type[i],
+                                            event_type[i],
                                             " == ",
                                             Refrigerator.python2stan(event_type_python),
                                         ]
@@ -842,7 +842,7 @@ class StanFitInterface(StanInterface):
                 sd_z_Ns = 1  # redshift of PS
                 sd_other = 6  # Emin_src, Emax_src, Emin, Emax, Emin_at_det, Emax_at_det
                 # Need Ns * N for spatial loglike, added extra in sd_string
-                if self.sources.atmospheric and "tracks" in self._event_types:
+                if self.sources.atmospheric:
                     # atmo_integrated_flux, why was this here before? not used as far as I can see
                     sd_other += 1  # no atmo in cascades
                 sd_string = f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other} + J*Ns"
@@ -861,7 +861,7 @@ class StanFitInterface(StanInterface):
                 )
 
                 self.int_data = ForwardArrayDef(
-                    "int_data", "int", ["[", self._N_shards, ", ", "J+6", "]"]
+                    "int_data", "int", ["[", self._N_shards, ", ", "J+4", "]"]
                 )
 
                 # Pack data into shards
@@ -1174,14 +1174,6 @@ class StanFitInterface(StanInterface):
                 "eps", "vector[" + n_comps_max + "]", ["[", self._Net, "]"]
             )
 
-            # TODO make source-list dependent
-            self._irf_return = ForwardArrayDef("irf_return", "real", ["[5]"])
-
-            self._eres_src = ForwardVariableDef("eres_src", "real")
-            self._eres_diff = ForwardVariableDef("eres_diff", "real")
-            self._aeff_src = ForwardVariableDef("aeff_src", "real")
-            self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
-            self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
             """
             if "cascades" in self._event_types and "tracks" in self._event_types:
                 self._logp_c = ForwardVariableDef("logp_c", "real")
@@ -1236,6 +1228,13 @@ class StanFitInterface(StanInterface):
                 # Latent arrival energies for each event
                 # self._E = ForwardVariableDef("E", "vector[N]")
                 self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
+                self._irf_return = ForwardArrayDef("irf_return", "real", ["[5]"])
+
+                self._eres_src = ForwardVariableDef("eres_src", "real")
+                self._eres_diff = ForwardVariableDef("eres_diff", "real")
+                self._aeff_src = ForwardVariableDef("aeff_src", "real")
+                self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
+                self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
 
             self._F_src << 0.0
             self._Nex_src << 0.0
