@@ -93,7 +93,6 @@ def test_N():
     )
 
 
-"""
 def test_multi_ps_n():
     Parameter.clear_registry()
     roi = RectangularROI(DEC_min=-5 * u.deg)
@@ -176,9 +175,9 @@ def test_multi_ps_n():
 
     sim = Simulation(
         my_sources,
-        IceCubeDetectorModel,
-        5 * u.year,
-        N={"tracks": [1, 2], "cascades": [2, 1]},
+        [NT, CAS],
+        {NT: 5 * u.year, CAS: 5 * u.year},
+        N={NT: [1, 2], CAS: [2, 1]},
     )
     sim.precomputation()
     sim.generate_stan_code()
@@ -188,7 +187,6 @@ def test_multi_ps_n():
     my_sources.add(point_source_2)
 
     sim.sources = my_sources
-    sim._N = {"tracks": [1, 2, 3], "cascades": [4, 5, 6]}
+    sim._N = {NT: [1, 2, 3], CAS: [4, 5, 6]}
     sim.precomputation()
     sim.run()
-"""
