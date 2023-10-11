@@ -394,10 +394,13 @@ class StanFitInterface(StanInterface):
                     start << start + 1
 
                     # Define tracks and cascades to sort events into correct detector response
-                    irf_return = ForwardArrayDef("irf_return", "real", ["[5]"])
-                    eres_src = ForwardVariableDef("eres_src", "real")
+                    irf_return = ForwardVariableDef(
+                        "irf_return",
+                        "tuple(array[Ns] real, array[Ns] real, array[3] real)",
+                    )
+                    eres_src = ForwardArrayDef("eres_src", "real", ["[Ns]"])
                     eres_diff = ForwardVariableDef("eres_diff", "real")
-                    aeff_src = ForwardVariableDef("aeff_src", "real")
+                    aeff_src = ForwardArrayDef("aeff_src", "real", ["[Ns]"])
                     aeff_diff = ForwardVariableDef("aeff_diff", "real")
                     aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
                     """
@@ -450,13 +453,13 @@ class StanFitInterface(StanInterface):
                                     E[i],
                                     Edet[i],
                                     omega_det[i],
-                                    varpi[1],
+                                    varpi,
                                 )
-                        eres_src << irf_return[1]
-                        eres_diff << irf_return[2]
-                        aeff_src << irf_return[3]
-                        aeff_diff << irf_return[4]
-                        aeff_atmo << irf_return[5]
+                        eres_src << StringExpression(["irf_return.1"])
+                        aeff_src << StringExpression(["irf_return.2"])
+                        eres_diff << StringExpression(["irf_return.3[1]"])
+                        aeff_diff << StringExpression(["irf_return.3[2]"])
+                        aeff_atmo << StringExpression(["irf_return.3[3]"])
 
                         # Sum over sources => evaluate and store components
                         with ForLoopContext(1, "Ns+atmo+diffuse", "k") as k:
@@ -465,7 +468,7 @@ class StanFitInterface(StanInterface):
                                 with IfBlockContext(
                                     [StringExpression([k, " < ", Ns + 1])]
                                 ):
-                                    StringExpression([lp[i][k], " += ", aeff_src])
+                                    StringExpression([lp[i][k], " += ", aeff_src[k]])
 
                                     if self._shared_src_index:
                                         src_index_ref = src_index
@@ -490,7 +493,7 @@ class StanFitInterface(StanInterface):
                                         ]
                                     )
 
-                                    StringExpression([lp[i][k], " += ", eres_src])
+                                    StringExpression([lp[i][k], " += ", eres_src[k]])
 
                                     StringExpression(
                                         [
@@ -1228,11 +1231,13 @@ class StanFitInterface(StanInterface):
                 # Latent arrival energies for each event
                 # self._E = ForwardVariableDef("E", "vector[N]")
                 self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
-                self._irf_return = ForwardArrayDef("irf_return", "real", ["[5]"])
+                self._irf_return = ForwardVariableDef(
+                    "irf_return", "tuple(array[Ns] real, array[Ns] real, array[3] real)"
+                )
 
-                self._eres_src = ForwardVariableDef("eres_src", "real")
+                self._eres_src = ForwardArrayDef("eres_src", "real", self._Ns_str)
                 self._eres_diff = ForwardVariableDef("eres_diff", "real")
-                self._aeff_src = ForwardVariableDef("aeff_src", "real")
+                self._aeff_src = ForwardArrayDef("aeff_src", "real", self._Ns_str)
                 self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
 
@@ -1475,14 +1480,14 @@ class StanFitInterface(StanInterface):
                                 self._E[i],
                                 self._Edet[i],
                                 self._omega_det[i],
-                                self._varpi[1],
+                                self._varpi,
                             )
 
-                    self._eres_src << self._irf_return[1]
-                    self._eres_diff << self._irf_return[2]
-                    self._aeff_src << self._irf_return[3]
-                    self._aeff_diff << self._irf_return[4]
-                    self._aeff_atmo << self._irf_return[5]
+                    self._eres_src << StringExpression(["irf_return.1"])
+                    self._aeff_src << StringExpression(["irf_return.2"])
+                    self._eres_diff << StringExpression(["irf_return.3[1]"])
+                    self._aeff_diff << StringExpression(["irf_return.3[2]"])
+                    self._aeff_atmo << StringExpression(["irf_return.3[3]"])
                     # Sum over sources => evaluate and store components
                     with ForLoopContext(1, n_comps_max, "k") as k:
                         # Point source components
@@ -1491,7 +1496,7 @@ class StanFitInterface(StanInterface):
                                 [StringExpression([k, " < ", self._Ns + 1])]
                             ):
                                 StringExpression(
-                                    [self._lp[i][k], " += ", self._aeff_src]
+                                    [self._lp[i][k], " += ", self._aeff_src[k]]
                                 )
 
                                 if self._shared_src_index:
@@ -1517,7 +1522,7 @@ class StanFitInterface(StanInterface):
                                     [
                                         self._lp[i][k],
                                         " += ",
-                                        self._eres_src,
+                                        self._eres_src[k],
                                     ]
                                 )
 
@@ -1761,10 +1766,12 @@ class StanFitInterface(StanInterface):
                 # and latent energies
                 self._lp = ForwardArrayDef("lp", "vector[Ns_tot]", ["[N]"])
                 self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
-                self._irf_return = ForwardArrayDef("irf_return", "real", ["[5]"])
-                self._eres_src = ForwardVariableDef("eres_src", "real")
+                self._irf_return = ForwardVariableDef(
+                    "irf_return", "tuple(array[Ns] real, array[Ns] real, array[3] real)"
+                )
+                self._eres_src = ForwardArrayDef("eres_src", "real", self._Ns_str)
                 self._eres_diff = ForwardVariableDef("eres_diff", "real")
-                self._aeff_src = ForwardVariableDef("aeff_src", "real")
+                self._aeff_src = ForwardArrayDef("aeff_src", "real", self._Ns_str)
                 self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
 
@@ -1796,14 +1803,14 @@ class StanFitInterface(StanInterface):
                                 self._E[i],
                                 self._Edet[i],
                                 self._omega_det[i],
-                                self._varpi[1],
+                                self._varpi,
                             )
 
-                    self._eres_src << self._irf_return[1]
-                    self._eres_diff << self._irf_return[2]
-                    self._aeff_src << self._irf_return[3]
-                    self._aeff_diff << self._irf_return[4]
-                    self._aeff_atmo << self._irf_return[5]
+                    self._eres_src << StringExpression(["irf_return.1"])
+                    self._aeff_src << StringExpression(["irf_return.2"])
+                    self._eres_diff << StringExpression(["irf_return.3[1]"])
+                    self._aeff_diff << StringExpression(["irf_return.3[2]"])
+                    self._aeff_atmo << StringExpression(["irf_return.3[3]"])
 
                     # Sum over sources => evaluate and store components
                     with ForLoopContext(1, self._Ns_tot, "k") as k:
@@ -1848,7 +1855,7 @@ class StanFitInterface(StanInterface):
                                     [
                                         self._lp[i][k],
                                         " += ",
-                                        self._eres_src,
+                                        self._eres_src[k],
                                     ]
                                 )
 
@@ -1856,7 +1863,7 @@ class StanFitInterface(StanInterface):
                                     [
                                         self._lp[i][k],
                                         " += ",
-                                        self._aeff_src,
+                                        self._aeff_src[k],
                                     ]
                                 )
 

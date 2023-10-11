@@ -513,7 +513,7 @@ class CascadesDetectorModel(DetectorModel):
         """
 
         if sources.point_source:
-            # assume only one for now
+            Ns = len(sources.point_source)
             pass
         if sources.diffuse:
             pass
@@ -524,35 +524,38 @@ class CascadesDetectorModel(DetectorModel):
             self,
             self._func_name,
             ["true_energy", "detected_energy", "omega_det", "src_pos"],
-            ["real", "real", "vector", "vector"],
-            "array[] real",
+            ["real", "real", "vector", "array[] vector"],
+            "tuple(array[] real, array[] real, array[] real)",
         )
         with self:
             # need to write a function that returns a tuple of energy likelihood and Aeff
-            return_this = ForwardArrayDef("return_this", "real", ["[5]"])
-            return_this[1] << self.energy_resolution(
+            ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
+            ps_aeff = ForwardArrayDef("ps_aeff", "real", ["[", Ns, "]"])
+            diff = ForwardArrayDef("diff", "real", ["[3]"])
+            eres = ForwardVariableDef("eres", "real")
+            eres << self.energy_resolution(
                 "log10(true_energy)", "log10(detected_energy)"
             )
+            with ForLoopContext(1, Ns, "i") as i:
+                ps_eres[i] << eres
+                ps_aeff[i] << FunctionCall(
+                    [
+                        self.effective_area("true_energy", "src_pos[i]"),
+                    ],
+                    "log",
+                )
+            diff[1] << eres
 
-            return_this[2] << return_this[1]
-            # TODO substitute this with the aeff slice at some point
-            return_this[3] << FunctionCall(
-                [
-                    self.effective_area("true_energy", "src_pos"),
-                ],
-                "log",
-            )
-
-            return_this[4] << FunctionCall(
+            diff[2] << FunctionCall(
                 [
                     self.effective_area("true_energy", "omega_det"),
                 ],
                 "log",
             )
 
-            return_this[5] << "negative_infinity()"
+            diff[3] << "negative_infinity()"
 
-            ReturnStatement([return_this])
+            ReturnStatement(["(ps_eres, ps_aeff, diff)"])
 
     def generate_rng_function_code(self):
         """

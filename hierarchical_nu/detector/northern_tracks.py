@@ -534,7 +534,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
     def _get_angular_resolution(self):
         return self._angular_resolution
 
-    def generate_pdf_function_code(self, sources: Sources = Sources()):
+    def generate_pdf_function_code(self, sources: Sources):
         """
         Generate a wrapper for the IRF.
         Should give for all source components the event likelihood,
@@ -550,7 +550,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
         # Temporarily, 4th entry is effective area for atmospheric component
 
         if sources.point_source:
-            # assume only one for now
+            Ns = len(sources.point_source)
             pass
         if sources.diffuse:
             pass
@@ -561,35 +561,47 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
             self,
             self._func_name,
             ["true_energy", "detected_energy", "omega_det", "src_pos"],
-            ["real", "real", "vector", "vector"],
-            "array[] real",
+            ["real", "real", "vector", "array[] vector"],
+            "tuple(array[] real, array[] real, array[] real)",
         )
+        # Change order of return values:
+        # For loop (i) over all PS:
+        # i*2 > eres
+        # i*2 + 1 > aeff
+        # eres diff
+        # aeff diff
+        # aeff atmo
         with self:
             # need to write a function that returns a tuple of energy likelihood and Aeff
-            return_this = ForwardArrayDef("return_this", "real", ["[5]"])
-            return_this[1] << self.energy_resolution(
+            # return_this = ForwardArrayDef("return_this", "real", ["[Ns * 2 + 3]"])
+            ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
+            ps_aeff = ForwardArrayDef("ps_aeff", "real", ["[", Ns, "]"])
+            diff = ForwardArrayDef("diff", "real", ["[3]"])
+            eres = ForwardVariableDef("eres", "real")
+            eres << self.energy_resolution(
                 "log10(true_energy)", "log10(detected_energy)"
             )
+            with ForLoopContext(1, Ns, "i") as i:
+                ps_eres[i] << eres
+                ps_aeff[i] << FunctionCall(
+                    [
+                        self.effective_area("true_energy", "src_pos[i]"),
+                    ],
+                    "log",
+                )
 
-            return_this[2] << return_this[1]
-            # TODO substitute this with the aeff slice at some point
-            return_this[3] << FunctionCall(
-                [
-                    self.effective_area("true_energy", "src_pos"),
-                ],
-                "log",
-            )
+            diff[1] << eres
 
-            return_this[4] << FunctionCall(
+            diff[2] << FunctionCall(
                 [
                     self.effective_area("true_energy", "omega_det"),
                 ],
                 "log",
             )
 
-            return_this[5] << return_this[4]
+            diff[3] << diff[2]
 
-            ReturnStatement([return_this])
+            ReturnStatement(["(ps_eres, ps_aeff, diff)"])
 
     def generate_rng_function_code(self):
         """
