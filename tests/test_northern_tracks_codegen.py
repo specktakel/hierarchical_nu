@@ -73,7 +73,7 @@ def generate_distribution_test_code(output_directory):
             reco_zenith = ForwardArrayDef(reco_zenith_name, "real", array_length_str)
 
         with GeneratedQuantitiesContext():
-            pdf_return = ForwardArrayDef("pdf_return", "real", ["[4]"])
+            pdf_return = ForwardArrayDef("pdf_return", "real", ["[5]"])
 
             array_length_2d_str = ["[", array_length, ",", array_length, "]"]
             e_res_result = ForwardArrayDef("e_res", "real", array_length_2d_str)
@@ -215,7 +215,7 @@ def generate_rv_test_code(output_directory):
             dummy_dir = ForwardVariableDef("dummy_dir", "unit_vector[3]")
             dummy_dir << StringExpression(["[1., 0., 0.]'"])
             e_res_result = ForwardArrayDef("e_res", "real", ["[100]"])
-            pdf_return = ForwardArrayDef("pdf_return", "real", ["[4]"])
+            pdf_return = ForwardArrayDef("pdf_return", "real", ["[5]"])
 
             with ForLoopContext(1, 100, "i") as i:
                 pdf_return << ntd_pdf(

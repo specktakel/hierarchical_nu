@@ -27,6 +27,7 @@ from hierarchical_nu.detector.icecube import IceCube, Refrigerator
 m_to_cm = 100  # cm
 NT = Refrigerator.PYTHON_NT
 CAS = Refrigerator.PYTHON_CAS
+IC86_II = Refrigerator.PYTHON_IC86_II
 
 
 class ExposureIntegral:
@@ -68,8 +69,11 @@ class ExposureIntegral:
                     "Emin_det_cascades"
                 ).value
 
-            elif detector_model in [NT]:
+            elif detector_model == NT:
                 self._min_det_energy = Parameter.get_parameter("Emin_det_tracks").value
+
+            elif detector_model == IC86_II:
+                self._min_det_energy = Parameter.get_parameter("Emin_det_IC86_II").value
 
             else:
                 raise ValueError("Detector model not recognised")

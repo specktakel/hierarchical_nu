@@ -9,24 +9,13 @@ from hierarchical_nu.source.source import Sources, PointSource
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
-from hierarchical_nu.detector.cascades import CascadesDetectorModel
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.utils.roi import RectangularROI
-
+from hierarchical_nu.detector.icecube import Refrigerator, DETECTOR_DICT
 import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-
-detector_models = [
-    NorthernTracksDetectorModel,
-    CascadesDetectorModel,
-    # IceCubeDetectorModel,
-    R2021DetectorModel,
-]
 
 stanc_options = {"include-paths": [STAN_PATH, STAN_GEN_PATH]}
 
@@ -86,8 +75,8 @@ def test_stan_sim_interface(output_directory):
     my_sources.add_atmospheric_component()
     file_name = os.path.join(output_directory, "test_sim_interface")
 
-    for dm in detector_models:
-        interface = StanSimInterface(file_name, my_sources, dm)
+    for dm in DETECTOR_DICT.keys():
+        interface = StanSimInterface(file_name, my_sources, [dm])
 
         # Generate Stan code
         stan_file = interface.generate()
@@ -151,9 +140,9 @@ def test_stan_fit_interface(output_directory):
     my_sources.add_atmospheric_component()
     file_name = os.path.join(output_directory, "test_fit_interface")
 
-    for dm in detector_models:
+    for dm in DETECTOR_DICT.keys():
         for nshards in [1, 2]:
-            interface = StanFitInterface(file_name, my_sources, dm, nshards=nshards)
+            interface = StanFitInterface(file_name, my_sources, [dm], nshards=nshards)
 
             # Generate Stan code
             stan_file = interface.generate()

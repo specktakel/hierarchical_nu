@@ -3,8 +3,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
 from hierarchical_nu.events import Events
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
+from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import PointSource, Sources
 from hierarchical_nu.simulation import Simulation
@@ -14,6 +13,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
+
+NT = Refrigerator.PYTHON_NT
+IC86_II = Refrigerator.PYTHON_IC86_II
 
 
 def test_circular_event_selection():
@@ -115,7 +117,7 @@ def test_rectangular_precomputation():
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
 
-    sim = Simulation(my_sources, NorthernTracksDetectorModel, 5 * u.year)
+    sim = Simulation(my_sources, NT, 5 * u.year)
 
     sim.precomputation()
 
@@ -126,11 +128,11 @@ def test_rectangular_precomputation():
     sim.precomputation()
     cut = sim._get_sim_inputs()
 
-    assert pytest.approx(np.array(cut["integral_grid_t"][1]) * 2.0) == np.array(
-        default["integral_grid_t"][1]
+    assert pytest.approx(np.array(cut["integral_grid"][0][1]) * 2.0) == np.array(
+        default["integral_grid"][0][1]
     )
-    assert pytest.approx(np.array(cut["integral_grid_t"][0])) == np.array(
-        default["integral_grid_t"][0]
+    assert pytest.approx(np.array(cut["integral_grid"][0][0])) == np.array(
+        default["integral_grid"][0][0]
     )
 
 
@@ -161,7 +163,7 @@ def test_compare_precomputation():
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
     my_sources.add_atmospheric_component()
-    sim = Simulation(my_sources, R2021DetectorModel, 5 * u.year)
+    sim = Simulation(my_sources, IC86_II, 5 * u.year)
 
     roi = RectangularROI(DEC_min=np.deg2rad(-5) * u.rad)
     sim.precomputation()

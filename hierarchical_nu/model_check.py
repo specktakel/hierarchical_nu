@@ -15,11 +15,7 @@ from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import PointSource, Sources
 
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
-from hierarchical_nu.detector.cascades import CascadesDetectorModel
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
-
+from hierarchical_nu.detector.icecube import Refrigerator, DETECTOR_DICT
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.sim_interface import StanSimInterface
@@ -74,7 +70,7 @@ class ModelCheck:
             self._obs_time = parameter_config["obs_time"] * u.year
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
-
+            print(self._detector_model_type)
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
             self._exposure_integral = sim._exposure_integral
@@ -154,6 +150,9 @@ class ModelCheck:
         detector_model_type = ModelCheck._get_dm_from_config(
             parameter_config["detector_model_type"]
         )
+
+        if not isinstance(detector_model_type, list):
+            detector_model_type = [detector_model_type]
 
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
@@ -561,6 +560,8 @@ class ModelCheck:
 
     @staticmethod
     def _get_dm_from_config(dm_key):
+        print(dm_key)
+        """
         if dm_key == "northern_tracks":
             dm = NorthernTracksDetectorModel
 
@@ -572,11 +573,11 @@ class ModelCheck:
 
         elif dm_key == "r2021":
             dm = R2021DetectorModel
-
+        """
+        if dm_key in DETECTOR_DICT.keys():
+            return dm_key
         else:
             raise ValueError("Detector model key in config not recognised")
-
-        return dm
 
     def _get_prior_func(self, var_name):
         """
@@ -657,6 +658,11 @@ def _initialise_sources():
         Emin_det_cascades = Parameter(
             parameter_config["Emin_det_cascades"] * u.GeV,
             "Emin_det_cascades",
+            fixed=True,
+        )
+        Emin_det_IC86_II = Parameter(
+            parameter_config["Emin_det_IC86_II"] * u.GeV,
+            "Emin_det_IC86_II",
             fixed=True,
         )
 

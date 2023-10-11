@@ -29,6 +29,9 @@ from .detector_model import (
     DetectorModel,
 )
 
+from ..source.source import Sources
+
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -531,7 +534,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
     def _get_angular_resolution(self):
         return self._angular_resolution
 
-    def generate_pdf_function_code(self, sources):
+    def generate_pdf_function_code(self, sources: Sources = Sources()):
         """
         Generate a wrapper for the IRF.
         Should give for all source components the event likelihood,

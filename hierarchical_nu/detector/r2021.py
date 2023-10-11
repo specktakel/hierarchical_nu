@@ -52,6 +52,8 @@ from .detector_model import (
     DetectorModel,
 )
 
+from ..source.source import Sources
+
 from icecube_tools.detector.r2021 import R2021IRF
 from icecube_tools.point_source_likelihood.energy_likelihood import (
     MarginalisedIntegratedEnergyLikelihood,
@@ -1830,7 +1832,6 @@ class R2021DetectorModel(DetectorModel):
         mode: DistributionMode,
         rewrite: bool = False,
         make_plots: bool = False,
-        gen_type: str = "histogram",
         n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
@@ -1884,7 +1885,7 @@ class R2021DetectorModel(DetectorModel):
                 f.write(code)
             return os.path.join(path, cls.RNG_FILENAME)
 
-    def generate_pdf_function_code(self, sources):
+    def generate_pdf_function_code(self, sources: Sources = Sources()):
         """
         Generate a wrapper for the IRF.
         Should give for all source components the event likelihood,
@@ -1962,7 +1963,7 @@ class R2021DetectorModel(DetectorModel):
         with self:
             return_this = ForwardVariableDef("return_this", "vector[5]")
             return_this[1] << FunctionCall(
-                [10.0, self.energy_resolution("log10(true_energy)")], "pow"
+                [10.0, self.energy_resolution("log10(true_energy)", "omega")], "pow"
             )
             return_this[2:5] << self.angular_resolution(
                 "log10(true_energy)", "log10(return_this[1])", "omega"

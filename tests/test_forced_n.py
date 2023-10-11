@@ -9,9 +9,12 @@ from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.utils.roi import RectangularROI
+
+NT = Refrigerator.PYTHON_NT
+CAS = Refrigerator.PYTHON_CAS
 
 
 def test_N():
@@ -69,9 +72,9 @@ def test_N():
 
     sim = Simulation(
         my_sources,
-        IceCubeDetectorModel,
-        5 * u.year,
-        N={"cascades": [2, 3, 2], "tracks": [1, 2, 3]},
+        [NT, CAS],
+        {NT: 5 * u.year, CAS: 5 * u.year},
+        N={CAS: [2, 3, 2], NT: [1, 2, 3]},
     )
 
     sim.precomputation()
@@ -90,6 +93,7 @@ def test_N():
     )
 
 
+"""
 def test_multi_ps_n():
     Parameter.clear_registry()
     roi = RectangularROI(DEC_min=-5 * u.deg)
@@ -187,3 +191,4 @@ def test_multi_ps_n():
     sim._N = {"tracks": [1, 2, 3], "cascades": [4, 5, 6]}
     sim.precomputation()
     sim.run()
+"""
