@@ -549,13 +549,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
         # atmospheric = bool(sources.atmospheric)
         # Temporarily, 4th entry is effective area for atmospheric component
 
-        if sources.point_source:
-            Ns = len(sources.point_source)
-            pass
-        if sources.diffuse:
-            pass
-        if sources.atmospheric:
-            pass
+        Ns = len(sources.point_source)
 
         UserDefinedFunction.__init__(
             self,

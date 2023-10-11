@@ -24,6 +24,8 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.stan.interface import STAN_PATH
 
+from hierarchical_nu.source.source import Sources
+
 
 def test_file_generation_northern_tracks(output_directory):
     _ = NorthernTracksDetectorModel.generate_code(
@@ -36,7 +38,7 @@ def test_file_generation_northern_tracks(output_directory):
     with StanGenerator() as gc:
         with FunctionsContext():
             ntd_pdf = NorthernTracksDetectorModel()
-            ntd_pdf.generate_pdf_function_code()
+            ntd_pdf.generate_pdf_function_code(Sources())
 
             ntd_rng = NorthernTracksDetectorModel(DistributionMode.RNG)
             ntd_rng.generate_rng_function_code()
@@ -60,8 +62,7 @@ def generate_distribution_test_code(output_directory):
             _ = Include("utils.stan")
             _ = Include("vMF.stan")
             _ = Include("northern_tracks_pdf.stan")
-            ntd_pdf = NorthernTracksDetectorModel()
-            ntd_pdf.generate_pdf_function_code()
+            ntd = NorthernTracksDetectorModel()
 
         with DataContext():
             array_length = ForwardVariableDef("n", "int")
@@ -73,8 +74,6 @@ def generate_distribution_test_code(output_directory):
             reco_zenith = ForwardArrayDef(reco_zenith_name, "real", array_length_str)
 
         with GeneratedQuantitiesContext():
-            pdf_return = ForwardArrayDef("pdf_return", "real", ["[5]"])
-
             array_length_2d_str = ["[", array_length, ",", array_length, "]"]
             e_res_result = ForwardArrayDef("e_res", "real", array_length_2d_str)
             eff_area_result = ForwardArrayDef("eff_area", "real", array_length_2d_str)
@@ -89,15 +88,14 @@ def generate_distribution_test_code(output_directory):
                     reco_dir_ang_res << StringExpression(
                         ["[sin(", reco_zenith[j], "), 0, cos(", reco_zenith[j], ")]'"]
                     )
-                    pdf_return << ntd_pdf(
-                        e_trues[i],
-                        e_recos[j],
-                        true_dirs[j],
-                        true_dirs[j],
+                    eff_area_result[i][j] << ntd.effective_area(
+                        e_trues[i], true_dirs[j]
                     )
-                    eff_area_result[i][j] << FunctionCall([pdf_return[3]], "exp")
-                    e_res_result[i][j] << pdf_return[1]
-                    ang_res_result[i][j] << ntd_pdf.angular_resolution(
+                    e_res_result[i][j] << ntd.energy_resolution(
+                        FunctionCall([e_trues[i]], "log10"),
+                        FunctionCall([e_recos[j]], "log10"),
+                    )
+                    ang_res_result[i][j] << ntd.angular_resolution(
                         FunctionCall([e_trues[i]], "log10"),
                         true_dir_ang_res,
                         reco_dir_ang_res,
@@ -205,7 +203,6 @@ def generate_rv_test_code(output_directory):
             Include("vMF.stan")
             Include("northern_tracks_pdf.stan")
             ntd_pdf = NorthernTracksDetectorModel(mode=DistributionMode.PDF)
-            ntd_pdf.generate_pdf_function_code()
 
         with DataContext():
             true_energy = ForwardVariableDef("true_energy", "real")
@@ -215,16 +212,12 @@ def generate_rv_test_code(output_directory):
             dummy_dir = ForwardVariableDef("dummy_dir", "unit_vector[3]")
             dummy_dir << StringExpression(["[1., 0., 0.]'"])
             e_res_result = ForwardArrayDef("e_res", "real", ["[100]"])
-            pdf_return = ForwardArrayDef("pdf_return", "real", ["[5]"])
 
             with ForLoopContext(1, 100, "i") as i:
-                pdf_return << ntd_pdf(
-                    true_energy,
-                    e_recos[i],
-                    dummy_dir,
-                    dummy_dir,
+                e_res_result[i] << ntd_pdf.energy_resolution(
+                    FunctionCall([true_energy], "log10"),
+                    FunctionCall([e_recos[i]], "log10"),
                 )
-                e_res_result[i] << pdf_return[1]
 
         code_gen_pdf.generate_single_file()
 

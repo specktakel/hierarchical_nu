@@ -512,13 +512,7 @@ class CascadesDetectorModel(DetectorModel):
         the requested event.
         """
 
-        if sources.point_source:
-            Ns = len(sources.point_source)
-            pass
-        if sources.diffuse:
-            pass
-        if sources.atmospheric:
-            pass
+        Ns = len(sources.point_source)
 
         UserDefinedFunction.__init__(
             self,
