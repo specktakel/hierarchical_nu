@@ -6,6 +6,7 @@ import time
 from matplotlib import pyplot as plt
 from joblib import Parallel, delayed
 from astropy import units as u
+from astropy.coordinates import SkyCoord
 from cmdstanpy import CmdStanModel
 from scipy.stats import uniform
 from typing import List, Union
@@ -24,6 +25,7 @@ from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
+from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
 from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
 
 
@@ -657,10 +659,15 @@ def _initialise_sources():
         )
 
     # Simple point source for testing
+    dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
+    ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
+    center = SkyCoord(ra=ra, dec=dec, frame="icrs")
+    radius = 10 * u.deg
+    roi = CircularROI(center, radius)
     point_source = PointSource.make_powerlaw_source(
         "test",
-        np.deg2rad(parameter_config["src_dec"]) * u.rad,
-        np.deg2rad(parameter_config["src_ra"]) * u.rad,
+        dec,
+        ra,
         L,
         src_index,
         parameter_config["z"],

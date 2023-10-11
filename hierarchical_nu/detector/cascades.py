@@ -46,7 +46,6 @@ class CascadesEffectiveArea(EffectiveArea):
     CACHE_FNAME = "aeff_cascades.npz"
 
     def __init__(self) -> None:
-
         super().__init__(
             "CascadesEffectiveArea",
             ["true_energy", "true_dir"],
@@ -55,6 +54,8 @@ class CascadesEffectiveArea(EffectiveArea):
         )
 
         self.setup()
+
+        self._make_spline()
 
         # Define Stan interface
         with self:
@@ -69,22 +70,17 @@ class CascadesEffectiveArea(EffectiveArea):
             _ = ReturnStatement([hist("true_energy", cos_dir)])
 
     def setup(self) -> None:
-
         if self.CACHE_FNAME in Cache:
-
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
-
                 data = np.load(fr)
                 eff_area = data["eff_area"]
                 tE_bin_edges = data["tE_bin_edges"]
                 cosz_bin_edges = data["cosz_bin_edges"]
 
         else:
-
             import h5py
 
             with h5py.File(self.DATA_PATH, "r") as f:
-
                 # Effective area [m^2]
                 eff_area = f["aeff/aeff"][()]
 
@@ -95,7 +91,6 @@ class CascadesEffectiveArea(EffectiveArea):
                 cosz_bin_edges = f["aeff/cosz_bin_edges"][()]
 
             with Cache.open(self.CACHE_FNAME, "wb") as fr:
-
                 np.savez(
                     fr,
                     eff_area=eff_area,
@@ -123,7 +118,9 @@ class CascadesEnergyResolution(EnergyResolution):
 
     CACHE_FNAME = "energy_reso_cascades.npz"
 
-    def __init__(self, mode: DistributionMode = DistributionMode.PDF, make_plots: bool = False) -> None:
+    def __init__(
+        self, mode: DistributionMode = DistributionMode.PDF, make_plots: bool = False
+    ) -> None:
         """
         Energy resolution based on the cascade_model simulation.
 
@@ -161,7 +158,6 @@ class CascadesEnergyResolution(EnergyResolution):
         lognorm = LognormalMixture(mixture_name, self._n_components, self._mode)
 
         if mode == DistributionMode.PDF:
-
             super().__init__(
                 "CascadeEnergyResolution",
                 ["true_energy", "reco_energy"],
@@ -170,20 +166,17 @@ class CascadesEnergyResolution(EnergyResolution):
             )
 
         elif mode == DistributionMode.RNG:
-
             super().__init__(
                 "CascadeEnergyResolution_rng", ["true_energy"], ["real"], "real"
             )
             mixture_name = "nt_energy_res_mix_rng"
 
         else:
-
             RuntimeError(
                 "mode must be either DistributionMode.PDF or DistributionMode.RNG"
             )
 
         with self:
-
             # Define parametrization in Stan.
             truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
             log_trunc_e = LogParameterization(truncated_e)
@@ -248,9 +241,7 @@ class CascadesEnergyResolution(EnergyResolution):
 
         # Check cache
         if self.CACHE_FNAME in Cache:
-
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
-
                 data = np.load(fr)
                 eres = data["eres"]
                 tE_bin_edges = data["tE_bin_edges"]
@@ -261,11 +252,9 @@ class CascadesEnergyResolution(EnergyResolution):
 
         # Load energy resolution from file
         else:
-
             import h5py
 
             with h5py.File(self.DATA_PATH, "r") as f:
-
                 # P(Ereco | Etrue), normalised along Ereco
                 eres = f["eres/eres"][()]
 
@@ -341,9 +330,7 @@ class CascadesAngularResolution(AngularResolution):
     CACHE_FNAME = "angular_reso_cascades.npz"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
-
         if mode == DistributionMode.PDF:
-
             super().__init__(
                 "CascadesAngularResolution",
                 ["true_energy", "true_dir", "reco_dir"],
@@ -352,7 +339,6 @@ class CascadesAngularResolution(AngularResolution):
             )
 
         else:
-
             super().__init__(
                 "CascadesAngularResolution_rng",
                 ["true_energy", "true_dir"],
@@ -370,7 +356,6 @@ class CascadesAngularResolution(AngularResolution):
 
         # Define Stan interface
         with self:
-
             # Clip true energy
             clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
 
@@ -390,7 +375,6 @@ class CascadesAngularResolution(AngularResolution):
             ReturnStatement([vmf])
 
     def kappa(self):
-
         clipped_e = TruncatedParameterization("E[i]", self._Emin, self._Emax)
 
         clipped_log_e = LogParameterization(clipped_e)
@@ -409,9 +393,7 @@ class CascadesAngularResolution(AngularResolution):
 
         # Check cache
         if self.CACHE_FNAME in Cache:
-
             with Cache.open(self.CACHE_FNAME, "rb") as fr:
-
                 data = np.load(fr)
                 self._kappa = data["kappa_grid"]
                 self._Egrid = data["Egrid"]
@@ -422,9 +404,7 @@ class CascadesAngularResolution(AngularResolution):
 
         # Load input data and fit polynomial
         else:
-
             if not os.path.exists(self.DATA_PATH):
-
                 raise RuntimeError(self.DATA_PATH, "is not a valid path")
 
             data = pd.read_csv(
@@ -471,7 +451,6 @@ class CascadesDetectorModel(DetectorModel):
         mode: DistributionMode = DistributionMode.PDF,
         event_type=None,
     ):
-
         super().__init__(mode, event_type="cascades")
 
         ang_res = CascadesAngularResolution(mode)
@@ -495,7 +474,6 @@ class CascadesDetectorModel(DetectorModel):
 # Testing.
 # @TODO: This needs updating.
 if __name__ == "__main__":
-
     e_true_name = "e_true"
     e_reco_name = "e_reco"
     true_dir_name = "true_dir"
@@ -513,7 +491,6 @@ if __name__ == "__main__":
     import pystan  # type: ignore
 
     with StanGenerator() as cg:
-
         with FunctionsContext() as fc:
             Include("utils.stan")
             Include("vMF.stan")

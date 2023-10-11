@@ -25,7 +25,7 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, flux_conv_
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.events import Events, TRACKS
-from hierarchical_nu.utils.roi import ROI
+from hierarchical_nu.utils.roi import ROI, RectangularROI, CircularROI
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
@@ -559,7 +559,7 @@ class Simulation:
         try:
             roi = ROI.STACK[0]
         except IndexError:
-            roi = ROI()
+            raise ValueError("An ROI is needed at this point.")
 
         v_lim_low = (np.cos(-roi.DEC_min.to_value(u.rad) + np.pi / 2) + 1.0) / 2
         v_lim_high = (np.cos(-roi.DEC_max.to_value(u.rad) + np.pi / 2) + 1.0) / 2
@@ -589,6 +589,14 @@ class Simulation:
         sim_inputs["u_low"] = roi.RA_min.to_value(u.rad) / (2.0 * np.pi)
         sim_inputs["u_high"] = roi.RA_max.to_value(u.rad) / (2.0 * np.pi)
 
+        # For circular ROI the center point and radius are needed
+        if isinstance(roi, CircularROI):
+            sim_inputs["roi_radius"] = roi.radius.to_value(u.rad)
+            roi.center.representation_type = "cartesian"
+            sim_inputs["roi_center"] = np.array(
+                [roi.center.x, roi.center.y, roi.center.z]
+            )
+
         flux_units = 1 / (u.m**2 * u.s)
 
         if self._sources.diffuse:
@@ -602,7 +610,6 @@ class Simulation:
             sim_inputs["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
                 flux_units
             ).value
-
         lumi_units = u.GeV / u.s
 
         if self._sources.point_source:

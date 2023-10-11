@@ -7,6 +7,8 @@ from itertools import product
 import logging
 
 import astropy.units as u
+from astropy.coordinates import SkyCoord
+import healpy as hp
 import numpy as np
 
 from hierarchical_nu.source.source import (
@@ -19,7 +21,7 @@ from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import ParScale, Parameter
 from hierarchical_nu.backend.stan_generator import StanGenerator
 from hierarchical_nu.detector.r2021 import R2021EnergyResolution
-from hierarchical_nu.utils.roi import ROI
+from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
 
 m_to_cm = 100  # cm
 
@@ -133,14 +135,24 @@ class ExposureIntegral:
     def integral_fixed_vals(self):
         return self._integral_fixed_vals
 
-    def calculate_rate(self, source):
-        z = source.redshift
+    def calculate_rate(self, source, Ebins=None):
+        # Emin determined as `Parameter` instance is accounted for
+        # in the spectral shapes of the individual sources
+        if Ebins is None:
+            lower_e_edges = self.effective_area.tE_bin_edges[:-1].copy() << u.GeV
+            upper_e_edges = self.effective_area.tE_bin_edges[1:].copy() << u.GeV
 
-        lower_e_edges = self.effective_area.tE_bin_edges[:-1].copy() << u.GeV
-        upper_e_edges = self.effective_area.tE_bin_edges[1:].copy() << u.GeV
-        e_cen = (lower_e_edges + upper_e_edges) / 2
+        else:
+            lower_e_edges = Ebins[:-1] << u.GeV
+            upper_e_edges = Ebins[1:] << u.GeV
 
-        integral_unit = 1 / (u.m**2 * u.s)
+        E_min = lower_e_edges[0]
+        E_max = upper_e_edges[-1]
+
+        log_E_space = np.linspace(np.log10(E_min.value), np.log10(E_max.value), 200)
+        log_E_c = log_E_space[:-1] + np.diff(log_E_space) / 2
+        E_c = np.power(10, log_E_c) * u.GeV
+        d_E = np.diff(np.power(10, log_E_space)) * u.GeV
 
         if isinstance(source, PointSource):
             # For point sources the integral over the space angle is trivial
@@ -151,88 +163,139 @@ class ExposureIntegral:
             dec = source.dec
             cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
 
+            """
             integral = source.flux_model.spectral_shape.integral(
                 lower_e_edges, upper_e_edges
             ).to(integral_unit)
+            """
+            flux_vals = source.flux_model.spectral_shape(E_c)
             if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
                 self.effective_area.cosz_bin_edges
             ):
-                aeff = np.zeros(len(lower_e_edges)) << (u.m**2)
+                aeff_vals = np.zeros(E_c.shape) << (u.m**2)
 
             else:
-                aeff = (
-                    self.effective_area.eff_area[
-                        :, np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
-                    ]
-                    * u.m**2
-                )
+                aeff_vals = self.effective_area.eff_area_spline(
+                    np.vstack(
+                        (np.log10(E_c.to_value(u.GeV)), np.full(E_c.shape, cosz))
+                    ).T,
+                ) << (u.m**2)
 
             p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                e_cen, self._min_det_energy, dec
+                E_c, self._min_det_energy, np.full(E_c.shape, dec) * u.rad
             )
             p_Edet = np.nan_to_num(p_Edet)
 
+            output = np.sum(aeff_vals * flux_vals * p_Edet * d_E)
+
         else:
-            lower_cz_edges = self.effective_area.cosz_bin_edges[:-1].copy()
-            upper_cz_edges = self.effective_area.cosz_bin_edges[1:].copy()
-
-            # Switch upper and lower since zen -> dec induces a -1
-            dec_lower = np.arccos(upper_cz_edges) * u.rad - np.pi / 2 * u.rad
-            dec_upper = np.arccos(lower_cz_edges) * u.rad - np.pi / 2 * u.rad
-
-            # make union with irf bins, at one point I might actually do this
-            # if isinstance(self.energy_resolution, R2021EnergyResolution):
-            #    dec_lower = np.union1d(dec_lower, self.energy_resolution._declination_bins[:-1] * u.rad)
-            #    dec_upper = np.union1d(dec_lower, self.energy_resolution._declination_bins[1:] * u.rad)
-
             try:
                 roi = ROI.STACK[0]
             except IndexError:
-                roi = ROI()
-            RA_min = roi.RA_min
-            RA_max = roi.RA_max
-            DEC_min = roi.DEC_min
-            DEC_max = roi.DEC_max
+                ValueError("An ROI is needed at this point.")
 
-            if RA_max < RA_min:
-                RA_diff = 2 * np.pi * u.rad + RA_max - RA_min
-            else:
-                RA_diff = RA_max - RA_min
+            # Setup coordinate grids at which to evaulate effective area and flux
+            if isinstance(roi, CircularROI):
+                # Make healpy pixel grid
+                NSIDE = 128
+                NPIX = hp.nside2npix(NSIDE)
+                # Surface element
+                d_omega = 4 * np.pi / NPIX * u.sr
 
-            dec_upper[np.nonzero(dec_upper <= DEC_min)] = DEC_min
-            dec_lower[np.nonzero(dec_lower <= DEC_min)] = DEC_min
+                ra, dec = hp.pix2ang(
+                    nside=NSIDE, ipix=list(range(NPIX)), nest=True, lonlat=True
+                )
 
-            dec_lower[np.nonzero(dec_lower >= DEC_max)] = DEC_max
-            dec_upper[np.nonzero(dec_upper >= DEC_max)] = DEC_max
+                coords = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
 
-            # For lower dec lim, let dec_lower = dec_upper s.t. integral evaluates to zero
+                # Create mask with pixels inside the ROI
+                mask = roi.center.separation(coords).deg * u.deg < roi.radius.to(u.deg)
 
-            integral = source.flux_model.integral(
-                lower_e_edges[:, np.newaxis],
-                upper_e_edges[:, np.newaxis],
-                dec_lower[np.newaxis, :],
-                dec_upper[np.newaxis, :],
-                0 * u.rad,
-                RA_diff,
-            ).to(integral_unit)
+                pixels = coords[mask]
 
-            aeff = np.array(self.effective_area.eff_area, copy=True) << (u.m**2)
+                ra = pixels.ra.rad * u.rad
+                dec = pixels.dec.rad * u.rad
+
+                # Assume that indexing is faster than calculating stuff
+                # only calculate at the unique declinations and sort values afterwards
+                # As `dec` contains all points we can weigh each unique declination according to its
+                # frequency over all points on the sky
+                dec_c, counts = np.unique(dec, return_counts=True)
+                cosz_c = -np.sin(dec_c.to_value(u.rad))
+
+            elif isinstance(roi, RectangularROI):
+                RA_min = roi.RA_min
+                RA_max = roi.RA_max
+                DEC_min = roi.DEC_min
+                DEC_max = roi.DEC_max
+
+                cosz_min = -np.sin(DEC_max)
+                cosz_max = -np.sin(DEC_min)
+
+                num_of_points = int((cosz_max - cosz_min) * 500)
+                if num_of_points < 50:
+                    num_of_points = 50
+                cosz_edges = np.linspace(cosz_min, cosz_max, num_of_points)
+                cosz_c = cosz_edges[:-1] + np.diff(cosz_edges) / 2
+                dec_c = -np.arcsin(cosz_c) << u.rad
+
+                if RA_max < RA_min:
+                    RA_diff = 2 * np.pi * u.rad + RA_max - RA_min
+                else:
+                    RA_diff = RA_max - RA_min
+
+                d_omega = np.diff(cosz_edges) * RA_diff.to_value(u.rad) * u.sr
+
+            # Create common grids
+            log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
+            E_grid, dec_grid = np.meshgrid(E_c, dec_c)
+
+            # Evaluate effective area and flux
+            aeff_vals = (
+                # np.power(
+                #    10,
+                self._effective_area.eff_area_spline(
+                    np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
+                ).reshape(log_E_grid.shape)
+                * u.m**2
+                # ).reshape(log_E_grid.shape)
+                # * u.m**2
+            )
+
+            flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
 
             if isinstance(self.energy_resolution, R2021EnergyResolution):
-                p_Edet = np.zeros((dec_upper.size, e_cen.size))
-                for c, (dec_l, dec_h) in enumerate(zip(dec_lower, dec_upper)):
-                    dec = (dec_l + dec_h) / 2
-                    p_Edet[c] = self.energy_resolution.prob_Edet_above_threshold(
-                        e_cen, self._min_det_energy, dec
-                    )
+                # p_Edet = np.zeros_like(E_grid)
+                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                    E_grid.flatten(),
+                    self._min_det_energy,
+                    dec_grid.flatten(),
+                ).reshape(E_grid.shape)
 
             else:
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    e_cen, self._min_det_energy
+                    E_c, self._min_det_energy
                 )
+                p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
+
+            # Inflate d_omega if needed
+            if isinstance(roi, RectangularROI):
+                d_omega = np.repeat(np.expand_dims(d_omega, 1), p_Edet.shape[1], axis=1)
+                weights = 1.0
+            elif isinstance(roi, CircularROI):
+                weights = np.repeat(np.expand_dims(counts, 1), p_Edet.shape[1], axis=1)
             p_Edet = np.nan_to_num(p_Edet)
 
-        return ((p_Edet * integral.T * aeff.T).T).sum()
+            output = np.sum(
+                np.sum(
+                    aeff_vals * flux_vals * p_Edet * d_omega * weights,
+                    axis=0,
+                )
+                * d_E,
+                axis=0,
+            )
+
+        return output
 
     def _compute_exposure_integral(self):
         """
@@ -290,8 +353,8 @@ class ExposureIntegral:
         Return a slice of the effective area at each point source's declination
         """
 
-        logelow = np.log10(self.effective_area.tE_bin_edges[:-1])
-        logehigh = np.log10(self._effective_area.tE_bin_edges[1:])
+        logelow = np.log10(self.effective_area.tE_bin_edges[:-1].copy())
+        logehigh = np.log10(self._effective_area.tE_bin_edges[1:].copy())
 
         ec = np.power(10, (logelow + logehigh) / 2) << u.GeV
 
@@ -303,7 +366,9 @@ class ExposureIntegral:
                 cosz = np.cos(np.pi - np.arccos(unit_vector[2]))
                 cosz_bin = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
 
-                aeff_slice = self.effective_area.eff_area[:, cosz_bin] << u.m**2
+                aeff_slice = (
+                    self.effective_area.eff_area[:, cosz_bin].copy() << u.m**2
+                )
 
                 self.pdet_grid.append(aeff_slice)
 
@@ -348,6 +413,11 @@ class ExposureIntegral:
                 aeff_values = []
                 for E in E_range:
                     idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
+                    if (
+                        np.isclose(E, Emax)
+                        and idx_E == self.effective_area.tE_bin_edges.size - 1
+                    ):
+                        idx_E -= 1
                     aeff_values.append(self.effective_area.eff_area[idx_E][idx_cosz])
                 f_values = (
                     source.flux_model.spectral_shape.pdf(
@@ -376,6 +446,11 @@ class ExposureIntegral:
                     aeff_values = []
                     for E in E_range:
                         idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
+                        if (
+                            np.isclose(E, Emax)
+                            and idx_E == self.effective_area.tE_bin_edges.size - 1
+                        ):
+                            idx_E -= 1
                         aeff_values.append(
                             self.effective_area.eff_area[idx_E][idx_cosz]
                         )

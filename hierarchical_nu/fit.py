@@ -12,14 +12,14 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.cm as cm
 import ligo.skymap.plot
+import arviz as av
 
 from math import ceil, floor
+from time import time
 
 from cmdstanpy import CmdStanModel
 
-from icecube_tools.utils.vMF import get_theta_p
-
-from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
+from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_to_icrs
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
@@ -28,6 +28,7 @@ from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
+from hierarchical_nu.utils.plotting import SphericalCircle
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -239,24 +240,35 @@ class StanFit:
             **kwargs,
         )
 
+    def get_src_position(self):
+        try:
+            ra = self._sources.point_source[0].ra
+            dec = self._sources.point_source[0].dec
+        except IndexError:
+            ra, dec = uv_to_icrs(self._fit_inputs["varpi"][0])
+        source_coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
+
+        return source_coords
+
     def plot_trace(self, var_names=None, **kwargs):
         """
         Trace plot using list of stan parameter keys.
         """
 
-        import arviz
-
         if not var_names:
             var_names = self._def_var_names
 
-        return arviz.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+        axs = av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+        fig = axs.flatten()[0].get_figure()
+
+        return fig, axs
 
     def plot_trace_and_priors(self, var_names=None, **kwargs):
         """
         Trace plot and overplot the used priors.
         """
 
-        axs = self.plot_trace(var_names=var_names, show=False, **kwargs)
+        fig, axs = self.plot_trace(var_names=var_names, show=False, **kwargs)
 
         if not var_names:
             var_names = self._def_var_names
@@ -270,14 +282,24 @@ class StanFit:
                 # If so, get it and plot it
                 prior = priors_dict[name]
                 ax = ax_double[0]
-
                 supp = ax.get_xlim()
                 x = np.linspace(*supp, 1000)
-                ax.plot(x, prior.pdf(x), color="black", alpha=0.4, zorder=0)
+
+                if "transform" in kwargs.keys():
+                    # Assumes that the only sensible transformation is log10
+                    pdf = prior.pdf_logspace
+                    ax.plot(x, pdf(np.power(10, x)), color="black", alpha=0.4, zorder=0)
+
+                else:
+                    pdf = prior.pdf
+                    ax.plot(x, pdf(x), color="black", alpha=0.4, zorder=0)
+
             except:
                 pass
 
-        return axs
+        fig = axs.flatten()[0].get_figure()
+
+        return fig, axs
 
     def corner_plot(self, var_names=None, truths=None):
         """
@@ -368,7 +390,61 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
-    def plot_energy_posterior(self):
+    def _plot_energy_posterior(self, input_axs, ax, source_idx, color_scale):
+        ev_class = np.array(self._get_event_classifications())
+        assoc_prob = ev_class[:, source_idx]
+
+        if color_scale == "lin":
+            norm = colors.Normalize(0.0, 1.0, clip=True)
+        elif color_scale == "log":
+            norm = colors.LogNorm(1e-8, 1.0, clip=True)
+        else:
+            raise ValueError("No other scale supported")
+        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        color = mapper.to_rgba(assoc_prob)
+
+        for c, line in enumerate(input_axs[0, 0].lines):
+            ax.plot(
+                np.power(10, line.get_data()[0]),
+                line.get_data()[1],
+                color=color[c],
+                zorder=assoc_prob[c] + 1,
+            )
+        _, yhigh = ax.get_ylim()
+        ax.set_xscale("log")
+
+        for c, line in enumerate(input_axs[0, 0].lines):
+            ax.vlines(
+                self.events.energies[c].to_value(u.GeV),
+                yhigh,
+                1.05 * yhigh,
+                color=color[c],
+                lw=1,
+                zorder=assoc_prob[c] + 1,
+            )
+            if assoc_prob[c] > 0.1:
+                # if we have more than 20% association prob, link both lines up
+                x, y = input_axs[0, 0].lines[c].get_data()
+                idx_posterior = np.argmax(y)
+                ax.plot(
+                    [
+                        np.power(10, x[idx_posterior]),
+                        self.events.energies[c].to_value(u.GeV),
+                    ],
+                    [y[idx_posterior], yhigh],
+                    lw=0.5,
+                    color="black",
+                    ls="--",
+                )
+
+        ax.text(1e7, yhigh, "$\hat E$")
+
+        ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
+        ax.set_ylabel("pdf")
+
+        return ax, mapper
+
+    def plot_energy_posterior(self, source_idx: int = 0, color_scale: str = "lin"):
         """
         Plot energy posteriors in log10-space.
         Color corresponds to association to point source presumed
@@ -376,73 +452,38 @@ class StanFit:
         TODO: make compatible with multiple PS
         """
 
-        ev_class = np.array(self._get_event_classifications())
-
         axs = self.plot_trace(
-            var_names=["E"],
-            transform=lambda x: np.log10(x),
-            show=False,
-            combined=True
+            var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
         )
 
-        min = 0.0
-        max = 1.0
-        norm = colors.Normalize(min, max, clip=True)
-        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
-        color = mapper.to_rgba(ev_class[:, 0])
+        fig, ax = plt.subplots(dpi=150)
 
-        fig, ax = plt.subplots()
-        for c, line in enumerate(axs[0, 0].lines):
-            ax.plot(
-                np.power(10, line.get_data()[0]),
-                line.get_data()[1],
-                color=color[c],
-                zorder=ev_class[c, 0] + 1,
-            )
-        _, yhigh = ax.get_ylim()
-        ax.set_xscale("log")
-
-        ax_reco = ax.twiny()
-        ax_reco.set_xscale("log")
-        ax_reco.set_xlim(ax.get_xlim())
-        ax_reco.vlines(
-            self.events.energies.to_value(u.GeV), 0.9 * yhigh, yhigh, color=color
-        )
-        ax_reco.set_xlabel(r"$\hat E~[\text{GeV}]$")
-
-        ax.set_xlabel(r"$E~[\text{GeV}]$")
-        ax.set_ylabel("pdf")
-        fig.colorbar(mapper, label="PS association probability")
+        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx, color_scale)
+        fig.colorbar(mapper, ax=ax, label=f"association probability to {source_idx:n}")
 
         return fig, ax
 
-    @u.quantity_input
-    def plot_roi(self, source_coords: SkyCoord, radius=5.0 * u.deg):
-        """
-        Create plot of the ROI.
-        Events are colour-coded dots, color corresponding
-        to the association probability to the point source proposed.
-        Assumes there is a point source in self.sources[0].
-        Size of events are meaningless.
-        """
-
+    def _plot_roi(self, source_coords, ax, radius, source_idx, color_scale):
         ev_class = np.array(self._get_event_classifications())
+        assoc_prob = ev_class[:, source_idx]
+
         min = 0.0
         max = 1.0
-        norm = colors.Normalize(min, max, clip=True)
+        if color_scale == "lin":
+            norm = colors.Normalize(min, max, clip=True)
+        elif color_scale == "log":
+            norm = colors.LogNorm(1e-8, max, clip=True)
+        else:
+            raise ValueError("No other scale supported")
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
-        color = mapper.to_rgba(ev_class[:, 0])
+        color = mapper.to_rgba(assoc_prob)
 
         events = self.events
         events.coords.representation_type = "spherical"
-        # we are working in degrees here
-        fig, ax = plt.subplots(
-            subplot_kw={
-                "projection": "astro degrees zoom",
-                "center": source_coords,
-                "radius": f"{radius.to_value(u.deg)} deg",
-            }
-        )
+
+        sep = events.coords.separation(source_coords).deg
+        mask = sep < radius.to_value(u.deg) * 1.41
+        # sloppy, don't know how to do that rn
 
         ax.scatter(
             source_coords.ra.deg,
@@ -454,27 +495,102 @@ class StanFit:
             transform=ax.get_transform("icrs"),
         )
 
-        for c, (colour, coord) in enumerate(zip(color, events.coords)):
+        for c, (colour, coord) in enumerate(zip(color[mask], events.coords[mask])):
             ax.scatter(
                 coord.ra.deg,
                 coord.dec.deg,
                 color=colour,
                 alpha=0.4,
-                zorder=ev_class[c, 0] + 1,
+                zorder=assoc_prob[c] + 1,
                 transform=ax.get_transform("icrs"),
             )
 
         ax.set_xlabel("RA")
         ax.set_ylabel("DEC")
-        cbar = fig.colorbar(mapper)
-        cbar.set_label("TXS association probability")
         ax.grid()
+
+        return ax, mapper
+
+    @u.quantity_input
+    def plot_roi(
+        self, radius=5.0 * u.deg, source_idx: int = 0, color_scale: str = "lin"
+    ):
+        """
+        Create plot of the ROI.
+        Events are colour-coded dots, color corresponding
+        to the association probability to the point source proposed.
+        Assumes there is a point source in self.sources[0].
+        Size of events are meaningless.
+        """
+
+        source_coords = self.get_src_position()
+
+        # we are working in degrees here
+        fig, ax = plt.subplots(
+            subplot_kw={
+                "projection": "astro degrees zoom",
+                "center": source_coords,
+                "radius": f"{radius.to_value(u.deg)} deg",
+            },
+            dpi=150,
+        )
+
+        ax, mapper = self._plot_roi(source_coords, ax, radius, source_idx, color_scale)
+        fig.colorbar(mapper, ax=ax, label=f"association probability to {source_idx:n}")
+
+        return fig, ax
+
+    @u.quantity_input
+    def plot_energy_and_roi(
+        self, radius=5 * u.deg, source_idx: int = 0, color_scale: str = "lin"
+    ):
+        fig = plt.figure(dpi=150, figsize=(8, 3))
+        gs = fig.add_gridspec(
+            1,
+            2,
+            width_ratios=(0.8, 1.0),
+            left=0.05,
+            right=0.95,
+            bottom=0.05,
+            top=0.95,
+            wspace=0.13,
+            hspace=0.05,
+        )
+
+        ax = fig.add_subplot(gs[0, 1])
+
+        axs = self.plot_trace(
+            var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
+        )
+
+        source_coords = self.get_src_position()
+
+        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx, color_scale)
+
+        ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
+        ax.yaxis.set_ticklabels([])
+        ax.yaxis.set_ticks([])
+        ax.set_ylabel("posterior pdf")
+        fig.colorbar(mapper, label=f"association probability to {source_idx:n}", ax=ax)
+
+        ax = fig.add_subplot(
+            gs[0, 0],
+            projection="astro degrees zoom",
+            center=source_coords,
+            radius=f"{radius.to_value(u.deg)} deg",
+        )
+
+        ax, _ = self._plot_roi(source_coords, ax, radius, source_idx, color_scale)
 
         return fig, ax
 
     def save(self, filename, overwrite: bool = False):
         if os.path.exists(filename) and not overwrite:
-            raise FileExistsError(f"File {filename} already exists.")
+            logger.warning(f"File {filename} already exists.")
+            file = os.path.splitext(filename)[0]
+            ext = os.path.splitext(filename)[1]
+            file += f"_{int(time())}"
+            filename = file + ext
 
         with h5py.File(filename, "w") as f:
             fit_folder = f.create_group("fit")
@@ -516,8 +632,12 @@ class StanFit:
             if "fit" not in f.keys():
                 raise ValueError("File is not a saved hierarchical_nu fit.")
 
-            for k, v in f["fit/meta"].items():
-                fit_meta[k] = v[()]
+            try:
+                for k, v in f["fit/meta"].items():
+                    fit_meta[k] = v[()]
+            except KeyError:
+                fit_meta["chains"] = 1
+                fit_meta["iter_sampling"] = 1000
 
             for k, v in f["fit/inputs"].items():
                 if "mu" in k or "sigma" in k:

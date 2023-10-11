@@ -75,26 +75,35 @@ class SinglePriorConfig:
 
 @dataclass
 class PriorConfig:
-    src_index: SinglePriorConfig = SinglePriorConfig(
-        name="NormalPrior", mu=2.0, sigma=1.5
+    src_index: SinglePriorConfig = field(
+        default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=2.0, sigma=1.5)
     )
-    diff_index: SinglePriorConfig = SinglePriorConfig(
-        name="NormalPrior", mu=2.5, sigma=1.5
+    diff_index: SinglePriorConfig = field(
+        default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=2.5, sigma=1.5)
     )
-    L: SinglePriorConfig = SinglePriorConfig(name="LogNormalPrior", mu=1e52, sigma=10.0)
-    diff_flux: SinglePriorConfig = SinglePriorConfig(
-        name="LogNormalPrior", mu=1e-6, sigma=1.0
+    L: SinglePriorConfig = field(
+        default_factory=lambda: SinglePriorConfig(
+            name="LogNormalPrior", mu=1e52, sigma=10.0
+        )
     )
-    atmo_flux: SinglePriorConfig = SinglePriorConfig(
-        name="LogNormalPrior", mu=1e-6, sigma=1.0
+
+    diff_flux: SinglePriorConfig = field(
+        default_factory=lambda: SinglePriorConfig(
+            name="LogNormalPrior", mu=1e-6, sigma=1.0
+        )
+    )
+    atmo_flux: SinglePriorConfig = field(
+        default_factory=lambda: SinglePriorConfig(
+            name="LogNormalPrior", mu=1e-6, sigma=1.0
+        )
     )
 
 
 @dataclass
 class HierarchicalNuConfig:
-    file_config: FileConfig = FileConfig()
-    parameter_config: ParameterConfig = ParameterConfig()
-    prior_config: PriorConfig = PriorConfig()
+    file_config: FileConfig = field(default_factory=lambda: FileConfig())
+    parameter_config: ParameterConfig = field(default_factory=lambda: ParameterConfig())
+    prior_config: PriorConfig = field(default_factory=lambda: PriorConfig())
 
 
 # Load default config
