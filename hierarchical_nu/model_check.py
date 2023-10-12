@@ -481,6 +481,7 @@ class ModelCheck:
         outputs["run_time"] = []
         outputs["Lambda"] = []
 
+        fit = None
         for i, s in enumerate(subjob_seeds):
             sys.stderr.write("Run %i\n" % i)
 
@@ -510,7 +511,8 @@ class ModelCheck:
 
             # Fit
             # Same as above, save time
-            if i == 0:
+            # Also handle in case first sim has no events
+            if not fit:
                 fit = StanFit(
                     self._sources,
                     self._detector_model_type,
