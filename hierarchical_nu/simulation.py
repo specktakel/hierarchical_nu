@@ -197,7 +197,7 @@ class Simulation:
 
         # Check for detected events
         if len(energies) != 0:
-            self.events = Events(energies, coords, event_types, ang_errs)
+            self.events = Events(energies, coords, event_types, ang_errs, mjd)
         else:
             self.events = None
 
