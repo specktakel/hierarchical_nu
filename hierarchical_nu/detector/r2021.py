@@ -23,13 +23,9 @@ from hierarchical_nu.stan.interface import STAN_PATH
 from ..utils.cache import Cache
 from ..utils.fitting_tools import Residuals
 from ..backend import (
-    # FunctionsContext,
     VMFParameterization,
-    # PolynomialParameterization,
     TruncatedParameterization,
-    # LogParameterization,
     SimpleHistogram,
-    # SimpleHistogram_rng,
     ReturnStatement,
     FunctionCall,
     DistributionMode,
@@ -40,7 +36,6 @@ from ..backend import (
     ForwardArrayDef,
     ForwardVectorDef,
     StanArray,
-    StanVector,
     StringExpression,
     UserDefinedFunction,
     TwoDimHistInterpolation,
@@ -70,10 +65,6 @@ Classes implement organisation of data and stan code generation.
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 Cache.set_cache_dir(".cache")
-
-IRF_PERIOD = "IC86_II"
-LOGNORM = "lognorm"
-HISTOGRAM = "histogram"
 
 
 class HistogramSampler:
@@ -397,16 +388,13 @@ class R2021EffectiveArea(EffectiveArea):
     More or less copied from NorthernTracks implementation.
     """
 
-    # Uses latest IRF version
-    local_path = f"input/tracks/{IRF_PERIOD}_effectiveArea.csv"
-    DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
-
-    CACHE_FNAME = "aeff_r2021.npz"
-
     def __init__(
-        self, mode: DistributionMode = DistributionMode.PDF, period: str = "IC86_II"
+        self, mode: DistributionMode = DistributionMode.PDF, season: str = "IC86_II"
     ) -> None:
-        self._func_name = "R2021EffectiveArea"
+        self._season = season
+        self._func_name = f"{season}EffectiveArea"
+
+        self.CACHE_FNAME = f"aeff_{season}.npz"
 
         self.mode = mode
 
@@ -427,12 +415,11 @@ class R2021EffectiveArea(EffectiveArea):
             type_ = TwoDimHistInterpolation
         else:
             type_ = SimpleHistogram
-        # type_ = SimpleHistogram
         with self:
             hist = type_(
                 self._eff_area,
                 [self._tE_bin_edges, self._cosz_bin_edges],
-                "R2021EffAreaHist",
+                f"{self._season}EffAreaHist",
             )
             # Uses cos(z), so calculate z = pi - theta
             cos_dir = "cos(pi() - acos(true_dir[3]))"
@@ -450,7 +437,7 @@ class R2021EffectiveArea(EffectiveArea):
             from icecube_tools.detector.effective_area import EffectiveArea
 
             # cut the arrays short because of numerical issues in precomputation.py
-            aeff = EffectiveArea.from_dataset("20210126", IRF_PERIOD)
+            aeff = EffectiveArea.from_dataset("20210126", self._season)
             # 1st axis: energy, 2nd axis: cosz
             eff_area = aeff.values
             # Deleting zero-entries above 1e9GeV is done in icecube_tools
@@ -482,45 +469,42 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
     """
 
-    local_path = f"input/tracks/{IRF_PERIOD}_smearing.csv"
-    DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
-
-    CACHE_FNAME_LOGNORM = "energy_reso_lognorm_r2021.npz"
-    CACHE_FNAME_HISTOGRAM = "energy_reso_histogram_r2021.npz"
-
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        # gen_type: str = "histogram",
         make_plots: bool = False,
         n_components: int = 3,
         ereco_cuts: bool = True,
+        season: str = "IC86_II",
     ) -> None:
         """
         Instantiate class.
         :param mode: DistributionMode.PDF or .RNG (fitting or simulating)
         :parm rewrite: bool, True if cached files should be overwritten,
                        if there are no cached files they will be generated either way
-        :param gen_type: "histogram" or "lognorm": Which type should be used for simulation/fitting
         :param make_plots: bool, true if plots of parameterisation in case of lognorm should be made
         :param n_components: int, specifies how many components the lognormal mixture should have
         :param ereco_cuts: bool, if True simulated events below Ereco of the data in the sampled Aeff dec bin are discarded
+        :param season: String indicating the detector season
         """
 
-        self.irf = R2021IRF.from_period(IRF_PERIOD)
+        self._season = season
+        self.CACHE_FNAME_LOGNORM = f"energy_reso_lognorm_{season}.npz"
+        self.CACHE_FNAME_HISTOGRAM = f"energy_reso_histogram_{season}.npz"
+        self.irf = R2021IRF.from_period(season)
         self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(
-            IRF_PERIOD, np.linspace(1, 9, 25)
+            season, np.linspace(1, 9, 25)
         )
         self._make_ereco_cuts = ereco_cuts
         self._ereco_cuts = self._icecube_tools_eres._ereco_limits
         self._aeff_dec_bins = self._icecube_tools_eres.declination_bins_aeff
         self.mode = mode
         if self.mode == DistributionMode.PDF:
-            self._func_name = "R2021EnergyResolution"
+            self._func_name = f"{season}EnergyResolution"
             self.gen_type = "lognorm"
         elif self.mode == DistributionMode.RNG:
-            self._func_name = "R2021EnergyResolution_rng"
+            self._func_name = f"{season}EnergyResolution_rng"
             self.gen_type = "histogram"
         self.mode = mode
         self._rewrite = rewrite
@@ -545,7 +529,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         # initialise parent classes with proper signature for stan functions
         if self.mode == DistributionMode.PDF:
-            self.mixture_name = "r2021_energy_res_mix"
+            self.mixture_name = f"{self._season}_energy_res_mix"
             super().__init__(
                 self._func_name,
                 ["log_true_energy", "log_reco_energy", "omega"],
@@ -553,7 +537,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 "real",
             )
         elif self.mode == DistributionMode.RNG:
-            self.mixture_name = "r2021_energy_res_mix_rng"
+            self.mixture_name = f"{self._season}_energy_res_mix_rng"
             super().__init__(
                 self._func_name,
                 ["log_true_energy", "omega"],
@@ -838,7 +822,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     data = np.load(fr, allow_pickle=True)
                     self._eres = data["eres"]
                     self._tE_bin_edges = data["tE_bin_edges"]
-                    # self._rE_bin_edges = data["rE_bin_edges"]
                     self._poly_params_mu = data["poly_params_mu"]
                     self._poly_params_sd = data["poly_params_sd"]
                     self._poly_limits = data["poly_limits"]
@@ -866,9 +849,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         else:
                             logger.warning(f"Faulty bin at {c_e, c_dec}")
 
-                    # tE_bin_edges = np.power(10, true_energy_bins)
                     tE_bin_edges = np.array(true_energy_bins)
-                    # tE_bin_edges = np.power(10, self.irf.true_energy_bins)
                     tE_binc = np.power(10, 0.5 * (tE_bin_edges[:-1] + tE_bin_edges[1:]))
 
                     # Find common rE binning per declination
@@ -926,11 +907,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         fit_params[c, ::2] = params[::2][idx]
                         fit_params[c, 1::2] = params[1::2][idx]
 
-                    # print(fit_params.shape)
-                    # print(rebin_tE_binc.shape)
                     self._fit_params.append(fit_params)
                     self._rebin_tE_binc.append(rebin_tE_binc)
-                    # self.rebin_tE_binc = rebin_tE_binc
 
                     # take entire range
                     imin = 0
@@ -938,8 +916,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                     Emin = rebin_tE_binc[imin]
                     Emax = rebin_tE_binc[imax]
-                    # Emin = tE_bin_edges[imin]
-                    # Emax = tE_bin_edges[imax]
 
                     # Fit polynomial:
                     poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
@@ -1049,6 +1025,11 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         find lowest and highest reconstructed energy
         and restrict the threshold energy by the found values.
         Optional argument upper_threshold_energy used for debugging and diagnostic plots
+        :param true_energy: True neutrino energy in GeV
+        :param lower_threshold_energy: Lower reconstructed muon energy in GeV
+        :param dec: Declination of event in radian
+        :param upper_threshold_energy: Optional upper reconstructe muon energy in GeV,
+                                       if none provided, use highest possible value
         """
         # self.set_fit_params(dec)
         # Truncate input energies to safe range
@@ -1228,7 +1209,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         # Rebin to have higher statistics at upper
         # and lower end of energy range
         rebin_tE_binc = np.zeros(int(len(tE_binc) / rebin))
-        # print(rebin_tE_binc)
 
         # Lognormal mixture
         model = self.make_fit_model(n_components)
@@ -1248,7 +1228,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 # Normalize to prob. density / bin
                 e_reso = e_reso / (e_reso.sum() * log10_bin_width)
 
-                residuals = Residuals((log10_rE_binc, e_reso), model)
+                # residuals = Residuals((log10_rE_binc, e_reso), model)
                 ls = LeastSquares(log10_rE_binc, e_reso, np.ones_like(e_reso), model)
                 # Calculate seed as mean of the resolution to help minimizer
                 seed_mu = np.average(log10_rE_binc, weights=e_reso)
@@ -1265,7 +1245,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     names += [f"scale_{i}", f"s_{i}"]
                     bounds_lo += [0, 0.01]
                     bounds_hi += [8, 1]
-                # seed[0] = seed_mu - 1
 
                 limits = [(l, h) for (l, h) in zip(bounds_lo, bounds_hi)]
                 m = Minuit(ls, *tuple(seed), name=names)
@@ -1300,7 +1279,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 fit_params.append(np.zeros(2 * n_components))
 
         fit_params = np.asarray(fit_params)
-        # print(fit_params)
         return fit_params, rebin_tE_binc, minuits
 
     def _fit_polynomial(
@@ -1501,10 +1479,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         return fig
 
     @classmethod
-    def rewrite_files(cls) -> None:
+    def rewrite_files(cls, season: str = "IC86_II") -> None:
         # call this to rewrite npz files
-        cls(DistributionMode.PDF, rewrite=True)
-        cls(DistributionMode.RNG, rewrite=True)
+        cls(DistributionMode.PDF, rewrite=True, season=season)
+        cls(DistributionMode.RNG, rewrite=True, season=season)
 
     @u.quantity_input
     def set_fit_params(self, dec: u.rad) -> None:
@@ -1529,36 +1507,33 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
     """
 
-    local_path = f"input/tracks/{IRF_PERIOD}_smearing.csv"
-    DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
-
-    CACHE_FNAME = "angular_reso_r2021.npz"
-    # only one file here for the rng data
-
     def __init__(
-        self, mode: DistributionMode = DistributionMode.PDF, rewrite: bool = False
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
+        season: str = "IC86_II",
     ) -> None:
         """
         Instanciate class.
         :param mode: DistributionMode.PDF or .RNG (fitting or simulating)
         :parm rewrite: bool, True if cached files should be overwritten,
                        if there are no cached files they will be generated either way
-        :param gen_type: "histogram" or "lognorm": Which type should be used for simulation/fitting
+        :param season: String identifying the detector season
         """
 
-        self.irf = R2021IRF.from_period(IRF_PERIOD)
+        self._season = season
+        self.CACHE_FNAME = f"angular_reso_{season}.npz"
+
+        self.irf = R2021IRF.from_period(season)
         self.mode = mode
         self._rewrite = rewrite
         logger.info("Forced angular rewriting: {}".format(rewrite))
 
         if mode == DistributionMode.PDF:
-            self._func_name = "R2021AngularResolution"
+            self._func_name = f"{season}AngularResolution"
         else:
-            self._func_name = "R2021AngularResolution_rng"
+            self._func_name = f"{season}AngularResolution_rng"
 
-        # self._kappa_grid: np.ndarray = None
-        # self._Egrid: np.ndarray = None
-        # self._poly_params: Sequence = []
         # TODO check for lin/log scale of energy
         self._Emin: float = float("nan")
         self._Emax: float = float("nan")
@@ -1572,7 +1547,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
 
         if self.mode == DistributionMode.PDF:
             super().__init__(
-                "R2021AngularResolution",
+                f"{self._season}AngularResolution",
                 ["true_dir", "reco_dir", "kappa"],
                 ["vector", "vector", "real"],
                 "real",
@@ -1580,7 +1555,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
 
         else:
             super().__init__(
-                "R2021AngularResolution_rng",
+                f"{self._season}AngularResolution_rng",
                 ["log_true_energy", "log_reco_energy", "true_dir"],
                 ["real", "real", "vector"],
                 "vector",
@@ -1766,12 +1741,12 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         pass
 
     @classmethod
-    def rewrite_files(cls):
+    def rewrite_files(cls, season: str = "IC86_II"):
         """
         Rewrite cached file
         """
 
-        cls(DistributionMode.RNG, rewrite=True)
+        cls(DistributionMode.RNG, rewrite=True, season=season)
 
 
 class R2021DetectorModel(DetectorModel):
@@ -1781,41 +1756,43 @@ class R2021DetectorModel(DetectorModel):
     Only knows muon track events.
     """
 
-    RNG_FILENAME = "r2021_rng.stan"
-    PDF_FILENAME = "r2021_pdf.stan"
-
-    PDF_NAME = "R2021PDF"
-    RNG_NAME = "R2021_rng"
-
-    event_types = ["tracks"]
-
     logger = logging.getLogger(__name__ + ".R2021DetectorModel")
     logger.setLevel(logging.DEBUG)
 
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
-        event_type: str = "tracks",
         rewrite: bool = False,
         make_plots: bool = False,
-        gen_type: str = "lognorm",
         n_components: int = 3,
         ereco_cuts: bool = True,
+        season: str = "IC86_II",
     ) -> None:
-        super().__init__(mode, event_type="tracks")
+        """
+        Instantiate R2021 detector model
+        :param mode: DistributionMode.PDF (for fits) or .RNG (for simulations)
+        :param rewrite: bool, if True rewrites all related cache files
+        :param make_plots: bool, if True creates diagnostic plots of the energy parameterisation
+        :param n_components: integer number of the energy resolution's lognormal mixture components
+        :param ereco_cuts: bool, if True applies exp-data Ereco cuts on simulated events
+        :param season: String identifying the detector season
+        """
+
+        self._season = season
+        super().__init__(mode)
 
         if mode == DistributionMode.PDF:
-            self._func_name = self.PDF_NAME
+            self._func_name = f"{season}PDF"
         elif mode == DistributionMode.RNG:
-            self._func_name = self.RNG_NAME
+            self._func_name = f"{season}_rng"
 
-        self._angular_resolution = R2021AngularResolution(mode, rewrite)
+        self._angular_resolution = R2021AngularResolution(mode, rewrite, season=season)
 
         self._energy_resolution = R2021EnergyResolution(
-            mode, rewrite, make_plots, n_components, ereco_cuts
+            mode, rewrite, make_plots, n_components, ereco_cuts, season=season
         )
 
-        self._eff_area = R2021EffectiveArea(mode)
+        self._eff_area = R2021EffectiveArea(mode, season=season)
 
     def _get_effective_area(self) -> R2021EffectiveArea:
         return self._eff_area
@@ -1826,6 +1803,14 @@ class R2021DetectorModel(DetectorModel):
     def _get_angular_resolution(self) -> R2021AngularResolution:
         return self._angular_resolution
 
+    @staticmethod
+    def RNG_FILENAME(season: str):
+        return f"{season}_rng.stan"
+
+    @staticmethod
+    def PDF_FILENAME(season: str):
+        return f"{season}_pdf.stan"
+
     @classmethod
     def generate_code(
         cls,
@@ -1835,6 +1820,7 @@ class R2021DetectorModel(DetectorModel):
         n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
+        season: str = "IC86_II",
     ) -> None:
         """
         Classmethod to generate stan code of entire detector.
@@ -1852,10 +1838,10 @@ class R2021DetectorModel(DetectorModel):
             os.makedirs(path)
         finally:
             if not rewrite:
-                if mode == DistributionMode.PDF and cls.PDF_FILENAME in files:
-                    return os.path.join(path, cls.PDF_FILENAME)
-                elif mode == DistributionMode.RNG and cls.RNG_FILENAME in files:
-                    return os.path.join(path, cls.RNG_FILENAME)
+                if mode == DistributionMode.PDF and cls.PDF_FILENAME(season) in files:
+                    return os.path.join(path, cls.PDF_FILENAME(season))
+                elif mode == DistributionMode.RNG and cls.RNG_FILENAME(season) in files:
+                    return os.path.join(path, cls.RNG_FILENAME(season))
 
             else:
                 cls.logger.info("Generating r2021 stan code.")
@@ -1867,6 +1853,7 @@ class R2021DetectorModel(DetectorModel):
                 make_plots=make_plots,
                 n_components=n_components,
                 ereco_cuts=ereco_cuts,
+                season=season,
             )
             instance.effective_area.generate_code()
             instance.angular_resolution.generate_code()
@@ -1877,13 +1864,13 @@ class R2021DetectorModel(DetectorModel):
         if not os.path.isdir(path):
             os.makedirs(path)
         if mode == DistributionMode.PDF:
-            with open(os.path.join(path, cls.PDF_FILENAME), "w+") as f:
+            with open(os.path.join(path, cls.PDF_FILENAME(season)), "w+") as f:
                 f.write(code)
-            return os.path.join(path, cls.PDF_FILENAME)
+            return os.path.join(path, cls.PDF_FILENAME(season))
         else:
-            with open(os.path.join(path, cls.RNG_FILENAME), "w+") as f:
+            with open(os.path.join(path, cls.RNG_FILENAME(season)), "w+") as f:
                 f.write(code)
-            return os.path.join(path, cls.RNG_FILENAME)
+            return os.path.join(path, cls.RNG_FILENAME(season))
 
     def generate_pdf_function_code(self, sources: Sources = Sources()):
         """
