@@ -5,7 +5,13 @@ from .northern_tracks import (
 from .cascades import (
     CascadesDetectorModel,
 )
-from .r2021 import R2021DetectorModel
+from .r2021 import (
+    IC40DetectorModel,
+    IC59DetectorModel,
+    IC79DetectorModel,
+    IC86_IDetectorModel,
+    IC86_IIDetectorModel,
+)
 
 
 class Refrigerator:
@@ -80,7 +86,11 @@ class ChilledGoods:
 DETECTOR_DICT = {
     Refrigerator.PYTHON_NT: NorthernTracksDetectorModel,
     Refrigerator.PYTHON_CAS: CascadesDetectorModel,
-    Refrigerator.PYTHON_IC86_II: R2021DetectorModel,
+    # Refrigerator.PYTHON_IC40: IC40DetectorModel,
+    # Refrigerator.PYTHON_IC59: IC59DetectorModel,
+    # Refrigerator.PYTHON_IC79: IC79DetectorModel,
+    Refrigerator.PYTHON_IC86_I: IC86_IDetectorModel,
+    Refrigerator.PYTHON_IC86_II: IC86_IIDetectorModel,
 }
 
 
