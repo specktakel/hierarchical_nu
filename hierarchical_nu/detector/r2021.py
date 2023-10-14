@@ -10,6 +10,8 @@ import numpy as np
 from scipy import stats
 from astropy import units as u
 
+from abc import ABC
+
 # import sys
 
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
@@ -515,7 +517,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self._poly_limits: Sequence = []
         self._poly_limits_battery: Sequence = []
         self._declination_bins = self.irf.declination_bins
-
+        # Find faulty bins (usually at low energy and in the Southern sky)
+        # and find pdet_limits according to this
         # For prob_Edet_above_threshold
         self._pdet_limits = (1e2, 1e8)
 
@@ -807,7 +810,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         if self.gen_type == "lognorm":
             # Create empty lists
             self._fit_params = []
-            self._eres = []
+            # self._eres = []
             self._rE_bin_edges = []
             self._rE_binc = []
             self._rebin_tE_binc = []
@@ -820,7 +823,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 logger.info("Loading energy lognorm data from file.")
                 with Cache.open(self.CACHE_FNAME_LOGNORM, "rb") as fr:
                     data = np.load(fr, allow_pickle=True)
-                    self._eres = data["eres"]
+                    # self._eres = data["eres"]
                     self._tE_bin_edges = data["tE_bin_edges"]
                     self._poly_params_mu = data["poly_params_mu"]
                     self._poly_params_sd = data["poly_params_sd"]
@@ -831,7 +834,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 self._poly_params_mu__ = self._poly_params_mu.copy()
                 self._poly_params_sd__ = self._poly_params_sd.copy()
                 self._poly_limits__ = self._poly_limits.copy()
-                self._eres__ = self._eres.copy()
+                # self._eres__ = self._eres.copy()
                 self._fit_params__ = self._fit_params.copy()
                 self._tE_binc__ = self._tE_binc.copy()
 
@@ -839,6 +842,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 logger.info("Re-doing energy lognorm data and saving files.")
 
                 self._dec_minuits = []
+
                 for c_dec, (dec_low, dec_high) in enumerate(
                     zip(self._declination_bins[:-1], self._declination_bins[1:])
                 ):
@@ -852,52 +856,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     tE_bin_edges = np.array(true_energy_bins)
                     tE_binc = np.power(10, 0.5 * (tE_bin_edges[:-1] + tE_bin_edges[1:]))
 
-                    # Find common rE binning per declination
-                    _min = 10
-                    _max = 0
-                    _diff = 0
-                    reco_bins_temp = []
-                    for c, tE in enumerate(self.irf.true_energy_values):
-                        if (c, c_dec) not in self.irf.faulty:
-                            reco_bins_temp.append(self.irf.reco_energy_bins[c, c_dec])
-                    for bins in reco_bins_temp:
-                        c_min = bins.min()
-                        c_max = bins.max()
-                        c_diff = np.diff(bins).max()
-                        _min = c_min if c_min < _min else _min
-                        _max = c_max if c_max > _max else _max
-                        _diff = c_diff if c_diff > _diff else _diff
-
-                    # Find binning encompassing all ereco distributions
-                    num_bins = int(np.ceil((_max - _min) / _diff))
-                    # Bin edges here in lin space, fitting done in logspace in `detector_model.py`
-                    rE_bin_edges = np.logspace(_min, _max, num_bins)
-                    self._rE_bin_edges.append(rE_bin_edges)
-                    rE_binc = 0.5 * (rE_bin_edges[:-1] + rE_bin_edges[1:])
-                    self._rE_binc.append(rE_binc)
-                    bin_width = np.log10(rE_bin_edges[1]) - np.log10(rE_bin_edges[0])
-                    eres = np.zeros(
-                        (self.irf.true_energy_bins.size - 1, rE_bin_edges.size - 1)
-                    )
-
-                    # Make 2D array of energy resolution
-                    for i, pdf in enumerate(self.irf.reco_energy[:, c_dec]):
-                        for j, (elow, ehigh) in enumerate(
-                            zip(rE_bin_edges[:-1], rE_bin_edges[1:])
-                        ):
-                            # Integrate pdf over reconstructed energy by evaluating cdf
-                            eres[i, j] = pdf.cdf(np.log10(ehigh)) - pdf.cdf(
-                                np.log10(elow)
-                            )
-                        # Normalisation (actually not needed, pdfs are normalised)
-                        eres[i, :] = eres[i, :] / np.sum(eres[i] * bin_width)
-
-                    self._eres.append(eres)
-
                     # Fit lognormal mixture to pdf(reco|true) for each true energy bin
                     # do not rebin -> rebin=1
-                    fit_params_temp, rebin_tE_binc, minuits = self._fit_energy_res(
-                        tE_binc, rE_binc, eres, self._n_components, rebin=1
+                    fit_params_temp, minuits = self._fit_energy_res(
+                        tE_binc, c_dec, self._n_components
                     )
                     self._dec_minuits.append(minuits)
                     # check for label switching
@@ -908,18 +870,18 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         fit_params[c, 1::2] = params[1::2][idx]
 
                     self._fit_params.append(fit_params)
-                    self._rebin_tE_binc.append(rebin_tE_binc)
+                    # self._rebin_tE_binc.append(rebin_tE_binc)
 
                     # take entire range
                     imin = 0
                     imax = -1
 
-                    Emin = rebin_tE_binc[imin]
-                    Emax = rebin_tE_binc[imax]
+                    Emin = tE_binc[imin]
+                    Emax = tE_binc[imax]
 
                     # Fit polynomial:
                     poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
-                        fit_params, rebin_tE_binc, Emin, Emax, polydeg=6
+                        fit_params, tE_binc, Emin, Emax, polydeg=6
                     )
 
                     self._poly_params_mu.append(poly_params_mu)
@@ -935,7 +897,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 self._poly_limits__ = self._poly_limits.copy()
                 self._poly_params_mu__ = self._poly_params_mu.copy()
                 self._poly_params_sd__ = self._poly_params_sd.copy()
-                self._eres__ = self._eres.copy()
+                # self._eres__ = self._eres.copy()
                 self._tE_binc__ = self._tE_binc.copy()
                 self._fit_params__ = self._fit_params.copy()
 
@@ -946,20 +908,18 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     for c, dec in enumerate(self._declination_bins[:-1]):
                         self.set_fit_params((dec + 0.01) * u.rad)
 
-                        fig = self.plot_fit_params(
-                            self._fit_params, self._rebin_tE_binc[c]
-                        )
-                        fig = self.plot_parameterizations(
-                            self._tE_binc,
-                            self._rE_binc[c],
-                            self._fit_params,
-                            # rebin_tE_binc=rebin_tE_binc,
-                        )
+                        fig = self.plot_fit_params(self._fit_params, self._tE_binc)
+                        # fig = self.plot_parameterizations(
+                        #    self._rebin_tE_binc[c],
+                        #    self._rE_binc[c],
+                        #    self._fit_params,
+                        #    # rebin_tE_binc=rebin_tE_binc,
+                        # )
 
                 self._poly_params_mu = self._poly_params_mu__.copy()
                 self._poly_params_sd = self._poly_params_sd__.copy()
                 self._poly_limits = self._poly_limits__.copy()
-                self._eres = self._eres__.copy()
+                # self._eres = self._eres__.copy()
                 self._fit_params = self._fit_params__.copy()
                 self._tE_binc = self._tE_binc__.copy()
 
@@ -967,11 +927,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 with Cache.open(self.CACHE_FNAME_LOGNORM, "wb") as fr:
                     np.savez(
                         fr,
-                        eres=eres,
                         tE_bin_edges=self._tE_bin_edges,
                         # rebin_tE_binc=self._rebin_tE_binc,
                         tE_binc=self._tE_binc,
-                        rE_bin_edges=rE_bin_edges,
+                        # rE_bin_edges=rE_bin_edges,
                         poly_params_mu=self._poly_params_mu,
                         poly_params_sd=self._poly_params_sd,
                         poly_limits=self.poly_limits,
@@ -1185,13 +1144,45 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         return _cumulative_model
 
+    @staticmethod
+    def make_cumulative_fit_model(bin_edges, n_components):
+        """
+        Integrate within the bin edges and make a fit model out of it
+        """
+
+        def _cumulative_model(*pars):
+            result = np.zeros(bin_edges.size - 1)
+            for i in range(n_components):
+                result += (
+                    (1 / n_components)
+                    * (
+                        stats.lognorm.cdf(
+                            bin_edges[1:], scale=pars[2 * i], s=pars[2 * i + 1]
+                        )
+                        - stats.lognorm.cdf(
+                            bin_edges[:-1], scale=pars[2 * i], s=pars[2 * i + 1]
+                        )
+                    )
+                    / np.diff(bin_edges)
+                )
+            return result
+
+        return _cumulative_model
+
+    @staticmethod
+    def make_likelihood_function(model, counts):
+        def likelihood_func(*pars):
+            eval = model(*pars)
+            mask = eval != 0.0
+            return -np.sum(counts[mask] * np.log(eval[mask]))
+
+        return likelihood_func
+
     def _fit_energy_res(
         self,
         tE_binc: np.ndarray,
-        rE_binc: np.ndarray,
-        eres: np.ndarray,
+        c_dec: int,
         n_components: int,
-        rebin: int = 1,
     ) -> np.ndarray:
         """
         Fit a lognormal mixture to P(Ereco | Etrue) in given Etrue bins.
@@ -1203,34 +1194,29 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         fit_params = []
 
-        log10_rE_binc = np.log10(rE_binc)
-        log10_bin_width = log10_rE_binc[1] - log10_rE_binc[0]
-
-        # Rebin to have higher statistics at upper
-        # and lower end of energy range
-        rebin_tE_binc = np.zeros(int(len(tE_binc) / rebin))
-
-        # Lognormal mixture
-        model = self.make_fit_model(n_components)
-
         minuits = []
         # Fitting loop
-        for index in range(len(rebin_tE_binc)):
-            rebin_tE_binc[index] = (
-                0.5 * (tE_binc[[index * rebin, rebin * (index + 1) - 1]]).sum()
-            )
+        for tE in tE_binc:
+            # print(tE)
+            tE_idx = np.digitize(np.log10(tE), self.irf.true_energy_bins) - 1
+            # print(tE_idx)
 
-            # Energy resolution for this true-energy bin
-            e_reso = eres[index * rebin : (index + 1) * rebin]
-            e_reso = e_reso.sum(axis=0)
+            # Ereco bins and fractional counts per bin
+            n, bins = self.irf._marginalisation(tE_idx, c_dec)
+            # normalisation to pdf
+            e_reso = n / np.sum(n * np.diff(bins))
+            bins_c = bins[:-1] + np.diff(bins) / 2
+            log10_rE_bin_edges = bins
+            log10_rE_binc = bins_c
 
             if e_reso.sum() > 0:
-                # Normalize to prob. density / bin
-                e_reso = e_reso / (e_reso.sum() * log10_bin_width)
+                # Lognormal mixture
+                model = self.make_cumulative_fit_model(log10_rE_bin_edges, n_components)
 
                 # residuals = Residuals((log10_rE_binc, e_reso), model)
-                ls = LeastSquares(log10_rE_binc, e_reso, np.ones_like(e_reso), model)
+                # ls = LeastSquares(log10_rE_binc, e_reso, np.ones_like(e_reso), model)
                 # Calculate seed as mean of the resolution to help minimizer
+                llh = self.make_likelihood_function(model, e_reso)
                 seed_mu = np.average(log10_rE_binc, weights=e_reso)
                 if ~np.isfinite(seed_mu):
                     seed_mu = 3
@@ -1243,16 +1229,17 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     seed[2 * i] = seed_mu + 0.1 * (i + 1)
                     seed[2 * i + 1] = (i + 1) * 0.05
                     names += [f"scale_{i}", f"s_{i}"]
-                    bounds_lo += [0, 0.01]
+                    bounds_lo += [1, 0.01]
                     bounds_hi += [8, 1]
 
                 limits = [(l, h) for (l, h) in zip(bounds_lo, bounds_hi)]
-                m = Minuit(ls, *tuple(seed), name=names)
-                m.errordef = 1
-                m.errors = 0.1 * np.asarray(seed)
+                m = Minuit(llh, *tuple(seed), name=names)
+                m.errordef = 0.5
+                m.errors = 0.05 * np.asarray(seed)
                 m.limits = limits
                 # m.scipy(method="SLSQP")
                 m.migrad()
+                print(m.fmin.is_valid)
                 minuits.append(m)
                 # Fit using simple least squares
                 # res = least_squares(
@@ -1265,8 +1252,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     temp += [m.values[f"scale_{i}"], m.values[f"s_{i}"]]
                 fit_params.append(temp)
                 # Check for label swapping
-                # mu_indices = np.arange(0, stop=n_components * 2, step=2)
-                # mu_order = np.argsort(res.x[mu_indices])
 
                 # Store fit parameters
                 # this_fit_pars: List = []
@@ -1279,7 +1264,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 fit_params.append(np.zeros(2 * n_components))
 
         fit_params = np.asarray(fit_params)
-        return fit_params, rebin_tE_binc, minuits
+        return fit_params, minuits
 
     def _fit_polynomial(
         self,
@@ -1369,51 +1354,27 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
     def plot_parameterizations(
         self,
-        tE_binc: np.ndarray,
-        rE_binc: np.ndarray,
         fit_params: np.ndarray,
-        rebin_tE_binc=None,
+        c_dec: int,
     ):
         """
         Plot fitted parameterizations
         Args:
-            tE_binc: np.ndarray
-                True energy bin centers
-            rE_binc: np.ndarray
-                Reconstructed energy bin centers
             fit_params: np.ndarray
                 Fitted parameters for mu and sigma
-            eres: np.ndarray
-                P(Ereco | Etrue)
         """
 
         import matplotlib.pyplot as plt
 
-        plot_energies = [1e5, 3e5, 5e5, 8e5, 1e6, 3e6, 5e6, 8e6]  # GeV
+        plot_energies = np.power(10, np.arange(3.25, 7.75, step=0.5))  # GeV
 
         if self._poly_params_mu is None:
             raise RuntimeError("Run setup() first")
 
-        # Find true energy bins for the chosen plotting energies
-        # assume that bins are evenly distributed in logspace
-        log_tE_binc = np.log10(tE_binc)
-        ext_log_tE_binc = np.hstack(
-            (
-                log_tE_binc[:-1] - 0.5 * np.diff(log_tE_binc),
-                np.array([log_tE_binc[-1] + 0.5 * np.diff(log_tE_binc)[-1]]),
-            )
+        plot_indices = (
+            np.digitize(plot_energies, np.power(10, self.irf.true_energy_bins)) - 1
         )
-        # print(ext_log_tE_binc)
-        tE_bin_edges = np.power(10, ext_log_tE_binc)
-        plot_indices = np.digitize(plot_energies, tE_bin_edges) - 1
-
-        if rebin_tE_binc is not None:
-            # Parameters are relative to the rebinned histogram
-            param_indices = np.digitize(plot_energies, rebin_tE_binc)
-            rebin = int(len(tE_binc) / len(rebin_tE_binc))
-
-        log10_rE_binc = np.log10(rE_binc)
-        log10_bin_width = log10_rE_binc[1] - log10_rE_binc[0]
+        print(plot_indices)
 
         fig, axs = plt.subplots(3, 3, figsize=(10, 10))
         xs = np.linspace(*np.log10(self._poly_limits), num=100)
@@ -1422,48 +1383,39 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         fl_ax = axs.ravel()
 
         for i, p_i in enumerate(plot_indices):
+            print(i, p_i)
             log_plot_e = np.log10(plot_energies[i])
 
             model_params: List[float] = []
-            model_params_linear: List[float] = []
+            # model_params_linear: List[float] = []
             for comp in range(self.n_components):
                 mu = np.poly1d(self._poly_params_mu[comp])(log_plot_e)
                 sigma = np.poly1d(self._poly_params_sd[comp])(log_plot_e)
                 model_params += [mu, sigma]
 
-                # print(self._fit_params.shape, self._tE_binc.shape)
-                # print(self._tE_binc.shape)
-                mu = np.interp(
-                    log_plot_e, np.log10(self._tE_binc), self._fit_params[:, comp * 2]
-                )
-                sigma = np.interp(
-                    log_plot_e,
-                    np.log10(self._tE_binc),
-                    self._fit_params[:, comp * 2 + 1],
-                )
-                model_params_linear += [mu, sigma]
+                # mu = np.interp(
+                #    log_plot_e, np.log10(self._tE_binc), self._fit_params[:, comp * 2]
+                # )
+                # sigma = np.interp(
+                #    log_plot_e,
+                #    np.log10(self._tE_binc),
+                #    self._fit_params[:, comp * 2 + 1],
+                # )
+                # model_params_linear += [mu, sigma]
 
-            if rebin_tE_binc is not None:
-                e_reso = self._eres[
-                    int(p_i / rebin) * rebin : (int(p_i / rebin) + 1) * rebin
-                ]
-                # normalisation of e_reso in case it's not normalised yet
-                e_reso = e_reso.sum(axis=0) / (e_reso.sum() * log10_bin_width)
-                res = fit_params[param_indices[i]]
-
-            else:
-                e_reso = self._eres[p_i]
-                res = fit_params[plot_indices[i]]
-
+            res = fit_params[p_i]
+            log10_rE_bin_edges = self.irf.reco_energy_bins[p_i, c_dec]
+            log10_rE_binc = log10_rE_bin_edges[:-1] + np.diff(log10_rE_bin_edges) / 2.0
+            e_reso = self.irf.reco_energy[p_i, c_dec].pdf(log10_rE_binc)
             fl_ax[i].plot(log10_rE_binc, e_reso, label="input eres")
             fl_ax[i].plot(xs, model(xs, *model_params), label="poly evaluated")
             fl_ax[i].plot(xs, model(xs, *res), label="nearest bin's parameters")
-            fl_ax[i].plot(
-                xs, model(xs, *model_params_linear), label="linear interpolation"
-            )
+            # fl_ax[i].plot(
+            #    xs, model(xs, *model_params_linear), label="linear interpolation"
+            # )
             fl_ax[i].set_ylim(1e-4, 5)
             fl_ax[i].set_yscale("log")
-            fl_ax[i].set_title("True E: {:.1E}".format(tE_binc[p_i]))
+            fl_ax[i].set_title("True E: {:.1E}".format(plot_energies[i]))
             fl_ax[i].legend()
 
         ax = fig.add_subplot(111, frameon=False)
@@ -1496,7 +1448,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self._poly_params_mu = self._poly_params_mu__[dec_idx]
         self._poly_params_sd = self._poly_params_sd__[dec_idx]
         self._poly_limits = self._poly_limits__[dec_idx]
-        self._eres = self._eres__[dec_idx]
+        # self._eres = self._eres__[dec_idx]
         self._fit_params = self._fit_params__[dec_idx]
         self._tE_binc = self._tE_binc__[dec_idx]
 
@@ -1804,15 +1756,15 @@ class R2021DetectorModel(DetectorModel):
         return self._angular_resolution
 
     @staticmethod
-    def RNG_FILENAME(season: str):
+    def _RNG_FILENAME(season: str):
         return f"{season}_rng.stan"
 
     @staticmethod
-    def PDF_FILENAME(season: str):
+    def _PDF_FILENAME(season: str):
         return f"{season}_pdf.stan"
 
     @classmethod
-    def generate_code(
+    def __generate_code(
         cls,
         mode: DistributionMode,
         rewrite: bool = False,
@@ -1838,16 +1790,18 @@ class R2021DetectorModel(DetectorModel):
             os.makedirs(path)
         finally:
             if not rewrite:
-                if mode == DistributionMode.PDF and cls.PDF_FILENAME(season) in files:
-                    return os.path.join(path, cls.PDF_FILENAME(season))
-                elif mode == DistributionMode.RNG and cls.RNG_FILENAME(season) in files:
-                    return os.path.join(path, cls.RNG_FILENAME(season))
+                if mode == DistributionMode.PDF and cls._PDF_FILENAME(season) in files:
+                    return os.path.join(path, cls._PDF_FILENAME(season))
+                elif (
+                    mode == DistributionMode.RNG and cls._RNG_FILENAME(season) in files
+                ):
+                    return os.path.join(path, cls._RNG_FILENAME(season))
 
             else:
                 cls.logger.info("Generating r2021 stan code.")
 
         with StanGenerator() as cg:
-            instance = cls(
+            instance = R2021DetectorModel(
                 mode=mode,
                 rewrite=rewrite,
                 make_plots=make_plots,
@@ -1864,13 +1818,13 @@ class R2021DetectorModel(DetectorModel):
         if not os.path.isdir(path):
             os.makedirs(path)
         if mode == DistributionMode.PDF:
-            with open(os.path.join(path, cls.PDF_FILENAME(season)), "w+") as f:
+            with open(os.path.join(path, cls._PDF_FILENAME(season)), "w+") as f:
                 f.write(code)
-            return os.path.join(path, cls.PDF_FILENAME(season))
+            return os.path.join(path, cls._PDF_FILENAME(season))
         else:
-            with open(os.path.join(path, cls.RNG_FILENAME(season)), "w+") as f:
+            with open(os.path.join(path, cls._RNG_FILENAME(season)), "w+") as f:
                 f.write(code)
-            return os.path.join(path, cls.RNG_FILENAME(season))
+            return os.path.join(path, cls._RNG_FILENAME(season))
 
     def generate_pdf_function_code(self, sources: Sources = Sources()):
         """
@@ -1951,3 +1905,198 @@ class R2021DetectorModel(DetectorModel):
                 "log10(true_energy)", "log10(return_this[1])", "omega"
             )
             ReturnStatement([return_this])
+
+
+class IC40DetectorModel(R2021DetectorModel):
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+    ):
+        super().__init__(
+            mode=mode,
+            rewrite=rewrite,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC40",
+        )
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+        path: str = STAN_GEN_PATH,
+    ):
+        cls._R2021DetectorModel__generate_code(
+            mode=mode,
+            rewrite=rewrite,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC40",
+            path=path,
+        )
+
+
+class IC59DetectorModel(R2021DetectorModel):
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+    ):
+        super().__init__(
+            mode=mode,
+            rewrite=rewrite,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC59",
+        )
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+        path: str = STAN_GEN_PATH,
+    ):
+        cls._R2021DetectorModel__generate_code(
+            mode=mode,
+            rewrite=rewrite,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC59",
+            path=path,
+        )
+
+
+class IC79DetectorModel(R2021DetectorModel):
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+    ):
+        super().__init__(
+            mode=mode,
+            rewrite=rewrite,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC79",
+        )
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+        path: str = STAN_GEN_PATH,
+    ):
+        cls._R2021DetectorModel__generate_code(
+            mode=mode,
+            rewrite=rewrite,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC79",
+            path=path,
+        )
+
+
+class IC86_IDetectorModel(R2021DetectorModel):
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+    ):
+        super().__init__(
+            mode=mode,
+            rewrite=rewrite,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC86_I",
+        )
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 4,
+        ereco_cuts: bool = True,
+        path: str = STAN_GEN_PATH,
+    ):
+        cls._R2021DetectorModel__generate_code(
+            mode=mode,
+            rewrite=rewrite,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC86_I",
+            path=path,
+        )
+
+
+class IC86_IIDetectorModel(R2021DetectorModel):
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+    ):
+        super().__init__(
+            mode=mode,
+            rewrite=rewrite,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC86_II",
+        )
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+        path: str = STAN_GEN_PATH,
+    ):
+        cls._R2021DetectorModel__generate_code(
+            mode=mode,
+            rewrite=rewrite,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC86_II",
+            path=path,
+        )
