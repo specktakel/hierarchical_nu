@@ -904,10 +904,25 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         self.set_fit_params((dec + 0.01) * u.rad)
 
                         fig = self.plot_fit_params(self._fit_params, self._tE_binc)
+                        """
+                        fig.savefig(
+                            f"new_version_at_tE/polynomial_{self._season}_dec_{c}.png",
+                            dpi=300,
+                            bbox_inches="tight",
+                        )
+                        """
                         fig = self.plot_parameterizations(
                             self._fit_params,
+                            self._tE_binc,
                             c,
                         )
+                        """
+                        fig.savefig(
+                            f"new_version_at_tE/lognorm_fit_{self._season}_dec_{c}.png",
+                            dpi=300,
+                            bbox_inches="tight",
+                        )
+                        """
 
                 self._poly_params_mu = self._poly_params_mu__.copy()
                 self._poly_params_sd = self._poly_params_sd__.copy()
@@ -1355,6 +1370,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
     def plot_parameterizations(
         self,
         fit_params: np.ndarray,
+        tE_binc: np.ndarray,
         c_dec: int,
     ):
         """
@@ -1367,12 +1383,13 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         import matplotlib.pyplot as plt
 
         plot_energies = np.power(10, np.arange(3.25, 7.75, step=0.5))  # GeV
+        # plot_energies = [1e5, 3e5, 5e5, 8e5, 1e6, 3e6, 5e6, 8e6]  # GeV
 
         if self._poly_params_mu is None:
             raise RuntimeError("Run setup() first")
 
         plot_indices = (
-            np.digitize(plot_energies, np.power(10, self.irf.true_energy_bins)) - 1
+            np.digitize(plot_energies, tE_binc) - 1
         )
 
         fig, axs = plt.subplots(3, 3, figsize=(10, 10))
