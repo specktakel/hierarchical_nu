@@ -1190,6 +1190,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         tE_binc: np.ndarray,
         c_dec: int,
         n_components: int,
+        fit_type: str = "likelihood",
     ) -> np.ndarray:
         """
         Fit a lognormal mixture to P(Ereco | Etrue) in given Etrue bins.
@@ -1204,6 +1205,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         This weighting in the above product is an exponential (more data points equals more factors),
         thus the likelihood reads $L(\theta) = \prod_i f(x_i; \theta)^{h_i}$ with the histograms height $h_i$.
         The loglike then trivially reads $\log{L} = \sum_i h_i \log{f(x_i; \theta)}$.
+
+        fit_type = "chi2" implements the previously used least square fit.
         """
 
         from scipy.optimize import least_squares
@@ -1229,11 +1232,21 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             log10_rE_binc = bins_c
 
             if e_reso.sum() > 0:
-                # Lognormal mixture, averages the proposed mixture pdf over each of the histogram's bins.
-                model = self.make_cumulative_fit_model(log10_rE_bin_edges, n_components)
+                if fit_type == "likelihood":
+                    # Lognormal mixture, averages the proposed mixture pdf over each of the histogram's bins.
+                    model = self.make_cumulative_fit_model(
+                        log10_rE_bin_edges, n_components
+                    )
 
-                # Make the likelihood function as described above
-                llh = self.make_likelihood_function(model, e_reso)
+                    # Make the likelihood function as described above
+                    llh = self.make_likelihood_function(model, e_reso)
+
+                elif fit_type == "chi2":
+                    model = self.make_fit_model(n_components)
+                    # residuals = Residuals((log10_rE_binc, e_reso), model)
+                    ls = LeastSquares(
+                        log10_rE_binc, e_reso, np.ones_like(e_reso), model
+                    )
 
                 # Calculate seed as mean of the resolution to help minimizer
                 seed_mu = np.average(log10_rE_binc, weights=e_reso)
@@ -1245,15 +1258,20 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 bounds_hi: List[float] = []
                 names: List[str] = []
                 for i in range(n_components):
-                    seed[2 * i] = seed_mu + 0.2 * (i + 1)
+                    seed[2 * i] = seed_mu + 0.1 * (i + 1)
                     seed[2 * i + 1] = (i + 1) * 0.05
                     names += [f"scale_{i}", f"s_{i}"]
                     bounds_lo += [1, 0.01]
                     bounds_hi += [8, 1]
 
                 limits = [(l, h) for (l, h) in zip(bounds_lo, bounds_hi)]
-                m = Minuit(llh, *tuple(seed), name=names)
-                m.errordef = 0.5
+
+                if fit_type == "likelihood":
+                    m = Minuit(llh, *tuple(seed), name=names)
+                    m.errordef = 0.5
+                elif fit_type == "chi2":
+                    m = Minuit(ls, *tuple(seed), name=names)
+                    m.errordef = 1
                 m.errors = 0.05 * np.asarray(seed)
                 m.limits = limits
                 m.migrad()
@@ -1269,18 +1287,16 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                     for i in range(n_components):
                         temp += [m.values[f"scale_{i}"], m.values[f"s_{i}"]]
-                    fit_params.append(temp)
-                minuits.append(m)
 
-                # tE_fitted.append(tE)
-                # Check for label swapping
-                # TODO re-add this
-                # Store fit parameters
-                # this_fit_pars: List = []
-                # for i in range(n_components):
-                #    mu_index = mu_indices[mu_order[i]]
-                #    this_fit_pars += [res.x[mu_index], res.x[mu_index + 1]]
-                # fit_params.append(this_fit_pars)
+                    # Check for label switching, ascending order of scale needs to be enforced
+                    # carry over possible swaps to the `s` parameter.
+                    hat = np.argsort(temp[::2])
+                    new_fit_pars = []
+                    for i in range(n_components):
+                        new_fit_pars.append(temp[::2][hat[i]])
+                        new_fit_pars.append(temp[1::2][hat[i]])
+                    fit_params.append(new_fit_pars)
+                minuits.append(m)
 
             else:
                 fit_params.append(np.zeros(2 * n_components))
@@ -1403,11 +1419,9 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         fl_ax = axs.ravel()
 
         for i, p_i in enumerate(plot_indices):
-            # print(i, p_i)
             log_plot_e = np.log10(plot_energies[i])
 
             model_params: List[float] = []
-            # model_params_linear: List[float] = []
             for comp in range(self.n_components):
                 mu = np.poly1d(self._poly_params_mu[comp])(log_plot_e)
                 sigma = np.poly1d(self._poly_params_sd[comp])(log_plot_e)
@@ -1428,6 +1442,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             fl_ax[i].set_ylim(1e-4, 5)
             fl_ax[i].set_yscale("log")
             fl_ax[i].set_title("True E: {:.1E}".format(plot_energies[i]))
+            fl_ax[i].set_xlim(1.5, 8.5)
             fl_ax[i].legend()
 
         ax = fig.add_subplot(111, frameon=False)
