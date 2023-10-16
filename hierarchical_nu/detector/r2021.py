@@ -904,6 +904,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         self.set_fit_params((dec + 0.01) * u.rad)
 
                         fig = self.plot_fit_params(self._fit_params, self._tE_binc)
+                        fig.show()
                         """
                         fig.savefig(
                             f"new_version_at_tE/polynomial_{self._season}_dec_{c}.png",
@@ -916,6 +917,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                             self._tE_binc,
                             c,
                         )
+                        fig.show()
                         """
                         fig.savefig(
                             f"new_version_at_tE/lognorm_fit_{self._season}_dec_{c}.png",
@@ -1211,6 +1213,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         fit_params = []
 
         minuits = []
+        # tE_fitted = []
         # Fitting loop
         for tE in tE_binc:
             # print(tE)
@@ -1242,7 +1245,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 bounds_hi: List[float] = []
                 names: List[str] = []
                 for i in range(n_components):
-                    seed[2 * i] = seed_mu + 0.1 * (i + 1)
+                    seed[2 * i] = seed_mu + 0.2 * (i + 1)
                     seed[2 * i + 1] = (i + 1) * 0.05
                     names += [f"scale_{i}", f"s_{i}"]
                     bounds_lo += [1, 0.01]
@@ -1260,12 +1263,16 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     logger.warning(
                         f"Fit at {tE:.1f}GeV has not converged, please inspect."
                     )
+                    fit_params.append(np.zeros(2 * n_components))
+                else:
+                    temp = []
+
+                    for i in range(n_components):
+                        temp += [m.values[f"scale_{i}"], m.values[f"s_{i}"]]
+                    fit_params.append(temp)
                 minuits.append(m)
 
-                temp = []
-                for i in range(n_components):
-                    temp += [m.values[f"scale_{i}"], m.values[f"s_{i}"]]
-                fit_params.append(temp)
+                # tE_fitted.append(tE)
                 # Check for label swapping
                 # TODO re-add this
                 # Store fit parameters
@@ -1388,9 +1395,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         if self._poly_params_mu is None:
             raise RuntimeError("Run setup() first")
 
-        plot_indices = (
-            np.digitize(plot_energies, tE_binc) - 1
-        )
+        plot_indices = np.digitize(plot_energies, tE_binc) - 1
 
         fig, axs = plt.subplots(3, 3, figsize=(10, 10))
 
@@ -1409,7 +1414,9 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 model_params += [mu, sigma]
 
             res = fit_params[p_i]
-            irf_tE_idx = np.digitize(np.log10(plot_energies[i]), self.irf.true_energy_bins) - 1
+            irf_tE_idx = (
+                np.digitize(np.log10(plot_energies[i]), self.irf.true_energy_bins) - 1
+            )
             log10_rE_bin_edges = self.irf.reco_energy_bins[irf_tE_idx, c_dec]
             log10_rE_binc = log10_rE_bin_edges[:-1] + np.diff(log10_rE_bin_edges) / 2.0
             xs = np.linspace(log10_rE_bin_edges[0], log10_rE_bin_edges[-1], num=100)
