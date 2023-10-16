@@ -1409,11 +1409,12 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 model_params += [mu, sigma]
 
             res = fit_params[p_i]
-            log10_rE_bin_edges = self.irf.reco_energy_bins[p_i, c_dec]
+            irf_tE_idx = np.digitize(np.log10(plot_energies[i]), self.irf.true_energy_bins) - 1
+            log10_rE_bin_edges = self.irf.reco_energy_bins[irf_tE_idx, c_dec]
             log10_rE_binc = log10_rE_bin_edges[:-1] + np.diff(log10_rE_bin_edges) / 2.0
             xs = np.linspace(log10_rE_bin_edges[0], log10_rE_bin_edges[-1], num=100)
 
-            e_reso = self.irf.reco_energy[p_i, c_dec].pdf(log10_rE_binc)
+            e_reso = self.irf.reco_energy[irf_tE_idx, c_dec].pdf(log10_rE_binc)
             fl_ax[i].plot(log10_rE_binc, e_reso, label="input eres")
             fl_ax[i].plot(xs, model(xs, *model_params), label="poly evaluated")
             fl_ax[i].plot(xs, model(xs, *res), label="nearest bin's parameters")
