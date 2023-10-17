@@ -2124,7 +2124,7 @@ class IC86_IDetectorModel(R2021DetectorModel):
         mode: DistributionMode,
         rewrite: bool = False,
         make_plots: bool = False,
-        n_components: int = 4,
+        n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
     ):

@@ -42,7 +42,6 @@ class Events:
         types,
         ang_errs: u.deg,
         mjd: Time,
-        periods: List[str] = None,
     ):
         """
         Events class for the storage of event observables
@@ -69,9 +68,6 @@ class Events:
             raise ValueError("Event types not recognised")
 
         self._ang_errs = ang_errs
-
-        if periods is not None:
-            self._periods = periods
 
     def remove(self, i):
         self._energies = np.delete(self._energies, i)
@@ -194,13 +190,13 @@ class Events:
     @classmethod
     def from_ev_file(
         cls,
-        p: str,
+        *seasons: str,
         Emin_det: u.GeV = 1 * u.GeV,
         **kwargs,
     ):
         """
         Load events from the 2021 data release
-        :param p: string of period to be loaded.
+        :param seasons: arbitrary number of strings identifying detector seasons of r2021 release.
         :param kwargs: kwargs passed to make an event selection, see `icecube_tools` documentation for details
         :return: :class:`hierarchical_nu.events.Events`
         """
@@ -209,9 +205,11 @@ class Events:
 
         # Borrow from icecube_tools
         use_all = kwargs.pop("use_all", True)
-        events = RealEvents.from_event_files(p, use_all=use_all)
+        events = RealEvents.from_event_files(*seasons, use_all=use_all)
 
         # Check if minimum detected energy is currently loaded as parameter
+        # TODO fix
+        """
         try:
             Emin_det = Parameter.get_parameter("Emin_det_t").value.to(u.GeV)
             logger.warning(f"Overwriting Emin_det with {Emin_det}")
@@ -221,23 +219,22 @@ class Events:
                 logger.warning(f"Overwriting Emin_det with {Emin_det}")
             except ValueError:
                 pass
-
+        """
         try:
             roi = ROI.STACK[0]
         except IndexError:
             raise ValueError("No ROI on stack.")
 
-        # events.restrict(**kwargs) # Do this completely in hnu, icecube_tools lacks the RA-wrapping right now, TODO...
-        # Read in relevant data
-        ra = events.ra[p] * u.rad
-        dec = events.dec[p] * u.rad
-        reco_energy = events.reco_energy[p] * u.GeV
-        period = ra.size * [p]
-        mjd = events.mjd[p]
+        ra = np.hstack([events.ra[s] * u.rad for s in seasons])
+        dec = np.hstack([events.dec[s] * u.rad for s in seasons])
+        reco_energy = np.hstack([events.reco_energy[s] * u.GeV for s in seasons])
+        types = np.hstack(
+            [events.ra[s].size * [Refrigerator.python2stan(s)] for s in seasons]
+        )
+        mjd = np.hstack([events.mjd[s] for s in seasons])
 
         # Conversion from 50% containment to 68% is already done in RealEvents
-        ang_err = events.ang_err[p] * u.deg
-        types = np.array(ra.size * [Refrigerator.STAN_IC86_II])
+        ang_err = np.hstack([events.ang_err[s] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         if isinstance(roi, CircularROI):
@@ -279,7 +276,6 @@ class Events:
             types[mask],
             ang_err[mask],
             mjd[mask],
-            p,
         )
 
     @u.quantity_input
