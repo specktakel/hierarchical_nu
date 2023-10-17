@@ -24,7 +24,6 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.detector_model import DetectorModel
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
 from hierarchical_nu.detector.icecube import IceCube, Refrigerator
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
@@ -456,7 +455,7 @@ class StanFit:
         TODO: make compatible with multiple PS
         """
 
-        axs = self.plot_trace(
+        _, axs = self.plot_trace(
             var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
         )
 
@@ -563,7 +562,7 @@ class StanFit:
 
         ax = fig.add_subplot(gs[0, 1])
 
-        axs = self.plot_trace(
+        _, axs = self.plot_trace(
             var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
         )
 
@@ -604,6 +603,9 @@ class StanFit:
 
             for key, value in self._fit_inputs.items():
                 inputs_folder.create_dataset(key, data=value)
+
+            # All quantities with event_types dependency follow this list's order
+            inputs_folder.create_dataset("event_types", data=self._event_types)
 
             for key, value in self._fit_output.stan_variables().items():
                 outputs_folder.create_dataset(key, data=value)
@@ -670,7 +672,11 @@ class StanFit:
                         )
                     )
 
+        event_types = [_.decode("ascii") for _ in fit_inputs["event_types"].tolist()]
+
         obs_time = fit_inputs["T"] * u.s
+
+        obs_time_dict = {et: obs_time[k] for k, et in enumerate(event_types)}
 
         priors = Priors()
         priors.luminosity = LogNormalPrior(
@@ -691,7 +697,7 @@ class StanFit:
 
         events = Events.from_file(filename)
 
-        fit = cls(Sources(), DetectorModel, events, obs_time, priors)
+        fit = cls(Sources(), event_types, events, obs_time_dict, priors)
 
         fit._fit_output = fit_outputs
         fit._fit_inputs = fit_inputs
