@@ -1727,7 +1727,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         cls(DistributionMode.RNG, rewrite=True, season=season)
 
 
-class R2021DetectorModel(DetectorModel):
+class R2021DetectorModel(ABC, DetectorModel):
     """
     Detector model class of ten-year All Sky Point Source release:
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
@@ -1816,12 +1816,10 @@ class R2021DetectorModel(DetectorModel):
             os.makedirs(path)
         finally:
             if not rewrite:
-                if mode == DistributionMode.PDF and cls._PDF_FILENAME(season) in files:
-                    return os.path.join(path, cls._PDF_FILENAME(season))
-                elif (
-                    mode == DistributionMode.RNG and cls._RNG_FILENAME(season) in files
-                ):
-                    return os.path.join(path, cls._RNG_FILENAME(season))
+                if mode == DistributionMode.PDF and cls.PDF_FILENAME in files:
+                    return os.path.join(path, cls.PDF_FILENAME)
+                elif mode == DistributionMode.RNG and cls.RNG_FILENAME in files:
+                    return os.path.join(path, cls.RNG_FILENAME)
 
             else:
                 cls.logger.info("Generating r2021 stan code.")
@@ -1934,6 +1932,9 @@ class R2021DetectorModel(DetectorModel):
 
 
 class IC40DetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC40_rng.stan"
+    PDF_FILENAME = "IC40_pdf.stan"
+
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
@@ -1973,6 +1974,9 @@ class IC40DetectorModel(R2021DetectorModel):
 
 
 class IC59DetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC59_rng.stan"
+    PDF_FILENAME = "IC59_pdf.stan"
+
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
@@ -2012,6 +2016,9 @@ class IC59DetectorModel(R2021DetectorModel):
 
 
 class IC79DetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC79_rng.stan"
+    PDF_FILENAME = "IC79_pdf.stan"
+
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
@@ -2051,6 +2058,9 @@ class IC79DetectorModel(R2021DetectorModel):
 
 
 class IC86_IDetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC86_I_rng.stan"
+    PDF_FILENAME = "IC86_I_pdf.stan"
+
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
@@ -2090,6 +2100,9 @@ class IC86_IDetectorModel(R2021DetectorModel):
 
 
 class IC86_IIDetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC86_II_rng.stan"
+    PDF_FILENAME = "IC86_II_pdf.stan"
+
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
