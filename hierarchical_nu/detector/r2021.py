@@ -242,7 +242,7 @@ class HistogramSampler:
         self._ang_cum_num_vals = ang_cum_num_vals
         self._ang_cum_num_edges = ang_cum_num_edges
 
-    def _make_hist_lookup_functions(self) -> None:
+    def _make_hist_lookup_functions(self, season: str) -> None:
         """
         Creates stan code for lookup functions of true energy and declination.
         True energy should be in log10(E/GeV), declination in rad.
@@ -250,7 +250,7 @@ class HistogramSampler:
 
         logger.debug("Making etrue/dec lookup functions.")
         self._etrue_lookup = UserDefinedFunction(
-            "etrue_lookup", ["true_energy"], ["real"], "int"
+            f"{season}_etrue_lookup", ["true_energy"], ["real"], "int"
         )
         with self._etrue_lookup:
             etrue_bins = StanArray(
@@ -259,7 +259,7 @@ class HistogramSampler:
             ReturnStatement(["binary_search(true_energy, ", etrue_bins, ")"])
 
         self._dec_lookup = UserDefinedFunction(
-            "dec_lookup", ["declination"], ["real"], "int"
+            f"{season}_dec_lookup", ["declination"], ["real"], "int"
         )
         with self._dec_lookup:
             # do binary search for bin of declination
@@ -267,7 +267,11 @@ class HistogramSampler:
             ReturnStatement(["binary_search(declination, ", declination_bins, ")"])
 
     def _make_histogram(
-        self, data_type: str, hist_values: Iterable[float], hist_bins: Iterable[float]
+        self,
+        data_type: str,
+        hist_values: Iterable[float],
+        hist_bins: Iterable[float],
+        season: str,
     ) -> None:
         """
         Creates stan code for ragged arrays used in histograms.
@@ -277,22 +281,22 @@ class HistogramSampler:
 
         logger.debug("Making histograms.")
         self._ragged_hist = UserDefinedFunction(
-            "{}_get_ragged_hist".format(data_type), ["idx"], ["int"], "array[] real"
+            f"{season}_{data_type}_get_ragged_hist", ["idx"], ["int"], "array[] real"
         )
         with self._ragged_hist:
             arr = StanArray("arr", "real", hist_values)
-            self._make_ragged_start_stop(data_type, "vals")
+            self._make_ragged_start_stop(data_type, "vals", season)
             ReturnStatement(["arr[start:stop]"])
 
         self._ragged_edges = UserDefinedFunction(
-            "{}_get_ragged_edges".format(data_type), ["idx"], ["int"], "array[] real"
+            f"{season}_{data_type}_get_ragged_edges", ["idx"], ["int"], "array[] real"
         )
         with self._ragged_edges:
             arr = StanArray("arr", "real", hist_bins)
-            self._make_ragged_start_stop(data_type, "edges")
+            self._make_ragged_start_stop(data_type, "edges", season)
             ReturnStatement(["arr[start:stop]"])
 
-    def _make_ereco_hist_index(self) -> None:
+    def _make_ereco_hist_index(self, season: str) -> None:
         """
         Creates stan code for lookup function for ereco hist index.
         Index is used to lookup which part of ragged array in histogram function is needed.
@@ -301,13 +305,13 @@ class HistogramSampler:
 
         logger.debug("Making ereco histogram indexing function.")
         get_ragged_index = UserDefinedFunction(
-            "ereco_get_ragged_index", ["etrue", "dec"], ["int", "int"], "int"
+            f"{season}_ereco_get_ragged_index", ["etrue", "dec"], ["int", "int"], "int"
         )
         # Takes indices of etrue and dec (to be determined elsewhere!)
         with get_ragged_index:
             ReturnStatement(["dec + (etrue - 1) * 3"])
 
-    def _make_psf_hist_index(self) -> None:
+    def _make_psf_hist_index(self, season: str) -> None:
         """
         Creates stan code for lookup function for ereco hist index.
         Index is used to lookup which part of ragged array in histogram function is needed.
@@ -316,7 +320,7 @@ class HistogramSampler:
 
         logger.debug("Making psf histogram indexing function.")
         get_ragged_index = UserDefinedFunction(
-            "psf_get_ragged_index",
+            f"{season}_psf_get_ragged_index",
             ["etrue", "dec", "ereco"],
             ["int", "int", "int"],
             "int",
@@ -324,7 +328,7 @@ class HistogramSampler:
         with get_ragged_index:
             ReturnStatement(["ereco + (dec - 1) * 20 + (etrue - 1) * 3  * 20"])
 
-    def _make_ang_hist_index(self) -> None:
+    def _make_ang_hist_index(self, season: str) -> None:
         """
         Creates stan code for lookup function for ereco hist index.
         Index is used to lookup which part of ragged array in histogram function is needed.
@@ -333,7 +337,7 @@ class HistogramSampler:
 
         logger.debug("Making ang histogram indexing function.")
         get_ragged_index = UserDefinedFunction(
-            "ang_get_ragged_index",
+            f"{season}_ang_get_ragged_index",
             ["etrue", "dec", "ereco", "psf"],
             ["int", "int", "int", "int"],
             "int",
@@ -345,7 +349,7 @@ class HistogramSampler:
                 ]
             )
 
-    def _make_lookup_functions(self, name: str, array: Iterable) -> None:
+    def _make_lookup_functions(self, name: str, array: Iterable, season: str) -> None:
         """
         Creates stan code for lookup functions, i.e. wraps function around array indexing.
         :param name: Name of function
@@ -353,14 +357,14 @@ class HistogramSampler:
         """
 
         logger.debug("Making generic lookup functions.")
-        f = UserDefinedFunction(name, ["idx"], ["int"], "int")
+        f = UserDefinedFunction(f"{season}_{name}", ["idx"], ["int"], "int")
         with f:
             arr = StanArray("arr", "int", array)
             with IfBlockContext(["idx > ", len(array), "|| idx < 0"]):
                 FunctionCall(['"idx outside range, "', "idx"], "reject")
             ReturnStatement(["arr[idx]"])
 
-    def _make_ragged_start_stop(self, data: str, hist: str) -> None:
+    def _make_ragged_start_stop(self, data: str, hist: str, season: str) -> None:
         """
         Creates stan code to find start and end of a histogram in a ragged array structure.
         :param data: str, "ereco", "psf", "ang"
@@ -373,12 +377,14 @@ class HistogramSampler:
         if hist == "edges" or hist == "vals":
             start << StringExpression(
                 [
-                    "{}_get_cum_num_{}(idx)-{}_get_num_{}(idx)+1".format(
-                        data, hist, data, hist
+                    "{}_{}_get_cum_num_{}(idx)-{}_{}_get_num_{}(idx)+1".format(
+                        season, data, hist, season, data, hist
                     )
                 ]
             )
-            stop << StringExpression(["{}_get_cum_num_{}(idx)".format(data, hist)])
+            stop << StringExpression(
+                ["{}_{}_get_cum_num_{}(idx)".format(season, data, hist)]
+            )
         else:
             raise ValueError("No other type available.")
 
@@ -560,14 +566,14 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 # 3 from declination
 
                 mu_poly_coeffs = StanArray(
-                    "R2021EnergyResolutionMuPolyCoeffs",
+                    "EnergyResolutionMuPolyCoeffs",
                     "real",
                     self._poly_params_mu,
                 )
                 # same as above
 
                 sd_poly_coeffs = StanArray(
-                    "R2021EnergyResolutionSdPolyCoeffs",
+                    "EnergyResolutionSdPolyCoeffs",
                     "real",
                     self._poly_params_sd,
                 )
@@ -686,9 +692,11 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             logger.info("Generating stan code using histograms")
             with self:
                 # Create necessary lists/attributes, inherited from HistogramSampler
-                self._make_hist_lookup_functions()
-                self._make_histogram("ereco", self._ereco_hist, self._ereco_edges)
-                self._make_ereco_hist_index()
+                self._make_hist_lookup_functions(self._season)
+                self._make_histogram(
+                    "ereco", self._ereco_hist, self._ereco_edges, self._season
+                )
+                self._make_ereco_hist_index(self._season)
 
                 for name, array in zip(
                     [
@@ -704,24 +712,26 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         self._ereco_num_edges,
                     ],
                 ):
-                    self._make_lookup_functions(name, array)
+                    self._make_lookup_functions(name, array, self._season)
 
                 # call histogramm with appropriate values/edges
                 declination = ForwardVariableDef("declination", "real")
                 declination << FunctionCall(["omega"], "omega_to_dec")
                 dec_idx = ForwardVariableDef("dec_idx", "int")
-                dec_idx << FunctionCall(["declination"], "dec_lookup")
+                dec_idx << FunctionCall(["declination"], f"{self._season}_dec_lookup")
 
                 ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
-                etrue_idx << FunctionCall(["log_true_energy"], "etrue_lookup")
+                etrue_idx << FunctionCall(
+                    ["log_true_energy"], f"{self._season}_etrue_lookup"
+                )
 
                 if self.mode == DistributionMode.PDF:
                     with IfBlockContext(["etrue_idx == 0 || etrue_idx > 14"]):
                         ReturnStatement(["negative_infinity()"])
 
                 ereco_hist_idx << FunctionCall(
-                    [etrue_idx, dec_idx], "ereco_get_ragged_index"
+                    [etrue_idx, dec_idx], f"{self._season}_ereco_get_ragged_index"
                 )
 
                 if self.mode == DistributionMode.PDF:
@@ -729,7 +739,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     ereco_idx << FunctionCall(
                         [
                             "log_reco_energy",
-                            FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges"),
+                            FunctionCall(
+                                [ereco_hist_idx],
+                                f"{self._season}_ereco_get_ragged_edges",
+                            ),
                         ],
                         "binary_search",
                     )
@@ -737,7 +750,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     # Intercept outside of hist range here:
                     with IfBlockContext(
                         [
-                            "ereco_idx == 0 || ereco_idx > ereco_get_num_vals(ereco_hist_idx)"
+                            f"ereco_idx == 0 || ereco_idx > {self._season}_ereco_get_num_vals(ereco_hist_idx)"
                         ]
                     ):
                         ReturnStatement(["negative_infinity()"])
@@ -745,7 +758,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     return_value = ForwardVariableDef("return_value", "real")
                     return_value << StringExpression(
                         [
-                            FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"),
+                            FunctionCall(
+                                [ereco_hist_idx],
+                                f"{self._season}_ereco_get_ragged_hist",
+                            ),
                             "[ereco_idx]",
                         ]
                     )
@@ -776,10 +792,12 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                             ereco << FunctionCall(
                                 [
                                     FunctionCall(
-                                        [ereco_hist_idx], "ereco_get_ragged_hist"
+                                        [ereco_hist_idx],
+                                        f"{self._season}_ereco_get_ragged_hist",
                                     ),
                                     FunctionCall(
-                                        [ereco_hist_idx], "ereco_get_ragged_edges"
+                                        [ereco_hist_idx],
+                                        f"{self._season}_ereco_get_ragged_edges",
                                     ),
                                 ],
                                 "histogram_rng",
@@ -793,9 +811,13 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     else:
                         ereco << FunctionCall(
                             [
-                                FunctionCall([ereco_hist_idx], "ereco_get_ragged_hist"),
                                 FunctionCall(
-                                    [ereco_hist_idx], "ereco_get_ragged_edges"
+                                    [ereco_hist_idx],
+                                    f"{self._season}_ereco_get_ragged_hist",
+                                ),
+                                FunctionCall(
+                                    [ereco_hist_idx],
+                                    f"{self._season}_ereco_get_ragged_edges",
                                 ),
                             ],
                             "histogram_rng",
@@ -1551,9 +1573,11 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 vmf = VMFParameterization(["true_dir"], "kappa", self.mode)
 
                 # Create all psf histogram
-                self._make_histogram("psf", self._psf_hist, self._psf_edges)
+                self._make_histogram(
+                    "psf", self._psf_hist, self._psf_edges, self._season
+                )
                 # Create indexing function
-                self._make_psf_hist_index()
+                self._make_psf_hist_index(self._season)
 
                 # Create lookup functions used for indexing
                 for name, array in zip(
@@ -1570,12 +1594,14 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                         self._psf_num_edges,
                     ],
                 ):
-                    self._make_lookup_functions(name, array)
+                    self._make_lookup_functions(name, array, self._season)
 
                 # Create ang_err histogram
-                self._make_histogram("ang", self._ang_hist, self._ang_edges)
+                self._make_histogram(
+                    "ang", self._ang_hist, self._ang_edges, self._season
+                )
                 # You know the drill by now
-                self._make_ang_hist_index()
+                self._make_ang_hist_index(self._season)
                 for name, array in zip(
                     [
                         "ang_get_cum_num_vals",
@@ -1590,26 +1616,30 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                         self._ang_num_edges,
                     ],
                 ):
-                    self._make_lookup_functions(name, array)
+                    self._make_lookup_functions(name, array, self._season)
 
                 # Re-uses lookup functions from energy resolution
                 etrue_idx = ForwardVariableDef("etrue_idx", "int")
-                etrue_idx << FunctionCall(["log_true_energy"], "etrue_lookup")
+                etrue_idx << FunctionCall(
+                    ["log_true_energy"], f"{self._season}_etrue_lookup"
+                )
 
                 declination = ForwardVariableDef("declination", "real")
                 declination << FunctionCall(["true_dir"], "omega_to_dec")
                 dec_idx = ForwardVariableDef("dec_idx ", "int")
-                dec_idx << FunctionCall(["declination"], "dec_lookup")
+                dec_idx << FunctionCall(["declination"], f"{self._season}_dec_lookup")
 
                 ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
                 ereco_hist_idx << FunctionCall(
-                    [etrue_idx, dec_idx], "ereco_get_ragged_index"
+                    [etrue_idx, dec_idx], f"{self._season}_ereco_get_ragged_index"
                 )
                 ereco_idx = ForwardVariableDef("ereco_idx", "int")
                 ereco_idx << FunctionCall(
                     [
                         "log_reco_energy",
-                        FunctionCall([ereco_hist_idx], "ereco_get_ragged_edges"),
+                        FunctionCall(
+                            [ereco_hist_idx], f"{self._season}_ereco_get_ragged_edges"
+                        ),
                     ],
                     "binary_search",
                 )
@@ -1617,13 +1647,18 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 # Find appropriate section of psf ragged hist for sampling
                 psf_hist_idx = ForwardVariableDef("psf_hist_idx", "int")
                 psf_hist_idx << FunctionCall(
-                    [etrue_idx, dec_idx, ereco_idx], "psf_get_ragged_index"
+                    [etrue_idx, dec_idx, ereco_idx],
+                    f"{self._season}_psf_get_ragged_index",
                 )
                 psf_idx = ForwardVariableDef("psf_idx", "int")
                 psf_idx << FunctionCall(
                     [
-                        FunctionCall([psf_hist_idx], "psf_get_ragged_hist"),
-                        FunctionCall([psf_hist_idx], "psf_get_ragged_edges"),
+                        FunctionCall(
+                            [psf_hist_idx], f"{self._season}_psf_get_ragged_hist"
+                        ),
+                        FunctionCall(
+                            [psf_hist_idx], f"{self._season}_psf_get_ragged_edges"
+                        ),
                     ],
                     "hist_cat_rng",
                 )
@@ -1631,13 +1666,18 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 # Repeat with angular error
                 ang_hist_idx = ForwardVariableDef("ang_hist_idx", "int")
                 ang_hist_idx << FunctionCall(
-                    [etrue_idx, dec_idx, ereco_idx, psf_idx], "ang_get_ragged_index"
+                    [etrue_idx, dec_idx, ereco_idx, psf_idx],
+                    f"{self._season}_ang_get_ragged_index",
                 )
                 ang_err = ForwardVariableDef("ang_err", "real")
                 ang_err << FunctionCall(
                     [
-                        FunctionCall([ang_hist_idx], "ang_get_ragged_hist"),
-                        FunctionCall([ang_hist_idx], "ang_get_ragged_edges"),
+                        FunctionCall(
+                            [ang_hist_idx], f"{self._season}_ang_get_ragged_hist"
+                        ),
+                        FunctionCall(
+                            [ang_hist_idx], f"{self._season}_ang_get_ragged_edges"
+                        ),
                     ],
                     "histogram_rng",
                 )
