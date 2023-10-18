@@ -277,15 +277,18 @@ class ModelCheck:
                     ]
                 )
                 sim = {}
+                sim_N = []
                 for i in range(n_jobs):
                     job_folder = f["results_%i" % i]
                     for res_key in job_folder:
                         results[res_key].extend(job_folder[res_key][()])
-                    sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
+                    # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
+                    sim_N.extend(sim_folder["sim_%i" % i][()])
 
         output = cls(truths, priors)
         output.results = results
         output.sim_Lambdas = sim
+        output.sim_N = sim_N
 
         return output
 
@@ -477,6 +480,7 @@ class ModelCheck:
         outputs["run_time"] = []
         outputs["Lambda"] = []
 
+        fit = None
         for i, s in enumerate(subjob_seeds):
             sys.stderr.write("Run %i\n" % i)
 
@@ -488,8 +492,13 @@ class ModelCheck:
                 )
                 sim.precomputation(self._exposure_integral)
                 sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
+
             sim.run(seed=s, verbose=True)
             self.sim = sim
+
+            # Skip if no detected events
+            if not sim.events:
+                continue
 
             lambd = sim._sim_output.stan_variable("Lambda").squeeze()
             ps = np.sum(lambd == 1.0)
@@ -505,7 +514,8 @@ class ModelCheck:
 
             # Fit
             # Same as above, save time
-            if i == 0:
+            # Also handle in case first sim has no events
+            if not fit:
                 fit = StanFit(
                     self._sources,
                     self._detector_model_type,

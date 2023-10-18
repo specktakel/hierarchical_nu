@@ -1,7 +1,7 @@
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from hierarchical_nu.utils.roi import CircularROI, RectangularROI
+from hierarchical_nu.utils.roi import CircularROI, RectangularROI, FullSkyROI
 from hierarchical_nu.events import Events
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.source.parameter import Parameter
@@ -70,7 +70,7 @@ def test_event_selection_wrap(caplog):
 
 def test_rectangular_precomputation():
     Parameter.clear_registry()
-    roi = RectangularROI()
+    roi = FullSkyROI()
     src_index = Parameter(2.3, "src_index", par_range=(1.5, 3.6))
     L = Parameter(
         1e47 * u.erg / u.s,

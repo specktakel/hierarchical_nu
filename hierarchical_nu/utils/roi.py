@@ -274,6 +274,15 @@ class RectangularROI(ROI):
         return f"RectangularROI, DEC=[{self.DEC_min.to_value(u.deg):.1f}°, {self.DEC_max.to_value(u.deg):.1f}°], RA=[{self.RA_min.to_value(u.deg):.1f}°, {self.RA_max.to_value(u.deg):.1f}°]"
 
 
+class FullSkyROI(RectangularROI):
+    """
+    Wrapper class for to easily define no ROI selection
+    for extra user-friendliness.
+    """
+
+    pass
+
+
 def ROI_width(d1, radius, d2):
     """
     Returns ROI width as function of declination.
