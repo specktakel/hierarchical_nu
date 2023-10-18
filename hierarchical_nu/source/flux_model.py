@@ -370,23 +370,30 @@ class PowerLawSpectrum(SpectralShape):
     @property
     @u.quantity_input
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
-        norm = self._parameters["norm"].value
-        index = self._parameters["index"].value  # diff flux * energy
-        lower, upper = self._lower_energy, self._upper_energy
+        # Pull out the units here because astropy screws this up sometimes
+        norm = self._parameters["norm"].value.to_value(1 / (u.GeV * u.m**2 * u.s))
+        index = self._parameters["index"].value
+        lower, upper = self._lower_energy.to_value(u.GeV), self._upper_energy.to_value(
+            u.GeV
+        )
+        return_units = u.GeV / (u.m**2 * u.s)
 
+        # Special case to avoid NaNs
         if index == 2:
-            # special case
-            int_norm = norm * np.power(self._normalisation_energy, index)
-            return int_norm * (np.log(upper / lower))
+            int_norm = norm * np.power(
+                self._normalisation_energy.to_value(u.GeV), index
+            )
+            return int_norm * (np.log(upper / lower)) * return_units
 
-        # Pull out the units here because astropy screwes this up sometimes
         int_norm = (
-            norm * np.power(self._normalisation_energy / u.GeV, index) / (2 - index)
+            norm
+            * np.power(self._normalisation_energy.to_value(u.GeV), index)
+            / (2 - index)
         )
         return (
             int_norm
-            * (np.power(upper / u.GeV, 2 - index) - np.power(lower / u.GeV, 2 - index))
-            * u.GeV**2
+            * (np.power(upper, 2 - index) - np.power(lower, 2 - index))
+            * return_units
         )
 
     def sample(self, N):
