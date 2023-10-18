@@ -67,7 +67,9 @@ class ExposureIntegral:
                 ).value
 
             elif detector_model == NT:
-                self._min_det_energy = Parameter.get_parameter("Emin_det_tracks").value
+                self._min_det_energy = Parameter.get_parameter(
+                    "Emin_det_northern_tracks"
+                ).value
 
             elif detector_model == IC86_II:
                 self._min_det_energy = Parameter.get_parameter("Emin_det_IC86_II").value
