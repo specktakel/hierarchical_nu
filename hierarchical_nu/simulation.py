@@ -329,9 +329,14 @@ class Simulation:
 
         return fig, ax
 
-    def show_skymap(self, track_zoom: float = 1.0):
+    def show_skymap(
+        self,
+        track_zoom: float = 1.0,
+        subplot_kw: dict = {"projection": "astro degrees mollweide"},
+    ):
         """
         :param track_zoom: Increase radius of track events by this factor for visibility
+        :param subplot_kw: Customise projection style and boundaries with ligo.skymap
         """
 
         lam = list(
@@ -349,7 +354,7 @@ class Simulation:
             N_bg_ev = lam.count(Ns)
             N_atmo_ev = lam.count(Ns + 1)
 
-        fig, ax = plt.subplots(subplot_kw={"projection": "astro degrees mollweide"})
+        fig, ax = plt.subplots(subplot_kw=subplot_kw)
         fig.set_size_inches((7, 5))
 
         self.events.coords.representation_type = "spherical"
