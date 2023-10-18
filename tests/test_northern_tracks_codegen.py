@@ -21,7 +21,6 @@ from hierarchical_nu.backend.variable_definitions import (
 from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
 
-from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.stan.interface import STAN_PATH
 
 from hierarchical_nu.source.source import Sources

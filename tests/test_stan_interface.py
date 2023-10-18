@@ -10,7 +10,7 @@ from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.roi import RectangularROI
-from hierarchical_nu.detector.icecube import Refrigerator, DETECTOR_DICT
+from hierarchical_nu.detector.icecube import DETECTOR_DICT
 import logging
 
 logger = logging.getLogger(__name__)

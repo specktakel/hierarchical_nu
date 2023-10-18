@@ -26,9 +26,6 @@ from typing import List
 logger = logging.getLogger(__name__)
 
 
-# Translate IRF period into integer from 0 to 4 (IC40 to IC86_II)
-
-
 class Events:
     """
     Events class for the storage of event observables

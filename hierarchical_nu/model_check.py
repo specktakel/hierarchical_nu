@@ -15,13 +15,13 @@ from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import PointSource, Sources
 
-from hierarchical_nu.detector.icecube import Refrigerator, DETECTOR_DICT
+from hierarchical_nu.detector.icecube import DETECTOR_DICT
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
-from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
+from hierarchical_nu.utils.roi import CircularROI
 from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
 
 
@@ -487,8 +487,6 @@ class ModelCheck:
                     self._sources, self._detector_model_type, self._obs_time
                 )
                 sim.precomputation(self._exposure_integral)
-                # sim.set_stan_filename(file_config["sim_filename"])
-                # sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
                 sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
             sim.run(seed=s, verbose=True)
             self.sim = sim
@@ -498,8 +496,6 @@ class ModelCheck:
             diff = np.sum(lambd == 2.0)
             atmo = np.sum(lambd == 3.0)
             lam = np.array([ps, diff, atmo])
-            # sim_output = {}
-            # sim_output["Lambda"] = lam
 
             # Skip if no detected events
             if not sim.events:
@@ -519,8 +515,6 @@ class ModelCheck:
                     nshards=self._threads_per_chain,
                 )
                 fit.precomputation()
-                # fit.set_stan_filename(file_config["fit_filename"])
-                # fit.compile_stan_code(include_paths=list(file_config["include_paths"]))
                 fit.setup_stan_fit(os.path.splitext(file_config["fit_filename"])[0])
 
             else:
@@ -560,20 +554,6 @@ class ModelCheck:
 
     @staticmethod
     def _get_dm_from_config(dm_key):
-        print(dm_key)
-        """
-        if dm_key == "northern_tracks":
-            dm = NorthernTracksDetectorModel
-
-        elif dm_key == "cascades":
-            dm = CascadesDetectorModel
-
-        elif dm_key == "icecube":
-            dm = IceCubeDetectorModel
-
-        elif dm_key == "r2021":
-            dm = R2021DetectorModel
-        """
         if dm_key in DETECTOR_DICT.keys():
             return dm_key
         else:

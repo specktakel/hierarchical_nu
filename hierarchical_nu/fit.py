@@ -24,12 +24,10 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.detector_model import DetectorModel
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
-from hierarchical_nu.detector.icecube import IceCube, Refrigerator
+from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
-from hierarchical_nu.utils.plotting import SphericalCircle
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -94,8 +92,6 @@ class StanFit:
         else:
             logger.debug("Reloading previous results.")
 
-        # TODO how to solve this? The IRF knows this and returns negative_infinity() for this combination
-        # Check for unsupported combinations
         if sources.atmospheric and self._event_types == [CAS]:
             raise NotImplementedError(
                 "AtmosphericNuMuFlux currently only implemented "
@@ -181,10 +177,6 @@ class StanFit:
     def compile_stan_code(self, include_paths=None):
         if not include_paths:
             include_paths = [STAN_PATH]
-        # if self._detector_model_type == R2021DetectorModel:
-        #    r2021_path = os.path.join(os.getcwd(), ".stan_files")
-        #    if not r2021_path in include_paths:
-        #        include_paths.append(r2021_path)
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename,
@@ -877,10 +869,6 @@ class StanFit:
         integral_grid = []
         atmo_integ_val = []
         obs_time = []
-        # TODO add these to the code generation part of the detector models and include in pdf function
-        # aeff_egrid = []
-        # aeff_slice = []
-        # aeff_len = []
 
         for c, event_type in enumerate(self._event_types):
             obs_time.append(self._observation_time[event_type].to(u.s).value)
@@ -943,29 +931,6 @@ class StanFit:
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
             )
-            """
-            if self._sources.point_source:
-                aeff_egrid.append(
-                    self._exposure_integral[event_type]
-                    .pdet_grid[0]
-                    .to(u.GeV)
-                    .value.tolist()
-                )
-                aeff_slice.append(
-                    [
-                        _.to(u.m**2).value.tolist()
-                        for _ in self._exposure_integral[event_type].pdet_grid[1:]
-                    ]
-                )
-                aeff_len.append(
-                    len(
-                        self._exposure_integral[event_type]
-                        .pdet_grid[0]
-                        .to(u.GeV)
-                        .value.tolist()
-                    )
-                )
-            """
 
             if self._sources.atmospheric:
                 atmo_integ_val.append(
@@ -978,9 +943,6 @@ class StanFit:
         fit_inputs["integral_grid"] = integral_grid
         fit_inputs["atmo_integ_val"] = atmo_integ_val
         fit_inputs["T"] = obs_time
-        # fit_inputs["aeff_egrid"] = aeff_egrid
-        # fit_inputs["aeff_slice"] = aeff_slice
-        # fit_inputs["aeff_len"] = aeff_len
         # To work with cmdstanpy serialization
         fit_inputs = {
             k: v if not isinstance(v, np.ndarray) else v.tolist()

@@ -1,7 +1,7 @@
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
+from hierarchical_nu.utils.roi import CircularROI, RectangularROI
 from hierarchical_nu.events import Events
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.source.parameter import Parameter

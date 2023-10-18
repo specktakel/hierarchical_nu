@@ -148,8 +148,3 @@ class StanInterface(object, metaclass=ABCMeta):
     @property
     def event_types(self):
         return self._event_types
-
-    # @property
-    # def detector_model_type(self):
-    #
-    #    return self._detector_model_type

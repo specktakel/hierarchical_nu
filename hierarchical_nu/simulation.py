@@ -13,20 +13,17 @@ import ligo.skymap.plot
 
 from icecube_tools.utils.vMF import get_theta_p
 
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.utils.plotting import SphericalCircle
 
-from hierarchical_nu.detector.detector_model import DetectorModel
-from hierarchical_nu.detector.icecube import IceCube, Refrigerator
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
+from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, flux_conv_
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.events import Events
-from hierarchical_nu.utils.roi import ROI, RectangularROI, CircularROI
+from hierarchical_nu.utils.roi import ROI, CircularROI
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
@@ -436,29 +433,6 @@ class Simulation:
         for c, event_type in enumerate(self._event_types):
             if self._force_N:
                 forced_N.append(self._N[event_type])
-            if self._sources.point_source:
-                if self._shared_src_index:
-                    key = "src_index"
-                else:
-                    key = "ps_0_src_index"
-
-                sim_inputs["Ngrid"] = len(
-                    self._exposure_integral[event_type].par_grids[key]
-                )
-
-                sim_inputs["src_index_grid"] = self._exposure_integral[
-                    event_type
-                ].par_grids[key]
-
-            # Weird that this is inside the loop over event types
-            if self._sources.diffuse:
-                sim_inputs["Ngrid"] = len(
-                    self._exposure_integral[event_type].par_grids["diff_index"]
-                )
-
-                sim_inputs["diff_index_grid"] = self._exposure_integral[
-                    event_type
-                ].par_grids["diff_index"]
 
             integral_grid.append(
                 [
@@ -476,6 +450,31 @@ class Simulation:
                 )
 
             obs_time.append(self._observation_time[event_type].to(u.s).value)
+
+        if self._sources.point_source:
+            # Grids are the same over all event types, just pick one to get the grids
+            if self._shared_src_index:
+                key = "src_index"
+            else:
+                key = "ps_0_src_index"
+
+            sim_inputs["Ngrid"] = len(
+                self._exposure_integral[event_type].par_grids[key]
+            )
+
+            sim_inputs["src_index_grid"] = self._exposure_integral[
+                event_type
+            ].par_grids[key]
+
+        if self._sources.diffuse:
+            # Same as for point sources
+            sim_inputs["Ngrid"] = len(
+                self._exposure_integral[event_type].par_grids["diff_index"]
+            )
+
+            sim_inputs["diff_index_grid"] = self._exposure_integral[
+                event_type
+            ].par_grids["diff_index"]
 
         if self._sources.point_source:
             # Check for shared src_index parameter

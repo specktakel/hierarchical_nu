@@ -1,9 +1,7 @@
 import numpy as np
 from astropy import units as u
-from typing import List, Union
+from typing import List
 from collections import OrderedDict
-from hierarchical_nu.detector.detector_model import DetectorModel
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.priors import Priors
 from hierarchical_nu.stan.interface import StanInterface
@@ -201,28 +199,7 @@ class StanFitInterface(StanInterface):
                     diffuse = InstantVariableDef("diffuse", "int", ["int_data[3]"])
                     atmo = InstantVariableDef("atmo", "int", ["int_data[4]"])
                     Ns_tot = InstantVariableDef("Ns_tot", "int", ["Ns+atmo+diffuse"])
-                    """
-                    aeff_len_t = InstantVariableDef(
-                        "aeff_len_t", "int", ["int_data[5]"]
-                    )
-                    aeff_len_c = InstantVariableDef(
-                        "aeff_len_c", "int", ["int_data[6]"]
-                    )
-                    # with IfBlockContext([aeff_len_t, " > ", 0]):
-                    aeff_egrid_t = ForwardVariableDef(
-                        "aeff_egrid_t", "vector[aeff_len_t]"
-                    )
-                    aeff_slice_t = ForwardArrayDef(
-                        "aeff_slice_t", "vector[aeff_len_t]", ["[Ns]"]
-                    )
-                    # with IfBlockContext([aeff_len_c, " > ", 0]):
-                    aeff_egrid_c = ForwardVariableDef(
-                        "aeff_egrid_c", "vector[aeff_len_c]"
-                    )
-                    aeff_slice_c = ForwardArrayDef(
-                        "aeff_slice_c", "vector[aeff_len_c]", ["[Ns]"]
-                    )
-                    """
+
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
                     length = ForwardVariableDef("length", "int")
@@ -268,11 +245,6 @@ class StanFitInterface(StanInterface):
                     Edet << FunctionCall(["real_data[start:end]"], "to_vector")
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
-
-                    # end << end + length
-                    # kappa = ForwardVariableDef("kappa", "vector[N]")
-                    # kappa << StringExpression(["to_vector(real_data[start:end])"])
-                    # start << start + length
 
                     omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
                     # Loop over events to unpack reconstructed direction
@@ -321,35 +293,7 @@ class StanFitInterface(StanInterface):
                                 ["real_data[start:end]"]
                             )
                             start << start + length
-                        """
-                        if "tracks" in self._event_types:
-                            end << end + aeff_len_t
-                            aeff_egrid_t << StringExpression(
-                                ["to_vector(real_data[start:end])"]
-                            )
-                            start << start + aeff_len_t
 
-                            with ForLoopContext(1, Ns, "k") as k:
-                                end << end + aeff_len_t
-                                aeff_slice_t[k] << StringExpression(
-                                    ["to_vector(real_data[start:end])"]
-                                )
-                                start << start + aeff_len_t
-
-                        if "cascades" in self._event_types:
-                            end << end + aeff_len_c
-                            aeff_egrid_c << StringExpression(
-                                ["to_vector(real_data[start:end])"]
-                            )
-                            start << start + aeff_len_c
-
-                            with ForLoopContext(1, Ns, "k") as k:
-                                end << end + aeff_len_c
-                                aeff_slice_c[k] << StringExpression(
-                                    ["to_vector(real_data[start:end])"]
-                                )
-                                start << start + aeff_len_c
-                        """
                     Emin_src = ForwardVariableDef("Emin_src", "real")
                     Emax_src = ForwardVariableDef("Emax_src", "real")
                     Emin = ForwardVariableDef("Emin", "real")
@@ -403,18 +347,6 @@ class StanFitInterface(StanInterface):
                     aeff_src = ForwardArrayDef("aeff_src", "real", ["[Ns]"])
                     aeff_diff = ForwardVariableDef("aeff_diff", "real")
                     aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
-                    """
-                    if "tracks" in self._event_types:
-                        track_type = ForwardVariableDef("track_type", "int")
-                        track_type << TRACKS
-                        eres_tracks = ForwardVariableDef("eres_tracks", "real")
-                        aeff_tracks = ForwardVariableDef("aeff_tracks", "real")
-
-                    if "cascades" in self._event_types:
-                        cascade_type = ForwardVariableDef("cascade_type", "int")
-                        cascade_type << CASCADES
-                        eres_cascades = ForwardVariableDef("eres_cascades", "real")
-                    """
 
                     if self.sources.diffuse and self.sources.atmospheric:
                         k_diff = "Ns + 1"
@@ -851,13 +783,7 @@ class StanFitInterface(StanInterface):
                 sd_string = f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other} + J*Ns"
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_diff}"
-                """
-                if self.sources.point_source:
-                    if "tracks" in self._event_types:
-                        sd_string += " + (Ns+1)*aeff_len_t"
-                    if "cascades" in self._event_types:
-                        sd_string += " + (Ns+1)*aeff_len_c"
-                """
+
                 # Create data arrays
                 self.real_data = ForwardArrayDef(
                     "real_data", "real", ["[N_shards,", sd_string, "]"]
@@ -942,40 +868,7 @@ class StanFitInterface(StanInterface):
                                 << self._spatial_loglike[k][start:end]
                             )
                             insert_start << insert_start + insert_len
-                        """
-                        # Pack aeff slices and the egrid of the slice
-                        if "tracks" in self._event_types:
-                            insert_end << insert_end + self._aeff_len_t
-                            self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._aeff_egrid_t], "to_array_1d"
-                            )
-                            insert_start << insert_start + self._aeff_len_t
 
-                            with ForLoopContext(1, self._Ns, "k") as k:
-                                insert_end << insert_end + self._aeff_len_t
-                                self.real_data[
-                                    i, insert_start:insert_end
-                                ] << FunctionCall(
-                                    [self._aeff_slice_t[k]], "to_array_1d"
-                                )
-                                insert_start << insert_start + self._aeff_len_t
-
-                        if "cascades" in self._event_types:
-                            insert_end << insert_end + self._aeff_len_c
-                            self.real_data[i, insert_start:insert_end] << FunctionCall(
-                                [self._aeff_egrid_c], "to_array_1d"
-                            )
-                            insert_start << insert_start + self._aeff_len_c
-
-                            with ForLoopContext(1, self._Ns, "k") as k:
-                                insert_end << insert_end + self._aeff_len_c
-                                self.real_data[
-                                    i, insert_start:insert_end
-                                ] << FunctionCall(
-                                    [self._aeff_slice_c[k]], "to_array_1d"
-                                )
-                                insert_start << insert_start + self._aeff_len_c
-                        """
                     insert_end << insert_end + 1
                     self.real_data[i, insert_start] << self._Emin_src
                     insert_start << insert_start + 1
@@ -1020,16 +913,6 @@ class StanFitInterface(StanInterface):
                         self.int_data[i, 4] << 1
                     else:
                         self.int_data[i, 4] << 0
-                    """
-                    if "tracks" in self._event_types:
-                        self.int_data[i, 5] << self._aeff_len_t
-                    else:
-                        self.int_data[i, 5] << 0
-                    if "cascades" in self._event_types:
-                        self.int_data[i, 6] << self._aeff_len_c
-                    else:
-                        self.int_data[i, 6] << 0
-                    """
 
                     self.int_data[i, 5:"4+insert_len"] << FunctionCall(
                         [FunctionCall([self._event_type[start:end]], "to_array_1d")],
@@ -1177,12 +1060,6 @@ class StanFitInterface(StanInterface):
                 "eps", "vector[" + n_comps_max + "]", ["[", self._Net, "]"]
             )
 
-            """
-            if "cascades" in self._event_types and "tracks" in self._event_types:
-                self._logp_c = ForwardVariableDef("logp_c", "real")
-                self._logp_t = ForwardVariableDef("logp_t", "real")
-            """
-
             if self._nshards not in [0, 1]:
                 # Create vector of parameters
                 # Global pars are src_index, diff_index, logF
@@ -1298,7 +1175,6 @@ class StanFitInterface(StanInterface):
                     else:
                         src_index_ref = self._src_index[k]
 
-                    # if "tracks" in self._event_types:
                     with ForLoopContext(1, self._Net_stan, "i") as i:
                         (
                             self._eps[i, k]
@@ -1318,9 +1194,7 @@ class StanFitInterface(StanInterface):
                         )
 
             if self.sources.diffuse and self.sources.atmospheric:
-                # if "tracks" in self._event_types:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
-                    # if "tracks" in self._event_types:
                     (
                         self._eps[i, "Ns+1"]
                         << FunctionCall(
@@ -1348,7 +1222,6 @@ class StanFitInterface(StanInterface):
                     )
 
             elif self.sources.diffuse:
-                # if "tracks" in self._event_types:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
                     (
                         self._eps[i, "Ns + 1"]
@@ -1388,14 +1261,6 @@ class StanFitInterface(StanInterface):
                 self._Nex_atmo << FunctionCall([self._Nex_atmo_comp], "sum")
 
             self._Nex << FunctionCall([self._Nex_comp], "sum")
-
-            """
-            # Relative probability of event types
-            self._logp_c << self._Nex_c / self._Nex
-            self._logp_c << StringExpression(["log(", self._logp_c, ")"])
-            self._logp_t << self._Nex_t / self._Nex
-            self._logp_t << StringExpression(["log(", self._logp_t, ")"])
-            """
 
             # Evaluate the different fractional associations as derived parameters
             if self.sources.diffuse and self.sources.atmospheric:
@@ -1456,7 +1321,6 @@ class StanFitInterface(StanInterface):
                 with ForLoopContext(1, self._N, "i") as i:
                     self._lp[i] << self._logF
 
-                    # Tracks
                     for c, (event_type_python) in enumerate(self._event_types):
                         if c == 0:
                             context = IfBlockContext
@@ -1474,7 +1338,6 @@ class StanFitInterface(StanInterface):
                             ]
                         ):
                             # Detection effects
-                            # Detection probability for diffuse sources
 
                             self._irf_return << self._dm[event_type_python](
                                 self._E[i],
@@ -1635,7 +1498,6 @@ class StanFitInterface(StanInterface):
 
         with ModelContext():
             # Likelihood: e^(-Nex) \prod_(i=1)^N_events \sum_(k=1)^N_sources lp[i][k]
-            # with ForLoopContext(1, self._N, "i") as i:
 
             if self._nshards not in [0, 1]:
                 # Map data to lp_reduce
@@ -1650,12 +1512,6 @@ class StanFitInterface(StanInterface):
                 with ForLoopContext(1, self._N, "i") as i:
                     StringExpression(["target += log_sum_exp(", self._lp[i], ")"])
 
-            """
-            # Add factor for relative probability of event types
-            if "tracks" in self._event_types and "cascades" in self._event_types:
-                StringExpression(["target += ", self._N_c, " * ", self._logp_c])
-                StringExpression(["target += ", self._N_t, " * ", self._logp_t])
-            """
             StringExpression(["target += -", self._Nex])
 
             # Priors
@@ -1778,8 +1634,6 @@ class StanFitInterface(StanInterface):
                 with ForLoopContext(1, self._N, "i") as i:
                     self._lp[i] << self._logF
 
-                    # Tracks
-                    # Tracks
                     for c, (event_type_python) in enumerate(self._event_types):
                         if c == 0:
                             context = IfBlockContext
@@ -1797,7 +1651,6 @@ class StanFitInterface(StanInterface):
                             ]
                         ):
                             # Detection effects
-                            # Detection probability for diffuse sources
 
                             self._irf_return << self._dm[event_type_python](
                                 self._E[i],
