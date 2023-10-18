@@ -9,7 +9,6 @@ from ..backend import (
     PolynomialParameterization,
     TruncatedParameterization,
     LogParameterization,
-    SimpleHistogram,
     ReturnStatement,
     FunctionCall,
     DistributionMode,
@@ -536,18 +535,23 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
 
     def generate_pdf_function_code(self, sources: Sources):
         """
-        Generate a wrapper for the IRF.
-        Should give for all source components the event likelihood,
-        including negative infinity if a model component cannot produce
-        the requested event.
+        Generate a wrapper for the IRF in `DistributionMode.PDF`.
+        Takes `Sources` instance as argument to generate energy likelihood
+        and effective area for all point sources.
+        Assumes that astro diffuse and atmo diffuse model components are present.
+        If not, they are disregarded by the model likelihood.
+        Has signature
+        real true_energy [Gev] : true neutrino energy
+        real detected_energy [GeV] : detected muon energy
+        unit_vector[3] : detected direction of event
+        array[] unit_vector[3] : array of point source's positions
+        Returns a tuple of type
+        1 array[Ns] real : log(energy likelihood) of all point sources
+        2 array[Ns] real : log(effective area) of all point sources
+        3 array[3] real : array with log(energy likelihood), log(effective area)
+            and log(effective area) for atmospheric component.
+        For cascades the last entry is negative_infinity().
         """
-
-        # TODO make this somehow the same signature across all detector models that exist
-        # Cascades should return negative infinity for atmo
-        # ps = len(sources.point_source)
-        # diffuse = bool(sources.diffuse)
-        # atmospheric = bool(sources.atmospheric)
-        # Temporarily, 4th entry is effective area for atmospheric component
 
         Ns = len(sources.point_source)
 
@@ -558,16 +562,8 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
             ["real", "real", "vector", "array[] vector"],
             "tuple(array[] real, array[] real, array[] real)",
         )
-        # Change order of return values:
-        # For loop (i) over all PS:
-        # i*2 > eres
-        # i*2 + 1 > aeff
-        # eres diff
-        # aeff diff
-        # aeff atmo
+
         with self:
-            # need to write a function that returns a tuple of energy likelihood and Aeff
-            # return_this = ForwardArrayDef("return_this", "real", ["[Ns * 2 + 3]"])
             ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
             ps_aeff = ForwardArrayDef("ps_aeff", "real", ["[", Ns, "]"])
             diff = ForwardArrayDef("diff", "real", ["[3]"])
@@ -599,10 +595,13 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
 
     def generate_rng_function_code(self):
         """
-        Generate a wrapper for the IRF.
-        Should give for all source components the event likelihood,
-        including negative infinity if a model component cannot produce
-        the requested event.
+        Generate a wrapper for the IRF in `DistributionMode.RNG`.
+        Has signature
+        real true_energy [GeV], unit_vector[3] source position
+        Returns a vector with entries
+        1 reconstructed energy [GeV]
+        2:4 reconstructed direction [unit_vector]
+        5 kappa
         """
 
         UserDefinedFunction.__init__(

@@ -2,8 +2,6 @@ from typing import List
 from collections import OrderedDict
 from astropy import units as u
 
-from hierarchical_nu.detector.detector_model import DetectorModel
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.stan.interface import StanInterface
 
@@ -33,9 +31,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 
 # from hierarchical_nu.events import NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II
 
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.detector.icecube import IceCube, Refrigerator
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
 from hierarchical_nu.source.source import Sources
 
@@ -234,14 +230,10 @@ class StanSimInterface(StanInterface):
             self._rs_bbpl_gamma2_scale = ForwardArrayDef(
                 "rs_bbpl_gamma2_scale", "real", ["[", self._Net, "]"]
             )
-            # self._rs_N_cosz_bins_t = ForwardVariableDef("rs_N_cosz_bins_t", "int")
             # entry for each component
             self._rs_cvals = ForwardArrayDef(
                 "rs_cvals", "real", ["[", self._Net, ",", Ns_string, "]"]
             )
-            # self._rs_cosz_bin_edges_t = ForwardArrayDef(
-            #    "rs_cosz_bin_edges_t", "real", ["[rs_N_cosz_bins_t + 1]"]
-            # )
 
             self._integral_grid = ForwardArrayDef(
                 "integral_grid",
@@ -433,7 +425,6 @@ class StanSimInterface(StanInterface):
                     else:
                         src_index_ref = self._src_index[k]
 
-                    # if "tracks" in self._event_types:
                     with ForLoopContext(1, self._Net_stan, "i") as i:
                         (
                             self._eps[i, k]
@@ -456,7 +447,6 @@ class StanSimInterface(StanInterface):
             # For cascades, we assume no atmo component
             if self.sources.diffuse and self.sources.atmospheric:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
-                    # if "tracks" in self._event_types:
                     (
                         self._eps[i, "Ns+1"]
                         << FunctionCall(
@@ -485,7 +475,6 @@ class StanSimInterface(StanInterface):
 
             elif self.sources.diffuse:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
-                    # if "tracks" in self._event_types:
                     (
                         self._eps[i, "Ns + 1"]
                         << FunctionCall(
@@ -513,10 +502,6 @@ class StanSimInterface(StanInterface):
                         << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
                     )
 
-                # This should already be included in precomputation through atmo_integ_val being 0 for cascades
-                # if "cascades" in self._event_types:
-                #     self._eps_c[self._Ns + 1] << 0.0
-
             # Get the relative exposure weights of all sources
             # This will be used to sample the labels
             # Also sample the number of events
@@ -541,39 +526,23 @@ class StanSimInterface(StanInterface):
                         ["poisson_rng(", self._Nex[i], ")"]
                     )
 
-            # if "tracks" in self._event_types and "cascades" in self._event_types:
-            # self._Nex_src << self._Nex_src_t + self._Nex_src_c
             self._Nex_src << StringExpression(["sum(", self._Nex_src_comp, ")"])
             if self.sources.diffuse:
-                # self._Nex_diff << self._Nex_diff_t + self._Nex_diff_c
                 self._Nex_diff << StringExpression(["sum(", self._Nex_diff_comp, ")"])
             if self.sources.atmospheric:
                 self._Nex_atmo << StringExpression(["sum(", self._Nex_atmo_comp, ")"])
-            # self._N << self._N_t + self._N_c
             self._N << StringExpression(["sum(", self._N_comp, ")"])
-            StringExpression(["print(N)"])
-            StringExpression(["print(Nex_src_comp)"])
-            StringExpression(["print(Nex_src)"])
-            # StringExpression(["print(Nex_diff_comp)"])
-            # StringExpression(["print(Nex_diff)"])
-            # StringExpression(["print(Nex_atmo_comp)"])
-            # StringExpression(["print(Nex_atmo)"])
-            StringExpression(["print(N_comp)"])
 
             # Calculate the fractional association for different assumptions
             if self.sources.diffuse and self.sources.atmospheric:
                 self._Ftot << self._F_src + self._F_diff + self._F_atmo
-                StringExpression(["print(Ftot)"])
                 self._f_arr_astro_ << StringExpression(
                     [self._F_src, "/", self._F_src + self._F_diff]
                 )
-                StringExpression(["print(f_arr_astro_)"])
                 self._f_det_ << self._Nex_src / (
                     self._Nex_src + self._Nex_diff + self._Nex_atmo
                 )
-                StringExpression(["print(f_det_)"])
                 self._f_det_astro_ << self._Nex_src / (self._Nex_src + self._Nex_diff)
-                StringExpression(["print(f_det_astro_)"])
 
             elif self.sources.diffuse:
                 self._Ftot << self._F_src + self._F_diff
@@ -596,7 +565,6 @@ class StanSimInterface(StanInterface):
                 self._f_det_astro_ << 1.0
 
             self._f_arr_ << StringExpression([self._F_src, "/", self._Ftot])
-            StringExpression(["print(f_arr_)"])
 
     def _generated_quantities(self):
         """
@@ -669,6 +637,7 @@ class StanSimInterface(StanInterface):
             self._gamma2 = ForwardVariableDef("gamma2", "real")
 
             # Label for the currently sampled source component, starts obviously with 1
+            # Is reset to 1 when using multiple detector models and sampling moves on to the next
             if self._force_N:
                 self._currently_sampling = ForwardVariableDef(
                     "currently_sampling",
@@ -681,9 +650,7 @@ class StanSimInterface(StanInterface):
             self._kappa = ForwardVariableDef("kappa", "vector[N]")
 
             # Here we start the sampling, first fo tracks and then cascades.
-            # if "tracks" in self._event_types:
             with ForLoopContext(1, self._Net_stan, "j") as j:
-                StringExpression(["print(j)"])
                 if self._force_N:
                     # Counts the events sampled of each source components
                     # Counter is reset after the required number is reached
@@ -697,8 +664,6 @@ class StanSimInterface(StanInterface):
                     )
                 self._loop_end << StringExpression(["sum(", self._N_comp[1:j], ")"])
 
-                StringExpression(["print(loop_start)"])
-                StringExpression(["print(loop_end)"])
                 if self._force_N:
                     self._currently_sampling << 1
 
@@ -723,7 +688,6 @@ class StanSimInterface(StanInterface):
 
                         with ElseBlockContext():
                             StringExpression([self._currently_sampling, " += 1"])
-                            # The fuck did I do here? TODO understand what the fuck I did here
                             with IfBlockContext(
                                 [self._currently_sampling, " > size(", self._F, ")"]
                             ):
@@ -1501,20 +1465,6 @@ class StanSimInterface(StanInterface):
                                     event_type_python
                                 ].effective_area(self._E[i], self._omega)
 
-                        # StringExpression(['print("Aeff: ", aeff_factor)'])
-                        # StringExpression(['print("energy: ", E[i])'])
-                        # StringExpression(['print("et: ", event_type[i])'])
-                        """
-                        # I feel like this is accounted for already elsewhere
-                        if (
-                            self.detector_model_type == NorthernTracksDetectorModel
-                            or self.detector_model_type == IceCubeDetectorModel
-                        ):
-                            with IfBlockContext(
-                                [StringExpression([self._cosz[i], ">= 0.1"])]
-                            ):
-                                self._aeff_factor << 0
-                        """
                         # Calculate quantities for rejection sampling
                         # Value of the distribution that we want to sample from
                         self._f_value << self._src_factor * self._aeff_factor

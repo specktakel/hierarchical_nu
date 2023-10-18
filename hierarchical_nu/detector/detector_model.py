@@ -14,12 +14,7 @@ from ..utils.cache import Cache
 from ..backend import (
     UserDefinedFunction,
     DistributionMode,
-    ForwardVariableDef,
-    StringExpression,
-    FunctionCall,
-    ReturnStatement,
     StanGenerator,
-    ForwardArrayDef,
 )
 from ..stan.interface import STAN_GEN_PATH
 
@@ -696,22 +691,36 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
     @abstractmethod
     def generate_pdf_function_code(self):
         """
-        Generate wrapper function for PDF.
-        Needs to have signature
-        Etrue / GeV, real Ereco / GeV, vector[3] true_dir, vector[3] reco_dir
+        Generate a wrapper for the IRF in `DistributionMode.PDF`.
+        Takes `Sources` instance as argument to generate energy likelihood
+        and effective area for all point sources.
+        Assumes that astro diffuse and atmo diffuse model components are present.
+        If not, they are disregarded by the model likelihood.
+        Has signature
+        real true_energy [Gev] : true neutrino energy
+        real detected_energy [GeV] : detected muon energy
+        unit_vector[3] : detected direction of event
+        array[] unit_vector[3] : array of point source's positions
+        Returns a tuple of type
+        1 array[Ns] real : log(energy likelihood) of all point sources
+        2 array[Ns] real : log(effective area) of all point sources
+        3 array[3] real : array with log(energy likelihood), log(effective area)
+            and log(effective area) for atmospheric component.
+        For cascades the last entry is negative_infinity().
         """
+
         pass
 
     @abstractmethod
     def generate_rng_function_code(self):
         """
-        Generate wrapper function for RNG.
-        Needs to have signature
-        real Etrue / GeV, vector[3] omega
-        Needs to have return type
-        array[5] real
-        with entries
-        1 log10(Ereco / GeV)
-        2:4 reconstructed direction, unit vector
+        Generate a wrapper for the IRF in `DistributionMode.RNG`.
+        Has signature
+        real true_energy [GeV], unit_vector[3] source position
+        Returns a vector with entries
+        1 reconstructed energy [GeV]
+        2:4 reconstructed direction [unit_vector]
         5 kappa
         """
+
+        pass

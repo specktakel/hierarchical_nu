@@ -9,7 +9,6 @@ from ..backend import (
     PolynomialParameterization,
     TruncatedParameterization,
     LogParameterization,
-    SimpleHistogram,
     TwoDimHistInterpolation,
     ReturnStatement,
     UserDefinedFunction,
@@ -152,7 +151,7 @@ class CascadesEnergyResolution(EnergyResolution):
         # For prob_Edet_above_threshold
         self._pdet_limits = (5e2, 1e8)
 
-        # Mixture of 3 lognormals
+        # Mixture of 4 lognormals
         self._n_components = 4
 
         # Load energy resolution and fit if not cached
@@ -506,10 +505,22 @@ class CascadesDetectorModel(DetectorModel):
 
     def generate_pdf_function_code(self, sources: Sources = Sources()):
         """
-        Generate a wrapper for the IRF.
-        Should give for all source components the event likelihood,
-        including negative infinity if a model component cannot produce
-        the requested event.
+        Generate a wrapper for the IRF in `DistributionMode.PDF`.
+        Takes `Sources` instance as argument to generate energy likelihood
+        and effective area for all point sources.
+        Assumes that astro diffuse and atmo diffuse model components are present.
+        If not, they are disregarded by the model likelihood.
+        Has signature
+        real true_energy [Gev] : true neutrino energy
+        real detected_energy [GeV] : detected muon energy
+        unit_vector[3] : detected direction of event
+        array[] unit_vector[3] : array of point source's positions
+        Returns a tuple of type
+        1 array[Ns] real : log(energy likelihood) of all point sources
+        2 array[Ns] real : log(effective area) of all point sources
+        3 array[3] real : array with log(energy likelihood), log(effective area)
+            and log(effective area) for atmospheric component.
+        For cascades the last entry is negative_infinity().
         """
 
         Ns = len(sources.point_source)
@@ -553,10 +564,13 @@ class CascadesDetectorModel(DetectorModel):
 
     def generate_rng_function_code(self):
         """
-        Generate a wrapper for the IRF.
-        Should give for all source components the event likelihood,
-        including negative infinity if a model component cannot produce
-        the requested event.
+        Generate a wrapper for the IRF in `DistributionMode.RNG`.
+        Has signature
+        real true_energy [GeV], unit_vector[3] source position
+        Returns a vector with entries
+        1 reconstructed energy [GeV]
+        2:4 reconstructed direction [unit_vector]
+        5 kappa
         """
 
         UserDefinedFunction.__init__(
