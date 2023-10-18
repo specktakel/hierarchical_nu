@@ -3,8 +3,12 @@ import astropy.units as u
 import pytest
 
 from hierarchical_nu.utils.roi import RectangularROI, ROI, CircularROI
+from hierarchical_nu.detector.icecube import Refrigerator
 
 import logging
+
+IC86_II = Refrigerator.PYTHON_IC86_II
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -22,7 +26,6 @@ class TestNex:
         from hierarchical_nu.source.parameter import Parameter
         from hierarchical_nu.source.source import Sources, PointSource
         from hierarchical_nu.simulation import Simulation
-        from hierarchical_nu.detector.r2021 import R2021DetectorModel
 
         Parameter.clear_registry()
         src_index = Parameter(2.8, "src_index", fixed=False, par_range=(1, 4))
@@ -55,7 +58,7 @@ class TestNex:
         my_sources.add(ps_hnu)
         roi = RectangularROI()
         logger.warning(roi)
-        sim = Simulation(my_sources, R2021DetectorModel, 1 * u.year)
+        sim = Simulation(my_sources, IC86_II, 1 * u.year)
         sim.precomputation()
 
         return (my_sources, sim)
@@ -96,7 +99,7 @@ class TestNex:
 
         for idx in indices:
             ps_hnu._parameters["index"].value = idx
-            nex_hnu = sim._exposure_integral["tracks"].calculate_rate(ps_hnu).value
+            nex_hnu = sim._exposure_integral[IC86_II].calculate_rate(ps_hnu).value
             nu_calc._sources[0].flux_model._index = idx
             nex_it = nu_calc(
                 time=1,  # years
@@ -115,7 +118,6 @@ class TestNex:
         from hierarchical_nu.source.parameter import Parameter
         from hierarchical_nu.source.source import Sources, PointSource
         from hierarchical_nu.simulation import Simulation
-        from hierarchical_nu.detector.r2021 import R2021DetectorModel
         from hierarchical_nu.source.cosmology import luminosity_distance as dl
         from hierarchical_nu.source.flux_model import integral_power_law as ipl
 
@@ -159,7 +161,7 @@ class TestNex:
         )
         roi = RectangularROI()
         logger.warning(roi)
-        sim = Simulation(my_sources, R2021DetectorModel, 1 * u.year)
+        sim = Simulation(my_sources, IC86_II, 1 * u.year)
         sim.precomputation()
         Nex_ps_hnu = []
         Nex_diff_hnu = []

@@ -29,7 +29,7 @@ def run_model_check(output_directory, random_seed):
 
 def test_short_run_r2021(output_directory, random_seed):
     # Edit configuration and save
-    hnu_config["parameter_config"]["detector_model_type"] = "r2021"
+    hnu_config["parameter_config"]["detector_model_type"] = "IC86_II"
 
     with _local_config_file.open("w") as f:
         OmegaConf.save(config=hnu_config, f=f.name)

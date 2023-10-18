@@ -7,6 +7,9 @@ import numpy as np
 
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
+from hierarchical_nu.detector.icecube import Refrigerator
+
+IC86_II = Refrigerator.PYTHON_IC86_II
 
 _config_path = Path("~/.config/hierarchical_nu/").expanduser()
 _local_config_path = Path(".")
@@ -55,9 +58,10 @@ class ParameterConfig:
     Emin_det: float = 1e5  # u.GeV
     Emin_det_tracks: float = 6e4  # u.GeV
     Emin_det_cascades: float = 6e4  # u.GeV
+    Emin_det_IC86_II: float = 6e4  # u.GeV
 
-    # Can be "icecube", "northern_tracks", "cascades", or "r2021"
-    detector_model_type: str = "r2021"
+    # Can be NT, CAS or IC86_II (or as string: "northern_tracks", "cascades", "IC86_II"
+    detector_model_type: str = IC86_II
 
     obs_time: float = 10  # years
 

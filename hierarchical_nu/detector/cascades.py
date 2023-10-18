@@ -9,7 +9,6 @@ from ..backend import (
     PolynomialParameterization,
     TruncatedParameterization,
     LogParameterization,
-    SimpleHistogram,
     TwoDimHistInterpolation,
     ReturnStatement,
     UserDefinedFunction,
@@ -29,6 +28,8 @@ from .detector_model import (
     DetectorModel,
 )
 
+from ..source.source import Sources
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -45,19 +46,24 @@ class CascadesEffectiveArea(EffectiveArea):
 
     CACHE_FNAME = "aeff_cascades.npz"
 
-    def __init__(self) -> None:
-        super().__init__(
-            "CascadesEffectiveArea",
-            ["true_energy", "true_dir"],
-            ["real", "vector"],
-            "real",
-        )
+    NAME = "CascadesEffectiveArea"
 
+    def __init__(self) -> None:
+        self._func_name = self.NAME
         self.setup()
 
         self._make_spline()
 
         # Define Stan interface
+
+    def generate_code(self):
+        super().__init__(
+            self._func_name,
+            ["true_energy", "true_dir"],
+            ["real", "vector"],
+            "real",
+        )
+
         with self:
             hist = TwoDimHistInterpolation(
                 self._eff_area,
@@ -118,6 +124,9 @@ class CascadesEnergyResolution(EnergyResolution):
 
     CACHE_FNAME = "energy_reso_cascades.npz"
 
+    PDF_NAME = "CascadeEnergyResolution"
+    RNG_NAME = "CascadeEnergyResolution_rng"
+
     def __init__(
         self, mode: DistributionMode = DistributionMode.PDF, make_plots: bool = False
     ) -> None:
@@ -130,7 +139,7 @@ class CascadesEnergyResolution(EnergyResolution):
         are then fit with a polynomial for fast interpolation and evaluation.
         """
 
-        self._mode = mode
+        self.mode = mode
 
         # Parameters of polynomials for lognormal mu and sd
         self._poly_params_mu: Sequence = []
@@ -142,34 +151,33 @@ class CascadesEnergyResolution(EnergyResolution):
         # For prob_Edet_above_threshold
         self._pdet_limits = (5e2, 1e8)
 
-        # Mixture of 3 lognormals
+        # Mixture of 4 lognormals
         self._n_components = 4
 
         # Load energy resolution and fit if not cached
         self.setup()
 
         if mode == DistributionMode.PDF:
-            mixture_name = "c_energy_res_mix"
+            self._func_name = self.PDF_NAME
         elif mode == DistributionMode.RNG:
-            mixture_name = "c_energy_res_mix_rng"
+            self._func_name = self.RNG_NAME
         else:
             RuntimeError("This should never happen")
 
-        lognorm = LognormalMixture(mixture_name, self._n_components, self._mode)
+    def generate_code(self):
+        if self.mode == DistributionMode.PDF:
+            mixture_name = "c_energy_res_mix"
 
-        if mode == DistributionMode.PDF:
             super().__init__(
-                "CascadeEnergyResolution",
-                ["true_energy", "reco_energy"],
+                self.PDF_NAME,
+                ["log_true_energy", "log_reco_energy"],
                 ["real", "real"],
                 "real",
             )
 
-        elif mode == DistributionMode.RNG:
-            super().__init__(
-                "CascadeEnergyResolution_rng", ["true_energy"], ["real"], "real"
-            )
-            mixture_name = "nt_energy_res_mix_rng"
+        elif self.mode == DistributionMode.RNG:
+            super().__init__(self.RNG_NAME, ["log_true_energy"], ["real"], "real")
+            mixture_name = "c_energy_res_mix_rng"
 
         else:
             RuntimeError(
@@ -178,8 +186,13 @@ class CascadesEnergyResolution(EnergyResolution):
 
         with self:
             # Define parametrization in Stan.
-            truncated_e = TruncatedParameterization("true_energy", *self._poly_limits)
-            log_trunc_e = LogParameterization(truncated_e)
+            lognorm = LognormalMixture(mixture_name, self._n_components, self.mode)
+
+            log_trunc_e = TruncatedParameterization(
+                "log_true_energy",
+                np.log10(self._poly_limits[0]),
+                np.log10(self._poly_limits[1]),
+            )
 
             mu_poly_coeffs = StanArray(
                 "CascadesEnergyResolutionMuPolyCoeffs", "real", self._poly_params_mu
@@ -227,10 +240,11 @@ class CascadesEnergyResolution(EnergyResolution):
             log_mu_vec = FunctionCall([log_mu], "to_vector")
             sigma_vec = FunctionCall([sigma], "to_vector")
 
-            if mode == DistributionMode.PDF:
-                log_reco_e = LogParameterization("reco_energy")
-                ReturnStatement([lognorm(log_reco_e, log_mu_vec, sigma_vec, weights)])
-            elif mode == DistributionMode.RNG:
+            if self.mode == DistributionMode.PDF:
+                ReturnStatement(
+                    [lognorm("log_reco_energy", log_mu_vec, sigma_vec, weights)]
+                )
+            elif self.mode == DistributionMode.RNG:
                 ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
 
     def setup(self) -> None:
@@ -329,23 +343,11 @@ class CascadesAngularResolution(AngularResolution):
 
     CACHE_FNAME = "angular_reso_cascades.npz"
 
+    PDF_NAME = "CascadesAngularResolution"
+    RNG_NAME = "CascadesAngularResolution_rng"
+
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
-        if mode == DistributionMode.PDF:
-            super().__init__(
-                "CascadesAngularResolution",
-                ["true_energy", "true_dir", "reco_dir"],
-                ["real", "vector", "vector"],
-                "real",
-            )
-
-        else:
-            super().__init__(
-                "CascadesAngularResolution_rng",
-                ["true_energy", "true_dir"],
-                ["real", "vector"],
-                "vector",
-            )
-
+        self.mode = mode
         self._kappa_grid: np.ndarray = None
         self._Egrid: np.ndarray = None
         self._poly_params: Sequence = []
@@ -354,25 +356,49 @@ class CascadesAngularResolution(AngularResolution):
 
         self.setup()
 
-        # Define Stan interface
+        if self.mode == DistributionMode.PDF:
+            self._func_name = self.PDF_NAME
+        else:
+            self._func_name = self.RNG_NAME
+
+    def generate_code(self):
+        if self.mode == DistributionMode.PDF:
+            super().__init__(
+                self._func_name,
+                ["log_true_energy", "true_dir", "reco_dir"],
+                ["real", "vector", "vector"],
+                "real",
+            )
+
+        else:
+            super().__init__(
+                self._func_name,
+                ["log_true_energy", "true_dir"],
+                ["real", "vector"],
+                "vector",
+            )
         with self:
             # Clip true energy
-            clipped_e = TruncatedParameterization("true_energy", self._Emin, self._Emax)
-
-            clipped_log_e = LogParameterization(clipped_e)
+            clipped_log_e = TruncatedParameterization(
+                "log_true_energy", np.log10(self._Emin), np.log10(self._Emax)
+            )
 
             kappa = PolynomialParameterization(
                 clipped_log_e, self._poly_params, "CascadesAngularResolutionPolyCoeffs"
             )
 
-            if mode == DistributionMode.PDF:
+            if self.mode == DistributionMode.PDF:
                 # VMF expects x_obs, x_true
-                vmf = VMFParameterization(["reco_dir", "true_dir"], kappa, mode)
+                vmf = VMFParameterization(["reco_dir", "true_dir"], kappa, self.mode)
+                ReturnStatement([vmf])
 
-            elif mode == DistributionMode.RNG:
-                vmf = VMFParameterization(["true_dir"], kappa, mode)
+            elif self.mode == DistributionMode.RNG:
+                pre_event = ForwardVariableDef("pre_event", "vector[4]")
+                vmf = VMFParameterization(["true_dir"], kappa, self.mode)
+                pre_event[1:3] << vmf
+                pre_event[4] << kappa
 
-            ReturnStatement([vmf])
+                ReturnStatement([pre_event])
 
     def kappa(self):
         clipped_e = TruncatedParameterization("E[i]", self._Emin, self._Emax)
@@ -446,12 +472,19 @@ class CascadesDetectorModel(DetectorModel):
 
     event_types = ["cascades"]
 
-    def __init__(
-        self,
-        mode: DistributionMode = DistributionMode.PDF,
-        event_type=None,
-    ):
+    PDF_NAME = "CascadesPDF"
+    RNG_NAME = "Cascades_rng"
+
+    RNG_FILENAME = "cascades_rng.stan"
+    PDF_FILENAME = "cascades_pdf.stan"
+
+    def __init__(self, mode: DistributionMode = DistributionMode.PDF):
         super().__init__(mode, event_type="cascades")
+
+        if self.mode == DistributionMode.PDF:
+            self._func_name = self.PDF_NAME
+        elif self.mode == DistributionMode.RNG:
+            self._func_name = self.RNG_NAME
 
         ang_res = CascadesAngularResolution(mode)
         self._angular_resolution = ang_res
@@ -469,6 +502,92 @@ class CascadesDetectorModel(DetectorModel):
 
     def _get_angular_resolution(self):
         return self._angular_resolution
+
+    def generate_pdf_function_code(self, sources: Sources = Sources()):
+        """
+        Generate a wrapper for the IRF in `DistributionMode.PDF`.
+        Takes `Sources` instance as argument to generate energy likelihood
+        and effective area for all point sources.
+        Assumes that astro diffuse and atmo diffuse model components are present.
+        If not, they are disregarded by the model likelihood.
+        Has signature
+        real true_energy [Gev] : true neutrino energy
+        real detected_energy [GeV] : detected muon energy
+        unit_vector[3] : detected direction of event
+        array[] unit_vector[3] : array of point source's positions
+        Returns a tuple of type
+        1 array[Ns] real : log(energy likelihood) of all point sources
+        2 array[Ns] real : log(effective area) of all point sources
+        3 array[3] real : array with log(energy likelihood), log(effective area)
+            and log(effective area) for atmospheric component.
+        For cascades the last entry is negative_infinity().
+        """
+
+        Ns = len(sources.point_source)
+
+        UserDefinedFunction.__init__(
+            self,
+            self._func_name,
+            ["true_energy", "detected_energy", "omega_det", "src_pos"],
+            ["real", "real", "vector", "array[] vector"],
+            "tuple(array[] real, array[] real, array[] real)",
+        )
+        with self:
+            # need to write a function that returns a tuple of energy likelihood and Aeff
+            ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
+            ps_aeff = ForwardArrayDef("ps_aeff", "real", ["[", Ns, "]"])
+            diff = ForwardArrayDef("diff", "real", ["[3]"])
+            eres = ForwardVariableDef("eres", "real")
+            eres << self.energy_resolution(
+                "log10(true_energy)", "log10(detected_energy)"
+            )
+            with ForLoopContext(1, Ns, "i") as i:
+                ps_eres[i] << eres
+                ps_aeff[i] << FunctionCall(
+                    [
+                        self.effective_area("true_energy", "src_pos[i]"),
+                    ],
+                    "log",
+                )
+            diff[1] << eres
+
+            diff[2] << FunctionCall(
+                [
+                    self.effective_area("true_energy", "omega_det"),
+                ],
+                "log",
+            )
+
+            diff[3] << "negative_infinity()"
+
+            ReturnStatement(["(ps_eres, ps_aeff, diff)"])
+
+    def generate_rng_function_code(self):
+        """
+        Generate a wrapper for the IRF in `DistributionMode.RNG`.
+        Has signature
+        real true_energy [GeV], unit_vector[3] source position
+        Returns a vector with entries
+        1 reconstructed energy [GeV]
+        2:4 reconstructed direction [unit_vector]
+        5 kappa
+        """
+
+        UserDefinedFunction.__init__(
+            self,
+            self.RNG_NAME,
+            ["true_energy", "omega"],
+            ["real", "vector"],
+            "vector",
+        )
+
+        with self:
+            return_this = ForwardVariableDef("return_this", "vector[5]")
+            return_this[1] << FunctionCall(
+                [10.0, self.energy_resolution("log10(true_energy)")], "pow"
+            )
+            return_this[2:5] << self.angular_resolution("log10(true_energy)", "omega")
+            ReturnStatement([return_this])
 
 
 # Testing.

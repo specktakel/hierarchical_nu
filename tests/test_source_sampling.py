@@ -8,9 +8,7 @@ from hierarchical_nu.source.source import PointSource
 from hierarchical_nu.source.flux_model import (
     PowerLawSpectrum,
     IsotropicDiffuseBG,
-    integral_power_law,
 )
-from hierarchical_nu.source.cosmology import luminosity_distance as dl
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.backend.stan_generator import (

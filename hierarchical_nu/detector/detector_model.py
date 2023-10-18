@@ -7,13 +7,16 @@ import numpy as np
 from scipy import stats
 from scipy.interpolate import RegularGridInterpolator
 from typing import List
+import os
 from astropy import units as u
 
 from ..utils.cache import Cache
 from ..backend import (
     UserDefinedFunction,
     DistributionMode,
+    StanGenerator,
 )
+from ..stan.interface import STAN_GEN_PATH
 
 from ..utils.fitting_tools import Residuals
 
@@ -125,10 +128,22 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
 
         return self._eff_area_spline
 
+    @abstractmethod
+    def generate_code(self):
+        """
+        Generates stan code.
+        """
+
+        pass
+
 
 class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
     """
     Abstract base class defining the energy resolution interface.
+
+    Signature for __call__ of UserDefinedFunction for DistributionMode.PDF is
+    log10(Etrue): real, log10(Edet): real, omega_det: unit_vector[3]
+    even if some parameter might not be used
     """
 
     @abstractmethod
@@ -511,6 +526,14 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
 
         return prob
 
+    @abstractmethod
+    def generate_code(self):
+        """
+        Generates stan code.
+        """
+
+        pass
+
 
 class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
     """
@@ -571,8 +594,16 @@ class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
 
         pass
 
+    @abstractmethod
+    def generate_code(self):
+        """
+        Generates stan code.
+        """
 
-class DetectorModel(metaclass=ABCMeta):
+        pass
+
+
+class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
     """
     Abstract base class for detector models.
     """
@@ -583,7 +614,7 @@ class DetectorModel(metaclass=ABCMeta):
         mode: DistributionMode = DistributionMode.PDF,
         event_type=None,
     ):
-        self._mode = mode
+        self.mode = mode
 
         self._event_type = event_type
 
@@ -614,3 +645,82 @@ class DetectorModel(metaclass=ABCMeta):
     @property
     def event_type(self):
         return self._event_type
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        path: str = STAN_GEN_PATH,
+        rewrite: bool = False,
+        **kwargs
+    ):
+        try:
+            files = os.listdir(path)
+        except FileNotFoundError:
+            files = []
+            os.makedirs(path)
+        finally:
+            if not rewrite:
+                if mode == DistributionMode.PDF and cls.PDF_FILENAME in files:
+                    return os.path.join(path, cls.PDF_FILENAME)
+                elif mode == DistributionMode.RNG and cls.RNG_FILENAME in files:
+                    return os.path.join(path, cls.RNG_FILENAME)
+
+            # else:
+            #     cls.logger.info("Generating IRF stan code.")
+
+        with StanGenerator() as cg:
+            instance = cls(mode=mode, **kwargs)
+            instance.effective_area.generate_code()
+            instance.angular_resolution.generate_code()
+            instance.energy_resolution.generate_code()
+            code = cg.generate()
+        code = code.removeprefix("functions\n{")
+        code = code.removesuffix("\n}\n")
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        if mode == DistributionMode.PDF:
+            with open(os.path.join(path, cls.PDF_FILENAME), "w+") as f:
+                f.write(code)
+            return os.path.join(path, cls.PDF_FILENAME)
+        else:
+            with open(os.path.join(path, cls.RNG_FILENAME), "w+") as f:
+                f.write(code)
+            return os.path.join(path, cls.RNG_FILENAME)
+
+    @abstractmethod
+    def generate_pdf_function_code(self):
+        """
+        Generate a wrapper for the IRF in `DistributionMode.PDF`.
+        Takes `Sources` instance as argument to generate energy likelihood
+        and effective area for all point sources.
+        Assumes that astro diffuse and atmo diffuse model components are present.
+        If not, they are disregarded by the model likelihood.
+        Has signature
+        real true_energy [Gev] : true neutrino energy
+        real detected_energy [GeV] : detected muon energy
+        unit_vector[3] : detected direction of event
+        array[] unit_vector[3] : array of point source's positions
+        Returns a tuple of type
+        1 array[Ns] real : log(energy likelihood) of all point sources
+        2 array[Ns] real : log(effective area) of all point sources
+        3 array[3] real : array with log(energy likelihood), log(effective area)
+            and log(effective area) for atmospheric component.
+        For cascades the last entry is negative_infinity().
+        """
+
+        pass
+
+    @abstractmethod
+    def generate_rng_function_code(self):
+        """
+        Generate a wrapper for the IRF in `DistributionMode.RNG`.
+        Has signature
+        real true_energy [GeV], unit_vector[3] source position
+        Returns a vector with entries
+        1 reconstructed energy [GeV]
+        2:4 reconstructed direction [unit_vector]
+        5 kappa
+        """
+
+        pass

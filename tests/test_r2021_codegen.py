@@ -16,7 +16,6 @@ from hierarchical_nu.backend.stan_generator import (
     ForLoopContext,
     ParametersContext,
     StanFileGenerator,
-    FunctionCall,
     TransformedParametersContext,
 )
 from hierarchical_nu.backend.variable_definitions import (
@@ -28,7 +27,6 @@ from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.stan.interface import STAN_PATH
-from hierarchical_nu.stan.interface import STAN_GEN_PATH
 
 from icecube_tools.detector.r2021 import R2021IRF
 from icecube_tools.detector.effective_area import EffectiveArea
@@ -47,7 +45,6 @@ class TestR2021:
         _ = R2021DetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=True,
-            gen_type="histogram",
             ereco_cuts=False,
             path=output_directory,
         )
@@ -58,6 +55,8 @@ class TestR2021:
                 _ = Include("utils.stan")
                 _ = Include("vMF.stan")
                 _ = Include(R2021DetectorModel.RNG_FILENAME)
+                rng = R2021DetectorModel(DistributionMode.RNG)
+                rng.generate_rng_function_code()
 
             with DataContext():
                 etrue = ForwardVariableDef("true_energy", "real")
@@ -65,22 +64,20 @@ class TestR2021:
                 theta = ForwardVariableDef("theta", "real")
 
             with GeneratedQuantitiesContext():
+                rng_return = ForwardVariableDef("rng_return", "vector[5]")
                 reco_energy = ForwardVariableDef("reco_energy", "real")
-                reco_energy << StringExpression(
-                    [
-                        "R2021EnergyResolution_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
-                    ]
-                )
-                pre_event = ForwardVariableDef("pre_event", "vector[4]")
-                pre_event << StringExpression(
-                    [
-                        "R2021AngularResolution_rng(true_energy, reco_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
-                    ]
-                )
                 kappa = ForwardVariableDef("kappa", "real")
                 reco_dir = ForwardVariableDef("reco_dir", "vector[3]")
-                kappa << StringExpression(["pre_event[4]"])
-                reco_dir << StringExpression(["pre_event[1:3]"])
+
+                rng_return << StringExpression(
+                    [
+                        "R2021_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                    ]
+                )
+                reco_energy << rng_return[1]
+                reco_dir << rng_return[2:4]
+                kappa << rng_return[5]
+
         code_gen.generate_single_file()
         return code_gen.filename
 
@@ -91,7 +88,6 @@ class TestR2021:
         _ = R2021DetectorModel.generate_code(
             mode=DistributionMode.PDF,
             rewrite=True,
-            gen_type="lognorm",
             path=output_directory,
         )
 
@@ -130,14 +126,12 @@ class TestR2021:
         R2021DetectorModel.generate_code(
             mode=DistributionMode.PDF,
             rewrite=False,
-            gen_type="lognorm",
             path=output_directory,
         )
 
         R2021DetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=False,
-            gen_type="histogram",
             path=output_directory,
         )
 
@@ -161,7 +155,7 @@ class TestR2021:
 
         phi = 0
         theta = np.array([3 * np.pi / 4, np.pi / 2, np.pi / 4])
-        etrue = irf.true_energy_values
+        etrue = np.power(10, irf.true_energy_values)
 
         for c_e, e in enumerate(etrue):
             for c_d, t in enumerate(theta):
@@ -174,7 +168,7 @@ class TestR2021:
                     seed=random_seed,
                 )
 
-                e_res = output.stan_variable("reco_energy")
+                e_res = np.log10(output.stan_variable("reco_energy"))
                 n, bins = np.histogram(
                     e_res, irf.reco_energy_bins[c_e, c_d], density=True
                 )
@@ -243,7 +237,6 @@ class TestR2021:
         _ = R2021DetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=True,
-            gen_type="histogram",
             ereco_cuts=True,
             path=output_directory,
         )

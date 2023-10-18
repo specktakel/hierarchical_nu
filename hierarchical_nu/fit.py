@@ -6,7 +6,7 @@ import collections
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
-from typing import List, Union
+from typing import List, Union, Dict
 import corner
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -24,15 +24,16 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.detector_model import DetectorModel
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
+from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
-from hierarchical_nu.utils.plotting import SphericalCircle
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 
+NT = Refrigerator.PYTHON_NT
+CAS = Refrigerator.PYTHON_CAS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -47,9 +48,9 @@ class StanFit:
     def __init__(
         self,
         sources: Sources,
-        detector_model: DetectorModel,
+        event_types: Union[str, List[str]],
         events: Events,
-        observation_time: u.year,
+        observation_time: Dict[str, u.quantity.Quantity[u.year]],
         priors: Priors = Priors(),
         atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
@@ -61,7 +62,13 @@ class StanFit:
         """
 
         self._sources = sources
-        self._detector_model_type = detector_model
+        # self._detector_model_type = detector_model
+        if isinstance(event_types, str):
+            event_types = [event_types]
+        if isinstance(observation_time, u.quantity.Quantity):
+            observation_time = {event_types[0]: observation_time}
+        assert len(event_types) == len(observation_time)
+        self._event_types = event_types
         self._events = events
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
@@ -76,7 +83,7 @@ class StanFit:
             self._stan_interface = StanFitInterface(
                 stan_file_name,
                 self._sources,
-                self._detector_model_type,
+                self._event_types,
                 priors=priors,
                 nshards=nshards,
                 atmo_flux_energy_points=atmo_flux_energy_points,
@@ -85,19 +92,14 @@ class StanFit:
         else:
             logger.debug("Reloading previous results.")
 
-        # Check for unsupported combinations
-        if sources.atmospheric and detector_model.event_types == ["cascades"]:
+        if sources.atmospheric and self._event_types == [CAS]:
             raise NotImplementedError(
                 "AtmosphericNuMuFlux currently only implemented "
                 + "for use with NorthernTracksDetectorModel or "
                 + "IceCubeDetectorModel"
             )
 
-        if (
-            sources.atmospheric
-            and sources.N == 1
-            and "cascades" in detector_model.event_types
-        ):
+        if sources.atmospheric and sources.N == 1 and CAS in self._event_types:
             raise NotImplementedError(
                 "AtmosphericNuMuFlux as the only source component "
                 + "for IceCubeDetectorModel is not implemented. Just use "
@@ -157,12 +159,10 @@ class StanFit:
         exposure_integral: collections.OrderedDict = None,
     ):
         if not exposure_integral:
-            for event_type in self._detector_model_type.event_types:
+            for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
-                    self._detector_model_type,
-                    n_grid_points=self._n_grid_points,
-                    event_type=event_type,
+                    event_type,
                 )
 
         else:
@@ -177,10 +177,6 @@ class StanFit:
     def compile_stan_code(self, include_paths=None):
         if not include_paths:
             include_paths = [STAN_PATH]
-        if self._detector_model_type == R2021DetectorModel:
-            r2021_path = os.path.join(os.getcwd(), ".stan_files")
-            if not r2021_path in include_paths:
-                include_paths.append(r2021_path)
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename,
@@ -870,9 +866,14 @@ class StanFit:
             Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
         )
 
-        fit_inputs["T"] = self._observation_time.to(u.s).value
+        integral_grid = []
+        atmo_integ_val = []
+        obs_time = []
 
-        event_type = self._detector_model_type.event_types[0]
+        for c, event_type in enumerate(self._event_types):
+            obs_time.append(self._observation_time[event_type].to(u.s).value)
+
+            # event_type = self._detector_model_type.event_types[0]
 
         fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
 
@@ -887,85 +888,32 @@ class StanFit:
                 event_type
             ].par_grids[key]
 
-            # Inputs for priors of point sources
-            fit_inputs["src_index_mu"] = self._priors.src_index.mu
-            fit_inputs["src_index_sigma"] = self._priors.src_index.sigma
-            if self._priors.luminosity.name in ["normal", "lognormal"]:
-                fit_inputs["lumi_mu"] = self._priors.luminosity.mu
-                fit_inputs["lumi_sigma"] = self._priors.luminosity.sigma
-            elif self._priors.luminosity.name == "pareto":
-                fit_inputs["lumi_xmin"] = self._priors.luminosity.xmin
-                fit_inputs["lumi_alpha"] = self._priors.luminosity.alpha
-            else:
-                raise ValueError("No other prior type for luminosity implemented")
+        # Inputs for priors of point sources
+        fit_inputs["src_index_mu"] = self._priors.src_index.mu
+        fit_inputs["src_index_sigma"] = self._priors.src_index.sigma
+        if self._priors.luminosity.name in ["normal", "lognormal"]:
+            fit_inputs["lumi_mu"] = self._priors.luminosity.mu
+            fit_inputs["lumi_sigma"] = self._priors.luminosity.sigma
+        elif self._priors.luminosity.name == "pareto":
+            fit_inputs["lumi_xmin"] = self._priors.luminosity.xmin
+            fit_inputs["lumi_alpha"] = self._priors.luminosity.alpha
+        else:
+            raise ValueError("No other prior type for luminosity implemented")
 
         if self._sources.diffuse:
+            # Just take any for now, using default parameters it doesn't matter
             fit_inputs["diff_index_grid"] = self._exposure_integral[
                 event_type
             ].par_grids["diff_index"]
 
+        if self._sources.diffuse:
             # Priors for diffuse model
             fit_inputs["f_diff_mu"] = self._priors.diffuse_flux.mu
             fit_inputs["f_diff_sigma"] = self._priors.diffuse_flux.sigma
             fit_inputs["diff_index_mu"] = self._priors.diff_index.mu
             fit_inputs["diff_index_sigma"] = self._priors.diff_index.sigma
 
-        if "tracks" in self._stan_interface._event_types:
-            fit_inputs["integral_grid_t"] = [
-                _.to(u.m**2).value.tolist()
-                for _ in self._exposure_integral["tracks"].integral_grid
-            ]
-
-            if self._sources.point_source:
-                fit_inputs["aeff_egrid_t"] = (
-                    self._exposure_integral["tracks"]
-                    .pdet_grid[0]
-                    .to(u.GeV)
-                    .value.tolist()
-                )
-                fit_inputs["aeff_slice_t"] = [
-                    _.to(u.m**2).value.tolist()
-                    for _ in self._exposure_integral["tracks"].pdet_grid[1:]
-                ]
-                fit_inputs["aeff_len_t"] = len(
-                    self._exposure_integral["tracks"]
-                    .pdet_grid[0]
-                    .to(u.GeV)
-                    .value.tolist()
-                )
-
-        if "cascades" in self._stan_interface._event_types:
-            fit_inputs["integral_grid_c"] = [
-                _.to(u.m**2).value.tolist()
-                for _ in self._exposure_integral["cascades"].integral_grid
-            ]
-
-            if self._sources.point_source:
-                fit_inputs["aeff_egrid_c"] = (
-                    self._exposure_integral["cascades"]
-                    .pdet_grid[0]
-                    .to(u.GeV)
-                    .value.tolist()
-                )
-                fit_inputs["aeff_slice_c"] = [
-                    _.to(u.m**2).value.tolist()
-                    for _ in self._exposure_integral["cascades"].pdet_grid[1:]
-                ]
-                fit_inputs["aeff_len_c"] = len(
-                    self._exposure_integral["cascades"]
-                    .pdet_grid[0]
-                    .to(u.GeV)
-                    .value.tolist()
-                )
-
         if self._sources.atmospheric:
-            fit_inputs["atmo_integ_val"] = (
-                self._exposure_integral["tracks"]
-                .integral_fixed_vals[0]
-                .to(u.m**2)
-                .value
-            )
-
             fit_inputs[
                 "atmo_integrated_flux"
             ] = self._sources.atmospheric.flux_model.total_flux_int.to(
@@ -976,6 +924,25 @@ class StanFit:
             fit_inputs["f_atmo_mu"] = self._priors.atmospheric_flux.mu
             fit_inputs["f_atmo_sigma"] = self._priors.atmospheric_flux.sigma
 
+        for c, event_type in enumerate(self._event_types):
+            integral_grid.append(
+                [
+                    _.to(u.m**2).value.tolist()
+                    for _ in self._exposure_integral[event_type].integral_grid
+                ]
+            )
+
+            if self._sources.atmospheric:
+                atmo_integ_val.append(
+                    self._exposure_integral[event_type]
+                    .integral_fixed_vals[0]
+                    .to(u.m**2)
+                    .value
+                )
+
+        fit_inputs["integral_grid"] = integral_grid
+        fit_inputs["atmo_integ_val"] = atmo_integ_val
+        fit_inputs["T"] = obs_time
         # To work with cmdstanpy serialization
         fit_inputs = {
             k: v if not isinstance(v, np.ndarray) else v.tolist()

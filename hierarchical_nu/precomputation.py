@@ -14,7 +14,6 @@ import numpy as np
 from hierarchical_nu.source.source import (
     Sources,
     PointSource,
-    DiffuseSource,
     icrs_to_uv,
 )
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
@@ -22,8 +21,12 @@ from hierarchical_nu.source.parameter import ParScale, Parameter
 from hierarchical_nu.backend.stan_generator import StanGenerator
 from hierarchical_nu.detector.r2021 import R2021EnergyResolution
 from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
+from hierarchical_nu.detector.icecube import IceCube, Refrigerator
 
 m_to_cm = 100  # cm
+NT = Refrigerator.PYTHON_NT
+CAS = Refrigerator.PYTHON_CAS
+IC86_II = Refrigerator.PYTHON_IC86_II
 
 
 class ExposureIntegral:
@@ -39,7 +42,6 @@ class ExposureIntegral:
         sources: Sources,
         detector_model,
         n_grid_points: int = 50,
-        event_type=None,
     ):
         """
         Handles calculation of the exposure integral.
@@ -50,9 +52,8 @@ class ExposureIntegral:
         :param DetectorModel: A DetectorModel class.
         """
 
+        self._detector_model = detector_model
         self._sources = sources
-        # self._min_src_energy = Parameter.get_parameter("Emin").value
-        # self._max_src_energy = Parameter.get_parameter("Emax").value
         self._n_grid_points = n_grid_points
 
         # Use Emin_det if available, otherwise use per event_type
@@ -60,16 +61,19 @@ class ExposureIntegral:
             self._min_det_energy = Parameter.get_parameter("Emin_det").value
 
         except ValueError:
-            if event_type == "tracks":
-                self._min_det_energy = Parameter.get_parameter("Emin_det_tracks").value
-
-            elif event_type == "cascades":
+            if detector_model == CAS:
                 self._min_det_energy = Parameter.get_parameter(
                     "Emin_det_cascades"
                 ).value
 
+            elif detector_model == NT:
+                self._min_det_energy = Parameter.get_parameter("Emin_det_tracks").value
+
+            elif detector_model == IC86_II:
+                self._min_det_energy = Parameter.get_parameter("Emin_det_IC86_II").value
+
             else:
-                raise ValueError("event_type not recognised")
+                raise ValueError("Detector model not recognised")
 
         # Silence log output
         logger = logging.getLogger("hierarchical_nu.backend.code_generator")
@@ -77,7 +81,7 @@ class ExposureIntegral:
 
         # Instantiate the given Detector class to access values
         with StanGenerator():
-            dm = detector_model(event_type=event_type)
+            dm = IceCube(detector_model)
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
             self._dm = dm
@@ -163,11 +167,6 @@ class ExposureIntegral:
             dec = source.dec
             cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
 
-            """
-            integral = source.flux_model.spectral_shape.integral(
-                lower_e_edges, upper_e_edges
-            ).to(integral_unit)
-            """
             flux_vals = source.flux_model.spectral_shape(E_c)
             if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
                 self.effective_area.cosz_bin_edges
@@ -252,20 +251,15 @@ class ExposureIntegral:
 
             # Evaluate effective area and flux
             aeff_vals = (
-                # np.power(
-                #    10,
                 self._effective_area.eff_area_spline(
                     np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
                 ).reshape(log_E_grid.shape)
                 * u.m**2
-                # ).reshape(log_E_grid.shape)
-                # * u.m**2
             )
 
             flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
 
             if isinstance(self.energy_resolution, R2021EnergyResolution):
-                # p_Edet = np.zeros_like(E_grid)
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                     E_grid.flatten(),
                     self._min_det_energy,
@@ -308,10 +302,16 @@ class ExposureIntegral:
 
         for k, source in enumerate(self._sources.sources):
             if not self._source_parameter_map[source]:
-                self._integral_fixed_vals.append(
-                    self.calculate_rate(source)
-                    / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
-                )
+                if (
+                    isinstance(source.flux_model, AtmosphericNuMuFlux)
+                    and self._detector_model == CAS
+                ):
+                    self._integral_fixed_vals.append(0.0 * u.m**2)
+                else:
+                    self._integral_fixed_vals.append(
+                        self.calculate_rate(source)
+                        / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
+                    )
                 continue
 
             this_free_pars = self._source_parameter_map[source]
@@ -331,10 +331,6 @@ class ExposureIntegral:
                 integral_grids_tmp[indices] += self.calculate_rate(
                     source
                 ) / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
-                # essentially my calculation, but from the other end
-                # normalisation of integrated particle flux is taken out
-                # because it is used as a transformed parameter
-                # remainder is only dependent on gamma and detector
 
             # Reset free parameters to original values
             for par_name in this_free_pars:
@@ -435,7 +431,7 @@ class ExposureIntegral:
                 # that is then used at all declinations.
                 # In the case of the atmospheric background,
                 # the distribution is bivariate. We are not allowed to
-                # pic c-values for each declination separetely
+                # pick c-values for each declination separetely
                 # because then we assume independent distributions
                 # at each declination, all "relative information"
                 # is then lost.
@@ -536,8 +532,6 @@ class ExposureIntegral:
         """
 
         self._compute_exposure_integral()
-
-        # self._compute_energy_detection_factor()
 
         self._slice_aeff_for_point_sources()
 

@@ -11,6 +11,8 @@ from hierarchical_nu.backend.stan_generator import (
     Include,
     ForLoopContext,
     StanFileGenerator,
+    StanGenerator,
+    FunctionCall,
 )
 from hierarchical_nu.backend.variable_definitions import (
     ForwardVariableDef,
@@ -21,22 +23,27 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.stan.interface import STAN_PATH
 
+from hierarchical_nu.source.source import Sources
+
 
 def test_file_generation_northern_tracks(output_directory):
+    _ = NorthernTracksDetectorModel.generate_code(
+        mode=DistributionMode.PDF, path=output_directory, rewrite=True
+    )
+    _ = NorthernTracksDetectorModel.generate_code(
+        mode=DistributionMode.RNG, path=output_directory, rewrite=True
+    )
 
-    file_name = os.path.join(output_directory, "northern_tracks")
+    with StanGenerator() as gc:
+        with FunctionsContext():
+            ntd_pdf = NorthernTracksDetectorModel()
+            ntd_pdf.generate_pdf_function_code(Sources())
 
-    with StanFileGenerator(file_name) as code_gen:
-
-        _ = NorthernTracksDetectorModel(mode=DistributionMode.PDF)
-
-        _ = NorthernTracksDetectorModel(mode=DistributionMode.RNG)
-
-        code_gen.generate_files()
+            ntd_rng = NorthernTracksDetectorModel(DistributionMode.RNG)
+            ntd_rng.generate_rng_function_code()
 
 
 def generate_distribution_test_code(output_directory):
-
     file_name = os.path.join(output_directory, "nt_distributions")
 
     e_true_name = "e_trues"
@@ -44,16 +51,19 @@ def generate_distribution_test_code(output_directory):
     true_dir_name = "true_dirs"
     reco_zenith_name = "reco_zeniths"
 
+    _ = NorthernTracksDetectorModel.generate_code(
+        mode=DistributionMode.PDF, path=output_directory, rewrite=True
+    )
+
     with StanFileGenerator(file_name) as code_gen:
-
         with FunctionsContext():
-
             _ = Include("interpolation.stan")
             _ = Include("utils.stan")
             _ = Include("vMF.stan")
+            _ = Include("northern_tracks_pdf.stan")
+            ntd = NorthernTracksDetectorModel()
 
         with DataContext():
-
             array_length = ForwardVariableDef("n", "int")
             array_length_str = ["[", array_length, "]"]
 
@@ -63,9 +73,6 @@ def generate_distribution_test_code(output_directory):
             reco_zenith = ForwardArrayDef(reco_zenith_name, "real", array_length_str)
 
         with GeneratedQuantitiesContext():
-
-            ntd = NorthernTracksDetectorModel()
-
             array_length_2d_str = ["[", array_length, ",", array_length, "]"]
             e_res_result = ForwardArrayDef("e_res", "real", array_length_2d_str)
             eff_area_result = ForwardArrayDef("eff_area", "real", array_length_2d_str)
@@ -76,18 +83,21 @@ def generate_distribution_test_code(output_directory):
             true_dir_ang_res << StringExpression("[sin(pi()/2), 0, cos(pi()/2)]'")
 
             with ForLoopContext(1, array_length, "i") as i:
-
                 with ForLoopContext(1, array_length, "j") as j:
-
-                    eff_area_result[i][j] << ntd.effective_area(
-                        e_trues[i], true_dirs[j]
-                    )
-                    e_res_result[i][j] << ntd.energy_resolution(e_trues[i], e_recos[j])
                     reco_dir_ang_res << StringExpression(
                         ["[sin(", reco_zenith[j], "), 0, cos(", reco_zenith[j], ")]'"]
                     )
+                    eff_area_result[i][j] << ntd.effective_area(
+                        e_trues[i], true_dirs[j]
+                    )
+                    e_res_result[i][j] << ntd.energy_resolution(
+                        FunctionCall([e_trues[i]], "log10"),
+                        FunctionCall([e_recos[j]], "log10"),
+                    )
                     ang_res_result[i][j] << ntd.angular_resolution(
-                        e_trues[i], true_dir_ang_res, reco_dir_ang_res
+                        FunctionCall([e_trues[i]], "log10"),
+                        true_dir_ang_res,
+                        reco_dir_ang_res,
                     )
 
     code_gen.generate_single_file()
@@ -96,7 +106,6 @@ def generate_distribution_test_code(output_directory):
 
 
 def test_distributions_northern_tracks(output_directory, random_seed):
-
     model_file = generate_distribution_test_code(output_directory)
 
     stanc_options = {"include-paths": [STAN_PATH]}
@@ -151,54 +160,63 @@ def test_distributions_northern_tracks(output_directory, random_seed):
 
 
 def generate_rv_test_code(output_directory):
-
     rng_file_name = os.path.join(output_directory, "nt_rng")
     pdf_file_name = os.path.join(output_directory, "nt_pdf")
 
+    _ = NorthernTracksDetectorModel.generate_code(
+        DistributionMode.RNG, path=output_directory
+    )
+
     with StanFileGenerator(rng_file_name) as code_gen_rng:
-
         with FunctionsContext():
-
             Include("interpolation.stan")
             Include("utils.stan")
             Include("vMF.stan")
+            Include("northern_tracks_rng.stan")
+            ntd_rng = NorthernTracksDetectorModel(mode=DistributionMode.RNG)
+            ntd_rng.generate_rng_function_code()
 
             with DataContext():
-
                 true_energy = ForwardVariableDef("true_energy", "real")
                 true_dir = ForwardVariableDef("true_dir", "vector[3]")
 
             with GeneratedQuantitiesContext():
-
-                ntd_rng = NorthernTracksDetectorModel(mode=DistributionMode.RNG)
+                rng_return = ForwardVariableDef("rng_return", "vector[5]")
                 rec_energy = ForwardVariableDef("rec_energy", "real")
                 rec_dir = ForwardVariableDef("rec_dir", "vector[3]")
 
-                rec_energy << ntd_rng.energy_resolution(true_energy)
-                rec_dir << ntd_rng.angular_resolution(true_energy, true_dir)
+                rng_return << ntd_rng(true_energy, true_dir)
+                rec_energy << rng_return[1]
+                rec_dir << rng_return[2:4]
 
         code_gen_rng.generate_single_file()
 
+    _ = NorthernTracksDetectorModel.generate_code(
+        DistributionMode.PDF, path=output_directory
+    )
+
     with StanFileGenerator(pdf_file_name) as code_gen_pdf:
-
         with FunctionsContext():
-
             Include("interpolation.stan")
             Include("utils.stan")
             Include("vMF.stan")
+            Include("northern_tracks_pdf.stan")
+            ntd_pdf = NorthernTracksDetectorModel(mode=DistributionMode.PDF)
 
         with DataContext():
-
             true_energy = ForwardVariableDef("true_energy", "real")
             e_recos = ForwardArrayDef("e_recos", "real", ["[100]"])
 
         with GeneratedQuantitiesContext():
-
+            dummy_dir = ForwardVariableDef("dummy_dir", "unit_vector[3]")
+            dummy_dir << StringExpression(["[1., 0., 0.]'"])
             e_res_result = ForwardArrayDef("e_res", "real", ["[100]"])
-            ntd_pdf = NorthernTracksDetectorModel(mode=DistributionMode.PDF)
 
             with ForLoopContext(1, 100, "i") as i:
-                e_res_result[i] << ntd_pdf.energy_resolution(true_energy, e_recos[i])
+                e_res_result[i] << ntd_pdf.energy_resolution(
+                    FunctionCall([true_energy], "log10"),
+                    FunctionCall([e_recos[i]], "log10"),
+                )
 
         code_gen_pdf.generate_single_file()
 
@@ -206,7 +224,6 @@ def generate_rv_test_code(output_directory):
 
 
 def test_rv_generation(output_directory, random_seed):
-
     # Get Stan files
     rng_file_name, pdf_file_name = generate_rv_test_code(output_directory)
 
@@ -247,7 +264,7 @@ def test_rv_generation(output_directory, random_seed):
         seed=random_seed,
     )
 
-    reco_energy_samples = output_rng.stan_variable("rec_energy")
+    reco_energy_samples = np.log10(output_rng.stan_variable("rec_energy"))
     reco_dir_samples = output_rng.stan_variable("rec_dir")
 
     reco_energy_pdf = np.exp(output_pdf.stan_variable("e_res")[0])
@@ -289,7 +306,7 @@ def test_rv_generation(output_directory, random_seed):
         seed=random_seed,
     )
 
-    reco_energy_samples = output_rng.stan_variable("rec_energy")
+    reco_energy_samples = np.log10(output_rng.stan_variable("rec_energy"))
     reco_dir_samples = output_rng.stan_variable("rec_dir")
 
     reco_energy_pdf = np.exp(output_pdf.stan_variable("e_res")[0])

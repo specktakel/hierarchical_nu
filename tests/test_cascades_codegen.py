@@ -1,18 +1,22 @@
-import os
-
-from hierarchical_nu.backend.stan_generator import StanFileGenerator
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
 from hierarchical_nu.backend.parameterizations import DistributionMode
+from hierarchical_nu.backend import FunctionsContext, StanGenerator
+from hierarchical_nu.source.source import Sources
 
 
 def test_file_generation_cascades(output_directory):
+    _ = CascadesDetectorModel.generate_code(
+        mode=DistributionMode.PDF, path=output_directory, rewrite=True
+    )
 
-    file_name = os.path.join(output_directory, "cascades")
+    _ = CascadesDetectorModel.generate_code(
+        mode=DistributionMode.RNG, path=output_directory, rewrite=True
+    )
 
-    with StanFileGenerator(file_name) as cg:
+    with StanGenerator() as gc:
+        with FunctionsContext():
+            cas_pdf = CascadesDetectorModel()
+            cas_pdf.generate_pdf_function_code(Sources())
 
-        _ = CascadesDetectorModel(mode=DistributionMode.PDF)
-
-        _ = CascadesDetectorModel(mode=DistributionMode.RNG)
-
-        cg.generate_files()
+            cas_rng = CascadesDetectorModel(DistributionMode.RNG)
+            cas_rng.generate_rng_function_code()
