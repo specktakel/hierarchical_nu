@@ -21,12 +21,12 @@ from hierarchical_nu.source.parameter import ParScale, Parameter
 from hierarchical_nu.backend.stan_generator import StanGenerator
 from hierarchical_nu.detector.r2021 import R2021EnergyResolution
 from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
-from hierarchical_nu.detector.icecube import IceCube, Refrigerator
+from hierarchical_nu.detector.icecube import (
+    Refrigerator,
+    CAS,
+)
 
 m_to_cm = 100  # cm
-NT = Refrigerator.PYTHON_NT
-CAS = Refrigerator.PYTHON_CAS
-IC86_II = Refrigerator.PYTHON_IC86_II
 
 
 class ExposureIntegral:
@@ -61,17 +61,12 @@ class ExposureIntegral:
             self._min_det_energy = Parameter.get_parameter("Emin_det").value
 
         except ValueError:
-            if detector_model == CAS:
-                self._min_det_energy = Parameter.get_parameter(
-                    "Emin_det_cascades"
-                ).value
-
-            elif detector_model == NT:
-                self._min_det_energy = Parameter.get_parameter("Emin_det_tracks").value
-
-            elif detector_model == IC86_II:
-                self._min_det_energy = Parameter.get_parameter("Emin_det_IC86_II").value
-
+            for dm in Refrigerator.detectors:
+                if detector_model == dm:
+                    self._min_det_energy = Parameter.get_parameter(
+                        f"Emin_det_{dm.P}"
+                    ).value
+                break
             else:
                 raise ValueError("Detector model not recognised")
 
@@ -81,7 +76,7 @@ class ExposureIntegral:
 
         # Instantiate the given Detector class to access values
         with StanGenerator():
-            dm = IceCube(detector_model)
+            dm = detector_model.model()
             self._effective_area = dm.effective_area
             self._energy_resolution = dm.energy_resolution
             self._dm = dm

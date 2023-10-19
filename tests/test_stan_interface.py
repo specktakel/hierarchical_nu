@@ -10,17 +10,17 @@ from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.roi import RectangularROI
-from hierarchical_nu.detector.icecube import Refrigerator
+from hierarchical_nu.detector.icecube import Refrigerator, NT, CAS, IC86_I, IC86_II
 import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 detector_list = [
-    Refrigerator.PYTHON_NT,
-    Refrigerator.PYTHON_CAS,
-    Refrigerator.PYTHON_IC86_II,
-    [Refrigerator.PYTHON_IC86_I, Refrigerator.PYTHON_IC86_II],
+    NT,
+    CAS,
+    IC86_II,
+    [IC86_I, IC86_II],
 ]
 
 

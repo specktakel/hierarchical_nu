@@ -2,6 +2,7 @@ from ..backend import DistributionMode
 from .northern_tracks import (
     NorthernTracksDetectorModel,
 )
+from dataclasses import dataclass
 from .cascades import (
     CascadesDetectorModel,
 )
@@ -14,74 +15,97 @@ from .r2021 import (
 )
 
 
+class EventType:
+    pass
+
+
+@dataclass
+class NT(EventType):
+    P = "northern_tracks"
+    S = 0
+    model = NorthernTracksDetectorModel
+
+
+@dataclass
+class CAS(EventType):
+    P = "cascades"
+    S = 1
+    model = CascadesDetectorModel
+
+
+@dataclass
+class IC40(EventType):
+    P = "IC40"
+    S = 2
+    model = IC40DetectorModel
+
+
+@dataclass
+class IC59(EventType):
+    P = "IC59"
+    S = 3
+    model = IC59DetectorModel
+
+
+@dataclass
+class IC79(EventType):
+    P = "IC79"
+    S = 4
+    model = IC79DetectorModel
+
+
+@dataclass
+class IC86_I(EventType):
+    P = "IC86_I"
+    S = 5
+    model = IC86_IDetectorModel
+
+
+@dataclass
+class IC86_II(EventType):
+    P = "IC86_II"
+    S = 6
+    model = IC86_IIDetectorModel
+
+
 class Refrigerator:
-    STAN_NT = 0
-    STAN_CAS = 1
-    STAN_IC40 = 2
-    STAN_IC59 = 3
-    STAN_IC79 = 4
-    STAN_IC86_I = 5
-    STAN_IC86_II = 6
+    detectors = [NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II]
 
-    PYTHON_NT = "northern_tracks"
-    PYTHON_CAS = "cascades"
-    PYTHON_IC40 = "IC40"
-    PYTHON_IC59 = "IC59"
-    PYTHON_IC79 = "IC79"
-    PYTHON_IC86_I = "IC86_I"
-    PYTHON_IC86_II = "IC86_II"
+    @classmethod
+    def python2dm(cls, python):
+        for dm in cls.detectors:
+            if dm.P == python:
+                return dm
+        else:
+            raise ValueError("No such detector available.")
 
-    stan_detectors = [
-        STAN_NT,
-        STAN_CAS,
-        STAN_IC40,
-        STAN_IC59,
-        STAN_IC79,
-        STAN_IC86_I,
-        STAN_IC86_II,
-    ]
-
-    python_detectors = [
-        PYTHON_NT,
-        PYTHON_CAS,
-        PYTHON_IC40,
-        PYTHON_IC59,
-        PYTHON_IC79,
-        PYTHON_IC86_I,
-        PYTHON_IC86_II,
-    ]
+    @classmethod
+    def stan2dm(cls, stan):
+        for dm in cls.detectors:
+            if dm.S == stan:
+                return dm
+        else:
+            raise ValueError("No such detector available.")
 
     @classmethod
     def stan2python(cls, stan):
-        for c, s_dm in enumerate(cls.stan_detectors):
-            if stan == s_dm:
-                break
+        for dm in cls.detectors:
+            if stan == dm.S:
+                return dm.P
         else:
             raise ValueError("No such detector available.")
-
-        return cls.python_detectors[c]
 
     @classmethod
     def python2stan(cls, python):
-        for c, p_dm in enumerate(cls.python_detectors):
-            if python == p_dm:
-                break
+        for dm in cls.detectors:
+            if python == dm.P:
+                return dm.S
         else:
             raise ValueError("No such detector available.")
 
-        return cls.stan_detectors[c]
-
 
 # Dictionary of currently supported detector configs
-DETECTOR_DICT = {
-    Refrigerator.PYTHON_NT: NorthernTracksDetectorModel,
-    Refrigerator.PYTHON_CAS: CascadesDetectorModel,
-    Refrigerator.PYTHON_IC40: IC40DetectorModel,
-    Refrigerator.PYTHON_IC59: IC59DetectorModel,
-    Refrigerator.PYTHON_IC79: IC79DetectorModel,
-    Refrigerator.PYTHON_IC86_I: IC86_IDetectorModel,
-    Refrigerator.PYTHON_IC86_II: IC86_IIDetectorModel,
-}
+DETECTOR_DICT = {dm: dm.model for dm in Refrigerator.detectors}
 
 
 def IceCube(detector, mode: DistributionMode = DistributionMode.PDF):

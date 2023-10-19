@@ -42,10 +42,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources
 
-from hierarchical_nu.detector.icecube import IceCube, Refrigerator
-
-NT = Refrigerator.PYTHON_NT
-CAS = Refrigerator.PYTHON_CAS
+from hierarchical_nu.detector.icecube import IceCube, EventType
 
 
 class StanFitInterface(StanInterface):
@@ -57,7 +54,7 @@ class StanFitInterface(StanInterface):
         self,
         output_file: str,
         sources: Sources,
-        event_types: List[str],
+        event_types: List[EventType],
         atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
         includes: List[str] = [
@@ -84,7 +81,7 @@ class StanFitInterface(StanInterface):
         """
 
         for et in event_types:
-            detector_model_type = IceCube(et, DistributionMode.PDF)
+            detector_model_type = et.model
 
             if detector_model_type.PDF_FILENAME not in includes:
                 includes.append(detector_model_type.PDF_FILENAME)
@@ -148,10 +145,7 @@ class StanFitInterface(StanInterface):
 
             for event_type in self._event_types:
                 # Include the PDF mode of the detector model
-                self._dm[event_type] = IceCube(
-                    event_type,
-                    mode=DistributionMode.PDF,
-                )
+                self._dm[event_type] = event_type.model(mode=DistributionMode.PDF)
                 self._dm[event_type].generate_pdf_function_code(self.sources)
 
             # If we have point sources, include the shape of their PDF
@@ -363,9 +357,8 @@ class StanFitInterface(StanInterface):
                     with ForLoopContext(1, N, "i") as i:
                         lp[i] << logF
 
-                        # Tracks
-                        # if "tracks" in self._event_types:
-                        for c, (event_type_python) in enumerate(self._event_types):
+                        # Sorry for the inconsistent naming of variables
+                        for c, et in enumerate(self._event_types):
                             if c == 0:
                                 context = IfBlockContext
                             else:
@@ -376,12 +369,12 @@ class StanFitInterface(StanInterface):
                                         [
                                             event_type[i],
                                             " == ",
-                                            Refrigerator.python2stan(event_type_python),
+                                            et.S,
                                         ]
                                     )
                                 ]
                             ):
-                                irf_return << self._dm[event_type_python](
+                                irf_return << self._dm[et](
                                     E[i],
                                     Edet[i],
                                     omega_det[i],
@@ -711,7 +704,7 @@ class StanFitInterface(StanInterface):
             self._Net_stan << StringExpression(["size(event_types)"])
 
             for c, et in enumerate(self._event_types, 1):
-                self._et_stan[c] << Refrigerator.python2stan(et)
+                self._et_stan[c] << et.S
 
             self._N_et_data = ForwardArrayDef("N_et_data", "int", ["[", self._Net, "]"])
 
@@ -720,12 +713,12 @@ class StanFitInterface(StanInterface):
                 self._N_et_data[i] << 0
 
             with ForLoopContext(1, self._N, "k") as k:
-                for c, event_type_python in enumerate(self._event_types, 1):
+                for c, event_type in enumerate(self._event_types, 1):
                     with IfBlockContext(
                         [
                             self._event_type[k],
                             " == ",
-                            Refrigerator.python2stan(event_type_python),
+                            event_type.S,
                         ]
                     ):
                         StringExpression([self._N_et_data[c], " += 1"])
@@ -1321,7 +1314,7 @@ class StanFitInterface(StanInterface):
                 with ForLoopContext(1, self._N, "i") as i:
                     self._lp[i] << self._logF
 
-                    for c, (event_type_python) in enumerate(self._event_types):
+                    for c, event_type in enumerate(self._event_types):
                         if c == 0:
                             context = IfBlockContext
                         else:
@@ -1332,14 +1325,14 @@ class StanFitInterface(StanInterface):
                                     [
                                         self._event_type[i],
                                         " == ",
-                                        Refrigerator.python2stan(event_type_python),
+                                        event_type.S,
                                     ]
                                 )
                             ]
                         ):
                             # Detection effects
 
-                            self._irf_return << self._dm[event_type_python](
+                            self._irf_return << self._dm[event_type](
                                 self._E[i],
                                 self._Edet[i],
                                 self._omega_det[i],
@@ -1634,7 +1627,7 @@ class StanFitInterface(StanInterface):
                 with ForLoopContext(1, self._N, "i") as i:
                     self._lp[i] << self._logF
 
-                    for c, (event_type_python) in enumerate(self._event_types):
+                    for c, event_type in enumerate(self._event_types):
                         if c == 0:
                             context = IfBlockContext
                         else:
@@ -1645,14 +1638,14 @@ class StanFitInterface(StanInterface):
                                     [
                                         self._event_type[i],
                                         " == ",
-                                        Refrigerator.python2stan(event_type_python),
+                                        event_type.S,
                                     ]
                                 )
                             ]
                         ):
                             # Detection effects
 
-                            self._irf_return << self._dm[event_type_python](
+                            self._irf_return << self._dm[event_type](
                                 self._E[i],
                                 self._Edet[i],
                                 self._omega_det[i],

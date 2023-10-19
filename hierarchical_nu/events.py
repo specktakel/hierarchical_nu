@@ -44,7 +44,7 @@ class Events:
         Events class for the storage of event observables
         """
 
-        self._recognised_types = [_ for _ in Refrigerator.stan_detectors]
+        self._recognised_types = [_.S for _ in Refrigerator.detectors]
 
         self.N = len(energies)
 
@@ -202,7 +202,7 @@ class Events:
 
         # Borrow from icecube_tools
         use_all = kwargs.pop("use_all", True)
-        events = RealEvents.from_event_files(*seasons, use_all=use_all)
+        events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=use_all)
 
         # Check if minimum detected energy is currently loaded as parameter
         # TODO fix
@@ -222,16 +222,14 @@ class Events:
         except IndexError:
             raise ValueError("No ROI on stack.")
 
-        ra = np.hstack([events.ra[s] * u.rad for s in seasons])
-        dec = np.hstack([events.dec[s] * u.rad for s in seasons])
-        reco_energy = np.hstack([events.reco_energy[s] * u.GeV for s in seasons])
-        types = np.hstack(
-            [events.ra[s].size * [Refrigerator.python2stan(s)] for s in seasons]
-        )
-        mjd = np.hstack([events.mjd[s] for s in seasons])
+        ra = np.hstack([events.ra[s.P] * u.rad for s in seasons])
+        dec = np.hstack([events.dec[s.P] * u.rad for s in seasons])
+        reco_energy = np.hstack([events.reco_energy[s.P] * u.GeV for s in seasons])
+        types = np.hstack([events.ra[s.P].size * [s.S] for s in seasons])
+        mjd = np.hstack([events.mjd[s.P] for s in seasons])
 
         # Conversion from 50% containment to 68% is already done in RealEvents
-        ang_err = np.hstack([events.ang_err[s] * u.deg for s in seasons])
+        ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         if isinstance(roi, CircularROI):

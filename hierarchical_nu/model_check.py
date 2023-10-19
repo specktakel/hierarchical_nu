@@ -15,7 +15,7 @@ from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import PointSource, Sources
 
-from hierarchical_nu.detector.icecube import DETECTOR_DICT
+from hierarchical_nu.detector.icecube import DETECTOR_DICT, Refrigerator
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.sim_interface import StanSimInterface
@@ -63,19 +63,16 @@ class ModelCheck:
             f_arr_astro = self._sources.f_arr_astro().value
 
             # Detector
-            self._detector_model_type = ModelCheck._get_dm_from_config(
-                parameter_config["detector_model_type"]
+            self._detector_model_type = Refrigerator.python2dm(
+                ModelCheck._get_dm_from_config(parameter_config["detector_model_type"])
             )
 
             self._obs_time = parameter_config["obs_time"] * u.year
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
-            print(self._detector_model_type)
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
             self._exposure_integral = sim._exposure_integral
-            # sim.set_stan_filename(file_config["sim_filename"])
-            # sim.compile_stan_code(include_paths=list(file_config["include_paths"]))
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
@@ -147,8 +144,8 @@ class ModelCheck:
 
         # Build necessary details to define simulation and fit code
         sources = _initialise_sources()
-        detector_model_type = ModelCheck._get_dm_from_config(
-            parameter_config["detector_model_type"]
+        detector_model_type = Refrigerator.python2dm(
+            ModelCheck._get_dm_from_config(parameter_config["detector_model_type"])
         )
 
         if not isinstance(detector_model_type, list):

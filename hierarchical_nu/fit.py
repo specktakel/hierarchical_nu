@@ -23,7 +23,7 @@ from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_t
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
-from hierarchical_nu.detector.icecube import Refrigerator
+from hierarchical_nu.detector.icecube import EventType, CAS
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
@@ -31,8 +31,6 @@ from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 
-NT = Refrigerator.PYTHON_NT
-CAS = Refrigerator.PYTHON_CAS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -47,7 +45,7 @@ class StanFit:
     def __init__(
         self,
         sources: Sources,
-        event_types: Union[str, List[str]],
+        event_types: Union[EventType, List[EventType]],
         events: Events,
         observation_time: Dict[str, u.quantity.Quantity[u.year]],
         priors: Priors = Priors(),
@@ -62,7 +60,7 @@ class StanFit:
 
         self._sources = sources
         # self._detector_model_type = detector_model
-        if isinstance(event_types, str):
+        if not isinstance(event_types, list):
             event_types = [event_types]
         if isinstance(observation_time, u.quantity.Quantity):
             observation_time = {event_types[0]: observation_time}

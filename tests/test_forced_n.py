@@ -4,17 +4,9 @@ from astropy import units as u
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 
-from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
-from hierarchical_nu.stan.sim_interface import StanSimInterface
-from hierarchical_nu.stan.fit_interface import StanFitInterface
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
-from hierarchical_nu.detector.cascades import CascadesDetectorModel
-from hierarchical_nu.detector.icecube import Refrigerator
+from hierarchical_nu.detector.icecube import Refrigerator, NT, CAS
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.utils.roi import RectangularROI
-
-NT = Refrigerator.PYTHON_NT
-CAS = Refrigerator.PYTHON_CAS
 
 
 def test_N():
