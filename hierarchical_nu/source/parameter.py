@@ -27,13 +27,12 @@ class Parameter:
 
     def __init__(
         self,
-        value: Any,
-        name: str,
+        value: Any = np.nan,
+        name: str = "",
         fixed: bool = False,
         par_range=(-np.inf, np.inf),
         scale=ParScale.lin,
     ):
-
         # If name is registered, copy internal state
         if name in Parameter.__par_registry:
             self.__dict__ = self.__par_registry[name].__dict__
