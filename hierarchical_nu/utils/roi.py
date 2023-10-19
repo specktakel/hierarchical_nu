@@ -73,7 +73,7 @@ class CircularROI(ROI):
             ROI.STACK = [self]
         self._center.representation_type = "spherical"
         if self._center.dec.deg - self._radius.to_value(u.deg) < -10.0:
-            logger.warning("ROI extends into Southern sky. Proceed with chaution.")
+            logger.warning("ROI extends into Southern sky. Proceed with caution.")
 
         if self._radius.to(u.deg) > 180.0 * u.deg:
             raise ValueError("Radii larger than 180 degrees are not sensible.")
