@@ -22,6 +22,8 @@ from hierarchical_nu.detector.icecube import Refrigerator
 import logging
 
 from typing import List
+import numpy.typing as npt
+
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +72,11 @@ class Events:
         if periods is not None:
             self._periods = periods
 
-    def remove(self, i):
+    def remove(self, i: int):
+        """
+        Remove the event at index i
+        :param i: Event index
+        """
         self._energies = np.delete(self._energies, i)
         self._coords = np.delete(self._coords, i)
         self._unit_vectors = np.delete(self._unit_vectors, i, axis=0)
@@ -78,6 +84,23 @@ class Events:
         self._ang_errs = np.delete(self._ang_errs, i)
         self._mjd = np.delete(self._mjd, i)
         self.N -= 1
+
+    def select(self, mask: npt.NDArray[np.bool_]):
+        """
+        Select some subset of existing events by providing a mask.
+        :param mask: Array of bools with same length as event properties.
+        """
+
+        assert len(mask) == self.N
+
+        self._energies = self._energies[mask]
+        self._coords = self._coords[mask]
+        self._unit_vectors = self._unit_vectors[mask]
+        self._types = self._types[mask]
+        self._ang_errs = self._ang_errs[mask]
+        self._mjd = self._mjd[mask]
+
+        self.N = len(self._energies)
 
     @property
     def energies(self):
