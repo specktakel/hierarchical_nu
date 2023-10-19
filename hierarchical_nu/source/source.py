@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import h5py
 from astropy import units as u
 import numpy as np
+from collections.abc import Callable
 
 from .flux_model import (
     PointSourceFluxModel,
@@ -65,7 +66,7 @@ class PointSource(Source):
         dec: u.rad,
         ra: u.rad,
         redshift: float,
-        spectral_shape,  #: Callable[[float], float], <- causes issues in py3.7
+        spectral_shape: Callable[[float], float],
         *args,
         **kwargs
     ):

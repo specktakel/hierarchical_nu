@@ -72,7 +72,9 @@ class Parameter:
     @value.setter
     def value(self, value):
         if self._par_range is not None:
-            if not self._par_range[0] <= value <= self._par_range[1]:
+            if not self._par_range[0] <= value <= self._par_range[1] and not np.isnan(
+                value
+            ):
                 raise ValueError("Parameter {} out of bounds".format(self.name))
         if self.fixed:
             raise RuntimeError("Parameter {} is fixed".format(self.name))
