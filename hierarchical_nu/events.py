@@ -188,7 +188,6 @@ class Events:
     def from_ev_file(
         cls,
         *seasons: str,
-        Emin_det: u.GeV = 1 * u.GeV,
         **kwargs,
     ):
         """
@@ -203,20 +202,22 @@ class Events:
         # Borrow from icecube_tools
         use_all = kwargs.pop("use_all", True)
         events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=use_all)
-
-        # Check if minimum detected energy is currently loaded as parameter
-        # TODO fix
-        """
+        # Emin_det = {}
         try:
-            Emin_det = Parameter.get_parameter("Emin_det_t").value.to(u.GeV)
-            logger.warning(f"Overwriting Emin_det with {Emin_det}")
+            _Emin_det = Parameter.get_parameter("Emin_det").value.to(u.GeV)
+            for s in seasons:
+                Emin_det = _Emin_det
         except ValueError:
-            try:
-                Emin_det = Parameter.get_parameter("Emin_det").value.to(u.GeV)
-                logger.warning(f"Overwriting Emin_det with {Emin_det}")
-            except ValueError:
-                pass
-        """
+            raise ValueError("Currently only one global Emin_det implemented.")
+            for s in seasons:
+                try:
+                    _Emin_det = Parameter.get_parameter(f"Emin_det_{s.P}").value.to(
+                        u.GeV
+                    )
+                    Emin_det[s] = _Emin_det
+                except ValueError:
+                    raise ValueError("Emin_det not defined for all seasons.")
+
         try:
             roi = ROI.STACK[0]
         except IndexError:

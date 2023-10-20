@@ -23,7 +23,7 @@ from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_t
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
-from hierarchical_nu.detector.icecube import EventType, CAS
+from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
@@ -595,7 +595,9 @@ class StanFit:
                 inputs_folder.create_dataset(key, data=value)
 
             # All quantities with event_types dependency follow this list's order
-            inputs_folder.create_dataset("event_types", data=self._event_types)
+            inputs_folder.create_dataset(
+                "event_types", data=[_.S for _ in self._event_types]
+            )
 
             for key, value in self._fit_output.stan_variables().items():
                 outputs_folder.create_dataset(key, data=value)
@@ -662,7 +664,9 @@ class StanFit:
                         )
                     )
 
-        event_types = [_.decode("ascii") for _ in fit_inputs["event_types"].tolist()]
+        event_types = [
+            Refrigerator.python2dm(_) for _ in fit_inputs["event_types"].tolist()
+        ]
 
         obs_time = fit_inputs["T"] * u.s
 
