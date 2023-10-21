@@ -135,7 +135,12 @@ class StanFit:
 
     @priors.setter
     def priors(self, p):
+        previous_prior = self._priors.to_dict()
         if isinstance(p, Priors):
+            new_prior = p.to_dict()
+            for k, v in new_prior.items():
+                if previous_prior[k].name != v.name:
+                    logger.warning(f"Prior type of {k} changed, regenerate and recompile the stan code.")
             self._priors = p
         else:
             raise ValueError("Priors must be instance of Priors.")
@@ -673,21 +678,31 @@ class StanFit:
         obs_time_dict = {et: obs_time[k] for k, et in enumerate(event_types)}
 
         priors = Priors()
-        priors.luminosity = LogNormalPrior(
-            mu=priors_dict["lumi_mu"], sigma=priors_dict["lumi_sigma"]
-        )
-        priors.src_index = NormalPrior(
-            mu=priors_dict["src_index_mu"], sigma=priors_dict["src_index_sigma"]
-        )
-        priors.diff_index = NormalPrior(
-            mu=priors_dict["diff_index_mu"], sigma=priors_dict["diff_index_sigma"]
-        )
-        priors.atmospheric_flux = LogNormalPrior(
-            mu=priors_dict["f_atmo_mu"], sigma=priors_dict["f_atmo_sigma"]
-        )
-        priors.diffuse_flux = LogNormalPrior(
-            mu=priors_dict["f_diff_mu"], sigma=priors_dict["f_diff_sigma"]
-        )
+        try:
+            priors.luminosity = LogNormalPrior(
+                mu=priors_dict["lumi_mu"], sigma=priors_dict["lumi_sigma"]
+            )
+            priors.src_index = NormalPrior(
+                mu=priors_dict["src_index_mu"], sigma=priors_dict["src_index_sigma"]
+            )
+        except KeyError:
+            pass
+        try:
+            priors.diff_index = NormalPrior(
+                mu=priors_dict["diff_index_mu"], sigma=priors_dict["diff_index_sigma"]
+            )
+            priors.diffuse_flux = LogNormalPrior(
+                mu=priors_dict["f_diff_mu"], sigma=priors_dict["f_diff_sigma"]
+            )
+        except KeyError:
+            pass
+        try:
+           priors.atmospheric_flux = LogNormalPrior(
+                mu=priors_dict["f_atmo_mu"], sigma=priors_dict["f_atmo_sigma"]
+            )
+        except KeyError:
+            pass
+        
 
         events = Events.from_file(filename)
 
