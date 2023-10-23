@@ -12,6 +12,7 @@ import numpy as np
 def test_circular_read():
     periods = ["IC86_II"]
     Parameter.clear_registry()
+    Emin_det = Parameter(5e4 * u.GeV, "Emin_det", fixed=True)
 
     roi = CircularROI(
         SkyCoord(ra=0 * u.deg, dec=0 * u.deg, frame="icrs"), radius=180 * u.deg
@@ -20,7 +21,7 @@ def test_circular_read():
         it_ev = RealEvents.from_event_files(p, use_all=True)
         it_ev.restrict(ereco_low=5e4)
         hnu_ev = Events.from_ev_file(
-            Refrigerator.python2dm(p), Emin_det=5e4 * u.GeV, use_all=True
+            Refrigerator.python2dm(p), use_all=True
         )
 
         assert hnu_ev.N == it_ev.N_restricted[p]
@@ -36,12 +37,13 @@ def test_circular_read():
 def test_rectangular_read():
     periods = ["IC86_II"]
     Parameter.clear_registry()
+    Emin_det = Parameter(5e4 * u.GeV, "Emin_det", fixed=True)
     roi = RectangularROI()
     for p in periods:
         it_ev = RealEvents.from_event_files(p, use_all=True)
         it_ev.restrict(ereco_low=5e4)
         hnu_ev = Events.from_ev_file(
-            Refrigerator.python2dm(p), Emin_det=5e4 * u.GeV, use_all=True
+            Refrigerator.python2dm(p), use_all=True
         )
 
         assert hnu_ev.N == it_ev.N_restricted[p]
