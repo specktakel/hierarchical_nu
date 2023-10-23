@@ -357,7 +357,7 @@ class Simulation:
         ):
             color = label_cmap[int(l)]
 
-            if t == S_NT:
+            if t == NT.S:
                 e = e * track_zoom  # to make tracks visible
 
             circle = SphericalCircle(
