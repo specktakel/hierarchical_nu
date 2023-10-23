@@ -797,8 +797,15 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     self._poly_params_mu = data["poly_params_mu"]
                     self._poly_params_sd = data["poly_params_sd"]
                     self._poly_limits = data["poly_limits"]
-                    self._fit_params = data["fit_params"]
-                    self._tE_binc = data["tE_binc"]
+                    fit_params_0 = data["fit_params_0"]
+                    fit_params_1 = data["fit_params_1"]
+                    fit_params_2 = data["fit_params_2"]
+                    tE_binc_0 = data["tE_binc_0"]
+                    tE_binc_1 = data["tE_binc_0"]
+                    tE_binc_2 = data["tE_binc_0"]
+
+                self._tE_binc = [tE_binc_0, tE_binc_1, tE_binc_2]
+                self._fit_params = [fit_params_0, fit_params_1, fit_params_2]
 
                 self._poly_params_mu__ = self._poly_params_mu.copy()
                 self._poly_params_sd__ = self._poly_params_sd.copy()
@@ -902,11 +909,15 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     np.savez(
                         fr,
                         tE_bin_edges=self._tE_bin_edges,
-                        tE_binc=self._tE_binc,
+                        tE_binc_0=self._tE_binc[0],
+                        tE_binc_1=self._tE_binc[1],
+                        tE_binc_2=self._tE_binc[2],
                         poly_params_mu=self._poly_params_mu,
                         poly_params_sd=self._poly_params_sd,
                         poly_limits=self.poly_limits,
-                        fit_params=self._fit_params,
+                        fit_params_0=self._fit_params[0],
+                        fit_params_1=self._fit_params[1],
+                        fit_params_2=self._fit_params[2],
                     )
 
         else:
@@ -1223,7 +1234,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
             else:
                 fit_params.append(np.zeros(2 * n_components))
-
         fit_params = np.asarray(fit_params)
 
         return fit_params, minuits
