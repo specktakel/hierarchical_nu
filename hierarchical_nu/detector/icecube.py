@@ -77,7 +77,7 @@ class Refrigerator:
             if dm.P == python:
                 return dm
         else:
-            raise ValueError("No such detector available.")
+            raise ValueError(f"No detector {python} available.")
 
     @classmethod
     def stan2dm(cls, stan):
@@ -85,7 +85,7 @@ class Refrigerator:
             if dm.S == stan:
                 return dm
         else:
-            raise ValueError("No such detector available.")
+            raise ValueError(f"No detector {stan} available.")
 
     @classmethod
     def stan2python(cls, stan):
@@ -93,7 +93,7 @@ class Refrigerator:
             if stan == dm.S:
                 return dm.P
         else:
-            raise ValueError("No such detector available.")
+            raise ValueError(f"No detector {stan} available.")
 
     @classmethod
     def python2stan(cls, python):
@@ -101,7 +101,7 @@ class Refrigerator:
             if python == dm.P:
                 return dm.S
         else:
-            raise ValueError("No such detector available.")
+            raise ValueError(f"No detector {python} available.")
 
 
 # Dictionary of currently supported detector configs
