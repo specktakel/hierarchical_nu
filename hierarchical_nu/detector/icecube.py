@@ -102,11 +102,3 @@ class Refrigerator:
                 return dm.S
         else:
             raise ValueError(f"No detector {python} available.")
-
-
-# Dictionary of currently supported detector configs
-DETECTOR_DICT = {dm: dm.model for dm in Refrigerator.detectors}
-
-
-def IceCube(detector, mode: DistributionMode = DistributionMode.PDF):
-    return DETECTOR_DICT[detector](mode)

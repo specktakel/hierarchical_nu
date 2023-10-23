@@ -31,7 +31,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 
 # from hierarchical_nu.events import NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II
 
-from hierarchical_nu.detector.icecube import IceCube, EventType
+from hierarchical_nu.detector.icecube import EventType
 
 from hierarchical_nu.source.source import Sources
 
@@ -47,7 +47,7 @@ class StanSimInterface(StanInterface):
         self,
         output_file: str,
         sources: Sources,
-        event_types: List[EventType],  # TODO make class
+        event_types: List[EventType],
         atmo_flux_theta_points: int = 30,
         includes: List[str] = [
             "interpolation.stan",
@@ -71,7 +71,7 @@ class StanSimInterface(StanInterface):
         """
 
         for et in event_types:
-            detector_model_type = IceCube(et, DistributionMode.RNG)
+            detector_model_type = et.model(DistributionMode.RNG)
             if detector_model_type.RNG_FILENAME not in includes:
                 includes.append(detector_model_type.RNG_FILENAME)
             detector_model_type.generate_code(DistributionMode.RNG, rewrite=False)

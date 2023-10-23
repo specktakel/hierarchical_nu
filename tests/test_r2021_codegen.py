@@ -6,7 +6,7 @@ from cmdstanpy import CmdStanModel
 
 from icecube_tools.utils.vMF import get_theta_p
 
-from hierarchical_nu.detector.r2021 import IC86_IDetectorModel
+from hierarchical_nu.detector.r2021 import IC86_IIDetectorModel
 from hierarchical_nu.backend.stan_generator import (
     GeneratedQuantitiesContext,
     DataContext,
@@ -42,7 +42,7 @@ class TestR2021:
 
         file_name = os.path.join(output_directory, "r2021_sim")
 
-        _ = IC86_IDetectorModel.generate_code(
+        _ = IC86_IIDetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=True,
             ereco_cuts=False,
@@ -54,8 +54,8 @@ class TestR2021:
                 _ = Include("interpolation.stan")
                 _ = Include("utils.stan")
                 _ = Include("vMF.stan")
-                _ = Include(IC86_IDetectorModel.RNG_FILENAME)
-                rng = IC86_IDetectorModel(DistributionMode.RNG)
+                _ = Include(IC86_IIDetectorModel.RNG_FILENAME)
+                rng = IC86_IIDetectorModel(DistributionMode.RNG)
                 rng.generate_rng_function_code()
 
             with DataContext():
@@ -71,7 +71,7 @@ class TestR2021:
 
                 rng_return << StringExpression(
                     [
-                        "IC86_I_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                        "IC86_II_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
                     ]
                 )
                 reco_energy << rng_return[1]
@@ -85,7 +85,7 @@ class TestR2021:
     def model_file(self, output_directory):
         file_name = os.path.join(output_directory, "r2021_model")
 
-        _ = IC86_IDetectorModel.generate_code(
+        _ = IC86_IIDetectorModel.generate_code(
             mode=DistributionMode.PDF,
             rewrite=True,
             path=output_directory,
@@ -96,7 +96,7 @@ class TestR2021:
                 _ = Include("interpolation.stan")
                 _ = Include("utils.stan")
                 _ = Include("vMF.stan")
-                _ = Include(IC86_IDetectorModel.PDF_FILENAME)
+                _ = Include(IC86_IIDetectorModel.PDF_FILENAME)
 
             with DataContext():
                 size = ForwardVariableDef("size", "int")
@@ -112,7 +112,7 @@ class TestR2021:
                 with ForLoopContext(1, size, "i") as i:
                     lp[i] << StringExpression(
                         [
-                            "IC86_IEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                            "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
                         ]
                     )
 
@@ -123,13 +123,13 @@ class TestR2021:
         return code_gen.filename
 
     def test_file_generation_r2021(self, output_directory):
-        IC86_IDetectorModel.generate_code(
+        IC86_IIDetectorModel.generate_code(
             mode=DistributionMode.PDF,
             rewrite=False,
             path=output_directory,
         )
 
-        IC86_IDetectorModel.generate_code(
+        IC86_IIDetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=False,
             path=output_directory,
@@ -139,8 +139,8 @@ class TestR2021:
     def test_samples(self, sim_file, random_seed):
         num_samples = 1000
 
-        irf = R2021IRF.from_period("IC86_I")
-
+        irf = R2021IRF.from_period("IC86_II")
+        # Causes error for e.g. IC86_I because it has zero-entries in the effective area and IRF at low energies/South
         samples = np.zeros(
             (irf.true_energy_values.size, irf.declination_bins.size - 1, num_samples)
         )
@@ -201,7 +201,7 @@ class TestR2021:
             stanc_options=stanc_options,
         )
 
-        irf = R2021IRF.from_period("IC86_I")
+        irf = R2021IRF.from_period("IC86_II")
         phi = 0
         theta = np.array([3 * np.pi / 4])  # , np.pi/2, np.pi/4])
         etrue = irf.true_energy_values[:-2]
@@ -234,15 +234,15 @@ class TestR2021:
         # Test that the ereco cuts are applied correctly
 
         file_name = os.path.join(output_directory, "r2021_sim")
-        _ = IC86_IDetectorModel.generate_code(
+        _ = IC86_IIDetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=True,
             ereco_cuts=True,
             path=output_directory,
         )
 
-        aeff = EffectiveArea.from_dataset("20210126", "IC86_I")
-        eres = MarginalisedIntegratedEnergyLikelihood("IC86_I", np.linspace(1, 9, 25))
+        aeff = EffectiveArea.from_dataset("20210126", "IC86_II")
+        eres = MarginalisedIntegratedEnergyLikelihood("IC86_II", np.linspace(1, 9, 25))
         cosz_bins = aeff.cos_zenith_bins
         dec = np.sort(np.arcsin((cosz_bins[:-1] + cosz_bins[1:]) / 2))
         theta_vals = np.pi / 2 - dec
@@ -252,8 +252,8 @@ class TestR2021:
                 _ = Include("interpolation.stan")
                 _ = Include("utils.stan")
                 _ = Include("vMF.stan")
-                _ = Include(IC86_IDetectorModel.RNG_FILENAME)
-                ic86_rng = IC86_IDetectorModel(DistributionMode.RNG)
+                _ = Include(IC86_IIDetectorModel.RNG_FILENAME)
+                ic86_rng = IC86_IIDetectorModel(DistributionMode.RNG)
                 ic86_rng.generate_rng_function_code()
 
             with DataContext():
@@ -266,7 +266,7 @@ class TestR2021:
                 with ForLoopContext(1, 1000, "j") as j:
                     reco_energy[j] << StringExpression(
                         [
-                            "IC86_IEnergyResolution_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                            "IC86_IIEnergyResolution_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
                         ]
                     )
 

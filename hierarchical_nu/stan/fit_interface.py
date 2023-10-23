@@ -42,7 +42,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources
 
-from hierarchical_nu.detector.icecube import IceCube, EventType
+from hierarchical_nu.detector.icecube import EventType
 
 
 class StanFitInterface(StanInterface):
