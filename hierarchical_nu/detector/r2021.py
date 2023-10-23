@@ -1195,6 +1195,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 m.limits = limits
                 m.migrad()
 
+                if not m.fmin.is_valid:
+                    # if not converged, give it one more try, seems to do the trick
+                    m.migrad()
+
                 # Check for convergence
                 if not m.fmin.is_valid:
                     logger.warning(
@@ -1244,6 +1248,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         imin = find_nearest_idx(tE_binc, Emin)
         imax = find_nearest_idx(tE_binc, Emax)
 
+        # Mask out entries where the lognormal-mixture-fit has not converged,
+        # i.e. zero entriesin fit_params
+        mask = np.nonzero(np.all(fit_params[imin:imax, ::2], axis=1))
+
         log10_tE_binc = np.log10(tE_binc)
         poly_params_mu = np.zeros((self._n_components, polydeg + 1))
 
@@ -1251,11 +1259,11 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         poly_params_sd = np.zeros_like(poly_params_mu)
         for i in range(self.n_components):
             poly_params_mu[i] = np.polyfit(
-                log10_tE_binc[imin:imax], fit_params[:, 2 * i][imin:imax], polydeg
+                log10_tE_binc[imin:imax][mask], fit_params[:, 2 * i][imin:imax][mask], polydeg
             )
             poly_params_sd[i] = np.polyfit(
-                log10_tE_binc[imin:imax],
-                fit_params[:, 2 * i + 1][imin:imax],
+                log10_tE_binc[imin:imax][mask],
+                fit_params[:, 2 * i + 1][imin:imax][mask],
                 polydeg,
             )
 
