@@ -142,6 +142,7 @@ class StanFit:
                 if previous_prior[k].name != v.name:
                     logger.warning(f"Prior type of {k} changed, regenerate and recompile the stan code.")
             self._priors = p
+            self._stan_interface._priors = p
         else:
             raise ValueError("Priors must be instance of Priors.")
 
@@ -670,7 +671,7 @@ class StanFit:
                     )
 
         event_types = [
-            Refrigerator.python2dm(_) for _ in fit_inputs["event_types"].tolist()
+            Refrigerator.stan2dm(_) for _ in fit_inputs["event_types"].tolist()
         ]
 
         obs_time = fit_inputs["T"] * u.s

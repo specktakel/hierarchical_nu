@@ -66,7 +66,7 @@ class ExposureIntegral:
                     self._min_det_energy = Parameter.get_parameter(
                         f"Emin_det_{dm.P}"
                     ).value
-                break
+                    break
             else:
                 raise ValueError("Detector model not recognised")
 

@@ -514,7 +514,7 @@ class Simulation:
 
             except ValueError:
                 Emin_det.append(
-                    Parameter.get_parameter(f"Emin_det_{event_type}")
+                    Parameter.get_parameter(f"Emin_det_{event_type.P}")
                     .value.to(u.GeV)
                     .value
                 )
