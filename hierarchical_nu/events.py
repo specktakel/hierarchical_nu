@@ -136,7 +136,7 @@ class Events:
         try:
             roi = ROI.STACK[0]
         except IndexError:
-            roi = RectangularROI()
+            roi = FullSkyROI()
 
         # TODO add reco energy cut for all event types
         if roi.RA_min > roi.RA_max:

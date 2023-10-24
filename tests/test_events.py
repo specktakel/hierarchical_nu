@@ -20,9 +20,7 @@ def test_circular_read():
     for p in periods:
         it_ev = RealEvents.from_event_files(p, use_all=True)
         it_ev.restrict(ereco_low=5e4)
-        hnu_ev = Events.from_ev_file(
-            Refrigerator.python2dm(p), use_all=True
-        )
+        hnu_ev = Events.from_ev_file(Refrigerator.python2dm(p))
 
         assert hnu_ev.N == it_ev.N_restricted[p]
 
@@ -42,9 +40,7 @@ def test_rectangular_read():
     for p in periods:
         it_ev = RealEvents.from_event_files(p, use_all=True)
         it_ev.restrict(ereco_low=5e4)
-        hnu_ev = Events.from_ev_file(
-            Refrigerator.python2dm(p), use_all=True
-        )
+        hnu_ev = Events.from_ev_file(Refrigerator.python2dm(p))
 
         assert hnu_ev.N == it_ev.N_restricted[p]
 
