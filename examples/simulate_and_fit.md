@@ -21,6 +21,7 @@ from matplotlib import pyplot as plt
 import h5py
 import corner
 import astropy.units as u
+from astropy.coordinates import SkyCoord
 ```
 
 ## Sources
@@ -35,15 +36,15 @@ First set up the high-level parameters. The parameters defined here are singleto
 ```python
 # define high-level parameters
 Parameter.clear_registry()
-src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
-diff_index = Parameter(3.7, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(5E46 * (u.erg / u.s), "luminosity", fixed=True, 
+src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1, 4))
+diff_index = Parameter(2.13, "diff_index", fixed=False, par_range=(1, 4))
+L = Parameter(2E49 * (u.erg / u.s), "luminosity", fixed=True, 
               par_range=(0, 1E60) * (u.erg/u.s))
 diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
-z = 0.4
+z = 0.3365
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
-Emin = Parameter(1E4 * u.GeV, "Emin", fixed=True)
+Emin = Parameter(1E2 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 Emin_src = Parameter(Emin.value * (1 + z), "Emin_src", fixed=True)
 Emax_src = Parameter(Emax.value * (1 + z), "Emax_src", fixed=True)
@@ -54,19 +55,24 @@ Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 When setting the minimum detected (i.e. reconstructed) energy, there are a few options. If fitting one event type (ie. tracks or cascades), just use `Emin_det`. This is also fine if you are fitting both event types, but want to set the same minimum detected energy. `Emin_det_tracks` and `Emin_det_cascades` are to be used when fitting both event types, but setting different minimum detected energies. 
 
 ```python
-Emin_det = Parameter(6e4 * u.GeV, "Emin_det", fixed=True)
+Emin_det = Parameter(3e2 * u.GeV, "Emin_det", fixed=True)
 
-#Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
+#Emin_det_northern_tracks = Parameter(1e5 * u.GeV, "Emin_det_northern_tracks", fixed=True)
 #Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
+#Emin_det_IC86_II = Parameter(6e4 * u.GeV, "Emin_det_IC86_II", fixed=True)
 ```
 
 Next, we use these high-level parameters to define sources. This can be done for either individual sources, or a list loaded from a file. For now we just work with a single point source. There are functions to add the different background components.
 
 ```python
 # Single PS for testing and usual components
-point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
-                                                np.pi*u.rad, 
-                                                L, src_index, z, Emin_src, Emax_src)
+ra = np.pi * u.rad
+dec = np.deg2rad(5) * u.rad
+width = np.deg2rad(8) * u.rad
+source = SkyCoord(ra=ra, dec=dec, frame="icrs")
+point_source = PointSource.make_powerlaw_source(
+    "test", dec, ra, L, src_index, z, Emin_src, Emax_src
+)
 
 my_sources = Sources()
 my_sources.add(point_source)
@@ -88,22 +94,32 @@ my_sources.f_arr_astro() # As above, excluding atmo
 
 ```python
 from hierarchical_nu.simulation import Simulation
-from hierarchical_nu.detector.cascades import CascadesDetectorModel 
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
-from hierarchical_nu.detector.r2021 import R2021DetectorModel
+from hierarchical_nu.detector.icecube import NT, CAS, IC86_II
 ```
 
-In order to go from sources to a simulation, we need to specify an observation time and a detector model. The detector model defines the effective area, energy resolution and angular resolution to be simulated. The currently implemented options are `NorthernTracksDetectorModel`, `CascadesDetectorModel` and `IceCubeDetectorModel`. The `IceCubeDetectorModel` is really a wrapper around the models for tracks and cascades, for an easy interface. The models should be used in conjunction with the correct `Edet_min`, as described above.
+In order to go from sources to a simulation, we need to specify an observation time and a detector model. The detector model defines the effective area, energy resolution and angular resolution to be simulated. The currently implemented options are `NorthernTracksDetectorModel`, `CascadesDetectorModel`, `IC40`, `IC59`, `IC79`, `IC86_I` and `IC86_II`. The models should be used in conjunction with the correct `Edet_min`, as described above. If a parameter named `Edet_min` is on the stack it takes precedence over any detector model specific parameter, that is to say, those are disregarded. If detector model specific thresholds are used, they need to be defined for each used detector model.
 
 ```python
-obs_time = 5 * u.year
-#sim = Simulation(my_sources, CascadesDetectorModel, obs_time)
-#sim = Simulation(my_sources, NorthernTracksDetectorModel, obs_time)
-sim = Simulation(my_sources, R2021DetectorModel, obs_time)
+obs_time = 1 * u.day
+#sim = Simulation(my_sources, CAS, {CAS: obs_time})
+sim = Simulation(my_sources, NT, {NT: obs_time})
+#sim = Simulation(my_sources, IC86_II, {obs_time})
 ```
 
 Below are shown all the necessary steps to set up and run a simulation for clarity. There is also the handy sim.setup_and_run() option which calls everything.
+
+
+Before starting, however, a region of interest needs to be defined in which fits and simulations are carried out. There are three options, `FullSkyROI`, `RectangularROI` and `CircularROI`, accepting different kinds of arguments. In addition to spatial restriction the ROI accepts keyworded arguments `MJD_min` and `MJD_max`, which restrict further data selection when loading experimental data. On simulations and fits to simulated data they have no effect.
+
+```python
+from hierarchical_nu.utils.roi import FullSkyROI, CircularROI, RectangularROI
+```
+
+```python
+roi = FullSkyROI()
+#roi = CircularROI(source, radius=5*u.deg)
+#roi = RectangularROI(RA_min=ra-width, RA_max=ra+width, DEC_min=dec-width, DEC_max=dec+width)
+```
 
 ```python
 sim.precomputation()
@@ -123,14 +139,18 @@ sim.run(verbose=True, seed=42)
 sim.save("output/test_sim_file.h5", overwrite=True)
 ```
 
-For already compiled models that should be re-loaded there is a special method `sim.setup_stan_sim(".stan_files/sim_code")` which takes the filename of the compiled model as sole argument. Source selection should macht up with the compiled model, otherwise cmdstanpy will complain. The `save` method (also the one of the fit) has a keyword `overwrite` which needs to be set to `True`. Otherwise, if a file of the specified name already exsists, an exception is raised.
+For already compiled models that should be re-loaded there is a special method `sim.setup_stan_sim(".stan_files/sim_code")` which takes the filename of the compiled model as sole argument. Source selection should macht up with the compiled model, otherwise cmdstanpy will complain. The `save` method (also the one of the fit) has a keyword `overwrite` which may be set to `True`. Otherwise, if a file of the specified name already exsists, a time stamp is appended to the file name prior to saving.
 
 
-We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~50 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
+We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~55 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
 
 ```python
 fig, axs = sim.show_spectrum()
-# fig, axs = sim.show_spectrum(scale="log")  displays plots with y axis on a log scale
+# fig, axs = sim.show_spectrum(scale="log")  #displays plots with y axis on a log scale
+```
+
+```python
+fig, ax = sim.show_skymap()
 ```
 
 ## Fit 
@@ -138,9 +158,6 @@ fig, axs = sim.show_spectrum()
 ```python
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
-from hierarchical_nu.detector.cascades import CascadesDetectorModel
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
 ```
 
@@ -148,7 +165,6 @@ We can start setting up the fit by loading the events from the output of our sim
 
 ```python
 events = Events.from_file("output/test_sim_file.h5")
-obs_time = 5 * u.year
 ```
 
 We can also define priors using the `Priors` interface. Here, we use the default uninformative priors, except for on the atmospheric flux, which we assume to be well known.
@@ -158,21 +174,32 @@ priors = Priors()
 
 flux_units = 1 / (u.m**2 * u.s)
 atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.to(flux_units).value
-priors.atmospheric_flux = LogNormalPrior(mu=np.log(atmo_flux), sigma=0.1)
+diffuse_flux = my_sources.diffuse.flux_model.total_flux_int.to(flux_units).value
+priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.02)
+priors.luminosity = LogNormalPrior(mu=np.log(L.value.to_value(u.GeV/u.s)), sigma=3)
+priors.diff_index = NormalPrior(mu=2.13, sigma=0.2)
+priors.diffuse_flux = LogNormalPrior(mu=np.log(diffuse_flux), sigma=0.1)
 ```
 
 ```python
-#fit = StanFit(my_sources, CascadesDetectorModel, events, obs_time, priors=priors)
-#fit = StanFit(my_sources, NorthernTracksDetectorModel, events, obs_time, priors=priors)
-#fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time, priors=priors)
-fit = StanFit(my_sources, R2021DetectorModel, events, obs_time, priors=priors, nshards=10)
-# optional keyword nshards=5 or other integer, activates multithreading
+#fit = StanFit(my_sources, CAS, events, obs_time, priors=priors)
+fit = StanFit(my_sources, NT, events, {NT: obs_time}, priors=priors, nshards=25)
+#fit = StanFit(my_sources, IC86_II, events, obs_time, priors=priors, nshards=144)
 ```
 
 The kwarg `nshards` accepts integer numbers. Any number greater than 1 will cause the model to be compiled with multithreading. This leads to a different model code, where the data is split up in shards. For each shard one thread is used to calculate the loglikelihood, which in the end is summed up and added to stan's `target`. Using `nshards=1` or not specifying it at all will compile a 'normal' model code without multithreading.
 
 
-Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes around 5 min on one core (or roughly one minute on 10 cores).
+The same `StanFit` object can be re-used for running multiple fits with different data, sources or priors. Recompiling, i.e. calling `fit.generate_stan_code()` and `fit.compile_stan_code()`, is only necessary when
+ - a type of prior
+ - the background model components
+ - the entire detector model
+ - multithreading
+ 
+is changed. When changing `Emin_det` a call of `fit.precomputation()` will be neccessary.
+
+
+Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes forever on one core and still much too long on 20 cores.
 
 Sometimes the MCMC needs a little help getting started, for this we can set `inits={"L": 1e50, "src_index": 2.3}` and other model parameters in `fit.run()` with a value to start from.
 
@@ -180,8 +207,12 @@ Sometimes the MCMC needs a little help getting started, for this we can set `ini
 fit.precomputation()
 fit.generate_stan_code()
 fit.compile_stan_code()
-fit.run(show_progress=True, seed=42)
+fit.run(show_progress=True, seed=42, inits={"L": 1e50, "src_index": 2.2, "diff_index": 2.2, "F_atmo": 1e-1, "F_diff": 1e-4})
 # fit.setup_stan_fit(".stan_files/model_code")   # will re-load compiled model
+```
+
+```python
+print(fit._fit_output.diagnose())
 ```
 
 Some methods are included for basic plots, but the `fit._fit_output` is a `CmdStanMCMC` object that can be passed to `arviz` for fancier options.
