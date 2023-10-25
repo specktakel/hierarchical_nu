@@ -5,6 +5,7 @@ from itertools import product
 import numpy as np
 from scipy import stats
 from astropy import units as u
+import matplotlib.pyplot as plt
 
 from abc import ABC
 
@@ -876,14 +877,14 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         self.set_fit_params((dec + 0.01) * u.rad)
 
                         fig = self.plot_fit_params(self._fit_params, self._tE_binc)
-                        fig.show()
+                        plt.show()
 
                         fig = self.plot_parameterizations(
                             self._fit_params,
                             self._tE_binc,
                             c,
                         )
-                        fig.show()
+                        plt.show()
 
                 self._poly_params_mu = self._poly_params_mu__.copy()
                 self._poly_params_sd = self._poly_params_sd__.copy()
