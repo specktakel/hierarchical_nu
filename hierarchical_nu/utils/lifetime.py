@@ -25,7 +25,7 @@ class LifeTime:
     def __init__(self):
         self._uptime = Uptime(*available_data_periods)
 
-    def life_time_from_MJD(
+    def life_time_from_mjd(
         self, MJD_min: Union[float, int], MJD_max: Union[float, int]
     ) -> dict[EventType, u.quantity.Quantity[u.year]]:
         lifetime = self._uptime.find_obs_time(start=MJD_min, end=MJD_max)
@@ -39,7 +39,7 @@ class LifeTime:
 
         return output
 
-    def life_time_from_DM(
+    def life_time_from_dm(
         self, *event_type: EventType
     ) -> dict[EventType, u.quantity.Quantity[u.year]]:
         lifetime = self._uptime.cumulative_time_obs()
@@ -47,3 +47,8 @@ class LifeTime:
         for et in event_type:
             output[et] = lifetime[et.P] * u.year
         return output
+
+    def mjd_from_dm(self, event_type: EventType) -> tuple[float]:
+        mjd_min = self._uptime._data[event_type.P].min()
+        mjd_max = self._uptime._data[event_type.P].max()
+        return mjd_min, mjd_max
