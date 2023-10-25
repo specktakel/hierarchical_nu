@@ -877,26 +877,13 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                         fig = self.plot_fit_params(self._fit_params, self._tE_binc)
                         fig.show()
-                        """
-                        fig.savefig(
-                            f"new_version_at_tE/polynomial_{self._season}_dec_{c}.png",
-                            dpi=300,
-                            bbox_inches="tight",
-                        )
-                        """
+
                         fig = self.plot_parameterizations(
                             self._fit_params,
                             self._tE_binc,
                             c,
                         )
                         fig.show()
-                        """
-                        fig.savefig(
-                            f"new_version_at_tE/lognorm_fit_{self._season}_dec_{c}.png",
-                            dpi=300,
-                            bbox_inches="tight",
-                        )
-                        """
 
                 self._poly_params_mu = self._poly_params_mu__.copy()
                 self._poly_params_sd = self._poly_params_sd__.copy()
@@ -1269,7 +1256,9 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         poly_params_sd = np.zeros_like(poly_params_mu)
         for i in range(self.n_components):
             poly_params_mu[i] = np.polyfit(
-                log10_tE_binc[imin:imax][mask], fit_params[:, 2 * i][imin:imax][mask], polydeg
+                log10_tE_binc[imin:imax][mask],
+                fit_params[:, 2 * i][imin:imax][mask],
+                polydeg,
             )
             poly_params_sd[i] = np.polyfit(
                 log10_tE_binc[imin:imax][mask],
