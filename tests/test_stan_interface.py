@@ -10,11 +10,18 @@ from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.roi import RectangularROI
-from hierarchical_nu.detector.icecube import DETECTOR_DICT
+from hierarchical_nu.detector.icecube import Refrigerator, NT, CAS, IC86_I, IC86_II
 import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
+
+detector_list = [
+    NT,
+    CAS,
+    IC86_II,
+    [IC86_I, IC86_II],
+]
 
 
 stanc_options = {"include-paths": [STAN_PATH, STAN_GEN_PATH]}
@@ -75,8 +82,10 @@ def test_stan_sim_interface(output_directory):
     my_sources.add_atmospheric_component()
     file_name = os.path.join(output_directory, "test_sim_interface")
 
-    for dm in DETECTOR_DICT.keys():
-        interface = StanSimInterface(file_name, my_sources, [dm])
+    for dm in detector_list:
+        if not isinstance(dm, list):
+            dm = [dm]
+        interface = StanSimInterface(file_name, my_sources, dm)
 
         # Generate Stan code
         stan_file = interface.generate()
@@ -140,9 +149,11 @@ def test_stan_fit_interface(output_directory):
     my_sources.add_atmospheric_component()
     file_name = os.path.join(output_directory, "test_fit_interface")
 
-    for dm in DETECTOR_DICT.keys():
+    for dm in detector_list:
+        if not isinstance(dm, list):
+            dm = [dm]
         for nshards in [1, 2]:
-            interface = StanFitInterface(file_name, my_sources, [dm], nshards=nshards)
+            interface = StanFitInterface(file_name, my_sources, dm, nshards=nshards)
 
             # Generate Stan code
             stan_file = interface.generate()

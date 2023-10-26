@@ -3,11 +3,9 @@ import astropy.units as u
 import pytest
 
 from hierarchical_nu.utils.roi import RectangularROI, ROI, CircularROI
-from hierarchical_nu.detector.icecube import Refrigerator
+from hierarchical_nu.detector.icecube import Refrigerator, IC86_II
 
 import logging
-
-IC86_II = Refrigerator.PYTHON_IC86_II
 
 
 logger = logging.getLogger(__name__)

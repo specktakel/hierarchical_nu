@@ -23,8 +23,7 @@ from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_t
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
-from hierarchical_nu.detector.detector_model import DetectorModel
-from hierarchical_nu.detector.icecube import Refrigerator
+from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
@@ -32,8 +31,6 @@ from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 
-NT = Refrigerator.PYTHON_NT
-CAS = Refrigerator.PYTHON_CAS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -48,7 +45,7 @@ class StanFit:
     def __init__(
         self,
         sources: Sources,
-        event_types: Union[str, List[str]],
+        event_types: Union[EventType, List[EventType]],
         events: Events,
         observation_time: Dict[str, u.quantity.Quantity[u.year]],
         priors: Priors = Priors(),
@@ -63,7 +60,7 @@ class StanFit:
 
         self._sources = sources
         # self._detector_model_type = detector_model
-        if isinstance(event_types, str):
+        if not isinstance(event_types, list):
             event_types = [event_types]
         if isinstance(observation_time, u.quantity.Quantity):
             observation_time = {event_types[0]: observation_time}
@@ -138,8 +135,14 @@ class StanFit:
 
     @priors.setter
     def priors(self, p):
+        previous_prior = self._priors.to_dict()
         if isinstance(p, Priors):
+            new_prior = p.to_dict()
+            for k, v in new_prior.items():
+                if previous_prior[k].name != v.name:
+                    logger.warning(f"Prior type of {k} changed, regenerate and recompile the stan code.")
             self._priors = p
+            self._stan_interface._priors = p
         else:
             raise ValueError("Priors must be instance of Priors.")
 
@@ -448,7 +451,7 @@ class StanFit:
         TODO: make compatible with multiple PS
         """
 
-        axs = self.plot_trace(
+        _, axs = self.plot_trace(
             var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
         )
 
@@ -555,7 +558,7 @@ class StanFit:
 
         ax = fig.add_subplot(gs[0, 1])
 
-        axs = self.plot_trace(
+        _, axs = self.plot_trace(
             var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
         )
 
@@ -596,6 +599,11 @@ class StanFit:
 
             for key, value in self._fit_inputs.items():
                 inputs_folder.create_dataset(key, data=value)
+
+            # All quantities with event_types dependency follow this list's order
+            inputs_folder.create_dataset(
+                "event_types", data=[_.S for _ in self._event_types]
+            )
 
             for key, value in self._fit_output.stan_variables().items():
                 outputs_folder.create_dataset(key, data=value)
@@ -662,28 +670,44 @@ class StanFit:
                         )
                     )
 
+        event_types = [
+            Refrigerator.stan2dm(_) for _ in fit_inputs["event_types"].tolist()
+        ]
+
         obs_time = fit_inputs["T"] * u.s
 
+        obs_time_dict = {et: obs_time[k] for k, et in enumerate(event_types)}
+
         priors = Priors()
-        priors.luminosity = LogNormalPrior(
-            mu=priors_dict["lumi_mu"], sigma=priors_dict["lumi_sigma"]
-        )
-        priors.src_index = NormalPrior(
-            mu=priors_dict["src_index_mu"], sigma=priors_dict["src_index_sigma"]
-        )
-        priors.diff_index = NormalPrior(
-            mu=priors_dict["diff_index_mu"], sigma=priors_dict["diff_index_sigma"]
-        )
-        priors.atmospheric_flux = LogNormalPrior(
-            mu=priors_dict["f_atmo_mu"], sigma=priors_dict["f_atmo_sigma"]
-        )
-        priors.diffuse_flux = LogNormalPrior(
-            mu=priors_dict["f_diff_mu"], sigma=priors_dict["f_diff_sigma"]
-        )
+        try:
+            priors.luminosity = LogNormalPrior(
+                mu=priors_dict["lumi_mu"], sigma=priors_dict["lumi_sigma"]
+            )
+            priors.src_index = NormalPrior(
+                mu=priors_dict["src_index_mu"], sigma=priors_dict["src_index_sigma"]
+            )
+        except KeyError:
+            pass
+        try:
+            priors.diff_index = NormalPrior(
+                mu=priors_dict["diff_index_mu"], sigma=priors_dict["diff_index_sigma"]
+            )
+            priors.diffuse_flux = LogNormalPrior(
+                mu=priors_dict["f_diff_mu"], sigma=priors_dict["f_diff_sigma"]
+            )
+        except KeyError:
+            pass
+        try:
+           priors.atmospheric_flux = LogNormalPrior(
+                mu=priors_dict["f_atmo_mu"], sigma=priors_dict["f_atmo_sigma"]
+            )
+        except KeyError:
+            pass
+        
 
         events = Events.from_file(filename)
 
-        fit = cls(Sources(), DetectorModel, events, obs_time, priors)
+        fit = cls(Sources(), event_types, events, obs_time_dict, priors)
 
         fit._fit_output = fit_outputs
         fit._fit_inputs = fit_inputs

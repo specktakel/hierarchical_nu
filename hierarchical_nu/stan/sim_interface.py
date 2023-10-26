@@ -31,15 +31,11 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 
 # from hierarchical_nu.events import NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II
 
-from hierarchical_nu.detector.icecube import IceCube, Refrigerator
+from hierarchical_nu.detector.icecube import EventType
 
 from hierarchical_nu.source.source import Sources
 
 from hierarchical_nu.utils.roi import ROI, CircularROI
-
-
-NT = Refrigerator.STAN_NT
-CAS = Refrigerator.STAN_CAS
 
 
 class StanSimInterface(StanInterface):
@@ -51,7 +47,7 @@ class StanSimInterface(StanInterface):
         self,
         output_file: str,
         sources: Sources,
-        event_types: List[str],  # TODO make class
+        event_types: List[EventType],
         atmo_flux_theta_points: int = 30,
         includes: List[str] = [
             "interpolation.stan",
@@ -75,7 +71,7 @@ class StanSimInterface(StanInterface):
         """
 
         for et in event_types:
-            detector_model_type = IceCube(et, DistributionMode.RNG)
+            detector_model_type = et.model(DistributionMode.RNG)
             if detector_model_type.RNG_FILENAME not in includes:
                 includes.append(detector_model_type.RNG_FILENAME)
             detector_model_type.generate_code(DistributionMode.RNG, rewrite=False)
@@ -109,10 +105,7 @@ class StanSimInterface(StanInterface):
 
             for event_type in self._event_types:
                 # Include the PDF mode of the detector model
-                self._dm[event_type] = IceCube(
-                    event_type,
-                    mode=DistributionMode.RNG,
-                )
+                self._dm[event_type] = event_type.model(DistributionMode.RNG)
                 self._dm[event_type].generate_rng_function_code()
 
             # If we have point sources, include the shape of their PDF
@@ -311,7 +304,7 @@ class StanSimInterface(StanInterface):
 
             idx = 1
             for et in self._event_types:
-                self._et_stan[idx] << Refrigerator.python2stan(et)
+                self._et_stan[idx] << et.S
                 idx += 1
 
             # Relative exposure weights of sources for tracks
@@ -572,16 +565,6 @@ class StanSimInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
-            StringExpression(['print("generating quantities")'])
-            self._dm_rng = OrderedDict()
-
-            # For different event types, define the detector model in both RNG and PDF
-            # mode to have all functions included.
-            # This will add to the functions section of the Stan file automatically.
-            for event_type in self._event_types:
-                self._dm_rng[event_type] = IceCube(
-                    event_type, mode=DistributionMode.RNG
-                )
 
             self._loop_start = ForwardVariableDef("loop_start", "int")
             self._loop_end = ForwardVariableDef("loop_end", "int")
@@ -1453,16 +1436,16 @@ class StanSimInterface(StanInterface):
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
 
-                        for c, event_type_python in enumerate(self._event_types):
+                        for c, event_type in enumerate(self._event_types):
                             with IfBlockContext(
                                 [
                                     self._event_type[i],
                                     " == ",
-                                    Refrigerator.python2stan(event_type_python),
+                                    event_type.S,
                                 ]
                             ):
-                                self._aeff_factor << self._dm_rng[
-                                    event_type_python
+                                self._aeff_factor << self._dm[
+                                    event_type
                                 ].effective_area(self._E[i], self._omega)
 
                         # Calculate quantities for rejection sampling
@@ -1493,19 +1476,15 @@ class StanSimInterface(StanInterface):
                                     )
                                 ]
                             ):
-                                for c, event_type_python in enumerate(
-                                    self._event_types
-                                ):
+                                for c, event_type in enumerate(self._event_types):
                                     with IfBlockContext(
                                         [
                                             self._event_type[i],
                                             " == ",
-                                            Refrigerator.python2stan(event_type_python),
+                                            event_type.S,
                                         ]
                                     ):
-                                        self._pre_event << self._dm_rng[
-                                            event_type_python
-                                        ](
+                                        self._pre_event << self._dm[event_type](
                                             self._E[i],
                                             self._omega,
                                         )
