@@ -243,7 +243,7 @@ class PointSource(Source):
 
             ras = f["phi"][()] * u.rad
 
-            decs = f["theta"][()] * u.rad
+            decs = (f["theta"][()] - np.pi / 2) * u.rad
 
             selection = f["selection"][()]
 
