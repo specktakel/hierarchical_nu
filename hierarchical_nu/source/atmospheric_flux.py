@@ -45,7 +45,7 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
         cos_theta_grid = np.linspace(-1, 1, theta_points)
 
         if ROI.STACK:
-            apply_roi = ROI.STACK[0]._apply_roi
+            apply_roi = ROI.STACK[0].apply_roi
         else:
             apply_roi = False
 

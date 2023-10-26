@@ -422,7 +422,7 @@ class R2021EffectiveArea(EffectiveArea):
         # Check if ROI should be applied to the effective area
         # This will speed up the fit but required recompilation for different ROIs
         if ROI.STACK:
-            apply_roi = ROI.STACK[0]._apply_roi
+            apply_roi = ROI.STACK[0].apply_roi
         else:
             apply_roi = False
 
