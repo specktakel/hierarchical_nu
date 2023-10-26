@@ -40,7 +40,7 @@ class ExposureIntegral:
     def __init__(
         self,
         sources: Sources,
-        detector_model,
+        detector_model: str,
         n_grid_points: int = 50,
     ):
         """
@@ -48,8 +48,9 @@ class ExposureIntegral:
         This is the convolution of the source spectrum and the
         effective area, multiplied by the observation time.
 
-        :param source_list: An instance of SourceList.
-        :param DetectorModel: A DetectorModel class.
+        :param sources: An instance of Sources.
+        :param detector_model: A string from Refrigerator describing which
+                                detector model to use.
         """
 
         self._detector_model = detector_model
@@ -164,7 +165,7 @@ class ExposureIntegral:
             # For point sources the integral over the space angle is trivial
 
             # Assume that the source is inside the ROI
-            # TODO add check at some poin
+            # TODO add check at some point
 
             dec = source.dec
             cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
