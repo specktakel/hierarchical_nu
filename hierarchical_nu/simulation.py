@@ -16,7 +16,7 @@ from icecube_tools.utils.vMF import get_theta_p
 
 from hierarchical_nu.utils.plotting import SphericalCircle
 
-from hierarchical_nu.detector.icecube import Refrigerator
+from hierarchical_nu.detector.icecube import Refrigerator, EventType, NT, CAS
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
 from hierarchical_nu.source.parameter import Parameter
@@ -32,12 +32,6 @@ from hierarchical_nu.stan.sim_interface import StanSimInterface
 sim_logger = logging.getLogger(__name__)
 sim_logger.setLevel(logging.DEBUG)
 
-NT = Refrigerator.PYTHON_NT
-CAS = Refrigerator.PYTHON_CAS
-
-S_NT = Refrigerator.STAN_NT
-S_CAS = Refrigerator.STAN_CAS
-
 
 class Simulation:
     """
@@ -48,8 +42,8 @@ class Simulation:
     def __init__(
         self,
         sources: Sources,
-        event_types: Union[str, List[str]],
-        observation_time: Dict[str, u.quantity.Quantity[u.year]],
+        event_types: Union[EventType, List[EventType]],
+        observation_time: Dict[EventType, u.quantity.Quantity[u.year]],
         N: dict = {},
     ):
         """
@@ -57,7 +51,7 @@ class Simulation:
         """
 
         self._sources = sources
-        if isinstance(event_types, str):
+        if not isinstance(event_types, list):
             event_types = [event_types]
         if isinstance(observation_time, u.quantity.Quantity):
             observation_time = {event_types[0]: observation_time}
@@ -368,7 +362,7 @@ class Simulation:
         ):
             color = label_cmap[int(l)]
 
-            if t == S_NT:
+            if t == NT.S:
                 e = e * track_zoom  # to make tracks visible
 
             circle = SphericalCircle(
@@ -525,7 +519,7 @@ class Simulation:
 
             except ValueError:
                 Emin_det.append(
-                    Parameter.get_parameter(f"Emin_det_{event_type}")
+                    Parameter.get_parameter(f"Emin_det_{event_type.P}")
                     .value.to(u.GeV)
                     .value
                 )
@@ -614,9 +608,7 @@ class Simulation:
         if self._force_N:
             sim_inputs["forced_N"] = forced_N
 
-        sim_inputs["event_types"] = [
-            Refrigerator.python2stan(_) for _ in self._event_types
-        ]
+        sim_inputs["event_types"] = [_.S for _ in self._event_types]
 
         # Remove np.ndarrays for use with cmdstanpy
         sim_inputs = {

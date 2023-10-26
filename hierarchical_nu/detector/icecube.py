@@ -2,140 +2,103 @@ from ..backend import DistributionMode
 from .northern_tracks import (
     NorthernTracksDetectorModel,
 )
+from dataclasses import dataclass
 from .cascades import (
     CascadesDetectorModel,
 )
-from .r2021 import R2021DetectorModel
+from .r2021 import (
+    IC40DetectorModel,
+    IC59DetectorModel,
+    IC79DetectorModel,
+    IC86_IDetectorModel,
+    IC86_IIDetectorModel,
+)
+
+
+class EventType:
+    pass
+
+
+@dataclass
+class NT(EventType):
+    P = "northern_tracks"
+    S = 0
+    model = NorthernTracksDetectorModel
+
+
+@dataclass
+class CAS(EventType):
+    P = "cascades"
+    S = 1
+    model = CascadesDetectorModel
+
+
+@dataclass
+class IC40(EventType):
+    P = "IC40"
+    S = 2
+    model = IC40DetectorModel
+
+
+@dataclass
+class IC59(EventType):
+    P = "IC59"
+    S = 3
+    model = IC59DetectorModel
+
+
+@dataclass
+class IC79(EventType):
+    P = "IC79"
+    S = 4
+    model = IC79DetectorModel
+
+
+@dataclass
+class IC86_I(EventType):
+    P = "IC86_I"
+    S = 5
+    model = IC86_IDetectorModel
+
+
+@dataclass
+class IC86_II(EventType):
+    P = "IC86_II"
+    S = 6
+    model = IC86_IIDetectorModel
 
 
 class Refrigerator:
-    STAN_NT = 0
-    STAN_CAS = 1
-    STAN_IC40 = 2
-    STAN_IC59 = 3
-    STAN_IC79 = 4
-    STAN_IC86_I = 5
-    STAN_IC86_II = 6
+    detectors = [NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II]
 
-    PYTHON_NT = "northern_tracks"
-    PYTHON_CAS = "cascades"
-    PYTHON_IC40 = "IC40"
-    PYTHON_IC59 = "IC59"
-    PYTHON_IC79 = "IC79"
-    PYTHON_IC86_I = "IC86_I"
-    PYTHON_IC86_II = "IC86_II"
+    @classmethod
+    def python2dm(cls, python):
+        for dm in cls.detectors:
+            if dm.P == python:
+                return dm
+        else:
+            raise ValueError(f"No detector {python} available.")
 
-    stan_detectors = [
-        STAN_NT,
-        STAN_CAS,
-        STAN_IC40,
-        STAN_IC59,
-        STAN_IC79,
-        STAN_IC86_I,
-        STAN_IC86_II,
-    ]
-
-    python_detectors = [
-        PYTHON_NT,
-        PYTHON_CAS,
-        PYTHON_IC40,
-        PYTHON_IC59,
-        PYTHON_IC79,
-        PYTHON_IC86_I,
-        PYTHON_IC86_II,
-    ]
+    @classmethod
+    def stan2dm(cls, stan):
+        for dm in cls.detectors:
+            if dm.S == stan:
+                return dm
+        else:
+            raise ValueError(f"No detector {stan} available.")
 
     @classmethod
     def stan2python(cls, stan):
-        for c, s_dm in enumerate(cls.stan_detectors):
-            if stan == s_dm:
-                break
+        for dm in cls.detectors:
+            if stan == dm.S:
+                return dm.P
         else:
-            raise ValueError("No such detector available.")
-
-        return cls.python_detectors[c]
+            raise ValueError(f"No detector {stan} available.")
 
     @classmethod
     def python2stan(cls, python):
-        for c, p_dm in enumerate(cls.python_detectors):
-            if python == p_dm:
-                break
+        for dm in cls.detectors:
+            if python == dm.P:
+                return dm.S
         else:
-            raise ValueError("No such detector available.")
-
-        return cls.stan_detectors[c]
-
-
-"""
-class ChilledGoods:
-    def __init__(self, *p_dm):
-        self._p_dm = []
-        self._s_dm = []
-        p_dm = list(p_dm)
-        for dm in p_dm:
-"""
-
-
-# Dictionary of currently supported detector configs
-DETECTOR_DICT = {
-    Refrigerator.PYTHON_NT: NorthernTracksDetectorModel,
-    Refrigerator.PYTHON_CAS: CascadesDetectorModel,
-    Refrigerator.PYTHON_IC86_II: R2021DetectorModel,
-}
-
-
-def IceCube(detector, mode: DistributionMode = DistributionMode.PDF):
-    return DETECTOR_DICT[detector](mode)
-
-
-'''
-class IceCubeDetectorModel(DetectorModel):
-    """
-    Unified interface to detector models for both track and
-    cascade events for joint analyses.
-    """
-
-    event_types = ["tracks", "cascades"]
-
-    PDF_FILENAME = "icecube_pdf.stan"
-    RNG_FILENAME = "icecube_rng.stan"
-
-    def __init__(
-        self,
-        mode: DistributionMode = DistributionMode.PDF,
-        event_type="tracks",
-    ):
-        super().__init__(mode=mode, event_type=event_type)
-
-        if self._event_type == "cascades":
-            ang_res = CascadesAngularResolution(mode)
-            self._angular_resolution = ang_res
-
-            energy_res = CascadesEnergyResolution(mode)
-            self._energy_resolution = energy_res
-
-            # if mode == DistributionMode.PDF:
-            self._eff_area = CascadesEffectiveArea()
-
-        elif self._event_type == "tracks":
-            ang_res = NorthernTracksAngularResolution(mode)
-            self._angular_resolution = ang_res
-
-            energy_res = NorthernTracksEnergyResolution(mode)
-            self._energy_resolution = energy_res
-
-            # if mode == DistributionMode.PDF:
-            self._eff_area = NorthernTracksEffectiveArea()
-
-        else:
-            raise ValueError("event_type %s not recognised" % event_type)
-
-    def _get_effective_area(self):
-        return self._eff_area
-
-    def _get_energy_resolution(self):
-        return self._energy_resolution
-
-    def _get_angular_resolution(self):
-        return self._angular_resolution
-'''
+            raise ValueError(f"No detector {python} available.")

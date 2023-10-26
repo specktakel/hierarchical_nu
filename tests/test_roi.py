@@ -3,7 +3,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from hierarchical_nu.utils.roi import CircularROI, RectangularROI, FullSkyROI
 from hierarchical_nu.events import Events
-from hierarchical_nu.detector.icecube import Refrigerator
+from hierarchical_nu.detector.icecube import IC86_II, NT
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import PointSource, Sources
 from hierarchical_nu.simulation import Simulation
@@ -14,9 +14,6 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-NT = Refrigerator.PYTHON_NT
-IC86_II = Refrigerator.PYTHON_IC86_II
-
 
 def test_circular_event_selection():
     roi = CircularROI(
@@ -24,14 +21,14 @@ def test_circular_event_selection():
         radius=10.0 * u.deg,
     )
     logger.warning(roi)
-    events = Events.from_ev_file("IC86_II")
+    events = Events.from_ev_file(IC86_II)
     assert events.coords.z.min() >= 0.0
 
 
 def test_rectangular_event_selection():
     roi = RectangularROI(DEC_min=0.0 * u.rad)
     logger.warning(roi)
-    events = Events.from_ev_file("IC86_II")
+    events = Events.from_ev_file(IC86_II)
     assert events.coords.z.min() >= 0.0
 
 
@@ -55,7 +52,7 @@ def test_humongous_roi():
 
 def test_event_selection_wrap(caplog):
     roi = RectangularROI(RA_min=np.deg2rad(350) * u.rad, RA_max=np.deg2rad(10) * u.rad)
-    events = Events.from_ev_file("IC86_II")
+    events = Events.from_ev_file(IC86_II)
     events.coords.representation_type = "spherical"
     ra = events.coords.ra.rad
     mask = np.nonzero((ra >= np.pi))

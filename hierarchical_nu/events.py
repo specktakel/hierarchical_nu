@@ -15,9 +15,10 @@ import ligo.skymap.plot
 from icecube_tools.utils.vMF import get_kappa
 
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.utils.roi import ROI, RectangularROI, CircularROI
+from hierarchical_nu.utils.roi import ROI, RectangularROI, CircularROI, FullSkyROI
 from hierarchical_nu.utils.plotting import SphericalCircle
 from hierarchical_nu.detector.icecube import Refrigerator
+from hierarchical_nu.detector.icecube import EventType
 
 import logging
 
@@ -41,13 +42,12 @@ class Events:
         types,
         ang_errs: u.deg,
         mjd: Time,
-        periods: List[str] = None,
     ):
         """
         Events class for the storage of event observables
         """
 
-        self._recognised_types = [_ for _ in Refrigerator.stan_detectors]
+        self._recognised_types = [_.S for _ in Refrigerator.detectors]
 
         self.N = len(energies)
 
@@ -212,52 +212,52 @@ class Events:
                     event_folder.create_dataset(key, data=value)
 
     @classmethod
-    def from_ev_file(
-        cls,
-        p: str,
-        Emin_det: u.GeV = 1 * u.GeV,
-        **kwargs,
-    ):
+    def from_ev_file(cls, *seasons: EventType, use_all: bool = True):
         """
         Load events from the 2021 data release
-        :param p: string of period to be loaded.
-        :param kwargs: kwargs passed to make an event selection, see `icecube_tools` documentation for details
+        :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
         :return: :class:`hierarchical_nu.events.Events`
         """
 
         from icecube_tools.utils.data import RealEvents
 
         # Borrow from icecube_tools
-        use_all = kwargs.pop("use_all", True)
-        events = RealEvents.from_event_files(p, use_all=use_all)
-
-        # Check if minimum detected energy is currently loaded as parameter
+        # Already exclude low energy events here, would be quite difficult later on
         try:
-            Emin_det = Parameter.get_parameter("Emin_det_t").value.to(u.GeV)
-            logger.warning(f"Overwriting Emin_det with {Emin_det}")
+            _Emin_det = Parameter.get_parameter("Emin_det").value.to_value(u.GeV)
+            events = RealEvents.from_event_files(
+                *(s.P for s in seasons), use_all=use_all
+            )
+            events.restrict(ereco_low=_Emin_det)
         except ValueError:
-            try:
-                Emin_det = Parameter.get_parameter("Emin_det").value.to(u.GeV)
-                logger.warning(f"Overwriting Emin_det with {Emin_det}")
-            except ValueError:
-                pass
+            events = RealEvents.from_event_files(
+                *(s.P for s in seasons), use_all=use_all
+            )
+            # Create a dict of masks for each season
+            mask = {}
+            for s in seasons:
+                try:
+                    _Emin_det = Parameter.get_parameter(
+                        f"Emin_det_{s.P}"
+                    ).value.to_value(u.GeV)
+                    mask[s.P] = events.reco_energy[s.P] >= _Emin_det
+                except ValueError:
+                    raise ValueError("Emin_det not defined for all seasons.")
+            events.mask = mask
 
         try:
             roi = ROI.STACK[0]
         except IndexError:
-            raise ValueError("No ROI on stack.")
+            roi = FullSkyROI()
 
-        # events.restrict(**kwargs) # Do this completely in hnu, icecube_tools lacks the RA-wrapping right now, TODO...
-        # Read in relevant data
-        ra = events.ra[p] * u.rad
-        dec = events.dec[p] * u.rad
-        reco_energy = events.reco_energy[p] * u.GeV
-        period = ra.size * [p]
-        mjd = events.mjd[p]
+        ra = np.hstack([events.ra[s.P] * u.rad for s in seasons])
+        dec = np.hstack([events.dec[s.P] * u.rad for s in seasons])
+        reco_energy = np.hstack([events.reco_energy[s.P] * u.GeV for s in seasons])
+        types = np.hstack([events.ra[s.P].size * [s.S] for s in seasons])
+        mjd = np.hstack([events.mjd[s.P] for s in seasons])
 
         # Conversion from 50% containment to 68% is already done in RealEvents
-        ang_err = events.ang_err[p] * u.deg
-        types = np.array(ra.size * [Refrigerator.STAN_IC86_II])
+        ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         if isinstance(roi, CircularROI):
@@ -265,7 +265,6 @@ class Events:
                 (coords.separation(roi.center).deg * u.deg < roi.radius)
                 & (mjd >= roi.MJD_min)
                 & (mjd <= roi.MJD_max)
-                & (reco_energy > Emin_det)
             )
         elif isinstance(roi, RectangularROI):
             if roi.RA_min > roi.RA_max:
@@ -274,7 +273,6 @@ class Events:
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                        & (reco_energy >= Emin_det)
                         & (mjd >= roi.MJD_min)
                         & (mjd <= roi.MJD_max)
                     )
@@ -286,7 +284,6 @@ class Events:
                         & (dec >= roi.DEC_min)
                         & (ra >= roi.RA_min)
                         & (ra <= roi.RA_max)
-                        & (reco_energy >= Emin_det)
                         & (mjd >= roi.MJD_min)
                         & (mjd <= roi.MJD_max)
                     )
@@ -299,7 +296,6 @@ class Events:
             types[mask],
             ang_err[mask],
             mjd[mask],
-            p,
         )
 
     @u.quantity_input
