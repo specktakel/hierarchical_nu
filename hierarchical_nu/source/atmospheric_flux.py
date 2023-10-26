@@ -8,6 +8,8 @@ from scipy.integrate import dblquad, quad
 from MCEq.core import MCEqRun
 import crflux.models as crf
 
+from ..utils.roi import ROI
+
 
 from .flux_model import FluxModel
 from ..utils.cache import Cache
@@ -40,9 +42,24 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             "real",
         )
 
-        self.theta_points = theta_points
+        cos_theta_grid = np.linspace(-1, 1, theta_points)
 
-        self.cos_theta_grid = np.linspace(-1, 1, self.theta_points)
+        if ROI.STACK:
+            apply_roi = ROI.STACK[0]._apply_roi
+        else:
+            apply_roi = False
+
+        if apply_roi:
+            roi = ROI.STACK[0]
+            cosz_min = -np.sin(roi.DEC_max)
+            cosz_max = -np.sin(roi.DEC_min)
+            idx_min = np.digitize(cosz_min, cos_theta_grid) - 1
+            idx_max = np.digitize(cosz_max, cos_theta_grid, right=True) - 1
+            self.cos_theta_grid = cos_theta_grid[idx_min : idx_max + 1]
+            self.theta_points = self.cos_theta_grid.size
+        else:
+            self.theta_points = theta_points
+            self.cos_theta_grid = cos_theta_grid
 
         self.log_energy_grid = log_energy_grid
 
@@ -77,8 +94,7 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             )
             log_trunc_e = LogParameterization(truncated_e)
 
-            # Use abs() since the flux is symmetric around the horizon
-            cos_theta << StringExpression(["abs(cos(pi() - acos(true_dir[3])))"])
+            cos_theta << StringExpression(["cos(pi() - acos(true_dir[3]))"])
             cos_theta_bin_index << FunctionCall(
                 [cos_theta, cos_theta_grid_stan],
                 "binary_search",
