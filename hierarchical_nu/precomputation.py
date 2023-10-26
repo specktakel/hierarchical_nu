@@ -22,6 +22,7 @@ from hierarchical_nu.backend.stan_generator import StanGenerator
 from hierarchical_nu.detector.r2021 import R2021EnergyResolution
 from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
 from hierarchical_nu.detector.icecube import (
+    EventType,
     Refrigerator,
     CAS,
 )
@@ -40,7 +41,7 @@ class ExposureIntegral:
     def __init__(
         self,
         sources: Sources,
-        detector_model: str,
+        detector_model: EventType,
         n_grid_points: int = 50,
     ):
         """
@@ -49,8 +50,7 @@ class ExposureIntegral:
         effective area, multiplied by the observation time.
 
         :param sources: An instance of Sources.
-        :param detector_model: A string from Refrigerator describing which
-                                detector model to use.
+        :param detector_model: An instance of EventType from the Refrigerator.
         """
 
         self._detector_model = detector_model

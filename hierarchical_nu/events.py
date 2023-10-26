@@ -25,7 +25,6 @@ import logging
 from typing import List
 import numpy.typing as npt
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -69,10 +68,7 @@ class Events:
 
         self._ang_errs = ang_errs
 
-        if periods is not None:
-            self._periods = periods
-
-    def remove(self, i: int):
+    def remove(self, i):
         """
         Remove the event at index i
         :param i: Event index
