@@ -21,8 +21,13 @@ from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
-from hierarchical_nu.utils.roi import CircularROI
+from hierarchical_nu.utils.roi import CircularROI, RectangularROI, FullSkyROI
 from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
+
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class ModelCheck:
@@ -34,10 +39,10 @@ class ModelCheck:
     def __init__(self, truths=None, priors=None):
         if priors:
             self.priors = priors
-            print("Found priors")
+            logger.info("Found priors")
 
         else:
-            print("Loading priors from config")
+            logger.info("Loading priors from config")
             prior_config = hnu_config["prior_config"]
             priors = Priors()
             priors.luminosity = self.make_prior(prior_config["L"])
@@ -48,11 +53,11 @@ class ModelCheck:
             self.priors = priors
 
         if truths:
-            print("Found true values")
+            logger.info("Found true values")
             self.truths = truths
 
         else:
-            print("Loading true values from config")
+            logger.info("Loading true values from config")
             # Config
             file_config = hnu_config["file_config"]
             parameter_config = hnu_config["parameter_config"]
@@ -63,9 +68,12 @@ class ModelCheck:
             f_arr_astro = self._sources.f_arr_astro().value
 
             # Detector
-            self._detector_model_type = ModelCheck._get_dm_from_config(parameter_config["detector_model_type"])
-
-            self._obs_time = parameter_config["obs_time"] * u.year
+            self._detector_model_type = ModelCheck._get_dm_from_config(
+                parameter_config["detector_model_type"]
+            )
+            self._obs_time = ModelCheck._get_obs_time_from_config(
+                self._detector_model_type, parameter_config["obs_time"]
+            )
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
@@ -119,7 +127,7 @@ class ModelCheck:
         return prior
 
     @staticmethod
-    def initialise_env(output_dir, priors: Priors = Priors()):
+    def initialise_env(output_dir):
         """
         Script to set up enviroment for parallel
         model checking runs.
@@ -135,17 +143,16 @@ class ModelCheck:
         prior_config = hnu_config["prior_config"]
 
         # Run MCEq computation
-        print("Setting up MCEq run for AtmopshericNumuFlux")
+        logger.info("Setting up MCEq run for AtmopshericNumuFlux")
         Emin = parameter_config["Emin"] * u.GeV
         Emax = parameter_config["Emax"] * u.GeV
         atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
 
         # Build necessary details to define simulation and fit code
         sources = _initialise_sources()
-        detector_model_type = ModelCheck._get_dm_from_config(parameter_config["detector_model_type"])
-
-        if not isinstance(detector_model_type, list):
-            detector_model_type = [detector_model_type]
+        detector_model_type = ModelCheck._get_dm_from_config(
+            parameter_config["detector_model_type"]
+        )
 
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
@@ -156,10 +163,11 @@ class ModelCheck:
         )
 
         stan_sim_interface.generate()
-        print("Generated sim_code Stan file at:", sim_name)
+        logger.info(f"Generated sim_code Stan file at: {sim_name}")
 
         # Generate fit Stan file
-        nshards = parameter_config["nshards"]
+        threads_per_chain = parameter_config["threads_per_chain"]
+        nshards = threads_per_chain
         fit_name = file_config["fit_filename"][:-5]
 
         priors = Priors()
@@ -178,10 +186,10 @@ class ModelCheck:
         )
 
         stan_fit_interface.generate()
-        print("Generated fit Stan file at:", fit_name)
+        logger.info(f"Generated fit Stan file at: {fit_name}")
 
         # Comilation of Stan models
-        print("Compile Stan models")
+        logger.info("Compile Stan models")
         stanc_options = {"include-paths": list(file_config["include_paths"])}
         cpp_options = None
 
@@ -377,6 +385,15 @@ class ModelCheck:
                 N = len(self.results[var_name][0]) * 100
                 xmin, xmax = ax[v].get_xlim()
 
+                # this case distinction is overly complicated
+                if (
+                    var_name == "L"
+                    or var_name == "F_diff"
+                    or var_name == "F_atmo"
+                    or var_name == "Fs"
+                ):
+                    pass
+
                 if "f_" in var_name and not "diff" in var_name:  # yikes
                     prior_samples = uniform(0, 1).rvs(N)
                     prior_density = uniform(0, 1).pdf(prior_supp)
@@ -440,13 +457,13 @@ class ModelCheck:
         ind_not_ok = np.where(diagnostics_array == 0)[0]
 
         if len(ind_not_ok) > 0:
-            print(
+            logger.warning(
                 "%.2f percent of fits have issues!"
                 % (len(ind_not_ok) / len(diagnostics_array) * 100)
             )
 
         else:
-            print("No issues found")
+            logger.info("No issues found")
 
         return ind_not_ok
 
@@ -527,9 +544,14 @@ class ModelCheck:
             fit.run(
                 seed=s,
                 show_progress=True,
-                threads_per_chain=self._threads_per_chain,
-                inits={"src_index": 2.2, "L": 1e50, "diff_index": 2.2},
-                **kwargs
+                inits={
+                    "src_index": 2.2,
+                    "L": 1e50,
+                    "diff_index": 2.2,
+                    "F_atmo": 1e-1,
+                    "F_diff": 1e-4,
+                },
+                **kwargs,
             )
 
             self.fit = fit
@@ -557,7 +579,11 @@ class ModelCheck:
 
     @staticmethod
     def _get_dm_from_config(dm_key):
-        return Refrigerator.python2dm(dm_key)
+        return [Refrigerator.python2dm(dm) for dm in dm_key]
+
+    @staticmethod
+    def _get_obs_time_from_config(dms, obs_time):
+        return {dm: obs_time[c] * u.year for c, dm in enumerate(dms)}
 
     def _get_prior_func(self, var_name):
         """
@@ -650,8 +676,25 @@ def _initialise_sources():
     dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
     ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
     center = SkyCoord(ra=ra, dec=dec, frame="icrs")
-    radius = 10 * u.deg
-    roi = CircularROI(center, radius)
+
+    roi_config = hnu_config["roi_config"]
+    size = roi_config["size"] * u.deg
+    apply_roi = roi_config["apply_roi"]
+
+    if roi_config["roi_type"] == "CircularROI":
+        roi = CircularROI(center, size, apply_roi=apply_roi)
+    elif roi_config["roi_type"] == "RectangularROI":
+        size = size.to(u.rad)
+        roi = RectangularROI(
+            RA_min=ra - size,
+            RA_max=ra + size,
+            DEC_min=dec - size,
+            DEC_max=dec + size,
+            apply_roi=apply_roi,
+        )
+    elif roi_config["roi_type"] == "FullSkyROI":
+        roi = FullSkyROI()
+
     point_source = PointSource.make_powerlaw_source(
         "test",
         dec,

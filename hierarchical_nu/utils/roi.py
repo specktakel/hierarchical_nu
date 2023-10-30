@@ -85,7 +85,7 @@ class CircularROI(ROI):
             raise ValueError("Radii larger than 180 degrees are not sensible.")
 
     def __repr__(self):
-        return f"CircularROI, center RA={self._center.ra.deg:.1f}°, DEC={self._center.dec.deg:.1f}°, radius={self._radius.to_value(u.deg):.1f}°"
+        return f"CircularROI, center RA={self._center.ra.deg:.1f}°, DEC={self._center.dec.deg:.1f}°, radius={self._radius.to_value(u.deg):.1f}°, apply={self.apply_roi}"
 
     def _get_roi_width(self):
         """
@@ -279,7 +279,7 @@ class RectangularROI(ROI):
         self.DEC_max = self._DEC_max
 
     def __repr__(self):
-        return f"RectangularROI, DEC=[{self.DEC_min.to_value(u.deg):.1f}°, {self.DEC_max.to_value(u.deg):.1f}°], RA=[{self.RA_min.to_value(u.deg):.1f}°, {self.RA_max.to_value(u.deg):.1f}°]"
+        return f"RectangularROI, DEC=[{self.DEC_min.to_value(u.deg):.1f}°, {self.DEC_max.to_value(u.deg):.1f}°], RA=[{self.RA_min.to_value(u.deg):.1f}°, {self.RA_max.to_value(u.deg):.1f}°], apply={self.apply_roi}"
 
 
 class FullSkyROI(RectangularROI):
@@ -288,7 +288,8 @@ class FullSkyROI(RectangularROI):
     for extra user-friendliness.
     """
 
-    pass
+    def __repr__(self):
+        return f"FullSkyROI, apply={self.apply_roi}"
 
 
 def ROI_width(d1, radius, d2):

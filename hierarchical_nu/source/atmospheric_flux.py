@@ -54,7 +54,7 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             cosz_min = -np.sin(roi.DEC_max)
             cosz_max = -np.sin(roi.DEC_min)
             idx_min = np.digitize(cosz_min, cos_theta_grid) - 1
-            idx_max = np.digitize(cosz_max, cos_theta_grid, right=True) - 1
+            idx_max = np.digitize(cosz_max, cos_theta_grid, right=True)
             self.cos_theta_grid = cos_theta_grid[idx_min : idx_max + 1]
             self.theta_points = self.cos_theta_grid.size
         else:
