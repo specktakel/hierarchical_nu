@@ -548,7 +548,7 @@ class ModelCheck:
                     "src_index": 2.2,
                     "L": 1e50,
                     "diff_index": 2.2,
-                    "F_atmo": 1e-1,
+                    "F_atmo": 0.3,
                     "F_diff": 1e-4,
                 },
                 **kwargs,
