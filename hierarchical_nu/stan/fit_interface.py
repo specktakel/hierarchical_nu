@@ -964,7 +964,7 @@ class StanFitInterface(StanInterface):
 
             # Atmo spectral shape is fixed, but normalisation can move.
             if self.sources.atmospheric:
-                self._F_atmo = ParameterDef("F_atmo", "real", 0.0, None)
+                self._F_atmo = ParameterDef("F_atmo", "real", 0.2, 0.4)
 
             # Vector of latent true source energies for each event
             # TODO change to energies at the detector
