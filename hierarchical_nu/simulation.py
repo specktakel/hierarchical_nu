@@ -252,6 +252,10 @@ class Simulation:
                 data=self._sources.total_flux_int().to(flux_unit).value,
             )
 
+            outputs_folder.create_dataset(
+                "expected_Nnu_per_comp", data=self._expected_Nnu_per_comp
+            )
+
         self.events.to_file(filename, append=True)
 
     def show_spectrum(self, *components: str, scale: str = "linear"):
