@@ -320,7 +320,7 @@ class NorthernSkyROI(RectangularROI):
         )
 
     def __repr__(self):
-        return f"NorthernSkyRoi, apply={self.apply_roi}"
+        return f"NorthernSkyROI, apply={self.apply_roi}"
 
 
 def ROI_width(d1, radius, d2):
