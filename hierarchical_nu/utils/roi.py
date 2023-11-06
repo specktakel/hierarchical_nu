@@ -288,8 +288,39 @@ class FullSkyROI(RectangularROI):
     for extra user-friendliness.
     """
 
+    def __init__(
+        self,
+        MJD_min=0.0,
+        MJD_max=np.inf,
+        apply_roi: bool = False,
+    ):
+        super().__init__(MJD_min=MJD_min, MJD_max=MJD_max, apply_roi=apply_roi)
+
     def __repr__(self):
         return f"FullSkyROI, apply={self.apply_roi}"
+
+
+class NorthernSkyROI(RectangularROI):
+    """
+    Wrapper class for to define an ROI in the Northern Sky,
+    bounded at DEC_min=-5 deg
+    """
+
+    def __init__(
+        self,
+        MJD_min=0.0,
+        MJD_max=np.inf,
+        apply_roi: bool = False,
+    ):
+        super().__init__(
+            DEC_min=np.deg2rad(-5) * u.rad,
+            MJD_min=MJD_min,
+            MJD_max=MJD_max,
+            apply_roi=apply_roi,
+        )
+
+    def __repr__(self):
+        return f"NorthernSkyRoi, apply={self.apply_roi}"
 
 
 def ROI_width(d1, radius, d2):

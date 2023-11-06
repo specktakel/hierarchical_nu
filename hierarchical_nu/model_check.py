@@ -11,7 +11,6 @@ from cmdstanpy import CmdStanModel
 from scipy.stats import uniform
 from typing import List, Union
 
-from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import PointSource, Sources
 
@@ -21,7 +20,12 @@ from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
-from hierarchical_nu.utils.roi import CircularROI, RectangularROI, FullSkyROI
+from hierarchical_nu.utils.roi import (
+    CircularROI,
+    RectangularROI,
+    FullSkyROI,
+    NorthernSkyROI,
+)
 from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
 
 import logging
@@ -144,15 +148,12 @@ class ModelCheck:
 
         # Run MCEq computation
         logger.info("Setting up MCEq run for AtmopshericNumuFlux")
-        Emin = parameter_config["Emin"] * u.GeV
-        Emax = parameter_config["Emax"] * u.GeV
-        atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
 
         # Build necessary details to define simulation and fit code
-        sources = _initialise_sources()
         detector_model_type = ModelCheck._get_dm_from_config(
             parameter_config["detector_model_type"]
         )
+        sources = _initialise_sources()
 
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
@@ -656,21 +657,14 @@ def _initialise_sources():
         )
 
     else:
-        Emin_det_tracks = Parameter(
-            parameter_config["Emin_det_tracks"] * u.GeV,
-            "Emin_det_tracks",
-            fixed=True,
-        )
-        Emin_det_cascades = Parameter(
-            parameter_config["Emin_det_cascades"] * u.GeV,
-            "Emin_det_cascades",
-            fixed=True,
-        )
-        Emin_det_IC86_II = Parameter(
-            parameter_config["Emin_det_IC86_II"] * u.GeV,
-            "Emin_det_IC86_II",
-            fixed=True,
-        )
+        for dm in Refrigerator.detectors:
+            # Create a parameter for each detector
+            # If the detector is not used, the parameter is disregarded
+            _ = Parameter(
+                parameter_config[f"Emin_det_{dm.P}"] * u.GeV,
+                "Emin_det_{dm.P}",
+                fixed=True,
+            )
 
     # Simple point source for testing
     dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
@@ -694,6 +688,8 @@ def _initialise_sources():
         )
     elif roi_config["roi_type"] == "FullSkyROI":
         roi = FullSkyROI()
+    elif roi_config["roi_type"] == "NorthernSkyROI":
+        roi = NorthernSkyROI()
 
     point_source = PointSource.make_powerlaw_source(
         "test",

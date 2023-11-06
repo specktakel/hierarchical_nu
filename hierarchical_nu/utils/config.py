@@ -39,35 +39,43 @@ class ParameterConfig:
     src_index_range: tuple = (1.0, 4.0)
     diff_index: float = 2.5
     diff_index_range: tuple = (1.0, 4.0)
-    L: float = 2e47  # u.erg / u.s
+    L: float = 2e47  # u.erg / u.s, defined in the source frame
     L_range: tuple = (0, 1e60)
     src_dec: float = 0.0  # u.deg
     src_ra: float = 90.0  # u.deg
-    Enorm: float = 1e5  # u.GeV
-    Emin: float = 5e4  # u.GeV
+    Enorm: float = 1e5  # u.GeV, defined in the detector frame
+    Emin: float = 5e4  # u.GeV, defined in the detector frame
     Emax: float = 1e8  # u.GeV
-    Emin_src: float = 1.4e5  # u.GeV, value to fix current problems with energy ranges
+    Emin_src: float = 1.4e5  # u.GeV, defined in the source frame at redshift z
     Emax_src: float = 1.4e8  # u.GeV
-    Emin_diff: float = 5e4  # u.GeV
+    Emin_diff: float = 5e4  # u.GeV, defined in the detector frame
     Emax_diff: float = 1e8  # u.GeV
-    diff_norm: float = 2e-13  # 1 / (u.GeV * u.m**2 * u.s)
-    z: float = 0.4  # cosmological redshift, dimensionless
+    diff_norm: float = (
+        2e-13  # 1 / (u.GeV * u.m**2 * u.s), defined in the detector frame
+    )
+    z: float = 0.4  # cosmological redshift, dimensionless, only for point source
 
     # If True, use same Emin_det for all
     # If False, use separate for tracks and cascades
     Emin_det_eq: bool = False
 
+    # Entries for un-used detector models are disregarded by the sim/fit/model check
+    # defined in the detector frame
     Emin_det: float = 1e5  # u.GeV
-    Emin_det_tracks: float = 6e4  # u.GeV
+    Emin_det_northern_tracks: float = 6e4  # u.GeV
     Emin_det_cascades: float = 6e4  # u.GeV
-    Emin_det_IC86_II: float = 6e4  # u.GeV
+    Emin_det_IC40: float = 3e2  # u.GeV
+    Emin_det_IC59: float = 3e2  # u.GeV
+    Emin_det_IC79: float = 3e2  # u.GeV
+    Emin_det_IC86_I: float = 3e2  # u.GeV
+    Emin_det_IC86_II: float = 3e2  # u.GeV
 
     # Can be NT, CAS or IC40 through IC86_II,
     # needs to be the Python-string, accessed through e.g. NT.P
     # due to merging of the yaml config and this config here
     detector_model_type: List[str] = field(default_factory=lambda: ["IC86_II"])
 
-    obs_time: List[float] = field(default_factory=lambda: [10.0])  # years
+    obs_time: List[float] = field(default_factory=lambda: [6.0])  # years
 
     # Within-chain parallelisation
     threads_per_chain: int = 1
@@ -92,7 +100,7 @@ class PriorConfig:
     )
     L: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=1e52, sigma=3
+            name="LogNormalPrior", mu=1e49, sigma=3
         )
     )
 
@@ -103,7 +111,7 @@ class PriorConfig:
     )
     atmo_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=3e-1, sigma=0.4
+            name="NormalPrior", mu=3e-1, sigma=0.08
         )
     )
 
