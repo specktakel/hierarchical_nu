@@ -61,14 +61,9 @@ class ExposureIntegral:
             self._min_det_energy = Parameter.get_parameter("Emin_det").value
 
         except ValueError:
-            for dm in Refrigerator.detectors:
-                if detector_model == dm:
-                    self._min_det_energy = Parameter.get_parameter(
-                        f"Emin_det_{dm.P}"
-                    ).value
-                    break
-            else:
-                raise ValueError("Detector model not recognised")
+            self._min_det_energy = Parameter.get_parameter(
+                f"Emin_det_{self._detector_model.P}"
+            ).value
 
         # Silence log output
         logger = logging.getLogger("hierarchical_nu.backend.code_generator")
