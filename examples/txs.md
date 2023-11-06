@@ -96,7 +96,7 @@ A `LifeTime` instance computes the detector lifetime in the chosen time range.
 
 ```python
 lt = LifeTime()
-lifetime = lt.life_time_from_MJD(MJD_min, MJD_max)
+lifetime = lt.lifetime_from_mjd(MJD_min, MJD_max)
 print(lifetime)
 ```
 
