@@ -147,7 +147,8 @@ class Simulation:
 
     def compile_stan_code(self, include_paths=None):
         if not include_paths:
-            include_paths = [STAN_PATH]
+            include_paths = [STAN_PATH, STAN_GEN_PATH]
+        print(include_paths)
 
         stanc_options = {"include-paths": include_paths}
 

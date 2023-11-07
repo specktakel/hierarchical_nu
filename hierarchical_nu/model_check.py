@@ -17,6 +17,7 @@ from hierarchical_nu.source.source import PointSource, Sources
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
+from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
@@ -145,6 +146,9 @@ class ModelCheck:
         parameter_config = hnu_config["parameter_config"]
         file_config = hnu_config["file_config"]
         prior_config = hnu_config["prior_config"]
+
+        if not STAN_GEN_PATH in file_config["include_paths"]:
+            file_config["include_paths"].append(STAN_GEN_PATH)
 
         # Run MCEq computation
         logger.info("Setting up MCEq run for AtmopshericNumuFlux")
@@ -662,7 +666,7 @@ def _initialise_sources():
             # If the detector is not used, the parameter is disregarded
             _ = Parameter(
                 parameter_config[f"Emin_det_{dm.P}"] * u.GeV,
-                "Emin_det_{dm.P}",
+                f"Emin_det_{dm.P}",
                 fixed=True,
             )
 

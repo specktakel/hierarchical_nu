@@ -181,7 +181,7 @@ class StanFit:
 
     def compile_stan_code(self, include_paths=None):
         if not include_paths:
-            include_paths = [STAN_PATH]
+            include_paths = [STAN_PATH, STAN_GEN_PATH]
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename,
