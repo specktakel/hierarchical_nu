@@ -39,7 +39,7 @@ class ParameterConfig:
     src_index_range: tuple = (1.0, 4.0)
     diff_index: float = 2.5
     diff_index_range: tuple = (1.0, 4.0)
-    L: float = 2e47  # u.erg / u.s, defined in the source frame
+    L: float = 4e46  # u.erg / u.s, defined in the source frame
     L_range: tuple = (0, 1e60)
     src_dec: float = 0.0  # u.deg
     src_ra: float = 90.0  # u.deg
@@ -64,13 +64,14 @@ class ParameterConfig:
     Emin_det: float = 1e5  # u.GeV
     Emin_det_northern_tracks: float = 6e4  # u.GeV
     Emin_det_cascades: float = 6e4  # u.GeV
-    Emin_det_IC40: float = 3e2  # u.GeV
-    Emin_det_IC59: float = 3e2  # u.GeV
-    Emin_det_IC79: float = 3e2  # u.GeV
-    Emin_det_IC86_I: float = 3e2  # u.GeV
-    Emin_det_IC86_II: float = 3e2  # u.GeV
+    Emin_det_IC40: float = 6e4  # u.GeV
+    Emin_det_IC59: float = 6e4  # u.GeV
+    Emin_det_IC79: float = 6e4  # u.GeV
+    Emin_det_IC86_I: float = 6e4  # u.GeV
+    Emin_det_IC86_II: float = 6e4  # u.GeV
 
-    # Can be NT, CAS or IC40 through IC86_II,
+    # Can be NT, CAS or IC40 through IC86_II or any combination,
+    # see `hierarchical_nu.detector.icecube.Refrigerator`
     # needs to be the Python-string, accessed through e.g. NT.P
     # due to merging of the yaml config and this config here
     detector_model_type: List[str] = field(default_factory=lambda: ["IC86_II"])
