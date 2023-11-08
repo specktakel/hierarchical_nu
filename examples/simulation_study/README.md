@@ -36,6 +36,8 @@ sbatch parallel_run.sh
 
 The total number of independent simulation/fit runs will be `n_node` x `n_jobs` x `n_subjobs`.
 
+A slightly different approach is shown in `array_run.sh`. The downside of `parallel_run.sh` using multiple nodes for one job is that all nodes have to be free for the job to start. Using arrays, a single array tasks only requires one node. The array job be staggered and single array tasks whenever the next free node is allocated to the job.
+
 ## Check results
 
 See the `check_results` notebook for how to use the `ModelCheck` class to have a look at the results.
