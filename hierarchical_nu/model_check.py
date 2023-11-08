@@ -2,8 +2,10 @@ import os
 import sys
 import numpy as np
 import h5py
+import arviz as av
 import time
 from matplotlib import pyplot as plt
+import matplotlib.patches as mpl_patches
 from joblib import Parallel, delayed
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -400,7 +402,7 @@ class ModelCheck:
                     pass
 
                 if "f_" in var_name and not "diff" in var_name:  # yikes
-                    prior_samples = uniform(0, 1).rvs(N)
+                    # prior_samples = uniform(0, 1).rvs(N)
                     prior_density = uniform(0, 1).pdf(prior_supp)
                     plot = True
 
@@ -412,7 +414,7 @@ class ModelCheck:
                     plot = True
 
                 elif not "Fs" in var_name:
-                    prior_samples = self.priors.to_dict()[var_name].sample(N)
+                    # prior_samples = self.priors.to_dict()[var_name].sample(N)
                     prior_density = self.priors.to_dict()[var_name].pdf_logspace(
                         prior_supp
                     )
@@ -429,6 +431,7 @@ class ModelCheck:
                         lw=2,
                         label="Prior",
                     )
+                    """
                     ax[v].hist(
                         prior_samples,
                         color="k",
@@ -439,14 +442,34 @@ class ModelCheck:
                         weights=np.tile(0.01, len(prior_samples)),
                         label="Prior samples",
                     )
-            try:
+                    """
+            if var_name in self.truths.keys():
                 ax[v].axvline(
                     self.truths[var_name], color="k", linestyle="-", label="Truth"
                 )
-            except KeyError:
-                pass
+                counts_hdi = 0
+                counts_50_quantile = 0
+                for d in self.results[var_name]:
+                    hdi = av.hdi(d, 0.5)
+                    quantile = np.quantile(d, [0.25, 0.75])
+                    true_val = self.truths[var_name]
+                    if true_val <= hdi[1] and true_val >= hdi[0]:
+                        counts_hdi += 1
+                    if true_val <= quantile[1] and true_val >= hdi[0]:
+                        counts_50_quantile += 1
+                length = len(self.results[var_name]) - mask_results.size
+                text = [
+                    f"fraction in 50% HDI: {counts_hdi / length:.2f}\n"
+                    + f"fraction in 50% central interval: {counts_50_quantile / length:.2f}"
+                ]
+                handles = [
+                    mpl_patches.Rectangle(
+                        (0, 0), 1, 1, fc="white", ec="white", lw=0, alpha=0
+                    )
+                ]
+                ax[v].legend(handles=handles, labels=text, loc="best", handlelength=0, handletextpad=0)
+
             ax[v].set_xlabel(var_labels[v], labelpad=10)
-            ax[v].legend(loc="best")
 
         fig.tight_layout()
         return fig, ax
