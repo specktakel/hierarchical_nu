@@ -320,3 +320,23 @@ class Events:
         fig.colorbar(mapper, ax=ax, label=r"$\hat E~[\mathrm{GeV}]$")
 
         return fig, ax
+
+    @u.quantity_input
+    def plot_radial_excess(self, center: SkyCoord, radius: u.deg = 5 * u.deg):
+        """
+        Plot histogram of radial distance to a source located at center.
+        Bin edges are equdistant in angle squared such that equal areas in polar coordinates
+        (assuming Euclidian space for small angles) are covered by each bin.
+        :param center: SkyCoord of center
+        :param radius: Max radius of histogram
+        """
+
+        r2_bins = np.arange(0.0, radius.to_value(u.deg) + 1.0 / 3.0, 1.0 / 3.0)
+        sep = center.separation(self.coords).deg
+
+        fig, ax = plt.subplots()
+        ax.hist(sep**2, r2_bins, histtype="step")
+        ax.set_xlabel("$\Psi^2$ [deg$^2$]")
+        ax.set_ylabel("counts")
+
+        return fig, ax
