@@ -329,9 +329,10 @@ class ModelCheck:
             if (
                 var_name == "L"
                 or var_name == "F_diff"
-                or var_name == "F_atmo"
+                # or var_name == "F_atmo"
                 or var_name == "Fs"
             ):
+                log = True
                 bins = np.geomspace(
                     np.min(np.array(self.results[var_name])[~mask]),
                     np.max(np.array(self.results[var_name])[~mask]),
@@ -345,9 +346,10 @@ class ModelCheck:
                 ax[v].set_xscale("log")
 
             else:
+                log = False
                 prior_supp = np.linspace(
-                    np.min(self.results[var_name]),
-                    np.max(self.results[var_name]),
+                    np.min(np.array(self.results[var_name])[~mask]),
+                    np.max(np.array(self.results[var_name])[~mask]),
                     1000,
                 )
                 bins = np.linspace(
@@ -359,13 +361,30 @@ class ModelCheck:
 
             for i in range(len(self.results[var_name])):
                 if i not in mask_results and len(self.results[var_name]) != 0:
-                    n, bins, _ = ax[v].hist(
-                        self.results[var_name][i],
+                    if log:
+                        n, _ = np.histogram(
+                            np.log10(self.results[var_name][i]),
+                            np.log10(bins),
+                            density=True,
+                        )
+                    else:
+                        n, _ = np.histogram(
+                            self.results[var_name][i], bins, density=True
+                        )
+                    n = np.hstack((np.array([0]), n, np.array([n[-1], 0])))
+                    plot_bins = np.hstack(
+                        (np.array([bins[0] - 1e-10]), bins, np.array([bins[-1]]))
+                    )
+
+                    low = np.nonzero(n)[0].min()
+                    high = np.nonzero(n)[0].max()
+                    ax[v].step(
+                        plot_bins[low - 1 : high + 2],
+                        n[low - 1 : high + 2],
                         color="#017B76",
                         alpha=alpha,
-                        histtype="step",
-                        bins=bins,
                         lw=1.0,
+                        where="post",
                     )
 
                     if show_N and var_name == "Nex_src":
@@ -390,7 +409,6 @@ class ModelCheck:
 
             if show_prior:
                 N = len(self.results[var_name][0]) * 100
-                xmin, xmax = ax[v].get_xlim()
 
                 # this case distinction is overly complicated
                 if (
@@ -402,9 +420,7 @@ class ModelCheck:
                     pass
 
                 if "f_" in var_name and not "diff" in var_name:  # yikes
-                    # prior_samples = uniform(0, 1).rvs(N)
-                    prior_density = uniform(0, 1).pdf(prior_supp)
-                    plot = True
+                    plot = False
 
                 elif "Nex" in var_name:
                     plot = False
@@ -425,24 +441,13 @@ class ModelCheck:
                 if plot:
                     ax[v].plot(
                         prior_supp,
-                        prior_density / prior_density.max() * max_value / 2.0,
+                        prior_density,
                         color="k",
                         alpha=0.5,
                         lw=2,
                         label="Prior",
                     )
-                    """
-                    ax[v].hist(
-                        prior_samples,
-                        color="k",
-                        alpha=0.5,
-                        histtype="step",
-                        bins=bins,
-                        lw=2,
-                        weights=np.tile(0.01, len(prior_samples)),
-                        label="Prior samples",
-                    )
-                    """
+
             if var_name in self.truths.keys():
                 ax[v].axvline(
                     self.truths[var_name], color="k", linestyle="-", label="Truth"
@@ -467,9 +472,16 @@ class ModelCheck:
                         (0, 0), 1, 1, fc="white", ec="white", lw=0, alpha=0
                     )
                 ]
-                ax[v].legend(handles=handles, labels=text, loc="best", handlelength=0, handletextpad=0)
+                ax[v].legend(
+                    handles=handles,
+                    labels=text,
+                    loc="best",
+                    handlelength=0,
+                    handletextpad=0,
+                )
 
             ax[v].set_xlabel(var_labels[v], labelpad=10)
+            ax[v].set_yticks([])
 
         fig.tight_layout()
         return fig, ax
