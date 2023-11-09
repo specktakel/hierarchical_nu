@@ -243,7 +243,7 @@ class PointSource(Source):
 
             ras = f["phi"][()] * u.rad
 
-            decs = f["theta"][()] * u.rad
+            decs = (f["theta"][()] - np.pi / 2) * u.rad
 
             selection = f["selection"][()]
 
@@ -258,6 +258,17 @@ class PointSource(Source):
             ras = ras[selection]
 
             decs = decs[selection]
+
+        # Make cut on declination, current implementations are only defined in the Northern Sky
+        # dec > -5deg
+
+        mask = decs >= np.deg2rad(-5) * u.rad
+
+        luminosities = luminosities[mask]
+        spectral_indices = spectral_indices[mask]
+        redshifts = redshifts[mask]
+        ras = ras[mask]
+        decs = decs[mask]
 
         # Make list of point sources
         source_list = []

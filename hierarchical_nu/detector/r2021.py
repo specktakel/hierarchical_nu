@@ -5,9 +5,11 @@ from itertools import product
 import numpy as np
 from scipy import stats
 from astropy import units as u
+import matplotlib.pyplot as plt
 
 from abc import ABC
 
+from hierarchical_nu.utils.roi import ROI
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.backend.stan_generator import (
     ElseBlockContext,
@@ -416,10 +418,35 @@ class R2021EffectiveArea(EffectiveArea):
             type_ = TwoDimHistInterpolation
         else:
             type_ = SimpleHistogram
+
+        # Check if ROI should be applied to the effective area
+        # This will speed up the fit but required recompilation for different ROIs
+        if ROI.STACK:
+            apply_roi = ROI.STACK[0].apply_roi
+        else:
+            apply_roi = False
+
+        if apply_roi:
+            roi = ROI.STACK[0]
+            cosz_min = -np.sin(roi.DEC_max)
+            cosz_max = -np.sin(roi.DEC_min)
+            idx_min = np.digitize(cosz_min, self._cosz_bin_edges) - 1
+            idx_max = np.digitize(cosz_max, self._cosz_bin_edges, right=True) - 1
+            eff_area = self._eff_area[:, idx_min : idx_max + 1]
+            cosz_bin_edges = self._cosz_bin_edges[idx_min : idx_max + 2]
+        else:
+            cosz_bin_edges = self._cosz_bin_edges
+            eff_area = self._eff_area
+        # Define Stan interface.
+        if self.mode == DistributionMode.PDF:
+            type_ = TwoDimHistInterpolation
+        else:
+            type_ = SimpleHistogram
+
         with self:
             hist = type_(
-                self._eff_area,
-                [self._tE_bin_edges, self._cosz_bin_edges],
+                eff_area,
+                [self._tE_bin_edges, cosz_bin_edges],
                 f"{self._season}EffAreaHist",
             )
             # Uses cos(z), so calculate z = pi - theta
@@ -876,27 +903,14 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         self.set_fit_params((dec + 0.01) * u.rad)
 
                         fig = self.plot_fit_params(self._fit_params, self._tE_binc)
-                        fig.show()
-                        """
-                        fig.savefig(
-                            f"new_version_at_tE/polynomial_{self._season}_dec_{c}.png",
-                            dpi=300,
-                            bbox_inches="tight",
-                        )
-                        """
+                        plt.show()
+
                         fig = self.plot_parameterizations(
                             self._fit_params,
                             self._tE_binc,
                             c,
                         )
-                        fig.show()
-                        """
-                        fig.savefig(
-                            f"new_version_at_tE/lognorm_fit_{self._season}_dec_{c}.png",
-                            dpi=300,
-                            bbox_inches="tight",
-                        )
-                        """
+                        plt.show()
 
                 self._poly_params_mu = self._poly_params_mu__.copy()
                 self._poly_params_sd = self._poly_params_sd__.copy()
@@ -1269,7 +1283,9 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         poly_params_sd = np.zeros_like(poly_params_mu)
         for i in range(self.n_components):
             poly_params_mu[i] = np.polyfit(
-                log10_tE_binc[imin:imax][mask], fit_params[:, 2 * i][imin:imax][mask], polydeg
+                log10_tE_binc[imin:imax][mask],
+                fit_params[:, 2 * i][imin:imax][mask],
+                polydeg,
             )
             poly_params_sd[i] = np.polyfit(
                 log10_tE_binc[imin:imax][mask],

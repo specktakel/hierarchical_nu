@@ -45,6 +45,10 @@ class ROI(ABC):
     def RA_max(self):
         pass
 
+    @property
+    def apply_roi(self):
+        return self._apply_roi
+
 
 class CircularROI(ROI):
     """
@@ -58,11 +62,13 @@ class CircularROI(ROI):
         radius: u.deg = 5 * u.deg,
         MJD_min=0.0,
         MJD_max=np.inf,
+        apply_roi: bool = False,
     ):
         self._center = center
         self._radius = radius
         self._MJD_min = MJD_min
         self._MJD_max = MJD_max
+        self._apply_roi = apply_roi
 
         if ROI.STACK:
             # logger.warning(
@@ -183,6 +189,7 @@ class RectangularROI(ROI):
         DEC_max=np.pi / 2 * u.rad,
         MJD_min=0.0,
         MJD_max=np.inf,
+        apply_roi: bool = False,
     ):
         self._RA_min = RA_min
         self._RA_max = RA_max
@@ -190,6 +197,7 @@ class RectangularROI(ROI):
         self._DEC_max = DEC_max
         self._MJD_min = MJD_min
         self._MJD_max = MJD_max
+        self._apply_roi = apply_roi
 
         self.check_boundaries()
 

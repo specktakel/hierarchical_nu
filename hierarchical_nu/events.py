@@ -136,7 +136,7 @@ class Events:
         try:
             roi = ROI.STACK[0]
         except IndexError:
-            roi = RectangularROI()
+            roi = FullSkyROI()
 
         # TODO add reco energy cut for all event types
         if roi.RA_min > roi.RA_max:
@@ -186,11 +186,7 @@ class Events:
                     event_folder.create_dataset(key, data=value)
 
     @classmethod
-    def from_ev_file(
-        cls,
-        *seasons: EventType,
-        use_all: bool = True
-    ):
+    def from_ev_file(cls, *seasons: EventType):
         """
         Load events from the 2021 data release
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
@@ -203,17 +199,17 @@ class Events:
         # Already exclude low energy events here, would be quite difficult later on
         try:
             _Emin_det = Parameter.get_parameter("Emin_det").value.to_value(u.GeV)
-            events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=use_all)
+            events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=True)
             events.restrict(ereco_low=_Emin_det)
         except ValueError:
-            events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=use_all)
+            events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=True)
             # Create a dict of masks for each season
             mask = {}
             for s in seasons:
                 try:
-                    _Emin_det = Parameter.get_parameter(f"Emin_det_{s.P}").value.to_value(
-                        u.GeV
-                    )
+                    _Emin_det = Parameter.get_parameter(
+                        f"Emin_det_{s.P}"
+                    ).value.to_value(u.GeV)
                     mask[s.P] = events.reco_energy[s.P] >= _Emin_det
                 except ValueError:
                     raise ValueError("Emin_det not defined for all seasons.")

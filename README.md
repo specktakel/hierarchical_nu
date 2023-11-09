@@ -41,6 +41,13 @@ install_cmdstan
 
 This will make and install CmdStan in the `~/.cmdstan` directory.
 
+Optionally, Stan models can be compiled such that they are executed in parallel, using multithreading. For this option Stan's makefile (located in `~/.cmdstan/cmdstan-x.xx.x/make/local`) needs the lines
+
+```
+STAN_THREADS=true
+CXX_FLAGS+= -DSTAN_THREADS
+```
+
 ### A note on updating existing code
 
 For a clean install, be aware that some calculations are cached in your local working directory when your run the code. Please delete any files in `.cache/` and the necessary calculations will be re-run as you go along.

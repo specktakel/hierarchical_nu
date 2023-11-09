@@ -140,7 +140,9 @@ class StanFit:
             new_prior = p.to_dict()
             for k, v in new_prior.items():
                 if previous_prior[k].name != v.name:
-                    logger.warning(f"Prior type of {k} changed, regenerate and recompile the stan code.")
+                    logger.warning(
+                        f"Prior type of {k} changed, regenerate and recompile the stan code."
+                    )
             self._priors = p
             self._stan_interface._priors = p
         else:
@@ -452,7 +454,11 @@ class StanFit:
         """
 
         _, axs = self.plot_trace(
-            var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
+            var_names=["E"],
+            transform=lambda x: np.log10(x),
+            show=False,
+            combined=True,
+            divergences=None,
         )
 
         fig, ax = plt.subplots(dpi=150)
@@ -559,7 +565,11 @@ class StanFit:
         ax = fig.add_subplot(gs[0, 1])
 
         _, axs = self.plot_trace(
-            var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
+            var_names=["E"],
+            transform=lambda x: np.log10(x),
+            show=False,
+            combined=True,
+            divergences=None,
         )
 
         source_coords = self.get_src_position()
@@ -698,12 +708,11 @@ class StanFit:
         except KeyError:
             pass
         try:
-           priors.atmospheric_flux = LogNormalPrior(
+            priors.atmospheric_flux = LogNormalPrior(
                 mu=priors_dict["f_atmo_mu"], sigma=priors_dict["f_atmo_sigma"]
             )
         except KeyError:
             pass
-        
 
         events = Events.from_file(filename)
 

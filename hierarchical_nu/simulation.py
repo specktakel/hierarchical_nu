@@ -645,7 +645,7 @@ class Simulation:
     def from_file(cls, filename):
         raise NotImplementedError()
 
-    def _get_min_det_energy(event_type=None):
+    def _get_min_det_energy(self):
         """
         Check for different definitions of minimum detected
         energy in parameter settings and return relevant
@@ -659,11 +659,11 @@ class Simulation:
             Emin_det = Parameter.get_parameter("Emin_det").value
 
         except ValueError:
-            Emin_det_t = Parameter.get_parameter("Emin_det_tracks").value
+            Edets = []
+            for et in self._event_types:
+                Edets.append(Parameter.get_parameter(f"Emin_det_{et.P}").value)
 
-            Emin_det_c = Parameter.get_parameter("Emin_det_cascades").value
-
-            Emin_det = min(Emin_det_t, Emin_det_c)
+            Emin_det = min(Edets)
 
         return Emin_det
 
