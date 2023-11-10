@@ -135,9 +135,15 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
+        # Use Enorm if set, otherwise fix to 1e5 GeV
+        try:
+            Enorm_value = Parameter.get_parameter("Enorm").value
+        except ValueError:
+            Enorm_value = 1e5 * u.GeV
+
         shape = PowerLawSpectrum(
             norm,
-            1e5 * u.GeV,
+            Enorm_value,
             index,
             lower.value / (1 + redshift),
             upper.value / (1 + redshift),
