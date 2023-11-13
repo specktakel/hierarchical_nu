@@ -331,7 +331,9 @@ class Events:
         :param radius: Max radius of histogram
         """
 
-        r2_bins = np.arange(0.0, radius.to_value(u.deg) + 1.0 / 3.0, 1.0 / 3.0)
+        r2_bins = np.arange(
+            0.0, np.power(radius.to_value(u.deg), 2) + 1.0 / 3.0, 1.0 / 3.0
+        )
         sep = center.separation(self.coords).deg
 
         fig, ax = plt.subplots()
