@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from typing import Union
 import astropy.units as u
 import numpy as np
 from scipy import stats
@@ -132,11 +133,55 @@ class ParetoPrior(PriorDistribution):
         return prior_dict
 
 
-class Luminosity(PriorDistribution):
+class UnitPrior:
+    def __init__(self, name, **kwargs):
+        if name == ParetoPrior:
+            raise NotImplementedError
+
+        else:
+            mu = kwargs.get("mu")
+            sigma = kwargs.get("sigma")
+            units = kwargs.get("units")
+            if name == LogNormalPrior:
+                # In this case sigma is a real number
+                self._prior = name(mu=np.log(mu.to_value(units)), sigma=sigma)
+            elif name == NormalPrior:
+                self._prior = name(mu=mu.to_value(units), sigma=sigma.to_value(units))
+
+    # Poor man's conditional inheritance
+    # copied from https://stackoverflow.com/a/65754897
+    def __getattr__(self, name):
+        return self._prior.__getattribute__(name)
+
+
+class LuminosityPrior(UnitPrior):
+    UNITS = u.GeV / u.s
+
+    # @u.quantity_input
     def __init__(
-        self, name="LogNormal", mu=1e49 * u.GeV / u.s, sigma=np.exp(3) * u.GeV / u.s
+        self,
+        name=LogNormalPrior,
+        mu: u.GeV / u.s = 1e49 * u.GeV / u.s,
+        sigma: Union[u.Quantity[u.GeV / u.s], float] = 3.0,
     ):
-        pass
+        """
+        Converts automatically to log of values, be aware of misuse of notation.
+        """
+        # This sigma thing is weird due to the log
+        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
+
+
+class FluxPrior(UnitPrior):
+    UNITS = 1 / u.m**2 / u.s
+
+    @u.quantity_input
+    def __init__(
+        self,
+        name=NormalPrior,
+        mu: 1 / u.m**2 / u.s = 0.314 / u.m**2 / u.s,
+        sigma: 1 / u.m**2 / u.s = 0.08 / u.m**2 / u.s,
+    ):
+        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
 
 class Priors(object):
@@ -148,15 +193,16 @@ class Priors(object):
     """
 
     def __init__(self):
-        self.luminosity = LogNormalPrior(mu=np.log(1e50), sigma=10.0)
+        # self.luminosity = LogNormalPrior(mu=np.log(1e50), sigma=10.0)
+        self._luminosity = LuminosityPrior()
 
         self.diffuse_flux = LogNormalPrior(mu=np.log(1e-7), sigma=1.0)
 
-        self.src_index = NormalPrior(mu=2.0, sigma=1.5)
+        self.src_index = IndexPrior()
 
-        self.diff_index = NormalPrior(mu=2.5, sigma=1.5)
+        self.diff_index = IndexPrior()
 
-        self.atmospheric_flux = LogNormalPrior(mu=np.log(1e-5), sigma=1.0)
+        self.atmospheric_flux = FluxPrior(mu=np.log(1e-5), sigma=1.0)
 
     @property
     def luminosity(self):
