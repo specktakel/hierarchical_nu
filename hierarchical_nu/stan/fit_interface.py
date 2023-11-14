@@ -964,15 +964,9 @@ class StanFitInterface(StanInterface):
 
             # Atmo spectral shape is fixed, but normalisation can move.
             if self.sources.atmospheric:
-                self._F_atmo = ParameterDef("F_atmo", "real", 0.2, 0.4)
+                self._F_atmo = ParameterDef("F_atmo", "real", 0.1, 0.5)
 
             # Vector of latent true source energies for each event
-            # TODO change to energies at the detector
-            # find largest allowed range in loop over sources
-
-            # self._Esrc = ParameterVectorDef(
-            #    "Esrc", "vector", self._N_str, self._Emin_src, self._Emax_src
-            # )
             self._E = ParameterVectorDef(
                 "E", "vector", self._N_str, self._Emin_at_det, self._Emax_at_det
             )
@@ -1057,10 +1051,7 @@ class StanFitInterface(StanInterface):
                 # Create vector of parameters
                 # Global pars are src_index, diff_index, logF
                 # Count number of pars:
-                if self._shared_luminosity:
-                    num_of_pars = "1"
-                else:
-                    num_of_pars = " Ns"
+                num_of_pars = "Ns"
 
                 if self._shared_src_index:
                     num_of_pars += " + 1"
