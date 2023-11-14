@@ -139,23 +139,26 @@ class Events:
             roi = FullSkyROI()
 
         # TODO add reco energy cut for all event types
-        if roi.RA_min > roi.RA_max:
-            mask = np.nonzero(
-                (
-                    (dec <= roi.DEC_max)
-                    & (dec >= roi.DEC_min)
-                    & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                )
-            )
+        if isinstance(roi, CircularROI):
+            mask = np.nonzero((roi.radius >= roi.center.separation(coords)))
         else:
-            mask = np.nonzero(
-                (
-                    (dec <= roi.DEC_max)
-                    & (dec >= roi.DEC_min)
-                    & (ra >= roi.RA_min)
-                    & (ra <= roi.RA_max)
+            if roi.RA_min > roi.RA_max:
+                mask = np.nonzero(
+                    (
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                    )
                 )
-            )
+            else:
+                mask = np.nonzero(
+                    (
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & (ra >= roi.RA_min)
+                        & (ra <= roi.RA_max)
+                    )
+                )
 
         return cls(
             energies[mask], coords[mask], types[mask], ang_errs[mask], time[mask]
