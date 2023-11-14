@@ -10,6 +10,7 @@ from ..backend.stan_generator import (
     UserDefinedFunction,
     IfBlockContext,
     ElseBlockContext,
+    ElseIfBlockContext,
 )
 from ..backend.operations import FunctionCall
 from ..backend.variable_definitions import ForwardVariableDef
@@ -468,6 +469,11 @@ class PowerLawSpectrum(SpectralShape):
 
             N = ForwardVariableDef("N", "real")
             p = ForwardVariableDef("p", "real")
+
+            with IfBlockContext([E, ">", e_up]):
+                ReturnStatement(["negative_infinity()"])
+            with ElseIfBlockContext([E, "<", e_low]):
+                ReturnStatement(["negative_infinity()"])
 
             with IfBlockContext([StringExpression([alpha, " == ", 1.0])]):
                 N << 1.0 / (FunctionCall([e_up], "log") - FunctionCall([e_low], "log"))
