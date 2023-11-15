@@ -47,8 +47,6 @@ class Events:
 
         self._recognised_types = [_.S for _ in Refrigerator.detectors]
 
-        self.N = len(energies)
-
         self._energies = energies
 
         self._mjd = mjd
@@ -74,7 +72,10 @@ class Events:
         self._types = np.delete(self._types, i)
         self._ang_errs = np.delete(self._ang_errs, i)
         self._mjd = np.delete(self._mjd, i)
-        self.N -= 1
+
+    @property
+    def N(self):
+        return self.types.size
 
     @property
     def energies(self):
