@@ -202,7 +202,7 @@ class RectangularROI(ROI):
             ROI.STACK = [self]
 
         if self._DEC_min.to(u.deg) < -10.0 * u.deg:
-            logger.warning("ROI extends into Southern sky. Proceed with chaution.")
+            logger.warning("ROI extends into Southern sky. Proceed with caution.")
 
     @property
     def RA_min(self):
