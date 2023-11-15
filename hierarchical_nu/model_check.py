@@ -84,8 +84,8 @@ class ModelCheck:
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
+            _ = _make_roi("fit")
             sim.precomputation()
-            self._exposure_integral = sim._exposure_integral
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
@@ -160,7 +160,7 @@ class ModelCheck:
             parameter_config["detector_model_type"]
         )
         sources = _initialise_sources()
-
+        _ = _make_roi("sim")
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
         stan_sim_interface = StanSimInterface(
@@ -184,6 +184,7 @@ class ModelCheck:
         priors.diffuse_flux = ModelCheck.make_prior(prior_config["diff_flux"])
         priors.diff_index = ModelCheck.make_prior(prior_config["diff_index"])
 
+        _ = _make_roi("fit")
         stan_fit_interface = StanFitInterface(
             fit_name,
             sources,
@@ -533,14 +534,14 @@ class ModelCheck:
         fit = None
         for i, s in enumerate(subjob_seeds):
             sys.stderr.write("Run %i\n" % i)
-
+            roi = _make_roi("sim")
             # Simulation
             # Should reduce time consumption if only on first iteration model is compiled
             if i == 0:
                 sim = Simulation(
                     self._sources, self._detector_model_type, self._obs_time
                 )
-                sim.precomputation(self._exposure_integral)
+                sim.precomputation()
                 sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
 
             sim.run(seed=s, verbose=True)
@@ -550,17 +551,25 @@ class ModelCheck:
             if not sim.events:
                 continue
 
+            events = sim.events
+            roi = _make_roi("fit")
+            if isinstance(roi, CircularROI):
+                sep = roi.center.separation(events.coords).deg
+                mask = sep > roi.radius.to_value(u.deg)
+                events.remove(mask)
+            else:
+                mask = np.zeros(events.N, dtype=int)
+
             lambd = sim._sim_output.stan_variable("Lambda").squeeze()
-            ps = np.sum(lambd == 1.0)
-            diff = np.sum(lambd == 2.0)
-            atmo = np.sum(lambd == 3.0)
+
+            ps = np.sum(lambd[~mask] == 1.0)
+            diff = np.sum(lambd[~mask] == 2.0)
+            atmo = np.sum(lambd[~mask] == 3.0)
             lam = np.array([ps, diff, atmo])
 
             # Skip if no detected events
             if not sim.events:
                 continue
-
-            self.events = sim.events
 
             # Fit
             # Same as above, save time
@@ -569,7 +578,7 @@ class ModelCheck:
                 fit = StanFit(
                     self._sources,
                     self._detector_model_type,
-                    sim.events,
+                    events,
                     self._obs_time,
                     priors=self.priors,
                     nshards=self._threads_per_chain,
@@ -578,7 +587,7 @@ class ModelCheck:
                 fit.setup_stan_fit(os.path.splitext(file_config["fit_filename"])[0])
 
             else:
-                fit.events = sim.events
+                fit.events = events
 
             start_time = time.time()
             fit.run(
@@ -710,25 +719,7 @@ def _initialise_sources():
     ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
     center = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-    roi_config = hnu_config["roi_config"]
-    size = roi_config["size"] * u.deg
-    apply_roi = roi_config["apply_roi"]
-
-    if roi_config["roi_type"] == "CircularROI":
-        roi = CircularROI(center, size, apply_roi=apply_roi)
-    elif roi_config["roi_type"] == "RectangularROI":
-        size = size.to(u.rad)
-        roi = RectangularROI(
-            RA_min=ra - size,
-            RA_max=ra + size,
-            DEC_min=dec - size,
-            DEC_max=dec + size,
-            apply_roi=apply_roi,
-        )
-    elif roi_config["roi_type"] == "FullSkyROI":
-        roi = FullSkyROI()
-    elif roi_config["roi_type"] == "NorthernSkyROI":
-        roi = NorthernSkyROI()
+    _make_roi("sim")
 
     point_source = PointSource.make_powerlaw_source(
         "test",
@@ -749,3 +740,36 @@ def _initialise_sources():
     sources.add_atmospheric_component()
 
     return sources
+
+
+def _make_roi(which: str):
+    parameter_config = hnu_config["parameter_config"]
+    roi_config = hnu_config["roi_config"]
+    dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
+    ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
+    center = SkyCoord(ra=ra, dec=dec, frame="icrs")
+
+    roi_config = hnu_config["roi_config"]
+    size = roi_config["size"] * u.deg
+    apply_roi = roi_config["apply_roi"]
+
+    if roi_config["roi_type"] == "CircularROI":
+        if which == "sim":
+            roi = CircularROI(center, size + 5 * u.deg, apply_roi=apply_roi)
+        elif which == "fit":
+            roi = CircularROI(center, size, apply_roi=apply_roi)
+    elif roi_config["roi_type"] == "RectangularROI":
+        size = size.to(u.rad)
+        roi = RectangularROI(
+            RA_min=ra - size,
+            RA_max=ra + size,
+            DEC_min=dec - size,
+            DEC_max=dec + size,
+            apply_roi=apply_roi,
+        )
+    elif roi_config["roi_type"] == "FullSkyROI":
+        roi = FullSkyROI()
+    elif roi_config["roi_type"] == "NorthernSkyROI":
+        roi = NorthernSkyROI()
+
+    return roi
