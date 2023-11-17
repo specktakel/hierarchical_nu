@@ -181,7 +181,7 @@ class ExposureIntegral:
             try:
                 roi = ROI.STACK[0]
             except IndexError:
-                ValueError("An ROI is needed at this point.")
+                raise ValueError("An ROI is needed at this point.")
 
             # Setup coordinate grids at which to evaulate effective area and flux
             if isinstance(roi, CircularROI):
