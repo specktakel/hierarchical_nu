@@ -85,6 +85,7 @@ class CircularROI(ROI):
             raise ValueError("Radii larger than 180 degrees are not sensible.")
 
     def __repr__(self):
+        self._center.representation_type = "spherical"
         return f"CircularROI, center RA={self._center.ra.deg:.1f}°, DEC={self._center.dec.deg:.1f}°, radius={self._radius.to_value(u.deg):.1f}°, apply={self.apply_roi}"
 
     def _get_roi_width(self):
