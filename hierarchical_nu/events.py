@@ -168,7 +168,7 @@ class Events:
             energies[mask], coords[mask], types[mask], ang_errs[mask], time[mask]
         )
 
-    def to_file(self, filename, append=False):
+    def to_file(self, filename, append=False, group_name=None):
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]
         self._file_values = [
             self.energies.to(u.GeV).value,
@@ -180,7 +180,10 @@ class Events:
 
         if append:
             with h5py.File(filename, "r+") as f:
-                event_folder = f.create_group("events")
+                if group_name is None:
+                    event_folder = f.create_group("events")
+                else:
+                    event_folder = f.create_group(group_name)
 
                 for key, value in zip(self._file_keys, self._file_values):
                     event_folder.create_dataset(key, data=value)

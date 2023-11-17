@@ -237,18 +237,19 @@ class ModelCheck:
                 folder = f.create_group("results_%i" % i)
 
                 for key, value in res.items():
-                    if key not in ["Lambda", "assoc"]:
+                    if key == "events":
+                        continue
+                    elif key != "Lambda":
                         folder.create_dataset(key, data=value)
                     else:
-                        if key == "Lambda":
-                            sim_folder.create_dataset(
-                                "sim_%i" % i, data=np.vstack(value)
-                            )
-                        else:
-                            for c, val in enumerate(value):
-                                sim_folder.create_dataset(
-                                    f"sim_{i}_assoc_{c}", data=val
-                                )
+                        sim_folder.create_dataset("sim_%i" % i, data=np.vstack(value))
+
+        if save_events and "events" in res.keys():
+            for i, res in enumerate(self._results):
+                for c, events in enumerate(res["events"]):
+                    events.to_file(
+                        filename, append=True, group_name=f"sim/events_{i}_{c}"
+                    )
 
         self.priors.addto(filename, "priors")
 
@@ -524,6 +525,8 @@ class ModelCheck:
         Single run to be called using Parallel.
         """
 
+        save_events = kwargs.pop("save_events", False)
+
         sys.stderr.write("Random seed: %i\n" % seed)
 
         roi = _make_roi()
@@ -543,7 +546,8 @@ class ModelCheck:
         outputs["diagnostics_ok"] = []
         outputs["run_time"] = []
         outputs["Lambda"] = []
-        outputs["assoc"] = []
+        if save_events:
+            outputs["events"] = []
 
         fit = None
         for i, s in enumerate(subjob_seeds):
@@ -567,7 +571,6 @@ class ModelCheck:
             events = sim.events
 
             lambd = sim._sim_output.stan_variable("Lambda").squeeze()
-            lambdas = sim._sim_output.stan_variable("Lambda").squeeze()
 
             ps = np.sum(lambd == 1.0)
             diff = np.sum(lambd == 2.0)
@@ -617,13 +620,15 @@ class ModelCheck:
             sys.stderr.write("time: %.5f\n" % run_time)
             outputs["run_time"].append(run_time)
             outputs["Lambda"].append(lam)
-            outputs["assoc"].append(lambdas)
 
             for key in self._default_var_names:
                 outputs[key].append(fit._fit_output.stan_variable(key))
 
             for key in self._diagnostic_names:
                 outputs[key].append(fit._fit_output.method_variables()[key])
+
+            if save_events:
+                outputs["events"].append(events)
 
             diagnostics_output_str = fit._fit_output.diagnose()
 
