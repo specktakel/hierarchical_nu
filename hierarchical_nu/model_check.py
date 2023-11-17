@@ -239,6 +239,11 @@ class ModelCheck:
                 for key, value in res.items():
                     if key == "events":
                         continue
+                    elif key == "association_prob":
+                        if not save_events:
+                            continue
+                        for c, prob in enumerate(value):
+                            folder.create_dataset(f"association_prob_{c}", data=prob)
                     elif key != "Lambda":
                         folder.create_dataset(key, data=value)
                     else:
@@ -548,6 +553,7 @@ class ModelCheck:
         outputs["Lambda"] = []
         if save_events:
             outputs["events"] = []
+            outputs["association_prob"] = []
 
         fit = None
         for i, s in enumerate(subjob_seeds):
@@ -629,6 +635,9 @@ class ModelCheck:
 
             if save_events:
                 outputs["events"].append(events)
+                outputs["association_prob"].append(
+                    np.array(fit._get_event_classifications())
+                )
 
             diagnostics_output_str = fit._fit_output.diagnose()
 
