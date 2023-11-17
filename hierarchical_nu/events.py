@@ -75,7 +75,10 @@ class Events:
 
     @property
     def N(self):
-        return self.types.size
+        try:
+            return self.types.size
+        except AttributeError:
+            return len(self.types)
 
     @property
     def energies(self):
