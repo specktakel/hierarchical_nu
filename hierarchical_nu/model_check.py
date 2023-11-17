@@ -68,6 +68,7 @@ class ModelCheck:
             # Config
             file_config = hnu_config["file_config"]
             parameter_config = hnu_config["parameter_config"]
+            roi = _make_roi()
 
             # Sources
             self._sources = _initialise_sources()
@@ -84,7 +85,6 @@ class ModelCheck:
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
-            _ = _make_roi("fit")
             sim.precomputation()
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
@@ -149,6 +149,8 @@ class ModelCheck:
         file_config = hnu_config["file_config"]
         prior_config = hnu_config["prior_config"]
 
+        roi = _make_roi()
+
         if not STAN_GEN_PATH in file_config["include_paths"]:
             file_config["include_paths"].append(STAN_GEN_PATH)
 
@@ -160,7 +162,6 @@ class ModelCheck:
             parameter_config["detector_model_type"]
         )
         sources = _initialise_sources()
-        _ = _make_roi("sim")
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
         stan_sim_interface = StanSimInterface(
@@ -184,7 +185,6 @@ class ModelCheck:
         priors.diffuse_flux = ModelCheck.make_prior(prior_config["diff_flux"])
         priors.diff_index = ModelCheck.make_prior(prior_config["diff_index"])
 
-        _ = _make_roi("fit")
         stan_fit_interface = StanFitInterface(
             fit_name,
             sources,
@@ -225,7 +225,7 @@ class ModelCheck:
             delayed(self._single_run)(n_subjobs, seed=s, **kwargs) for s in job_seeds
         )
 
-    def save(self, filename):
+    def save(self, filename, save_events: bool = False):
         with h5py.File(filename, "w") as f:
             truths_folder = f.create_group("truths")
             for key, value in self.truths.items():
@@ -237,10 +237,18 @@ class ModelCheck:
                 folder = f.create_group("results_%i" % i)
 
                 for key, value in res.items():
-                    if key != "Lambda":
+                    if key not in ["Lambda", "assoc"]:
                         folder.create_dataset(key, data=value)
                     else:
-                        sim_folder.create_dataset("sim_%i" % i, data=np.vstack(value))
+                        if key == "Lambda":
+                            sim_folder.create_dataset(
+                                "sim_%i" % i, data=np.vstack(value)
+                            )
+                        else:
+                            for c, val in enumerate(value):
+                                sim_folder.create_dataset(
+                                    f"sim_{i}_assoc_{c}", data=val
+                                )
 
         self.priors.addto(filename, "priors")
 
@@ -258,6 +266,10 @@ class ModelCheck:
             results[key] = []
 
         file_truths = {}
+
+        sim = {}
+        sim_N = []
+
         for filename in filename_list:
             file_priors = Priors.from_group(filename, "priors")
 
@@ -285,8 +297,7 @@ class ModelCheck:
                         if (key != "truths" and key != "priors" and key != "sim")
                     ]
                 )
-                sim = {}
-                sim_N = []
+
                 for i in range(n_jobs):
                     job_folder = f["results_%i" % i]
                     for res_key in job_folder:
@@ -515,6 +526,8 @@ class ModelCheck:
 
         sys.stderr.write("Random seed: %i\n" % seed)
 
+        roi = _make_roi()
+
         self._sources = _initialise_sources()
 
         file_config = hnu_config["file_config"]
@@ -530,11 +543,11 @@ class ModelCheck:
         outputs["diagnostics_ok"] = []
         outputs["run_time"] = []
         outputs["Lambda"] = []
+        outputs["assoc"] = []
 
         fit = None
         for i, s in enumerate(subjob_seeds):
             sys.stderr.write("Run %i\n" % i)
-            roi = _make_roi("sim")
             # Simulation
             # Should reduce time consumption if only on first iteration model is compiled
             if i == 0:
@@ -552,19 +565,13 @@ class ModelCheck:
                 continue
 
             events = sim.events
-            roi = _make_roi("fit")
-            if isinstance(roi, CircularROI):
-                sep = roi.center.separation(events.coords).deg
-                mask = sep > roi.radius.to_value(u.deg)
-                events.remove(mask)
-            else:
-                mask = np.zeros(events.N, dtype=int)
 
             lambd = sim._sim_output.stan_variable("Lambda").squeeze()
+            lambdas = sim._sim_output.stan_variable("Lambda").squeeze()
 
-            ps = np.sum(lambd[~mask] == 1.0)
-            diff = np.sum(lambd[~mask] == 2.0)
-            atmo = np.sum(lambd[~mask] == 3.0)
+            ps = np.sum(lambd == 1.0)
+            diff = np.sum(lambd == 2.0)
+            atmo = np.sum(lambd == 3.0)
             lam = np.array([ps, diff, atmo])
 
             # Skip if no detected events
@@ -610,6 +617,7 @@ class ModelCheck:
             sys.stderr.write("time: %.5f\n" % run_time)
             outputs["run_time"].append(run_time)
             outputs["Lambda"].append(lam)
+            outputs["assoc"].append(lambdas)
 
             for key in self._default_var_names:
                 outputs[key].append(fit._fit_output.stan_variable(key))
@@ -719,8 +727,6 @@ def _initialise_sources():
     ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
     center = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-    _make_roi("sim")
-
     point_source = PointSource.make_powerlaw_source(
         "test",
         dec,
@@ -742,7 +748,7 @@ def _initialise_sources():
     return sources
 
 
-def _make_roi(which: str):
+def _make_roi():
     parameter_config = hnu_config["parameter_config"]
     roi_config = hnu_config["roi_config"]
     dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
@@ -754,10 +760,7 @@ def _make_roi(which: str):
     apply_roi = roi_config["apply_roi"]
 
     if roi_config["roi_type"] == "CircularROI":
-        if which == "sim":
-            roi = CircularROI(center, size + 5 * u.deg, apply_roi=apply_roi)
-        elif which == "fit":
-            roi = CircularROI(center, size, apply_roi=apply_roi)
+        roi = CircularROI(center, size, apply_roi=apply_roi)
     elif roi_config["roi_type"] == "RectangularROI":
         size = size.to(u.rad)
         roi = RectangularROI(
