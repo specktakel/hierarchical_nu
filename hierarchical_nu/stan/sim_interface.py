@@ -565,7 +565,6 @@ class StanSimInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
-
             self._loop_start = ForwardVariableDef("loop_start", "int")
             self._loop_end = ForwardVariableDef("loop_end", "int")
             # We redefine a bunch of variables from transformed data here, as we would
@@ -1490,7 +1489,19 @@ class StanSimInterface(StanInterface):
                                         )
 
                                 self._Edet[i] << self._pre_event[1]
-                                self._event[i] << self._pre_event[2:4]
+                                if self.sources.point_source:
+                                    with IfBlockContext(
+                                        [
+                                            StringExpression(
+                                                [self._lam[i], " < ", self._Ns + 1]
+                                            )
+                                        ]
+                                    ):
+                                        self._event[i] << self._pre_event[2:4]
+                                    with ElseBlockContext():
+                                        self._event[i] << self._omega
+                                else:
+                                    self._event[i] << self._omega
                                 self._kappa[i] << self._pre_event[5]
 
                                 if isinstance(self._roi, CircularROI):
