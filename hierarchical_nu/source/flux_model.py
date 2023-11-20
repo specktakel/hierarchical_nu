@@ -707,10 +707,6 @@ class TwiceBrokenPowerLaw(SpectralShape):
         and return its Nx factor.
         """
 
-        norm = self._parameters["norm"].value
-        index = self._parameters["index"].value
-        index0 = self._index0
-        index2 = self._index2
         norm_energy = self._normalisation_energy
 
         # Go through all parts of the broken power law
@@ -825,25 +821,78 @@ class TwiceBrokenPowerLaw(SpectralShape):
     @property
     @u.quantity_input
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
-        raise NotImplementedError
+        # raise NotImplementedError
         norm = self._parameters["norm"].value
-        index = self._parameters["index"].value  # diff flux * energy
-        lower, upper = self._lower_energy, self._upper_energy
+        index = self._parameters["index"].value
 
-        if index == 2:
-            # special case
-            int_norm = norm * np.power(self._normalisation_energy, index)
-            return int_norm * (np.log(upper / lower))
+        indices = [self._index0, index, self._index2]
+        energy_bounds = [self._e0, self._lower_energy, self._upper_energy, self._e3]
+        # print(energy_bounds)
 
-        # Pull out the units here because astropy screwes this up sometimes
-        int_norm = (
-            norm * np.power(self._normalisation_energy / u.GeV, index) / (2 - index)
-        )
-        return (
-            int_norm
-            * (np.power(upper / u.GeV, 2 - index) - np.power(lower / u.GeV, 2 - index))
-            * u.GeV**2
-        )
+        norms = [self.N0, self.N1, self.N2]
+
+        lower = np.atleast_1d(self._e0)
+        upper = np.atleast_1d(self._e3)
+
+        output = np.zeros(upper.shape) << u.GeV / u.m**2 / u.s
+        # print(output)
+
+        for c, (_l, _u) in enumerate(zip(lower, upper)):
+            l_idx = np.digitize(_l, energy_bounds) - 1
+            u_idx = np.digitize(_u, energy_bounds, right=True) - 1
+
+            print(l_idx, u_idx)
+            if l_idx == u_idx:
+                # print(c, u_idx)
+                # print(_l, _u, indices[l_idx], norms[l_idx])
+                output[c] = (
+                    self._piecewise_integral(_l, _u, indices[l_idx] - 1.0)
+                    * norms[l_idx]
+                    * norm
+                    * u.GeV
+                    * self._normalisation_energy
+                )
+            else:
+                for i in range(l_idx, u_idx + 1):
+                    print(i)
+                    if i == l_idx:
+                        output[c] += (
+                            self._piecewise_integral(
+                                _l, energy_bounds[i + 1], indices[i] - 1.0
+                            )
+                            * norms[i]
+                            * norm
+                            * u.GeV
+                            * self._normalisation_energy
+                        )
+                    elif i == u_idx:
+                        output[c] += (
+                            self._piecewise_integral(
+                                energy_bounds[i], _u, indices[i] - 1.0
+                            )
+                            * norms[i]
+                            * norm
+                            * u.GeV
+                            * self._normalisation_energy
+                        )
+                    else:
+                        output[c] += (
+                            self._piecewise_integral(
+                                energy_bounds[i], energy_bounds[i + 1], indices[i] - 1.0
+                            )
+                            * norms[i]
+                            * norm
+                            * u.GeV
+                            * self._normalisation_energy
+                        )
+                    print(output[c])
+
+        # print(output)
+        output = output / self.norm_norm
+
+        output = output.to(u.erg / u.m**2 / u.s)
+
+        return output.squeeze()
 
     def sample(self, N):
         """
