@@ -608,10 +608,6 @@ class TwiceBrokenPowerLaw(SpectralShape):
     def Itot(self):
         return self.I0 + self.I1 + self.I2
 
-    # @property
-    # def norm_factor(self):
-    #     return
-
     @u.quantity_input
     def _piecewise_integral(self, x1: u.GeV, x2: u.GeV, gamma: float):
         """
@@ -633,7 +629,7 @@ class TwiceBrokenPowerLaw(SpectralShape):
 
     @property
     def energy_bounds(self):
-        return (self._lower_energy, self._upper_energy)
+        return (self._e0, self._e3)
 
     def set_parameter(self, par_name: str, par_value: float):
         if par_name not in self._parameters:
@@ -736,10 +732,12 @@ class TwiceBrokenPowerLaw(SpectralShape):
 
         indices = [self._index0, index, self._index2]
         energy_bounds = [self._e0, self._lower_energy, self._upper_energy, self._e3]
-        # print(energy_bounds)
 
         norms = [self.N0, self.N1, self.N2]
-
+        if lower.size > 1:
+            squeeze = False
+        else:
+            squeeze = True
         lower = np.atleast_1d(lower)
         upper = np.atleast_1d(upper)
 
@@ -748,16 +746,12 @@ class TwiceBrokenPowerLaw(SpectralShape):
         upper[((lower < self._e3) & (upper > self._e3))] = self._e3
 
         output = np.zeros(upper.shape) << 1 / u.m**2 / u.s
-        # print(output)
 
         for c, (_l, _u) in enumerate(zip(lower, upper)):
             l_idx = np.digitize(_l, energy_bounds) - 1
             u_idx = np.digitize(_u, energy_bounds, right=True) - 1
 
-            print(l_idx, u_idx)
             if l_idx == u_idx:
-                # print(c, u_idx)
-                # print(_l, _u, indices[l_idx], norms[l_idx])
                 output[c] = (
                     self._piecewise_integral(_l, _u, indices[l_idx])
                     * norms[l_idx]
@@ -766,7 +760,6 @@ class TwiceBrokenPowerLaw(SpectralShape):
                 )
             else:
                 for i in range(l_idx, u_idx + 1):
-                    print(i)
                     if i == l_idx:
                         output[c] += (
                             self._piecewise_integral(
@@ -792,14 +785,14 @@ class TwiceBrokenPowerLaw(SpectralShape):
                             * norm
                             * u.GeV
                         )
-                    print(output[c])
 
-        # print(output)
         output = output / self.norm_norm
         # Correct if outside bounds
-        output[(upper <= self._e0)] = 0.0 * 1 / (u.m**2 * u.s)
-        output[(lower >= self._e3)] = 0.0 * 1 / (u.m**2 * u.s)
+        output[(upper < self._e0)] = 0.0 * 1 / (u.m**2 * u.s)
+        output[(lower > self._e3)] = 0.0 * 1 / (u.m**2 * u.s)
 
+        if squeeze:
+            output = output[0]
         return output
 
     def _integral(self, lower, upper):
@@ -841,10 +834,7 @@ class TwiceBrokenPowerLaw(SpectralShape):
             l_idx = np.digitize(_l, energy_bounds) - 1
             u_idx = np.digitize(_u, energy_bounds, right=True) - 1
 
-            print(l_idx, u_idx)
             if l_idx == u_idx:
-                # print(c, u_idx)
-                # print(_l, _u, indices[l_idx], norms[l_idx])
                 output[c] = (
                     self._piecewise_integral(_l, _u, indices[l_idx] - 1.0)
                     * norms[l_idx]
@@ -854,7 +844,6 @@ class TwiceBrokenPowerLaw(SpectralShape):
                 )
             else:
                 for i in range(l_idx, u_idx + 1):
-                    print(i)
                     if i == l_idx:
                         output[c] += (
                             self._piecewise_integral(
@@ -885,9 +874,7 @@ class TwiceBrokenPowerLaw(SpectralShape):
                             * u.GeV
                             * self._normalisation_energy
                         )
-                    print(output[c])
 
-        # print(output)
         output = output / self.norm_norm
 
         output = output.to(u.erg / u.m**2 / u.s)
@@ -914,24 +901,14 @@ class TwiceBrokenPowerLaw(SpectralShape):
         return self.power_law.samples(N)
 
     @u.quantity_input
-    def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV, apply_lim: bool = True):
+    def pdf(self, E: u.GeV, *args, **kwargs):
         """
         Return PDF.
         """
 
-        raise NotImplementedError
-        E_input = E.to_value(u.GeV)
-        Emin_input = Emin.to_value(u.GeV)
-        Emax_input = Emax.to_value(u.GeV)
-        index = self._parameters["index"].value
-
-        self.power_law = BoundedPowerLaw(
-            index,
-            Emin_input,
-            Emax_input,
-        )
-
-        return self.power_law.pdf(E_input, apply_lim=apply_lim)
+        integral = self.integral(*self.energy_bounds)
+        value = self.__call__(E)
+        return value / integral * u.GeV
 
     @classmethod
     def make_stan_sampling_func(cls, f_name) -> UserDefinedFunction:
