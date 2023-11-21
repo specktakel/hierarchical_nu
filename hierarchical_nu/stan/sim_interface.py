@@ -34,6 +34,10 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.detector.icecube import EventType
 
 from hierarchical_nu.source.source import Sources
+from hierarchical_nu.source.flux_model import (
+    PowerLawSpectrum,
+    TwiceBrokenPowerLaw,
+)
 
 from hierarchical_nu.utils.roi import ROI, CircularROI
 
@@ -924,12 +928,29 @@ class StanSimInterface(StanInterface):
                                     )
 
                                 # Store the value of the source PDF at this energy
-                                self._src_factor << self._src_spectrum_lpdf(
-                                    self._E[i],
-                                    src_index_ref,
-                                    self._Emin_src / (1 + self._z[self._lam[i]]),
-                                    self._Emax_src / (1 + self._z[self._lam[i]]),
-                                )
+                                if self._ps_spectrum == PowerLawSpectrum:
+                                    self._src_factor << self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        src_index_ref,
+                                        self._Emin_src / (1 + self._z[self._lam[i]]),
+                                        self._Emax_src / (1 + self._z[self._lam[i]]),
+                                    )
+                                elif self._ps_spectrum == TwiceBrokenPowerLaw:
+                                    self._src_factor << self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        -10.0,
+                                        src_index_ref,
+                                        10.0,
+                                        # This is necessary for the sampling to work, no idea why though
+                                        self._Emin_src / (1 + self._z[self._lam[i]]),
+                                        self._Emin_src / (1 + self._z[self._lam[i]]),
+                                        self._Emax_src / (1 + self._z[self._lam[i]]),
+                                        self._Emax_src / (1 + self._z[self._lam[i]]),
+                                    )
+                                else:
+                                    raise ValueError(
+                                        f"{self._ps_spectrum} not recognised."
+                                    )
 
                                 # It is log, to take the exp()
                                 self._src_factor << FunctionCall(

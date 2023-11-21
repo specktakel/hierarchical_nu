@@ -41,6 +41,10 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources
+from hierarchical_nu.source.flux_model import (
+    PowerLawSpectrum,
+    TwiceBrokenPowerLaw,
+)
 
 from hierarchical_nu.detector.icecube import EventType
 
@@ -405,18 +409,41 @@ class StanFitInterface(StanInterface):
                                         [E[i], " * (", 1 + z[k], ")"]
                                     )
                                     # log_prob += log(p(Esrc|src_index))
-                                    StringExpression(
-                                        [
-                                            lp[i][k],
-                                            " += ",
-                                            self._src_spectrum_lpdf(
-                                                E[i],
-                                                src_index_ref,
-                                                Emin_src / (1 + z[k]),
-                                                Emax_src / (1 + z[k]),
-                                            ),
-                                        ]
-                                    )
+                                    if self._ps_spectrum == PowerLawSpectrum:
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += ",
+                                                self._src_spectrum_lpdf(
+                                                    E[i],
+                                                    src_index_ref,
+                                                    Emin_src / (1 + z[k]),
+                                                    Emax_src / (1 + z[k]),
+                                                ),
+                                            ]
+                                        )
+                                    elif self._ps_spectrum == TwiceBrokenPowerLaw:
+                                        StringExpression(
+                                            [
+                                                lp[i][k],
+                                                " += ",
+                                                self._src_spectrum_lpdf(
+                                                    E[i],
+                                                    -10.0,
+                                                    src_index_ref,
+                                                    10.0,
+                                                    # This is necessary for the sampling to work, no idea why though
+                                                    Emin,
+                                                    Emin_src / (1 + z[k]),
+                                                    Emax_src / (1 + z[k]),
+                                                    Emax,
+                                                ),
+                                            ]
+                                        )
+                                    else:
+                                        raise ValueError(
+                                            f"{self._ps_spectrum} not recognised."
+                                        )
 
                                     StringExpression([lp[i][k], " += ", eres_src[k]])
 
@@ -1361,18 +1388,41 @@ class StanFitInterface(StanInterface):
                                     src_index_ref = self._src_index[k]
 
                                 # log_prob += log(p(Esrc|src_index))
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += ",
-                                        self._src_spectrum_lpdf(
-                                            self._E[i],
-                                            src_index_ref,
-                                            self._Emin_src / (1 + self._z[k]),
-                                            self._Emax_src / (1 + self._z[k]),
-                                        ),
-                                    ]
-                                )
+                                if self._ps_spectrum == PowerLawSpectrum:
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            self._src_spectrum_lpdf(
+                                                self._E[i],
+                                                src_index_ref,
+                                                self._Emin_src / (1 + self._z[k]),
+                                                self._Emax_src / (1 + self._z[k]),
+                                            ),
+                                        ]
+                                    )
+                                elif self._ps_spectrum == TwiceBrokenPowerLaw:
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            self._src_spectrum_lpdf(
+                                                self._E[i],
+                                                -10.0,
+                                                src_index_ref,
+                                                10.0,
+                                                # This is necessary for the sampling to work, no idea why though
+                                                self._Emin,
+                                                self._Emin_src / (1 + self._z[k]),
+                                                self._Emax_src / (1 + self._z[k]),
+                                                self._Emax,
+                                            ),
+                                        ]
+                                    )
+                                else:
+                                    raise ValueError(
+                                        f"{self._ps_spectrum} not recognised."
+                                    )
 
                                 StringExpression(
                                     [
@@ -1675,18 +1725,41 @@ class StanFitInterface(StanInterface):
                                 else:
                                     src_index_ref = self._src_index[k]
                                 # log_prob += log(p(Esrc|src_index))
-                                StringExpression(
-                                    [
-                                        self._lp[i][k],
-                                        " += ",
-                                        self._src_spectrum_lpdf(
-                                            self._E[i],
-                                            src_index_ref,
-                                            self._Emin_src / (1 + self._z[k]),
-                                            self._Emax_src / (1 + self._z[k]),
-                                        ),
-                                    ]
-                                )
+                                if self._ps_spectrum == PowerLawSpectrum:
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            self._src_spectrum_lpdf(
+                                                self._E[i],
+                                                src_index_ref,
+                                                self._Emin_src / (1 + self._z[k]),
+                                                self._Emax_src / (1 + self._z[k]),
+                                            ),
+                                        ]
+                                    )
+                                elif self._ps_spectrum == TwiceBrokenPowerLaw:
+                                    StringExpression(
+                                        [
+                                            self._lp[i][k],
+                                            " += ",
+                                            self._src_spectrum_lpdf(
+                                                self._E[i],
+                                                -10.0,
+                                                src_index_ref,
+                                                10.0,
+                                                # This is necessary for the sampling to work, no idea why though
+                                                self._Emin,
+                                                self._Emin_src / (1 + self._z[k]),
+                                                self._Emax_src / (1 + self._z[k]),
+                                                self._Emax,
+                                            ),
+                                        ]
+                                    )
+                                else:
+                                    raise ValueError(
+                                        f"{self._ps_spectrum} not recognised."
+                                    )
 
                                 # log_prob += log(p(omega_det|varpi, kappa))
                                 StringExpression(

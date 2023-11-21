@@ -558,8 +558,8 @@ class TwiceBrokenPowerLaw(SpectralShape):
         self._normalisation_energy = normalisation_energy
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
-        self._index0 = -4.0
-        self._index2 = 6.0
+        self._index0 = -10.0
+        self._index2 = 10.0
         self._parameters = {"norm": normalisation, "index": index}
 
     @property
@@ -824,8 +824,8 @@ class TwiceBrokenPowerLaw(SpectralShape):
 
         norms = [self.N0, self.N1, self.N2]
 
-        lower = np.atleast_1d(self._e0)
-        upper = np.atleast_1d(self._e3)
+        lower = np.atleast_1d(self._lower_energy)
+        upper = np.atleast_1d(self._upper_energy)
 
         output = np.zeros(upper.shape) << u.GeV / u.m**2 / u.s
         # print(output)
@@ -901,67 +901,81 @@ class TwiceBrokenPowerLaw(SpectralShape):
         return self.power_law.samples(N)
 
     @u.quantity_input
-    def pdf(self, E: u.GeV, *args, **kwargs):
+    def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV, *args, **kwargs):
         """
         Return PDF.
         """
 
-        integral = self.integral(*self.energy_bounds)
+        integral = self.integral(Emin, Emax)
         value = self.__call__(E)
         return value / integral * u.GeV
 
     @classmethod
     def make_stan_sampling_func(cls, f_name) -> UserDefinedFunction:
         raise NotImplementedError
-        func = UserDefinedFunction(
-            f_name, ["alpha", "e_low", "e_up"], ["real", "real", "real"], "real"
-        )
-
-        with func:
-            uni_sample = ForwardVariableDef("uni_sample", "real")
-            norm = ForwardVariableDef("norm", "real")
-            alpha = StringExpression(["alpha"])
-            e_low = StringExpression(["e_low"])
-            e_up = StringExpression(["e_up"])
-
-            norm << (1 - alpha) / (e_up ** (1 - alpha) - e_low ** (1 - alpha))
-
-            uni_sample << FunctionCall([0, 1], "uniform_rng")
-            ReturnStatement(
-                [
-                    (uni_sample * (1 - alpha) / norm + e_low ** (1 - alpha))
-                    ** (1 / (1 - alpha))
-                ]
-            )
-
-        return func
 
     @classmethod
     def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
         func = UserDefinedFunction(
             f_name,
-            ["E", "alpha", "e_low", "e_up"],
-            ["real", "real", "real", "real"],
+            ["E", "alpha1", "alpha2", "alpha3", "e1", "e2", "e3", "e4"],
+            ["real", "real", "real", "real", "real", "real", "real", "real"],
             "real",
         )
 
         with func:
-            alpha = StringExpression(["alpha"])
-            e_low = StringExpression(["e_low"])
-            e_up = StringExpression(["e_up"])
+            alpha1 = StringExpression(["alpha1"])
+            alpha2 = StringExpression(["alpha2"])
+            alpha3 = StringExpression(["alpha3"])
+            e1 = StringExpression(["e1"])
+            e2 = StringExpression(["e2"])
+            e3 = StringExpression(["e3"])
+            e4 = StringExpression(["e4"])
             E = StringExpression(["E"])
 
-            N = ForwardVariableDef("N", "real")
-            p = ForwardVariableDef("p", "real")
-
-            with IfBlockContext([StringExpression([alpha, " == ", 1.0])]):
-                N << 1.0 / (FunctionCall([e_up], "log") - FunctionCall([e_low], "log"))
+            I1 = ForwardVariableDef("I1", "real")
+            I1 << (
+                FunctionCall([e2, 1.0 - alpha1], "pow")
+                - FunctionCall([e1, 1.0 - alpha1], "pow")
+            ) / (1.0 - alpha1)
+            N2 = ForwardVariableDef("N2", "real")
+            N2 << FunctionCall([e2, alpha2 - alpha1], "pow")
+            I2 = ForwardVariableDef("I2", "real")
+            with IfBlockContext([alpha2, "==", 1.0]):
+                I2 << FunctionCall([e3 / e2], "log") * N2
             with ElseBlockContext():
-                N << (1.0 - alpha) / (e_up ** (1.0 - alpha) - e_low ** (1.0 - alpha))
+                (
+                    I2
+                    << (
+                        FunctionCall([e3, 1.0 - alpha2], "pow")
+                        - FunctionCall([e2, 1.0 - alpha2], "pow")
+                    )
+                    / (1.0 - alpha2)
+                    * N2
+                )
+            N3 = ForwardVariableDef("N3", "real")
+            N3 << FunctionCall([e3, alpha3 - alpha2], "pow") * N2
+            I3 = ForwardVariableDef("I3", "real")
+            (
+                I3
+                << (
+                    FunctionCall([e4, 1.0 - alpha3], "pow")
+                    - FunctionCall([e3, 1.0 - alpha3], "pow")
+                )
+                / (1.0 - alpha3)
+                * N3
+            )
+            I = ForwardVariableDef("I", "real")
+            I << I1 + I2 + I3
+            p = ForwardVariableDef("p", "real")
+            with IfBlockContext([E, "<", e2]):
+                p << FunctionCall([E, alpha1 * -1], "pow")
+            with ElseIfBlockContext([E, "<", e3]):
+                p << FunctionCall([E, alpha2 * -1], "pow") * N2
+            with ElseBlockContext():
+                p << FunctionCall([E, alpha3 * -1], "pow") * N3
 
-            p << N * FunctionCall([E, alpha * -1], "pow")
-
-            ReturnStatement([FunctionCall([p], "log")])
+            ReturnStatement([FunctionCall([p / I], "log")])
 
         return func
 
@@ -969,6 +983,7 @@ class TwiceBrokenPowerLaw(SpectralShape):
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
         """
         Factor to convert from total_flux_density to total_flux_int.
+        Keep for now and disregard the flanks.
         """
 
         func = UserDefinedFunction(
