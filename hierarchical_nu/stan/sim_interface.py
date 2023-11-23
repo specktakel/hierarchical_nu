@@ -941,11 +941,10 @@ class StanSimInterface(StanInterface):
                                         -10.0,
                                         src_index_ref,
                                         10.0,
-                                        # This is necessary for the sampling to work, no idea why though
-                                        self._Emin_src / (1 + self._z[self._lam[i]]),
+                                        self._Emin,
                                         self._Emin_src / (1 + self._z[self._lam[i]]),
                                         self._Emax_src / (1 + self._z[self._lam[i]]),
-                                        self._Emax_src / (1 + self._z[self._lam[i]]),
+                                        self._Emax,
                                     )
                                 else:
                                     raise ValueError(
