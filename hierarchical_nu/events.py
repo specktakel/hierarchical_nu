@@ -15,7 +15,13 @@ import ligo.skymap.plot
 from icecube_tools.utils.vMF import get_kappa
 
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.utils.roi import ROI, RectangularROI, CircularROI, FullSkyROI
+from hierarchical_nu.utils.roi import (
+    ROI,
+    RectangularROI,
+    CircularROI,
+    FullSkyROI,
+    ROIList,
+)
 from hierarchical_nu.utils.plotting import SphericalCircle
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.detector.icecube import EventType
@@ -136,36 +142,31 @@ class Events:
         dec = coords.dec.rad * u.rad
 
         coords.representation_type = "cartesian"
-
-        try:
-            roi = ROI.STACK[0]
-        except IndexError:
-            roi = FullSkyROI()
-
-        # TODO add reco energy cut for all event types
-        if isinstance(roi, CircularROI):
-            mask = np.nonzero((roi.radius >= roi.center.separation(coords)))
-        else:
-            if roi.RA_min > roi.RA_max:
-                mask = np.nonzero(
-                    (
+        mask = []
+        for roi in ROIList.STACK:
+            # TODO add reco energy cut for all event types
+            if isinstance(roi, CircularROI):
+                mask.append(roi.radius >= roi.center.separation(coords))
+            else:
+                if roi.RA_min > roi.RA_max:
+                    mask.append(
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
                     )
-                )
-            else:
-                mask = np.nonzero(
-                    (
+
+                else:
+                    mask.append(
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & (ra >= roi.RA_min)
                         & (ra <= roi.RA_max)
                     )
-                )
+
+        idxs = np.logical_or.reduce(mask)
 
         return cls(
-            energies[mask], coords[mask], types[mask], ang_errs[mask], time[mask]
+            energies[idxs], coords[idxs], types[idxs], ang_errs[idxs], time[idxs]
         )
 
     def to_file(self, filename, append=False, group_name=None):
@@ -225,11 +226,6 @@ class Events:
                     raise ValueError("Emin_det not defined for all seasons.")
             events.mask = mask
 
-        try:
-            roi = ROI.STACK[0]
-        except IndexError:
-            roi = FullSkyROI()
-
         ra = np.hstack([events.ra[s.P] * u.rad for s in seasons])
         dec = np.hstack([events.dec[s.P] * u.rad for s in seasons])
         reco_energy = np.hstack([events.reco_energy[s.P] * u.GeV for s in seasons])
@@ -240,42 +236,33 @@ class Events:
         ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        if isinstance(roi, CircularROI):
-            mask = np.nonzero(
-                (coords.separation(roi.center).deg * u.deg < roi.radius)
-                & (mjd >= roi.MJD_min)
-                & (mjd <= roi.MJD_max)
-            )
-        elif isinstance(roi, RectangularROI):
-            if roi.RA_min > roi.RA_max:
-                mask = np.nonzero(
-                    (
+        mask = []
+        for roi in ROIList.STACK:
+            # TODO add reco energy cut for all event types
+            if isinstance(roi, CircularROI):
+                mask.append(roi.radius >= roi.center.separation(coords))
+            else:
+                if roi.RA_min > roi.RA_max:
+                    mask.append(
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                        & (mjd >= roi.MJD_min)
-                        & (mjd <= roi.MJD_max)
                     )
-                )
-            else:
-                mask = np.nonzero(
-                    (
+
+                else:
+                    mask.append(
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & (ra >= roi.RA_min)
                         & (ra <= roi.RA_max)
-                        & (mjd >= roi.MJD_min)
-                        & (mjd <= roi.MJD_max)
                     )
-                )
+
         mjd = Time(mjd, format="mjd")
 
+        idxs = np.logical_or.reduce(mask)
+
         return cls(
-            reco_energy[mask],
-            coords[mask],
-            types[mask],
-            ang_err[mask],
-            mjd[mask],
+            reco_energy[idxs], coords[idxs], types[idxs], ang_err[idxs], mjd[idxs]
         )
 
     @u.quantity_input

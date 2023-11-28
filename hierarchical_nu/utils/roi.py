@@ -54,29 +54,55 @@ class ROI(ABC):
 class ROIList:
     STACK = []
 
-    @classmethod
-    def add(cls, roi):
-        cls.STACK.append(roi)
+    @staticmethod
+    def add(roi):
+        ROIList.STACK.append(roi)
 
-    @classmethod
-    def pop(cls, i):
-        cls.STACK.pop(i)
+    @staticmethod
+    def pop(i):
+        ROIList.STACK.pop(i)
 
-    @classmethod
-    def RA_max(cls):
-        return
+    # need to think about the wrapping at 2pi/0
+    # TODO for future-Julian
+    @staticmethod
+    def RA_max():
+        ra_max = 0.0 * u.rad
+        for roi in ROIList.STACK:
+            temp = roi.RA_max
+            if temp > ra_max:
+                ra_max = temp
 
-    @classmethod
-    def RA_min(cls):
-        return
+        return ra_max
 
-    @classmethod
-    def DEC_min(cls):
-        return
+    @staticmethod
+    def RA_min():
+        ra_min = 2 * np.pi * u.rad
+        for roi in ROIList.STACK:
+            temp = roi.RA_min
+            if temp < ra_min:
+                ra_min = temp
 
-    @classmethod
-    def DEC_max(cls):
-        return
+        return ra_min
+
+    @staticmethod
+    def DEC_min():
+        dec_min = np.pi / 2 * u.rad
+        for roi in ROIList.STACK:
+            temp = roi.DEC_min
+            if temp < dec_min:
+                dec_min = temp
+
+        return dec_min
+
+    @staticmethod
+    def DEC_max():
+        dec_max = -np.pi / 2 * u.rad
+        for roi in ROIList.STACK:
+            temp = roi.DEC_max
+            if temp > dec_max:
+                dec_max = temp
+
+        return dec_max
 
     def __repr__(self):
         return "\n".join([roi.__repr__() for roi in ROIList.STACK])
