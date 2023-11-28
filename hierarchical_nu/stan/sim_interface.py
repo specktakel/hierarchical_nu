@@ -39,7 +39,7 @@ from hierarchical_nu.source.flux_model import (
     TwiceBrokenPowerLaw,
 )
 
-from hierarchical_nu.utils.roi import ROI, CircularROI
+from hierarchical_nu.utils.roi import ROI, CircularROI, ROIList
 
 
 class StanSimInterface(StanInterface):
@@ -270,12 +270,16 @@ class StanSimInterface(StanInterface):
 
             # If we have a circular ROI, set center point and radius
             try:
-                self._roi = ROI.STACK[0]
+                ROIList.STACK[0]
             except IndexError:
                 raise ValueError("An ROI is needed at this point.")
-            if isinstance(self._roi, CircularROI):
-                self._roi_center = ForwardVariableDef("roi_center", "unit_vector[3]")
-                self._roi_radius = ForwardVariableDef("roi_radius", "real")
+            if isinstance(ROIList.STACK[0], CircularROI):
+                self._roi_center = ForwardArrayDef(
+                    "roi_center", "unit_vector[3]", ["[", len(ROIList.STACK), "]"]
+                )
+                self._roi_radius = ForwardArrayDef(
+                    "roi_radius", "real", ["[", len(ROIList.STACK), "]"]
+                )
 
             # The observation time
             self._T = ForwardArrayDef("T", "real", ["[", self._Net, "]"])
@@ -286,6 +290,10 @@ class StanSimInterface(StanInterface):
         """
 
         with TransformedDataContext():
+            if isinstance(ROIList.STACK[0], CircularROI):
+                self._n_roi = ForwardVariableDef("n_roi", "int")
+                self._n_roi << StringExpression(["num_elements(roi_radius)"])
+
             # Decide how many flux entries, F, we have
             if self.sources.diffuse and self.sources.atmospheric:
                 self._F = ForwardVariableDef("F", "vector[Ns+2]")
@@ -1523,14 +1531,18 @@ class StanSimInterface(StanInterface):
                                 else:
                                     self._event[i] << self._omega
                                 self._kappa[i] << self._pre_event[5]
-
-                                if isinstance(self._roi, CircularROI):
-                                    with IfBlockContext(
-                                        ["ang_sep(event[i], roi_center) <= roi_radius"]
-                                    ):
-                                        self._detected << 1
-                                    with ElseBlockContext():
-                                        self._detected << 0
+                                self._detected << 0
+                                if isinstance(ROIList.STACK[0], CircularROI):
+                                    with ForLoopContext(1, self._n_roi, "n") as n:
+                                        with IfBlockContext(
+                                            [
+                                                "ang_sep(event[i], roi_center[",
+                                                n,
+                                                "]) <= roi_radius[n]",
+                                            ]
+                                        ):
+                                            self._detected << 1
+                                            StringExpression(["break"])
                                 else:
                                     self._detected << 1
 

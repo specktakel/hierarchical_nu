@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from abc import ABC
 
-from hierarchical_nu.utils.roi import ROI
+from hierarchical_nu.utils.roi import ROI, ROIList, CircularROI
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.backend.stan_generator import (
     ElseBlockContext,
@@ -420,16 +420,15 @@ class R2021EffectiveArea(EffectiveArea):
             type_ = SimpleHistogram
 
         # Check if ROI should be applied to the effective area
-        # This will speed up the fit but required recompilation for different ROIs
-        if ROI.STACK:
-            apply_roi = ROI.STACK[0].apply_roi
+        # This will speed up the fit but requires recompilation for different ROIs
+        if ROIList.STACK:
+            apply_roi = np.all(_.apply_roi for _ in ROIList.STACK)
         else:
             apply_roi = False
 
         if apply_roi:
-            roi = ROI.STACK[0]
-            cosz_min = -np.sin(roi.DEC_max)
-            cosz_max = -np.sin(roi.DEC_min)
+            cosz_min = -np.sin(ROIList.DEC_max())
+            cosz_max = -np.sin(ROIList.DEC_min())
             idx_min = np.digitize(cosz_min, self._cosz_bin_edges) - 1
             idx_max = np.digitize(cosz_max, self._cosz_bin_edges, right=True) - 1
             eff_area = self._eff_area[:, idx_min : idx_max + 1]

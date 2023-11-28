@@ -526,12 +526,12 @@ class Simulation:
             rs_cvals.append(self._exposure_integral[event_type].c_values)
 
         try:
-            roi = ROIList.STACK[0]
+            ROIList.STACK[0]
         except IndexError:
             raise ValueError("An ROI is needed at this point.")
 
-        v_lim_low = (np.cos(-roi.DEC_min.to_value(u.rad) + np.pi / 2) + 1.0) / 2
-        v_lim_high = (np.cos(-roi.DEC_max.to_value(u.rad) + np.pi / 2) + 1.0) / 2
+        v_lim_low = (np.cos(-ROIList.DEC_min().to_value(u.rad) + np.pi / 2) + 1.0) / 2
+        v_lim_high = (np.cos(-ROIList.DEC_max().to_value(u.rad) + np.pi / 2) + 1.0) / 2
 
         if NT in self._event_types:
             # acos(2 * v - 1) = theta -> v = cos(theta) + 1 / 2
@@ -550,16 +550,25 @@ class Simulation:
 
         sim_inputs["v_low"] = v_lim_low
         sim_inputs["v_high"] = v_lim_high
-        sim_inputs["u_low"] = roi.RA_min.to_value(u.rad) / (2.0 * np.pi)
-        sim_inputs["u_high"] = roi.RA_max.to_value(u.rad) / (2.0 * np.pi)
+        if len(ROIList.STACK) > 1:
+            sim_inputs["u_low"] = 0.0
+            sim_inputs["u_high"] = 1.0
+        else:
+            # Finding the most efficient RA range for multiple ROIs is not implemented yet
+            sim_inputs["u_low"] = ROIList.STACK[0].RA_min.to_value(u.rad) / (
+                2.0 * np.pi
+            )
+            sim_inputs["u_high"] = ROIList.STACK[0].RA_max.to_value(u.rad) / (2.0 * np.pi)
 
         # For circular ROI the center point and radius are needed
-        if isinstance(roi, CircularROI):
-            sim_inputs["roi_radius"] = roi.radius.to_value(u.rad)
-            roi.center.representation_type = "cartesian"
-            sim_inputs["roi_center"] = np.array(
-                [roi.center.x, roi.center.y, roi.center.z]
-            )
+        if isinstance(ROIList.STACK[0], CircularROI):
+            radii = [_.radius.to_value(u.rad) for _ in ROIList.STACK]
+            sim_inputs["roi_radius"] = radii
+            centers = []
+            for roi in ROIList.STACK:
+                roi.center.representation_type = "cartesian"
+                centers.append(np.array([roi.center.x, roi.center.y, roi.center.z]))
+            sim_inputs["roi_center"] = centers
 
         flux_units = 1 / (u.m**2 * u.s)
 

@@ -56,6 +56,13 @@ class ROIList:
 
     @staticmethod
     def add(roi):
+        if ROIList.STACK:
+            if isinstance(roi, CircularROI) and not isinstance(
+                ROIList.STACK[0], CircularROI
+            ):
+                raise ValueError("Circular and non-Circular ROIs must not be mixed.")
+            if not isinstance(roi, CircularROI):
+                raise ValueError("Non-CircularROIs cannot be stacked.")
         ROIList.STACK.append(roi)
 
     @staticmethod
@@ -194,9 +201,7 @@ class CircularROI(ROI):
             return dec_max
 
     @property
-    def RA_min(self):
-        self._center.representation_type = "spherical"
-        # If either pole is inside the ROI, RA_min/max are 0 and 2pi, respectively
+    def _RA_min(self):
         if (
             self.center.dec.deg * u.deg - self.radius.to(u.deg) < -90.0 * u.deg
             or self.center.dec.deg * u.deg + self.radius.to(u.deg) > 90.0 * u.deg
@@ -205,14 +210,19 @@ class CircularROI(ROI):
         else:
             RA_width = self._get_roi_width()
             min = self.center.ra.rad * u.rad - RA_width.to(u.rad)
-            # Check for wrapping at 2pi/0
-            if min < 0 * u.rad:
-                return min + 2.0 * np.pi * u.rad
-            else:
-                return min
+            return min
 
     @property
-    def RA_max(self):
+    def RA_min(self):
+        min = self._RA_min
+        # Check for wrapping at 2pi/0
+        if min < 0 * u.rad:
+            return min + 2.0 * np.pi * u.rad
+        else:
+            return min
+
+    @property
+    def _RA_max(self):
         self._center.representation_type = "spherical"
         if (
             self.center.dec.deg * u.deg - self.radius.to(u.deg) < -90.0 * u.deg
@@ -222,11 +232,16 @@ class CircularROI(ROI):
         else:
             RA_width = self._get_roi_width()
             max = self.center.ra.rad * u.rad + RA_width.to(u.rad)
-            # Check for wrapping at 2pi/0
-            if max > 2.0 * np.pi * u.rad:
-                return max - 2.0 * np.pi * u.rad
-            else:
-                return max
+            return max
+
+    @property
+    def RA_max(self):
+        # Check for wrapping at 2pi/0
+        max = self._RA_max
+        if max > 2.0 * np.pi * u.rad:
+            return max - 2.0 * np.pi * u.rad
+        else:
+            return max
 
 
 class RectangularROI(ROI):
