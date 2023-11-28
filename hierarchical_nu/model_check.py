@@ -68,6 +68,7 @@ class ModelCheck:
             # Config
             file_config = hnu_config["file_config"]
             parameter_config = hnu_config["parameter_config"]
+            roi = _make_roi()
 
             # Sources
             self._sources = _initialise_sources()
@@ -85,7 +86,6 @@ class ModelCheck:
             self._threads_per_chain = parameter_config["threads_per_chain"]
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
-            self._exposure_integral = sim._exposure_integral
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
@@ -149,6 +149,8 @@ class ModelCheck:
         file_config = hnu_config["file_config"]
         prior_config = hnu_config["prior_config"]
 
+        roi = _make_roi()
+
         if not STAN_GEN_PATH in file_config["include_paths"]:
             file_config["include_paths"].append(STAN_GEN_PATH)
 
@@ -160,7 +162,6 @@ class ModelCheck:
             parameter_config["detector_model_type"]
         )
         sources = _initialise_sources()
-
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
         stan_sim_interface = StanSimInterface(
@@ -224,7 +225,7 @@ class ModelCheck:
             delayed(self._single_run)(n_subjobs, seed=s, **kwargs) for s in job_seeds
         )
 
-    def save(self, filename):
+    def save(self, filename, save_events: bool = False):
         with h5py.File(filename, "w") as f:
             truths_folder = f.create_group("truths")
             for key, value in self.truths.items():
@@ -236,10 +237,24 @@ class ModelCheck:
                 folder = f.create_group("results_%i" % i)
 
                 for key, value in res.items():
-                    if key != "Lambda":
+                    if key == "events":
+                        continue
+                    elif key == "association_prob":
+                        if not save_events:
+                            continue
+                        for c, prob in enumerate(value):
+                            folder.create_dataset(f"association_prob_{c}", data=prob)
+                    elif key != "Lambda":
                         folder.create_dataset(key, data=value)
                     else:
                         sim_folder.create_dataset("sim_%i" % i, data=np.vstack(value))
+
+        if save_events and "events" in res.keys():
+            for i, res in enumerate(self._results):
+                for c, events in enumerate(res["events"]):
+                    events.to_file(
+                        filename, append=True, group_name=f"sim/events_{i}_{c}"
+                    )
 
         self.priors.addto(filename, "priors")
 
@@ -257,6 +272,10 @@ class ModelCheck:
             results[key] = []
 
         file_truths = {}
+
+        sim = {}
+        sim_N = []
+
         for filename in filename_list:
             file_priors = Priors.from_group(filename, "priors")
 
@@ -284,8 +303,7 @@ class ModelCheck:
                         if (key != "truths" and key != "priors" and key != "sim")
                     ]
                 )
-                sim = {}
-                sim_N = []
+
                 for i in range(n_jobs):
                     job_folder = f["results_%i" % i]
                     for res_key in job_folder:
@@ -512,7 +530,11 @@ class ModelCheck:
         Single run to be called using Parallel.
         """
 
+        save_events = kwargs.pop("save_events", False)
+
         sys.stderr.write("Random seed: %i\n" % seed)
+
+        roi = _make_roi()
 
         self._sources = _initialise_sources()
 
@@ -529,18 +551,20 @@ class ModelCheck:
         outputs["diagnostics_ok"] = []
         outputs["run_time"] = []
         outputs["Lambda"] = []
+        if save_events:
+            outputs["events"] = []
+            outputs["association_prob"] = []
 
         fit = None
         for i, s in enumerate(subjob_seeds):
             sys.stderr.write("Run %i\n" % i)
-
             # Simulation
             # Should reduce time consumption if only on first iteration model is compiled
             if i == 0:
                 sim = Simulation(
                     self._sources, self._detector_model_type, self._obs_time
                 )
-                sim.precomputation(self._exposure_integral)
+                sim.precomputation()
                 sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
 
             sim.run(seed=s, verbose=True)
@@ -550,7 +574,10 @@ class ModelCheck:
             if not sim.events:
                 continue
 
+            events = sim.events
+
             lambd = sim._sim_output.stan_variable("Lambda").squeeze()
+
             ps = np.sum(lambd == 1.0)
             diff = np.sum(lambd == 2.0)
             atmo = np.sum(lambd == 3.0)
@@ -560,8 +587,6 @@ class ModelCheck:
             if not sim.events:
                 continue
 
-            self.events = sim.events
-
             # Fit
             # Same as above, save time
             # Also handle in case first sim has no events
@@ -569,7 +594,7 @@ class ModelCheck:
                 fit = StanFit(
                     self._sources,
                     self._detector_model_type,
-                    sim.events,
+                    events,
                     self._obs_time,
                     priors=self.priors,
                     nshards=self._threads_per_chain,
@@ -578,7 +603,7 @@ class ModelCheck:
                 fit.setup_stan_fit(os.path.splitext(file_config["fit_filename"])[0])
 
             else:
-                fit.events = sim.events
+                fit.events = events
 
             start_time = time.time()
             fit.run(
@@ -607,6 +632,12 @@ class ModelCheck:
 
             for key in self._diagnostic_names:
                 outputs[key].append(fit._fit_output.method_variables()[key])
+
+            if save_events:
+                outputs["events"].append(events)
+                outputs["association_prob"].append(
+                    np.array(fit._get_event_classifications())
+                )
 
             diagnostics_output_str = fit._fit_output.diagnose()
 
@@ -710,6 +741,34 @@ def _initialise_sources():
     ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
     center = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
+    point_source = PointSource.make_powerlaw_source(
+        "test",
+        dec,
+        ra,
+        L,
+        src_index,
+        parameter_config["z"],
+        Emin_src,
+        Emax_src,
+    )
+
+    sources = Sources()
+    sources.add(point_source)
+    sources.add_diffuse_component(
+        diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
+    )
+    sources.add_atmospheric_component()
+
+    return sources
+
+
+def _make_roi():
+    parameter_config = hnu_config["parameter_config"]
+    roi_config = hnu_config["roi_config"]
+    dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
+    ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
+    center = SkyCoord(ra=ra, dec=dec, frame="icrs")
+
     roi_config = hnu_config["roi_config"]
     size = roi_config["size"] * u.deg
     apply_roi = roi_config["apply_roi"]
@@ -730,22 +789,4 @@ def _initialise_sources():
     elif roi_config["roi_type"] == "NorthernSkyROI":
         roi = NorthernSkyROI()
 
-    point_source = PointSource.make_powerlaw_source(
-        "test",
-        dec,
-        ra,
-        L,
-        src_index,
-        parameter_config["z"],
-        Emin_src,
-        Emax_src,
-    )
-
-    sources = Sources()
-    sources.add(point_source)
-    sources.add_diffuse_component(
-        diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
-    )
-    sources.add_atmospheric_component()
-
-    return sources
+    return roi

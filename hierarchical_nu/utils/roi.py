@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class ROI(ABC):
-    STACK = []
+    def __init__(self):
+        ROIList.add(self)
 
     @property
     def MJD_min(self):
@@ -50,6 +51,37 @@ class ROI(ABC):
         return self._apply_roi
 
 
+class ROIList:
+    STACK = []
+
+    @classmethod
+    def add(cls, roi):
+        cls.STACK.append(roi)
+
+    @classmethod
+    def pop(cls, i):
+        cls.STACK.pop(i)
+
+    @classmethod
+    def RA_max(cls):
+        return
+
+    @classmethod
+    def RA_min(cls):
+        return
+
+    @classmethod
+    def DEC_min(cls):
+        return
+
+    @classmethod
+    def DEC_max(cls):
+        return
+
+    def __repr__(self):
+        return "\n".join([roi.__repr__() for roi in ROIList.STACK])
+
+
 class CircularROI(ROI):
     """
     Implements circular ROI
@@ -70,13 +102,8 @@ class CircularROI(ROI):
         self._MJD_max = MJD_max
         self._apply_roi = apply_roi
 
-        if ROI.STACK:
-            # logger.warning(
-            #    "Only one ROI allowed at a time. Deleting previous instance.\n"
-            # )
-            ROI.STACK = [self]
-        else:
-            ROI.STACK = [self]
+        # ROI.STACK.append(self)
+        super().__init__()
         self._center.representation_type = "spherical"
         if self._center.dec.deg - self._radius.to_value(u.deg) < -10.0:
             logger.warning("ROI extends into Southern sky. Proceed with chaution.")
@@ -85,6 +112,7 @@ class CircularROI(ROI):
             raise ValueError("Radii larger than 180 degrees are not sensible.")
 
     def __repr__(self):
+        self._center.representation_type = "spherical"
         return f"CircularROI, center RA={self._center.ra.deg:.1f}°, DEC={self._center.dec.deg:.1f}°, radius={self._radius.to_value(u.deg):.1f}°, apply={self.apply_roi}"
 
     def _get_roi_width(self):
@@ -201,13 +229,8 @@ class RectangularROI(ROI):
 
         self.check_boundaries()
 
-        if ROI.STACK:
-            logger.warning(
-                "Only one ROI allowed at a time. Deleting previous instance.\n"
-            )
-            ROI.STACK = [self]
-        else:
-            ROI.STACK = [self]
+        # ROI.STACK.append(self)
+        super().__init__()
 
         if self._DEC_min.to(u.deg) < -10.0 * u.deg:
             logger.warning("ROI extends into Southern sky. Proceed with chaution.")

@@ -34,6 +34,10 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.detector.icecube import EventType
 
 from hierarchical_nu.source.source import Sources
+from hierarchical_nu.source.flux_model import (
+    PowerLawSpectrum,
+    TwiceBrokenPowerLaw,
+)
 
 from hierarchical_nu.utils.roi import ROI, CircularROI
 
@@ -565,7 +569,6 @@ class StanSimInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
-
             self._loop_start = ForwardVariableDef("loop_start", "int")
             self._loop_end = ForwardVariableDef("loop_end", "int")
             # We redefine a bunch of variables from transformed data here, as we would
@@ -925,12 +928,28 @@ class StanSimInterface(StanInterface):
                                     )
 
                                 # Store the value of the source PDF at this energy
-                                self._src_factor << self._src_spectrum_lpdf(
-                                    self._E[i],
-                                    src_index_ref,
-                                    self._Emin_src / (1 + self._z[self._lam[i]]),
-                                    self._Emax_src / (1 + self._z[self._lam[i]]),
-                                )
+                                if self._ps_spectrum == PowerLawSpectrum:
+                                    self._src_factor << self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        src_index_ref,
+                                        self._Emin_src / (1 + self._z[self._lam[i]]),
+                                        self._Emax_src / (1 + self._z[self._lam[i]]),
+                                    )
+                                elif self._ps_spectrum == TwiceBrokenPowerLaw:
+                                    self._src_factor << self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        -10.0,
+                                        src_index_ref,
+                                        10.0,
+                                        self._Emin,
+                                        self._Emin_src / (1 + self._z[self._lam[i]]),
+                                        self._Emax_src / (1 + self._z[self._lam[i]]),
+                                        self._Emax,
+                                    )
+                                else:
+                                    raise ValueError(
+                                        f"{self._ps_spectrum} not recognised."
+                                    )
 
                                 # It is log, to take the exp()
                                 self._src_factor << FunctionCall(
@@ -1490,7 +1509,19 @@ class StanSimInterface(StanInterface):
                                         )
 
                                 self._Edet[i] << self._pre_event[1]
-                                self._event[i] << self._pre_event[2:4]
+                                if self.sources.point_source:
+                                    with IfBlockContext(
+                                        [
+                                            StringExpression(
+                                                [self._lam[i], " < ", self._Ns + 1]
+                                            )
+                                        ]
+                                    ):
+                                        self._event[i] << self._pre_event[2:4]
+                                    with ElseBlockContext():
+                                        self._event[i] << self._omega
+                                else:
+                                    self._event[i] << self._omega
                                 self._kappa[i] << self._pre_event[5]
 
                                 if isinstance(self._roi, CircularROI):
