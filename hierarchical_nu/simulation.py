@@ -16,14 +16,14 @@ from icecube_tools.utils.vMF import get_theta_p
 
 from hierarchical_nu.utils.plotting import SphericalCircle
 
-from hierarchical_nu.detector.icecube import Refrigerator, EventType, NT, CAS
+from hierarchical_nu.detector.icecube import EventType, NT, CAS
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, flux_conv_
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.events import Events
-from hierarchical_nu.utils.roi import ROI, CircularROI
+from hierarchical_nu.utils.roi import ROI, CircularROI, ROIList
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
@@ -526,7 +526,7 @@ class Simulation:
             rs_cvals.append(self._exposure_integral[event_type].c_values)
 
         try:
-            roi = ROI.STACK[0]
+            roi = ROIList.STACK[0]
         except IndexError:
             raise ValueError("An ROI is needed at this point.")
 

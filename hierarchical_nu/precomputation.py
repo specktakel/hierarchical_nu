@@ -20,7 +20,7 @@ from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import ParScale, Parameter
 from hierarchical_nu.backend.stan_generator import StanGenerator
 from hierarchical_nu.detector.r2021 import R2021EnergyResolution
-from hierarchical_nu.utils.roi import ROI, CircularROI, RectangularROI
+from hierarchical_nu.utils.roi import CircularROI, ROIList
 from hierarchical_nu.detector.icecube import (
     Refrigerator,
     CAS,
@@ -152,7 +152,7 @@ class ExposureIntegral:
             # For point sources the integral over the space angle is trivial
 
             # Assume that the source is inside the ROI
-            # TODO add check at some poin
+            # TODO add check at some point
 
             dec = source.dec
             cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
@@ -179,61 +179,47 @@ class ExposureIntegral:
 
         else:
             try:
-                roi = ROI.STACK[0]
+                roi = ROIList.STACK[0]
             except IndexError:
                 raise ValueError("An ROI is needed at this point.")
 
             # Setup coordinate grids at which to evaulate effective area and flux
-            if isinstance(roi, CircularROI):
-                # Make healpy pixel grid
-                NSIDE = 128
-                NPIX = hp.nside2npix(NSIDE)
-                # Surface element
-                d_omega = 4 * np.pi / NPIX * u.sr
+            NSIDE = 128
+            NPIX = hp.nside2npix(NSIDE)
+            # Surface element
+            d_omega = 4 * np.pi / NPIX * u.sr
 
-                ra, dec = hp.pix2ang(
-                    nside=NSIDE, ipix=list(range(NPIX)), nest=True, lonlat=True
-                )
+            ra, dec = hp.pix2ang(
+                nside=NSIDE, ipix=list(range(NPIX)), nest=True, lonlat=True
+            )
 
-                coords = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
-
+            coords = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
+            mask = []
+            for roi in ROIList.STACK:
                 # Create mask with pixels inside the ROI
-                mask = roi.center.separation(coords).deg * u.deg < roi.radius.to(u.deg)
-
-                pixels = coords[mask]
-
-                ra = pixels.ra.rad * u.rad
-                dec = pixels.dec.rad * u.rad
-
-                # Assume that indexing is faster than calculating stuff
-                # only calculate at the unique declinations and sort values afterwards
-                # As `dec` contains all points we can weigh each unique declination according to its
-                # frequency over all points on the sky
-                dec_c, counts = np.unique(dec, return_counts=True)
-                cosz_c = -np.sin(dec_c.to_value(u.rad))
-
-            elif isinstance(roi, RectangularROI):
-                RA_min = roi.RA_min
-                RA_max = roi.RA_max
-                DEC_min = roi.DEC_min
-                DEC_max = roi.DEC_max
-
-                cosz_min = -np.sin(DEC_max)
-                cosz_max = -np.sin(DEC_min)
-
-                num_of_points = int((cosz_max - cosz_min) * 500)
-                if num_of_points < 50:
-                    num_of_points = 50
-                cosz_edges = np.linspace(cosz_min, cosz_max, num_of_points)
-                cosz_c = cosz_edges[:-1] + np.diff(cosz_edges) / 2
-                dec_c = -np.arcsin(cosz_c) << u.rad
-
-                if RA_max < RA_min:
-                    RA_diff = 2 * np.pi * u.rad + RA_max - RA_min
+                if isinstance(roi, CircularROI):
+                    mask.append(
+                        roi.center.separation(coords).deg * u.deg < roi.radius.to(u.deg)
+                    )
                 else:
-                    RA_diff = RA_max - RA_min
+                    mask.append(
+                        (coords.ra.rad >= roi.RA_min.to_value(u.rad))
+                        & (coords.ra.rad <= roi.RA_min.to_value(u.rad))
+                        & (coords.dec.rad >= roi.DEC_min.to_value(u.rad))
+                        & (coords.dec.rad <= roi.DEC_max.to_value(u.rad))
+                    )
 
-                d_omega = np.diff(cosz_edges) * RA_diff.to_value(u.rad) * u.sr
+            # Assume that indexing is faster than calculating stuff
+            # only calculate at the unique declinations and sort values afterwards
+            # As `dec` contains all points we can weigh each unique declination according to its
+            # frequency over all points on the sky
+
+            idxs = np.logical_or.reduce(mask)
+            pixels = coords[idxs]
+            ra = pixels.ra.rad * u.rad
+            dec = pixels.dec.rad * u.rad
+            dec_c, counts = np.unique(dec, return_counts=True)
+            cosz_c = -np.sin(dec_c.to_value(u.rad))
 
             # Create common grids
             log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
@@ -263,11 +249,7 @@ class ExposureIntegral:
                 p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
 
             # Inflate d_omega if needed
-            if isinstance(roi, RectangularROI):
-                d_omega = np.repeat(np.expand_dims(d_omega, 1), p_Edet.shape[1], axis=1)
-                weights = 1.0
-            elif isinstance(roi, CircularROI):
-                weights = np.repeat(np.expand_dims(counts, 1), p_Edet.shape[1], axis=1)
+            weights = np.repeat(np.expand_dims(counts, 1), p_Edet.shape[1], axis=1)
             p_Edet = np.nan_to_num(p_Edet)
 
             output = np.sum(
