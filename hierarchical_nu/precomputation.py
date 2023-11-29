@@ -184,7 +184,7 @@ class ExposureIntegral:
                 raise ValueError("An ROI is needed at this point.")
 
             # Setup coordinate grids at which to evaulate effective area and flux
-            NSIDE = 128
+            NSIDE = 256
             NPIX = hp.nside2npix(NSIDE)
             # Surface element
             d_omega = 4 * np.pi / NPIX * u.sr
@@ -202,12 +202,24 @@ class ExposureIntegral:
                         roi.center.separation(coords).deg * u.deg < roi.radius.to(u.deg)
                     )
                 else:
-                    mask.append(
-                        (coords.ra.rad >= roi.RA_min.to_value(u.rad))
-                        & (coords.ra.rad <= roi.RA_min.to_value(u.rad))
-                        & (coords.dec.rad >= roi.DEC_min.to_value(u.rad))
-                        & (coords.dec.rad <= roi.DEC_max.to_value(u.rad))
-                    )
+                    RA_min = roi.RA_min.to_value(u.rad)
+                    RA_max = roi.RA_max.to_value(u.rad)
+                    if RA_min > RA_max:
+                        mask.append(
+                            (
+                                (coords.ra.rad >= roi.RA_min.to_value(u.rad))
+                                | (coords.ra.rad <= roi.RA_max.to_value(u.rad))
+                            )
+                            & (coords.dec.rad >= roi.DEC_min.to_value(u.rad))
+                            & (coords.dec.rad <= roi.DEC_max.to_value(u.rad))
+                        )
+                    else:
+                        mask.append(
+                            (coords.ra.rad >= roi.RA_min.to_value(u.rad))
+                            & (coords.ra.rad <= roi.RA_max.to_value(u.rad))
+                            & (coords.dec.rad >= roi.DEC_min.to_value(u.rad))
+                            & (coords.dec.rad <= roi.DEC_max.to_value(u.rad))
+                        )
 
             # Assume that indexing is faster than calculating stuff
             # only calculate at the unique declinations and sort values afterwards

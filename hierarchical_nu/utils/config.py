@@ -35,14 +35,18 @@ class FileConfig:
 
 @dataclass
 class ParameterConfig:
-    src_index: float = 2.3
+    src_index: List[float] = field(default_factory=lambda: [2.3])
+    share_src_index: bool = True
     src_index_range: tuple = (1.0, 4.0)
     diff_index: float = 2.5
     diff_index_range: tuple = (1.0, 4.0)
-    L: float = 4e46  # u.erg / u.s, defined in the source frame
+    L: List[float] = field(
+        default_factory=lambda: [4e46]
+    )  # u.erg / u.s, defined in the source frame
+    share_L: bool = True
     L_range: tuple = (0, 1e60)
-    src_dec: float = 0.0  # u.deg
-    src_ra: float = 90.0  # u.deg
+    src_dec: List[float] = field(default_factory=lambda: [0.0])  # u.deg
+    src_ra: List[float] = field(default_factory=lambda: [90.0])  # u.deg
     Enorm: float = 1e5  # u.GeV, defined in the detector frame
     Emin: float = 5e4  # u.GeV, defined in the detector frame
     Emax: float = 1e8  # u.GeV
@@ -53,7 +57,9 @@ class ParameterConfig:
     diff_norm: float = (
         2e-13  # 1 / (u.GeV * u.m**2 * u.s), defined in the detector frame
     )
-    z: float = 0.4  # cosmological redshift, dimensionless, only for point source
+    z: List[float] = field(
+        default_factory=lambda: [0.4]
+    )  # cosmological redshift, dimensionless, only for point source
 
     # If True, use same Emin_det for all
     # If False, use separate for tracks and cascades

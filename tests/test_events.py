@@ -1,7 +1,7 @@
 from icecube_tools.utils.data import RealEvents
 from hierarchical_nu.events import Events
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.utils.roi import CircularROI, RectangularROI
+from hierarchical_nu.utils.roi import CircularROI, RectangularROI, ROIList
 from hierarchical_nu.detector.icecube import Refrigerator
 
 from astropy import units as u
@@ -12,6 +12,7 @@ import numpy as np
 def test_circular_read():
     periods = ["IC86_II"]
     Parameter.clear_registry()
+    ROIList.clear_registry()
     Emin_det = Parameter(5e4 * u.GeV, "Emin_det", fixed=True)
 
     roi = CircularROI(
@@ -36,6 +37,7 @@ def test_rectangular_read():
     periods = ["IC86_II"]
     Parameter.clear_registry()
     Emin_det = Parameter(5e4 * u.GeV, "Emin_det", fixed=True)
+    ROIList.clear_registry()
     roi = RectangularROI()
     for p in periods:
         it_ev = RealEvents.from_event_files(p, use_all=True)

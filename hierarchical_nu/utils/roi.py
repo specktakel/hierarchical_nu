@@ -69,6 +69,10 @@ class ROIList:
     def pop(i):
         ROIList.STACK.pop(i)
 
+    @staticmethod
+    def clear_registry():
+        ROIList.STACK = []
+
     # need to think about the wrapping at 2pi/0
     # TODO for future-Julian
     @staticmethod

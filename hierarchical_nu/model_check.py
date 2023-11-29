@@ -28,6 +28,7 @@ from hierarchical_nu.utils.roi import (
     RectangularROI,
     FullSkyROI,
     NorthernSkyROI,
+    ROIList,
 )
 from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
 
@@ -68,7 +69,9 @@ class ModelCheck:
             # Config
             file_config = hnu_config["file_config"]
             parameter_config = hnu_config["parameter_config"]
-            roi = _make_roi()
+            _make_roi()
+            share_L = hnu_config.parameter_config.share_L
+            share_src_index = hnu_config.parameter_config.share_src_index
 
             # Sources
             self._sources = _initialise_sources()
@@ -103,12 +106,26 @@ class ModelCheck:
             self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
                 flux_unit
             ).value
-            self.truths["L"] = (
-                Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
-            )
+            try:
+                self.truths["L"] = [
+                    Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
+                ]
+            except ValueError:
+                self.truths["L"] = [
+                    Parameter.get_parameter(f"ps_{_}_luminosity")
+                    .value.to(u.GeV / u.s)
+                    .value
+                    for _ in range(len(self._sources.point_source))
+                ]
             self.truths["f_arr"] = f_arr
             self.truths["f_arr_astro"] = f_arr_astro
-            self.truths["src_index"] = Parameter.get_parameter("src_index").value
+            try:
+                self.truths["src_index"] = [Parameter.get_parameter("src_index").value]
+            except ValueError:
+                self.truths["src_index"] = [
+                    Parameter.get_parameter(f"ps_{_}_src_index").value
+                    for _ in range(len(self._sources.point_source))
+                ]
             self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
 
             self.truths["Nex"] = Nex
@@ -149,7 +166,7 @@ class ModelCheck:
         file_config = hnu_config["file_config"]
         prior_config = hnu_config["prior_config"]
 
-        roi = _make_roi()
+        _make_roi()
 
         if not STAN_GEN_PATH in file_config["include_paths"]:
             file_config["include_paths"].append(STAN_GEN_PATH)
@@ -606,16 +623,30 @@ class ModelCheck:
                 fit.events = events
 
             start_time = time.time()
+
+            share_L = hnu_config.parameter_config.share_L
+            share_src_index = hnu_config.parameter_config.share_src_index
+
+            if not share_L:
+                L_init = [1e49] * len(self._sources.point_source)
+            else:
+                L_init = 1e49
+
+            if not share_src_index:
+                src_init = [2.3] * len(self._sources.point_source)
+            else:
+                src_init = 2.3
+            inits = {
+                "F_diff": 1e-4,
+                "F_atmo": 0.3,
+                "E": [1e5] * fit.events.N,
+                "L": L_init,
+                "src_index": src_init,
+            }
             fit.run(
                 seed=s,
                 show_progress=True,
-                inits={
-                    "src_index": 2.2,
-                    "L": 1e50,
-                    "diff_index": 2.2,
-                    "F_atmo": 0.3,
-                    "F_diff": 1e-4,
-                },
+                inits=inits,
                 **kwargs,
             )
 
@@ -681,26 +712,58 @@ class ModelCheck:
 
 def _initialise_sources():
     parameter_config = hnu_config["parameter_config"]
+    share_L = parameter_config["share_L"]
+    share_src_index = parameter_config["share_src_index"]
 
     Parameter.clear_registry()
-    src_index = Parameter(
-        parameter_config["src_index"],
-        "src_index",
-        fixed=False,
-        par_range=parameter_config["src_index_range"],
-    )
+    indices = []
+    if not share_src_index:
+        for c, idx in enumerate(parameter_config["src_index"]):
+            name = f"ps_{c}_src_index"
+            indices.append(
+                Parameter(
+                    idx,
+                    name,
+                    fixed=False,
+                    par_range=parameter_config["src_index_range"],
+                )
+            )
+    else:
+        indices.append(
+            Parameter(
+                parameter_config["src_index"][0],
+                "src_index",
+                fixed=False,
+                par_range=parameter_config["src_index_range"],
+            )
+        )
     diff_index = Parameter(
         parameter_config["diff_index"],
         "diff_index",
         fixed=False,
         par_range=parameter_config["diff_index_range"],
     )
-    L = Parameter(
-        parameter_config["L"] * u.erg / u.s,
-        "luminosity",
-        fixed=True,
-        par_range=parameter_config["L_range"] * u.erg / u.s,
-    )
+    L = []
+    if not share_L:
+        for c, Lumi in enumerate(parameter_config["L"]):
+            name = f"ps_{c}_luminosity"
+            L.append(
+                Parameter(
+                    Lumi * u.erg / u.s,
+                    name,
+                    fixed=True,
+                    par_range=parameter_config["L_range"] * u.erg / u.s,
+                )
+            )
+    else:
+        L.append(
+            Parameter(
+                parameter_config["L"][0] * u.erg / u.s,
+                "luminosity",
+                fixed=False,
+                par_range=parameter_config["L_range"] * u.erg / u.s,
+            )
+        )
     diffuse_norm = Parameter(
         parameter_config["diff_norm"] * 1 / (u.GeV * u.m**2 * u.s),
         "diffuse_norm",
@@ -736,24 +799,34 @@ def _initialise_sources():
                 fixed=True,
             )
 
-    # Simple point source for testing
     dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
     ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
     center = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-    point_source = PointSource.make_powerlaw_source(
-        "test",
-        dec,
-        ra,
-        L,
-        src_index,
-        parameter_config["z"],
-        Emin_src,
-        Emax_src,
-    )
-
     sources = Sources()
-    sources.add(point_source)
+
+    for c in range(len(dec)):
+        if share_L:
+            Lumi = L[0]
+        else:
+            Lumi = L[c]
+
+        if share_src_index:
+            idx = indices[0]
+        else:
+            idx = indices[c]
+        point_source = PointSource.make_powerlaw_source(
+            f"ps_{c}",
+            dec[c],
+            ra[c],
+            Lumi,
+            idx,
+            parameter_config["z"][c],
+            Emin_src,
+            Emax_src,
+        )
+
+        sources.add(point_source)
     sources.add_diffuse_component(
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
     )
@@ -763,6 +836,7 @@ def _initialise_sources():
 
 
 def _make_roi():
+    ROIList.clear_registry()
     parameter_config = hnu_config["parameter_config"]
     roi_config = hnu_config["roi_config"]
     dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
@@ -773,20 +847,21 @@ def _make_roi():
     size = roi_config["size"] * u.deg
     apply_roi = roi_config["apply_roi"]
 
+    if apply_roi and len(dec) > 1 and not roi_config["roi_type"] == "CircularROI":
+        raise ValueError("Only CircularROIs can be stacked")
     if roi_config["roi_type"] == "CircularROI":
-        roi = CircularROI(center, size, apply_roi=apply_roi)
+        for c in range(len(dec)):
+            CircularROI(center[c], size, apply_roi=apply_roi)
     elif roi_config["roi_type"] == "RectangularROI":
         size = size.to(u.rad)
-        roi = RectangularROI(
-            RA_min=ra - size,
-            RA_max=ra + size,
-            DEC_min=dec - size,
-            DEC_max=dec + size,
+        RectangularROI(
+            RA_min=ra[0] - size,
+            RA_max=ra[0] + size,
+            DEC_min=dec[0] - size,
+            DEC_max=dec[0] + size,
             apply_roi=apply_roi,
         )
     elif roi_config["roi_type"] == "FullSkyROI":
-        roi = FullSkyROI()
+        FullSkyROI()
     elif roi_config["roi_type"] == "NorthernSkyROI":
-        roi = NorthernSkyROI()
-
-    return roi
+        NorthernSkyROI()
