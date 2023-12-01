@@ -31,6 +31,7 @@ import logging
 from typing import List
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class Events:
@@ -115,9 +116,12 @@ class Events:
         return self._mjd
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, group_name=None):
         with h5py.File(filename, "r") as f:
-            events_folder = f["events"]
+            if group_name is None:
+                events_folder = f["events"]
+            else:
+                events_folder = f[group_name]
 
             energies = events_folder["energies"][()] * u.GeV
             uvs = events_folder["unit_vectors"][()]
@@ -143,31 +147,36 @@ class Events:
 
         coords.representation_type = "cartesian"
         mask = []
-        for roi in ROIList.STACK:
-            # TODO add reco energy cut for all event types
-            if isinstance(roi, CircularROI):
-                mask.append(roi.radius >= roi.center.separation(coords))
-            else:
-                if roi.RA_min > roi.RA_max:
-                    mask.append(
-                        (dec <= roi.DEC_max)
-                        & (dec >= roi.DEC_min)
-                        & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                    )
-
+        if ROIList.STACK:
+            logger.info("Applying ROIs to event selection")
+            for roi in ROIList.STACK:
+                # TODO add reco energy cut for all event types
+                if isinstance(roi, CircularROI):
+                    mask.append(roi.radius >= roi.center.separation(coords))
                 else:
-                    mask.append(
-                        (dec <= roi.DEC_max)
-                        & (dec >= roi.DEC_min)
-                        & (ra >= roi.RA_min)
-                        & (ra <= roi.RA_max)
-                    )
+                    if roi.RA_min > roi.RA_max:
+                        mask.append(
+                            (dec <= roi.DEC_max)
+                            & (dec >= roi.DEC_min)
+                            & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                        )
 
-        idxs = np.logical_or.reduce(mask)
+                    else:
+                        mask.append(
+                            (dec <= roi.DEC_max)
+                            & (dec >= roi.DEC_min)
+                            & (ra >= roi.RA_min)
+                            & (ra <= roi.RA_max)
+                        )
 
-        return cls(
-            energies[idxs], coords[idxs], types[idxs], ang_errs[idxs], time[idxs]
-        )
+            idxs = np.logical_or.reduce(mask)
+
+            return cls(
+                energies[idxs], coords[idxs], types[idxs], ang_errs[idxs], time[idxs]
+            )
+        else:
+            logger.info("Applying no ROIs to event selection")
+            return cls(energies, coords, types, ang_errs, time)
 
     def to_file(self, filename, append=False, group_name=None):
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]

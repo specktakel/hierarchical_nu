@@ -261,10 +261,15 @@ class ModelCheck:
                             continue
                         for c, prob in enumerate(value):
                             folder.create_dataset(f"association_prob_{c}", data=prob)
-                    elif key != "Lambda":
+                    elif key != "Lambda" and key != "event_Lambda":
                         folder.create_dataset(key, data=value)
-                    else:
+                    elif key == "Lambda":
                         sim_folder.create_dataset("sim_%i" % i, data=np.vstack(value))
+                    elif key == "event_Lambda":
+                        for c, data in enumerate(res["event_Lambda"]):
+                            sim_folder.create_dataset(
+                                f"event_Lambda_{i}_{c}", data=data
+                            )
 
         if save_events and "events" in res.keys():
             for i, res in enumerate(self._results):
@@ -571,6 +576,7 @@ class ModelCheck:
         if save_events:
             outputs["events"] = []
             outputs["association_prob"] = []
+            outputs["event_Lambda"] = []
 
         fit = None
         for i, s in enumerate(subjob_seeds):
@@ -669,6 +675,7 @@ class ModelCheck:
                 outputs["association_prob"].append(
                     np.array(fit._get_event_classifications())
                 )
+                outputs["event_Lambda"].append(lambd)
 
             diagnostics_output_str = fit._fit_output.diagnose()
 
