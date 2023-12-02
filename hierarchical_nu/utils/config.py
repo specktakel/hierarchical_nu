@@ -87,6 +87,9 @@ class ParameterConfig:
     # Within-chain parallelisation
     threads_per_chain: int = 1
 
+    # Asimov data - fix simulated event numbers to nearest integer of expected number
+    asimov: bool = False
+
 
 @dataclass
 class SinglePriorConfig:

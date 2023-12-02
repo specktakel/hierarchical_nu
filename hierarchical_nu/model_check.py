@@ -73,6 +73,8 @@ class ModelCheck:
             share_L = hnu_config.parameter_config.share_L
             share_src_index = hnu_config.parameter_config.share_src_index
 
+            asimov = parameter_config.asimov
+
             # Sources
             self._sources = _initialise_sources()
             f_arr = self._sources.f_arr().value
@@ -87,11 +89,27 @@ class ModelCheck:
             )
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
-            sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
+
+            if asimov:
+                N = {}
+                for dm in self._obs_time.keys():
+                    N[dm] = [1] * self._sources.N
+                sim = Simulation(self._sources, self._detector_model_type, self._obs_time, N=N)
+            else:
+                sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
+            self.sim = sim
             sim.precomputation()
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
+            self._Nex_et = sim._Nex_et
+            if asimov:
+                N = {}
+                for c, dm in enumerate(self._obs_time.keys()):
+                    N[dm] = np.rint(self._Nex_et[c]).astype(int).tolist()
+                self._N = N
+
+            sim._N = N
 
             # Truths
             self.truths = {}
@@ -166,6 +184,8 @@ class ModelCheck:
         file_config = hnu_config["file_config"]
         prior_config = hnu_config["prior_config"]
 
+        asimov = parameter_config.asimov
+
         _make_roi()
 
         if not STAN_GEN_PATH in file_config["include_paths"]:
@@ -182,9 +202,7 @@ class ModelCheck:
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
         stan_sim_interface = StanSimInterface(
-            sim_name,
-            sources,
-            detector_model_type,
+            sim_name, sources, detector_model_type, force_N=asimov
         )
 
         stan_sim_interface.generate()
@@ -562,6 +580,8 @@ class ModelCheck:
 
         file_config = hnu_config["file_config"]
 
+        asimov = hnu_config.parameter_config.asimov
+
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
         outputs = {}
@@ -584,14 +604,25 @@ class ModelCheck:
             # Simulation
             # Should reduce time consumption if only on first iteration model is compiled
             if i == 0:
-                sim = Simulation(
-                    self._sources, self._detector_model_type, self._obs_time
-                )
+                if asimov:
+                    sim = Simulation(
+                        self._sources,
+                        self._detector_model_type,
+                        self._obs_time,
+                        N=self._N,
+                    )
+                    print(sim._N)
+                else:
+                    sim = Simulation(
+                        self._sources,
+                        self._detector_model_type,
+                        self._obs_time,
+                    )
                 sim.precomputation()
                 sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
 
             sim.run(seed=s, verbose=True)
-            self.sim = sim
+            # self.sim = sim
 
             # Skip if no detected events
             if not sim.events:
