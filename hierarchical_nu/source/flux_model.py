@@ -815,7 +815,7 @@ class TwiceBrokenPowerLaw(SpectralShape):
     @property
     @u.quantity_input
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
-        raise NotImplementedError
+        # raise NotImplementedError
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value
 
