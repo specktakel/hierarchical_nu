@@ -815,21 +815,18 @@ class TwiceBrokenPowerLaw(SpectralShape):
     @property
     @u.quantity_input
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
-        # raise NotImplementedError
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value
 
         indices = [self._index0, index, self._index2]
         energy_bounds = [self._e0, self._lower_energy, self._upper_energy, self._e3]
-        # print(energy_bounds)
 
         norms = [self.N0, self.N1, self.N2]
 
-        lower = np.atleast_1d(self._lower_energy)
-        upper = np.atleast_1d(self._upper_energy)
+        lower = np.atleast_1d(self._e0)
+        upper = np.atleast_1d(self._e3)
 
         output = np.zeros(upper.shape) << u.GeV / u.m**2 / u.s
-        # print(output)
 
         for c, (_l, _u) in enumerate(zip(lower, upper)):
             l_idx = np.digitize(_l, energy_bounds) - 1
