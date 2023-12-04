@@ -1402,7 +1402,6 @@ class StanFitInterface(StanInterface):
                                                 -10.0,
                                                 src_index_ref,
                                                 10.0,
-                                                # This is necessary for the sampling to work, no idea why though
                                                 self._Emin,
                                                 self._Emin_src / (1 + self._z[k]),
                                                 self._Emax_src / (1 + self._z[k]),
@@ -1739,7 +1738,6 @@ class StanFitInterface(StanInterface):
                                                 -10.0,
                                                 src_index_ref,
                                                 10.0,
-                                                # This is necessary for the sampling to work, no idea why though
                                                 self._Emin,
                                                 self._Emin_src / (1 + self._z[k]),
                                                 self._Emax_src / (1 + self._z[k]),

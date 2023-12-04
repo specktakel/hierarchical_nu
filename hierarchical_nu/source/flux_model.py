@@ -524,6 +524,9 @@ class TwiceBrokenPowerLaw(SpectralShape):
     Power law shape
     """
 
+    _index0 = -10.0
+    _index2 = 10.0
+
     @u.quantity_input
     def __init__(
         self,
@@ -558,8 +561,6 @@ class TwiceBrokenPowerLaw(SpectralShape):
         self._normalisation_energy = normalisation_energy
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
-        self._index0 = -10.0
-        self._index2 = 10.0
         self._parameters = {"norm": normalisation, "index": index}
 
     @property
@@ -814,21 +815,18 @@ class TwiceBrokenPowerLaw(SpectralShape):
     @property
     @u.quantity_input
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
-        # raise NotImplementedError
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value
 
         indices = [self._index0, index, self._index2]
         energy_bounds = [self._e0, self._lower_energy, self._upper_energy, self._e3]
-        # print(energy_bounds)
 
         norms = [self.N0, self.N1, self.N2]
 
-        lower = np.atleast_1d(self._lower_energy)
-        upper = np.atleast_1d(self._upper_energy)
+        lower = np.atleast_1d(self._e0)
+        upper = np.atleast_1d(self._e3)
 
         output = np.zeros(upper.shape) << u.GeV / u.m**2 / u.s
-        # print(output)
 
         for c, (_l, _u) in enumerate(zip(lower, upper)):
             l_idx = np.digitize(_l, energy_bounds) - 1
@@ -987,27 +985,85 @@ class TwiceBrokenPowerLaw(SpectralShape):
         """
 
         func = UserDefinedFunction(
-            f_name, ["alpha", "e_low", "e_up"], ["real", "real", "real"], "real"
+            f_name,
+            ["alpha1", "alpha2", "alpha3", "e1", "e2", "e3", "e4"],
+            ["real", "real", "real", "real", "real", "real", "real"],
+            "real",
         )
 
         with func:
+            alpha1 = StringExpression(["alpha1"])
+            alpha2 = StringExpression(["alpha2"])
+            alpha3 = StringExpression(["alpha3"])
+            e1 = StringExpression(["e1"])
+            e2 = StringExpression(["e2"])
+            e3 = StringExpression(["e3"])
+            e4 = StringExpression(["e4"])
             f1 = ForwardVariableDef("f1", "real")
             f2 = ForwardVariableDef("f2", "real")
 
-            alpha = StringExpression(["alpha"])
-            e_low = StringExpression(["e_low"])
-            e_up = StringExpression(["e_up"])
+            I1 = ForwardVariableDef("I1", "real")
+            I2 = ForwardVariableDef("I2", "real")
+            I3 = ForwardVariableDef("I3", "real")
 
-            with IfBlockContext([StringExpression([alpha, " == ", 1.0])]):
-                f1 << FunctionCall([e_up], "log") - FunctionCall([e_low], "log")
+            N2 = ForwardVariableDef("N2", "real")
+            N3 = ForwardVariableDef("N3", "real")
+
+            I1 << (
+                FunctionCall([e2, 1.0 - alpha1], "pow")
+                - FunctionCall([e1, 1.0 - alpha1], "pow")
+            ) / (1.0 - alpha1)
+            N2 << FunctionCall([e2, alpha2 - alpha1], "pow")
+            with IfBlockContext([alpha2, "==", 1.0]):
+                I2 << FunctionCall([e3 / e2], "log") * N2
             with ElseBlockContext():
-                f1 << (1 / (1 - alpha)) * (e_up ** (1 - alpha) - e_low ** (1 - alpha))
+                (
+                    I2
+                    << (
+                        FunctionCall([e3, 1.0 - alpha2], "pow")
+                        - FunctionCall([e2, 1.0 - alpha2], "pow")
+                    )
+                    / (1.0 - alpha2)
+                    * N2
+                )
+            N3 << FunctionCall([e3, alpha3 - alpha2], "pow") * N2
+            (
+                I3
+                << (
+                    FunctionCall([e4, 1.0 - alpha3], "pow")
+                    - FunctionCall([e3, 1.0 - alpha3], "pow")
+                )
+                / (1.0 - alpha3)
+                * N3
+            )
+            f1 << I1 + I2 + I3
 
-            with IfBlockContext([StringExpression([alpha, " == ", 2.0])]):
-                f2 << FunctionCall([e_up], "log") - FunctionCall([e_low], "log")
+            I1 << (
+                FunctionCall([e2, 2.0 - alpha1], "pow")
+                - FunctionCall([e1, 2.0 - alpha1], "pow")
+            ) / (2.0 - alpha1)
+            with IfBlockContext([alpha2, "==", 1.0]):
+                I2 << FunctionCall([e3 / e2], "log") * N2
             with ElseBlockContext():
-                f2 << (1 / (2 - alpha)) * (e_up ** (2 - alpha) - e_low ** (2 - alpha))
-
+                (
+                    I2
+                    << (
+                        FunctionCall([e3, 2.0 - alpha2], "pow")
+                        - FunctionCall([e2, 2.0 - alpha2], "pow")
+                    )
+                    / (2.0 - alpha2)
+                    * N2
+                )
+            (
+                I3
+                << (
+                    FunctionCall([e4, 2.0 - alpha3], "pow")
+                    - FunctionCall([e3, 2.0 - alpha3], "pow")
+                )
+                / (2.0 - alpha3)
+                * N3
+            )
+            f2 << I1 + I2 + I3
             ReturnStatement([f1 / f2])
 
         return func
