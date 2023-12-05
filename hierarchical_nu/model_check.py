@@ -94,9 +94,13 @@ class ModelCheck:
                 N = {}
                 for dm in self._obs_time.keys():
                     N[dm] = [1] * self._sources.N
-                sim = Simulation(self._sources, self._detector_model_type, self._obs_time, N=N)
+                sim = Simulation(
+                    self._sources, self._detector_model_type, self._obs_time, N=N
+                )
             else:
-                sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
+                sim = Simulation(
+                    self._sources, self._detector_model_type, self._obs_time
+                )
             self.sim = sim
             sim.precomputation()
             sim_inputs = sim._get_sim_inputs()
@@ -108,8 +112,6 @@ class ModelCheck:
                 for c, dm in enumerate(self._obs_time.keys()):
                     N[dm] = np.rint(self._Nex_et[c]).astype(int).tolist()
                 self._N = N
-
-            sim._N = N
 
             # Truths
             self.truths = {}
@@ -611,7 +613,6 @@ class ModelCheck:
                         self._obs_time,
                         N=self._N,
                     )
-                    print(sim._N)
                 else:
                     sim = Simulation(
                         self._sources,
