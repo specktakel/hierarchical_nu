@@ -690,6 +690,8 @@ class StanSimInterface(StanInterface):
                         self._lam[i] << FunctionCall(
                             [self._w_exposure[j]], "categorical_rng"
                         )
+                        self._event_type[i] << self._et_stan[j]
+
 
                     # Reset rejection
                     self._accept << 0
