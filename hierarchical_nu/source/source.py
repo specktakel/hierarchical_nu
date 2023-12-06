@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 import h5py
 from astropy import units as u
 import numpy as np
+import numpy.typing as npt
+from collections.abc import Callable
 
 from .flux_model import (
     PointSourceFluxModel,
@@ -65,7 +67,7 @@ class PointSource(Source):
         dec: u.rad,
         ra: u.rad,
         redshift: float,
-        spectral_shape,  #: Callable[[float], float], <- causes issues in py3.7
+        spectral_shape: Callable[[float], float],
         *args,
         **kwargs
     ):
@@ -134,9 +136,15 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
+        # Use Enorm if set, otherwise fix to 1e5 GeV
+        try:
+            Enorm_value = Parameter.get_parameter("Enorm").value
+        except ValueError:
+            Enorm_value = 1e5 * u.GeV
+
         shape = PowerLawSpectrum(
             norm,
-            1e5 * u.GeV,
+            Enorm_value,
             index,
             lower.value / (1 + redshift),
             upper.value / (1 + redshift),
@@ -159,6 +167,7 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
+        pivot: Parameter,
     ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
@@ -178,11 +187,10 @@ class PointSource(Source):
                 Spectral index
             redshift: float
             lower: Parameter
-                Lower energy bound in source frame
+                Lower energy bound
             upper: Parameter
-                Upper energy bound in source frame
-        Takes additionally Emin and Emax (in the detector frame) to limit the spectral model.
-        `index` is the valid spectral index between `lower` and `upper` energ
+                Upper energy bound
+        All parameters are taken to be defined in the source frame.
         """
         # raise NotImplementedError
         total_flux = luminosity.value / (
@@ -200,9 +208,9 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
-        shape = TwiceBrokenPowerLaw(
+        shape = PowerLawSpectrum(
             norm,
-            1e5 * u.GeV,
+            pivot.value / (1 + redshift),
             index,
             lower.value / (1 + redshift),
             upper.value / (1 + redshift),
@@ -220,7 +228,6 @@ class PointSource(Source):
         lower_energy: Parameter,
         upper_energy: Parameter,
         include_undetected: bool = False,
-        specify_energy_at_earth: bool = False,
     ):
         """
         Factory for power law sources defined in
@@ -229,9 +236,6 @@ class PointSource(Source):
         :param lower_energy: Lower energy bound in definition of the luminosity.
         :param upper_energy: Upper energy bound in definition of the luminosity.
         :param include_undetected: Include sources that are not detected in population.
-        :param specify_energy_at_earth: Interpet `lower_energy` and `upper_energy` as
-        defined at the Earth, rather than at the source. Adjustments are made according
-        to the source distance.
         """
 
         # Sensible bounds on luminosity
@@ -247,7 +251,7 @@ class PointSource(Source):
 
             ras = f["phi"][()] * u.rad
 
-            decs = (f["theta"][()] - np.pi / 2) * u.rad
+            decs = f["theta"][()] * u.rad
 
             selection = f["selection"][()]
 
@@ -301,17 +305,6 @@ class PointSource(Source):
                     par_range=(1, 4),
                 )
 
-            if specify_energy_at_earth:
-                _lower_energy = Parameter(
-                    lower_energy.value * (1 + z), "Emin_src_%i" % i
-                )
-                _upper_energy = Parameter(
-                    upper_energy.value * (1 + z), "Emax_src_%i" % i
-                )
-            else:
-                _lower_energy = lower_energy
-                _upper_energy = upper_energy
-
             # Create source
             source = PointSource.make_powerlaw_source(
                 "ps_%i" % i,
@@ -320,8 +313,8 @@ class PointSource(Source):
                 luminosity,
                 src_index,
                 z,
-                _lower_energy,
-                _upper_energy,
+                lower_energy,
+                upper_energy,
             )
 
             source_list.append(source)
@@ -402,7 +395,7 @@ class DiffuseSource(Source):
 class Sources:
     """
     Container for sources with a set of factory methods
-    for and easy source setup interface.
+    for an easy source setup interface.
     """
 
     def __init__(self):
@@ -534,9 +527,22 @@ class Sources:
 
         self.add(atmospheric_component)
 
+    def select(self, mask: npt.NDArray[np.bool_]):
+        """
+        Select some subset of existing sources by providing a mask.
+        :param mask: Array of bools with same length as event properties.
+        """
+
+        assert len(mask) == self.N
+
+        self.sources = self.sources[mask]
+
+        self.N = len(self.sources)
+
     def select_below_redshift(self, zth):
         """
-        remove sources with redshift above a certain threshold.
+        Remove sources with redshift above a certain threshold.
+        NB: Replaced by `Sources.select()`, but kept for backwards compatibility.
         """
 
         self.sources = [s for s in self.sources if s.redshift <= zth]
