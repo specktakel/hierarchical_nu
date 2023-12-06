@@ -535,9 +535,11 @@ class Sources:
 
         assert len(mask) == self.N
 
-        self.sources = self.sources[mask]
+        _sources = np.array(self.sources)
 
-        self.N = len(self.sources)
+        _sources = _sources[mask]
+
+        self.sources = list(_sources)
 
     def select_below_redshift(self, zth):
         """
