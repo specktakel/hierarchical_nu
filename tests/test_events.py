@@ -1,7 +1,7 @@
 from icecube_tools.utils.data import RealEvents
 from hierarchical_nu.events import Events
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.utils.roi import CircularROI, RectangularROI, ROIList
+from hierarchical_nu.utils.roi import CircularROI, RectangularROI, ROIList, FullSkyROI
 from hierarchical_nu.detector.icecube import Refrigerator
 
 from astropy import units as u
@@ -13,6 +13,9 @@ events_file_name = "test_event_read_write.h5"
 
 
 def test_event_class(output_directory):
+    ROIList.clear_registry()
+    roi = FullSkyROI()
+
     N_in = 50
     energies_in = np.linspace(1, 10, N_in) * u.TeV
 

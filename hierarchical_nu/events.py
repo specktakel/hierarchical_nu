@@ -106,8 +106,6 @@ class Events:
         self._ang_errs = self._ang_errs[mask]
         self._mjd = self._mjd[mask]
 
-        self.N = len(self._energies)
-
     @property
     def energies(self):
         return self._energies
