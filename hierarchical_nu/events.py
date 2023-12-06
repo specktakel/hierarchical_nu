@@ -15,7 +15,13 @@ import ligo.skymap.plot
 from icecube_tools.utils.vMF import get_kappa
 
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.utils.roi import ROI, RectangularROI, CircularROI, FullSkyROI
+from hierarchical_nu.utils.roi import (
+    ROI,
+    RectangularROI,
+    CircularROI,
+    FullSkyROI,
+    ROIList,
+)
 from hierarchical_nu.utils.plotting import SphericalCircle
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.detector.icecube import EventType
@@ -47,8 +53,6 @@ class Events:
 
         self._recognised_types = [_.S for _ in Refrigerator.detectors]
 
-        self.N = len(energies)
-
         self._energies = energies
 
         self._mjd = mjd
@@ -74,7 +78,13 @@ class Events:
         self._types = np.delete(self._types, i)
         self._ang_errs = np.delete(self._ang_errs, i)
         self._mjd = np.delete(self._mjd, i)
-        self.N -= 1
+
+    @property
+    def N(self):
+        try:
+            return self.types.size
+        except AttributeError:
+            return len(self.types)
 
     @property
     def energies(self):
@@ -132,36 +142,34 @@ class Events:
         dec = coords.dec.rad * u.rad
 
         coords.representation_type = "cartesian"
+        mask = []
+        for roi in ROIList.STACK:
+            # TODO add reco energy cut for all event types
+            if isinstance(roi, CircularROI):
+                mask.append(roi.radius >= roi.center.separation(coords))
+            else:
+                if roi.RA_min > roi.RA_max:
+                    mask.append(
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                    )
 
-        try:
-            roi = ROI.STACK[0]
-        except IndexError:
-            roi = FullSkyROI()
+                else:
+                    mask.append(
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & (ra >= roi.RA_min)
+                        & (ra <= roi.RA_max)
+                    )
 
-        # TODO add reco energy cut for all event types
-        if roi.RA_min > roi.RA_max:
-            mask = np.nonzero(
-                (
-                    (dec <= roi.DEC_max)
-                    & (dec >= roi.DEC_min)
-                    & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                )
-            )
-        else:
-            mask = np.nonzero(
-                (
-                    (dec <= roi.DEC_max)
-                    & (dec >= roi.DEC_min)
-                    & (ra >= roi.RA_min)
-                    & (ra <= roi.RA_max)
-                )
-            )
+        idxs = np.logical_or.reduce(mask)
 
         return cls(
-            energies[mask], coords[mask], types[mask], ang_errs[mask], time[mask]
+            energies[idxs], coords[idxs], types[idxs], ang_errs[idxs], time[idxs]
         )
 
-    def to_file(self, filename, append=False):
+    def to_file(self, filename, append=False, group_name=None):
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]
         self._file_values = [
             self.energies.to(u.GeV).value,
@@ -173,7 +181,10 @@ class Events:
 
         if append:
             with h5py.File(filename, "r+") as f:
-                event_folder = f.create_group("events")
+                if group_name is None:
+                    event_folder = f.create_group("events")
+                else:
+                    event_folder = f.create_group(group_name)
 
                 for key, value in zip(self._file_keys, self._file_values):
                     event_folder.create_dataset(key, data=value)
@@ -215,11 +226,6 @@ class Events:
                     raise ValueError("Emin_det not defined for all seasons.")
             events.mask = mask
 
-        try:
-            roi = ROI.STACK[0]
-        except IndexError:
-            roi = FullSkyROI()
-
         ra = np.hstack([events.ra[s.P] * u.rad for s in seasons])
         dec = np.hstack([events.dec[s.P] * u.rad for s in seasons])
         reco_energy = np.hstack([events.reco_energy[s.P] * u.GeV for s in seasons])
@@ -230,42 +236,33 @@ class Events:
         ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        if isinstance(roi, CircularROI):
-            mask = np.nonzero(
-                (coords.separation(roi.center).deg * u.deg < roi.radius)
-                & (mjd >= roi.MJD_min)
-                & (mjd <= roi.MJD_max)
-            )
-        elif isinstance(roi, RectangularROI):
-            if roi.RA_min > roi.RA_max:
-                mask = np.nonzero(
-                    (
+        mask = []
+        for roi in ROIList.STACK:
+            # TODO add reco energy cut for all event types
+            if isinstance(roi, CircularROI):
+                mask.append(roi.radius >= roi.center.separation(coords))
+            else:
+                if roi.RA_min > roi.RA_max:
+                    mask.append(
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                        & (mjd >= roi.MJD_min)
-                        & (mjd <= roi.MJD_max)
                     )
-                )
-            else:
-                mask = np.nonzero(
-                    (
+
+                else:
+                    mask.append(
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & (ra >= roi.RA_min)
                         & (ra <= roi.RA_max)
-                        & (mjd >= roi.MJD_min)
-                        & (mjd <= roi.MJD_max)
                     )
-                )
+
         mjd = Time(mjd, format="mjd")
 
+        idxs = np.logical_or.reduce(mask)
+
         return cls(
-            reco_energy[mask],
-            coords[mask],
-            types[mask],
-            ang_err[mask],
-            mjd[mask],
+            reco_energy[idxs], coords[idxs], types[idxs], ang_err[idxs], mjd[idxs]
         )
 
     @u.quantity_input
@@ -318,5 +315,27 @@ class Events:
         ax.set_ylabel("DEC")
 
         fig.colorbar(mapper, ax=ax, label=r"$\hat E~[\mathrm{GeV}]$")
+
+        return fig, ax
+
+    @u.quantity_input
+    def plot_radial_excess(self, center: SkyCoord, radius: u.deg = 5 * u.deg):
+        """
+        Plot histogram of radial distance to a source located at center.
+        Bin edges are equdistant in angle squared such that equal areas in polar coordinates
+        (assuming Euclidian space for small angles) are covered by each bin.
+        :param center: SkyCoord of center
+        :param radius: Max radius of histogram
+        """
+
+        r2_bins = np.arange(
+            0.0, np.power(radius.to_value(u.deg), 2) + 1.0 / 3.0, 1.0 / 3.0
+        )
+        sep = center.separation(self.coords).deg
+
+        fig, ax = plt.subplots()
+        ax.hist(sep**2, r2_bins, histtype="step")
+        ax.set_xlabel("$\Psi^2$ [deg$^2$]")
+        ax.set_ylabel("counts")
 
         return fig, ax

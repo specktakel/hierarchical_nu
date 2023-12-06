@@ -2,8 +2,8 @@ import numpy as np
 import astropy.units as u
 import pytest
 
-from hierarchical_nu.utils.roi import RectangularROI, ROI, CircularROI
-from hierarchical_nu.detector.icecube import Refrigerator, IC86_II
+from hierarchical_nu.utils.roi import RectangularROI, ROIList
+from hierarchical_nu.detector.icecube import IC86_II
 
 import logging
 
@@ -26,6 +26,7 @@ class TestNex:
         from hierarchical_nu.simulation import Simulation
 
         Parameter.clear_registry()
+        ROIList.clear_registry()
         src_index = Parameter(2.8, "src_index", fixed=False, par_range=(1, 4))
         L = Parameter(
             1.0e47 * (u.erg / u.s),
@@ -120,6 +121,7 @@ class TestNex:
         from hierarchical_nu.source.flux_model import integral_power_law as ipl
 
         Parameter.clear_registry()
+        ROIList.clear_registry()
         src_index = Parameter(2.8, "src_index", fixed=False, par_range=(1, 4))
         diff_index = Parameter(2.1, "diff_index", fixed=False, par_range=(1.5, 4))
         L = Parameter(

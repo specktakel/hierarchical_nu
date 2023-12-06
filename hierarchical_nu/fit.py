@@ -181,7 +181,7 @@ class StanFit:
 
     def compile_stan_code(self, include_paths=None):
         if not include_paths:
-            include_paths = [STAN_PATH]
+            include_paths = [STAN_PATH, STAN_GEN_PATH]
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename,
@@ -629,6 +629,9 @@ class StanFit:
 
         self.events.to_file(filename, append=True)
 
+        # Add priors separately
+        self.priors.addto(filename, "priors")
+
     @classmethod
     def from_file(cls, filename):
         """
@@ -688,31 +691,7 @@ class StanFit:
 
         obs_time_dict = {et: obs_time[k] for k, et in enumerate(event_types)}
 
-        priors = Priors()
-        try:
-            priors.luminosity = LogNormalPrior(
-                mu=priors_dict["lumi_mu"], sigma=priors_dict["lumi_sigma"]
-            )
-            priors.src_index = NormalPrior(
-                mu=priors_dict["src_index_mu"], sigma=priors_dict["src_index_sigma"]
-            )
-        except KeyError:
-            pass
-        try:
-            priors.diff_index = NormalPrior(
-                mu=priors_dict["diff_index_mu"], sigma=priors_dict["diff_index_sigma"]
-            )
-            priors.diffuse_flux = LogNormalPrior(
-                mu=priors_dict["f_diff_mu"], sigma=priors_dict["f_diff_sigma"]
-            )
-        except KeyError:
-            pass
-        try:
-            priors.atmospheric_flux = LogNormalPrior(
-                mu=priors_dict["f_atmo_mu"], sigma=priors_dict["f_atmo_sigma"]
-            )
-        except KeyError:
-            pass
+        priors = Priors.from_group(filename, "priors")
 
         events = Events.from_file(filename)
 
