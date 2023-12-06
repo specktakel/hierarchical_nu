@@ -220,6 +220,7 @@ class PointSource(Source):
         lower_energy: Parameter,
         upper_energy: Parameter,
         include_undetected: bool = False,
+        specify_energy_at_earth: bool = False,
     ):
         """
         Factory for power law sources defined in
@@ -228,6 +229,9 @@ class PointSource(Source):
         :param lower_energy: Lower energy bound in definition of the luminosity.
         :param upper_energy: Upper energy bound in definition of the luminosity.
         :param include_undetected: Include sources that are not detected in population.
+        :param specify_energy_at_earth: Interpet `lower_energy` and `upper_energy` as
+        defined at the Earth, rather than at the source. Adjustments are made according
+        to the source distance.
         """
 
         # Sensible bounds on luminosity
@@ -297,6 +301,17 @@ class PointSource(Source):
                     par_range=(1, 4),
                 )
 
+            if specify_energy_at_earth:
+                _lower_energy = Parameter(
+                    lower_energy.value * (1 + z), "Emin_src_%i" % i
+                )
+                _upper_energy = Parameter(
+                    upper_energy.value * (1 + z), "Emax_src_%i" % i
+                )
+            else:
+                _lower_energy = lower_energy
+                _upper_energy = upper_energy
+
             # Create source
             source = PointSource.make_powerlaw_source(
                 "ps_%i" % i,
@@ -305,8 +320,8 @@ class PointSource(Source):
                 luminosity,
                 src_index,
                 z,
-                lower_energy,
-                upper_energy,
+                _lower_energy,
+                _upper_energy,
             )
 
             source_list.append(source)
