@@ -34,8 +34,12 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.detector.icecube import EventType
 
 from hierarchical_nu.source.source import Sources
+from hierarchical_nu.source.flux_model import (
+    PowerLawSpectrum,
+    TwiceBrokenPowerLaw,
+)
 
-from hierarchical_nu.utils.roi import ROI, CircularROI
+from hierarchical_nu.utils.roi import ROI, CircularROI, ROIList
 
 
 class StanSimInterface(StanInterface):
@@ -266,12 +270,16 @@ class StanSimInterface(StanInterface):
 
             # If we have a circular ROI, set center point and radius
             try:
-                self._roi = ROI.STACK[0]
+                ROIList.STACK[0]
             except IndexError:
                 raise ValueError("An ROI is needed at this point.")
-            if isinstance(self._roi, CircularROI):
-                self._roi_center = ForwardVariableDef("roi_center", "unit_vector[3]")
-                self._roi_radius = ForwardVariableDef("roi_radius", "real")
+            if isinstance(ROIList.STACK[0], CircularROI):
+                self._roi_center = ForwardArrayDef(
+                    "roi_center", "unit_vector[3]", ["[", len(ROIList.STACK), "]"]
+                )
+                self._roi_radius = ForwardArrayDef(
+                    "roi_radius", "real", ["[", len(ROIList.STACK), "]"]
+                )
 
             # The observation time
             self._T = ForwardArrayDef("T", "real", ["[", self._Net, "]"])
@@ -282,6 +290,10 @@ class StanSimInterface(StanInterface):
         """
 
         with TransformedDataContext():
+            if isinstance(ROIList.STACK[0], CircularROI):
+                self._n_roi = ForwardVariableDef("n_roi", "int")
+                self._n_roi << StringExpression(["num_elements(roi_radius)"])
+
             # Decide how many flux entries, F, we have
             if self.sources.diffuse and self.sources.atmospheric:
                 self._F = ForwardVariableDef("F", "vector[Ns+2]")
@@ -565,7 +577,6 @@ class StanSimInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
-
             self._loop_start = ForwardVariableDef("loop_start", "int")
             self._loop_end = ForwardVariableDef("loop_end", "int")
             # We redefine a bunch of variables from transformed data here, as we would
@@ -632,13 +643,12 @@ class StanSimInterface(StanInterface):
             # Kappa is the shape param of the vMF used in sampling the detected direction
             self._kappa = ForwardVariableDef("kappa", "vector[N]")
 
-            # Here we start the sampling, first fo tracks and then cascades.
+            # Here we start the sampling, first of tracks and then cascades, all other detector mdoels...
             with ForLoopContext(1, self._Net_stan, "j") as j:
                 if self._force_N:
                     # Counts the events sampled of each source components
                     # Counter is reset after the required number is reached
                     self._forced_N_sampled = InstantVariableDef("sampled_N", "int", [0])
-                self._loop_end << self._N_comp[j]
                 with IfBlockContext([j, " == ", 1]):
                     self._loop_start << 1
                 with ElseBlockContext():
@@ -648,47 +658,40 @@ class StanSimInterface(StanInterface):
                 self._loop_end << StringExpression(["sum(", self._N_comp[1:j], ")"])
 
                 if self._force_N:
+                    # currently sampling first source component when starting with a detector model
                     self._currently_sampling << 1
 
                 # For each event, we rejection sample the true energy and direction
                 # and then directly sample the detected properties
                 with ForLoopContext(self._loop_start, self._loop_end, "i") as i:
-                    # StringExpression(["print(i)"])
-                    self._event_type[i] << self._et_stan[j]
-
                     # Sample source label
                     # If we force N, proceed to sample the given number of events for each source
                     if self._force_N:
-                        with IfBlockContext(
-                            [
-                                self._forced_N_sampled,
-                                " < ",
-                                self._forced_N[j, self._currently_sampling],
-                            ]
-                        ):
-                            self._lam[i] << self._currently_sampling
-                            StringExpression([self._forced_N_sampled, " += 1"])
-
-                        with ElseBlockContext():
-                            StringExpression([self._currently_sampling, " += 1"])
+                        # If we have not sampled enough events,
+                        # get the source label and increase the sampled events by 1
+                        with WhileLoopContext([1]):
                             with IfBlockContext(
-                                [self._currently_sampling, " > size(", self._F, ")"]
+                                [
+                                    self._forced_N_sampled,
+                                    " < ",
+                                    self._forced_N[j, self._currently_sampling],
+                                ]
                             ):
-                                # Might as well be break statement
-                                self._currently_sampling << 1
-                                StringExpression(["continue"])
-
-                            with ElseBlockContext():
                                 self._lam[i] << self._currently_sampling
-                                self._forced_N_sampled << 1
-
-                        # make loop checking how many events are already sampled for a certain type
+                                self._event_type[i] << self._et_stan[j]
+                                StringExpression([self._forced_N_sampled, " += 1"])
+                                StringExpression(["break"])
+                            with ElseBlockContext():
+                                StringExpression([self._currently_sampling, " += 1"])
+                                self._forced_N_sampled << 0
 
                     # Otherwise, use the exposure weights to determine the event label
                     else:
                         self._lam[i] << FunctionCall(
                             [self._w_exposure[j]], "categorical_rng"
                         )
+                        self._event_type[i] << self._et_stan[j]
+
 
                     # Reset rejection
                     self._accept << 0
@@ -925,12 +928,28 @@ class StanSimInterface(StanInterface):
                                     )
 
                                 # Store the value of the source PDF at this energy
-                                self._src_factor << self._src_spectrum_lpdf(
-                                    self._E[i],
-                                    src_index_ref,
-                                    self._Emin_src / (1 + self._z[self._lam[i]]),
-                                    self._Emax_src / (1 + self._z[self._lam[i]]),
-                                )
+                                if self._ps_spectrum == PowerLawSpectrum:
+                                    self._src_factor << self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        src_index_ref,
+                                        self._Emin_src / (1 + self._z[self._lam[i]]),
+                                        self._Emax_src / (1 + self._z[self._lam[i]]),
+                                    )
+                                elif self._ps_spectrum == TwiceBrokenPowerLaw:
+                                    self._src_factor << self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        -10.0,
+                                        src_index_ref,
+                                        10.0,
+                                        self._Emin,
+                                        self._Emin_src / (1 + self._z[self._lam[i]]),
+                                        self._Emax_src / (1 + self._z[self._lam[i]]),
+                                        self._Emax,
+                                    )
+                                else:
+                                    raise ValueError(
+                                        f"{self._ps_spectrum} not recognised."
+                                    )
 
                                 # It is log, to take the exp()
                                 self._src_factor << FunctionCall(
@@ -1490,16 +1509,32 @@ class StanSimInterface(StanInterface):
                                         )
 
                                 self._Edet[i] << self._pre_event[1]
-                                self._event[i] << self._pre_event[2:4]
-                                self._kappa[i] << self._pre_event[5]
-
-                                if isinstance(self._roi, CircularROI):
+                                if self.sources.point_source:
                                     with IfBlockContext(
-                                        ["ang_sep(event[i], roi_center) <= roi_radius"]
+                                        [
+                                            StringExpression(
+                                                [self._lam[i], " < ", self._Ns + 1]
+                                            )
+                                        ]
                                     ):
-                                        self._detected << 1
+                                        self._event[i] << self._pre_event[2:4]
                                     with ElseBlockContext():
-                                        self._detected << 0
+                                        self._event[i] << self._omega
+                                else:
+                                    self._event[i] << self._omega
+                                self._kappa[i] << self._pre_event[5]
+                                self._detected << 0
+                                if isinstance(ROIList.STACK[0], CircularROI):
+                                    with ForLoopContext(1, self._n_roi, "n") as n:
+                                        with IfBlockContext(
+                                            [
+                                                "ang_sep(event[i], roi_center[",
+                                                n,
+                                                "]) <= roi_radius[n]",
+                                            ]
+                                        ):
+                                            self._detected << 1
+                                            StringExpression(["break"])
                                 else:
                                     self._detected << 1
 

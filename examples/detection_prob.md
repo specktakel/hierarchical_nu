@@ -24,6 +24,7 @@ from astropy.coordinates import SkyCoord
 ```python
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
+from hierarchical_nu.utils.roi import RectangularROI
 ```
 
 ## Sources
@@ -50,15 +51,18 @@ Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 ```python
 Emin_det = Parameter(5e4 * u.GeV, "Emin_det", fixed=True)
 
-#Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
+#Emin_det_northern_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
 #Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
 ```
 
 ```python
 # Single PS for testing and usual components
-point_source = PointSource.make_powerlaw_source("test", np.deg2rad(5)*u.rad,
-                                                np.pi*u.rad, 
-                                                L, src_index, z, Emin_src, Emax_src)
+ra = np.pi*u.rad
+dec = np.deg2rad(5)*u.rad
+width = np.deg2rad(10) * u.rad
+point_source = PointSource.make_powerlaw_source(
+    "test", dec, ra, L, src_index, z, Emin_src, Emax_src
+)
 
 my_sources = Sources()
 my_sources.add(point_source)
@@ -68,10 +72,15 @@ my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_dif
 
 ```
 
+```python
+roi = RectangularROI(RA_min=ra-width, RA_max=ra+width, DEC_min=dec-width, DEC_max=dec+width)
+```
+
 ## Test particle
 
 ```python
-from hierarchical_nu.events import Events, TRACKS
+from hierarchical_nu.events import Events
+from hierarchical_nu.detector.icecube import NT
 ```
 
 ```python
@@ -81,8 +90,9 @@ coord = SkyCoord(ra, dec, frame="icrs")
 
 event = Events(energies=np.array([5.1e4]) * u.GeV, 
                coords=coord, 
-               types=np.array([TRACKS]), 
-               ang_errs=np.array([5]) * u.deg)
+               types=np.array([NT.S]), 
+               ang_errs=np.array([5]) * u.deg,
+               mjd=[99])
 ```
 
 ## Plot inputs
@@ -108,15 +118,17 @@ ax.legend()
 ## Fit
 
 ```python
-from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 ```
 
 ```python
 obs_time = 1 * u.year
-fit = StanFit(my_sources, NorthernTracksDetectorModel, event, obs_time)
+fit = StanFit(my_sources, NT, event, {NT: obs_time})
 fit.setup_and_run()
+```
+
+```python
+fit.plot_energy_and_roi(radius=8 * u.deg)
 ```
 
 ## P(label=src | data)

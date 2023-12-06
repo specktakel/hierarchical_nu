@@ -22,7 +22,6 @@ def test_configuration_write():
     hnu_config = HierarchicalNuConfig()
 
     with tempfile.NamedTemporaryFile() as f:
-
         OmegaConf.save(config=hnu_config, f=f.name)
 
         loaded_config = OmegaConf.load(f.name)
@@ -39,15 +38,13 @@ def test_user_config_merge():
 
     user_configs = [
         {"file_config": {"sim_filename": "my_new_name.stan"}},
-        {"parameter_config": {"src_index": 2.6, "L": 1e47}},
+        {"parameter_config": {"src_index": [2.6], "L": [1e47]}},
     ]
 
     for i, config in enumerate(user_configs):
-
         path = Path(f"config_{i}.yml")
 
         with path.open("w") as f:
-
             yaml.dump(stream=f, data=config, Dumper=yaml.SafeDumper)
 
         loaded_config = OmegaConf.load(path)
@@ -58,6 +55,6 @@ def test_user_config_merge():
 
     assert hnu_config["file_config"]["sim_filename"] == "my_new_name.stan"
 
-    assert hnu_config["parameter_config"]["src_index"] == 2.6
+    assert hnu_config["parameter_config"]["src_index"][0] == 2.6
 
-    assert hnu_config["parameter_config"]["L"] == 1e47
+    assert hnu_config["parameter_config"]["L"][0] == 1e47

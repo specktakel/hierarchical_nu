@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class ROI(ABC):
-    STACK = []
+    def __init__(self):
+        ROIList.add(self)
 
     @property
     def MJD_min(self):
@@ -45,6 +46,78 @@ class ROI(ABC):
     def RA_max(self):
         pass
 
+    @property
+    def apply_roi(self):
+        return self._apply_roi
+
+
+class ROIList:
+    STACK = []
+
+    @staticmethod
+    def add(roi):
+        if ROIList.STACK:
+            if isinstance(roi, CircularROI) and not isinstance(
+                ROIList.STACK[0], CircularROI
+            ):
+                raise ValueError("Circular and non-Circular ROIs must not be mixed.")
+            if not isinstance(roi, CircularROI):
+                raise ValueError("Non-CircularROIs cannot be stacked.")
+        ROIList.STACK.append(roi)
+
+    @staticmethod
+    def pop(i):
+        ROIList.STACK.pop(i)
+
+    @staticmethod
+    def clear_registry():
+        ROIList.STACK = []
+
+    # need to think about the wrapping at 2pi/0
+    # TODO for future-Julian
+    @staticmethod
+    def RA_max():
+        ra_max = 0.0 * u.rad
+        for roi in ROIList.STACK:
+            temp = roi.RA_max
+            if temp > ra_max:
+                ra_max = temp
+
+        return ra_max
+
+    @staticmethod
+    def RA_min():
+        ra_min = 2 * np.pi * u.rad
+        for roi in ROIList.STACK:
+            temp = roi.RA_min
+            if temp < ra_min:
+                ra_min = temp
+
+        return ra_min
+
+    @staticmethod
+    def DEC_min():
+        dec_min = np.pi / 2 * u.rad
+        for roi in ROIList.STACK:
+            temp = roi.DEC_min
+            if temp < dec_min:
+                dec_min = temp
+
+        return dec_min
+
+    @staticmethod
+    def DEC_max():
+        dec_max = -np.pi / 2 * u.rad
+        for roi in ROIList.STACK:
+            temp = roi.DEC_max
+            if temp > dec_max:
+                dec_max = temp
+
+        return dec_max
+
+    def __repr__(self):
+        return "\n".join([roi.__repr__() for roi in ROIList.STACK])
+
 
 class CircularROI(ROI):
     """
@@ -58,19 +131,16 @@ class CircularROI(ROI):
         radius: u.deg = 5 * u.deg,
         MJD_min=0.0,
         MJD_max=np.inf,
+        apply_roi: bool = False,
     ):
         self._center = center
         self._radius = radius
         self._MJD_min = MJD_min
         self._MJD_max = MJD_max
+        self._apply_roi = apply_roi
 
-        if ROI.STACK:
-            # logger.warning(
-            #    "Only one ROI allowed at a time. Deleting previous instance.\n"
-            # )
-            ROI.STACK = [self]
-        else:
-            ROI.STACK = [self]
+        # ROI.STACK.append(self)
+        super().__init__()
         self._center.representation_type = "spherical"
         if self._center.dec.deg - self._radius.to_value(u.deg) < -10.0:
             logger.warning("ROI extends into Southern sky. Proceed with caution.")
@@ -79,7 +149,8 @@ class CircularROI(ROI):
             raise ValueError("Radii larger than 180 degrees are not sensible.")
 
     def __repr__(self):
-        return f"CircularROI, center RA={self._center.ra.deg:.1f}°, DEC={self._center.dec.deg:.1f}°, radius={self._radius.to_value(u.deg):.1f}°"
+        self._center.representation_type = "spherical"
+        return f"CircularROI, center RA={self._center.ra.deg:.1f}°, DEC={self._center.dec.deg:.1f}°, radius={self._radius.to_value(u.deg):.1f}°, apply={self.apply_roi}"
 
     def _get_roi_width(self):
         """
@@ -134,9 +205,7 @@ class CircularROI(ROI):
             return dec_max
 
     @property
-    def RA_min(self):
-        self._center.representation_type = "spherical"
-        # If either pole is inside the ROI, RA_min/max are 0 and 2pi, respectively
+    def _RA_min(self):
         if (
             self.center.dec.deg * u.deg - self.radius.to(u.deg) < -90.0 * u.deg
             or self.center.dec.deg * u.deg + self.radius.to(u.deg) > 90.0 * u.deg
@@ -145,14 +214,19 @@ class CircularROI(ROI):
         else:
             RA_width = self._get_roi_width()
             min = self.center.ra.rad * u.rad - RA_width.to(u.rad)
-            # Check for wrapping at 2pi/0
-            if min < 0 * u.rad:
-                return min + 2.0 * np.pi * u.rad
-            else:
-                return min
+            return min
 
     @property
-    def RA_max(self):
+    def RA_min(self):
+        min = self._RA_min
+        # Check for wrapping at 2pi/0
+        if min < 0 * u.rad:
+            return min + 2.0 * np.pi * u.rad
+        else:
+            return min
+
+    @property
+    def _RA_max(self):
         self._center.representation_type = "spherical"
         if (
             self.center.dec.deg * u.deg - self.radius.to(u.deg) < -90.0 * u.deg
@@ -162,11 +236,16 @@ class CircularROI(ROI):
         else:
             RA_width = self._get_roi_width()
             max = self.center.ra.rad * u.rad + RA_width.to(u.rad)
-            # Check for wrapping at 2pi/0
-            if max > 2.0 * np.pi * u.rad:
-                return max - 2.0 * np.pi * u.rad
-            else:
-                return max
+            return max
+
+    @property
+    def RA_max(self):
+        # Check for wrapping at 2pi/0
+        max = self._RA_max
+        if max > 2.0 * np.pi * u.rad:
+            return max - 2.0 * np.pi * u.rad
+        else:
+            return max
 
 
 class RectangularROI(ROI):
@@ -183,6 +262,7 @@ class RectangularROI(ROI):
         DEC_max=np.pi / 2 * u.rad,
         MJD_min=0.0,
         MJD_max=np.inf,
+        apply_roi: bool = False,
     ):
         self._RA_min = RA_min
         self._RA_max = RA_max
@@ -190,16 +270,12 @@ class RectangularROI(ROI):
         self._DEC_max = DEC_max
         self._MJD_min = MJD_min
         self._MJD_max = MJD_max
+        self._apply_roi = apply_roi
 
         self.check_boundaries()
 
-        if ROI.STACK:
-            logger.warning(
-                "Only one ROI allowed at a time. Deleting previous instance.\n"
-            )
-            ROI.STACK = [self]
-        else:
-            ROI.STACK = [self]
+        # ROI.STACK.append(self)
+        super().__init__()
 
         if self._DEC_min.to(u.deg) < -10.0 * u.deg:
             logger.warning("ROI extends into Southern sky. Proceed with chaution.")
@@ -271,7 +347,7 @@ class RectangularROI(ROI):
         self.DEC_max = self._DEC_max
 
     def __repr__(self):
-        return f"RectangularROI, DEC=[{self.DEC_min.to_value(u.deg):.1f}°, {self.DEC_max.to_value(u.deg):.1f}°], RA=[{self.RA_min.to_value(u.deg):.1f}°, {self.RA_max.to_value(u.deg):.1f}°]"
+        return f"RectangularROI, DEC=[{self.DEC_min.to_value(u.deg):.1f}°, {self.DEC_max.to_value(u.deg):.1f}°], RA=[{self.RA_min.to_value(u.deg):.1f}°, {self.RA_max.to_value(u.deg):.1f}°], apply={self.apply_roi}"
 
 
 class FullSkyROI(RectangularROI):
@@ -280,7 +356,39 @@ class FullSkyROI(RectangularROI):
     for extra user-friendliness.
     """
 
-    pass
+    def __init__(
+        self,
+        MJD_min=0.0,
+        MJD_max=np.inf,
+        apply_roi: bool = False,
+    ):
+        super().__init__(MJD_min=MJD_min, MJD_max=MJD_max, apply_roi=apply_roi)
+
+    def __repr__(self):
+        return f"FullSkyROI, apply={self.apply_roi}"
+
+
+class NorthernSkyROI(RectangularROI):
+    """
+    Wrapper class for to define an ROI in the Northern Sky,
+    bounded at DEC_min=-5 deg
+    """
+
+    def __init__(
+        self,
+        MJD_min=0.0,
+        MJD_max=np.inf,
+        apply_roi: bool = False,
+    ):
+        super().__init__(
+            DEC_min=np.deg2rad(-5) * u.rad,
+            MJD_min=MJD_min,
+            MJD_max=MJD_max,
+            apply_roi=apply_roi,
+        )
+
+    def __repr__(self):
+        return f"NorthernSkyROI, apply={self.apply_roi}"
 
 
 def ROI_width(d1, radius, d2):

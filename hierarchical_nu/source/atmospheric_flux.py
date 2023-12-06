@@ -8,6 +8,8 @@ from scipy.integrate import dblquad, quad
 from MCEq.core import MCEqRun
 import crflux.models as crf
 
+from ..utils.roi import ROIList
+
 
 from .flux_model import FluxModel
 from ..utils.cache import Cache
@@ -40,9 +42,23 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
             "real",
         )
 
-        self.theta_points = theta_points
+        cos_theta_grid = np.linspace(-1, 1, theta_points)
 
-        self.cos_theta_grid = np.linspace(-1, 1, self.theta_points)
+        if ROIList.STACK:
+            apply_roi = np.all(_.apply_roi for _ in ROIList.STACK)
+        else:
+            apply_roi = False
+
+        if apply_roi:
+            cosz_min = -np.sin(ROIList.DEC_max())
+            cosz_max = -np.sin(ROIList.DEC_min())
+            idx_min = np.digitize(cosz_min, cos_theta_grid) - 1
+            idx_max = np.digitize(cosz_max, cos_theta_grid, right=True)
+            self.cos_theta_grid = cos_theta_grid[idx_min : idx_max + 1]
+            self.theta_points = self.cos_theta_grid.size
+        else:
+            self.theta_points = theta_points
+            self.cos_theta_grid = cos_theta_grid
 
         self.log_energy_grid = log_energy_grid
 

@@ -3,6 +3,7 @@ import os
 import pytest
 from cmdstanpy import CmdStanModel
 
+
 from hierarchical_nu.detector.northern_tracks import NorthernTracksDetectorModel
 from hierarchical_nu.backend.stan_generator import (
     GeneratedQuantitiesContext,

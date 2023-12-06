@@ -2,8 +2,10 @@ import os
 import sys
 import numpy as np
 import h5py
+import arviz as av
 import time
 from matplotlib import pyplot as plt
+import matplotlib.patches as mpl_patches
 from joblib import Parallel, delayed
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -11,18 +13,29 @@ from cmdstanpy import CmdStanModel
 from scipy.stats import uniform
 from typing import List, Union
 
-from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import PointSource, Sources
 
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
+from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
-from hierarchical_nu.utils.roi import CircularROI
+from hierarchical_nu.utils.roi import (
+    CircularROI,
+    RectangularROI,
+    FullSkyROI,
+    NorthernSkyROI,
+    ROIList,
+)
 from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
+
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class ModelCheck:
@@ -34,10 +47,10 @@ class ModelCheck:
     def __init__(self, truths=None, priors=None):
         if priors:
             self.priors = priors
-            print("Found priors")
+            logger.info("Found priors")
 
         else:
-            print("Loading priors from config")
+            logger.info("Loading priors from config")
             prior_config = hnu_config["prior_config"]
             priors = Priors()
             priors.luminosity = self.make_prior(prior_config["L"])
@@ -48,14 +61,17 @@ class ModelCheck:
             self.priors = priors
 
         if truths:
-            print("Found true values")
+            logger.info("Found true values")
             self.truths = truths
 
         else:
-            print("Loading true values from config")
+            logger.info("Loading true values from config")
             # Config
             file_config = hnu_config["file_config"]
             parameter_config = hnu_config["parameter_config"]
+            _make_roi()
+            share_L = hnu_config.parameter_config.share_L
+            share_src_index = hnu_config.parameter_config.share_src_index
 
             # Sources
             self._sources = _initialise_sources()
@@ -63,14 +79,16 @@ class ModelCheck:
             f_arr_astro = self._sources.f_arr_astro().value
 
             # Detector
-            self._detector_model_type = ModelCheck._get_dm_from_config(parameter_config["detector_model_type"])
-
-            self._obs_time = parameter_config["obs_time"] * u.year
+            self._detector_model_type = ModelCheck._get_dm_from_config(
+                parameter_config["detector_model_type"]
+            )
+            self._obs_time = ModelCheck._get_obs_time_from_config(
+                self._detector_model_type, parameter_config["obs_time"]
+            )
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
             sim = Simulation(self._sources, self._detector_model_type, self._obs_time)
             sim.precomputation()
-            self._exposure_integral = sim._exposure_integral
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
@@ -88,12 +106,26 @@ class ModelCheck:
             self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
                 flux_unit
             ).value
-            self.truths["L"] = (
-                Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
-            )
+            try:
+                self.truths["L"] = [
+                    Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
+                ]
+            except ValueError:
+                self.truths["L"] = [
+                    Parameter.get_parameter(f"ps_{_}_luminosity")
+                    .value.to(u.GeV / u.s)
+                    .value
+                    for _ in range(len(self._sources.point_source))
+                ]
             self.truths["f_arr"] = f_arr
             self.truths["f_arr_astro"] = f_arr_astro
-            self.truths["src_index"] = Parameter.get_parameter("src_index").value
+            try:
+                self.truths["src_index"] = [Parameter.get_parameter("src_index").value]
+            except ValueError:
+                self.truths["src_index"] = [
+                    Parameter.get_parameter(f"ps_{_}_src_index").value
+                    for _ in range(len(self._sources.point_source))
+                ]
             self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
 
             self.truths["Nex"] = Nex
@@ -119,7 +151,7 @@ class ModelCheck:
         return prior
 
     @staticmethod
-    def initialise_env(output_dir, priors: Priors = Priors()):
+    def initialise_env(output_dir):
         """
         Script to set up enviroment for parallel
         model checking runs.
@@ -134,19 +166,19 @@ class ModelCheck:
         file_config = hnu_config["file_config"]
         prior_config = hnu_config["prior_config"]
 
+        _make_roi()
+
+        if not STAN_GEN_PATH in file_config["include_paths"]:
+            file_config["include_paths"].append(STAN_GEN_PATH)
+
         # Run MCEq computation
-        print("Setting up MCEq run for AtmopshericNumuFlux")
-        Emin = parameter_config["Emin"] * u.GeV
-        Emax = parameter_config["Emax"] * u.GeV
-        atmo_flux_model = AtmosphericNuMuFlux(Emin, Emax)
+        logger.info("Setting up MCEq run for AtmopshericNumuFlux")
 
         # Build necessary details to define simulation and fit code
+        detector_model_type = ModelCheck._get_dm_from_config(
+            parameter_config["detector_model_type"]
+        )
         sources = _initialise_sources()
-        detector_model_type = ModelCheck._get_dm_from_config(parameter_config["detector_model_type"])
-
-        if not isinstance(detector_model_type, list):
-            detector_model_type = [detector_model_type]
-
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
         stan_sim_interface = StanSimInterface(
@@ -156,10 +188,11 @@ class ModelCheck:
         )
 
         stan_sim_interface.generate()
-        print("Generated sim_code Stan file at:", sim_name)
+        logger.info(f"Generated sim_code Stan file at: {sim_name}")
 
         # Generate fit Stan file
-        nshards = parameter_config["nshards"]
+        threads_per_chain = parameter_config["threads_per_chain"]
+        nshards = threads_per_chain
         fit_name = file_config["fit_filename"][:-5]
 
         priors = Priors()
@@ -178,10 +211,10 @@ class ModelCheck:
         )
 
         stan_fit_interface.generate()
-        print("Generated fit Stan file at:", fit_name)
+        logger.info(f"Generated fit Stan file at: {fit_name}")
 
         # Comilation of Stan models
-        print("Compile Stan models")
+        logger.info("Compile Stan models")
         stanc_options = {"include-paths": list(file_config["include_paths"])}
         cpp_options = None
 
@@ -209,7 +242,7 @@ class ModelCheck:
             delayed(self._single_run)(n_subjobs, seed=s, **kwargs) for s in job_seeds
         )
 
-    def save(self, filename):
+    def save(self, filename, save_events: bool = False):
         with h5py.File(filename, "w") as f:
             truths_folder = f.create_group("truths")
             for key, value in self.truths.items():
@@ -221,10 +254,24 @@ class ModelCheck:
                 folder = f.create_group("results_%i" % i)
 
                 for key, value in res.items():
-                    if key != "Lambda":
+                    if key == "events":
+                        continue
+                    elif key == "association_prob":
+                        if not save_events:
+                            continue
+                        for c, prob in enumerate(value):
+                            folder.create_dataset(f"association_prob_{c}", data=prob)
+                    elif key != "Lambda":
                         folder.create_dataset(key, data=value)
                     else:
                         sim_folder.create_dataset("sim_%i" % i, data=np.vstack(value))
+
+        if save_events and "events" in res.keys():
+            for i, res in enumerate(self._results):
+                for c, events in enumerate(res["events"]):
+                    events.to_file(
+                        filename, append=True, group_name=f"sim/events_{i}_{c}"
+                    )
 
         self.priors.addto(filename, "priors")
 
@@ -242,6 +289,10 @@ class ModelCheck:
             results[key] = []
 
         file_truths = {}
+
+        sim = {}
+        sim_N = []
+
         for filename in filename_list:
             file_priors = Priors.from_group(filename, "priors")
 
@@ -269,8 +320,7 @@ class ModelCheck:
                         if (key != "truths" and key != "priors" and key != "sim")
                     ]
                 )
-                sim = {}
-                sim_N = []
+
                 for i in range(n_jobs):
                     job_folder = f["results_%i" % i]
                     for res_key in job_folder:
@@ -314,9 +364,10 @@ class ModelCheck:
             if (
                 var_name == "L"
                 or var_name == "F_diff"
-                or var_name == "F_atmo"
+                # or var_name == "F_atmo"
                 or var_name == "Fs"
             ):
+                log = True
                 bins = np.geomspace(
                     np.min(np.array(self.results[var_name])[~mask]),
                     np.max(np.array(self.results[var_name])[~mask]),
@@ -330,9 +381,10 @@ class ModelCheck:
                 ax[v].set_xscale("log")
 
             else:
+                log = False
                 prior_supp = np.linspace(
-                    np.min(self.results[var_name]),
-                    np.max(self.results[var_name]),
+                    np.min(np.array(self.results[var_name])[~mask]),
+                    np.max(np.array(self.results[var_name])[~mask]),
                     1000,
                 )
                 bins = np.linspace(
@@ -344,43 +396,66 @@ class ModelCheck:
 
             for i in range(len(self.results[var_name])):
                 if i not in mask_results and len(self.results[var_name]) != 0:
-                    n, bins, _ = ax[v].hist(
-                        self.results[var_name][i],
+                    if log:
+                        n, _ = np.histogram(
+                            np.log10(self.results[var_name][i]),
+                            np.log10(bins),
+                            density=True,
+                        )
+                    else:
+                        n, _ = np.histogram(
+                            self.results[var_name][i], bins, density=True
+                        )
+                    n = np.hstack((np.array([0]), n, np.array([n[-1], 0])))
+                    plot_bins = np.hstack(
+                        (np.array([bins[0] - 1e-10]), bins, np.array([bins[-1]]))
+                    )
+
+                    low = np.nonzero(n)[0].min()
+                    high = np.nonzero(n)[0].max()
+                    ax[v].step(
+                        plot_bins[low - 1 : high + 2],
+                        n[low - 1 : high + 2],
                         color="#017B76",
                         alpha=alpha,
-                        histtype="step",
-                        bins=bins,
                         lw=1.0,
+                        where="post",
                     )
 
                     if show_N and var_name == "Nex_src":
-                        for val in self.sim_Lambdas.values():
+                        for val in self.sim_N:
                             # Overplot the actual number of events for each component
-                            for line in val:
-                                ax[v].axvline(line[0], ls="-", c="red", lw=0.3)
+                            # for line in val:
+                            ax[v].axvline(val[0], ls="-", c="red", lw=0.3)
 
                     elif show_N and var_name == "Nex_diff":
-                        for val in self.sim_Lambdas.values():
+                        for val in self.sim_N:
                             # Overplot the actual number of events for each component
-                            for line in val:
-                                ax[v].axvline(line[1], ls="-", c="red", lw=0.3)
+                            # for line in val:
+                            ax[v].axvline(val[1], ls="-", c="red", lw=0.3)
 
                     elif show_N and var_name == "Nex_atmo":
-                        for val in self.sim_Lambdas.values():
+                        for val in self.sim_N:
                             # Overplot the actual number of events for each component
-                            for line in val:
-                                ax[v].axvline(line[2], ls="-", c="red", lw=0.3)
+                            # for line in val:
+                            ax[v].axvline(val[2], ls="-", c="red", lw=0.3)
 
                     max_value = n.max() if n.max() > max_value else max_value
 
             if show_prior:
                 N = len(self.results[var_name][0]) * 100
-                xmin, xmax = ax[v].get_xlim()
+
+                # this case distinction is overly complicated
+                if (
+                    var_name == "L"
+                    or var_name == "F_diff"
+                    or var_name == "F_atmo"
+                    or var_name == "Fs"
+                ):
+                    pass
 
                 if "f_" in var_name and not "diff" in var_name:  # yikes
-                    prior_samples = uniform(0, 1).rvs(N)
-                    prior_density = uniform(0, 1).pdf(prior_supp)
-                    plot = True
+                    plot = False
 
                 elif "Nex" in var_name:
                     plot = False
@@ -390,7 +465,7 @@ class ModelCheck:
                     plot = True
 
                 elif not "Fs" in var_name:
-                    prior_samples = self.priors.to_dict()[var_name].sample(N)
+                    # prior_samples = self.priors.to_dict()[var_name].sample(N)
                     prior_density = self.priors.to_dict()[var_name].pdf_logspace(
                         prior_supp
                     )
@@ -401,30 +476,47 @@ class ModelCheck:
                 if plot:
                     ax[v].plot(
                         prior_supp,
-                        prior_density / prior_density.max() * max_value / 2.0,
+                        prior_density,
                         color="k",
                         alpha=0.5,
                         lw=2,
                         label="Prior",
                     )
-                    ax[v].hist(
-                        prior_samples,
-                        color="k",
-                        alpha=0.5,
-                        histtype="step",
-                        bins=bins,
-                        lw=2,
-                        weights=np.tile(0.01, len(prior_samples)),
-                        label="Prior samples",
-                    )
-            try:
+
+            if var_name in self.truths.keys():
                 ax[v].axvline(
                     self.truths[var_name], color="k", linestyle="-", label="Truth"
                 )
-            except KeyError:
-                pass
+                counts_hdi = 0
+                counts_50_quantile = 0
+                for d in self.results[var_name]:
+                    hdi = av.hdi(d, 0.5)
+                    quantile = np.quantile(d, [0.25, 0.75])
+                    true_val = self.truths[var_name]
+                    if true_val <= hdi[1] and true_val >= hdi[0]:
+                        counts_hdi += 1
+                    if true_val <= quantile[1] and true_val >= hdi[0]:
+                        counts_50_quantile += 1
+                length = len(self.results[var_name]) - mask_results.size
+                text = [
+                    f"fraction in 50% HDI: {counts_hdi / length:.2f}\n"
+                    + f"fraction in 50% central interval: {counts_50_quantile / length:.2f}"
+                ]
+                handles = [
+                    mpl_patches.Rectangle(
+                        (0, 0), 1, 1, fc="white", ec="white", lw=0, alpha=0
+                    )
+                ]
+                ax[v].legend(
+                    handles=handles,
+                    labels=text,
+                    loc="best",
+                    handlelength=0,
+                    handletextpad=0,
+                )
+
             ax[v].set_xlabel(var_labels[v], labelpad=10)
-            ax[v].legend(loc="best")
+            ax[v].set_yticks([])
 
         fig.tight_layout()
         return fig, ax
@@ -440,13 +532,13 @@ class ModelCheck:
         ind_not_ok = np.where(diagnostics_array == 0)[0]
 
         if len(ind_not_ok) > 0:
-            print(
+            logger.warning(
                 "%.2f percent of fits have issues!"
                 % (len(ind_not_ok) / len(diagnostics_array) * 100)
             )
 
         else:
-            print("No issues found")
+            logger.info("No issues found")
 
         return ind_not_ok
 
@@ -455,7 +547,11 @@ class ModelCheck:
         Single run to be called using Parallel.
         """
 
+        save_events = kwargs.pop("save_events", False)
+
         sys.stderr.write("Random seed: %i\n" % seed)
+
+        roi = _make_roi()
 
         self._sources = _initialise_sources()
 
@@ -472,18 +568,20 @@ class ModelCheck:
         outputs["diagnostics_ok"] = []
         outputs["run_time"] = []
         outputs["Lambda"] = []
+        if save_events:
+            outputs["events"] = []
+            outputs["association_prob"] = []
 
         fit = None
         for i, s in enumerate(subjob_seeds):
             sys.stderr.write("Run %i\n" % i)
-
             # Simulation
             # Should reduce time consumption if only on first iteration model is compiled
             if i == 0:
                 sim = Simulation(
                     self._sources, self._detector_model_type, self._obs_time
                 )
-                sim.precomputation(self._exposure_integral)
+                sim.precomputation()
                 sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
 
             sim.run(seed=s, verbose=True)
@@ -493,7 +591,10 @@ class ModelCheck:
             if not sim.events:
                 continue
 
+            events = sim.events
+
             lambd = sim._sim_output.stan_variable("Lambda").squeeze()
+
             ps = np.sum(lambd == 1.0)
             diff = np.sum(lambd == 2.0)
             atmo = np.sum(lambd == 3.0)
@@ -503,8 +604,6 @@ class ModelCheck:
             if not sim.events:
                 continue
 
-            self.events = sim.events
-
             # Fit
             # Same as above, save time
             # Also handle in case first sim has no events
@@ -512,7 +611,7 @@ class ModelCheck:
                 fit = StanFit(
                     self._sources,
                     self._detector_model_type,
-                    sim.events,
+                    events,
                     self._obs_time,
                     priors=self.priors,
                     nshards=self._threads_per_chain,
@@ -521,15 +620,34 @@ class ModelCheck:
                 fit.setup_stan_fit(os.path.splitext(file_config["fit_filename"])[0])
 
             else:
-                fit.events = sim.events
+                fit.events = events
 
             start_time = time.time()
+
+            share_L = hnu_config.parameter_config.share_L
+            share_src_index = hnu_config.parameter_config.share_src_index
+
+            if not share_L:
+                L_init = [1e49] * len(self._sources.point_source)
+            else:
+                L_init = 1e49
+
+            if not share_src_index:
+                src_init = [2.3] * len(self._sources.point_source)
+            else:
+                src_init = 2.3
+            inits = {
+                "F_diff": 1e-4,
+                "F_atmo": 0.3,
+                "E": [1e5] * fit.events.N,
+                "L": L_init,
+                "src_index": src_init,
+            }
             fit.run(
                 seed=s,
                 show_progress=True,
-                threads_per_chain=self._threads_per_chain,
-                inits={"src_index": 2.2, "L": 1e50, "diff_index": 2.2},
-                **kwargs
+                inits=inits,
+                **kwargs,
             )
 
             self.fit = fit
@@ -546,6 +664,12 @@ class ModelCheck:
             for key in self._diagnostic_names:
                 outputs[key].append(fit._fit_output.method_variables()[key])
 
+            if save_events:
+                outputs["events"].append(events)
+                outputs["association_prob"].append(
+                    np.array(fit._get_event_classifications())
+                )
+
             diagnostics_output_str = fit._fit_output.diagnose()
 
             if "no problems detected" in diagnostics_output_str:
@@ -557,7 +681,11 @@ class ModelCheck:
 
     @staticmethod
     def _get_dm_from_config(dm_key):
-        return Refrigerator.python2dm(dm_key)
+        return [Refrigerator.python2dm(dm) for dm in dm_key]
+
+    @staticmethod
+    def _get_obs_time_from_config(dms, obs_time):
+        return {dm: obs_time[c] * u.year for c, dm in enumerate(dms)}
 
     def _get_prior_func(self, var_name):
         """
@@ -584,26 +712,58 @@ class ModelCheck:
 
 def _initialise_sources():
     parameter_config = hnu_config["parameter_config"]
+    share_L = parameter_config["share_L"]
+    share_src_index = parameter_config["share_src_index"]
 
     Parameter.clear_registry()
-    src_index = Parameter(
-        parameter_config["src_index"],
-        "src_index",
-        fixed=False,
-        par_range=parameter_config["src_index_range"],
-    )
+    indices = []
+    if not share_src_index:
+        for c, idx in enumerate(parameter_config["src_index"]):
+            name = f"ps_{c}_src_index"
+            indices.append(
+                Parameter(
+                    idx,
+                    name,
+                    fixed=False,
+                    par_range=parameter_config["src_index_range"],
+                )
+            )
+    else:
+        indices.append(
+            Parameter(
+                parameter_config["src_index"][0],
+                "src_index",
+                fixed=False,
+                par_range=parameter_config["src_index_range"],
+            )
+        )
     diff_index = Parameter(
         parameter_config["diff_index"],
         "diff_index",
         fixed=False,
         par_range=parameter_config["diff_index_range"],
     )
-    L = Parameter(
-        parameter_config["L"] * u.erg / u.s,
-        "luminosity",
-        fixed=True,
-        par_range=parameter_config["L_range"] * u.erg / u.s,
-    )
+    L = []
+    if not share_L:
+        for c, Lumi in enumerate(parameter_config["L"]):
+            name = f"ps_{c}_luminosity"
+            L.append(
+                Parameter(
+                    Lumi * u.erg / u.s,
+                    name,
+                    fixed=True,
+                    par_range=parameter_config["L_range"] * u.erg / u.s,
+                )
+            )
+    else:
+        L.append(
+            Parameter(
+                parameter_config["L"][0] * u.erg / u.s,
+                "luminosity",
+                fixed=False,
+                par_range=parameter_config["L_range"] * u.erg / u.s,
+            )
+        )
     diffuse_norm = Parameter(
         parameter_config["diff_norm"] * 1 / (u.GeV * u.m**2 * u.s),
         "diffuse_norm",
@@ -630,44 +790,78 @@ def _initialise_sources():
         )
 
     else:
-        Emin_det_tracks = Parameter(
-            parameter_config["Emin_det_tracks"] * u.GeV,
-            "Emin_det_tracks",
-            fixed=True,
-        )
-        Emin_det_cascades = Parameter(
-            parameter_config["Emin_det_cascades"] * u.GeV,
-            "Emin_det_cascades",
-            fixed=True,
-        )
-        Emin_det_IC86_II = Parameter(
-            parameter_config["Emin_det_IC86_II"] * u.GeV,
-            "Emin_det_IC86_II",
-            fixed=True,
-        )
+        for dm in Refrigerator.detectors:
+            # Create a parameter for each detector
+            # If the detector is not used, the parameter is disregarded
+            _ = Parameter(
+                parameter_config[f"Emin_det_{dm.P}"] * u.GeV,
+                f"Emin_det_{dm.P}",
+                fixed=True,
+            )
 
-    # Simple point source for testing
     dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
     ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
     center = SkyCoord(ra=ra, dec=dec, frame="icrs")
-    radius = 10 * u.deg
-    roi = CircularROI(center, radius)
-    point_source = PointSource.make_powerlaw_source(
-        "test",
-        dec,
-        ra,
-        L,
-        src_index,
-        parameter_config["z"],
-        Emin_src,
-        Emax_src,
-    )
 
     sources = Sources()
-    sources.add(point_source)
+
+    for c in range(len(dec)):
+        if share_L:
+            Lumi = L[0]
+        else:
+            Lumi = L[c]
+
+        if share_src_index:
+            idx = indices[0]
+        else:
+            idx = indices[c]
+        point_source = PointSource.make_powerlaw_source(
+            f"ps_{c}",
+            dec[c],
+            ra[c],
+            Lumi,
+            idx,
+            parameter_config["z"][c],
+            Emin_src,
+            Emax_src,
+        )
+
+        sources.add(point_source)
     sources.add_diffuse_component(
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
     )
     sources.add_atmospheric_component()
 
     return sources
+
+
+def _make_roi():
+    ROIList.clear_registry()
+    parameter_config = hnu_config["parameter_config"]
+    roi_config = hnu_config["roi_config"]
+    dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
+    ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
+    center = SkyCoord(ra=ra, dec=dec, frame="icrs")
+
+    roi_config = hnu_config["roi_config"]
+    size = roi_config["size"] * u.deg
+    apply_roi = roi_config["apply_roi"]
+
+    if apply_roi and len(dec) > 1 and not roi_config["roi_type"] == "CircularROI":
+        raise ValueError("Only CircularROIs can be stacked")
+    if roi_config["roi_type"] == "CircularROI":
+        for c in range(len(dec)):
+            CircularROI(center[c], size, apply_roi=apply_roi)
+    elif roi_config["roi_type"] == "RectangularROI":
+        size = size.to(u.rad)
+        RectangularROI(
+            RA_min=ra[0] - size,
+            RA_max=ra[0] + size,
+            DEC_min=dec[0] - size,
+            DEC_max=dec[0] + size,
+            apply_roi=apply_roi,
+        )
+    elif roi_config["roi_type"] == "FullSkyROI":
+        FullSkyROI()
+    elif roi_config["roi_type"] == "NorthernSkyROI":
+        NorthernSkyROI()
