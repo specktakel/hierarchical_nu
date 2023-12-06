@@ -9,7 +9,7 @@ from hierarchical_nu.source.source import Sources, PointSource
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
-from hierarchical_nu.utils.roi import RectangularROI
+from hierarchical_nu.utils.roi import RectangularROI, ROIList
 from hierarchical_nu.detector.icecube import Refrigerator, NT, CAS, IC86_I, IC86_II
 import logging
 
@@ -28,6 +28,7 @@ stanc_options = {"include-paths": [STAN_PATH, STAN_GEN_PATH]}
 
 
 def test_stan_sim_interface(output_directory):
+    ROIList.clear_registry()
     roi = RectangularROI(DEC_min=-5 * u.deg)
     logger.warning(roi)
     # Set up sources
@@ -97,6 +98,7 @@ def test_stan_sim_interface(output_directory):
 def test_stan_fit_interface(output_directory):
     # Set up sources
     Parameter.clear_registry()
+    ROIList.clear_registry()
     roi = RectangularROI(DEC_min=5 * u.deg)
     logger.warning(roi)
 

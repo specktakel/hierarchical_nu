@@ -166,7 +166,6 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
-        pivot: Parameter,
     ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
@@ -186,10 +185,11 @@ class PointSource(Source):
                 Spectral index
             redshift: float
             lower: Parameter
-                Lower energy bound
+                Lower energy bound in source frame
             upper: Parameter
-                Upper energy bound
-        All parameters are taken to be defined in the source frame.
+                Upper energy bound in source frame
+        Takes additionally Emin and Emax (in the detector frame) to limit the spectral model.
+        `index` is the valid spectral index between `lower` and `upper` energ
         """
         # raise NotImplementedError
         total_flux = luminosity.value / (
@@ -207,9 +207,9 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
-        shape = PowerLawSpectrum(
+        shape = TwiceBrokenPowerLaw(
             norm,
-            pivot.value / (1 + redshift),
+            1e5 * u.GeV,
             index,
             lower.value / (1 + redshift),
             upper.value / (1 + redshift),
@@ -250,7 +250,7 @@ class PointSource(Source):
 
             ras = f["phi"][()] * u.rad
 
-            decs = f["theta"][()] * u.rad
+            decs = (f["theta"][()] - np.pi / 2) * u.rad
 
             selection = f["selection"][()]
 
@@ -265,6 +265,17 @@ class PointSource(Source):
             ras = ras[selection]
 
             decs = decs[selection]
+
+        # Make cut on declination, current implementations are only defined in the Northern Sky
+        # dec > -5deg
+
+        mask = decs >= np.deg2rad(-5) * u.rad
+
+        luminosities = luminosities[mask]
+        spectral_indices = spectral_indices[mask]
+        redshifts = redshifts[mask]
+        ras = ras[mask]
+        decs = decs[mask]
 
         # Make list of point sources
         source_list = []

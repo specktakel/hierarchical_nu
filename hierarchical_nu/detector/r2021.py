@@ -5,9 +5,11 @@ from itertools import product
 import numpy as np
 from scipy import stats
 from astropy import units as u
+import matplotlib.pyplot as plt
 
 from abc import ABC
 
+from hierarchical_nu.utils.roi import ROI, ROIList, CircularROI
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.backend.stan_generator import (
     ElseBlockContext,
@@ -416,10 +418,34 @@ class R2021EffectiveArea(EffectiveArea):
             type_ = TwoDimHistInterpolation
         else:
             type_ = SimpleHistogram
+
+        # Check if ROI should be applied to the effective area
+        # This will speed up the fit but requires recompilation for different ROIs
+        if ROIList.STACK:
+            apply_roi = np.all(_.apply_roi for _ in ROIList.STACK)
+        else:
+            apply_roi = False
+
+        if apply_roi:
+            cosz_min = -np.sin(ROIList.DEC_max())
+            cosz_max = -np.sin(ROIList.DEC_min())
+            idx_min = np.digitize(cosz_min, self._cosz_bin_edges) - 1
+            idx_max = np.digitize(cosz_max, self._cosz_bin_edges, right=True) - 1
+            eff_area = self._eff_area[:, idx_min : idx_max + 1]
+            cosz_bin_edges = self._cosz_bin_edges[idx_min : idx_max + 2]
+        else:
+            cosz_bin_edges = self._cosz_bin_edges
+            eff_area = self._eff_area
+        # Define Stan interface.
+        if self.mode == DistributionMode.PDF:
+            type_ = TwoDimHistInterpolation
+        else:
+            type_ = SimpleHistogram
+
         with self:
             hist = type_(
-                self._eff_area,
-                [self._tE_bin_edges, self._cosz_bin_edges],
+                eff_area,
+                [self._tE_bin_edges, cosz_bin_edges],
                 f"{self._season}EffAreaHist",
             )
             # Uses cos(z), so calculate z = pi - theta
@@ -876,27 +902,14 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         self.set_fit_params((dec + 0.01) * u.rad)
 
                         fig = self.plot_fit_params(self._fit_params, self._tE_binc)
-                        fig.show()
-                        """
-                        fig.savefig(
-                            f"new_version_at_tE/polynomial_{self._season}_dec_{c}.png",
-                            dpi=300,
-                            bbox_inches="tight",
-                        )
-                        """
+                        plt.show()
+
                         fig = self.plot_parameterizations(
                             self._fit_params,
                             self._tE_binc,
                             c,
                         )
-                        fig.show()
-                        """
-                        fig.savefig(
-                            f"new_version_at_tE/lognorm_fit_{self._season}_dec_{c}.png",
-                            dpi=300,
-                            bbox_inches="tight",
-                        )
-                        """
+                        plt.show()
 
                 self._poly_params_mu = self._poly_params_mu__.copy()
                 self._poly_params_sd = self._poly_params_sd__.copy()
@@ -959,6 +972,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         lower_threshold_energy: u.GeV,
         dec: u.rad,
         upper_threshold_energy=None,
+        use_lognorm: bool = False,
     ):
         """
         P(Edet > Edet_min | E) for use in precomputation.
@@ -972,6 +986,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         :param dec: Declination of event in radian
         :param upper_threshold_energy: Optional upper reconstructe muon energy in GeV,
                                        if none provided, use highest possible value
+        :param use_lognorm: bool, if True use lognormal parameterisation
         """
         # Truncate input energies to safe range
         energy_trunc = true_energy.to(u.GeV).value
@@ -1007,13 +1022,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             )
         ] -= 1
 
-        idx_tE = (
-            np.digitize(
-                np.log10(energy_trunc.to_value(u.GeV)), self.irf.true_energy_bins
-            )
-            - 1
-        )
-
         # Create output array
         prob = np.zeros(energy_trunc.shape)
 
@@ -1025,28 +1033,76 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         # apply stronger limit
         e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
 
-        for cE, cD in product(
-            range(self.irf.true_energy_bins.size - 1),
-            range(self.irf.declination_bins.size - 1),
-        ):
-            if cE not in idx_tE and cD not in idx_dec_eres:
-                continue
+        # Get the according IRF dec bins (there are only 3)
+        irf_dec_idx = np.digitize(dec.to_value(u.rad), self._declination_bins) - 1
 
-            if upper_threshold_energy is None:
-                prob[
-                    (cE == idx_tE) & (cD == idx_dec_eres)
-                ] = 1.0 - self.irf.reco_energy[cE, cD].cdf(
-                    e_low[(cE == idx_tE) & (cD == idx_dec_eres)]
+        if use_lognorm:
+            for c, d in enumerate(self._declination_bins[:-1]):
+                # Otherwise we will cause errors
+                if c not in irf_dec_idx:
+                    continue
+                self.set_fit_params((d + 0.01) * u.rad)
+
+                model = self.make_cumulative_model(self.n_components)
+
+                model_params: List[float] = []
+
+                for comp in range(self.n_components):
+                    mu = np.poly1d(self._poly_params_mu[comp])(
+                        np.log10(energy_trunc[irf_dec_idx == c].to(u.GeV).value)
+                    )
+                    sigma = np.poly1d(self._poly_params_sd[comp])(
+                        np.log10(energy_trunc[irf_dec_idx == c].to(u.GeV).value)
+                    )
+                    model_params += [mu, sigma]
+
+                # Limits are in log10(E/GeV)
+                e_low = self._icecube_tools_eres._ereco_limits[
+                    idx_dec_aeff[np.nonzero(irf_dec_idx == c)], 0
+                ]
+                ethr_low = np.log10(lower_threshold_energy.to_value(u.GeV))
+                # print(ethr_low)
+                e_low[ethr_low > e_low] = ethr_low
+                if upper_threshold_energy is None:
+                    prob[irf_dec_idx == c] = 1.0 - model(e_low, model_params)
+
+                else:
+                    prob[irf_dec_idx == c] = model(
+                        np.log10(upper_threshold_energy.to_value(u.GeV)), model_params
+                    ) - model(e_low, model_params)
+
+            return prob
+
+        else:
+            idx_tE = (
+                np.digitize(
+                    np.log10(energy_trunc.to_value(u.GeV)), self.irf.true_energy_bins
                 )
-            else:
-                pdf = self.irf.reco_energy[cE, cD]
-                prob[(cE == idx_tE) & (cD == idx_dec_eres)] = pdf.cdf(
-                    np.log10(upper_threshold_energy.to_value(u.GeV))[
-                        (cE == idx_tE) & (cD == idx_dec_eres)
-                    ]
-                ) - pdf.cdf(e_low[(cE == idx_tE) & (cD == idx_dec_eres)])
+                - 1
+            )
 
-        return prob
+            for cE, cD in product(
+                range(self.irf.true_energy_bins.size - 1),
+                range(self.irf.declination_bins.size - 1),
+            ):
+                if cE not in idx_tE and cD not in idx_dec_eres:
+                    continue
+
+                if upper_threshold_energy is None:
+                    prob[
+                        (cE == idx_tE) & (cD == idx_dec_eres)
+                    ] = 1.0 - self.irf.reco_energy[cE, cD].cdf(
+                        e_low[(cE == idx_tE) & (cD == idx_dec_eres)]
+                    )
+                else:
+                    pdf = self.irf.reco_energy[cE, cD]
+                    prob[(cE == idx_tE) & (cD == idx_dec_eres)] = pdf.cdf(
+                        np.log10(upper_threshold_energy.to_value(u.GeV))[
+                            (cE == idx_tE) & (cD == idx_dec_eres)
+                        ]
+                    ) - pdf.cdf(e_low[(cE == idx_tE) & (cD == idx_dec_eres)])
+
+            return prob
 
     @staticmethod
     def make_fit_model(n_components):
@@ -1269,7 +1325,9 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         poly_params_sd = np.zeros_like(poly_params_mu)
         for i in range(self.n_components):
             poly_params_mu[i] = np.polyfit(
-                log10_tE_binc[imin:imax][mask], fit_params[:, 2 * i][imin:imax][mask], polydeg
+                log10_tE_binc[imin:imax][mask],
+                fit_params[:, 2 * i][imin:imax][mask],
+                polydeg,
             )
             poly_params_sd[i] = np.polyfit(
                 log10_tE_binc[imin:imax][mask],

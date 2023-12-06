@@ -140,7 +140,9 @@ class StanFit:
             new_prior = p.to_dict()
             for k, v in new_prior.items():
                 if previous_prior[k].name != v.name:
-                    logger.warning(f"Prior type of {k} changed, regenerate and recompile the stan code.")
+                    logger.warning(
+                        f"Prior type of {k} changed, regenerate and recompile the stan code."
+                    )
             self._priors = p
             self._stan_interface._priors = p
         else:
@@ -179,7 +181,7 @@ class StanFit:
 
     def compile_stan_code(self, include_paths=None):
         if not include_paths:
-            include_paths = [STAN_PATH]
+            include_paths = [STAN_PATH, STAN_GEN_PATH]
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename,
@@ -452,7 +454,11 @@ class StanFit:
         """
 
         _, axs = self.plot_trace(
-            var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
+            var_names=["E"],
+            transform=lambda x: np.log10(x),
+            show=False,
+            combined=True,
+            divergences=None,
         )
 
         fig, ax = plt.subplots(dpi=150)
@@ -559,7 +565,11 @@ class StanFit:
         ax = fig.add_subplot(gs[0, 1])
 
         _, axs = self.plot_trace(
-            var_names=["E"], transform=lambda x: np.log10(x), show=False, combined=True
+            var_names=["E"],
+            transform=lambda x: np.log10(x),
+            show=False,
+            combined=True,
+            divergences=None,
         )
 
         source_coords = self.get_src_position()
@@ -618,6 +628,9 @@ class StanFit:
             meta_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
 
         self.events.to_file(filename, append=True)
+
+        # Add priors separately
+        self.priors.addto(filename, "priors")
 
     @classmethod
     def from_file(cls, filename):
@@ -678,32 +691,7 @@ class StanFit:
 
         obs_time_dict = {et: obs_time[k] for k, et in enumerate(event_types)}
 
-        priors = Priors()
-        try:
-            priors.luminosity = LogNormalPrior(
-                mu=priors_dict["lumi_mu"], sigma=priors_dict["lumi_sigma"]
-            )
-            priors.src_index = NormalPrior(
-                mu=priors_dict["src_index_mu"], sigma=priors_dict["src_index_sigma"]
-            )
-        except KeyError:
-            pass
-        try:
-            priors.diff_index = NormalPrior(
-                mu=priors_dict["diff_index_mu"], sigma=priors_dict["diff_index_sigma"]
-            )
-            priors.diffuse_flux = LogNormalPrior(
-                mu=priors_dict["f_diff_mu"], sigma=priors_dict["f_diff_sigma"]
-            )
-        except KeyError:
-            pass
-        try:
-           priors.atmospheric_flux = LogNormalPrior(
-                mu=priors_dict["f_atmo_mu"], sigma=priors_dict["f_atmo_sigma"]
-            )
-        except KeyError:
-            pass
-        
+        priors = Priors.from_group(filename, "priors")
 
         events = Events.from_file(filename)
 
