@@ -152,13 +152,19 @@ class Events:
             for roi in ROIList.STACK:
                 # TODO add reco energy cut for all event types
                 if isinstance(roi, CircularROI):
-                    mask.append(roi.radius >= roi.center.separation(coords))
+                    mask.append(
+                        (roi.radius >= roi.center.separation(coords))
+                        & (mjd <= roi.MJD_max)
+                        & (mjd >= roi.MJD_min)
+                    )
                 else:
                     if roi.RA_min > roi.RA_max:
                         mask.append(
                             (dec <= roi.DEC_max)
                             & (dec >= roi.DEC_min)
                             & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                            & (mjd <= roi.MJD_max)
+                            & (mjd >= roi.MJD_min)
                         )
 
                     else:
@@ -167,6 +173,8 @@ class Events:
                             & (dec >= roi.DEC_min)
                             & (ra >= roi.RA_min)
                             & (ra <= roi.RA_max)
+                            & (mjd <= roi.MJD_max)
+                            & (mjd >= roi.MJD_min)
                         )
 
             idxs = np.logical_or.reduce(mask)
@@ -247,15 +255,22 @@ class Events:
 
         mask = []
         for roi in ROIList.STACK:
-            # TODO add reco energy cut for all event types
             if isinstance(roi, CircularROI):
-                mask.append(roi.radius >= roi.center.separation(coords))
+                mask.append(
+                    (
+                        (roi.radius >= roi.center.separation(coords))
+                        & (mjd <= roi.MJD_max)
+                        & (mjd >= roi.MJD_min)
+                    )
+                )
             else:
                 if roi.RA_min > roi.RA_max:
                     mask.append(
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                        & (mjd <= roi.MJD_max)
+                        & (mjd >= roi.MJD_min)
                     )
 
                 else:
@@ -264,6 +279,8 @@ class Events:
                         & (dec >= roi.DEC_min)
                         & (ra >= roi.RA_min)
                         & (ra <= roi.RA_max)
+                        & (mjd <= roi.MJD_max)
+                        & (mjd >= roi.MJD_min)
                     )
 
         mjd = Time(mjd, format="mjd")
