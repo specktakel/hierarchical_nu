@@ -44,6 +44,9 @@ class Simulation:
         sources: Sources,
         event_types: Union[EventType, List[EventType]],
         observation_time: Dict[EventType, u.quantity.Quantity[u.year]],
+        atmo_flux_energy_points: int = 100,
+        atmo_flux_theta_points: int = 30,
+        n_grid_points: int = 50,
         N: dict = {},
     ):
         """
@@ -58,6 +61,7 @@ class Simulation:
         assert len(event_types) == len(observation_time)
         self._event_types = event_types
         self._observation_time = observation_time
+        self._n_grid_points = n_grid_points
 
         self._sources.organise()
 
@@ -84,6 +88,8 @@ class Simulation:
             stan_file_name,
             self._sources,
             self._event_types,
+            atmo_flux_energy_points=atmo_flux_energy_points,
+            atmo_flux_theta_points=atmo_flux_theta_points,
             force_N=self._force_N,
         )
 
@@ -132,8 +138,7 @@ class Simulation:
         if not exposure_integral:
             for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
-                    self._sources,
-                    event_type,
+                    self._sources, event_type, self._n_grid_points
                 )
 
         else:
