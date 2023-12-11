@@ -1195,7 +1195,7 @@ class StanFitInterface(StanInterface):
                                     self._integral_grid[i, k],
                                     src_index_ref,
                                 ],
-                                "interpolate",
+                                "interpolate_log_y",
                             )
                             * self._T[i]
                         )
@@ -1214,7 +1214,7 @@ class StanFitInterface(StanInterface):
                                 self._integral_grid[i, "Ns + 1"],
                                 self._diff_index,
                             ],
-                            "interpolate",
+                            "interpolate_log_y",
                         )
                         * self._T[i]
                     )
@@ -1242,7 +1242,7 @@ class StanFitInterface(StanInterface):
                                 self._integral_grid[i, "Ns + 1"],
                                 self._diff_index,
                             ],
-                            "interpolate",
+                            "interpolate_log_y",
                         )
                         * self._T[i]
                     )
