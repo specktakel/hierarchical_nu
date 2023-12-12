@@ -166,8 +166,7 @@ class StanFit:
         if not exposure_integral:
             for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
-                    self._sources,
-                    event_type,
+                    self._sources, event_type, self._n_grid_points
                 )
 
         else:
@@ -941,7 +940,7 @@ class StanFit:
         for c, event_type in enumerate(self._event_types):
             integral_grid.append(
                 [
-                    _.to(u.m**2).value.tolist()
+                    np.log(_.to(u.m**2).value).tolist()
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
             )
