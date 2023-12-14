@@ -29,6 +29,7 @@ from hierarchical_nu.detector.icecube import EventType
 import logging
 
 from typing import List
+import numpy.typing as npt
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -73,6 +74,10 @@ class Events:
         self._ang_errs = ang_errs
 
     def remove(self, i):
+        """
+        Remove the event at index i
+        :param i: Event index
+        """
         self._energies = np.delete(self._energies, i)
         self._coords = np.delete(self._coords, i)
         self._unit_vectors = np.delete(self._unit_vectors, i, axis=0)
@@ -86,6 +91,21 @@ class Events:
             return self.types.size
         except AttributeError:
             return len(self.types)
+
+    def select(self, mask: npt.NDArray[np.bool_]):
+        """
+        Select some subset of existing events by providing a mask.
+        :param mask: Array of bools with same length as event properties.
+        """
+
+        assert len(mask) == self.N
+
+        self._energies = self._energies[mask]
+        self._coords = self._coords[mask]
+        self._unit_vectors = self._unit_vectors[mask]
+        self._types = self._types[mask]
+        self._ang_errs = self._ang_errs[mask]
+        self._mjd = self._mjd[mask]
 
     @property
     def energies(self):

@@ -46,7 +46,7 @@ def test_roi_south(caplog):
         radius=12.0 * u.deg,
     )
 
-    assert "ROI extends into Southern sky. Proceed with chaution." in caplog.text
+    assert "ROI extends into Southern sky. Proceed with caution." in caplog.text
 
 
 def test_humongous_roi():
