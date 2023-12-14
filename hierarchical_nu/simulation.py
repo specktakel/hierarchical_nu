@@ -413,7 +413,7 @@ class Simulation:
             if isinstance(s, PointSource)
         ]
         src_pos = [
-            icrs_to_uv(s.dec.value, s.ra.value)
+            icrs_to_uv(s.dec.to_value(u.rad), s.ra.to_value(u.rad))
             for s in self._sources.sources
             if isinstance(s, PointSource)
         ]
@@ -567,7 +567,9 @@ class Simulation:
             sim_inputs["u_low"] = ROIList.STACK[0].RA_min.to_value(u.rad) / (
                 2.0 * np.pi
             )
-            sim_inputs["u_high"] = ROIList.STACK[0].RA_max.to_value(u.rad) / (2.0 * np.pi)
+            sim_inputs["u_high"] = ROIList.STACK[0].RA_max.to_value(u.rad) / (
+                2.0 * np.pi
+            )
 
         # For circular ROI the center point and radius are needed
         if isinstance(ROIList.STACK[0], CircularROI):
