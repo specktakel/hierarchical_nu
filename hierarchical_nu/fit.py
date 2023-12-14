@@ -803,22 +803,8 @@ class StanFit:
                 .transpose(1, 2, 0)
             )
 
-        n_comps = np.shape(logprob)[1]
-
-        instead = []
-        for lp in logprob:
-            # event wise
-            ratios = []
-            for i in range(1000):
-                # sample wise ratio
-                temp = []
-                for j in range(3):
-                    # source wise ratio
-                    temp.append(np.exp(lp[j, i]) / np.sum(np.exp(lp[:, i])))
-                ratios.append(temp)
-            ratios = np.array(ratios)
-            instead.append(np.average(ratios, axis=0))
-        instead = np.array(instead).tolist()
+        ratio = np.exp(logprob) / np.sum(np.exp(logprob), axis=1)[:, np.newaxis, :]
+        instead = np.average(ratio, axis=-1).tolist()
         return instead
 
     def _get_fit_inputs(self):
