@@ -291,7 +291,6 @@ class StanFitInterface(StanInterface):
                                 ["real_data[start:end]"]
                             )
                             start << start + length
-
                     Emin_src = ForwardVariableDef("Emin_src", "real")
                     Emax_src = ForwardVariableDef("Emax_src", "real")
                     Emin = ForwardVariableDef("Emin", "real")
@@ -586,9 +585,10 @@ class StanFitInterface(StanInterface):
             self._Emin_src = ForwardVariableDef("Emin_src", "real")
             self._Emax_src = ForwardVariableDef("Emax_src", "real")
 
-            # Energy range at the diffuse component at redshift z
-            self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
-            self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
+            if self.sources.diffuse:
+                # Energy range at the diffuse component at redshift z
+                self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
+                self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
 
             # Energy range at the detector
             self._Emin = ForwardVariableDef("Emin", "real")
