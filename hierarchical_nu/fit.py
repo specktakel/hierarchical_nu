@@ -626,6 +626,42 @@ class StanFit:
             meta_folder.create_dataset("runset", data=str(self._fit_output.runset))
             meta_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
 
+            summary = self._fit_output.summary()
+
+            # List of keys for which we are looking in the entirety of stan parameters
+            key_stubs = [
+                "lp__",
+                "L",
+                "_luminosity",
+                "src_index",
+                "_src_index",
+                "E[",
+                "Esrc[",
+                "F_atmo",
+                "F_diff",
+                "diff_index",
+                "Nex",
+                "f_det",
+                "f_arr",
+                "logF",
+                "Ftot",
+                "Fs",
+            ]
+
+            keys = []
+            for k, v in summary["N_Eff"].items():
+                for key in key_stubs:
+                    if key in k:
+                        keys.append(k)
+                        break
+
+            R_hat = np.array([summary["R_hat"][k] for k in keys])
+            N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+
+            meta_folder.create_dataset("N_Eff", data=N_Eff)
+            meta_folder.create_dataset("R_hat", data=R_hat)
+            meta_folder.create_dataset("parameters", data=np.array(keys, dtype="S"))
+
         self.events.to_file(filename, append=True)
 
         # Add priors separately
