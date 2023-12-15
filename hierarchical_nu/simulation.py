@@ -257,6 +257,10 @@ class Simulation:
                 data=self._sources.total_flux_int().to(flux_unit).value,
             )
 
+            outputs_folder.create_dataset(
+                "expected_Nnu_per_comp", data=self._expected_Nnu_per_comp
+            )
+
         self.events.to_file(filename, append=True)
 
     def show_spectrum(self, *components: str, scale: str = "linear"):
@@ -329,9 +333,14 @@ class Simulation:
 
         return fig, ax
 
-    def show_skymap(self, track_zoom: float = 1.0):
+    def show_skymap(
+        self,
+        track_zoom: float = 1.0,
+        subplot_kw: dict = {"projection": "astro degrees mollweide"},
+    ):
         """
         :param track_zoom: Increase radius of track events by this factor for visibility
+        :param subplot_kw: Customise projection style and boundaries with ligo.skymap
         """
 
         lam = list(
@@ -349,7 +358,7 @@ class Simulation:
             N_bg_ev = lam.count(Ns)
             N_atmo_ev = lam.count(Ns + 1)
 
-        fig, ax = plt.subplots(subplot_kw={"projection": "astro degrees mollweide"})
+        fig, ax = plt.subplots(subplot_kw=subplot_kw)
         fig.set_size_inches((7, 5))
 
         self.events.coords.representation_type = "spherical"
@@ -409,7 +418,7 @@ class Simulation:
             if isinstance(s, PointSource)
         ]
         src_pos = [
-            icrs_to_uv(s.dec.value, s.ra.value)
+            icrs_to_uv(s.dec.to_value(u.rad), s.ra.to_value(u.rad))
             for s in self._sources.sources
             if isinstance(s, PointSource)
         ]
@@ -563,7 +572,9 @@ class Simulation:
             sim_inputs["u_low"] = ROIList.STACK[0].RA_min.to_value(u.rad) / (
                 2.0 * np.pi
             )
-            sim_inputs["u_high"] = ROIList.STACK[0].RA_max.to_value(u.rad) / (2.0 * np.pi)
+            sim_inputs["u_high"] = ROIList.STACK[0].RA_max.to_value(u.rad) / (
+                2.0 * np.pi
+            )
 
         # For circular ROI the center point and radius are needed
         if isinstance(ROIList.STACK[0], CircularROI):

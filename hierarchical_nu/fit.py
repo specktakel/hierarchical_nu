@@ -851,7 +851,7 @@ class StanFit:
             if isinstance(s, PointSource)
         ]
         src_pos = [
-            icrs_to_uv(s.dec.value, s.ra.value)
+            icrs_to_uv(s.dec.to_value(u.rad), s.ra.to_value(u.rad))
             for s in self._sources.sources
             if isinstance(s, PointSource)
         ]
@@ -860,22 +860,24 @@ class StanFit:
         fit_inputs["D"] = D
         fit_inputs["varpi"] = src_pos
 
-        fit_inputs["Emin_src"] = (
-            Parameter.get_parameter("Emin_src").value.to(u.GeV).value
-        )
-        fit_inputs["Emax_src"] = (
-            Parameter.get_parameter("Emax_src").value.to(u.GeV).value
-        )
+        if self._sources.point_source:
+            fit_inputs["Emin_src"] = (
+                Parameter.get_parameter("Emin_src").value.to(u.GeV).value
+            )
+            fit_inputs["Emax_src"] = (
+                Parameter.get_parameter("Emax_src").value.to(u.GeV).value
+            )
 
         fit_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         fit_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
 
-        fit_inputs["Emin_diff"] = (
-            Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
-        )
-        fit_inputs["Emax_diff"] = (
-            Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
-        )
+        if self._sources.diffuse:
+            fit_inputs["Emin_diff"] = (
+                Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
+            )
+            fit_inputs["Emax_diff"] = (
+                Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
+            )
 
         integral_grid = []
         atmo_integ_val = []
