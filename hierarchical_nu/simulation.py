@@ -44,6 +44,9 @@ class Simulation:
         sources: Sources,
         event_types: Union[EventType, List[EventType]],
         observation_time: Dict[EventType, u.quantity.Quantity[u.year]],
+        atmo_flux_energy_points: int = 100,
+        atmo_flux_theta_points: int = 30,
+        n_grid_points: int = 50,
         N: dict = {},
     ):
         """
@@ -58,6 +61,7 @@ class Simulation:
         assert len(event_types) == len(observation_time)
         self._event_types = event_types
         self._observation_time = observation_time
+        self._n_grid_points = n_grid_points
 
         self._sources.organise()
 
@@ -84,6 +88,8 @@ class Simulation:
             stan_file_name,
             self._sources,
             self._event_types,
+            atmo_flux_energy_points=atmo_flux_energy_points,
+            atmo_flux_theta_points=atmo_flux_theta_points,
             force_N=self._force_N,
         )
 
@@ -132,8 +138,7 @@ class Simulation:
         if not exposure_integral:
             for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
-                    self._sources,
-                    event_type,
+                    self._sources, event_type, self._n_grid_points
                 )
 
         else:
@@ -441,7 +446,7 @@ class Simulation:
 
             integral_grid.append(
                 [
-                    _.to(u.m**2).value.tolist()
+                    np.log(_.to(u.m**2).value).tolist()
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
             )
@@ -793,14 +798,18 @@ def _get_expected_Nnu_(
     if point_source:
         for i in range(Ns):
             if shared_src_index:
-                eps.append(np.interp(src_index, src_index_grid, integral_grid[i]))
+                eps.append(
+                    np.exp(np.interp(src_index, src_index_grid, integral_grid[i]))
+                )
             else:
                 eps.append(
-                    np.interp(src_index_list[i], src_index_grid, integral_grid[i])
+                    np.exp(
+                        np.interp(src_index_list[i], src_index_grid, integral_grid[i])
+                    )
                 )
 
     if diffuse:
-        eps.append(np.interp(diff_index, diff_index_grid, integral_grid[Ns]))
+        eps.append(np.exp(np.interp(diff_index, diff_index_grid, integral_grid[Ns])))
 
     if atmospheric:
         eps.append(sim_inputs["atmo_integ_val"][c])

@@ -52,6 +52,7 @@ class StanSimInterface(StanInterface):
         output_file: str,
         sources: Sources,
         event_types: List[EventType],
+        atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
         includes: List[str] = [
             "interpolation.stan",
@@ -86,6 +87,8 @@ class StanSimInterface(StanInterface):
             event_types=event_types,
             includes=includes,
         )
+
+        self._atmo_flux_energy_points = atmo_flux_energy_points
 
         self._atmo_flux_theta_points = atmo_flux_theta_points
 
@@ -137,7 +140,8 @@ class StanSimInterface(StanInterface):
                 # Increasing theta points too much makes compilation very slow
                 # Could switch to passing array as data if problematic
                 self._atmo_flux = atmo_flux_model.make_stan_function(
-                    theta_points=self._atmo_flux_theta_points
+                    energy_points=self._atmo_flux_energy_points,
+                    theta_points=self._atmo_flux_theta_points,
                 )
 
     def _data(self):
@@ -439,7 +443,7 @@ class StanSimInterface(StanInterface):
                                     self._integral_grid[i, k],
                                     src_index_ref,
                                 ],
-                                "interpolate",
+                                "interpolate_log_y",
                             )
                             * self._T[i]
                         )
@@ -460,7 +464,7 @@ class StanSimInterface(StanInterface):
                                 self._integral_grid[i, "Ns + 1"],
                                 self._diff_index,
                             ],
-                            "interpolate",
+                            "interpolate_log_y",
                         )
                         * self._T[i]
                     )
@@ -488,7 +492,7 @@ class StanSimInterface(StanInterface):
                                 self._integral_grid[i, "Ns + 1"],
                                 self._diff_index,
                             ],
-                            "interpolate",
+                            "interpolate_log_y",
                         )
                         * self._T[i]
                     )
@@ -691,7 +695,6 @@ class StanSimInterface(StanInterface):
                             [self._w_exposure[j]], "categorical_rng"
                         )
                         self._event_type[i] << self._et_stan[j]
-
 
                     # Reset rejection
                     self._accept << 0
