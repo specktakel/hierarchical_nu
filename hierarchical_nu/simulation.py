@@ -48,9 +48,18 @@ class Simulation:
         atmo_flux_theta_points: int = 30,
         n_grid_points: int = 50,
         N: dict = {},
+        asimov: bool = False,
     ):
         """
         To set up and run simulations.
+        :param sources: Instance of `Sources` containing all to-be-simulated sources
+        :param event_types: `EventType` or list thereof, NB that not all event types should be combined
+        :param observation_time: single lifetime or dict of EventType: lifetime
+        :param atmo_flux_energy_points: number of atmo model grid points in energy space
+        :param atmo_flux_theta_points: number of atmo model grid points in theta/dec space
+        :param n_grid_poins: number of grid points for interpolations in exposure integral
+        :param N: if provided, simulate fixed number of events, e.g. {IC86_II: [1, 2, 3]}
+        :param asimov: if True, simulate np.rint(sim._Nex_et) events, overrides N
         """
 
         self._sources = sources
@@ -62,10 +71,17 @@ class Simulation:
         self._event_types = event_types
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
+        self._asimov = asimov
 
         self._sources.organise()
 
         self._exposure_integral = collections.OrderedDict()
+
+        if asimov:
+            N = {}
+            for event_type in self._event_types:
+                # dummy values
+                N[event_type] = [1] * self._sources.N
 
         if N:
             for event_type in self._event_types:
@@ -169,9 +185,18 @@ class Simulation:
         self._main_sim = CmdStanModel(exe_file=exe_file)
 
     def run(self, seed=None, verbose=False, **kwargs):
-        self._sim_inputs = self._get_sim_inputs(seed)
+        """
+        Run the simulation.
+        :param seed: random seed
+        :param verbose: if True, print debug messages
+        :param kwargs: kwargs passed to `cmdstanpy.CmdStanModel.sample()`
+        """
 
+        self._sim_inputs = self._get_sim_inputs(seed)
         self._expected_Nnu = self._get_expected_Nnu(self._sim_inputs)
+        if self._asimov:
+            # Override sim inputs with asimov-forced_N
+            self._sim_inputs = self._get_sim_inputs(seed, asimov=True)
 
         if verbose:
             print(
@@ -230,6 +255,12 @@ class Simulation:
         return energies, coords, event_types, ang_errs
 
     def save(self, filename, overwrite: bool = False):
+        """
+        Save simulation
+        :param filename: filename of simulation, should have extension `.h5`
+        :param overwrite: if True, overwrite files with identical name
+        """
+
         if os.path.exists(filename) and not overwrite:
             raise FileExistsError(f"File {filename} already exists.")
 
@@ -266,7 +297,13 @@ class Simulation:
     def show_spectrum(
         self, *components: str, scale: str = "linear", population: bool = False
     ):
-        # hatch_cycle = cycler(hatch=['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'])
+        """
+        Show binned spectrum of simulated data
+        :param components: not used? what is this?
+        :param scale: either `linear` or `log` to change y-axis scale of histograms
+        :param population: if True, display all point sources as one entry
+        """
+
         hatch_cycle = ["/", "\\", "|", "-", "+", "x", "o", "O", ".", "*"]
         Esrc = self._sim_output.stan_variable("Esrc")[0]
         E = self._sim_output.stan_variable("E")[0]
@@ -386,6 +423,7 @@ class Simulation:
         """
         :param track_zoom: Increase radius of track events by this factor for visibility
         :param subplot_kw: Customise projection style and boundaries with ligo.skymap
+        :param population: if True, display all point sources as one entry
         """
 
         try:
@@ -465,7 +503,7 @@ class Simulation:
         self.compile_stan_code(include_paths=include_paths)
         self.run()
 
-    def _get_sim_inputs(self, seed=None):
+    def _get_sim_inputs(self, seed=None, asimov=False):
         sim_inputs = {}
 
         redshift = [
@@ -501,6 +539,11 @@ class Simulation:
         rs_bbpl_gamma2_scale = []
         forced_N = []
         obs_time = []
+
+        if asimov:
+            # Round expected number of events to nearest integer
+            for c, et in enumerate(self._event_types):
+                self._N[et] = np.rint(self._Nex_et[c]).astype(int).tolist()
 
         for c, event_type in enumerate(self._event_types):
             if self._force_N:
