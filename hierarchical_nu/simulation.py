@@ -337,17 +337,28 @@ class Simulation:
         self,
         track_zoom: float = 1.0,
         subplot_kw: dict = {"projection": "astro degrees mollweide"},
+        population: bool = False,
     ):
         """
         :param track_zoom: Increase radius of track events by this factor for visibility
         :param subplot_kw: Customise projection style and boundaries with ligo.skymap
         """
 
-        lam = list(
-            self._sim_output.stan_variable("Lambda")[0] - 1
-        )  # avoid Stan-style indexing
+        try:
+            lam = list(
+                self._sim_output.stan_variable("Lambda")[0] - 1
+            )  # avoid Stan-style indexing
+        except AttributeError:
+            lam = list(self._sim_output.stan_variable["Lambda"][0] - 1)
         Ns = self._sim_inputs["Ns"]
-        label_cmap = plt.cm.Set1(list(range(self._sources.N)))
+
+        # Reduce the amount of labels in the legend and various colors for large populations
+        # plot all point sources in one colour if so desired
+        if population:
+            label_cmap = plt.cm.Set1(list(range(self._sources.N - Ns + 1)))
+        else:
+            label_cmap = plt.cm.Set1(list(range(self._sources.N)))
+
         N_src_ev = sum([lam.count(_) for _ in range(Ns)])
 
         if self._sources.atmospheric and not self._sources.diffuse:
@@ -369,7 +380,14 @@ class Simulation:
             self.events.ang_errs,
             self.events.types,
         ):
-            color = label_cmap[int(l)]
+            if not population:
+                color = label_cmap[int(l)]
+            elif l == Ns:
+                color = label_cmap[1]
+            elif l == Ns + 1:
+                color = label_cmap[2]
+            else:
+                color = label_cmap[0]
 
             if t == NT.S:
                 e = e * track_zoom  # to make tracks visible
@@ -389,7 +407,7 @@ class Simulation:
             % (N_src_ev, N_bg_ev, N_atmo_ev),
             y=0.85,
         )
-        fig.tight_layout()
+        # fig.tight_layout()
 
         return fig, ax
 
