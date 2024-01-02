@@ -757,6 +757,7 @@ class StanFitInterface(StanInterface):
             self._Emin_at_det << self._Emin
             self._Emax_at_det << self._Emax
 
+            # Find the largest energy range over all source components, transformed in the detector frame
             with ForLoopContext(1, self._Ns, "k") as k:
                 with IfBlockContext(
                     [self._Emin_src / (1 + self._z[k]), " < ", self._Emin_at_det]
