@@ -692,8 +692,6 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
     def generate_pdf_function_code(self):
         """
         Generate a wrapper for the IRF in `DistributionMode.PDF`.
-        Takes `Sources` instance as argument to generate energy likelihood
-        and effective area for all point sources.
         Assumes that astro diffuse and atmo diffuse model components are present.
         If not, they are disregarded by the model likelihood.
         Has signature

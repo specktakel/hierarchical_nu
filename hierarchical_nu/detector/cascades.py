@@ -17,6 +17,7 @@ from ..backend import (
     LognormalMixture,
     ForLoopContext,
     ForwardVariableDef,
+    InstantVariableDef,
     ForwardArrayDef,
     StanArray,
     StringExpression,
@@ -506,8 +507,6 @@ class CascadesDetectorModel(DetectorModel):
     def generate_pdf_function_code(self, sources: Sources = Sources()):
         """
         Generate a wrapper for the IRF in `DistributionMode.PDF`.
-        Takes `Sources` instance as argument to generate energy likelihood
-        and effective area for all point sources.
         Assumes that astro diffuse and atmo diffuse model components are present.
         If not, they are disregarded by the model likelihood.
         Has signature
@@ -523,8 +522,6 @@ class CascadesDetectorModel(DetectorModel):
         For cascades the last entry is negative_infinity().
         """
 
-        Ns = len(sources.point_source)
-
         UserDefinedFunction.__init__(
             self,
             self._func_name,
@@ -533,7 +530,8 @@ class CascadesDetectorModel(DetectorModel):
             "tuple(array[] real, array[] real, array[] real)",
         )
         with self:
-            # need to write a function that returns a tuple of energy likelihood and Aeff
+            Ns = InstantVariableDef("Ns", "int", ["size(src_pos)"])
+
             ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
             ps_aeff = ForwardArrayDef("ps_aeff", "real", ["[", Ns, "]"])
             diff = ForwardArrayDef("diff", "real", ["[3]"])

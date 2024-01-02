@@ -30,6 +30,7 @@ from ..backend import (
     ForLoopContext,
     WhileLoopContext,
     ForwardVariableDef,
+    InstantVariableDef,
     ForwardArrayDef,
     ForwardVectorDef,
     StanArray,
@@ -1863,11 +1864,9 @@ class R2021DetectorModel(ABC, DetectorModel):
                 f.write(code)
             return os.path.join(path, cls._RNG_FILENAME(season))
 
-    def generate_pdf_function_code(self, sources: Sources = Sources()):
+    def generate_pdf_function_code(self):
         """
         Generate a wrapper for the IRF in `DistributionMode.PDF`.
-        Takes `Sources` instance as argument to generate energy likelihood
-        and effective area for all point sources.
         Assumes that astro diffuse and atmo diffuse model components are present.
         If not, they are disregarded by the model likelihood.
         Has signature
@@ -1883,8 +1882,6 @@ class R2021DetectorModel(ABC, DetectorModel):
         For cascades the last entry is negative_infinity().
         """
 
-        Ns = len(sources.point_source)
-
         UserDefinedFunction.__init__(
             self,
             self._func_name,
@@ -1893,6 +1890,7 @@ class R2021DetectorModel(ABC, DetectorModel):
             "tuple(array[] real, array[] real, array[] real)",
         )
         with self:
+            Ns = InstantVariableDef("Ns", "int", ["size(src_pos)"])
             ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
             ps_aeff = ForwardArrayDef("ps_aeff", "real", ["[", Ns, "]"])
             diff = ForwardArrayDef("diff", "real", ["[3]"])

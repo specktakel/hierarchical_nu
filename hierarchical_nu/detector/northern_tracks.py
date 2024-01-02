@@ -16,6 +16,7 @@ from ..backend import (
     ForLoopContext,
     ForwardVariableDef,
     ForwardArrayDef,
+    InstantVariableDef,
     StanArray,
     StringExpression,
     TwoDimHistInterpolation,
@@ -536,8 +537,6 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
     def generate_pdf_function_code(self, sources: Sources):
         """
         Generate a wrapper for the IRF in `DistributionMode.PDF`.
-        Takes `Sources` instance as argument to generate energy likelihood
-        and effective area for all point sources.
         Assumes that astro diffuse and atmo diffuse model components are present.
         If not, they are disregarded by the model likelihood.
         Has signature
@@ -553,8 +552,6 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
         For cascades the last entry is negative_infinity().
         """
 
-        Ns = len(sources.point_source)
-
         UserDefinedFunction.__init__(
             self,
             self._func_name,
@@ -564,6 +561,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
         )
 
         with self:
+            Ns = InstantVariableDef("Ns", "int", ["size(src_pos)"])
             ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
             ps_aeff = ForwardArrayDef("ps_aeff", "real", ["[", Ns, "]"])
             diff = ForwardArrayDef("diff", "real", ["[3]"])
