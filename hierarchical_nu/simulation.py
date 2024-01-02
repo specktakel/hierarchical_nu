@@ -263,7 +263,9 @@ class Simulation:
 
         self.events.to_file(filename, append=True)
 
-    def show_spectrum(self, *components: str, scale: str = "linear"):
+    def show_spectrum(
+        self, *components: str, scale: str = "linear", population: bool = False
+    ):
         # hatch_cycle = cycler(hatch=['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'])
         hatch_cycle = ["/", "\\", "|", "-", "+", "x", "o", "O", ".", "*"]
         Esrc = self._sim_output.stan_variable("Esrc")[0]
@@ -274,10 +276,33 @@ class Simulation:
         Emin_det = self._get_min_det_energy().to(u.GeV).value
 
         N = len(self._sources)
+        N_ps = len(self._sources.point_source)
 
-        Esrc_plot = [Esrc[np.nonzero(lam == float(i))] for i in range(N)]
-        E_plot = [E[np.nonzero(lam == float(i))] for i in range(N)]
-        Edet_plot = [Edet[np.nonzero(lam == float(i))] for i in range(N)]
+        if not population:
+            Esrc_plot = [Esrc[np.nonzero(lam == float(i))] for i in range(N)]
+            E_plot = [E[np.nonzero(lam == float(i))] for i in range(N)]
+            Edet_plot = [Edet[np.nonzero(lam == float(i))] for i in range(N)]
+        else:
+            # compress all PSs into one entry
+            Esrc_plot = [
+                np.concatenate(
+                    [Esrc[np.nonzero(lam == float(i))] for i in range(N_ps)]
+                ),
+                Esrc[np.nonzero(lam == float(N_ps))],
+                Esrc[np.nonzero(lam == float(N_ps + 1))],
+            ]
+            E_plot = [
+                np.concatenate([E[np.nonzero(lam == float(i))] for i in range(N_ps)]),
+                E[np.nonzero(lam == float(N_ps))],
+                E[np.nonzero(lam == float(N_ps + 1))],
+            ]
+            Edet_plot = [
+                np.concatenate(
+                    [Edet[np.nonzero(lam == float(i))] for i in range(N_ps)]
+                ),
+                Edet[np.nonzero(lam == float(N_ps))],
+                Edet[np.nonzero(lam == float(N_ps + 1))],
+            ]
 
         bins = np.logspace(
             np.log10(Emin_det),
@@ -286,13 +311,26 @@ class Simulation:
             base=10,
         )
 
+        if not population:
+            sources = self._sources
+        else:
+            sources = [self._sources[0]]
+            if self._sources.diffuse:
+                sources.append(self._sources.diffuse)
+            if self._sources.atmospheric:
+                sources.append(self._sources.atmospheric)
+
         fig, ax = plt.subplots(3, 1)
+
         for c, (source, hatch, _Esrc, _E, _Edet) in enumerate(
-            zip(self._sources, hatch_cycle, Esrc_plot, E_plot, Edet_plot)
+            zip(sources, hatch_cycle, Esrc_plot, E_plot, Edet_plot)
         ):
             if c == 0:
                 _bsrc = np.zeros(bins[:-1].shape)
-                label = source.name + " at source"
+                if not population:
+                    label = source.name + " at source"
+                else:
+                    label = "population at source"
                 # This is only needed s.t. flake does not complain
                 _nEsrc = 0
             else:
@@ -305,7 +343,10 @@ class Simulation:
 
             if c == 0:
                 _b = np.zeros(bins[:-1].shape)
-                label = source.name + " at detector"
+                if not population:
+                    label = source.name + " at detector"
+                else:
+                    label = "population at detector"
                 _nE = 0
             else:
                 _b += _nE
@@ -316,7 +357,10 @@ class Simulation:
 
             if c == 0:
                 _bdet = np.zeros(bins[:-1].shape)
-                label = source.name + ", detected"
+                if not population:
+                    label = source.name + ", detected"
+                else:
+                    label = "population, detected"
                 _nEdet = 0
             else:
                 _bdet += _nEdet
