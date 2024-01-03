@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import Union
 import astropy.units as u
+from astropy.units.core import UnitConversionError
 import numpy as np
 from scipy import stats
 import h5py
@@ -55,9 +56,6 @@ class PriorDistribution(metaclass=ABCMeta):
 
 class NormalPrior(PriorDistribution):
     def __init__(self, name="normal", mu=0.0, sigma=1.0):
-        if isinstance(mu, u.Quantity) or isinstance(sigma, u.Quantity):
-            assert mu.is_equivalent(sigma)
-
         super().__init__(name=name)
 
         self._mu = mu
@@ -89,15 +87,29 @@ class NormalPrior(PriorDistribution):
         return prior_dict
 
 
-class LogNormalPrior(NormalPrior):
+class LogNormalPrior(PriorDistribution):
     def __init__(self, name="lognormal", mu=1.0, sigma=1.0):
-        super().__init__(name=name, mu=mu, sigma=sigma)
+        super().__init__(name=name)
+
+        self._mu = mu
+        self._sigma = sigma
 
     def pdf(self, x):
         return stats.lognorm(scale=np.exp(self._mu), s=self._sigma).pdf(x)
 
     def sample(self, N):
         return stats.lognorm(scale=np.exp(self._mu), s=self._sigma).rvs(N)
+
+    @property
+    def mu(self):
+        return self._mu
+
+    @property
+    def sigma(self):
+        return self._sigma
+
+    def to_dict(self):
+        pass
 
 
 class ParetoPrior(PriorDistribution):
@@ -142,11 +154,60 @@ class UnitPrior:
             mu = kwargs.get("mu")
             sigma = kwargs.get("sigma")
             units = kwargs.get("units")
+            self._units = units
+
             if name == LogNormalPrior:
-                # In this case sigma is a real number
+                # Check that sigma is a real number
+                try:
+                    sigma.to_value(1)
+                except AttributeError:
+                    # Is raised if sigma has no astropy unit attached
+                    pass
+                # else UnitConversionError is raised
                 self._prior = name(mu=np.log(mu.to_value(units)), sigma=sigma)
             elif name == NormalPrior:
                 self._prior = name(mu=mu.to_value(units), sigma=sigma.to_value(units))
+            self._pdf = self._prior.pdf
+            self._pdf_logspace = self._prior.pdf_logspace
+
+    def pdf(self, x):
+        return self._pdf(x.to_value(self._units))
+
+    def pdf_logspace(self, x):
+        return self._pdf_logspace(x.to_value(self._units))
+
+    @property
+    def mu(self):
+        if isinstance(self._prior, NormalPrior):
+            return self._prior.mu * self._units
+        else:
+            return self._prior.mu
+
+    @property
+    def sigma(self):
+        if isinstance(self._prior, NormalPrior):
+            return self._prior.sigma * self._units
+        else:
+            return self._prior.sigma
+
+    # Poor man's conditional inheritance
+    # copied from https://stackoverflow.com/a/65754897
+    def __getattr__(self, name):
+        return self._prior.__getattribute__(name)
+
+
+class UnitlessPrior:
+    def __init__(self, name, **kwargs):
+        if name == ParetoPrior:
+            raise NotImplementedError
+
+        else:
+            mu = kwargs.get("mu")
+            sigma = kwargs.get("sigma")
+            if name == LogNormalPrior:
+                self._prior = name(mu=np.log(mu), sigma=sigma)
+            elif name == NormalPrior:
+                self._prior = name(mu=mu, sigma=sigma)
 
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897
@@ -157,12 +218,12 @@ class UnitPrior:
 class LuminosityPrior(UnitPrior):
     UNITS = u.GeV / u.s
 
-    # @u.quantity_input
+    @u.quantity_input
     def __init__(
         self,
         name=LogNormalPrior,
         mu: u.GeV / u.s = 1e49 * u.GeV / u.s,
-        sigma: Union[u.Quantity[u.GeV / u.s], float] = 3.0,
+        sigma: Union[u.Quantity[u.GeV / u.s], u.Quantity[1]] = 3.0,
     ):
         """
         Converts automatically to log of values, be aware of misuse of notation.
@@ -184,6 +245,19 @@ class FluxPrior(UnitPrior):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
 
+class IndexPrior(UnitlessPrior):
+    UNITS = 1
+
+    @u.quantity_input
+    def __init__(
+        self,
+        name=NormalPrior,
+        mu: float = 2.5,
+        sigma: float = 0.5,
+    ):
+        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
+
+
 class Priors(object):
     """
     Container for model priors.
@@ -196,13 +270,13 @@ class Priors(object):
         # self.luminosity = LogNormalPrior(mu=np.log(1e50), sigma=10.0)
         self._luminosity = LuminosityPrior()
 
-        self.diffuse_flux = LogNormalPrior(mu=np.log(1e-7), sigma=1.0)
+        self.diffuse_flux = FluxPrior(mu=1e-4 / u.m**2 / u.s, sigma=1.0)
 
         self.src_index = IndexPrior()
 
         self.diff_index = IndexPrior()
 
-        self.atmospheric_flux = FluxPrior(mu=np.log(1e-5), sigma=1.0)
+        self.atmospheric_flux = FluxPrior()
 
     @property
     def luminosity(self):
