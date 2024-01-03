@@ -240,7 +240,9 @@ class FluxPrior(UnitPrior):
         self,
         name=NormalPrior,
         mu: 1 / u.m**2 / u.s = 0.314 / u.m**2 / u.s,
-        sigma: 1 / u.m**2 / u.s = 0.08 / u.m**2 / u.s,
+        sigma: Union[u.Quantity[1 / u.m**2 / u.s], u.Quantity[1]] = 0.08
+        / u.m**2
+        / u.s,
     ):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
@@ -267,10 +269,11 @@ class Priors(object):
     """
 
     def __init__(self):
-        # self.luminosity = LogNormalPrior(mu=np.log(1e50), sigma=10.0)
         self._luminosity = LuminosityPrior()
 
-        self.diffuse_flux = FluxPrior(mu=1e-4 / u.m**2 / u.s, sigma=1.0)
+        self.diffuse_flux = FluxPrior(
+            LogNormalPrior, mu=1e-4 * FluxPrior.UNITS, sigma=1.0
+        )
 
         self.src_index = IndexPrior()
 
@@ -283,12 +286,7 @@ class Priors(object):
         return self._luminosity
 
     @luminosity.setter
-    def luminosity(self, prior: PriorDistribution):
-        units = u.GeV / u.s
-        if not isinstance(prior, ParetoPrior):
-            prior._mu = prior._mu.to(units)
-            sigma = prior.sigma
-
+    def luminosity(self, prior: LuminosityPrior):
         self._luminosity = prior
 
     @property
@@ -296,7 +294,7 @@ class Priors(object):
         return self._diffuse_flux
 
     @diffuse_flux.setter
-    def diffuse_flux(self, prior: PriorDistribution):
+    def diffuse_flux(self, prior: FluxPrior):
         self._diffuse_flux = prior
 
     @property
@@ -304,7 +302,7 @@ class Priors(object):
         return self._src_index
 
     @src_index.setter
-    def src_index(self, prior: PriorDistribution):
+    def src_index(self, prior: IndexPrior):
         self._src_index = prior
 
     @property
@@ -312,7 +310,7 @@ class Priors(object):
         return self._diff_index
 
     @diff_index.setter
-    def diff_index(self, prior: PriorDistribution):
+    def diff_index(self, prior: IndexPrior):
         self._diff_index = prior
 
     @property
@@ -320,7 +318,7 @@ class Priors(object):
         return self._atmospheric_flux
 
     @atmospheric_flux.setter
-    def atmospheric_flux(self, prior: PriorDistribution):
+    def atmospheric_flux(self, prior: FluxPrior):
         self._atmospheric_flux = prior
 
     def to_dict(self):
