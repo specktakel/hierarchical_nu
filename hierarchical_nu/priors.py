@@ -287,6 +287,8 @@ class Priors(object):
 
     @luminosity.setter
     def luminosity(self, prior: LuminosityPrior):
+        if not isinstance(prior, LuminosityPrior):
+            raise ValueError("Wrong prior type")
         self._luminosity = prior
 
     @property
@@ -295,6 +297,8 @@ class Priors(object):
 
     @diffuse_flux.setter
     def diffuse_flux(self, prior: FluxPrior):
+        if not isinstance(prior, FluxPrior):
+            raise ValueError("Wrong prior type")
         self._diffuse_flux = prior
 
     @property
@@ -303,6 +307,8 @@ class Priors(object):
 
     @src_index.setter
     def src_index(self, prior: IndexPrior):
+        if not isinstance(prior, IndexPrior):
+            raise ValueError("Wrong prior type")
         self._src_index = prior
 
     @property
@@ -311,6 +317,8 @@ class Priors(object):
 
     @diff_index.setter
     def diff_index(self, prior: IndexPrior):
+        if not isinstance(prior, IndexPrior):
+            raise ValueError("Wrong prior type")
         self._diff_index = prior
 
     @property
@@ -319,6 +327,8 @@ class Priors(object):
 
     @atmospheric_flux.setter
     def atmospheric_flux(self, prior: FluxPrior):
+        if not isinstance(prior, FluxPrior):
+            raise ValueError("Wrong prior type")
         self._atmospheric_flux = prior
 
     def to_dict(self):
