@@ -504,7 +504,7 @@ class CascadesDetectorModel(DetectorModel):
     def _get_angular_resolution(self):
         return self._angular_resolution
 
-    def generate_pdf_function_code(self, sources: Sources = Sources()):
+    def generate_pdf_function_code(self):
         """
         Generate a wrapper for the IRF in `DistributionMode.PDF`.
         Assumes that astro diffuse and atmo diffuse model components are present.
