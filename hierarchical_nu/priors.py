@@ -35,24 +35,6 @@ class PriorDistribution(metaclass=ABCMeta):
     def to_dict(self):
         pass
 
-    @classmethod
-    def from_dict(cls, prior_dict):
-        name = prior_dict["name"]
-
-        if name == "normal":
-            prior = NormalPrior(**prior_dict)
-
-        elif name == "lognormal":
-            prior = LogNormalPrior(**prior_dict)
-
-        elif name == "pareto":
-            prior = ParetoPrior(**prior_dict)
-
-        else:
-            raise ValueError("Prior distribution type not recognised")
-
-        return prior
-
 
 class NormalPrior(PriorDistribution):
     def __init__(self, name="normal", mu=0.0, sigma=1.0):
@@ -75,7 +57,7 @@ class NormalPrior(PriorDistribution):
     def sample(self, N):
         return stats.norm(loc=self._mu, scale=self._sigma).rvs(N)
 
-    def to_dict(self):
+    def to_dict(self, units):
         prior_dict = {}
 
         prior_dict["name"] = self._name
@@ -83,6 +65,8 @@ class NormalPrior(PriorDistribution):
         prior_dict["mu"] = self._mu
 
         prior_dict["sigma"] = self._sigma
+
+        prior_dict["units"] = units
 
         return prior_dict
 
@@ -108,8 +92,18 @@ class LogNormalPrior(PriorDistribution):
     def sigma(self):
         return self._sigma
 
-    def to_dict(self):
-        pass
+    def to_dict(self, units):
+        prior_dict = {}
+
+        prior_dict["name"] = self._name
+
+        prior_dict["mu"] = self._mu
+
+        prior_dict["sigma"] = self._sigma
+
+        prior_dict["units"] = units
+
+        return prior_dict
 
 
 class ParetoPrior(PriorDistribution):
@@ -143,6 +137,32 @@ class ParetoPrior(PriorDistribution):
         prior_dict["alpha"] = self._alpha
 
         return prior_dict
+
+
+class PriorDictHandler:
+    @classmethod
+    def from_dict(cls, prior_dict):
+        # Translate "key" into Lumi, Flux or Index
+        translate = {
+            "L": LuminosityPrior,
+            "F_diff": FluxPrior,
+            "F_atmo": FluxPrior,
+            "src_index": IndexPrior,
+            "diff_index": IndexPrior,
+        }
+        prior_name = prior_dict["name"]
+        prior = translate[prior_dict["quantity"]]
+        if prior_name == "pareto":
+            raise NotImplementedError
+        units = u.Unit(prior_dict["units"])
+        mu = prior_dict["mu"]
+        sigma = prior_dict["sigma"]
+        if prior_name == "normal":
+            sigma *= units
+            mu *= units
+            return prior(NormalPrior, mu=mu, sigma=sigma)
+        elif prior_name == "lognormal":
+            return prior(LogNormalPrior, mu=np.exp(mu) * units, sigma=sigma)
 
 
 class UnitPrior:
@@ -217,6 +237,7 @@ class UnitlessPrior:
 
 class LuminosityPrior(UnitPrior):
     UNITS = u.GeV / u.s
+    UNITS_STRING = UNITS.to_string()
 
     @u.quantity_input
     def __init__(
@@ -234,6 +255,7 @@ class LuminosityPrior(UnitPrior):
 
 class FluxPrior(UnitPrior):
     UNITS = 1 / u.m**2 / u.s
+    UNITS_STRING = UNITS.unit.to_string()
 
     @u.quantity_input
     def __init__(
@@ -249,6 +271,7 @@ class FluxPrior(UnitPrior):
 
 class IndexPrior(UnitlessPrior):
     UNITS = 1
+    UNITS_STRING = "1"
 
     @u.quantity_input
     def __init__(
@@ -356,7 +379,7 @@ class Priors(object):
         for key, value in priors_dict.items():
             g = f.create_group(key)
 
-            for key, value in value.to_dict().items():
+            for key, value in value.to_dict(value.UNITS_STRING).items():
                 g.create_dataset(key, data=value)
 
     def addto(self, file_name: str, group_name: str):
@@ -383,17 +406,18 @@ class Priors(object):
 
         for key, value in f.items():
             prior_dict = {}
-
+            prior_dict["quantity"] = key
             for k, v in value.items():
                 if k == "name":
+                    # name should be replaces by LuminosityPrior etc.
                     prior_dict[k] = v[()].decode("ascii")
 
                 else:
                     prior_dict[k] = v[()]
 
-            priors_dict[key] = PriorDistribution.from_dict(prior_dict)
-
-        return cls.from_dict(priors_dict)
+            priors_dict[key] = PriorDictHandler.from_dict(prior_dict)
+        return priors_dict
+        # return cls.from_dict(priors_dict)
 
     @classmethod
     def from_dict(cls, priors_dict):
