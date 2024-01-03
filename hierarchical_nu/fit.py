@@ -891,11 +891,37 @@ class StanFit:
         fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
 
         if self._sources.point_source:
+            # This only searches for the src_index_grid, which is the same across all point sources
+            # fixed by n_grid_points
             try:
                 Parameter.get_parameter("src_index")
                 key = "src_index"
-            except ValueError:
-                key = "ps_0_src_index"
+                self._exposure_integral[event_type].par_grids[key]
+            except (ValueError, KeyError):
+                # ValueError is raised if src_index is not a valid parameter
+                # KeyError is raised if there is no entry in the exposure integral grid
+                try:
+                    key = "ps_0_src_index"
+                    fit_inputs["src_index_grid"] = self._exposure_integral[
+                        event_type
+                    ].par_grids[key]
+                except KeyError:
+                    # For source lists where sources have been deleted
+                    # ps_0_src_index might not exist
+                    # try systematically until one index is found
+                    params = list(Parameter._Parameter__par_registry.keys())
+                    for key in params:
+                        if "src_index" in key:
+                            try:
+                                Parameter.get_parameter(key)
+                                fit_inputs["src_index_grid"] = self._exposure_integral[
+                                    event_type
+                                ].par_grids[key]
+                                break
+                            except (ValueError, KeyError):
+                                pass
+                    else:
+                        raise ValueError("This should not happen.")
 
             fit_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
