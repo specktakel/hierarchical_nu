@@ -187,6 +187,8 @@ class UnitPrior:
                 self._prior = name(mu=np.log(mu.to_value(units)), sigma=sigma)
             elif name == NormalPrior:
                 self._prior = name(mu=mu.to_value(units), sigma=sigma.to_value(units))
+            elif name == ParetoPrior:
+                pass
             self._pdf = self._prior.pdf
             self._pdf_logspace = self._prior.pdf_logspace
 
@@ -243,8 +245,10 @@ class LuminosityPrior(UnitPrior):
     def __init__(
         self,
         name=LogNormalPrior,
-        mu: u.GeV / u.s = 1e49 * u.GeV / u.s,
-        sigma: Union[u.Quantity[u.GeV / u.s], u.Quantity[1]] = 3.0,
+        mu: Union[u.Quantity[u.GeV / u.s], None] = 1e49 * u.GeV / u.s,
+        sigma: Union[u.Quantity[u.GeV / u.s], u.Quantity[1], None] = 3.0,
+        xmin: Union[u.Quantity[u.GeV / u.s], u.Quantity[1]] = None,
+        alpha: Union[float, None] = None,
     ):
         """
         Converts automatically to log of values, be aware of misuse of notation.
