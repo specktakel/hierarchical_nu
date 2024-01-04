@@ -416,8 +416,7 @@ class Priors(object):
                     prior_dict[k] = v[()]
 
             priors_dict[key] = PriorDictHandler.from_dict(prior_dict)
-        return priors_dict
-        # return cls.from_dict(priors_dict)
+        return cls.from_dict(priors_dict)
 
     @classmethod
     def from_dict(cls, priors_dict):
