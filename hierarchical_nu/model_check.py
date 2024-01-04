@@ -226,65 +226,7 @@ class ModelCheck:
                     )
                 else:
                     raise NotImplementedError("Prior not recognised.")
-        """
-        if prior_config.L.name == "NormalPrior":
-            t = NormalPrior
-            mu = prior_config.L.mu * LuminosityPrior.UNITS
-            sigma = prior_config.L.sigma * LuminosityPrior.UNITS
-        elif prior_config.L.name == "LogNormalPrior":
-            t = LogNormalPrior
-            mu = prior_config.L.mu * LuminosityPrior.UNITS
-            sigma = prior_config.L.sigma
-        elif prior_config.L.name == "ParetoPrior":
-            t = ParetoPrior
-        else:
-            raise NotImplementedError("Prior type for index not recognised.")
-        priors.src_index = IndexPrior(t, mu=mu, sigma=prior_config.L.sigma)
 
-        if prior_config.src_index.name == "NormalPrior":
-            t = NormalPrior
-        elif prior_config.src_index.name == "LogNormalPrior":
-            t = LogNormalPrior
-        else:
-            raise NotImplementedError("Prior type for index not recognised.")
-        priors.src_index = IndexPrior(
-            t, mu=prior_config.src_index.mu, sigma=prior_config.src_index.sigma
-        )
-
-        if prior_config.diff_index.name == "NormalPrior":
-            t = NormalPrior
-        elif prior_config.diff_index.name == "LogNormalPrior":
-            t = LogNormalPrior
-        else:
-            raise NotImplementedError("Prior type for index not recognised.")
-        priors.diff_index = IndexPrior(
-            t, mu=prior_config.diff_index.mu, sigma=prior_config.diff_index.sigma
-        )
-
-        if prior_config.diff_flux.name == "NormalPrior":
-            t = NormalPrior
-            mu = prior_config.diff_flux.mu * FluxPrior.UNITS
-            sigma = prior_config.diff_flux.sigma * FluxPrior.UNITS
-        elif prior_config.diff_flux.name == "LogNormalPrior":
-            t = LogNormalPrior
-            mu = prior_config.diff_flux.mu * FluxPrior.UNITS
-            sigma = prior_config.diff_flux.sigma
-        else:
-            raise NotImplementedError("Prior type for index not recognised.")
-        priors.diffuse_flux = FluxPrior(t, mu=mu, sigma=sigma)
-
-        if prior_config.atmo_flux.name == "NormalPrior":
-            t = NormalPrior
-            mu = prior_config.atmo_flux.mu * FluxPrior.UNITS
-            sigma = prior_config.atmo_flux.sigma * FluxPrior.UNITS
-        elif prior_config.atmo_flux.name == "LogNormalPrior":
-            t = LogNormalPrior
-            mu = prior_config.atmo_flux.mu * FluxPrior.UNITS
-            sigma = prior_config.atmo_flux.sigma
-        else:
-            raise NotImplementedError("Prior type for index not recognised.")
-        priors.atmospheric_flux = FluxPrior(t, mu=mu, sigma=sigma)
-        """
         return priors
 
     @staticmethod
