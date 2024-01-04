@@ -81,7 +81,7 @@ my_sources.add_atmospheric_component()
 
 We now need to decide on the time period of observation (start and end times in MJD). The detector lifetime is automatically calculated from the "good time intervals" provided in the data release. Event selection respects the start and end times with which an ROI is instanciated.
 
-From the [paper](https://arxiv.org/pdf/2101.09836.pdf) accompanying the data release, Table IV, we can take guesstimate (Tmin, Tmax) = (56917, 57113). This is not the result of a flare analysis, but rather to include all contributing events.
+From the [paper](https://arxiv.org/pdf/2101.09836.pdf) accompanying the data release, Table IV, we can guesstimate (Tmin, Tmax) = (56917, 57113). This is not the result of a flare analysis, but rather to include all contributing events.
 
 Together with the source location we create an ROI.
 
@@ -89,7 +89,7 @@ Together with the source location we create an ROI.
 MJD_min=56917
 MJD_max=57113
 
-roi = CircularROI(txs, 5 * u.deg, MJD_min=MJD_min, MJD_max=MJD_max)
+roi = CircularROI(txs, 5 * u.deg, MJD_min=MJD_min, MJD_max=MJD_max, apply_roi=True)
 ```
 
 A `LifeTime` instance computes the detector lifetime in the chosen time range.

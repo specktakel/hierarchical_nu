@@ -6,11 +6,12 @@ from hierarchical_nu.source.source import Sources, PointSource
 
 from hierarchical_nu.detector.icecube import Refrigerator, NT, CAS
 from hierarchical_nu.simulation import Simulation
-from hierarchical_nu.utils.roi import RectangularROI
+from hierarchical_nu.utils.roi import RectangularROI, ROIList
 
 
 def test_N():
     Parameter.clear_registry()
+    ROIList.clear_registry()
 
     roi = RectangularROI(DEC_min=-5 * u.deg)
 
@@ -87,6 +88,7 @@ def test_N():
 
 def test_multi_ps_n():
     Parameter.clear_registry()
+    ROIList.clear_registry()
     roi = RectangularROI(DEC_min=-5 * u.deg)
 
     src_index_0 = Parameter(2.0, "ps_0_src_index", fixed=False, par_range=(1, 4))

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import h5py
 from astropy import units as u
 import numpy as np
+from collections.abc import Callable
 
 from .flux_model import (
     PointSourceFluxModel,
@@ -65,7 +66,7 @@ class PointSource(Source):
         dec: u.rad,
         ra: u.rad,
         redshift: float,
-        spectral_shape,  #: Callable[[float], float], <- causes issues in py3.7
+        spectral_shape: Callable[[float], float],
         *args,
         **kwargs
     ):
@@ -134,9 +135,15 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
+        # Use Enorm if set, otherwise fix to 1e5 GeV
+        try:
+            Enorm_value = Parameter.get_parameter("Enorm").value
+        except ValueError:
+            Enorm_value = 1e5 * u.GeV
+
         shape = PowerLawSpectrum(
             norm,
-            1e5 * u.GeV,
+            Enorm_value,
             index,
             lower.value / (1 + redshift),
             upper.value / (1 + redshift),
@@ -159,7 +166,6 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
-        pivot: Parameter,
     ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
@@ -179,10 +185,11 @@ class PointSource(Source):
                 Spectral index
             redshift: float
             lower: Parameter
-                Lower energy bound
+                Lower energy bound in source frame
             upper: Parameter
-                Upper energy bound
-        All parameters are taken to be defined in the source frame.
+                Upper energy bound in source frame
+        Takes additionally Emin and Emax (in the detector frame) to limit the spectral model.
+        `index` is the valid spectral index between `lower` and `upper` energ
         """
         # raise NotImplementedError
         total_flux = luminosity.value / (
@@ -200,9 +207,9 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
-        shape = PowerLawSpectrum(
+        shape = TwiceBrokenPowerLaw(
             norm,
-            pivot.value / (1 + redshift),
+            1e5 * u.GeV,
             index,
             lower.value / (1 + redshift),
             upper.value / (1 + redshift),

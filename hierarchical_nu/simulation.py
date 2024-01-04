@@ -16,14 +16,14 @@ from icecube_tools.utils.vMF import get_theta_p
 
 from hierarchical_nu.utils.plotting import SphericalCircle
 
-from hierarchical_nu.detector.icecube import Refrigerator, EventType, NT, CAS
+from hierarchical_nu.detector.icecube import EventType, NT, CAS
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, flux_conv_
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.events import Events
-from hierarchical_nu.utils.roi import ROI, CircularROI
+from hierarchical_nu.utils.roi import ROI, CircularROI, ROIList
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
@@ -44,6 +44,9 @@ class Simulation:
         sources: Sources,
         event_types: Union[EventType, List[EventType]],
         observation_time: Dict[EventType, u.quantity.Quantity[u.year]],
+        atmo_flux_energy_points: int = 100,
+        atmo_flux_theta_points: int = 30,
+        n_grid_points: int = 50,
         N: dict = {},
     ):
         """
@@ -58,6 +61,7 @@ class Simulation:
         assert len(event_types) == len(observation_time)
         self._event_types = event_types
         self._observation_time = observation_time
+        self._n_grid_points = n_grid_points
 
         self._sources.organise()
 
@@ -84,6 +88,8 @@ class Simulation:
             stan_file_name,
             self._sources,
             self._event_types,
+            atmo_flux_energy_points=atmo_flux_energy_points,
+            atmo_flux_theta_points=atmo_flux_theta_points,
             force_N=self._force_N,
         )
 
@@ -132,8 +138,7 @@ class Simulation:
         if not exposure_integral:
             for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
-                    self._sources,
-                    event_type,
+                    self._sources, event_type, self._n_grid_points
                 )
 
         else:
@@ -147,7 +152,7 @@ class Simulation:
 
     def compile_stan_code(self, include_paths=None):
         if not include_paths:
-            include_paths = [STAN_PATH]
+            include_paths = [STAN_PATH, STAN_GEN_PATH]
 
         stanc_options = {"include-paths": include_paths}
 
@@ -252,6 +257,10 @@ class Simulation:
                 data=self._sources.total_flux_int().to(flux_unit).value,
             )
 
+            outputs_folder.create_dataset(
+                "expected_Nnu_per_comp", data=self._expected_Nnu_per_comp
+            )
+
         self.events.to_file(filename, append=True)
 
     def show_spectrum(self, *components: str, scale: str = "linear"):
@@ -324,9 +333,14 @@ class Simulation:
 
         return fig, ax
 
-    def show_skymap(self, track_zoom: float = 1.0):
+    def show_skymap(
+        self,
+        track_zoom: float = 1.0,
+        subplot_kw: dict = {"projection": "astro degrees mollweide"},
+    ):
         """
         :param track_zoom: Increase radius of track events by this factor for visibility
+        :param subplot_kw: Customise projection style and boundaries with ligo.skymap
         """
 
         lam = list(
@@ -344,7 +358,7 @@ class Simulation:
             N_bg_ev = lam.count(Ns)
             N_atmo_ev = lam.count(Ns + 1)
 
-        fig, ax = plt.subplots(subplot_kw={"projection": "astro degrees mollweide"})
+        fig, ax = plt.subplots(subplot_kw=subplot_kw)
         fig.set_size_inches((7, 5))
 
         self.events.coords.representation_type = "spherical"
@@ -404,7 +418,7 @@ class Simulation:
             if isinstance(s, PointSource)
         ]
         src_pos = [
-            icrs_to_uv(s.dec.value, s.ra.value)
+            icrs_to_uv(s.dec.to_value(u.rad), s.ra.to_value(u.rad))
             for s in self._sources.sources
             if isinstance(s, PointSource)
         ]
@@ -432,7 +446,7 @@ class Simulation:
 
             integral_grid.append(
                 [
-                    _.to(u.m**2).value.tolist()
+                    np.log(_.to(u.m**2).value).tolist()
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
             )
@@ -526,12 +540,12 @@ class Simulation:
             rs_cvals.append(self._exposure_integral[event_type].c_values)
 
         try:
-            roi = ROI.STACK[0]
+            ROIList.STACK[0]
         except IndexError:
             raise ValueError("An ROI is needed at this point.")
 
-        v_lim_low = (np.cos(-roi.DEC_min.to_value(u.rad) + np.pi / 2) + 1.0) / 2
-        v_lim_high = (np.cos(-roi.DEC_max.to_value(u.rad) + np.pi / 2) + 1.0) / 2
+        v_lim_low = (np.cos(-ROIList.DEC_min().to_value(u.rad) + np.pi / 2) + 1.0) / 2
+        v_lim_high = (np.cos(-ROIList.DEC_max().to_value(u.rad) + np.pi / 2) + 1.0) / 2
 
         if NT in self._event_types:
             # acos(2 * v - 1) = theta -> v = cos(theta) + 1 / 2
@@ -550,16 +564,27 @@ class Simulation:
 
         sim_inputs["v_low"] = v_lim_low
         sim_inputs["v_high"] = v_lim_high
-        sim_inputs["u_low"] = roi.RA_min.to_value(u.rad) / (2.0 * np.pi)
-        sim_inputs["u_high"] = roi.RA_max.to_value(u.rad) / (2.0 * np.pi)
+        if len(ROIList.STACK) > 1:
+            sim_inputs["u_low"] = 0.0
+            sim_inputs["u_high"] = 1.0
+        else:
+            # Finding the most efficient RA range for multiple ROIs is not implemented yet
+            sim_inputs["u_low"] = ROIList.STACK[0].RA_min.to_value(u.rad) / (
+                2.0 * np.pi
+            )
+            sim_inputs["u_high"] = ROIList.STACK[0].RA_max.to_value(u.rad) / (
+                2.0 * np.pi
+            )
 
         # For circular ROI the center point and radius are needed
-        if isinstance(roi, CircularROI):
-            sim_inputs["roi_radius"] = roi.radius.to_value(u.rad)
-            roi.center.representation_type = "cartesian"
-            sim_inputs["roi_center"] = np.array(
-                [roi.center.x, roi.center.y, roi.center.z]
-            )
+        if isinstance(ROIList.STACK[0], CircularROI):
+            radii = [_.radius.to_value(u.rad) for _ in ROIList.STACK]
+            sim_inputs["roi_radius"] = radii
+            centers = []
+            for roi in ROIList.STACK:
+                roi.center.representation_type = "cartesian"
+                centers.append(np.array([roi.center.x, roi.center.y, roi.center.z]))
+            sim_inputs["roi_center"] = centers
 
         flux_units = 1 / (u.m**2 * u.s)
 
@@ -571,9 +596,14 @@ class Simulation:
 
         if self._sources.atmospheric:
             atmo_bg = self._sources.atmospheric
-            sim_inputs["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
-                flux_units
-            ).value
+            try:
+                sim_inputs["F_atmo"] = (
+                    Parameter.get_parameter("F_atmo").value.to(flux_units).value
+                )
+            except ValueError:
+                sim_inputs["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
+                    flux_units
+                ).value
         lumi_units = u.GeV / u.s
 
         if self._sources.point_source:
@@ -768,14 +798,18 @@ def _get_expected_Nnu_(
     if point_source:
         for i in range(Ns):
             if shared_src_index:
-                eps.append(np.interp(src_index, src_index_grid, integral_grid[i]))
+                eps.append(
+                    np.exp(np.interp(src_index, src_index_grid, integral_grid[i]))
+                )
             else:
                 eps.append(
-                    np.interp(src_index_list[i], src_index_grid, integral_grid[i])
+                    np.exp(
+                        np.interp(src_index_list[i], src_index_grid, integral_grid[i])
+                    )
                 )
 
     if diffuse:
-        eps.append(np.interp(diff_index, diff_index_grid, integral_grid[Ns]))
+        eps.append(np.exp(np.interp(diff_index, diff_index_grid, integral_grid[Ns])))
 
     if atmospheric:
         eps.append(sim_inputs["atmo_integ_val"][c])

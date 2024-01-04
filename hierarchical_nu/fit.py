@@ -166,8 +166,7 @@ class StanFit:
         if not exposure_integral:
             for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
-                    self._sources,
-                    event_type,
+                    self._sources, event_type, self._n_grid_points
                 )
 
         else:
@@ -181,7 +180,7 @@ class StanFit:
 
     def compile_stan_code(self, include_paths=None):
         if not include_paths:
-            include_paths = [STAN_PATH]
+            include_paths = [STAN_PATH, STAN_GEN_PATH]
 
         self._fit = CmdStanModel(
             stan_file=self._fit_filename,
@@ -629,6 +628,9 @@ class StanFit:
 
         self.events.to_file(filename, append=True)
 
+        # Add priors separately
+        self.priors.addto(filename, "priors")
+
     @classmethod
     def from_file(cls, filename):
         """
@@ -688,31 +690,7 @@ class StanFit:
 
         obs_time_dict = {et: obs_time[k] for k, et in enumerate(event_types)}
 
-        priors = Priors()
-        try:
-            priors.luminosity = LogNormalPrior(
-                mu=priors_dict["lumi_mu"], sigma=priors_dict["lumi_sigma"]
-            )
-            priors.src_index = NormalPrior(
-                mu=priors_dict["src_index_mu"], sigma=priors_dict["src_index_sigma"]
-            )
-        except KeyError:
-            pass
-        try:
-            priors.diff_index = NormalPrior(
-                mu=priors_dict["diff_index_mu"], sigma=priors_dict["diff_index_sigma"]
-            )
-            priors.diffuse_flux = LogNormalPrior(
-                mu=priors_dict["f_diff_mu"], sigma=priors_dict["f_diff_sigma"]
-            )
-        except KeyError:
-            pass
-        try:
-            priors.atmospheric_flux = LogNormalPrior(
-                mu=priors_dict["f_atmo_mu"], sigma=priors_dict["f_atmo_sigma"]
-            )
-        except KeyError:
-            pass
+        priors = Priors.from_group(filename, "priors")
 
         events = Events.from_file(filename)
 
@@ -873,7 +851,7 @@ class StanFit:
             if isinstance(s, PointSource)
         ]
         src_pos = [
-            icrs_to_uv(s.dec.value, s.ra.value)
+            icrs_to_uv(s.dec.to_value(u.rad), s.ra.to_value(u.rad))
             for s in self._sources.sources
             if isinstance(s, PointSource)
         ]
@@ -882,22 +860,24 @@ class StanFit:
         fit_inputs["D"] = D
         fit_inputs["varpi"] = src_pos
 
-        fit_inputs["Emin_src"] = (
-            Parameter.get_parameter("Emin_src").value.to(u.GeV).value
-        )
-        fit_inputs["Emax_src"] = (
-            Parameter.get_parameter("Emax_src").value.to(u.GeV).value
-        )
+        if self._sources.point_source:
+            fit_inputs["Emin_src"] = (
+                Parameter.get_parameter("Emin_src").value.to(u.GeV).value
+            )
+            fit_inputs["Emax_src"] = (
+                Parameter.get_parameter("Emax_src").value.to(u.GeV).value
+            )
 
         fit_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         fit_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
 
-        fit_inputs["Emin_diff"] = (
-            Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
-        )
-        fit_inputs["Emax_diff"] = (
-            Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
-        )
+        if self._sources.diffuse:
+            fit_inputs["Emin_diff"] = (
+                Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
+            )
+            fit_inputs["Emax_diff"] = (
+                Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
+            )
 
         integral_grid = []
         atmo_integ_val = []
@@ -960,7 +940,7 @@ class StanFit:
         for c, event_type in enumerate(self._event_types):
             integral_grid.append(
                 [
-                    _.to(u.m**2).value.tolist()
+                    np.log(_.to(u.m**2).value).tolist()
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
             )
