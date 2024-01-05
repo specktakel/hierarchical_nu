@@ -1920,6 +1920,43 @@ class R2021DetectorModel(ABC, DetectorModel):
 
             ReturnStatement(["(ps_eres, ps_aeff, diff)"])
 
+        # Overload function when there is only one PS queried from tagging the sources
+        overloaded = UserDefinedFunction(
+            self._func_name,
+            ["true_energy", "detected_energy", "omega_det", "src_pos"],
+            ["real", "real", "vector", "vector"],
+            "tuple(real, real, array[] real)",
+        )
+
+        with overloaded:
+            ps_eres = ForwardVariableDef("ps_eres", "real")
+            ps_aeff = ForwardVariableDef("ps_aeff", "real")
+            diff = ForwardArrayDef("diff", "real", ["[3]"])
+            ps_eres << self.energy_resolution(
+                "log10(true_energy)", "log10(detected_energy)", "src_pos"
+            )
+            ps_aeff << FunctionCall(
+                [
+                    self.effective_area("true_energy", "src_pos"),
+                ],
+                "log",
+            )
+
+            diff[1] << self.energy_resolution(
+                "log10(true_energy)", "log10(detected_energy)", "omega_det"
+            )
+
+            diff[2] << FunctionCall(
+                [
+                    self.effective_area("true_energy", "omega_det"),
+                ],
+                "log",
+            )
+
+            diff[3] << diff[2]
+
+            ReturnStatement(["(ps_eres, ps_aeff, diff)"])
+
     def generate_rng_function_code(self):
         """
         Generate a wrapper for the IRF in `DistributionMode.RNG`.
