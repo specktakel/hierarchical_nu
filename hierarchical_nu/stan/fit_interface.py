@@ -1020,8 +1020,11 @@ class StanFitInterface(StanInterface):
                 self._Nex_src_comp = ForwardArrayDef(
                     "Nex_src_comp", "real", ["[", self._Net, "]"]
                 )
+                self._Nex_per_ps = ForwardArrayDef("Nex_per_ps", "real", ["[Ns]"])
                 with ForLoopContext(1, self._Net_stan, "i") as i:
                     self._Nex_src_comp[i] << 0
+                with ForLoopContext(1, self._Ns, "i") as i:
+                    self._Nex_per_ps[i] << 0
             if self.sources.diffuse:
                 self._Nex_diff = ForwardVariableDef("Nex_diff", "real")
                 self._Nex_diff_comp = ForwardArrayDef(
@@ -1204,6 +1207,9 @@ class StanFitInterface(StanInterface):
                         StringExpression(
                             [self._Nex_src_comp[i], "+=", self._F[k] * self._eps[i, k]]
                         )
+                    StringExpression(
+                        [self._Nex_per_ps[k], "+=", self._F[k], " * ", "sum(eps[:, k])"]
+                    )
 
             if self.sources.diffuse and self.sources.atmospheric:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
