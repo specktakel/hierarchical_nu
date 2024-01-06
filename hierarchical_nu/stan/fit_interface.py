@@ -240,7 +240,16 @@ class StanFitInterface(StanInterface):
                     end << N
 
                     # Define variable to store loglikelihood
-                    lp = ForwardArrayDef("lp", "vector[" + Ns_tot + "]", ["[N]"])
+                    if self._use_event_tag:
+                        size = 1
+                        if self._sources.diffuse:
+                            size += 1
+                        if self._sources.atmospheric:
+                            size += 1
+                        # reduce lp to 3 components per event since we only allow for one PS association
+                        lp = ForwardArrayDef("lp", "vector[" + str(size) + "]", ["[N]"])
+                    else:
+                        lp = ForwardArrayDef("lp", "vector[" + Ns_tot + "]", ["[N]"])
 
                     # Unpack event types (track or cascade)
                     event_type = ForwardArrayDef("event_type", "int", ["[N]"])
@@ -428,26 +437,39 @@ class StanFitInterface(StanInterface):
                                     [StringExpression([k, " < ", Ns + 1])]
                                 ):
                                     if self._use_event_tag:
-                                        lp[i][k] << spatial_loglike[k, i]
+                                        # Create new reference to proper entry in lp to reuse more code
+                                        _lp = lp[i][1]
+                                        _eres_src = eres_src
+                                        _aeff_src = aeff_src
+
                                         # If the source label k does not match the tag, continue
                                         # with condition k < Ns + 1 this does not interfere with diffuse components
                                         with IfBlockContext([k, "!=", event_tag[i]]):
                                             StringExpression(["continue"])
                                         with ElseBlockContext():
-                                            lp[i][k] << logF[k]
+                                            _lp << logF[k]
+                                            StringExpression(
+                                                [
+                                                    _lp,
+                                                    " += ",
+                                                    spatial_loglike[k, i],
+                                                ]
+                                            )
                                     else:
+                                        _lp = lp[i][k]
+                                        _eres_src = eres_src[k]
+                                        _aeff_src = aeff_src[k]
+
                                         StringExpression(
                                             [
-                                                lp[i][k],
+                                                _lp,
                                                 " += ",
                                                 spatial_loglike[k, i],
                                             ]
                                         )
-                                    if self._use_event_tag:
-                                        _aeff_src = aeff_src
-                                    else:
-                                        _aeff_src = aeff_src[k]
-                                    StringExpression([lp[i][k], " += ", _aeff_src])
+
+                                    StringExpression([_lp, " += ", _eres_src])
+                                    StringExpression([_lp, " += ", _aeff_src])
 
                                     if self._shared_src_index:
                                         src_index_ref = src_index
@@ -462,7 +484,7 @@ class StanFitInterface(StanInterface):
                                     if self._ps_spectrum == PowerLawSpectrum:
                                         StringExpression(
                                             [
-                                                lp[i][k],
+                                                _lp,
                                                 " += ",
                                                 self._src_spectrum_lpdf(
                                                     E[i],
@@ -475,7 +497,7 @@ class StanFitInterface(StanInterface):
                                     elif self._ps_spectrum == TwiceBrokenPowerLaw:
                                         StringExpression(
                                             [
-                                                lp[i][k],
+                                                _lp,
                                                 " += ",
                                                 self._src_spectrum_lpdf(
                                                     E[i],
@@ -494,11 +516,6 @@ class StanFitInterface(StanInterface):
                                         raise ValueError(
                                             f"{self._ps_spectrum} not recognised."
                                         )
-                                    if self._use_event_tag:
-                                        _eres_src = eres_src
-                                    else:
-                                        _eres_src = eres_src[k]
-                                    StringExpression([lp[i][k], " += ", _eres_src])
 
                             # Diffuse component
                             if self.sources.diffuse:
@@ -506,12 +523,16 @@ class StanFitInterface(StanInterface):
                                     [StringExpression([k, " == ", k_diff])]
                                 ):
                                     if self._use_event_tag:
-                                        StringExpression([lp[i][k], "=", logF[k]])
-                                    StringExpression([lp[i][k], " += ", aeff_diff])
+                                        _lp = lp[i][2]
+                                        StringExpression([_lp, "=", logF[k]])
+
+                                    else:
+                                        _lp = lp[i][k]
+                                    StringExpression([_lp, " += ", aeff_diff])
 
                                     StringExpression(
                                         [
-                                            lp[i][k],
+                                            _lp,
                                             " += ",
                                             eres_diff,
                                         ]
@@ -523,7 +544,7 @@ class StanFitInterface(StanInterface):
                                     # log_prob += log(p(Esrc|diff_index))
                                     StringExpression(
                                         [
-                                            lp[i][k],
+                                            _lp,
                                             " += ",
                                             self._diff_spectrum_lpdf(
                                                 E[i],
@@ -537,7 +558,7 @@ class StanFitInterface(StanInterface):
                                     # log_prob += log(1/4pi)
                                     StringExpression(
                                         [
-                                            lp[i][k],
+                                            _lp,
                                             " += ",
                                             np.log(1 / (4 * np.pi)),
                                         ]
@@ -549,17 +570,24 @@ class StanFitInterface(StanInterface):
                                     [StringExpression([k, " == ", k_atmo])]
                                 ):
                                     if self._use_event_tag:
-                                        lp[i][k] << logF[k]
+                                        if self.sources.diffuse:
+                                            _lp = lp[i][3]
+                                        else:
+                                            _lp = lp[i][2]
+                                        _lp << logF[k]
+
+                                    else:
+                                        _lp = lp[i][k]
                                     StringExpression(
                                         [
-                                            lp[i][k],
+                                            _lp,
                                             " += ",
                                             aeff_atmo,
                                         ]
                                     )
                                     StringExpression(
                                         [
-                                            lp[i][k],
+                                            _lp,
                                             " += ",
                                             eres_diff,
                                         ]
@@ -571,7 +599,7 @@ class StanFitInterface(StanInterface):
                                     # log_prob += log(p(Esrc, omega | atmospheric source))
                                     StringExpression(
                                         [
-                                            lp[i][k],
+                                            _lp,
                                             " += ",
                                             FunctionCall(
                                                 [
