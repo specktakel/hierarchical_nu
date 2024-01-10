@@ -1676,6 +1676,8 @@ class StanFitInterface(StanInterface):
                         "Luminosity prior distribution not recognised."
                     )
 
+                if self._priors.src_index.name not in ["normal", "lognormal"]:
+                    raise ValueError("Prior type for source index not recognised.")
                 StringExpression(
                     [
                         self._src_index,
@@ -1691,6 +1693,10 @@ class StanFitInterface(StanInterface):
                 )
 
             if self.sources.diffuse:
+                if self._priors.diffuse_flux.name not in ["normal", "lognormal"]:
+                    raise NotImplementedError(
+                        "Prior type for diffuse flux not recognised."
+                    )
                 StringExpression(
                     [
                         self._F_diff,
@@ -1705,6 +1711,10 @@ class StanFitInterface(StanInterface):
                     ]
                 )
 
+                if self._priors.diff_index.name not in ["normal", "lognormal"]:
+                    raise NotImplementedError(
+                        "Prior type for diffuse index not recognised."
+                    )
                 StringExpression(
                     [
                         self._diff_index,
@@ -1718,7 +1728,10 @@ class StanFitInterface(StanInterface):
                         ),
                     ]
                 )
-
+            if self._priors.atmospheric_flux.name not in ["normal", "lognormal"]:
+                raise NotImplementedError(
+                    "Prior type for atmospheric flux not recognised."
+                )
             if self.sources.atmospheric:
                 StringExpression(
                     [
