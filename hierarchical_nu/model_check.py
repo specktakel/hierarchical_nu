@@ -30,7 +30,15 @@ from hierarchical_nu.utils.roi import (
     NorthernSkyROI,
     ROIList,
 )
-from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
+from hierarchical_nu.priors import (
+    Priors,
+    LogNormalPrior,
+    NormalPrior,
+    ParetoPrior,
+    LuminosityPrior,
+    IndexPrior,
+    FluxPrior,
+)
 
 import logging
 
@@ -52,12 +60,7 @@ class ModelCheck:
         else:
             logger.info("Loading priors from config")
             prior_config = hnu_config["prior_config"]
-            priors = Priors()
-            priors.luminosity = self.make_prior(prior_config["L"])
-            priors.src_index = self.make_prior(prior_config["src_index"])
-            priors.atmospheric_flux = self.make_prior(prior_config["atmo_flux"])
-            priors.diffuse_flux = self.make_prior(prior_config["diff_flux"])
-            priors.diff_index = self.make_prior(prior_config["diff_index"])
+            priors = self.make_priors(prior_config)
             self.priors = priors
 
         if truths:
@@ -161,14 +164,70 @@ class ModelCheck:
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
     @staticmethod
-    def make_prior(p):
-        if p["name"] == "LogNormalPrior":
-            prior = LogNormalPrior(mu=np.log(p["mu"]), sigma=p["sigma"])
-        elif p["name"] == "NormalPrior":
-            prior = NormalPrior(mu=p["mu"], sigma=p["sigma"])
-        else:
-            raise ValueError("Currently no other prior implemented")
-        return prior
+    def make_priors(prior_config):
+        """
+        Make priors from config file.
+        Assumes default units specified in `hierarchical_nu.priors` for each quantity.
+        """
+        priors = Priors()
+
+        for p, vals in prior_config.items():
+            if vals.name == "NormalPrior":
+                prior = NormalPrior
+                mu = vals.mu
+                sigma = vals.sigma
+            elif vals.name == "LogNormalPrior":
+                prior = LogNormalPrior
+                mu = vals.mu
+                sigma = vals.sigma
+            elif vals.name == "ParetoPrior":
+                prior = ParetoPrior
+            else:
+                raise NotImplementedError("Prior type not recognised.")
+
+            if p == "src_index":
+                priors.src_index = IndexPrior(prior, mu=mu, sigma=sigma)
+            elif p == "diff_index":
+                priors.diff_index = IndexPrior(prior, mu=mu, sigma=sigma)
+            elif p == "L":
+                if prior == NormalPrior:
+                    priors.luminosity = LuminosityPrior(
+                        prior,
+                        mu=mu * LuminosityPrior.UNITS,
+                        sigma=sigma * LuminosityPrior.UNITS,
+                    )
+                elif prior == LogNormalPrior:
+                    priors.luminosity = LuminosityPrior(
+                        prior, mu=mu * LuminosityPrior.UNITS, sigma=sigma
+                    )
+                elif prior == ParetoPrior:
+                    raise NotImplementedError("Prior not recognised.")
+                    # priors.luminosity = LuminosityPrior(prior,
+            elif p == "diff_flux":
+                if prior == NormalPrior:
+                    priors.diffuse_flux = FluxPrior(
+                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma * FluxPrior.UNITS
+                    )
+                elif prior == LogNormalPrior:
+                    priors.diffuse_flux = FluxPrior(
+                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma
+                    )
+                else:
+                    raise NotImplementedError("Prior not recognised.")
+
+            elif p == "atmo_flux":
+                if prior == NormalPrior:
+                    priors.atmospheric_flux = FluxPrior(
+                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma * FluxPrior.UNITS
+                    )
+                elif prior == LogNormalPrior:
+                    priors.atmospheric = FluxPrior(
+                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma
+                    )
+                else:
+                    raise NotImplementedError("Prior not recognised.")
+
+        return priors
 
     @staticmethod
     def initialise_env(output_dir):
@@ -215,12 +274,7 @@ class ModelCheck:
         nshards = threads_per_chain
         fit_name = file_config["fit_filename"][:-5]
 
-        priors = Priors()
-        priors.luminosity = ModelCheck.make_prior(prior_config["L"])
-        priors.src_index = ModelCheck.make_prior(prior_config["src_index"])
-        priors.atmospheric_flux = ModelCheck.make_prior(prior_config["atmo_flux"])
-        priors.diffuse_flux = ModelCheck.make_prior(prior_config["diff_flux"])
-        priors.diff_index = ModelCheck.make_prior(prior_config["diff_index"])
+        priors = ModelCheck.make_priors(prior_config)
 
         stan_fit_interface = StanFitInterface(
             fit_name,
@@ -495,13 +549,15 @@ class ModelCheck:
                     plot = False
 
                 elif "index" in var_name:
-                    prior_density = self.priors.to_dict()[var_name].pdf(prior_supp)
+                    prior_density = self.priors.to_dict()[var_name].pdf(
+                        prior_supp * self.priors.to_dict()[var_name].UNITS
+                    )
                     plot = True
 
                 elif not "Fs" in var_name:
                     # prior_samples = self.priors.to_dict()[var_name].sample(N)
                     prior_density = self.priors.to_dict()[var_name].pdf_logspace(
-                        prior_supp
+                        prior_supp * self.priors.to_dict()[var_name].UNITS
                     )
                     plot = True
                 else:
