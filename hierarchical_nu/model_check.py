@@ -281,6 +281,15 @@ class ModelCheck:
                             continue
                         for c, prob in enumerate(value):
                             folder.create_dataset(f"association_prob_{c}", data=prob)
+                    elif key == "parameter_names":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"par_names_{c}", data=data)
+                    elif key == "N_Eff":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"N_Eff_{c}", data=data)
+                    elif key == "R_hat":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"R_hat_{c}", data=data)
                     elif key != "Lambda" and key != "event_Lambda":
                         folder.create_dataset(key, data=value)
                     elif key == "Lambda":
@@ -595,6 +604,9 @@ class ModelCheck:
         outputs["diagnostics_ok"] = []
         outputs["run_time"] = []
         outputs["Lambda"] = []
+        outputs["parameter_names"] = []
+        outputs["N_Eff"] = []
+        outputs["R_hat"] = []
         if save_events:
             outputs["events"] = []
             outputs["association_prob"] = []
@@ -715,6 +727,40 @@ class ModelCheck:
                 outputs["diagnostics_ok"].append(1)
             else:
                 outputs["diagnostics_ok"].append(0)
+
+            # List of keys for which we are looking in the entirety of stan parameters
+            key_stubs = [
+                "lp__",
+                "L",
+                "_luminosity",
+                "src_index",
+                "_src_index",
+                "E[",
+                "Esrc[",
+                "F_atmo",
+                "F_diff",
+                "diff_index",
+                "Nex",
+                "f_det",
+                "f_arr",
+                "logF",
+                "Ftot",
+                "Fs",
+            ]
+
+            keys = []
+            summary = fit._fit_output.summary()
+            for k, v in summary["N_Eff"].items():
+                for key in key_stubs:
+                    if key in k:
+                        keys.append(k)
+                        break
+
+            R_hat = np.array([summary["R_hat"][k] for k in keys])
+            N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+            outputs["parameter_names"].append(np.array(keys, dtype="S"))
+            outputs["N_Eff"].append(N_Eff)
+            outputs["R_hat"].append(R_hat)
 
         return outputs
 
