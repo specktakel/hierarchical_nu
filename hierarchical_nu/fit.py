@@ -26,7 +26,7 @@ from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
-from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior
+from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrior
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -288,13 +288,30 @@ class StanFit:
                 if "transform" in kwargs.keys():
                     # Assumes that the only sensible transformation is log10
                     pdf = prior.pdf_logspace
-                    ax.plot(x, pdf(np.power(10, x)), color="black", alpha=0.4, zorder=0)
+                    ax.plot(
+                        x,
+                        pdf(np.power(10, x) * prior.UNITS),
+                        color="black",
+                        alpha=0.4,
+                        zorder=0,
+                    )
 
                 else:
                     pdf = prior.pdf
-                    ax.plot(x, pdf(x), color="black", alpha=0.4, zorder=0)
+                    ax.plot(x, pdf(x * prior.UNITS), color="black", alpha=0.4, zorder=0)
+                if isinstance(prior, UnitPrior):
+                    try:
+                        unit = prior.UNITS.unit
+                    except AttributeError:
+                        unit = prior.UNITS
+                    if "transform" in kwargs.keys():
+                        # yikes
+                        title = f"[$\\log_{{10}}\\left (\\frac{{{name}}}{{{unit.to_string('latex_inline').strip('$')}}}\\right )$]"
+                    else:
+                        title = f"{name} [{unit.to_string('latex_inline')}]"
+                    ax.set_title(title)
 
-            except:
+            except KeyError:
                 pass
 
         fig = axs.flatten()[0].get_figure()
@@ -626,6 +643,42 @@ class StanFit:
             meta_folder.create_dataset("runset", data=str(self._fit_output.runset))
             meta_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
 
+            summary = self._fit_output.summary()
+
+            # List of keys for which we are looking in the entirety of stan parameters
+            key_stubs = [
+                "lp__",
+                "L",
+                "_luminosity",
+                "src_index",
+                "_src_index",
+                "E[",
+                "Esrc[",
+                "F_atmo",
+                "F_diff",
+                "diff_index",
+                "Nex",
+                "f_det",
+                "f_arr",
+                "logF",
+                "Ftot",
+                "Fs",
+            ]
+
+            keys = []
+            for k, v in summary["N_Eff"].items():
+                for key in key_stubs:
+                    if key in k:
+                        keys.append(k)
+                        break
+
+            R_hat = np.array([summary["R_hat"][k] for k in keys])
+            N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+
+            meta_folder.create_dataset("N_Eff", data=N_Eff)
+            meta_folder.create_dataset("R_hat", data=R_hat)
+            meta_folder.create_dataset("parameters", data=np.array(keys, dtype="S"))
+
         self.events.to_file(filename, append=True)
 
         # Add priors separately
@@ -638,7 +691,7 @@ class StanFit:
         make plots and run classification check.
         """
 
-        priors_dict = {}
+        # priors_dict = {}
 
         fit_inputs = {}
         fit_outputs = {}
@@ -656,8 +709,8 @@ class StanFit:
                 fit_meta["iter_sampling"] = 1000
 
             for k, v in f["fit/inputs"].items():
-                if "mu" in k or "sigma" in k:
-                    priors_dict[k] = v[()]
+                # if "mu" in k or "sigma" in k:
+                #    priors_dict[k] = v[()]
 
                 fit_inputs[k] = v[()]
 
@@ -902,16 +955,26 @@ class StanFit:
             ].par_grids[key]
 
         # Inputs for priors of point sources
+        if self._priors.src_index.name not in ["normal", "lognormal"]:
+            raise ValueError("No other prior type for source index implemented.")
         fit_inputs["src_index_mu"] = self._priors.src_index.mu
         fit_inputs["src_index_sigma"] = self._priors.src_index.sigma
-        if self._priors.luminosity.name in ["normal", "lognormal"]:
+
+        if self._priors.luminosity.name == "lognormal":
             fit_inputs["lumi_mu"] = self._priors.luminosity.mu
             fit_inputs["lumi_sigma"] = self._priors.luminosity.sigma
+        elif self._priors.luminosity.name == "normal":
+            fit_inputs["lumi_mu"] = self._priors.luminosity.mu.to_value(
+                self._priors.luminosity.UNITS
+            )
+            fit_inputs["lumi_sigma"] = self._priors.luminosity.sigma.to_value(
+                self._priors.luminosity.UNITS
+            )
         elif self._priors.luminosity.name == "pareto":
             fit_inputs["lumi_xmin"] = self._priors.luminosity.xmin
             fit_inputs["lumi_alpha"] = self._priors.luminosity.alpha
         else:
-            raise ValueError("No other prior type for luminosity implemented")
+            raise ValueError("No other prior type for luminosity implemented.")
 
         if self._sources.diffuse:
             # Just take any for now, using default parameters it doesn't matter
@@ -919,10 +982,21 @@ class StanFit:
                 event_type
             ].par_grids["diff_index"]
 
-        if self._sources.diffuse:
             # Priors for diffuse model
-            fit_inputs["f_diff_mu"] = self._priors.diffuse_flux.mu
-            fit_inputs["f_diff_sigma"] = self._priors.diffuse_flux.sigma
+            if self._priors.diffuse_flux.name == "normal":
+                fit_inputs["f_diff_mu"] = self._priors.diffuse_flux.mu.to_value(
+                    self._priors.diffuse_flux.UNITS
+                )
+                fit_inputs["f_diff_sigma"] = self._priors.diffuse_flux.sigma.to_value(
+                    self._priors.diffuse_flux.UNITS
+                )
+            elif self._priors.diffuse_flux.name == "lognormal":
+                fit_inputs["f_diff_mu"] = self._priors.diffuse_flux.mu
+                fit_inputs["f_diff_sigma"] = self._priors.diffuse_flux.sigma
+            else:
+                raise ValueError(
+                    "No other type of prior for diffuse index implemented."
+                )
             fit_inputs["diff_index_mu"] = self._priors.diff_index.mu
             fit_inputs["diff_index_sigma"] = self._priors.diff_index.sigma
 
@@ -934,8 +1008,22 @@ class StanFit:
             ).value
 
             # Priors for atmo model
-            fit_inputs["f_atmo_mu"] = self._priors.atmospheric_flux.mu
-            fit_inputs["f_atmo_sigma"] = self._priors.atmospheric_flux.sigma
+            if self._priors.atmospheric_flux.name == "lognormal":
+                fit_inputs["f_atmo_mu"] = self._priors.atmospheric_flux.mu
+                fit_inputs["f_atmo_sigma"] = self._priors.atmospheric_flux.sigma
+            elif self._priors.atmospheric_flux.name == "normal":
+                fit_inputs["f_atmo_mu"] = self._priors.atmospheric_flux.mu.to_value(
+                    self._priors.atmospheric_flux.UNITS
+                )
+                fit_inputs[
+                    "f_atmo_sigma"
+                ] = self._priors.atmospheric_flux.sigma.to_value(
+                    self._priors.atmospheric_flux.UNITS
+                )
+            else:
+                raise ValueError(
+                    "No other prior type for atmospheric flux implemented."
+                )
 
         for c, event_type in enumerate(self._event_types):
             integral_grid.append(

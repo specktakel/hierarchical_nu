@@ -2,9 +2,10 @@ from hierarchical_nu.priors import (
     Priors,
     LogNormalPrior,
     NormalPrior,
-    # LuminosityPrior,
-    # IndexPrior,
-    # FluxPrior,
+    ParetoPrior,
+    LuminosityPrior,
+    IndexPrior,
+    FluxPrior,
 )
 from hierarchical_nu.utils.config import hnu_config, HierarchicalNuConfig
 from hierarchical_nu.source.source import Sources, PointSource
@@ -213,13 +214,69 @@ class ConfigParser:
         return fit
 
     def priors(self):
-        prior_config = self._hnu_config.prior_config
+        """
+        Make priors from config file.
+        Assumes default units specified in `hierarchical_nu.priors` for each quantity.
+        """
         priors = Priors()
-        priors.luminosity = self._make_prior(prior_config["L"])
-        priors.src_index = self._make_prior(prior_config["src_index"])
-        priors.atmospheric_flux = self._make_prior(prior_config["atmo_flux"])
-        priors.diffuse_flux = self._make_prior(prior_config["diff_flux"])
-        priors.diff_index = self._make_prior(prior_config["diff_index"])
+        prior_config = self._hnu_config.prior_config
+
+        for p, vals in prior_config.items():
+            if vals.name == "NormalPrior":
+                prior = NormalPrior
+                mu = vals.mu
+                sigma = vals.sigma
+            elif vals.name == "LogNormalPrior":
+                prior = LogNormalPrior
+                mu = vals.mu
+                sigma = vals.sigma
+            elif vals.name == "ParetoPrior":
+                prior = ParetoPrior
+            else:
+                raise NotImplementedError("Prior type not recognised.")
+
+            if p == "src_index":
+                priors.src_index = IndexPrior(prior, mu=mu, sigma=sigma)
+            elif p == "diff_index":
+                priors.diff_index = IndexPrior(prior, mu=mu, sigma=sigma)
+            elif p == "L":
+                if prior == NormalPrior:
+                    priors.luminosity = LuminosityPrior(
+                        prior,
+                        mu=mu * LuminosityPrior.UNITS,
+                        sigma=sigma * LuminosityPrior.UNITS,
+                    )
+                elif prior == LogNormalPrior:
+                    priors.luminosity = LuminosityPrior(
+                        prior, mu=mu * LuminosityPrior.UNITS, sigma=sigma
+                    )
+                elif prior == ParetoPrior:
+                    raise NotImplementedError("Prior not recognised.")
+                    # priors.luminosity = LuminosityPrior(prior,
+            elif p == "diff_flux":
+                if prior == NormalPrior:
+                    priors.diffuse_flux = FluxPrior(
+                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma * FluxPrior.UNITS
+                    )
+                elif prior == LogNormalPrior:
+                    priors.diffuse_flux = FluxPrior(
+                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma
+                    )
+                else:
+                    raise NotImplementedError("Prior not recognised.")
+
+            elif p == "atmo_flux":
+                if prior == NormalPrior:
+                    priors.atmospheric_flux = FluxPrior(
+                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma * FluxPrior.UNITS
+                    )
+                elif prior == LogNormalPrior:
+                    priors.atmospheric = FluxPrior(
+                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma
+                    )
+                else:
+                    raise NotImplementedError("Prior not recognised.")
+
         return priors
 
     @staticmethod
