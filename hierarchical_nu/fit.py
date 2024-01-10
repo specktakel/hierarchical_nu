@@ -53,6 +53,7 @@ class StanFit:
         atmo_flux_theta_points: int = 30,
         n_grid_points: int = 50,
         nshards: int = 0,
+        use_event_tag: bool = False,
     ):
         """
         To set up and run fits in Stan.
@@ -71,6 +72,7 @@ class StanFit:
         self._n_grid_points = n_grid_points
         self._nshards = nshards
         self._priors = priors
+        self._use_event_tag = use_event_tag
 
         self._sources.organise()
 
@@ -85,6 +87,7 @@ class StanFit:
                 nshards=nshards,
                 atmo_flux_energy_points=atmo_flux_energy_points,
                 atmo_flux_theta_points=atmo_flux_theta_points,
+                use_event_tag=use_event_tag,
             )
         else:
             logger.debug("Reloading previous results.")
@@ -942,6 +945,11 @@ class StanFit:
             # event_type = self._detector_model_type.event_types[0]
 
         fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
+
+        if self._use_event_tag:
+            fit_inputs["event_tag"] = (
+                np.array(self._events.get_tags(self._sources)).astype(int) + 1
+            )
 
         if self._sources.point_source:
             # This only searches for the src_index_grid, which is the same across all point sources
