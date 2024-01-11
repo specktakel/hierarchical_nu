@@ -22,6 +22,7 @@ from hierarchical_nu.backend.stan_generator import StanGenerator
 from hierarchical_nu.detector.r2021 import R2021EnergyResolution
 from hierarchical_nu.utils.roi import CircularROI, ROIList
 from hierarchical_nu.detector.icecube import (
+    EventType,
     Refrigerator,
     CAS,
 )
@@ -40,7 +41,7 @@ class ExposureIntegral:
     def __init__(
         self,
         sources: Sources,
-        detector_model,
+        detector_model: EventType,
         n_grid_points: int = 50,
     ):
         """
@@ -48,8 +49,8 @@ class ExposureIntegral:
         This is the convolution of the source spectrum and the
         effective area, multiplied by the observation time.
 
-        :param source_list: An instance of SourceList.
-        :param DetectorModel: A DetectorModel class.
+        :param sources: An instance of Sources.
+        :param detector_model: An instance of EventType from the Refrigerator.
         """
 
         self._detector_model = detector_model
@@ -154,8 +155,8 @@ class ExposureIntegral:
             # Assume that the source is inside the ROI
             # TODO add check at some point
 
-            dec = source.dec
-            cosz = -np.sin(dec)  # ONLY FOR ICECUBE!
+            dec = source.dec.to(u.rad)
+            cosz = -np.sin(dec.to_value(u.rad))  # ONLY FOR ICECUBE!
 
             flux_vals = source.flux_model.spectral_shape(E_c)
             if cosz < min(self.effective_area.cosz_bin_edges) or cosz >= max(
@@ -171,7 +172,9 @@ class ExposureIntegral:
                 ) << (u.m**2)
 
             p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                E_c, self._min_det_energy, np.full(E_c.shape, dec) * u.rad
+                E_c,
+                self._min_det_energy,
+                np.full(E_c.shape, dec.to_value(u.rad)) * u.rad,
             )
             p_Edet = np.nan_to_num(p_Edet)
 

@@ -30,6 +30,7 @@ from ..backend import (
     ForLoopContext,
     WhileLoopContext,
     ForwardVariableDef,
+    InstantVariableDef,
     ForwardArrayDef,
     ForwardVectorDef,
     StanArray,
@@ -1863,14 +1864,12 @@ class R2021DetectorModel(ABC, DetectorModel):
                 f.write(code)
             return os.path.join(path, cls._RNG_FILENAME(season))
 
-    def generate_pdf_function_code(self, sources: Sources = Sources()):
+    def generate_pdf_function_code(self, single_ps: bool = False):
         """
         Generate a wrapper for the IRF in `DistributionMode.PDF`.
-        Takes `Sources` instance as argument to generate energy likelihood
-        and effective area for all point sources.
         Assumes that astro diffuse and atmo diffuse model components are present.
         If not, they are disregarded by the model likelihood.
-        Has signature
+        Has signature dependent on the parameter `single_ps`, defaulting to False:
         real true_energy [Gev] : true neutrino energy
         real detected_energy [GeV] : detected muon energy
         unit_vector[3] : detected direction of event
@@ -1880,32 +1879,57 @@ class R2021DetectorModel(ABC, DetectorModel):
         2 array[Ns] real : log(effective area) of all point sources
         3 array[3] real : array with log(energy likelihood), log(effective area)
             and log(effective area) for atmospheric component.
+        If `single_ps==True`, all arrays regarding the PS are instead reals.
         For cascades the last entry is negative_infinity().
         """
 
-        Ns = len(sources.point_source)
+        if not single_ps:
+            UserDefinedFunction.__init__(
+                self,
+                self._func_name,
+                ["true_energy", "detected_energy", "omega_det", "src_pos"],
+                ["real", "real", "vector", "array[] vector"],
+                "tuple(array[] real, array[] real, array[] real)",
+            )
+        else:
+            UserDefinedFunction.__init__(
+                self,
+                self._func_name,
+                ["true_energy", "detected_energy", "omega_det", "src_pos"],
+                ["real", "real", "vector", "vector"],
+                "tuple(real, real, array[] real)",
+            )
 
-        UserDefinedFunction.__init__(
-            self,
-            self._func_name,
-            ["true_energy", "detected_energy", "omega_det", "src_pos"],
-            ["real", "real", "vector", "array[] vector"],
-            "tuple(array[] real, array[] real, array[] real)",
-        )
         with self:
-            ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
-            ps_aeff = ForwardArrayDef("ps_aeff", "real", ["[", Ns, "]"])
-            diff = ForwardArrayDef("diff", "real", ["[3]"])
-            with ForLoopContext(1, Ns, "i") as i:
-                ps_eres[i] << self.energy_resolution(
-                    "log10(true_energy)", "log10(detected_energy)", "src_pos[i]"
+            if not single_ps:
+                Ns = InstantVariableDef("Ns", "int", ["size(src_pos)"])
+                ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
+                ps_aeff = ForwardArrayDef("ps_aeff", "real", ["[", Ns, "]"])
+                with ForLoopContext(1, Ns, "i") as i:
+                    ps_eres[i] << self.energy_resolution(
+                        "log10(true_energy)", "log10(detected_energy)", "src_pos[i]"
+                    )
+                    ps_aeff[i] << FunctionCall(
+                        [
+                            self.effective_area("true_energy", "src_pos[i]"),
+                        ],
+                        "log",
+                    )
+
+            else:
+                ps_eres = ForwardVariableDef("ps_eres", "real")
+                ps_aeff = ForwardVariableDef("ps_aeff", "real")
+                ps_eres << self.energy_resolution(
+                    "log10(true_energy)", "log10(detected_energy)", "src_pos"
                 )
-                ps_aeff[i] << FunctionCall(
+                ps_aeff << FunctionCall(
                     [
-                        self.effective_area("true_energy", "src_pos[i]"),
+                        self.effective_area("true_energy", "src_pos"),
                     ],
                     "log",
                 )
+
+            diff = ForwardArrayDef("diff", "real", ["[3]"])
 
             diff[1] << self.energy_resolution(
                 "log10(true_energy)", "log10(detected_energy)", "omega_det"

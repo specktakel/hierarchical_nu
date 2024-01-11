@@ -44,10 +44,22 @@ class Simulation:
         sources: Sources,
         event_types: Union[EventType, List[EventType]],
         observation_time: Dict[EventType, u.quantity.Quantity[u.year]],
+        atmo_flux_energy_points: int = 100,
+        atmo_flux_theta_points: int = 30,
+        n_grid_points: int = 50,
         N: dict = {},
+        asimov: bool = False,
     ):
         """
         To set up and run simulations.
+        :param sources: Instance of `Sources` containing all to-be-simulated sources
+        :param event_types: `EventType` or list thereof, NB that not all event types should be combined
+        :param observation_time: single lifetime or dict of EventType: lifetime
+        :param atmo_flux_energy_points: number of atmo model grid points in energy space
+        :param atmo_flux_theta_points: number of atmo model grid points in theta/dec space
+        :param n_grid_poins: number of grid points for interpolations in exposure integral
+        :param N: if provided, simulate fixed number of events, e.g. {IC86_II: [1, 2, 3]}
+        :param asimov: if True, simulate np.rint(sim._Nex_et) events, overrides N
         """
 
         self._sources = sources
@@ -58,10 +70,18 @@ class Simulation:
         assert len(event_types) == len(observation_time)
         self._event_types = event_types
         self._observation_time = observation_time
+        self._n_grid_points = n_grid_points
+        self._asimov = asimov
 
         self._sources.organise()
 
         self._exposure_integral = collections.OrderedDict()
+
+        if asimov:
+            N = {}
+            for event_type in self._event_types:
+                # dummy values
+                N[event_type] = [1] * self._sources.N
 
         if N:
             for event_type in self._event_types:
@@ -84,6 +104,8 @@ class Simulation:
             stan_file_name,
             self._sources,
             self._event_types,
+            atmo_flux_energy_points=atmo_flux_energy_points,
+            atmo_flux_theta_points=atmo_flux_theta_points,
             force_N=self._force_N,
         )
 
@@ -132,8 +154,7 @@ class Simulation:
         if not exposure_integral:
             for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
-                    self._sources,
-                    event_type,
+                    self._sources, event_type, self._n_grid_points
                 )
 
         else:
@@ -164,9 +185,18 @@ class Simulation:
         self._main_sim = CmdStanModel(exe_file=exe_file)
 
     def run(self, seed=None, verbose=False, **kwargs):
-        self._sim_inputs = self._get_sim_inputs(seed)
+        """
+        Run the simulation.
+        :param seed: random seed
+        :param verbose: if True, print debug messages
+        :param kwargs: kwargs passed to `cmdstanpy.CmdStanModel.sample()`
+        """
 
+        self._sim_inputs = self._get_sim_inputs(seed)
         self._expected_Nnu = self._get_expected_Nnu(self._sim_inputs)
+        if self._asimov:
+            # Override sim inputs with asimov-forced_N
+            self._sim_inputs = self._get_sim_inputs(seed, asimov=True)
 
         if verbose:
             print(
@@ -225,6 +255,12 @@ class Simulation:
         return energies, coords, event_types, ang_errs
 
     def save(self, filename, overwrite: bool = False):
+        """
+        Save simulation
+        :param filename: filename of simulation, should have extension `.h5`
+        :param overwrite: if True, overwrite files with identical name
+        """
+
         if os.path.exists(filename) and not overwrite:
             raise FileExistsError(f"File {filename} already exists.")
 
@@ -252,10 +288,22 @@ class Simulation:
                 data=self._sources.total_flux_int().to(flux_unit).value,
             )
 
+            outputs_folder.create_dataset(
+                "expected_Nnu_per_comp", data=self._expected_Nnu_per_comp
+            )
+
         self.events.to_file(filename, append=True)
 
-    def show_spectrum(self, *components: str, scale: str = "linear"):
-        # hatch_cycle = cycler(hatch=['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'])
+    def show_spectrum(
+        self, *components: str, scale: str = "linear", population: bool = False
+    ):
+        """
+        Show binned spectrum of simulated data
+        :param components: not used? what is this?
+        :param scale: either `linear` or `log` to change y-axis scale of histograms
+        :param population: if True, display all point sources as one entry
+        """
+
         hatch_cycle = ["/", "\\", "|", "-", "+", "x", "o", "O", ".", "*"]
         Esrc = self._sim_output.stan_variable("Esrc")[0]
         E = self._sim_output.stan_variable("E")[0]
@@ -265,10 +313,33 @@ class Simulation:
         Emin_det = self._get_min_det_energy().to(u.GeV).value
 
         N = len(self._sources)
+        N_ps = len(self._sources.point_source)
 
-        Esrc_plot = [Esrc[np.nonzero(lam == float(i))] for i in range(N)]
-        E_plot = [E[np.nonzero(lam == float(i))] for i in range(N)]
-        Edet_plot = [Edet[np.nonzero(lam == float(i))] for i in range(N)]
+        if not population:
+            Esrc_plot = [Esrc[np.nonzero(lam == float(i))] for i in range(N)]
+            E_plot = [E[np.nonzero(lam == float(i))] for i in range(N)]
+            Edet_plot = [Edet[np.nonzero(lam == float(i))] for i in range(N)]
+        else:
+            # compress all PSs into one entry
+            Esrc_plot = [
+                np.concatenate(
+                    [Esrc[np.nonzero(lam == float(i))] for i in range(N_ps)]
+                ),
+                Esrc[np.nonzero(lam == float(N_ps))],
+                Esrc[np.nonzero(lam == float(N_ps + 1))],
+            ]
+            E_plot = [
+                np.concatenate([E[np.nonzero(lam == float(i))] for i in range(N_ps)]),
+                E[np.nonzero(lam == float(N_ps))],
+                E[np.nonzero(lam == float(N_ps + 1))],
+            ]
+            Edet_plot = [
+                np.concatenate(
+                    [Edet[np.nonzero(lam == float(i))] for i in range(N_ps)]
+                ),
+                Edet[np.nonzero(lam == float(N_ps))],
+                Edet[np.nonzero(lam == float(N_ps + 1))],
+            ]
 
         bins = np.logspace(
             np.log10(Emin_det),
@@ -277,13 +348,26 @@ class Simulation:
             base=10,
         )
 
+        if not population:
+            sources = self._sources
+        else:
+            sources = [self._sources[0]]
+            if self._sources.diffuse:
+                sources.append(self._sources.diffuse)
+            if self._sources.atmospheric:
+                sources.append(self._sources.atmospheric)
+
         fig, ax = plt.subplots(3, 1)
+
         for c, (source, hatch, _Esrc, _E, _Edet) in enumerate(
-            zip(self._sources, hatch_cycle, Esrc_plot, E_plot, Edet_plot)
+            zip(sources, hatch_cycle, Esrc_plot, E_plot, Edet_plot)
         ):
             if c == 0:
                 _bsrc = np.zeros(bins[:-1].shape)
-                label = source.name + " at source"
+                if not population:
+                    label = source.name + " at source"
+                else:
+                    label = "population at source"
                 # This is only needed s.t. flake does not complain
                 _nEsrc = 0
             else:
@@ -296,7 +380,10 @@ class Simulation:
 
             if c == 0:
                 _b = np.zeros(bins[:-1].shape)
-                label = source.name + " at detector"
+                if not population:
+                    label = source.name + " at detector"
+                else:
+                    label = "population at detector"
                 _nE = 0
             else:
                 _b += _nE
@@ -307,7 +394,10 @@ class Simulation:
 
             if c == 0:
                 _bdet = np.zeros(bins[:-1].shape)
-                label = source.name + ", detected"
+                if not population:
+                    label = source.name + ", detected"
+                else:
+                    label = "population, detected"
                 _nEdet = 0
             else:
                 _bdet += _nEdet
@@ -324,16 +414,33 @@ class Simulation:
 
         return fig, ax
 
-    def show_skymap(self, track_zoom: float = 1.0):
+    def show_skymap(
+        self,
+        track_zoom: float = 1.0,
+        subplot_kw: dict = {"projection": "astro degrees mollweide"},
+        population: bool = False,
+    ):
         """
         :param track_zoom: Increase radius of track events by this factor for visibility
+        :param subplot_kw: Customise projection style and boundaries with ligo.skymap
+        :param population: if True, display all point sources as one entry
         """
 
-        lam = list(
-            self._sim_output.stan_variable("Lambda")[0] - 1
-        )  # avoid Stan-style indexing
+        try:
+            lam = list(
+                self._sim_output.stan_variable("Lambda")[0] - 1
+            )  # avoid Stan-style indexing
+        except AttributeError:
+            lam = list(self._sim_output.stan_variable["Lambda"][0] - 1)
         Ns = self._sim_inputs["Ns"]
-        label_cmap = plt.cm.Set1(list(range(self._sources.N)))
+
+        # Reduce the amount of labels in the legend and various colors for large populations
+        # plot all point sources in one colour if so desired
+        if population:
+            label_cmap = plt.cm.Set1(list(range(self._sources.N - Ns + 1)))
+        else:
+            label_cmap = plt.cm.Set1(list(range(self._sources.N)))
+
         N_src_ev = sum([lam.count(_) for _ in range(Ns)])
 
         if self._sources.atmospheric and not self._sources.diffuse:
@@ -344,7 +451,7 @@ class Simulation:
             N_bg_ev = lam.count(Ns)
             N_atmo_ev = lam.count(Ns + 1)
 
-        fig, ax = plt.subplots(subplot_kw={"projection": "astro degrees mollweide"})
+        fig, ax = plt.subplots(subplot_kw=subplot_kw)
         fig.set_size_inches((7, 5))
 
         self.events.coords.representation_type = "spherical"
@@ -355,7 +462,14 @@ class Simulation:
             self.events.ang_errs,
             self.events.types,
         ):
-            color = label_cmap[int(l)]
+            if not population:
+                color = label_cmap[int(l)]
+            elif l == Ns:
+                color = label_cmap[1]
+            elif l == Ns + 1:
+                color = label_cmap[2]
+            else:
+                color = label_cmap[0]
 
             if t == NT.S:
                 e = e * track_zoom  # to make tracks visible
@@ -375,7 +489,7 @@ class Simulation:
             % (N_src_ev, N_bg_ev, N_atmo_ev),
             y=0.85,
         )
-        fig.tight_layout()
+        # fig.tight_layout()
 
         return fig, ax
 
@@ -389,7 +503,7 @@ class Simulation:
         self.compile_stan_code(include_paths=include_paths)
         self.run()
 
-    def _get_sim_inputs(self, seed=None):
+    def _get_sim_inputs(self, seed=None, asimov=False):
         sim_inputs = {}
 
         redshift = [
@@ -426,13 +540,18 @@ class Simulation:
         forced_N = []
         obs_time = []
 
+        if asimov:
+            # Round expected number of events to nearest integer
+            for c, et in enumerate(self._event_types):
+                self._N[et] = np.rint(self._Nex_et[c]).astype(int).tolist()
+
         for c, event_type in enumerate(self._event_types):
             if self._force_N:
                 forced_N.append(self._N[event_type])
 
             integral_grid.append(
                 [
-                    _.to(u.m**2).value.tolist()
+                    np.log(_.to(u.m**2).value).tolist()
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
             )
@@ -784,14 +903,18 @@ def _get_expected_Nnu_(
     if point_source:
         for i in range(Ns):
             if shared_src_index:
-                eps.append(np.interp(src_index, src_index_grid, integral_grid[i]))
+                eps.append(
+                    np.exp(np.interp(src_index, src_index_grid, integral_grid[i]))
+                )
             else:
                 eps.append(
-                    np.interp(src_index_list[i], src_index_grid, integral_grid[i])
+                    np.exp(
+                        np.interp(src_index_list[i], src_index_grid, integral_grid[i])
+                    )
                 )
 
     if diffuse:
-        eps.append(np.interp(diff_index, diff_index_grid, integral_grid[Ns]))
+        eps.append(np.exp(np.interp(diff_index, diff_index_grid, integral_grid[Ns])))
 
     if atmospheric:
         eps.append(sim_inputs["atmo_integ_val"][c])

@@ -38,7 +38,7 @@ def test_file_generation_northern_tracks(output_directory):
     with StanGenerator() as gc:
         with FunctionsContext():
             ntd_pdf = NorthernTracksDetectorModel()
-            ntd_pdf.generate_pdf_function_code(Sources())
+            ntd_pdf.generate_pdf_function_code()
 
             ntd_rng = NorthernTracksDetectorModel(DistributionMode.RNG)
             ntd_rng.generate_rng_function_code()

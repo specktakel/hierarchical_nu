@@ -46,7 +46,7 @@ def test_roi_south(caplog):
         radius=12.0 * u.deg,
     )
 
-    assert "ROI extends into Southern sky. Proceed with chaution." in caplog.text
+    assert "ROI extends into Southern sky. Proceed with caution." in caplog.text
 
 
 def test_humongous_roi():
@@ -137,10 +137,10 @@ def test_rectangular_precomputation():
     sim.precomputation()
     cut = sim._get_sim_inputs()
 
-    assert pytest.approx(
-        np.array(cut["integral_grid"][0][1]) * 2.0, rel=1e-3
-    ) == np.array(default["integral_grid"][0][1])
-    assert pytest.approx(np.array(cut["integral_grid"][0][0])) == np.array(
+    assert pytest.approx(np.exp(cut["integral_grid"][0][1]) * 2.0, rel=1e-3) == np.exp(
+        default["integral_grid"][0][1]
+    )
+    assert pytest.approx(np.exp(cut["integral_grid"][0][0])) == np.exp(
         default["integral_grid"][0][0]
     )
 
