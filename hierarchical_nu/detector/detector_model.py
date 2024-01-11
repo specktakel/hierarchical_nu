@@ -692,11 +692,9 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
     def generate_pdf_function_code(self):
         """
         Generate a wrapper for the IRF in `DistributionMode.PDF`.
-        Takes `Sources` instance as argument to generate energy likelihood
-        and effective area for all point sources.
         Assumes that astro diffuse and atmo diffuse model components are present.
         If not, they are disregarded by the model likelihood.
-        Has signature
+        Has signature dependent on the parameter `single_ps`, defaulting to False:
         real true_energy [Gev] : true neutrino energy
         real detected_energy [GeV] : detected muon energy
         unit_vector[3] : detected direction of event
@@ -706,6 +704,7 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
         2 array[Ns] real : log(effective area) of all point sources
         3 array[3] real : array with log(energy likelihood), log(effective area)
             and log(effective area) for atmospheric component.
+        If `single_ps==True`, all arrays regarding the PS are instead reals.
         For cascades the last entry is negative_infinity().
         """
 

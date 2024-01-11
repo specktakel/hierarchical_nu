@@ -152,11 +152,19 @@ class ModelCheck:
             self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
 
             self.truths["Nex"] = Nex
-            self.truths["Nex_src"] = Nex_per_comp[0]
-            self.truths["Nex_diff"] = Nex_per_comp[1]
-            self.truths["Nex_atmo"] = Nex_per_comp[2]
+            self.truths["Nex_src"] = np.sum(
+                Nex_per_comp[0 : len(self._sources.point_source)]
+            )
+            upper_idx = len(self._sources.point_source)
+            if self._sources.diffuse:
+                self.truths["Nex_diff"] = Nex_per_comp[len(self._sources.point_source)]
+                upper_idx += 1
+            if self._sources.atmospheric:
+                self.truths["Nex_atmo"] = Nex_per_comp[-1]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
-            self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
+            self.truths["f_det_astro"] = Nex_per_comp[0] / sum(
+                Nex_per_comp[0:upper_idx]
+            )
 
         self._default_var_names = [key for key in self.truths]
         self._default_var_names.append("Fs")

@@ -53,6 +53,7 @@ class StanFit:
         atmo_flux_theta_points: int = 30,
         n_grid_points: int = 50,
         nshards: int = 0,
+        use_event_tag: bool = False,
     ):
         """
         To set up and run fits in Stan.
@@ -71,6 +72,7 @@ class StanFit:
         self._n_grid_points = n_grid_points
         self._nshards = nshards
         self._priors = priors
+        self._use_event_tag = use_event_tag
 
         self._sources.organise()
 
@@ -85,6 +87,7 @@ class StanFit:
                 nshards=nshards,
                 atmo_flux_energy_points=atmo_flux_energy_points,
                 atmo_flux_theta_points=atmo_flux_theta_points,
+                use_event_tag=use_event_tag,
             )
         else:
             logger.debug("Reloading previous results.")
@@ -240,12 +243,20 @@ class StanFit:
             **kwargs,
         )
 
-    def get_src_position(self):
+    def get_src_position(self, source_idx: int = 0):
         try:
-            ra = self._sources.point_source[0].ra
-            dec = self._sources.point_source[0].dec
-        except IndexError:
-            ra, dec = uv_to_icrs(self._fit_inputs["varpi"][0])
+            if self._sources.N == 0:
+                raise AttributeError
+            try:
+                ra = self._sources.point_source[source_idx].ra
+                dec = self._sources.point_source[source_idx].dec
+            except IndexError:
+                raise IndexError(f"Point source index {source_idx} is out of range.")
+        except AttributeError:
+            try:
+                ra, dec = uv_to_icrs(self._fit_inputs["varpi"][source_idx])
+            except IndexError:
+                raise IndexError(f"Point source index {source_idx} is out of range.")
         source_coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         return source_coords
@@ -407,9 +418,27 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
-    def _plot_energy_posterior(self, input_axs, ax, source_idx, color_scale):
+    @u.quantity_input
+    def _plot_energy_posterior(
+        self,
+        input_axs,
+        ax,
+        center,
+        assoc_idx,
+        radius,
+        color_scale,
+    ):
         ev_class = np.array(self._get_event_classifications())
-        assoc_prob = ev_class[:, source_idx]
+        if radius is not None and center is not None:
+            events = self.events
+            events.coords.representation_type = "spherical"
+
+            sep = events.coords.separation(center).deg
+            mask = sep < radius.to_value(u.deg)
+        else:
+            mask = np.ones(ev_class.shape[0], dtype=bool)
+
+        assoc_prob = ev_class[:, assoc_idx][mask]
 
         if color_scale == "lin":
             norm = colors.Normalize(0.0, 1.0, clip=True)
@@ -420,7 +449,7 @@ class StanFit:
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
         color = mapper.to_rgba(assoc_prob)
 
-        for c, line in enumerate(input_axs[0, 0].lines):
+        for c, line in enumerate(np.array(input_axs[0, 0].lines)[mask]):
             ax.plot(
                 np.power(10, line.get_data()[0]),
                 line.get_data()[1],
@@ -430,23 +459,23 @@ class StanFit:
         _, yhigh = ax.get_ylim()
         ax.set_xscale("log")
 
-        for c, line in enumerate(input_axs[0, 0].lines):
+        for c, line in enumerate(np.array(input_axs[0, 0].lines)[mask]):
             ax.vlines(
-                self.events.energies[c].to_value(u.GeV),
+                self.events.energies[mask][c].to_value(u.GeV),
                 yhigh,
                 1.05 * yhigh,
                 color=color[c],
                 lw=1,
                 zorder=assoc_prob[c] + 1,
             )
-            if assoc_prob[c] > 0.1:
+            if assoc_prob[c] > 0.2:
                 # if we have more than 20% association prob, link both lines up
-                x, y = input_axs[0, 0].lines[c].get_data()
+                x, y = np.array(input_axs[0, 0].lines)[mask][c].get_data()
                 idx_posterior = np.argmax(y)
                 ax.plot(
                     [
                         np.power(10, x[idx_posterior]),
-                        self.events.energies[c].to_value(u.GeV),
+                        self.events.energies[mask][c].to_value(u.GeV),
                     ],
                     [y[idx_posterior], yhigh],
                     lw=0.5,
@@ -461,12 +490,20 @@ class StanFit:
 
         return ax, mapper
 
-    def plot_energy_posterior(self, source_idx: int = 0, color_scale: str = "lin"):
+    def plot_energy_posterior(
+        self,
+        center: Union[SkyCoord, int, None] = None,
+        assoc_idx: int = 0,
+        radius: Union[u.Quantity[u.deg], None] = None,
+        color_scale: str = "lin",
+    ):
         """
         Plot energy posteriors in log10-space.
-        Color corresponds to association to point source presumed
-        to be in self.sources[0]
-        TODO: make compatible with multiple PS
+        Color corresponds to association probability.
+        :param center: SkyCoord, int identifying PS or None to center selection on
+        :param assoc_idx: integer identifying the source component to calculate assoc prob
+        :param radius: if center is not None, select only events within radius around center
+        :param color_scale: color scale of assoc prob, either "lin" or "log"
         """
 
         _, axs = self.plot_trace(
@@ -478,15 +515,18 @@ class StanFit:
         )
 
         fig, ax = plt.subplots(dpi=150)
-
-        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx, color_scale)
-        fig.colorbar(mapper, ax=ax, label=f"association probability to {source_idx:n}")
+        if isinstance(center, int):
+            center = self.get_src_position(center)
+        ax, mapper = self._plot_energy_posterior(
+            axs, ax, center, assoc_idx, radius, color_scale
+        )
+        fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
         return fig, ax
 
-    def _plot_roi(self, source_coords, ax, radius, source_idx, color_scale):
+    def _plot_roi(self, center, ax, radius, assoc_idx, color_scale):
         ev_class = np.array(self._get_event_classifications())
-        assoc_prob = ev_class[:, source_idx]
+        assoc_prob = ev_class[:, assoc_idx]
 
         min = 0.0
         max = 1.0
@@ -502,13 +542,13 @@ class StanFit:
         events = self.events
         events.coords.representation_type = "spherical"
 
-        sep = events.coords.separation(source_coords).deg
-        mask = sep < radius.to_value(u.deg) * 1.41
+        sep = events.coords.separation(center).deg
+        mask = sep < radius.to_value(u.deg)  #  * 1.41
         # sloppy, don't know how to do that rn
 
         ax.scatter(
-            source_coords.ra.deg,
-            source_coords.dec.deg,
+            center.ra.deg,
+            center.dec.deg,
             marker="x",
             color="black",
             zorder=10,
@@ -534,7 +574,11 @@ class StanFit:
 
     @u.quantity_input
     def plot_roi(
-        self, radius=5.0 * u.deg, source_idx: int = 0, color_scale: str = "lin"
+        self,
+        center: Union[SkyCoord, int] = 0,
+        radius: u.Quantity[u.deg] = 5.0 * u.deg,
+        assoc_idx: int = 0,
+        color_scale: str = "lin",
     ):
         """
         Create plot of the ROI.
@@ -542,28 +586,37 @@ class StanFit:
         to the association probability to the point source proposed.
         Assumes there is a point source in self.sources[0].
         Size of events are meaningless.
+        :param center: either SkyCoord or PS index to center the plot on
+        :param radius: Radius of sky plot
+        :param assoc_idx: source idx to calculate the association probability
+        :param color_scale: display association probability on "lin" or "log" scale
         """
 
-        source_coords = self.get_src_position()
+        if isinstance(center, int):
+            center = self.get_src_position(center)
 
         # we are working in degrees here
         fig, ax = plt.subplots(
             subplot_kw={
                 "projection": "astro degrees zoom",
-                "center": source_coords,
+                "center": center,
                 "radius": f"{radius.to_value(u.deg)} deg",
             },
             dpi=150,
         )
 
-        ax, mapper = self._plot_roi(source_coords, ax, radius, source_idx, color_scale)
-        fig.colorbar(mapper, ax=ax, label=f"association probability to {source_idx:n}")
+        ax, mapper = self._plot_roi(center, ax, radius, assoc_idx, color_scale)
+        fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
         return fig, ax
 
     @u.quantity_input
     def plot_energy_and_roi(
-        self, radius=5 * u.deg, source_idx: int = 0, color_scale: str = "lin"
+        self,
+        center: Union[SkyCoord, int] = 0,
+        assoc_idx: int = 0,
+        radius: u.Quantity[u.deg] = 5 * u.deg,
+        color_scale: str = "lin",
     ):
         fig = plt.figure(dpi=150, figsize=(8, 3))
         gs = fig.add_gridspec(
@@ -588,24 +641,27 @@ class StanFit:
             divergences=None,
         )
 
-        source_coords = self.get_src_position()
+        if isinstance(center, int):
+            center = self.get_src_position(center)
 
-        ax, mapper = self._plot_energy_posterior(axs, ax, source_idx, color_scale)
+        ax, mapper = self._plot_energy_posterior(
+            axs, ax, center, assoc_idx, radius, color_scale
+        )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.yaxis.set_ticklabels([])
         ax.yaxis.set_ticks([])
         ax.set_ylabel("posterior pdf")
-        fig.colorbar(mapper, label=f"association probability to {source_idx:n}", ax=ax)
+        fig.colorbar(mapper, label=f"association probability to {assoc_idx:n}", ax=ax)
 
         ax = fig.add_subplot(
             gs[0, 0],
             projection="astro degrees zoom",
-            center=source_coords,
+            center=center,
             radius=f"{radius.to_value(u.deg)} deg",
         )
 
-        ax, _ = self._plot_roi(source_coords, ax, radius, source_idx, color_scale)
+        ax, _ = self._plot_roi(center, ax, radius, assoc_idx, color_scale)
 
         return fig, ax
 
@@ -635,7 +691,11 @@ class StanFit:
                 outputs_folder.create_dataset(key, data=value)
 
             # Save some metadata for debugging, easier loading from file
-            meta_folder.create_dataset("divergences", data=self._fit_output.divergences)
+            if self._fit_output.divergences:
+                divergences = self._fit_output.method_variables()["divergent__"]
+                meta_folder.create_dataset(
+                    "divergences", data=np.argwhere(divergences == 1.0)
+                )
             meta_folder.create_dataset("chains", data=self._fit_output.chains)
             meta_folder.create_dataset(
                 "iter_sampling", data=self._fit_output._iter_sampling
@@ -683,6 +743,14 @@ class StanFit:
 
         # Add priors separately
         self.priors.addto(filename, "priors")
+
+    def save_csvfiles(self, directory):
+        """
+        Save cmdstanpy csv files
+        :param directory: Directory to save csf files to.
+        """
+
+        self._fit_output.save_csvfiles(directory)
 
     @classmethod
     def from_file(cls, filename):
@@ -943,12 +1011,43 @@ class StanFit:
 
         fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
 
+        if self._use_event_tag:
+            fit_inputs["event_tag"] = (
+                np.array(self._events.get_tags(self._sources)).astype(int) + 1
+            )
+
         if self._sources.point_source:
+            # This only searches for the src_index_grid, which is the same across all point sources
+            # fixed by n_grid_points
             try:
                 Parameter.get_parameter("src_index")
                 key = "src_index"
-            except ValueError:
-                key = "ps_0_src_index"
+                self._exposure_integral[event_type].par_grids[key]
+            except (ValueError, KeyError):
+                # ValueError is raised if src_index is not a valid parameter
+                # KeyError is raised if there is no entry in the exposure integral grid
+                try:
+                    key = "ps_0_src_index"
+                    fit_inputs["src_index_grid"] = self._exposure_integral[
+                        event_type
+                    ].par_grids[key]
+                except KeyError:
+                    # For source lists where sources have been deleted
+                    # ps_0_src_index might not exist
+                    # try systematically until one index is found
+                    params = list(Parameter._Parameter__par_registry.keys())
+                    for key in params:
+                        if "src_index" in key:
+                            try:
+                                Parameter.get_parameter(key)
+                                fit_inputs["src_index_grid"] = self._exposure_integral[
+                                    event_type
+                                ].par_grids[key]
+                                break
+                            except (ValueError, KeyError):
+                                pass
+                    else:
+                        raise ValueError("This should not happen.")
 
             fit_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
