@@ -153,7 +153,7 @@ class StanFitInterface(StanInterface):
             for event_type in self._event_types:
                 # Include the PDF mode of the detector model
                 self._dm[event_type] = event_type.model(mode=DistributionMode.PDF)
-                self._dm[event_type].generate_pdf_function_code()
+                self._dm[event_type].generate_pdf_function_code(self._use_event_tag)
 
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
