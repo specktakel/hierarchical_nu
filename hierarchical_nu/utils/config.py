@@ -95,7 +95,7 @@ class ParameterConfig:
     diffuse: bool = True
 
     # Asimov data - fix simulated event numbers to nearest integer of expected number
-    # asimov: bool = False
+    asimov: bool = False
 
 
 @dataclass
