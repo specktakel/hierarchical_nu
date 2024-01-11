@@ -527,17 +527,35 @@ class Sources:
 
         self.add(atmospheric_component)
 
-    def select(self, mask: npt.NDArray[np.bool_]):
+    def select(self, mask: npt.NDArray[np.bool_], only_point_sources: bool = False):
         """
         Select some subset of existing sources by providing a mask.
-        :param mask: Array of bools with same length as event properties.
+        NB: Assumes only one diffuse and one atmospheric component
+         :param mask: Array of bools with same length as the number of sources.
+        :param only_point_sources: Set `True` to only make selections on point sources
         """
 
-        assert len(mask) == self.N
+        if only_point_sources:
+            # Make selection on point sources
+            assert len(mask) == len(self.point_source)
 
-        _sources = np.array(self.sources)
+            _point_sources = np.array(self._point_source)
 
-        _sources = _sources[mask]
+            _point_sources = _point_sources[mask]
+
+            _sources = list(_point_sources)
+
+            # Add back diffuse and atmospheric components
+            _sources.append(self.diffuse)
+            _sources.append(self.atmospheric)
+
+        else:
+            # Select on over all sources
+            assert len(mask) == self.N
+
+            _sources = np.array(self.sources)
+
+            _sources = _sources[mask]
 
         self.sources = list(_sources)
 
