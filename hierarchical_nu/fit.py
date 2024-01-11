@@ -691,7 +691,11 @@ class StanFit:
                 outputs_folder.create_dataset(key, data=value)
 
             # Save some metadata for debugging, easier loading from file
-            meta_folder.create_dataset("divergences", data=self._fit_output.divergences)
+            if self._fit_output.divergences:
+                divergences = self._fit_output.method_variables()["divergent__"]
+                meta_folder.create_dataset(
+                    "divergences", data=np.argwhere(divergences == 1.0)
+                )
             meta_folder.create_dataset("chains", data=self._fit_output.chains)
             meta_folder.create_dataset(
                 "iter_sampling", data=self._fit_output._iter_sampling
@@ -739,6 +743,14 @@ class StanFit:
 
         # Add priors separately
         self.priors.addto(filename, "priors")
+
+    def save_csvfiles(self, directory):
+        """
+        Save cmdstanpy csv files
+        :param directory: Directory to save csf files to.
+        """
+
+        self._fit_output.save_csvfiles(directory)
 
     @classmethod
     def from_file(cls, filename):
