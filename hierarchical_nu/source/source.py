@@ -208,7 +208,7 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
-        shape = PowerLawSpectrum(
+        shape = TwiceBrokenPowerLaw(
             norm,
             pivot.value / (1 + redshift),
             index,
