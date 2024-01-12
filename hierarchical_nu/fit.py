@@ -132,6 +132,19 @@ class StanFit:
 
         self._exposure_integral = collections.OrderedDict()
 
+        # Check for shared luminosity and src_index params
+        try:
+            Parameter.get_parameter("luminosity")
+            self._shared_luminosity = True
+        except ValueError:
+            self._shared_luminosity = False
+
+        try:
+            Parameter.get_parameter("src_index")
+            self._shared_src_index = True
+        except ValueError:
+            self._shared_src_index = False
+
     @property
     def priors(self):
         return self._priors
@@ -354,10 +367,10 @@ class StanFit:
                 if len(np.shape(chain[key])) > 1:
                     # This is for array-like variables, e.g. multiple PS
                     # having their own entry in src_index
-                    for i, s in enumerate(chain[key].T):
-                        samples_list.append(s)
+                    for samp, src in zip(chain[key].T, self._sources.point_source):
+                        samples_list.append(samp)
                         if key == "L" or key == "src_index":
-                            label = "ps_%i_" % i + key
+                            label = "%s_" % src.name + key
                         else:
                             label = key
 
@@ -371,9 +384,11 @@ class StanFit:
                 # check for len(np.shape(chain[key]) > 2 because extra dim for chains
                 # would be, e.g. for 3 sources, (chains, iter_sampling, 3)
                 if len(np.shape(chain[key])) > 2:
-                    for i in range(np.shape(chain[key][-1])):
+                    for i, src in zip(
+                        range(np.shape(chain[key][-1])), self._sources.point_source
+                    ):
                         if key == "L" or key == "src_index":
-                            label = "ps_%i_" % i + key
+                            label = "%s_" % src.name + key
                         else:
                             label = key
                         samples_list.append(
@@ -1017,37 +1032,14 @@ class StanFit:
             )
 
         if self._sources.point_source:
-            # This only searches for the src_index_grid, which is the same across all point sources
-            # fixed by n_grid_points
-            try:
-                Parameter.get_parameter("src_index")
+            # Check for shared source index
+            if self._shared_src_index:
                 key = "src_index"
-                self._exposure_integral[event_type].par_grids[key]
-            except (ValueError, KeyError):
-                # ValueError is raised if src_index is not a valid parameter
-                # KeyError is raised if there is no entry in the exposure integral grid
-                try:
-                    key = "ps_0_src_index"
-                    fit_inputs["src_index_grid"] = self._exposure_integral[
-                        event_type
-                    ].par_grids[key]
-                except KeyError:
-                    # For source lists where sources have been deleted
-                    # ps_0_src_index might not exist
-                    # try systematically until one index is found
-                    params = list(Parameter._Parameter__par_registry.keys())
-                    for key in params:
-                        if "src_index" in key:
-                            try:
-                                Parameter.get_parameter(key)
-                                fit_inputs["src_index_grid"] = self._exposure_integral[
-                                    event_type
-                                ].par_grids[key]
-                                break
-                            except (ValueError, KeyError):
-                                pass
-                    else:
-                        raise ValueError("This should not happen.")
+
+            # Otherwise just use first source in the list
+            # src_index_grid is identical for all point sources
+            else:
+                key = "%s_src_index" % self._sources.point_source[0].name
 
             fit_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
