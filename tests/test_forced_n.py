@@ -91,32 +91,23 @@ def test_multi_ps_n():
     ROIList.clear_registry()
     roi = RectangularROI(DEC_min=-5 * u.deg)
 
-    src_index_0 = Parameter(2.0, "ps_0_src_index", fixed=False, par_range=(1, 4))
-    src_index_1 = Parameter(2.0, "ps_1_src_index", fixed=False, par_range=(1, 4))
-    src_index_2 = Parameter(2.0, "ps_2_src_index", fixed=False, par_range=(1, 4))
+    src_names = ["test_%i" % i for i in range(3)]
+    src_index_params = []
+    src_lumi_params = []
+    for sn in src_names:
+        src_index_params.append(
+            Parameter(2.0, sn + "_src_index", fixed=False, par_range=(1, 4))
+        )
+        src_lumi_params.append(
+            Parameter(
+                2e47 * (u.erg / u.s),
+                sn + "_luminosity",
+                fixed=True,
+                par_range=(0, 1e60) * (u.erg / u.s),
+            )
+        )
 
     diff_index = Parameter(2.0, "diff_index", fixed=False, par_range=(1, 4))
-
-    L_0 = Parameter(
-        2e47 * (u.erg / u.s),
-        "ps_0_luminosity",
-        fixed=True,
-        par_range=(0, 1e60) * (u.erg / u.s),
-    )
-
-    L_1 = Parameter(
-        2e47 * (u.erg / u.s),
-        "ps_1_luminosity",
-        fixed=True,
-        par_range=(0, 1e60) * (u.erg / u.s),
-    )
-
-    L_2 = Parameter(
-        2e47 * (u.erg / u.s),
-        "ps_2_luminosity",
-        fixed=True,
-        par_range=(0, 1e60) * (u.erg / u.s),
-    )
 
     Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
     Emin = Parameter(5e4 * u.GeV, "Emin", fixed=True)
@@ -131,33 +122,33 @@ def test_multi_ps_n():
     Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 
     point_source_0 = PointSource.make_powerlaw_source(
-        "test_0",
+        src_names[0],
         np.deg2rad(5) * u.rad,
         np.pi * u.rad,
-        L_0,
-        src_index_0,
+        src_lumi_params[0],
+        src_index_params[0],
         z,
         Emin_src,
         Emax_src,
     )
 
     point_source_1 = PointSource.make_powerlaw_source(
-        "test_1",
+        src_names[1],
         np.deg2rad(25) * u.rad,
         np.pi * u.rad,
-        L_1,
-        src_index_1,
+        src_lumi_params[1],
+        src_index_params[1],
         z,
         Emin_src,
         Emax_src,
     )
 
     point_source_2 = PointSource.make_powerlaw_source(
-        "test_2",
+        src_names[2],
         np.deg2rad(45) * u.rad,
         np.pi * u.rad,
-        L_2,
-        src_index_2,
+        src_lumi_params[2],
+        src_index_params[2],
         z,
         Emin_src,
         Emax_src,
