@@ -571,7 +571,7 @@ class Simulation:
             if self._shared_src_index:
                 key = "src_index"
             else:
-                key = "ps_0_src_index"
+                key = "%s_src_index" % self._sources.point_source[0].name
 
             sim_inputs["Ngrid"] = len(
                 self._exposure_integral[event_type].par_grids[key]
@@ -596,11 +596,11 @@ class Simulation:
             if self._shared_src_index:
                 sim_inputs["src_index"] = Parameter.get_parameter("src_index").value
 
-            # Otherwise look for individual ps_%i_src_index parameters
+            # Otherwise look for individual src_index parameters
             else:
                 sim_inputs["src_index"] = [
-                    Parameter.get_parameter("ps_%i_src_index" % i).value
-                    for i in range(sim_inputs["Ns"])
+                    Parameter.get_parameter("%s_src_index" % s.name).value
+                    for s in self._sources.point_source
                 ]
 
         if self._sources.diffuse:
@@ -718,13 +718,13 @@ class Simulation:
                     Parameter.get_parameter("luminosity").value.to(lumi_units).value
                 )
 
-            # Otherwise, look for individual ps_%i_luminsoity parameters
+            # Otherwise, look for individual luminosity parameters
             else:
                 sim_inputs["L"] = [
-                    Parameter.get_parameter("ps_%i_luminosity" % i)
+                    Parameter.get_parameter("%s_luminosity" % s.name)
                     .value.to(lumi_units)
                     .value
-                    for i in range(sim_inputs["Ns"])
+                    for s in self._sources.point_source
                 ]
 
         sim_inputs["integral_grid"] = integral_grid

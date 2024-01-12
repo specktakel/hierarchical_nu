@@ -536,9 +536,16 @@ class Sources:
         """
 
         if only_point_sources:
-            # Make selection on point sources
             assert len(mask) == len(self.point_source)
 
+            # Remove parameters describing removed point sources
+            for i, s in enumerate(self.point_source):
+                if not mask[i]:
+                    Parameter.remove_parameter("%s_src_index" % s.name)
+                    Parameter.remove_parameter("%s_luminosity" % s.name)
+                    Parameter.remove_parameter("%s_norm" % s.name)
+
+            # Make selection on point sources
             _point_sources = np.array(self._point_source)
 
             _point_sources = _point_sources[mask]
@@ -550,9 +557,16 @@ class Sources:
             _sources.append(self.atmospheric)
 
         else:
-            # Select on over all sources
             assert len(mask) == self.N
 
+            # Remove parameters describing removed point sources
+            for i, s in enumerate(self.sources):
+                if not mask[i] and isinstance(s, PointSource):
+                    Parameter.remove_parameter("%s_src_index" % s.name)
+                    Parameter.remove_parameter("%s_luminosity" % s.name)
+                    Parameter.remove_parameter("%s_norm" % s.name)
+
+            # Select on over all sources
             _sources = np.array(self.sources)
 
             _sources = _sources[mask]
