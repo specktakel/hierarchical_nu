@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import h5py
 from astropy import units as u
 import numpy as np
+import numpy.typing as npt
 from collections.abc import Callable
 
 from .flux_model import (
@@ -166,6 +167,7 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
+        pivot: Parameter,
     ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
@@ -185,11 +187,10 @@ class PointSource(Source):
                 Spectral index
             redshift: float
             lower: Parameter
-                Lower energy bound in source frame
+                Lower energy bound
             upper: Parameter
-                Upper energy bound in source frame
-        Takes additionally Emin and Emax (in the detector frame) to limit the spectral model.
-        `index` is the valid spectral index between `lower` and `upper` energ
+                Upper energy bound
+        All parameters are taken to be defined in the source frame.
         """
         # raise NotImplementedError
         total_flux = luminosity.value / (
@@ -209,7 +210,7 @@ class PointSource(Source):
 
         shape = TwiceBrokenPowerLaw(
             norm,
-            1e5 * u.GeV,
+            pivot.value / (1 + redshift),
             index,
             lower.value / (1 + redshift),
             upper.value / (1 + redshift),
@@ -265,17 +266,6 @@ class PointSource(Source):
             ras = ras[selection]
 
             decs = decs[selection]
-
-        # Make cut on declination, current implementations are only defined in the Northern Sky
-        # dec > -5deg
-
-        mask = decs >= np.deg2rad(-5) * u.rad
-
-        luminosities = luminosities[mask]
-        spectral_indices = spectral_indices[mask]
-        redshifts = redshifts[mask]
-        ras = ras[mask]
-        decs = decs[mask]
 
         # Make list of point sources
         source_list = []
@@ -405,7 +395,7 @@ class DiffuseSource(Source):
 class Sources:
     """
     Container for sources with a set of factory methods
-    for and easy source setup interface.
+    for an easy source setup interface.
     """
 
     def __init__(self):
@@ -537,9 +527,56 @@ class Sources:
 
         self.add(atmospheric_component)
 
+    def select(self, mask: npt.NDArray[np.bool_], only_point_sources: bool = False):
+        """
+        Select some subset of existing sources by providing a mask.
+        NB: Assumes only one diffuse and one atmospheric component
+         :param mask: Array of bools with same length as the number of sources.
+        :param only_point_sources: Set `True` to only make selections on point sources
+        """
+
+        if only_point_sources:
+            assert len(mask) == len(self.point_source)
+
+            # Remove parameters describing removed point sources
+            for i, s in enumerate(self.point_source):
+                if not mask[i]:
+                    Parameter.remove_parameter("%s_src_index" % s.name)
+                    Parameter.remove_parameter("%s_luminosity" % s.name)
+                    Parameter.remove_parameter("%s_norm" % s.name)
+
+            # Make selection on point sources
+            _point_sources = np.array(self._point_source)
+
+            _point_sources = _point_sources[mask]
+
+            _sources = list(_point_sources)
+
+            # Add back diffuse and atmospheric components
+            _sources.append(self.diffuse)
+            _sources.append(self.atmospheric)
+
+        else:
+            assert len(mask) == self.N
+
+            # Remove parameters describing removed point sources
+            for i, s in enumerate(self.sources):
+                if not mask[i] and isinstance(s, PointSource):
+                    Parameter.remove_parameter("%s_src_index" % s.name)
+                    Parameter.remove_parameter("%s_luminosity" % s.name)
+                    Parameter.remove_parameter("%s_norm" % s.name)
+
+            # Select on over all sources
+            _sources = np.array(self.sources)
+
+            _sources = _sources[mask]
+
+        self.sources = list(_sources)
+
     def select_below_redshift(self, zth):
         """
-        remove sources with redshift above a certain threshold.
+        Remove sources with redshift above a certain threshold.
+        NB: Replaced by `Sources.select()`, but kept for backwards compatibility.
         """
 
         self.sources = [s for s in self.sources if s.redshift <= zth]

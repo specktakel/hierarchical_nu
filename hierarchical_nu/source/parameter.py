@@ -53,6 +53,12 @@ class Parameter:
         return cls.__par_registry[par_name]
 
     @classmethod
+    def remove_parameter(cls, par_name):
+        if par_name not in cls.__par_registry:
+            raise ValueError("Parameter {} not found".format(par_name))
+        del cls.__par_registry[par_name]
+
+    @classmethod
     def clear_registry(cls):
         """Clear the parameter registry"""
         cls.__par_registry = {}
