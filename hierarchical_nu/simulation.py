@@ -541,9 +541,17 @@ class Simulation:
         obs_time = []
 
         if asimov:
-            # Round expected number of events to nearest integer
+            # Round expected number of events to nearest integer per source
+            # distribute this number weighted with the Nex per event type over the event types
+            N = np.rint(self._Nex_et.sum(axis=0)).astype(int)
+            self._N = np.zeros_like(self._Nex_et)
+            for c, _ in enumerate(self._sources):
+                weights = self._Nex_et[:, c] / self._Nex_et[:, c].sum()
+                self._N[:, c] = np.rint(weights * N[c])
+            N = {}
             for c, et in enumerate(self._event_types):
-                self._N[et] = np.rint(self._Nex_et[c]).astype(int).tolist()
+                N[et] = self._N[c].astype(int).tolist()
+            self._N = N
 
         for c, event_type in enumerate(self._event_types):
             if self._force_N:
@@ -771,7 +779,7 @@ class Simulation:
             )
 
         self._Nex_et = Nex_et
-        # Nnu per source component
+        # Nnu per source source component
         self._expected_Nnu_per_comp = np.sum(self._Nex_et, axis=0)
 
         return np.sum(self._Nex_et)
