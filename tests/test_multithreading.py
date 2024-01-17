@@ -19,23 +19,20 @@ import matplotlib.cm as cm
 import matplotlib.colors as colors
 import os
 
-ra = np.deg2rad(77.35)
-dec = np.deg2rad(5.7)
-source_coords = SkyCoord(ra=ra * u.rad, dec=dec * u.rad, frame="icrs")
-bandwidth = np.deg2rad(5)
-DEC_min = (dec - bandwidth) * u.rad
-DEC_max = (dec + bandwidth) * u.rad
-RA_min = (ra - bandwidth) * u.rad
-RA_max = (ra + bandwidth) * u.rad
-
 
 @pytest.fixture
 def sources():
     Parameter.clear_registry()
     ROIList.clear_registry()
-    roi = RectangularROI(
-        DEC_min=DEC_min, DEC_max=DEC_max, RA_min=RA_min, RA_max=RA_max, apply_roi=True
-    )
+    ra = np.deg2rad(77.35)
+    dec = np.deg2rad(5.7)
+    source_coords = SkyCoord(ra=ra * u.rad, dec=dec * u.rad, frame="icrs")
+    bandwidth = np.deg2rad(5)
+    DEC_min = (dec - bandwidth) * u.rad
+    DEC_max = (dec + bandwidth) * u.rad
+    RA_min = (ra - bandwidth) * u.rad
+    RA_max = (ra + bandwidth) * u.rad
+    roi = RectangularROI(DEC_min=DEC_min, DEC_max=DEC_max, RA_min=RA_min, RA_max=RA_max)
 
     Emin_det = Parameter(1e3 * u.GeV, "Emin_det", fixed=True)
     sources = Sources()

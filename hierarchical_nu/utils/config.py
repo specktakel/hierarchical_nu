@@ -132,7 +132,7 @@ class ROIConfig:
         "CircularROI"  # can be "CircularROI", "FullSkyROI", or "RectangularROI"
     )
     size: float = 5.0  # size in degrees; for circular: radius, fullsky: disregarded, rectangular: center +/- size in RA and DEC
-    apply_roi: bool = True
+    apply_roi: bool = False
 
 
 @dataclass
