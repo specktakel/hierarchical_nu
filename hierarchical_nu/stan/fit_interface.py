@@ -70,6 +70,7 @@ class StanFitInterface(StanInterface):
         priors: Priors = Priors(),
         nshards: int = 1,
         use_event_tag: bool = False,
+        debug: bool = False,
     ):
         """
         An interface for generating Stan fit code.
@@ -84,6 +85,7 @@ class StanFitInterface(StanInterface):
         :param priors: Priors object detailing the priors to use
         :param nshards: Number of shards for multithreading, defaults to zero
         :param use_event_tag: if True, only consider the closest PS for each event
+        :param debug: if True, add function calls for debugging and tests
         """
 
         for et in event_types:
@@ -112,6 +114,7 @@ class StanFitInterface(StanInterface):
         assert nshards >= 0
         self._nshards = nshards
         self._use_event_tag = use_event_tag
+        self._debug = debug
 
     def _get_par_ranges(self):
         """
@@ -616,7 +619,11 @@ class StanFitInterface(StanInterface):
                     results = ForwardArrayDef("results", "real", ["[N]"])
                     with ForLoopContext(1, self._N, "i") as i:
                         results[i] << FunctionCall([self._lp[i]], "log_sum_exp")
-                    ReturnStatement(["[sum(results)]'"])
+                    if self._debug:
+                        # Only for debugging purposes, this makes fits for large N really slow
+                        ReturnStatement([FunctionCall([results], "to_vector")])
+                    else:
+                        ReturnStatement(["[sum(results)]'"])
 
     def _data(self):
         with DataContext():
@@ -1601,3 +1608,14 @@ class StanFitInterface(StanInterface):
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
 
                 self._model_likelihood()
+
+                if self._debug:
+                    self._lp_gen_q = ForwardVariableDef("lp_gen_q", "vector[N]")
+                    self._lp_debug = ForwardVariableDef("lp_debug", "vector[N]")
+                    self._lp_debug << StringExpression(
+                        [
+                            "map_rect(lp_reduce, global_pars, local_pars[:N_shards_loop], real_data[:N_shards_loop], int_data[:N_shards_loop])"
+                        ]
+                    )
+                    with ForLoopContext(1, self._N, "i") as i:
+                        self._lp_gen_q[i] << FunctionCall([self._lp[i]], "log_sum_exp")

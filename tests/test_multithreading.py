@@ -1,3 +1,4 @@
+import pytest
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from hierarchical_nu.source.parameter import Parameter
@@ -7,7 +8,7 @@ from hierarchical_nu.priors import Priors
 from hierarchical_nu.source.source import Sources, PointSource
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.utils.roi import RectangularROI
+from hierarchical_nu.utils.roi import RectangularROI, ROIList
 from hierarchical_nu.detector.icecube import IC86_II
 from hierarchical_nu.backend import DistributionMode
 import numpy as np
@@ -27,13 +28,15 @@ DEC_max = (dec + bandwidth) * u.rad
 RA_min = (ra - bandwidth) * u.rad
 RA_max = (ra + bandwidth) * u.rad
 
-roi = RectangularROI(
-    DEC_min=DEC_min, DEC_max=DEC_max, RA_min=RA_min, RA_max=RA_max, apply_roi=True
-)
 
-
-def test_ps(output_directory):
+@pytest.fixture
+def sources():
     Parameter.clear_registry()
+    ROIList.clear_registry()
+    roi = RectangularROI(
+        DEC_min=DEC_min, DEC_max=DEC_max, RA_min=RA_min, RA_max=RA_max, apply_roi=True
+    )
+
     Emin_det = Parameter(1e3 * u.GeV, "Emin_det", fixed=True)
     sources = Sources()
     z = 0.3365
@@ -65,7 +68,10 @@ def test_ps(output_directory):
         "txs", dec * u.rad, ra * u.rad, L, src_index, z, Emin_src, Emax_src
     )
     sources.add(ps)
+    return sources
 
+
+def test_ps(output_directory, sources):
     sim = Simulation(sources, IC86_II, {IC86_II: 180 * u.d})
 
     sim.precomputation()
@@ -116,6 +122,23 @@ def test_ps(output_directory):
         mt_n, _ = np.histogram(mt._fit_output["src_index"][0], bins=bins, density=True)
         n, _ = np.histogram(fit._fit_output["src_index"][0], bins=bins, density=True)
         assert np.sum(~np.isclose(mt_n, n, atol=0.3)) < 3
+
+
+def test_lp(output_directory, sources):
+    events = Events.from_file(os.path.join(output_directory, f"ps_only_0.h5"))
+    fit = StanFit(sources, IC86_II, events, 180 * u.d, nshards=2, debug=True)
+    fit.precomputation()
+    fit.generate_stan_code()
+    fit.compile_stan_code()
+
+    fit.run(iterations=1, iter_warmup=1)
+
+    assert np.all(
+        np.isclose(
+            fit._fit_output.stan_variable("lp").squeeze(),
+            fit._fit_output.stan_variable("lp_gen_q").squeeze(),
+        )
+    )
 
 
 """
