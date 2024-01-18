@@ -54,6 +54,7 @@ class StanFit:
         n_grid_points: int = 50,
         nshards: int = 0,
         use_event_tag: bool = False,
+        debug: bool = False,
     ):
         """
         To set up and run fits in Stan.
@@ -88,6 +89,7 @@ class StanFit:
                 atmo_flux_energy_points=atmo_flux_energy_points,
                 atmo_flux_theta_points=atmo_flux_theta_points,
                 use_event_tag=use_event_tag,
+                debug=debug,
             )
         else:
             logger.debug("Reloading previous results.")
