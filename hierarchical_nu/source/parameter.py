@@ -27,13 +27,12 @@ class Parameter:
 
     def __init__(
         self,
-        value: Any,
-        name: str,
+        value: Any = np.nan,
+        name: str = "",
         fixed: bool = False,
         par_range=(-np.inf, np.inf),
         scale=ParScale.lin,
     ):
-
         # If name is registered, copy internal state
         if name in Parameter.__par_registry:
             self.__dict__ = self.__par_registry[name].__dict__
@@ -52,6 +51,12 @@ class Parameter:
             # print(cls.__par_registry)
             raise ValueError("Parameter {} not found".format(par_name))
         return cls.__par_registry[par_name]
+
+    @classmethod
+    def remove_parameter(cls, par_name):
+        if par_name not in cls.__par_registry:
+            raise ValueError("Parameter {} not found".format(par_name))
+        del cls.__par_registry[par_name]
 
     @classmethod
     def clear_registry(cls):
@@ -73,7 +78,9 @@ class Parameter:
     @value.setter
     def value(self, value):
         if self._par_range is not None:
-            if not self._par_range[0] <= value <= self._par_range[1]:
+            if not self._par_range[0] <= value <= self._par_range[1] and not np.isnan(
+                value
+            ):
                 raise ValueError("Parameter {} out of bounds".format(self.name))
         if self.fixed:
             raise RuntimeError("Parameter {} is fixed".format(self.name))

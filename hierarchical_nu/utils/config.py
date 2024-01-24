@@ -86,6 +86,13 @@ class ParameterConfig:
 
     # Within-chain parallelisation
     threads_per_chain: int = 1
+    chains: int = 1
+    iterations: int = 1000
+    iter_warmup: int = 1000
+
+    # Background components
+    atmospheric: bool = True
+    diffuse: bool = True
 
     # Asimov data - fix simulated event numbers to nearest integer of expected number
     asimov: bool = False
@@ -132,7 +139,7 @@ class ROIConfig:
         "CircularROI"  # can be "CircularROI", "FullSkyROI", or "RectangularROI"
     )
     size: float = 5.0  # size in degrees; for circular: radius, fullsky: disregarded, rectangular: center +/- size in RA and DEC
-    apply_roi: bool = True
+    apply_roi: bool = False
 
 
 @dataclass

@@ -23,6 +23,7 @@ from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import hnu_config
+from hierarchical_nu.utils.config_parser import ConfigParser
 from hierarchical_nu.utils.roi import (
     CircularROI,
     RectangularROI,
@@ -30,12 +31,23 @@ from hierarchical_nu.utils.roi import (
     NorthernSkyROI,
     ROIList,
 )
-from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
+from hierarchical_nu.priors import (
+    Priors,
+    LogNormalPrior,
+    NormalPrior,
+    ParetoPrior,
+    LuminosityPrior,
+    IndexPrior,
+    FluxPrior,
+)
 
 import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+parser = ConfigParser(hnu_config)
 
 
 class ModelCheck:
@@ -51,14 +63,8 @@ class ModelCheck:
 
         else:
             logger.info("Loading priors from config")
-            prior_config = hnu_config["prior_config"]
-            priors = Priors()
-            priors.luminosity = self.make_prior(prior_config["L"])
-            priors.src_index = self.make_prior(prior_config["src_index"])
-            priors.atmospheric_flux = self.make_prior(prior_config["atmo_flux"])
-            priors.diffuse_flux = self.make_prior(prior_config["diff_flux"])
-            priors.diff_index = self.make_prior(prior_config["diff_index"])
-            self.priors = priors
+
+            self.priors = parser.priors()
 
         if truths:
             logger.info("Found true values")
@@ -67,26 +73,18 @@ class ModelCheck:
         else:
             logger.info("Loading true values from config")
             # Config
-            file_config = hnu_config["file_config"]
             parameter_config = hnu_config["parameter_config"]
-            _make_roi()
-            share_L = hnu_config.parameter_config.share_L
-            share_src_index = hnu_config.parameter_config.share_src_index
+            parser.ROI()
 
             asimov = parameter_config.asimov
-
             # Sources
-            self._sources = _initialise_sources()
+            self._sources = parser.sources()
             f_arr = self._sources.f_arr().value
             f_arr_astro = self._sources.f_arr_astro().value
 
             # Detector
-            self._detector_model_type = ModelCheck._get_dm_from_config(
-                parameter_config["detector_model_type"]
-            )
-            self._obs_time = ModelCheck._get_obs_time_from_config(
-                self._detector_model_type, parameter_config["obs_time"]
-            )
+            self._detector_model_type = parser.detector_model()
+            self._obs_time = parser.obs_time()
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
 
@@ -119,13 +117,15 @@ class ModelCheck:
             flux_unit = 1 / (u.m**2 * u.s)
 
             diffuse_bg = self._sources.diffuse
-            self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
-                flux_unit
-            ).value
+            if diffuse_bg:
+                self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
+                    flux_unit
+                ).value
             atmo_bg = self._sources.atmospheric
-            self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
-                flux_unit
-            ).value
+            if atmo_bg:
+                self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
+                    flux_unit
+                ).value
             try:
                 self.truths["L"] = [
                     Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
@@ -149,26 +149,24 @@ class ModelCheck:
             self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
 
             self.truths["Nex"] = Nex
-            self.truths["Nex_src"] = Nex_per_comp[0]
-            self.truths["Nex_diff"] = Nex_per_comp[1]
-            self.truths["Nex_atmo"] = Nex_per_comp[2]
+            self.truths["Nex_src"] = np.sum(
+                Nex_per_comp[0 : len(self._sources.point_source)]
+            )
+            upper_idx = len(self._sources.point_source)
+            if self._sources.diffuse:
+                self.truths["Nex_diff"] = Nex_per_comp[len(self._sources.point_source)]
+                upper_idx += 1
+            if self._sources.atmospheric:
+                self.truths["Nex_atmo"] = Nex_per_comp[-1]
             self.truths["f_det"] = Nex_per_comp[0] / Nex
-            self.truths["f_det_astro"] = Nex_per_comp[0] / sum(Nex_per_comp[0:2])
+            self.truths["f_det_astro"] = Nex_per_comp[0] / sum(
+                Nex_per_comp[0:upper_idx]
+            )
 
         self._default_var_names = [key for key in self.truths]
         self._default_var_names.append("Fs")
 
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
-
-    @staticmethod
-    def make_prior(p):
-        if p["name"] == "LogNormalPrior":
-            prior = LogNormalPrior(mu=np.log(p["mu"]), sigma=p["sigma"])
-        elif p["name"] == "NormalPrior":
-            prior = NormalPrior(mu=p["mu"], sigma=p["sigma"])
-        else:
-            raise ValueError("Currently no other prior implemented")
-        return prior
 
     @staticmethod
     def initialise_env(output_dir):
@@ -184,11 +182,10 @@ class ModelCheck:
         # Config
         parameter_config = hnu_config["parameter_config"]
         file_config = hnu_config["file_config"]
-        prior_config = hnu_config["prior_config"]
 
         asimov = parameter_config.asimov
 
-        _make_roi()
+        parser.ROI()
 
         if not STAN_GEN_PATH in file_config["include_paths"]:
             file_config["include_paths"].append(STAN_GEN_PATH)
@@ -197,10 +194,9 @@ class ModelCheck:
         logger.info("Setting up MCEq run for AtmopshericNumuFlux")
 
         # Build necessary details to define simulation and fit code
-        detector_model_type = ModelCheck._get_dm_from_config(
-            parameter_config["detector_model_type"]
-        )
-        sources = _initialise_sources()
+        detector_model_type = parser.detector_model()
+
+        sources = parser.sources()
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
         stan_sim_interface = StanSimInterface(
@@ -215,12 +211,7 @@ class ModelCheck:
         nshards = threads_per_chain
         fit_name = file_config["fit_filename"][:-5]
 
-        priors = Priors()
-        priors.luminosity = ModelCheck.make_prior(prior_config["L"])
-        priors.src_index = ModelCheck.make_prior(prior_config["src_index"])
-        priors.atmospheric_flux = ModelCheck.make_prior(prior_config["atmo_flux"])
-        priors.diffuse_flux = ModelCheck.make_prior(prior_config["diff_flux"])
-        priors.diff_index = ModelCheck.make_prior(prior_config["diff_index"])
+        priors = parser.priors()
 
         stan_fit_interface = StanFitInterface(
             fit_name,
@@ -235,6 +226,8 @@ class ModelCheck:
 
         # Comilation of Stan models
         logger.info("Compile Stan models")
+        # Why are we using this? the automatically created lists of StanSimInterface and StanFitInterface take care of this
+        # and we don't have to manually create these entries preventing configs from being copied freely
         stanc_options = {"include-paths": list(file_config["include_paths"])}
         cpp_options = None
 
@@ -281,6 +274,15 @@ class ModelCheck:
                             continue
                         for c, prob in enumerate(value):
                             folder.create_dataset(f"association_prob_{c}", data=prob)
+                    elif key == "parameter_names":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"par_names_{c}", data=data)
+                    elif key == "N_Eff":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"N_Eff_{c}", data=data)
+                    elif key == "R_hat":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"R_hat_{c}", data=data)
                     elif key != "Lambda" and key != "event_Lambda":
                         folder.create_dataset(key, data=value)
                     elif key == "Lambda":
@@ -486,13 +488,15 @@ class ModelCheck:
                     plot = False
 
                 elif "index" in var_name:
-                    prior_density = self.priors.to_dict()[var_name].pdf(prior_supp)
+                    prior_density = self.priors.to_dict()[var_name].pdf(
+                        prior_supp * self.priors.to_dict()[var_name].UNITS
+                    )
                     plot = True
 
                 elif not "Fs" in var_name:
                     # prior_samples = self.priors.to_dict()[var_name].sample(N)
                     prior_density = self.priors.to_dict()[var_name].pdf_logspace(
-                        prior_supp
+                        prior_supp * self.priors.to_dict()[var_name].UNITS
                     )
                     plot = True
                 else:
@@ -576,9 +580,9 @@ class ModelCheck:
 
         sys.stderr.write("Random seed: %i\n" % seed)
 
-        roi = _make_roi()
+        parser.ROI()
 
-        self._sources = _initialise_sources()
+        self._sources = parser.sources()
 
         file_config = hnu_config["file_config"]
 
@@ -595,6 +599,9 @@ class ModelCheck:
         outputs["diagnostics_ok"] = []
         outputs["run_time"] = []
         outputs["Lambda"] = []
+        outputs["parameter_names"] = []
+        outputs["N_Eff"] = []
+        outputs["R_hat"] = []
         if save_events:
             outputs["events"] = []
             outputs["association_prob"] = []
@@ -716,15 +723,41 @@ class ModelCheck:
             else:
                 outputs["diagnostics_ok"].append(0)
 
+            # List of keys for which we are looking in the entirety of stan parameters
+            key_stubs = [
+                "lp__",
+                "L",
+                "_luminosity",
+                "src_index",
+                "_src_index",
+                "E[",
+                "Esrc[",
+                "F_atmo",
+                "F_diff",
+                "diff_index",
+                "Nex",
+                "f_det",
+                "f_arr",
+                "logF",
+                "Ftot",
+                "Fs",
+            ]
+
+            keys = []
+            summary = fit._fit_output.summary()
+            for k, v in summary["N_Eff"].items():
+                for key in key_stubs:
+                    if key in k:
+                        keys.append(k)
+                        break
+
+            R_hat = np.array([summary["R_hat"][k] for k in keys])
+            N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+            outputs["parameter_names"].append(np.array(keys, dtype="S"))
+            outputs["N_Eff"].append(N_Eff)
+            outputs["R_hat"].append(R_hat)
+
         return outputs
-
-    @staticmethod
-    def _get_dm_from_config(dm_key):
-        return [Refrigerator.python2dm(dm) for dm in dm_key]
-
-    @staticmethod
-    def _get_obs_time_from_config(dms, obs_time):
-        return {dm: obs_time[c] * u.year for c, dm in enumerate(dms)}
 
     def _get_prior_func(self, var_name):
         """
@@ -747,160 +780,3 @@ class ModelCheck:
                 raise ValueError("var_name not recognised")
 
         return prior_func
-
-
-def _initialise_sources():
-    parameter_config = hnu_config["parameter_config"]
-    share_L = parameter_config["share_L"]
-    share_src_index = parameter_config["share_src_index"]
-
-    Parameter.clear_registry()
-    indices = []
-    if not share_src_index:
-        for c, idx in enumerate(parameter_config["src_index"]):
-            name = f"ps_{c}_src_index"
-            indices.append(
-                Parameter(
-                    idx,
-                    name,
-                    fixed=False,
-                    par_range=parameter_config["src_index_range"],
-                )
-            )
-    else:
-        indices.append(
-            Parameter(
-                parameter_config["src_index"][0],
-                "src_index",
-                fixed=False,
-                par_range=parameter_config["src_index_range"],
-            )
-        )
-    diff_index = Parameter(
-        parameter_config["diff_index"],
-        "diff_index",
-        fixed=False,
-        par_range=parameter_config["diff_index_range"],
-    )
-    L = []
-    if not share_L:
-        for c, Lumi in enumerate(parameter_config["L"]):
-            name = f"ps_{c}_luminosity"
-            L.append(
-                Parameter(
-                    Lumi * u.erg / u.s,
-                    name,
-                    fixed=True,
-                    par_range=parameter_config["L_range"] * u.erg / u.s,
-                )
-            )
-    else:
-        L.append(
-            Parameter(
-                parameter_config["L"][0] * u.erg / u.s,
-                "luminosity",
-                fixed=False,
-                par_range=parameter_config["L_range"] * u.erg / u.s,
-            )
-        )
-    diffuse_norm = Parameter(
-        parameter_config["diff_norm"] * 1 / (u.GeV * u.m**2 * u.s),
-        "diffuse_norm",
-        fixed=True,
-        par_range=(0, np.inf),
-    )
-    Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
-    Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
-    Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
-
-    Emin_src = Parameter(parameter_config["Emin_src"] * u.GeV, "Emin_src", fixed=True)
-    Emax_src = Parameter(parameter_config["Emax_src"] * u.GeV, "Emax_src", fixed=True)
-
-    Emin_diff = Parameter(
-        parameter_config["Emin_diff"] * u.GeV, "Emin_diff", fixed=True
-    )
-    Emax_diff = Parameter(
-        parameter_config["Emax_diff"] * u.GeV, "Emax_diff", fixed=True
-    )
-
-    if parameter_config["Emin_det_eq"]:
-        Emin_det = Parameter(
-            parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
-        )
-
-    else:
-        for dm in Refrigerator.detectors:
-            # Create a parameter for each detector
-            # If the detector is not used, the parameter is disregarded
-            _ = Parameter(
-                parameter_config[f"Emin_det_{dm.P}"] * u.GeV,
-                f"Emin_det_{dm.P}",
-                fixed=True,
-            )
-
-    dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
-    ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
-    center = SkyCoord(ra=ra, dec=dec, frame="icrs")
-
-    sources = Sources()
-
-    for c in range(len(dec)):
-        if share_L:
-            Lumi = L[0]
-        else:
-            Lumi = L[c]
-
-        if share_src_index:
-            idx = indices[0]
-        else:
-            idx = indices[c]
-        point_source = PointSource.make_powerlaw_source(
-            f"ps_{c}",
-            dec[c],
-            ra[c],
-            Lumi,
-            idx,
-            parameter_config["z"][c],
-            Emin_src,
-            Emax_src,
-        )
-
-        sources.add(point_source)
-    sources.add_diffuse_component(
-        diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
-    )
-    sources.add_atmospheric_component()
-
-    return sources
-
-
-def _make_roi():
-    ROIList.clear_registry()
-    parameter_config = hnu_config["parameter_config"]
-    roi_config = hnu_config["roi_config"]
-    dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
-    ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
-    center = SkyCoord(ra=ra, dec=dec, frame="icrs")
-
-    roi_config = hnu_config["roi_config"]
-    size = roi_config["size"] * u.deg
-    apply_roi = roi_config["apply_roi"]
-
-    if apply_roi and len(dec) > 1 and not roi_config["roi_type"] == "CircularROI":
-        raise ValueError("Only CircularROIs can be stacked")
-    if roi_config["roi_type"] == "CircularROI":
-        for c in range(len(dec)):
-            CircularROI(center[c], size, apply_roi=apply_roi)
-    elif roi_config["roi_type"] == "RectangularROI":
-        size = size.to(u.rad)
-        RectangularROI(
-            RA_min=ra[0] - size,
-            RA_max=ra[0] + size,
-            DEC_min=dec[0] - size,
-            DEC_max=dec[0] + size,
-            apply_roi=apply_roi,
-        )
-    elif roi_config["roi_type"] == "FullSkyROI":
-        FullSkyROI()
-    elif roi_config["roi_type"] == "NorthernSkyROI":
-        NorthernSkyROI()

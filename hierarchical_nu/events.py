@@ -22,6 +22,7 @@ from hierarchical_nu.utils.roi import (
     FullSkyROI,
     ROIList,
 )
+from hierarchical_nu.source.source import Sources
 from hierarchical_nu.utils.plotting import SphericalCircle
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.detector.icecube import EventType
@@ -29,6 +30,7 @@ from hierarchical_nu.detector.icecube import EventType
 import logging
 
 from typing import List
+import numpy.typing as npt
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -73,6 +75,10 @@ class Events:
         self._ang_errs = ang_errs
 
     def remove(self, i):
+        """
+        Remove the event at index i
+        :param i: Event index
+        """
         self._energies = np.delete(self._energies, i)
         self._coords = np.delete(self._coords, i)
         self._unit_vectors = np.delete(self._unit_vectors, i, axis=0)
@@ -86,6 +92,21 @@ class Events:
             return self.types.size
         except AttributeError:
             return len(self.types)
+
+    def select(self, mask: npt.NDArray[np.bool_]):
+        """
+        Select some subset of existing events by providing a mask.
+        :param mask: Array of bools with same length as event properties.
+        """
+
+        assert len(mask) == self.N
+
+        self._energies = self._energies[mask]
+        self._coords = self._coords[mask]
+        self._unit_vectors = self._unit_vectors[mask]
+        self._types = self._types[mask]
+        self._ang_errs = self._ang_errs[mask]
+        self._mjd = self._mjd[mask]
 
     @property
     def energies(self):
@@ -116,7 +137,7 @@ class Events:
         return self._mjd
 
     @classmethod
-    def from_file(cls, filename, group_name=None):
+    def from_file(cls, filename, apply_tags: bool = False, group_name=None):
         with h5py.File(filename, "r") as f:
             if group_name is None:
                 events_folder = f["events"]
@@ -212,6 +233,25 @@ class Events:
 
                 for key, value in zip(self._file_keys, self._file_values):
                     event_folder.create_dataset(key, data=value)
+
+    @u.quantity_input
+    def get_tags(self, sources: Sources):
+        """
+        Idea: each event gets one PS (smallest distance), assumes that CircularROIs do not overlap
+        :param sources: instance of `Sources`
+        """
+
+        logger.warning("Applying tags is experimental.")
+        self.coords.representation_type = "spherical"
+        ps_ra = np.array([_.ra.to_value(u.deg) for _ in sources.point_source]) * u.deg
+        ps_dec = np.array([_.dec.to_value(u.deg) for _ in sources.point_source]) * u.deg
+        ps_coords = SkyCoord(ra=ps_ra, dec=ps_dec, frame="icrs")
+        tags = []
+        for coord in self.coords:
+            ang_dist = coord.separation(ps_coords).deg
+            # Take source with smallest angular separation
+            tags.append(np.argmin(ang_dist))
+        return tags
 
     @classmethod
     def from_ev_file(cls, *seasons: EventType):

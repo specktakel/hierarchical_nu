@@ -79,6 +79,8 @@ flux_select.boundary = 2e-10 # erg s^-1 cm^-2
 pop_synth.set_flux_selection(flux_select)
 
 # Add auxiliary sampler for spectral index
+# NB: We have to use the name "spectral_index" here for this
+# parameter to be recognised when loading later.
 
 # Spectral indices all the same
 #index = DeltaAuxSampler(name="spectral_index", observed=False)
