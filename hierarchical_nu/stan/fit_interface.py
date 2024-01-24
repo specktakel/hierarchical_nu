@@ -70,6 +70,7 @@ class StanFitInterface(StanInterface):
         priors: Priors = Priors(),
         nshards: int = 1,
         use_event_tag: bool = False,
+        debug: bool = False,
     ):
         """
         An interface for generating Stan fit code.
@@ -84,6 +85,7 @@ class StanFitInterface(StanInterface):
         :param priors: Priors object detailing the priors to use
         :param nshards: Number of shards for multithreading, defaults to zero
         :param use_event_tag: if True, only consider the closest PS for each event
+        :param debug: if True, add function calls for debugging and tests
         """
 
         for et in event_types:
@@ -112,6 +114,7 @@ class StanFitInterface(StanInterface):
         assert nshards >= 0
         self._nshards = nshards
         self._use_event_tag = use_event_tag
+        self._debug = debug
 
     def _get_par_ranges(self):
         """
@@ -137,6 +140,226 @@ class StanFitInterface(StanInterface):
 
         if self.sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range
+
+    def _model_likelihood(self):
+        """
+        Write the likelihood part of the model.
+        Is reused three times in the python code and up to two times
+        when generating, depending on the configutation.
+        """
+
+        with ForLoopContext(1, self._N, "i") as i:
+            if not self._use_event_tag:
+                self._lp[i] << self._logF
+
+            for c, event_type in enumerate(self._event_types):
+                if c == 0:
+                    context = IfBlockContext
+                else:
+                    context = ElseIfBlockContext
+                with context(
+                    [
+                        StringExpression(
+                            [
+                                self._event_type[i],
+                                " == ",
+                                event_type.S,
+                            ]
+                        )
+                    ]
+                ):
+                    # Detection effects
+                    if self._use_event_tag:
+                        ps_pos = self._varpi[self._event_tag[i]]
+                    else:
+                        ps_pos = self._varpi
+                    self._irf_return << self._dm[event_type](
+                        self._E[i],
+                        self._Edet[i],
+                        self._omega_det[i],
+                        ps_pos,
+                    )
+
+            self._eres_src << StringExpression(["irf_return.1"])
+            self._aeff_src << StringExpression(["irf_return.2"])
+            self._eres_diff << StringExpression(["irf_return.3[1]"])
+            self._aeff_diff << StringExpression(["irf_return.3[2]"])
+            self._aeff_atmo << StringExpression(["irf_return.3[3]"])
+
+            # Sum over sources => evaluate and store components
+            with ForLoopContext(1, self._Ns_tot, "k") as k:
+                # Point source components
+                if self.sources.point_source:
+                    with IfBlockContext([StringExpression([k, " < ", self._Ns + 1])]):
+                        if self._use_event_tag:
+                            # Create new reference to proper entry in lp to reuse more code
+                            _lp = self._lp[i][1]
+                            _eres_src = self._eres_src
+                            _aeff_src = self._aeff_src
+                            # If the source label k does not match the tag, continue
+                            # with condition k < Ns + 1 this does not interfere with diffuse components
+                            with IfBlockContext([k, "!=", self._event_tag[i]]):
+                                StringExpression(["continue"])
+                            with ElseBlockContext():
+                                _lp << self._logF[k]
+                        else:
+                            _lp = self._lp[i][k]
+                            _eres_src = self._eres_src[k]
+                            _aeff_src = self._aeff_src[k]
+
+                        StringExpression(
+                            [
+                                _lp,
+                                " += ",
+                                self._spatial_loglike[k, i],
+                            ]
+                        )
+                        StringExpression([_lp, " += ", _aeff_src])
+                        StringExpression([_lp, " += ", _eres_src])
+
+                        if self._shared_src_index:
+                            src_index_ref = self._src_index
+                        else:
+                            src_index_ref = self._src_index[k]
+
+                        # log_prob += log(p(Esrc|src_index))
+                        if self._ps_spectrum == PowerLawSpectrum:
+                            StringExpression(
+                                [
+                                    _lp,
+                                    " += ",
+                                    self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        src_index_ref,
+                                        self._Emin_src / (1 + self._z[k]),
+                                        self._Emax_src / (1 + self._z[k]),
+                                    ),
+                                ]
+                            )
+                        elif self._ps_spectrum == TwiceBrokenPowerLaw:
+                            StringExpression(
+                                [
+                                    _lp,
+                                    " += ",
+                                    self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        -10.0,
+                                        src_index_ref,
+                                        10.0,
+                                        self._Emin,
+                                        self._Emin_src / (1 + self._z[k]),
+                                        self._Emax_src / (1 + self._z[k]),
+                                        self._Emax,
+                                    ),
+                                ]
+                            )
+                        else:
+                            raise ValueError(f"{self._ps_spectrum} not recognised.")
+
+                        # E = Esrc / (1+z)
+                        self._Esrc[i] << StringExpression(
+                            [self._E[i], " * (", 1 + self._z[k], ")"]
+                        )
+
+                # Diffuse component
+                if self.sources.diffuse:
+                    with IfBlockContext([StringExpression([k, " == ", self._k_diff])]):
+                        if self._use_event_tag:
+                            _lp = self._lp[i][2]
+                            StringExpression([_lp, "=", self._logF[k]])
+                        else:
+                            _lp = self._lp[i][k]
+                        StringExpression(
+                            [
+                                _lp,
+                                " += ",
+                                self._eres_diff,
+                            ]
+                        )
+
+                        StringExpression(
+                            [
+                                _lp,
+                                " += ",
+                                self._aeff_diff,
+                            ]
+                        )
+
+                        # E = Esrc / (1+z)
+                        self._Esrc[i] << self._E[i] * (1.0 + self._z[k])
+
+                        # log_prob += log(p(Esrc|diff_index))
+                        StringExpression(
+                            [
+                                _lp,
+                                " += ",
+                                self._diff_spectrum_lpdf(
+                                    self._E[i],
+                                    self._diff_index,
+                                    self._Emin_diff / (1.0 + self._z[k]),
+                                    self._Emax_diff / (1.0 + self._z[k]),
+                                ),
+                            ]
+                        )
+
+                        # log_prob += log(1/4pi)
+                        StringExpression(
+                            [
+                                _lp,
+                                " += ",
+                                np.log(1 / (4 * np.pi)),
+                            ]
+                        )
+
+                # Atmospheric component
+                if self.sources.atmospheric:
+                    with IfBlockContext([StringExpression([k, " == ", self._k_atmo])]):
+                        if self._use_event_tag:
+                            if self.sources.diffuse:
+                                _lp = self._lp[i][3]
+                            else:
+                                _lp = self._lp[i][2]
+                            _lp << self._logF[k]
+                        else:
+                            _lp = self._lp[i][k]
+                        StringExpression(
+                            [
+                                _lp,
+                                " += ",
+                                self._eres_diff,
+                            ]
+                        )
+
+                        StringExpression(
+                            [
+                                _lp,
+                                " += ",
+                                self._aeff_atmo,
+                            ]
+                        )
+
+                        # E = Esrc
+                        self._Esrc[i] << self._E[i]
+
+                        # log_prob += log(p(Esrc, omega | atmospheric source))
+                        StringExpression(
+                            [
+                                _lp,
+                                " += ",
+                                FunctionCall(
+                                    [
+                                        self._atmo_flux_func(
+                                            self._E[i],
+                                            self._omega_det[i],
+                                        )
+                                        / self._atmo_integrated_flux
+                                    ],
+                                    "log",
+                                ),
+                            ]
+                        )
+
+        pass
 
     def _functions(self):
         """
@@ -195,15 +418,15 @@ class StanFitInterface(StanInterface):
                 with lp_reduce:
                     # Unpack integer data, needed to interpret real data
                     # Use InstantVariableDef to save on lines
-                    N = InstantVariableDef("N", "int", ["int_data[1]"])
-                    Ns = InstantVariableDef("Ns", "int", ["int_data[2]"])
+                    self._N = InstantVariableDef("N", "int", ["int_data[1]"])
+                    self._Ns = InstantVariableDef("Ns", "int", ["int_data[2]"])
 
                     if self._sources.diffuse and self._sources.atmospheric:
-                        Ns_tot = "Ns+2"
+                        self._Ns_tot = "Ns+2"
                     elif self._sources.diffuse or self._sources.atmospheric:
-                        Ns_tot = "Ns+1"
+                        self._Ns_tot = "Ns+1"
                     else:
-                        Ns_tot = "Ns"
+                        self._Ns_tot = "Ns"
 
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
@@ -212,32 +435,34 @@ class StanFitInterface(StanInterface):
                     # Get global parameters
                     # Check for shared index
                     if self._shared_src_index:
-                        src_index = ForwardVariableDef("src_index", "real")
-                        src_index << StringExpression(["global[1]"])
+                        self._src_index = ForwardVariableDef("src_index", "real")
+                        self._src_index << StringExpression(["global[1]"])
                         idx = "2"
                     else:
-                        src_index = ForwardVariableDef("src_index", "vector[Ns]")
-                        src_index << StringExpression(["global[1:Ns]"])
+                        self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
+                        self._src_index << StringExpression(["global[1:Ns]"])
                         idx = "Ns+1"
 
                     # Get diffuse index
                     if self.sources.diffuse:
-                        diff_index = ForwardVariableDef("diff_index", "real")
-                        diff_index << StringExpression(["global[", idx, "]"])
+                        self._diff_index = ForwardVariableDef("diff_index", "real")
+                        self._diff_index << StringExpression(["global[", idx, "]"])
                         idx += "+1"
 
-                    logF = ForwardVariableDef("logF", "vector[" + Ns_tot + "]")
-                    logF << StringExpression(["global[", idx, ":]"])
+                    self._logF = ForwardVariableDef(
+                        "logF", "vector[" + self._Ns_tot + "]"
+                    )
+                    self._logF << StringExpression(["global[", idx, ":]"])
 
                     # Local pars are only source energies
-                    E = ForwardVariableDef("E", "vector[N]")
-                    E << StringExpression(["local[:N]"])
-                    Esrc = ForwardVariableDef("Esrc", "vector[N]")
+                    self._E = ForwardVariableDef("E", "vector[N]")
+                    self._E << StringExpression(["local[:N]"])
+                    self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
 
                     # Define indices for unpacking of real_data
                     start << 1
-                    length << N
-                    end << N
+                    length << self._N
+                    end << self._N
 
                     # Define variable to store loglikelihood
                     if self._use_event_tag:
@@ -247,370 +472,158 @@ class StanFitInterface(StanInterface):
                         if self._sources.atmospheric:
                             size += 1
                         # reduce lp to 3 components per event since we only allow for one PS association
-                        lp = ForwardArrayDef("lp", "vector[" + str(size) + "]", ["[N]"])
+                        self._lp = ForwardArrayDef(
+                            "lp", "vector[" + str(size) + "]", ["[N]"]
+                        )
                     else:
-                        lp = ForwardArrayDef("lp", "vector[" + Ns_tot + "]", ["[N]"])
+                        self._lp = ForwardArrayDef(
+                            "lp", "vector[" + self._Ns_tot + "]", ["[N]"]
+                        )
 
                     # Unpack event types (track or cascade)
-                    event_type = ForwardArrayDef("event_type", "int", ["[N]"])
-                    event_type << StringExpression(["int_data[3:2+N]"])
+                    self._event_type = ForwardArrayDef("event_type", "int", ["[N]"])
+                    self._event_type << StringExpression(["int_data[3:2+N]"])
 
                     if self._use_event_tag:
-                        event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
-                        event_tag << StringExpression(["int_data[3+N:2+2*N]"])
+                        self._event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
+                        self._event_tag << StringExpression(["int_data[3+N:2+2*N]"])
 
-                    Edet = ForwardVariableDef("Edet", "vector[N]")
-                    Edet << FunctionCall(["real_data[start:end]"], "to_vector")
+                    self._Edet = ForwardVariableDef("Edet", "vector[N]")
+                    self._Edet << FunctionCall(["real_data[start:end]"], "to_vector")
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
 
-                    omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
+                    self._omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
                     # Loop over events to unpack reconstructed direction
-                    with ForLoopContext(1, N, "i") as i:
+                    with ForLoopContext(1, self._N, "i") as i:
                         end << end + 3
-                        omega_det[i] << StringExpression(
+                        self._omega_det[i] << StringExpression(
                             ["to_vector(real_data[start:end])"]
                         )
                         start << start + 3
 
-                    varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
+                    self._varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
                     # Loop over sources to unpack source direction (for point sources only)
-                    with ForLoopContext(1, Ns, "i") as i:
+                    with ForLoopContext(1, self._Ns, "i") as i:
                         end << end + 3
-                        varpi[i] << StringExpression(
+                        self._varpi[i] << StringExpression(
                             ["to_vector(real_data[start:end])"]
                         )
                         start << start + 3
                     # If diffuse source, z is longer by 1 element
                     if self.sources.diffuse:
-                        end << end + Ns + 1
-                        z = ForwardVariableDef("z", "vector[Ns+1]")
-                        z << StringExpression(["to_vector(real_data[start:end])"])
-                        start << start + Ns + 1
+                        end << end + self._Ns + 1
+                        self._z = ForwardVariableDef("z", "vector[Ns+1]")
+                        self._z << StringExpression(["to_vector(real_data[start:end])"])
+                        start << start + self._Ns + 1
                     else:
-                        end << end + Ns
-                        z = ForwardVariableDef("z", "vector[Ns]")
-                        z << StringExpression(["to_vector(real_data[start:end])"])
-                        start << start + Ns
+                        end << end + self._Ns
+                        self._z = ForwardVariableDef("z", "vector[Ns]")
+                        self._z << StringExpression(["to_vector(real_data[start:end])"])
+                        start << start + self._Ns
 
                     if self.sources.atmospheric:
-                        atmo_integrated_flux = ForwardVariableDef(
+                        self._atmo_integrated_flux = ForwardVariableDef(
                             "atmo_integrated_flux", "real"
                         )
                         end << end + 1
-                        atmo_integrated_flux << StringExpression(["real_data[start]"])
+                        self._atmo_integrated_flux << StringExpression(
+                            ["real_data[start]"]
+                        )
                         start << start + 1
 
                     if self.sources.point_source:
-                        spatial_loglike = ForwardArrayDef(
+                        self._spatial_loglike = ForwardArrayDef(
                             "spatial_loglike", "real", ["[Ns, N]"]
                         )
-                        with ForLoopContext(1, Ns, "k") as k:
+                        with ForLoopContext(1, self._Ns, "k") as k:
                             end << end + length
-                            spatial_loglike[k] << StringExpression(
+                            self._spatial_loglike[k] << StringExpression(
                                 ["real_data[start:end]"]
                             )
                             start << start + length
-                    Emin_src = ForwardVariableDef("Emin_src", "real")
-                    Emax_src = ForwardVariableDef("Emax_src", "real")
-                    Emin = ForwardVariableDef("Emin", "real")
-                    Emax = ForwardVariableDef("Emax", "real")
+                    self._Emin_src = ForwardVariableDef("Emin_src", "real")
+                    self._Emax_src = ForwardVariableDef("Emax_src", "real")
+                    self._Emin = ForwardVariableDef("Emin", "real")
+                    self._Emax = ForwardVariableDef("Emax", "real")
                     if self.sources.diffuse:
-                        Emin_diff = ForwardVariableDef("Emin_diff", "real")
-                        Emax_diff = ForwardVariableDef("Emax_diff", "real")
-                    Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
-                    Emax_at_det = ForwardVariableDef("Emax_at_det", "real")
+                        self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
+                        self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
+                    self._Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
+                    self._Emax_at_det = ForwardVariableDef("Emax_at_det", "real")
 
                     end << end + 1
-                    Emin_src << StringExpression(["real_data[start]"])
+                    self._Emin_src << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     end << end + 1
-                    Emax_src << StringExpression(["real_data[start]"])
+                    self._Emax_src << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     if self.sources.diffuse:
                         end << end + 1
-                        Emin_diff << StringExpression(["real_data[start]"])
+                        self._Emin_diff << StringExpression(["real_data[start]"])
                         start << start + 1
 
                         end << end + 1
-                        Emax_diff << StringExpression(["real_data[start]"])
+                        self._Emax_diff << StringExpression(["real_data[start]"])
                         start << start + 1
 
                     end << end + 1
-                    Emin << StringExpression(["real_data[start]"])
+                    self._Emin << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     end << end + 1
-                    Emax << StringExpression(["real_data[start]"])
+                    self._Emax << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     end << end + 1
-                    Emin_at_det << StringExpression(["real_data[start]"])
+                    self._Emin_at_det << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     end << end + 1
-                    Emax_at_det << StringExpression(["real_data[start]"])
+                    self._Emax_at_det << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     # Define tracks and cascades to sort events into correct detector response
                     if self._use_event_tag:
-                        irf_return = ForwardVariableDef(
+                        self._irf_return = ForwardVariableDef(
                             "irf_return",
                             "tuple(real, real, array[3] real)",
                         )
-                        eres_src = ForwardVariableDef("eres_src", "real")
-                        aeff_src = ForwardVariableDef("aeff_src", "real")
+                        self._eres_src = ForwardVariableDef("eres_src", "real")
+                        self._aeff_src = ForwardVariableDef("aeff_src", "real")
 
                     else:
-                        irf_return = ForwardVariableDef(
+                        self._irf_return = ForwardVariableDef(
                             "irf_return",
                             "tuple(array[Ns] real, array[Ns] real, array[3] real)",
                         )
-                        eres_src = ForwardArrayDef("eres_src", "real", ["[Ns]"])
-                        aeff_src = ForwardArrayDef("aeff_src", "real", ["[Ns]"])
-                    eres_diff = ForwardVariableDef("eres_diff", "real")
-                    aeff_diff = ForwardVariableDef("aeff_diff", "real")
-                    aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
+                        self._eres_src = ForwardArrayDef("eres_src", "real", ["[Ns]"])
+                        self._aeff_src = ForwardArrayDef("aeff_src", "real", ["[Ns]"])
+                    self._eres_diff = ForwardVariableDef("eres_diff", "real")
+                    self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
+                    self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
 
                     if self.sources.diffuse and self.sources.atmospheric:
-                        k_diff = "Ns + 1"
-                        k_atmo = "Ns + 2"
+                        self._k_diff = "Ns + 1"
+                        self._k_atmo = "Ns + 2"
 
                     elif self.sources.diffuse:
-                        k_diff = "Ns + 1"
+                        self._k_diff = "Ns + 1"
 
                     elif self.sources.atmospheric:
-                        k_atmo = "Ns + 1"
+                        self._k_atmo = "Ns + 1"
 
-                    # Actual function body goes here
-                    # Starting here, everything needs to go to lp_reduce!
-                    with ForLoopContext(1, N, "i") as i:
-                        if not self._use_event_tag:
-                            lp[i] << logF
-                        # Sorry for the inconsistent naming of variables
-                        for c, et in enumerate(self._event_types):
-                            if c == 0:
-                                context = IfBlockContext
-                            else:
-                                context = ElseIfBlockContext
-                            with context(
-                                [
-                                    StringExpression(
-                                        [
-                                            event_type[i],
-                                            " == ",
-                                            et.S,
-                                        ]
-                                    )
-                                ]
-                            ):
-                                if self._use_event_tag:
-                                    ps_pos = varpi[event_tag[i]]
-                                else:
-                                    ps_pos = varpi
-
-                                irf_return << self._dm[et](
-                                    E[i],
-                                    Edet[i],
-                                    omega_det[i],
-                                    ps_pos,
-                                )
-                        eres_src << StringExpression(["irf_return.1"])
-                        aeff_src << StringExpression(["irf_return.2"])
-                        eres_diff << StringExpression(["irf_return.3[1]"])
-                        aeff_diff << StringExpression(["irf_return.3[2]"])
-                        aeff_atmo << StringExpression(["irf_return.3[3]"])
-
-                        # Sum over sources => evaluate and store components
-                        if self._sources.diffuse and self._sources.atmospheric:
-                            end_loop = "Ns+2"
-                        elif self._sources.diffuse or self._sources.atmospheric:
-                            end_loop = "Ns+1"
-                        else:
-                            end_loop = "Ns"
-                        with ForLoopContext(1, end_loop, "k") as k:
-                            if self.sources.point_source:
-                                # Point source components
-                                with IfBlockContext(
-                                    [StringExpression([k, " < ", Ns + 1])]
-                                ):
-                                    if self._use_event_tag:
-                                        # Create new reference to proper entry in lp to reuse more code
-                                        _lp = lp[i][1]
-                                        _eres_src = eres_src
-                                        _aeff_src = aeff_src
-
-                                        # If the source label k does not match the tag, continue
-                                        # with condition k < Ns + 1 this does not interfere with diffuse components
-                                        with IfBlockContext([k, "!=", event_tag[i]]):
-                                            StringExpression(["continue"])
-                                        with ElseBlockContext():
-                                            _lp << logF[k]
-                                    else:
-                                        _lp = lp[i][k]
-                                        _eres_src = eres_src[k]
-                                        _aeff_src = aeff_src[k]
-
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            spatial_loglike[k, i],
-                                        ]
-                                    )
-
-                                    StringExpression([_lp, " += ", _eres_src])
-                                    StringExpression([_lp, " += ", _aeff_src])
-
-                                    if self._shared_src_index:
-                                        src_index_ref = src_index
-                                    else:
-                                        src_index_ref = src_index[k]
-
-                                    # E = Esrc / (1+z)
-                                    Esrc[i] << StringExpression(
-                                        [E[i], " * (", 1 + z[k], ")"]
-                                    )
-                                    # log_prob += log(p(Esrc|src_index))
-                                    if self._ps_spectrum == PowerLawSpectrum:
-                                        StringExpression(
-                                            [
-                                                _lp,
-                                                " += ",
-                                                self._src_spectrum_lpdf(
-                                                    E[i],
-                                                    src_index_ref,
-                                                    Emin_src / (1 + z[k]),
-                                                    Emax_src / (1 + z[k]),
-                                                ),
-                                            ]
-                                        )
-                                    elif self._ps_spectrum == TwiceBrokenPowerLaw:
-                                        StringExpression(
-                                            [
-                                                _lp,
-                                                " += ",
-                                                self._src_spectrum_lpdf(
-                                                    E[i],
-                                                    -10.0,
-                                                    src_index_ref,
-                                                    10.0,
-                                                    # This is necessary for the sampling to work, no idea why though
-                                                    Emin,
-                                                    Emin_src / (1 + z[k]),
-                                                    Emax_src / (1 + z[k]),
-                                                    Emax,
-                                                ),
-                                            ]
-                                        )
-                                    else:
-                                        raise ValueError(
-                                            f"{self._ps_spectrum} not recognised."
-                                        )
-
-                            # Diffuse component
-                            if self.sources.diffuse:
-                                with IfBlockContext(
-                                    [StringExpression([k, " == ", k_diff])]
-                                ):
-                                    if self._use_event_tag:
-                                        _lp = lp[i][2]
-                                        StringExpression([_lp, "=", logF[k]])
-
-                                    else:
-                                        _lp = lp[i][k]
-                                    StringExpression([_lp, " += ", aeff_diff])
-
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            eres_diff,
-                                        ]
-                                    )
-
-                                    # E = Esrc / (1+z)
-                                    Esrc[i] << E[i] * (1 + z[k])
-
-                                    # log_prob += log(p(Esrc|diff_index))
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            self._diff_spectrum_lpdf(
-                                                E[i],
-                                                diff_index,
-                                                Emin_diff / (1.0 + z[k]),
-                                                Emax_diff / (1.0 + z[k]),
-                                            ),
-                                        ]
-                                    )
-
-                                    # log_prob += log(1/4pi)
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            np.log(1 / (4 * np.pi)),
-                                        ]
-                                    )
-
-                            # Atmospheric component
-                            if self.sources.atmospheric:
-                                with IfBlockContext(
-                                    [StringExpression([k, " == ", k_atmo])]
-                                ):
-                                    if self._use_event_tag:
-                                        if self.sources.diffuse:
-                                            _lp = lp[i][3]
-                                        else:
-                                            _lp = lp[i][2]
-                                        _lp << logF[k]
-
-                                    else:
-                                        _lp = lp[i][k]
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            aeff_atmo,
-                                        ]
-                                    )
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            eres_diff,
-                                        ]
-                                    )
-
-                                    # E = Esrc
-                                    Esrc[i] << E[i]
-
-                                    # log_prob += log(p(Esrc, omega | atmospheric source))
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            FunctionCall(
-                                                [
-                                                    self._atmo_flux_func(
-                                                        E[i],
-                                                        omega_det[i],
-                                                    )
-                                                    / atmo_integrated_flux
-                                                ],
-                                                "log",
-                                            ),
-                                        ]
-                                    )
-
+                    self._model_likelihood()
                     results = ForwardArrayDef("results", "real", ["[N]"])
-                    with ForLoopContext(1, N, "i") as i:
-                        results[i] << FunctionCall([lp[i]], "log_sum_exp")
-                    ReturnStatement(["[sum(results)]'"])
+                    with ForLoopContext(1, self._N, "i") as i:
+                        results[i] << FunctionCall([self._lp[i]], "log_sum_exp")
+                    if self._debug:
+                        # Only for debugging purposes, this makes fits for large N really slow
+                        ReturnStatement([FunctionCall([results], "to_vector")])
+                    else:
+                        ReturnStatement(["[sum(results)]'"])
 
     def _data(self):
         with DataContext():
@@ -1428,224 +1441,7 @@ class StanFitInterface(StanInterface):
                 # Likelihood is evaluated in `lp_reduce`
 
             else:
-                # Product over events => add log likelihoods
-                with ForLoopContext(1, self._N, "i") as i:
-                    if not self._use_event_tag:
-                        self._lp[i] << self._logF
-
-                    for c, event_type in enumerate(self._event_types):
-                        if c == 0:
-                            context = IfBlockContext
-                        else:
-                            context = ElseIfBlockContext
-                        with context(
-                            [
-                                StringExpression(
-                                    [
-                                        self._event_type[i],
-                                        " == ",
-                                        event_type.S,
-                                    ]
-                                )
-                            ]
-                        ):
-                            # Detection effects
-                            if self._use_event_tag:
-                                ps_pos = self._varpi[self._event_tag[i]]
-                            else:
-                                ps_pos = self._varpi
-                            self._irf_return << self._dm[event_type](
-                                self._E[i],
-                                self._Edet[i],
-                                self._omega_det[i],
-                                ps_pos,
-                            )
-
-                    self._eres_src << StringExpression(["irf_return.1"])
-                    self._aeff_src << StringExpression(["irf_return.2"])
-                    self._eres_diff << StringExpression(["irf_return.3[1]"])
-                    self._aeff_diff << StringExpression(["irf_return.3[2]"])
-                    self._aeff_atmo << StringExpression(["irf_return.3[3]"])
-                    # Sum over sources => evaluate and store components
-                    with ForLoopContext(1, n_comps_max, "k") as k:
-                        # Point source components
-                        if self.sources.point_source:
-                            with IfBlockContext(
-                                [StringExpression([k, " < ", self._Ns + 1])]
-                            ):
-                                if self._use_event_tag:
-                                    # Create new reference to proper entry in lp to reuse more code
-                                    _lp = self._lp[i][1]
-                                    _eres_src = self._eres_src
-                                    _aeff_src = self._aeff_src
-                                    # If the source label k does not match the tag, continue
-                                    # with condition k < Ns + 1 this does not interfere with diffuse components
-                                    with IfBlockContext([k, "!=", self._event_tag[i]]):
-                                        StringExpression(["continue"])
-                                    with ElseBlockContext():
-                                        _lp << self._logF[k]
-                                else:
-                                    _lp = self._lp[i][k]
-                                    _eres_src = self._eres_src[k]
-                                    _aeff_src = self._aeff_src[k]
-
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._spatial_loglike[k, i],
-                                    ]
-                                )
-                                StringExpression([_lp, " += ", _aeff_src])
-                                StringExpression([_lp, " += ", _eres_src])
-
-                                if self._shared_src_index:
-                                    src_index_ref = self._src_index
-                                else:
-                                    src_index_ref = self._src_index[k]
-
-                                # log_prob += log(p(Esrc|src_index))
-                                if self._ps_spectrum == PowerLawSpectrum:
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            self._src_spectrum_lpdf(
-                                                self._E[i],
-                                                src_index_ref,
-                                                self._Emin_src / (1 + self._z[k]),
-                                                self._Emax_src / (1 + self._z[k]),
-                                            ),
-                                        ]
-                                    )
-                                elif self._ps_spectrum == TwiceBrokenPowerLaw:
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            self._src_spectrum_lpdf(
-                                                self._E[i],
-                                                -10.0,
-                                                src_index_ref,
-                                                10.0,
-                                                self._Emin,
-                                                self._Emin_src / (1 + self._z[k]),
-                                                self._Emax_src / (1 + self._z[k]),
-                                                self._Emax,
-                                            ),
-                                        ]
-                                    )
-                                else:
-                                    raise ValueError(
-                                        f"{self._ps_spectrum} not recognised."
-                                    )
-
-                                # E = Esrc / (1+z)
-                                self._Esrc[i] << StringExpression(
-                                    [self._E[i], " * (", 1 + self._z[k], ")"]
-                                )
-
-                        # Diffuse component
-                        if self.sources.diffuse:
-                            with IfBlockContext(
-                                [StringExpression([k, " == ", self._k_diff])]
-                            ):
-                                if self._use_event_tag:
-                                    _lp = self._lp[i][2]
-                                    StringExpression([_lp, "=", self._logF[k]])
-                                else:
-                                    _lp = self._lp[i][k]
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._eres_diff,
-                                    ]
-                                )
-
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._aeff_diff,
-                                    ]
-                                )
-
-                                # E = Esrc / (1+z)
-                                self._Esrc[i] << self._E[i] * (1.0 + self._z[k])
-
-                                # log_prob += log(p(Esrc|diff_index))
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._diff_spectrum_lpdf(
-                                            self._E[i],
-                                            self._diff_index,
-                                            self._Emin_diff / (1.0 + self._z[k]),
-                                            self._Emax_diff / (1.0 + self._z[k]),
-                                        ),
-                                    ]
-                                )
-
-                                # log_prob += log(1/4pi)
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        np.log(1 / (4 * np.pi)),
-                                    ]
-                                )
-
-                        # Atmospheric component
-                        if self.sources.atmospheric:
-                            with IfBlockContext(
-                                [StringExpression([k, " == ", self._k_atmo])]
-                            ):
-                                if self._use_event_tag:
-                                    if self.sources.diffuse:
-                                        _lp = self._lp[i][3]
-                                    else:
-                                        _lp = self._lp[i][2]
-                                    _lp << self._logF[k]
-                                else:
-                                    _lp = self._lp[i][k]
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._eres_diff,
-                                    ]
-                                )
-
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._aeff_atmo,
-                                    ]
-                                )
-
-                                # E = Esrc
-                                self._Esrc[i] << self._E[i]
-
-                                # log_prob += log(p(Esrc, omega | atmospheric source))
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        FunctionCall(
-                                            [
-                                                self._atmo_flux_func(
-                                                    self._E[i],
-                                                    self._omega_det[i],
-                                                )
-                                                / self._atmo_integrated_flux
-                                            ],
-                                            "log",
-                                        ),
-                                    ]
-                                )
+                self._model_likelihood()
 
     def _model(self):
         """
@@ -1811,221 +1607,15 @@ class StanFitInterface(StanInterface):
                 self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
 
-                with ForLoopContext(1, self._N, "i") as i:
-                    if not self._use_event_tag:
-                        self._lp[i] << self._logF
+                self._model_likelihood()
 
-                    for c, event_type in enumerate(self._event_types):
-                        if c == 0:
-                            context = IfBlockContext
-                        else:
-                            context = ElseIfBlockContext
-                        with context(
-                            [
-                                StringExpression(
-                                    [
-                                        self._event_type[i],
-                                        " == ",
-                                        event_type.S,
-                                    ]
-                                )
-                            ]
-                        ):
-                            # Detection effects
-                            if self._use_event_tag:
-                                ps_pos = self._varpi[self._event_tag[i]]
-                            else:
-                                ps_pos = self._varpi
-                            self._irf_return << self._dm[event_type](
-                                self._E[i],
-                                self._Edet[i],
-                                self._omega_det[i],
-                                ps_pos,
-                            )
-
-                    self._eres_src << StringExpression(["irf_return.1"])
-                    self._aeff_src << StringExpression(["irf_return.2"])
-                    self._eres_diff << StringExpression(["irf_return.3[1]"])
-                    self._aeff_diff << StringExpression(["irf_return.3[2]"])
-                    self._aeff_atmo << StringExpression(["irf_return.3[3]"])
-
-                    # Sum over sources => evaluate and store components
-                    with ForLoopContext(1, self._Ns_tot, "k") as k:
-                        # Point source components
-                        if self.sources.point_source:
-                            with IfBlockContext(
-                                [StringExpression([k, " < ", self._Ns + 1])]
-                            ):
-                                if self._use_event_tag:
-                                    # Create new reference to proper entry in lp to reuse more code
-                                    _lp = self._lp[i][1]
-                                    _eres_src = self._eres_src
-                                    _aeff_src = self._aeff_src
-                                    # If the source label k does not match the tag, continue
-                                    # with condition k < Ns + 1 this does not interfere with diffuse components
-                                    with IfBlockContext([k, "!=", self._event_tag[i]]):
-                                        StringExpression(["continue"])
-                                    with ElseBlockContext():
-                                        _lp << self._logF[k]
-                                else:
-                                    _lp = self._lp[i][k]
-                                    _eres_src = self._eres_src[k]
-                                    _aeff_src = self._aeff_src[k]
-
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._spatial_loglike[k, i],
-                                    ]
-                                )
-                                StringExpression([_lp, " += ", _aeff_src])
-                                StringExpression([_lp, " += ", _eres_src])
-
-                                if self._shared_src_index:
-                                    src_index_ref = self._src_index
-                                else:
-                                    src_index_ref = self._src_index[k]
-
-                                # log_prob += log(p(Esrc|src_index))
-                                if self._ps_spectrum == PowerLawSpectrum:
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            self._src_spectrum_lpdf(
-                                                self._E[i],
-                                                src_index_ref,
-                                                self._Emin_src / (1 + self._z[k]),
-                                                self._Emax_src / (1 + self._z[k]),
-                                            ),
-                                        ]
-                                    )
-                                elif self._ps_spectrum == TwiceBrokenPowerLaw:
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " += ",
-                                            self._src_spectrum_lpdf(
-                                                self._E[i],
-                                                -10.0,
-                                                src_index_ref,
-                                                10.0,
-                                                self._Emin,
-                                                self._Emin_src / (1 + self._z[k]),
-                                                self._Emax_src / (1 + self._z[k]),
-                                                self._Emax,
-                                            ),
-                                        ]
-                                    )
-                                else:
-                                    raise ValueError(
-                                        f"{self._ps_spectrum} not recognised."
-                                    )
-
-                                # E = Esrc / (1+z)
-                                self._Esrc[i] << StringExpression(
-                                    [self._E[i], " * (", 1 + self._z[k], ")"]
-                                )
-
-                        # Diffuse component
-                        if self.sources.diffuse:
-                            with IfBlockContext(
-                                [StringExpression([k, " == ", self._k_diff])]
-                            ):
-                                if self._use_event_tag:
-                                    _lp = self._lp[i][2]
-                                    StringExpression([_lp, "=", self._logF[k]])
-                                else:
-                                    _lp = self._lp[i][k]
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._eres_diff,
-                                    ]
-                                )
-
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._aeff_diff,
-                                    ]
-                                )
-
-                                # E = Esrc / (1+z)
-                                self._Esrc[i] << self._E[i] * (1.0 + self._z[k])
-
-                                # log_prob += log(p(Esrc|diff_index))
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._diff_spectrum_lpdf(
-                                            self._E[i],
-                                            self._diff_index,
-                                            self._Emin_diff / (1.0 + self._z[k]),
-                                            self._Emax_diff / (1.0 + self._z[k]),
-                                        ),
-                                    ]
-                                )
-
-                                # log_prob += log(1/4pi)
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        np.log(1 / (4 * np.pi)),
-                                    ]
-                                )
-
-                        # Atmospheric component
-                        if self.sources.atmospheric:
-                            with IfBlockContext(
-                                [StringExpression([k, " == ", self._k_atmo])]
-                            ):
-                                if self._use_event_tag:
-                                    if self.sources.diffuse:
-                                        _lp = self._lp[i][3]
-                                    else:
-                                        _lp = self._lp[i][2]
-                                    _lp << self._logF[k]
-                                else:
-                                    _lp = self._lp[i][k]
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._eres_diff,
-                                    ]
-                                )
-
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        self._aeff_atmo,
-                                    ]
-                                )
-
-                                # E = Esrc
-                                self._Esrc[i] << self._E[i]
-
-                                # log_prob += log(p(Esrc, omega | atmospheric source))
-                                StringExpression(
-                                    [
-                                        _lp,
-                                        " += ",
-                                        FunctionCall(
-                                            [
-                                                self._atmo_flux_func(
-                                                    self._E[i],
-                                                    self._omega_det[i],
-                                                )
-                                                / self._atmo_integrated_flux
-                                            ],
-                                            "log",
-                                        ),
-                                    ]
-                                )
+                if self._debug:
+                    self._lp_gen_q = ForwardVariableDef("lp_gen_q", "vector[N]")
+                    self._lp_debug = ForwardVariableDef("lp_debug", "vector[N]")
+                    self._lp_debug << StringExpression(
+                        [
+                            "map_rect(lp_reduce, global_pars, local_pars[:N_shards_loop], real_data[:N_shards_loop], int_data[:N_shards_loop])"
+                        ]
+                    )
+                    with ForLoopContext(1, self._N, "i") as i:
+                        self._lp_gen_q[i] << FunctionCall([self._lp[i]], "log_sum_exp")
