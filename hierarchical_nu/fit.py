@@ -837,7 +837,11 @@ class StanFit:
 
         obs_time_dict = {et: obs_time[k] for k, et in enumerate(event_types)}
 
-        priors = Priors.from_group(filename, "priors")
+        try:
+            priors = Priors.from_group(filename, "priors")
+        except KeyError:
+            # lazy fix for backwards compatibility
+            priors = Priors()
 
         events = Events.from_file(filename)
 
