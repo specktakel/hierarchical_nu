@@ -158,7 +158,7 @@ fig, ax = sim.show_skymap()
 ```python
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
+from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, LuminosityPrior, IndexPrior, FluxPrior
 ```
 
 We can start setting up the fit by loading the events from the output of our simulation. This file only contains the information we would have in a realistic data scenario (energies, directions, uncertainties, event types). We also need to specify the observation time and detector model for the fit, as for the simulation. Please make sure you are using the same ones in both for sensible results!
@@ -173,12 +173,12 @@ We can also define priors using the `Priors` interface. Here, we use the default
 priors = Priors()
 
 flux_units = 1 / (u.m**2 * u.s)
-atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.to(flux_units).value
-diffuse_flux = my_sources.diffuse.flux_model.total_flux_int.to(flux_units).value
-priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.02)
-priors.luminosity = LogNormalPrior(mu=np.log(L.value.to_value(u.GeV/u.s)), sigma=3)
-priors.diff_index = NormalPrior(mu=2.13, sigma=0.2)
-priors.diffuse_flux = LogNormalPrior(mu=np.log(diffuse_flux), sigma=0.1)
+atmo_flux = my_sources.atmospheric.flux_model.total_flux_int
+diffuse_flux = my_sources.diffuse.flux_model.total_flux_int
+priors.atmospheric_flux = FluxPrior(mu=atmo_flux, sigma=0.02 * flux_units)
+priors.luminosity = LuminosityPrior(mu=L.value, sigma=3)
+priors.diff_index = IndexPrior(mu=2.13, sigma=0.2)
+priors.diffuse_flux = FluxPrior(LogNormalPrior, mu=diffuse_flux, sigma=0.1)
 ```
 
 ```python
