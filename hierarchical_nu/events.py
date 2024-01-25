@@ -234,7 +234,6 @@ class Events:
                 for key, value in zip(self._file_keys, self._file_values):
                     event_folder.create_dataset(key, data=value)
 
-    @u.quantity_input
     def get_tags(self, sources: Sources):
         """
         Idea: each event gets one PS (smallest distance), assumes that CircularROIs do not overlap
@@ -254,7 +253,7 @@ class Events:
         return tags
 
     @classmethod
-    def from_ev_file(cls, *seasons: EventType):
+    def from_ev_file(cls, *seasons: EventType, scramble_ra: bool = False):
         """
         Load events from the 2021 data release
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
@@ -284,6 +283,10 @@ class Events:
             events.mask = mask
 
         ra = np.hstack([events.ra[s.P] * u.rad for s in seasons])
+        if scramble_ra:
+            rng = np.random.default_rng()
+            ra = rng.random(ra.size) * 2 * np.pi * u.rad
+
         dec = np.hstack([events.dec[s.P] * u.rad for s in seasons])
         reco_energy = np.hstack([events.reco_energy[s.P] * u.GeV for s in seasons])
         types = np.hstack([events.ra[s.P].size * [s.S] for s in seasons])
@@ -330,6 +333,19 @@ class Events:
         return cls(
             reco_energy[idxs], coords[idxs], types[idxs], ang_err[idxs], mjd[idxs]
         )
+
+    def merge(self, events):
+        self.coords.representation_type = "spherical"
+        events.coords.representation_type = "spherical"
+        ra = np.hstack([self.coords.ra.deg, events.coords.ra.deg]) * u.deg
+        dec = np.hstack([self.coords.dec.deg, events.coords.dec.deg]) * u.deg
+        coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
+        energies = np.hstack([self.energies, events.energies])
+        ang_errs = np.hstack([self.ang_errs, events.ang_errs])
+        types = np.hstack([self.types, events.types])
+        mjd = Time(np.hstack([self.mjd.mjd, events.mjd.mjd]), format="mjd")
+
+        return Events(energies, coords, types, ang_errs, mjd)
 
     @u.quantity_input
     def plot_energy(self, center_coords: SkyCoord, radius: 3 * u.deg, lw: float = 1.0):
