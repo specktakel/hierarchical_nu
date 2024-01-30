@@ -6,7 +6,7 @@ import collections
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Callable
 import corner
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -344,6 +344,22 @@ class StanFit:
 
         return fig, axs
 
+    def _get_kde(
+        self,
+        var_name,
+        index: Union[int, slice, None] = None,
+        transform: Callable = lambda x: x,
+    ):
+        try:
+            chain = self._fit_output.stan_variables(var_name)
+        except AttributeError:
+            chain = self._fit_output[var_name]
+        if index is not None:
+            data = chain.T[index]
+        else:
+            data = chain
+        return av.kde(transform(data))
+
     def corner_plot(self, var_names=None, truths=None):
         """
         Corner plot using list of Stan parameter keys and optional
@@ -438,7 +454,6 @@ class StanFit:
     @u.quantity_input
     def _plot_energy_posterior(
         self,
-        input_axs,
         ax,
         center,
         assoc_idx,
@@ -466,17 +481,22 @@ class StanFit:
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
         color = mapper.to_rgba(assoc_prob)
 
-        for c, line in enumerate(np.array(input_axs[0, 0].lines)[mask]):
+        indices = np.arange(self._events.N, dtype=int)[mask]
+
+        for c, i in enumerate(indices):
+            # get the support (is then log10(E/GeV) and the pdf values
+            supp, pdf = self._get_kde("E", i, lambda x: np.log10(x))
+            # exponentiate the support, because we rescale the axis in the end
             ax.plot(
-                np.power(10, line.get_data()[0]),
-                line.get_data()[1],
+                np.power(10, supp),
+                pdf,
                 color=color[c],
                 zorder=assoc_prob[c] + 1,
             )
         _, yhigh = ax.get_ylim()
         ax.set_xscale("log")
 
-        for c, line in enumerate(np.array(input_axs[0, 0].lines)[mask]):
+        for c, i in enumerate(indices):
             ax.vlines(
                 self.events.energies[mask][c].to_value(u.GeV),
                 yhigh,
@@ -487,7 +507,7 @@ class StanFit:
             )
             if assoc_prob[c] > 0.2:
                 # if we have more than 20% association prob, link both lines up
-                x, y = np.array(input_axs[0, 0].lines)[mask][c].get_data()
+                x, y = self._get_kde("E", i, lambda x: np.log10(x))
                 idx_posterior = np.argmax(y)
                 ax.plot(
                     [
@@ -523,19 +543,11 @@ class StanFit:
         :param color_scale: color scale of assoc prob, either "lin" or "log"
         """
 
-        _, axs = self.plot_trace(
-            var_names=["E"],
-            transform=lambda x: np.log10(x),
-            show=False,
-            combined=True,
-            divergences=None,
-        )
-
         fig, ax = plt.subplots(dpi=150)
         if isinstance(center, int):
             center = self.get_src_position(center)
         ax, mapper = self._plot_energy_posterior(
-            axs, ax, center, assoc_idx, radius, color_scale
+            ax, center, assoc_idx, radius, color_scale
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -650,19 +662,11 @@ class StanFit:
 
         ax = fig.add_subplot(gs[0, 1])
 
-        _, axs = self.plot_trace(
-            var_names=["E"],
-            transform=lambda x: np.log10(x),
-            show=False,
-            combined=True,
-            divergences=None,
-        )
-
         if isinstance(center, int):
             center = self.get_src_position(center)
 
         ax, mapper = self._plot_energy_posterior(
-            axs, ax, center, assoc_idx, radius, color_scale
+            ax, center, assoc_idx, radius, color_scale
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -708,7 +712,7 @@ class StanFit:
                 outputs_folder.create_dataset(key, data=value)
 
             # Save some metadata for debugging, easier loading from file
-            if self._fit_output.divergences:
+            if np.any(self._fit_output.divergences):
                 divergences = self._fit_output.method_variables()["divergent__"]
                 meta_folder.create_dataset(
                     "divergences", data=np.argwhere(divergences == 1.0)
