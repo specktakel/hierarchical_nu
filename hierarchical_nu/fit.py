@@ -54,6 +54,7 @@ class StanFit:
         n_grid_points: int = 50,
         nshards: int = 0,
         use_event_tag: bool = False,
+        use_spatial_gaussian: bool = False,
         debug: bool = False,
     ):
         """
@@ -89,6 +90,7 @@ class StanFit:
                 atmo_flux_energy_points=atmo_flux_energy_points,
                 atmo_flux_theta_points=atmo_flux_theta_points,
                 use_event_tag=use_event_tag,
+                use_spatial_gaussian=use_spatial_gaussian,
                 debug=debug,
             )
         else:
@@ -351,7 +353,7 @@ class StanFit:
         transform: Callable = lambda x: x,
     ):
         try:
-            chain = self._fit_output.stan_variables(var_name)
+            chain = self._fit_output.stan_variable(var_name)
         except AttributeError:
             chain = self._fit_output[var_name]
         if index is not None:
@@ -977,6 +979,7 @@ class StanFit:
         ]
         fit_inputs["event_type"] = self._events.types
         fit_inputs["kappa"] = self._events.kappas
+        fit_inputs["ang_err"] = self._events.ang_errs.to_value(u.rad)
         fit_inputs["Ns"] = len(
             [s for s in self._sources.sources if isinstance(s, PointSource)]
         )

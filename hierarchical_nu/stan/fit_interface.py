@@ -70,6 +70,7 @@ class StanFitInterface(StanInterface):
         priors: Priors = Priors(),
         nshards: int = 1,
         use_event_tag: bool = False,
+        use_spatial_gaussian: bool = False,
         debug: bool = False,
     ):
         """
@@ -114,6 +115,7 @@ class StanFitInterface(StanInterface):
         assert nshards >= 0
         self._nshards = nshards
         self._use_event_tag = use_event_tag
+        self._use_spatial_gaussian = use_spatial_gaussian
         self._debug = debug
 
     def _get_par_ranges(self):
@@ -659,6 +661,9 @@ class StanFitInterface(StanInterface):
             # Dected energies
             self._Edet = ForwardVariableDef("Edet", "vector[N]")
 
+            # Angular uncertainty, 0.683 coverage
+            self._ang_errs = ForwardVariableDef("ang_err", "vector[N]")
+
             # Event types as track/cascades
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
 
@@ -801,18 +806,31 @@ class StanFitInterface(StanInterface):
                 )
                 with ForLoopContext(1, self._N, "i") as i:
                     with ForLoopContext(1, self._Ns, "k") as k:
-                        StringExpression(
-                            [
-                                "spatial_loglike[k, i]",
-                                " = vMF_lpdf(",
-                                self._omega_det[i],
-                                " | ",
-                                self._varpi[k],
-                                ", ",
-                                self._kappa[i],
-                                ")",
-                            ]
-                        )
+                        if self._use_spatial_gaussian:
+                            StringExpression(
+                                [
+                                    "spatial_loglike[k, i]",
+                                    " = " "- log(2 * pi() * pow(ang_sep(",
+                                    self._varpi[k],
+                                    ", ",
+                                    self._omega_det[i],
+                                    "), 2))",
+                                    " - 0.5 * pow(ang_sep(varpi[k], omega_det[i]) / ang_err[i], 2)",
+                                ]
+                            )
+                        else:
+                            StringExpression(
+                                [
+                                    "spatial_loglike[k, i]",
+                                    " = vMF_lpdf(",
+                                    self._omega_det[i],
+                                    " | ",
+                                    self._varpi[k],
+                                    ", ",
+                                    self._kappa[i],
+                                    ")",
+                                ]
+                            )
 
             self._et_stan = ForwardArrayDef("event_types", "int", ["[", self._Net, "]"])
             self._Net_stan = ForwardVariableDef("Net", "int")
