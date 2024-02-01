@@ -810,11 +810,9 @@ class StanFitInterface(StanInterface):
                             StringExpression(
                                 [
                                     "spatial_loglike[k, i]",
-                                    " = " "- log(2 * pi() * pow(ang_sep(",
-                                    self._varpi[k],
-                                    ", ",
-                                    self._omega_det[i],
-                                    "), 2))",
+                                    " = " "- log(2 * pi() * pow(",
+                                    self._ang_errs[i],
+                                    ", 2))",
                                     " - 0.5 * pow(ang_sep(varpi[k], omega_det[i]) / ang_err[i], 2)",
                                 ]
                             )
