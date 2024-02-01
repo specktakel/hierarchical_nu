@@ -523,13 +523,17 @@ class StanFit:
         :param color_scale: color scale of assoc prob, either "lin" or "log"
         """
 
-        _, axs = self.plot_trace(
-            var_names=["E"],
-            transform=lambda x: np.log10(x),
-            show=False,
-            combined=True,
-            divergences=None,
-        )
+        try:
+            axs = self._energy_axs
+        except AttributeError:
+            _, axs = self.plot_trace(
+                var_names=["E"],
+                transform=lambda x: np.log10(x),
+                show=False,
+                combined=True,
+                divergences=None,
+            )
+            self._energy_axs = axs
 
         fig, ax = plt.subplots(dpi=150)
         if isinstance(center, int):
@@ -573,13 +577,15 @@ class StanFit:
             transform=ax.get_transform("icrs"),
         )
 
-        for c, (colour, coord) in enumerate(zip(color[mask], events.coords[mask])):
+        for c, (colour, coord, zorder) in enumerate(
+            zip(color[mask], events.coords[mask], assoc_prob[mask])
+        ):
             ax.scatter(
                 coord.ra.deg,
                 coord.dec.deg,
                 color=colour,
                 alpha=0.4,
-                zorder=assoc_prob[c] + 1,
+                zorder=zorder + 1,
                 transform=ax.get_transform("icrs"),
             )
 
@@ -649,14 +655,17 @@ class StanFit:
         )
 
         ax = fig.add_subplot(gs[0, 1])
-
-        _, axs = self.plot_trace(
-            var_names=["E"],
-            transform=lambda x: np.log10(x),
-            show=False,
-            combined=True,
-            divergences=None,
-        )
+        try:
+            axs = self._energy_axs
+        except AttributeError:
+            _, axs = self.plot_trace(
+                var_names=["E"],
+                transform=lambda x: np.log10(x),
+                show=False,
+                combined=True,
+                divergences=None,
+            )
+            self._energy_axs = axs
 
         if isinstance(center, int):
             center = self.get_src_position(center)
@@ -828,7 +837,11 @@ class StanFit:
 
         obs_time_dict = {et: obs_time[k] for k, et in enumerate(event_types)}
 
-        priors = Priors.from_group(filename, "priors")
+        try:
+            priors = Priors.from_group(filename, "priors")
+        except KeyError:
+            # lazy fix for backwards compatibility
+            priors = Priors()
 
         events = Events.from_file(filename)
 
