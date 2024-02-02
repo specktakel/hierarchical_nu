@@ -61,6 +61,7 @@ class StanSimInterface(StanInterface):
             "rejection_sampling.stan",
         ],
         force_N: bool = False,
+        use_spatial_gaussian: bool = False,
     ):
         """
         An interface for generating the Stan simulation code.
@@ -97,6 +98,7 @@ class StanSimInterface(StanInterface):
 
         else:
             self._force_N = False
+        self._use_spatial_gaussian = use_spatial_gaussian
 
     def _functions(self):
         """
@@ -112,7 +114,7 @@ class StanSimInterface(StanInterface):
 
             for event_type in self._event_types:
                 # Include the PDF mode of the detector model
-                self._dm[event_type] = event_type.model(DistributionMode.RNG)
+                self._dm[event_type] = event_type.model(DistributionMode.RNG, use_spatial_gaussian=self._use_spatial_gaussian)
                 self._dm[event_type].generate_rng_function_code()
 
             # If we have point sources, include the shape of their PDF

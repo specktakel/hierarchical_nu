@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import Sequence
 from enum import Enum
+from hierarchical_nu.backend.expression import TListTExpression
 import numpy as np  # type: ignore
 from .stan_generator import UserDefinedFunction, ForLoopContext
 from .expression import (Expression, TExpression, TListTExpression,
@@ -16,7 +17,7 @@ from .typedefs import TArrayOrNumericIterable
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = ["LogParameterization",
+__all__ = ["LogParameterization", "RayleighParameterization",
            "PolynomialParameterization", "LognormalParameterization",
            "VMFParameterization", "TruncatedParameterization",
            "SimpleHistogram", "SimpleHistogram_rng",
@@ -143,6 +144,35 @@ class LognormalParameterization(Distribution):
         stan_code += ["lognormal_lpdf(", x_obs_stan, " | ", self._mu, ", ",
                       self._sigma, ")"]
         return stan_code
+
+
+class RayleighParameterization(Distribution):
+    """
+    Rayleigh parameterisation.
+    I am not amused to write this class with a 'z'.
+    """
+
+    def __init__(
+            self,
+            inputs: TListTExpression, 
+            sigma: TExpression,
+            mode: DistributionMode = DistributionMode.PDF
+        ):
+        self._sigma = sigma
+        Distribution.__init__(self, inputs, mode)
+
+    def __call__(self):
+        pass
+
+    def stan_code_rng(self, inputs: TListTExpression) -> TListTExpression:
+        # Needs true direction and sigma
+        x_true_stan = inputs[0]
+        stan_code: TListTExpression = []
+        stan_code += ["rayleigh_deflected_rng(", x_true_stan, ", ", self._sigma, ")"]
+        return stan_code
+
+    def stan_code_pdf(self, inputs: TListTExpression) -> TListTExpression:
+        return
 
 
 class VMFParameterization(Distribution):

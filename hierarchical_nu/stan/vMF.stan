@@ -128,6 +128,21 @@ vector sphere_rng(real radius) {
     
 }
 
+/**
+ * Deflect a vector mu on a cone of half opening angle
+ * theta ~ Rayleigh(sigma) with random position angle
+ */
+vector rayleigh_deflected_rng(vector mu, real sigma) {
+  real theta;
+  real PA;
+  PA = uniform_rng(0, 2.0 * pi());
+
+  vector[3] orthonormal = sample_orthonormal_to_rng(mu);
+  vector[3] deflected = rotate_vector(mu, orthonormal, theta);
+  deflected = rotate_vector(deflected, mu, PA);
+  return deflected;
+}
+
 /*
  * Sample a point uniformly on the surface of a sphere of 
  * a certain radius. The v_lim option can be used to limit the
