@@ -809,8 +809,16 @@ class StanFitInterface(StanInterface):
                         if self._use_spatial_gaussian:
                             StringExpression(
                                 [
-                                    "spatial_loglike[k, i]",
-                                    " = " "- log(2 * pi() * pow(",
+                                    self._spatial_loglike[k, i],
+                                    " = log(ang_sep(",
+                                    self._varpi[k],
+                                    ", ",
+                                    self._omega_det[i],
+                                    ") / sin(ang_sep(",
+                                    self._varpi[k],
+                                    ", ",
+                                    self._omega_det[i],
+                                    "))) - log(2 * pi() * pow(",
                                     self._ang_errs[i],
                                     ", 2))",
                                     " - 0.5 * pow(ang_sep(varpi[k], omega_det[i]) / ang_err[i], 2)",
