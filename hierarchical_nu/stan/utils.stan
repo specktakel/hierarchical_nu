@@ -306,11 +306,3 @@ int hist_cat_rng(array[] real hist_array, array[] real hist_edges)
     }
     return categorical_rng(normalised);
 }
-
-/**
- * Angular separation on a sphere
- */
-real ang_sep(vector vec1, vector vec2)
-{
-    return acos(sum(vec1 .* vec2));
-}
