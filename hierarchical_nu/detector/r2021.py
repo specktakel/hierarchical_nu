@@ -492,7 +492,6 @@ class R2021EffectiveArea(EffectiveArea):
 
 
 class R2021EnergyResolution(EnergyResolution, HistogramSampler):
-
     """
     Energy resolution for the ten-year All Sky Point Source release:
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
@@ -1091,10 +1090,11 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     continue
 
                 if upper_threshold_energy is None:
-                    prob[
-                        (cE == idx_tE) & (cD == idx_dec_eres)
-                    ] = 1.0 - self.irf.reco_energy[cE, cD].cdf(
-                        e_low[(cE == idx_tE) & (cD == idx_dec_eres)]
+                    prob[(cE == idx_tE) & (cD == idx_dec_eres)] = (
+                        1.0
+                        - self.irf.reco_energy[cE, cD].cdf(
+                            e_low[(cE == idx_tE) & (cD == idx_dec_eres)]
+                        )
                     )
                 else:
                     pdf = self.irf.reco_energy[cE, cD]
@@ -1488,7 +1488,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
         season: str = "IC86_II",
-        use_spatial_gaussian: bool = False
+        use_spatial_gaussian: bool = False,
     ) -> None:
         """
         Instanciate class.
@@ -1547,10 +1547,14 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
 
             elif self.mode == DistributionMode.RNG:
                 if self._use_spatial_gaussian:
-                    angular_parameterisation = RayleighParameterization(["true_dir"], "sigma", self.mode)
+                    angular_parameterisation = RayleighParameterization(
+                        ["true_dir"], "sigma", self.mode
+                    )
                 # Create vmf parameterisation, to be fed with kappa calculated from ang_err
                 else:
-                    angular_parameterisation = VMFParameterization(["true_dir"], "kappa", self.mode)
+                    angular_parameterisation = VMFParameterization(
+                        ["true_dir"], "kappa", self.mode
+                    )
 
                 # Create all psf histogram
                 self._make_histogram(
@@ -1666,7 +1670,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 # Convert angular error to kappa
                 # Hardcoded p=0.5 (log(1-p)) from the tabulated data of release
                 kappa << StringExpression(
-                    ["- (2 / (pi() * pow(10, ang_err) / 180)^2) * log(1 - 0.5)"]
+                    ["- (2 / (pi() * pow(10, ang_err) / 180)^2) * log(1 - 0.683)"]
                 )
 
                 # Stan code needs both deflected direction and kappa
@@ -1785,7 +1789,9 @@ class R2021DetectorModel(ABC, DetectorModel):
         elif mode == DistributionMode.RNG:
             self._func_name = f"{season}_rng"
 
-        self._angular_resolution = R2021AngularResolution(mode, rewrite, season=season, use_spatial_gaussian=use_spatial_gaussian)
+        self._angular_resolution = R2021AngularResolution(
+            mode, rewrite, season=season, use_spatial_gaussian=use_spatial_gaussian
+        )
 
         self._energy_resolution = R2021EnergyResolution(
             mode, rewrite, make_plots, n_components, ereco_cuts, season=season
@@ -2118,7 +2124,7 @@ class IC79DetectorModel(R2021DetectorModel):
             ereco_cuts=ereco_cuts,
             season="IC79",
             path=path,
-            use_spatial_gaussian=use_spatial_gaussian
+            use_spatial_gaussian=use_spatial_gaussian,
         )
 
 
