@@ -587,13 +587,15 @@ class StanFit:
             transform=ax.get_transform("icrs"),
         )
 
-        for c, (colour, coord) in enumerate(zip(color[mask], events.coords[mask])):
+        for c, (colour, coord, zorder) in enumerate(
+            zip(color[mask], events.coords[mask], assoc_prob[mask])
+        ):
             ax.scatter(
                 coord.ra.deg,
                 coord.dec.deg,
                 color=colour,
                 alpha=0.4,
-                zorder=assoc_prob[c] + 1,
+                zorder=zorder + 1,
                 transform=ax.get_transform("icrs"),
             )
 
@@ -834,7 +836,11 @@ class StanFit:
 
         obs_time_dict = {et: obs_time[k] for k, et in enumerate(event_types)}
 
-        priors = Priors.from_group(filename, "priors")
+        try:
+            priors = Priors.from_group(filename, "priors")
+        except KeyError:
+            # lazy fix for backwards compatibility
+            priors = Priors()
 
         events = Events.from_file(filename)
 
