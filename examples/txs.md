@@ -30,7 +30,7 @@ from hierarchical_nu.source.source import Sources, PointSource
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior
+from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, LuminosityPrior, IndexPrior, FluxPrior
 from hierarchical_nu.utils.roi import CircularROI
 from hierarchical_nu.detector.icecube import IC86_II, IC86_I
 from icecube_tools.utils.data import Uptime
@@ -129,18 +129,18 @@ print(sim._expected_Nnu_per_comp)
 
 ```python
 priors = Priors()
-priors.diffuse_flux = LogNormalPrior(mu=np.log(my_sources.diffuse.flux_model.total_flux_int.to_value(1/(u.m**2 * u.s))), sigma=0.5)
-priors.luminosity = LogNormalPrior(
-    mu=np.log(L.value.to_value(u.GeV/u.s) / sim._expected_Nnu_per_comp[0] * 10),   # we expect ~10 events
+priors.diffuse_flux = FluxPrior(LogNormalPrior, mu=my_sources.diffuse.flux_model.total_flux_int, sigma=0.5)
+priors.luminosity = LuminosityPrior(
+    mu=L.value / sim._expected_Nnu_per_comp[0] * 10,   # we expect ~10 events
     sigma=2
 )
-priors.diff_index = NormalPrior(mu=2.37, sigma=0.09)
-priors.src_index = NormalPrior(mu=2.5, sigma=1)
+priors.diff_index = IndexPrior(mu=2.52, sigma=0.08)
+priors.src_index = IndexPrior(mu=2.5, sigma=1)
 ```
 
 ```python
 # Copy flux
-atmo_flux_int = my_sources.atmospheric.flux_model.total_flux_int.to_value(1/u.m**2/u.s)
+atmo_flux_int = my_sources.atmospheric.flux_model.total_flux_int
 Nex = np.sum(sim._expected_Nnu_per_comp[2])
 Nex_std = np.sqrt(Nex)
 N = events.N
@@ -152,7 +152,7 @@ mu = atmo_flux_int / Nex * N
 sigma = atmo_flux_int / Nex * np.sqrt(N)
 # N +/- N_std -> N_std is sigma on scale of events
 # atmo_flux_int +/- sigma should yield N +/- N_std events
-priors.atmospheric_flux = NormalPrior(mu=mu, sigma=sigma)
+priors.atmospheric_flux = FluxPrior(mu=mu, sigma=sigma)
 ```
 
 ```python
