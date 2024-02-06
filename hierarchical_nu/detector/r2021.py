@@ -1548,7 +1548,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
             elif self.mode == DistributionMode.RNG:
                 if self._use_spatial_gaussian:
                     angular_parameterisation = RayleighParameterization(
-                        ["true_dir"], "sigma", self.mode
+                        ["true_dir"], "pi() * ang_err / 180", self.mode
                     )
                 # Create vmf parameterisation, to be fed with kappa calculated from ang_err
                 else:
@@ -1656,21 +1656,29 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 ang_err = ForwardVariableDef("ang_err", "real")
                 ang_err << FunctionCall(
                     [
+                        10,
                         FunctionCall(
-                            [ang_hist_idx], f"{self._season}_ang_get_ragged_hist"
-                        ),
-                        FunctionCall(
-                            [ang_hist_idx], f"{self._season}_ang_get_ragged_edges"
+                            [
+                                FunctionCall(
+                                    [ang_hist_idx],
+                                    f"{self._season}_ang_get_ragged_hist",
+                                ),
+                                FunctionCall(
+                                    [ang_hist_idx],
+                                    f"{self._season}_ang_get_ragged_edges",
+                                ),
+                            ],
+                            "histogram_rng",
                         ),
                     ],
-                    "histogram_rng",
+                    "pow",
                 )
 
                 kappa = ForwardVariableDef("kappa", "real")
                 # Convert angular error to kappa
                 # Hardcoded p=0.5 (log(1-p)) from the tabulated data of release
                 kappa << StringExpression(
-                    ["- (2 / (pi() * pow(10, ang_err) / 180)^2) * log(1 - 0.683)"]
+                    ["- (2 / (pi() * ang_err / 180)^2) * log(1 - 0.683)"]
                 )
 
                 # Stan code needs both deflected direction and kappa
@@ -2033,6 +2041,7 @@ class IC40DetectorModel(R2021DetectorModel):
             ereco_cuts=ereco_cuts,
             season="IC40",
             path=path,
+            use_spatial_gaussian=use_spatial_gaussian,
         )
 
 

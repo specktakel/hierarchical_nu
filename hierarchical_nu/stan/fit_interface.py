@@ -89,13 +89,6 @@ class StanFitInterface(StanInterface):
         :param debug: if True, add function calls for debugging and tests
         """
 
-        for et in event_types:
-            detector_model_type = et.model
-
-            if detector_model_type.PDF_FILENAME not in includes:
-                includes.append(detector_model_type.PDF_FILENAME)
-            detector_model_type.generate_code(DistributionMode.PDF, rewrite=False)
-
         super().__init__(
             output_file=output_file,
             sources=sources,
@@ -117,6 +110,22 @@ class StanFitInterface(StanInterface):
         self._use_event_tag = use_event_tag
         self._use_spatial_gaussian = use_spatial_gaussian
         self._debug = debug
+
+        self._dm = OrderedDict()
+
+        for et in self._event_types:
+            detector_model_type = et.model
+
+            if detector_model_type.PDF_FILENAME not in self._includes:
+                self._includes.append(detector_model_type.PDF_FILENAME)
+            detector_model_type.generate_code(
+                DistributionMode.PDF,
+                rewrite=False,
+                use_spatial_gaussian=use_spatial_gaussian,
+            )
+
+            self._dm[et] = et.model(mode=DistributionMode.PDF)
+            self._dm[et].generate_pdf_function_code(self._use_event_tag)
 
     def _get_par_ranges(self):
         """
@@ -373,13 +382,8 @@ class StanFitInterface(StanInterface):
             for include_file in self._includes:
                 _ = Include(include_file)
 
-            self._dm = OrderedDict()
-
-            for event_type in self._event_types:
-                # Include the PDF mode of the detector model
-                self._dm[event_type] = event_type.model(mode=DistributionMode.PDF)
-                self._dm[event_type].generate_pdf_function_code(self._use_event_tag)
-
+            for et in self._event_types:
+                et.generate_pdf_function_code(self._use_event_tag)
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
             if self.sources.point_source:

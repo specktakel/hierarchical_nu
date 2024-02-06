@@ -137,6 +137,8 @@ vector rayleigh_deflected_rng(vector mu, real sigma) {
   real PA;
   PA = uniform_rng(0, 2.0 * pi());
 
+  theta = rayleigh_rng(sigma);
+
   vector[3] orthonormal = sample_orthonormal_to_rng(mu);
   vector[3] deflected = rotate_vector(mu, orthonormal, theta);
   deflected = rotate_vector(deflected, mu, PA);

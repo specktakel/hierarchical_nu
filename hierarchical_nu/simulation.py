@@ -108,7 +108,7 @@ class Simulation:
             atmo_flux_energy_points=atmo_flux_energy_points,
             atmo_flux_theta_points=atmo_flux_theta_points,
             force_N=self._force_N,
-            use_spatial_gaussian=use_spatial_gaussian
+            use_spatial_gaussian=use_spatial_gaussian,
         )
 
         # Silence log output
