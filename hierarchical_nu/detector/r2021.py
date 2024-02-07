@@ -1488,7 +1488,6 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
         season: str = "IC86_II",
-        use_spatial_gaussian: bool = False,
     ) -> None:
         """
         Instanciate class.
@@ -1513,7 +1512,6 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
 
         self._Emin: float = float("nan")
         self._Emax: float = float("nan")
-        self._use_spatial_gaussian = use_spatial_gaussian
 
         self.setup()
 
@@ -1525,8 +1523,8 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 f"{self._season}AngularResolution",
-                ["true_dir", "reco_dir", "kappa"],
-                ["vector", "vector", "real"],
+                ["true_dir", "reco_dir", "sigma", "kappa"],
+                ["vector", "vector", "real", "real"],
                 "real",
             )
 
@@ -1541,20 +1539,14 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         # Define Stan interface
         with self:
             if self.mode == DistributionMode.PDF:
-                # Is never used anyways.
-                vmf = VMFParameterization(["reco_dir", "true_dir"], "kappa", self.mode)
-                ReturnStatement([vmf])
+                angular_parameterisation = RayleighParameterization(["true_dir", "reco_dir"], "sigma", self.mode)
+                ReturnStatement([angular_parameterisation])
 
             elif self.mode == DistributionMode.RNG:
-                if self._use_spatial_gaussian:
-                    angular_parameterisation = RayleighParameterization(
-                        ["true_dir"], "pi() * ang_err / 180", self.mode
-                    )
-                # Create vmf parameterisation, to be fed with kappa calculated from ang_err
-                else:
-                    angular_parameterisation = VMFParameterization(
-                        ["true_dir"], "kappa", self.mode
-                    )
+                angular_parameterisation = RayleighParameterization(
+                    ["true_dir"], "ang_err", self.mode
+                )
+
 
                 # Create all psf histogram
                 self._make_histogram(
@@ -1654,6 +1646,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                     f"{self._season}_ang_get_ragged_index",
                 )
                 ang_err = ForwardVariableDef("ang_err", "real")
+                # Samples angular uncertainty in degrees
                 ang_err << FunctionCall(
                     [
                         10,
@@ -1674,11 +1667,12 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                     "pow",
                 )
 
+                # Convert to radian
+                ang_err << StringExpression(["pi() * ang_err / 180.0"])
                 kappa = ForwardVariableDef("kappa", "real")
                 # Convert angular error to kappa
-                # Hardcoded p=0.5 (log(1-p)) from the tabulated data of release
                 kappa << StringExpression(
-                    ["- (2 / (pi() * ang_err / 180)^2) * log(1 - 0.683)"]
+                    ["- (2 / ang_err^2) * log(1 - 0.683)"]
                 )
 
                 # Stan code needs both deflected direction and kappa
@@ -1777,7 +1771,6 @@ class R2021DetectorModel(ABC, DetectorModel):
         n_components: int = 3,
         ereco_cuts: bool = True,
         season: str = "IC86_II",
-        use_spatial_gaussian: bool = False,
     ) -> None:
         """
         Instantiate R2021 detector model
@@ -1798,7 +1791,7 @@ class R2021DetectorModel(ABC, DetectorModel):
             self._func_name = f"{season}_rng"
 
         self._angular_resolution = R2021AngularResolution(
-            mode, rewrite, season=season, use_spatial_gaussian=use_spatial_gaussian
+            mode, rewrite, season=season
         )
 
         self._energy_resolution = R2021EnergyResolution(
@@ -1834,7 +1827,6 @@ class R2021DetectorModel(ABC, DetectorModel):
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
         season: str = "IC86_II",
-        use_spatial_gaussian: bool = False,
     ) -> None:
         """
         Classmethod to generate stan code of entire detector.
@@ -1850,6 +1842,7 @@ class R2021DetectorModel(ABC, DetectorModel):
         except FileNotFoundError:
             files = []
             os.makedirs(path)
+        """
         finally:
             if not rewrite:
                 if mode == DistributionMode.PDF and cls.PDF_FILENAME in files:
@@ -1859,7 +1852,8 @@ class R2021DetectorModel(ABC, DetectorModel):
 
             else:
                 cls.logger.info("Generating r2021 stan code.")
-
+        """
+        cls.logger.info("Generating r2021 stan code.")
         with StanGenerator() as cg:
             instance = R2021DetectorModel(
                 mode=mode,
@@ -1868,7 +1862,6 @@ class R2021DetectorModel(ABC, DetectorModel):
                 n_components=n_components,
                 ereco_cuts=ereco_cuts,
                 season=season,
-                use_spatial_gaussian=use_spatial_gaussian,
             )
             instance.effective_area.generate_code()
             instance.angular_resolution.generate_code()
@@ -1969,6 +1962,7 @@ class R2021DetectorModel(ABC, DetectorModel):
 
             ReturnStatement(["(ps_eres, ps_aeff, diff)"])
 
+
     def generate_rng_function_code(self):
         """
         Generate a wrapper for the IRF in `DistributionMode.RNG`.
@@ -2010,7 +2004,6 @@ class IC40DetectorModel(R2021DetectorModel):
         make_plots: bool = False,
         n_components: int = 3,
         ereco_cuts: bool = True,
-        use_spatial_gaussian: bool = False,
     ):
         super().__init__(
             mode=mode,
@@ -2019,7 +2012,6 @@ class IC40DetectorModel(R2021DetectorModel):
             n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC40",
-            use_spatial_gaussian=use_spatial_gaussian,
         )
 
     @classmethod
@@ -2031,7 +2023,6 @@ class IC40DetectorModel(R2021DetectorModel):
         n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
-        use_spatial_gaussian: bool = False,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
@@ -2041,7 +2032,6 @@ class IC40DetectorModel(R2021DetectorModel):
             ereco_cuts=ereco_cuts,
             season="IC40",
             path=path,
-            use_spatial_gaussian=use_spatial_gaussian,
         )
 
 
@@ -2056,7 +2046,6 @@ class IC59DetectorModel(R2021DetectorModel):
         make_plots: bool = False,
         n_components: int = 3,
         ereco_cuts: bool = True,
-        use_spatial_gaussian: bool = False,
     ):
         super().__init__(
             mode=mode,
@@ -2065,7 +2054,6 @@ class IC59DetectorModel(R2021DetectorModel):
             n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC59",
-            use_spatial_gaussian=use_spatial_gaussian,
         )
 
     @classmethod
@@ -2077,7 +2065,6 @@ class IC59DetectorModel(R2021DetectorModel):
         n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
-        use_spatial_gaussian: bool = False,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
@@ -2087,7 +2074,6 @@ class IC59DetectorModel(R2021DetectorModel):
             ereco_cuts=ereco_cuts,
             season="IC59",
             path=path,
-            use_spatial_gaussian=use_spatial_gaussian,
         )
 
 
@@ -2102,7 +2088,6 @@ class IC79DetectorModel(R2021DetectorModel):
         make_plots: bool = False,
         n_components: int = 3,
         ereco_cuts: bool = True,
-        use_spatial_gaussian: bool = False,
     ):
         super().__init__(
             mode=mode,
@@ -2111,7 +2096,6 @@ class IC79DetectorModel(R2021DetectorModel):
             n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC79",
-            use_spatial_gaussian=use_spatial_gaussian,
         )
 
     @classmethod
@@ -2123,7 +2107,6 @@ class IC79DetectorModel(R2021DetectorModel):
         n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
-        use_spatial_gaussian: bool = False,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
@@ -2133,7 +2116,6 @@ class IC79DetectorModel(R2021DetectorModel):
             ereco_cuts=ereco_cuts,
             season="IC79",
             path=path,
-            use_spatial_gaussian=use_spatial_gaussian,
         )
 
 
@@ -2148,7 +2130,6 @@ class IC86_IDetectorModel(R2021DetectorModel):
         make_plots: bool = False,
         n_components: int = 3,
         ereco_cuts: bool = True,
-        use_spatial_gaussian: bool = False,
     ):
         super().__init__(
             mode=mode,
@@ -2157,7 +2138,6 @@ class IC86_IDetectorModel(R2021DetectorModel):
             n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC86_I",
-            use_spatial_gaussian=use_spatial_gaussian,
         )
 
     @classmethod
@@ -2169,7 +2149,6 @@ class IC86_IDetectorModel(R2021DetectorModel):
         n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
-        use_spatial_gaussian: bool = False,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
@@ -2179,7 +2158,6 @@ class IC86_IDetectorModel(R2021DetectorModel):
             ereco_cuts=ereco_cuts,
             season="IC86_I",
             path=path,
-            use_spatial_gaussian=use_spatial_gaussian,
         )
 
 
@@ -2194,7 +2172,6 @@ class IC86_IIDetectorModel(R2021DetectorModel):
         make_plots: bool = False,
         n_components: int = 3,
         ereco_cuts: bool = True,
-        use_spatial_gaussian: bool = False,
     ):
         super().__init__(
             mode=mode,
@@ -2203,7 +2180,6 @@ class IC86_IIDetectorModel(R2021DetectorModel):
             n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC86_II",
-            use_spatial_gaussian=use_spatial_gaussian,
         )
 
     @classmethod
@@ -2215,7 +2191,6 @@ class IC86_IIDetectorModel(R2021DetectorModel):
         n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
-        use_spatial_gaussian: bool = False,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
@@ -2225,5 +2200,4 @@ class IC86_IIDetectorModel(R2021DetectorModel):
             ereco_cuts=ereco_cuts,
             season="IC86_II",
             path=path,
-            use_spatial_gaussian=use_spatial_gaussian,
         )

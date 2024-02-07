@@ -49,7 +49,6 @@ class Simulation:
         n_grid_points: int = 50,
         N: dict = {},
         asimov: bool = False,
-        use_spatial_gaussian: bool = False,
     ):
         """
         To set up and run simulations.
@@ -108,7 +107,6 @@ class Simulation:
             atmo_flux_energy_points=atmo_flux_energy_points,
             atmo_flux_theta_points=atmo_flux_theta_points,
             force_N=self._force_N,
-            use_spatial_gaussian=use_spatial_gaussian,
         )
 
         # Silence log output

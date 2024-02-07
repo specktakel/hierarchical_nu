@@ -54,7 +54,6 @@ class StanFit:
         n_grid_points: int = 50,
         nshards: int = 0,
         use_event_tag: bool = False,
-        use_spatial_gaussian: bool = False,
         debug: bool = False,
     ):
         """
@@ -90,7 +89,6 @@ class StanFit:
                 atmo_flux_energy_points=atmo_flux_energy_points,
                 atmo_flux_theta_points=atmo_flux_theta_points,
                 use_event_tag=use_event_tag,
-                use_spatial_gaussian=use_spatial_gaussian,
                 debug=debug,
             )
         else:

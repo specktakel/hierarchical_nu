@@ -61,7 +61,6 @@ class StanSimInterface(StanInterface):
             "rejection_sampling.stan",
         ],
         force_N: bool = False,
-        use_spatial_gaussian: bool = False,
     ):
         """
         An interface for generating the Stan simulation code.
@@ -93,14 +92,12 @@ class StanSimInterface(StanInterface):
         else:
             self._force_N = False
 
-        self._use_spatial_gaussian = use_spatial_gaussian
-
         self._dm = OrderedDict()
 
         for et in self._event_types:
             # Include the PDF mode of the detector model
             dm = et.model(
-                DistributionMode.RNG, use_spatial_gaussian=self._use_spatial_gaussian
+                DistributionMode.RNG
             )
 
             if dm.RNG_FILENAME not in self._includes:
@@ -108,7 +105,6 @@ class StanSimInterface(StanInterface):
             dm.generate_code(
                 DistributionMode.RNG,
                 rewrite=False,
-                use_spatial_gaussian=self._use_spatial_gaussian,
             )
 
             self._dm[et] = dm

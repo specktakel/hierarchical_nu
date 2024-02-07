@@ -148,7 +148,9 @@ class LognormalParameterization(Distribution):
 
 class RayleighParameterization(Distribution):
     """
-    Rayleigh parameterisation.
+    Rayleigh Distribution.
+    Additional 1 / (sin(x) * 2 * pi) is included to account for
+    the spherical coordinate system in which the likelihood is defined.
     I am not amused to write this class with a 'z'.
     """
 
@@ -156,7 +158,7 @@ class RayleighParameterization(Distribution):
             self,
             inputs: TListTExpression, 
             sigma: TExpression,
-            mode: DistributionMode = DistributionMode.PDF
+            mode: DistributionMode = DistributionMode.PDF,
         ):
         self._sigma = sigma
         Distribution.__init__(self, inputs, mode)
@@ -172,7 +174,31 @@ class RayleighParameterization(Distribution):
         return stan_code
 
     def stan_code_pdf(self, inputs: TListTExpression) -> TListTExpression:
-        return
+        x_true = inputs[0]
+        x_reco = inputs[1]
+
+        stan_code : TListTExpression = []
+        stan_code += [
+            "log(ang_sep(",
+            x_true, 
+            ", ",
+            x_reco,
+            ") / sin(ang_sep(",
+            x_true,
+            ", ",
+            x_reco,
+            "))) - log(2 * pi() * pow(",
+            self._sigma,
+             ", 2)) -  0.5 * pow(ang_sep(",
+            x_true,
+            ", ",
+            x_reco,
+            ") / ",
+            self._sigma,
+            ", 2)",
+        ]
+
+        return stan_code
 
 
 class VMFParameterization(Distribution):
