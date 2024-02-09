@@ -134,14 +134,12 @@ vector sphere_rng(real radius) {
  */
 vector rayleigh_deflected_rng(vector mu, real sigma) {
   real theta;
-  real PA;
-  PA = uniform_rng(0, 2.0 * pi());
 
   theta = rayleigh_rng(sigma);
-
+  // due to the random nature of the orthonormal axis
+  // we can skip an additional randomisation on the cone
   vector[3] orthonormal = sample_orthonormal_to_rng(mu);
   vector[3] deflected = rotate_vector(mu, orthonormal, theta);
-  deflected = rotate_vector(deflected, mu, PA);
   return deflected;
 }
 
