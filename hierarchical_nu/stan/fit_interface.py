@@ -88,13 +88,6 @@ class StanFitInterface(StanInterface):
         :param debug: if True, add function calls for debugging and tests
         """
 
-        for et in event_types:
-            detector_model_type = et.model
-
-            if detector_model_type.PDF_FILENAME not in includes:
-                includes.append(detector_model_type.PDF_FILENAME)
-            detector_model_type.generate_code(DistributionMode.PDF, rewrite=False)
-
         super().__init__(
             output_file=output_file,
             sources=sources,
@@ -115,6 +108,18 @@ class StanFitInterface(StanInterface):
         self._nshards = nshards
         self._use_event_tag = use_event_tag
         self._debug = debug
+
+        self._dm = OrderedDict()
+
+        for et in self._event_types:
+            detector_model_type = et.model
+
+            if detector_model_type.PDF_FILENAME not in self._includes:
+                self._includes.append(detector_model_type.PDF_FILENAME)
+            detector_model_type.generate_code(
+                DistributionMode.PDF,
+                rewrite=False,
+            )
 
     def _get_par_ranges(self):
         """
@@ -371,13 +376,9 @@ class StanFitInterface(StanInterface):
             for include_file in self._includes:
                 _ = Include(include_file)
 
-            self._dm = OrderedDict()
-
-            for event_type in self._event_types:
-                # Include the PDF mode of the detector model
-                self._dm[event_type] = event_type.model(mode=DistributionMode.PDF)
-                self._dm[event_type].generate_pdf_function_code(self._use_event_tag)
-
+            for et in self._event_types:
+                self._dm[et] = et.model(mode=DistributionMode.PDF)
+                self._dm[et].generate_pdf_function_code(self._use_event_tag)
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
             if self.sources.point_source:
@@ -659,6 +660,9 @@ class StanFitInterface(StanInterface):
             # Dected energies
             self._Edet = ForwardVariableDef("Edet", "vector[N]")
 
+            # Angular uncertainty, 0.683 coverage
+            self._ang_errs = ForwardVariableDef("ang_err", "vector[N]")
+
             # Event types as track/cascades
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
 
@@ -793,27 +797,8 @@ class StanFitInterface(StanInterface):
         """
 
         with TransformedDataContext():
-            if self.sources.point_source:
-                # Vector to hold pre-calculated spatial loglikes
-                # This needs to be compatible with multiple point sources!
-                self._spatial_loglike = ForwardArrayDef(
-                    "spatial_loglike", "real", ["[Ns, N]"]
-                )
-                with ForLoopContext(1, self._N, "i") as i:
-                    with ForLoopContext(1, self._Ns, "k") as k:
-                        StringExpression(
-                            [
-                                "spatial_loglike[k, i]",
-                                " = vMF_lpdf(",
-                                self._omega_det[i],
-                                " | ",
-                                self._varpi[k],
-                                ", ",
-                                self._kappa[i],
-                                ")",
-                            ]
-                        )
 
+            # Count different event types and create variables to store counts
             self._et_stan = ForwardArrayDef("event_types", "int", ["[", self._Net, "]"])
             self._Net_stan = ForwardVariableDef("Net", "int")
             self._Net_stan << StringExpression(["size(event_types)"])
@@ -837,6 +822,45 @@ class StanFitInterface(StanInterface):
                         ]
                     ):
                         StringExpression([self._N_et_data[c], " += 1"])
+
+            if self.sources.point_source:
+                # Vector to hold pre-calculated spatial loglikes
+                # This needs to be compatible with multiple point sources!
+                self._spatial_loglike = ForwardArrayDef(
+                    "spatial_loglike", "real", ["[Ns, N]"]
+                )
+                with ForLoopContext(1, self._N, "i") as i:
+                    with ForLoopContext(1, self._Ns, "k") as k:
+                        # Insert loop over event types 
+                        for c, event_type in enumerate(self._event_types):
+                            if c == 0:
+                                context = IfBlockContext
+                            else:
+                                context = ElseIfBlockContext
+                            with context(
+                                [
+                                    StringExpression(
+                                        [
+                                            self._event_type[i],
+                                            " == ",
+                                            event_type.S,
+                                        ]
+                                    )
+                                ]
+                            ):
+                                # Hand over both ang_errs and kappa,
+                                # the angular resolution will pick out the one that
+                                # should be used.
+                                self._spatial_loglike[k, i] << FunctionCall(
+                                    [
+                                        self._varpi[k],
+                                        self._omega_det[i],
+                                        self._ang_errs[i],
+                                        self._kappa[i]
+                                    ],
+                                    event_type.F+"AngularResolution"
+                                )
+
 
             # Find largest permitted range of energies at the detector
             # TODO: not sure about this construct...

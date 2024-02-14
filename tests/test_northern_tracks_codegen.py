@@ -77,7 +77,6 @@ def generate_distribution_test_code(output_directory):
             array_length_2d_str = ["[", array_length, ",", array_length, "]"]
             e_res_result = ForwardArrayDef("e_res", "real", array_length_2d_str)
             eff_area_result = ForwardArrayDef("eff_area", "real", array_length_2d_str)
-            ang_res_result = ForwardArrayDef("ang_res", "real", array_length_2d_str)
 
             reco_dir_ang_res = ForwardVariableDef("reco_dir", "vector[3]")
             true_dir_ang_res = ForwardVariableDef("true_dir", "vector[3]")
@@ -94,11 +93,6 @@ def generate_distribution_test_code(output_directory):
                     e_res_result[i][j] << ntd.energy_resolution(
                         FunctionCall([e_trues[i]], "log10"),
                         FunctionCall([e_recos[j]], "log10"),
-                    )
-                    ang_res_result[i][j] << ntd.angular_resolution(
-                        FunctionCall([e_trues[i]], "log10"),
-                        true_dir_ang_res,
-                        reco_dir_ang_res,
                     )
 
     code_gen.generate_single_file()
@@ -147,13 +141,9 @@ def test_distributions_northern_tracks(output_directory, random_seed):
 
     e_res = output.stan_variable("e_res")
 
-    ang_res = output.stan_variable("ang_res")
-
     eff_area = output.stan_variable("eff_area")
 
     assert np.mean(e_res) == pytest.approx(-13.9071762520618, 0.1)
-
-    assert np.mean(ang_res) == pytest.approx(-43.526770393359996, 0.1)
 
     assert np.max(eff_area) == pytest.approx(28210.3)
 

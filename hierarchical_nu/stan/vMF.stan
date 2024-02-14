@@ -23,6 +23,27 @@ real abs_val(vector input_vector) {
 }
 
 /**
+ * Calculate cross product a x b
+ */
+vector cross_product(vector a, vector b) {
+  vector[3] result = [
+      a[2]*b[3] - a[3]*b[2],
+      a[3]*b[1] - a[1]*b[3],
+      a[1]*b[2] - a[2]*b[1]
+  ]';
+  return result;
+}
+
+/**
+ * Rotate vector x by angle (in rad) around vector n
+ */
+vector rotate_vector(vector x, vector n, real angle) {
+  //  definition from wikipedia: https://de.wikipedia.org/wiki/Drehmatrix
+  vector[3] result = n * dot_product(n, x) + cos(angle) * cross_product(cross_product(n, x), n) + sin(angle) * cross_product(n, x);
+  return result;
+}
+
+/**
  * Sample point on sphere orthogonal to mu.
  */
 vector sample_orthonormal_to_rng(vector mu) {
@@ -105,6 +126,21 @@ vector sphere_rng(real radius) {
   
   return result;
     
+}
+
+/**
+ * Deflect a vector mu on a cone of half opening angle
+ * theta ~ Rayleigh(sigma) with random position angle
+ */
+vector rayleigh_deflected_rng(vector mu, real sigma) {
+  real theta;
+
+  theta = rayleigh_rng(sigma);
+  // due to the random nature of the orthonormal axis
+  // we can skip an additional randomisation on the cone
+  vector[3] orthonormal = sample_orthonormal_to_rng(mu);
+  vector[3] deflected = rotate_vector(mu, orthonormal, theta);
+  return deflected;
 }
 
 /*

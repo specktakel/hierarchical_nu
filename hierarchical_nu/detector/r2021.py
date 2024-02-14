@@ -21,6 +21,7 @@ from ..utils.cache import Cache
 from ..utils.fitting_tools import Residuals
 from ..backend import (
     VMFParameterization,
+    RayleighParameterization,
     TruncatedParameterization,
     SimpleHistogram,
     ReturnStatement,
@@ -491,7 +492,6 @@ class R2021EffectiveArea(EffectiveArea):
 
 
 class R2021EnergyResolution(EnergyResolution, HistogramSampler):
-
     """
     Energy resolution for the ten-year All Sky Point Source release:
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
@@ -1090,10 +1090,11 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     continue
 
                 if upper_threshold_energy is None:
-                    prob[
-                        (cE == idx_tE) & (cD == idx_dec_eres)
-                    ] = 1.0 - self.irf.reco_energy[cE, cD].cdf(
-                        e_low[(cE == idx_tE) & (cD == idx_dec_eres)]
+                    prob[(cE == idx_tE) & (cD == idx_dec_eres)] = (
+                        1.0
+                        - self.irf.reco_energy[cE, cD].cdf(
+                            e_low[(cE == idx_tE) & (cD == idx_dec_eres)]
+                        )
                     )
                 else:
                     pdf = self.irf.reco_energy[cE, cD]
@@ -1522,8 +1523,8 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 f"{self._season}AngularResolution",
-                ["true_dir", "reco_dir", "kappa"],
-                ["vector", "vector", "real"],
+                ["true_dir", "reco_dir", "sigma", "kappa"],
+                ["vector", "vector", "real", "real"],
                 "real",
             )
 
@@ -1538,13 +1539,14 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         # Define Stan interface
         with self:
             if self.mode == DistributionMode.PDF:
-                # Is never used anyways.
-                vmf = VMFParameterization(["reco_dir", "true_dir"], "kappa", self.mode)
-                ReturnStatement([vmf])
+                angular_parameterisation = RayleighParameterization(["true_dir", "reco_dir"], "sigma", self.mode)
+                ReturnStatement([angular_parameterisation])
 
             elif self.mode == DistributionMode.RNG:
-                # Create vmf parameterisation, to be fed with kappa calculated from ang_err
-                vmf = VMFParameterization(["true_dir"], "kappa", self.mode)
+                angular_parameterisation = RayleighParameterization(
+                    ["true_dir"], "ang_err", self.mode
+                )
+
 
                 # Create all psf histogram
                 self._make_histogram(
@@ -1644,30 +1646,40 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                     f"{self._season}_ang_get_ragged_index",
                 )
                 ang_err = ForwardVariableDef("ang_err", "real")
+                # Samples angular uncertainty in degrees
                 ang_err << FunctionCall(
                     [
+                        10,
                         FunctionCall(
-                            [ang_hist_idx], f"{self._season}_ang_get_ragged_hist"
-                        ),
-                        FunctionCall(
-                            [ang_hist_idx], f"{self._season}_ang_get_ragged_edges"
+                            [
+                                FunctionCall(
+                                    [ang_hist_idx],
+                                    f"{self._season}_ang_get_ragged_hist",
+                                ),
+                                FunctionCall(
+                                    [ang_hist_idx],
+                                    f"{self._season}_ang_get_ragged_edges",
+                                ),
+                            ],
+                            "histogram_rng",
                         ),
                     ],
-                    "histogram_rng",
+                    "pow",
                 )
 
+                # Convert to radian
+                ang_err << StringExpression(["pi() * ang_err / 180.0"])
                 kappa = ForwardVariableDef("kappa", "real")
                 # Convert angular error to kappa
-                # Hardcoded p=0.5 (log(1-p)) from the tabulated data of release
                 kappa << StringExpression(
-                    ["- (2 / (pi() * pow(10, ang_err) / 180)^2) * log(1 - 0.5)"]
+                    ["- (2 / ang_err^2) * log(1 - 0.683)"]
                 )
 
                 # Stan code needs both deflected direction and kappa
                 # Make a vector of length 4, last component is kappa
                 return_vec = ForwardVectorDef("return_this", [4])
                 # Deflect true direction
-                StringExpression(["return_this[1:3] = ", vmf])
+                StringExpression(["return_this[1:3] = ", angular_parameterisation])
                 StringExpression(["return_this[4] = kappa"])
                 ReturnStatement([return_vec])
 
@@ -1778,7 +1790,9 @@ class R2021DetectorModel(ABC, DetectorModel):
         elif mode == DistributionMode.RNG:
             self._func_name = f"{season}_rng"
 
-        self._angular_resolution = R2021AngularResolution(mode, rewrite, season=season)
+        self._angular_resolution = R2021AngularResolution(
+            mode, rewrite, season=season
+        )
 
         self._energy_resolution = R2021EnergyResolution(
             mode, rewrite, make_plots, n_components, ereco_cuts, season=season
@@ -1828,6 +1842,7 @@ class R2021DetectorModel(ABC, DetectorModel):
         except FileNotFoundError:
             files = []
             os.makedirs(path)
+        """
         finally:
             if not rewrite:
                 if mode == DistributionMode.PDF and cls.PDF_FILENAME in files:
@@ -1837,7 +1852,8 @@ class R2021DetectorModel(ABC, DetectorModel):
 
             else:
                 cls.logger.info("Generating r2021 stan code.")
-
+        """
+        cls.logger.info("Generating r2021 stan code.")
         with StanGenerator() as cg:
             instance = R2021DetectorModel(
                 mode=mode,
@@ -1945,6 +1961,7 @@ class R2021DetectorModel(ABC, DetectorModel):
             diff[3] << diff[2]
 
             ReturnStatement(["(ps_eres, ps_aeff, diff)"])
+
 
     def generate_rng_function_code(self):
         """

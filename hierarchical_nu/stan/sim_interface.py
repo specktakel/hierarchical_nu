@@ -75,12 +75,6 @@ class StanSimInterface(StanInterface):
         :param N: dict with keys "tracks" and/or "cascades". Value needs to be a list of length `len(sources)`
         """
 
-        for et in event_types:
-            detector_model_type = et.model(DistributionMode.RNG)
-            if detector_model_type.RNG_FILENAME not in includes:
-                includes.append(detector_model_type.RNG_FILENAME)
-            detector_model_type.generate_code(DistributionMode.RNG, rewrite=False)
-
         super().__init__(
             output_file=output_file,
             sources=sources,
@@ -98,6 +92,23 @@ class StanSimInterface(StanInterface):
         else:
             self._force_N = False
 
+        self._dm = OrderedDict()
+
+        for et in self._event_types:
+            # Include the PDF mode of the detector model
+            dm = et.model(
+                DistributionMode.RNG
+            )
+
+            if dm.RNG_FILENAME not in self._includes:
+                self._includes.append(dm.RNG_FILENAME)
+            dm.generate_code(
+                DistributionMode.RNG,
+                rewrite=False,
+            )
+
+            self._dm[et] = dm
+
     def _functions(self):
         """
         Write the functions section of the Stan file.
@@ -108,11 +119,7 @@ class StanSimInterface(StanInterface):
             for include_file in self._includes:
                 _ = Include(include_file)
 
-            self._dm = OrderedDict()
-
             for event_type in self._event_types:
-                # Include the PDF mode of the detector model
-                self._dm[event_type] = event_type.model(DistributionMode.RNG)
                 self._dm[event_type].generate_rng_function_code()
 
             # If we have point sources, include the shape of their PDF

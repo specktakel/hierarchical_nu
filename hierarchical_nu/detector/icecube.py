@@ -22,6 +22,7 @@ class EventType:
 @dataclass
 class NT(EventType):
     P = "northern_tracks"
+    F = "NorthernTracks"
     S = 0
     model = NorthernTracksDetectorModel
 
@@ -29,6 +30,7 @@ class NT(EventType):
 @dataclass
 class CAS(EventType):
     P = "cascades"
+    F = "Cascades"
     S = 1
     model = CascadesDetectorModel
 
@@ -36,6 +38,7 @@ class CAS(EventType):
 @dataclass
 class IC40(EventType):
     P = "IC40"
+    F = P
     S = 2
     model = IC40DetectorModel
 
@@ -43,6 +46,7 @@ class IC40(EventType):
 @dataclass
 class IC59(EventType):
     P = "IC59"
+    F = P
     S = 3
     model = IC59DetectorModel
 
@@ -50,6 +54,7 @@ class IC59(EventType):
 @dataclass
 class IC79(EventType):
     P = "IC79"
+    F = P
     S = 4
     model = IC79DetectorModel
 
@@ -57,6 +62,7 @@ class IC79(EventType):
 @dataclass
 class IC86_I(EventType):
     P = "IC86_I"
+    F = P
     S = 5
     model = IC86_IDetectorModel
 
@@ -64,6 +70,7 @@ class IC86_I(EventType):
 @dataclass
 class IC86_II(EventType):
     P = "IC86_II"
+    F = P
     S = 6
     model = IC86_IIDetectorModel
 
