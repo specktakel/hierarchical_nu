@@ -229,7 +229,9 @@ class AtmosphericNuMuFlux(FluxModel):
     @lru_cache(maxsize=None)
     def call_fast(self, energy, dec, ra):
         energy = np.atleast_1d(energy)
-        if np.any((energy > self.EMAX.value) | (energy < self.EMIN.value)):
+        if np.any(
+            (energy > self.EMAX.to_value(u.GeV)) | (energy < self.EMIN.to_value(u.GeV))
+        ):
             raise ValueError(
                 "Energy needs to be in {} < E {}".format(self.EMIN, self.EMAX)
             )
@@ -250,13 +252,36 @@ class AtmosphericNuMuFlux(FluxModel):
 
     @u.quantity_input
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
-        energy = (energy / u.GeV).value
+        energy = energy.to_value(u.GeV)
 
         def _integral(energy):
             def wrap_call(sindec):
                 return self.call_fast(energy, np.arcsin(sindec), 0)
 
             integral = quad(wrap_call, -1, 1)[0]
+            ra_int = 2 * np.pi
+
+            return integral * ra_int
+
+        vect_int = np.vectorize(_integral)
+
+        return vect_int(energy) << (1 / (u.cm**2 * u.s * u.GeV))
+
+    @u.quantity_input
+    def flux_per_dec_band(
+        self, energy: u.GeV, dec_min: u.rad, dec_max: u.rad
+    ) -> 1 / (u.m**2 * u.s * u.GeV):
+        energy = energy.to_value(u.GeV)
+
+        def _integral(energy):
+            def wrap_call(sindec):
+                return self.call_fast(energy, np.arcsin(sindec), 0)
+
+            integral = quad(
+                wrap_call,
+                np.sin(dec_min.to_value(u.rad)),
+                np.sin(dec_max.to_value(u.rad)),
+            )[0]
             ra_int = 2 * np.pi
 
             return integral * ra_int

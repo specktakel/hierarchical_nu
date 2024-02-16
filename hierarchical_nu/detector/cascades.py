@@ -366,8 +366,8 @@ class CascadesAngularResolution(AngularResolution):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 self._func_name,
-                ["log_true_energy", "true_dir", "reco_dir"],
-                ["real", "vector", "vector"],
+                ["true_dir", "reco_dir", "sigma", "kappa"],
+                ["vector", "vector", "real", "real"],
                 "real",
             )
 
@@ -378,22 +378,22 @@ class CascadesAngularResolution(AngularResolution):
                 ["real", "vector"],
                 "vector",
             )
+
         with self:
-            # Clip true energy
-            clipped_log_e = TruncatedParameterization(
-                "log_true_energy", np.log10(self._Emin), np.log10(self._Emax)
-            )
-
-            kappa = PolynomialParameterization(
-                clipped_log_e, self._poly_params, "CascadesAngularResolutionPolyCoeffs"
-            )
-
             if self.mode == DistributionMode.PDF:
                 # VMF expects x_obs, x_true
-                vmf = VMFParameterization(["reco_dir", "true_dir"], kappa, self.mode)
+                vmf = VMFParameterization(["reco_dir", "true_dir"], "kappa", self.mode)
                 ReturnStatement([vmf])
 
             elif self.mode == DistributionMode.RNG:
+                # Clip true energy
+                clipped_log_e = TruncatedParameterization(
+                    "log_true_energy", np.log10(self._Emin), np.log10(self._Emax)
+                )
+
+                kappa = PolynomialParameterization(
+                    clipped_log_e, self._poly_params, "CascadesAngularResolutionPolyCoeffs"
+                )
                 pre_event = ForwardVariableDef("pre_event", "vector[4]")
                 vmf = VMFParameterization(["true_dir"], kappa, self.mode)
                 pre_event[1:3] << vmf

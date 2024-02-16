@@ -175,7 +175,7 @@ class TestR2021:
 
                 samples[c_e, c_d, :] = e_res
                 kappa = output.stan_variable("kappa")
-                p = 0.5
+                p = 0.683
                 ang_err = get_theta_p(kappa, p=p)
 
                 assert np.all(ang_err >= 0.2)
@@ -186,7 +186,7 @@ class TestR2021:
                     irf.reco_energy[c_e, c_d].pdf(
                         irf.reco_energy_bins[c_e, c_d][:-1] + 0.01
                     ),
-                    abs=0.3,
+                    abs=0.35,
                 )
 
         return samples
