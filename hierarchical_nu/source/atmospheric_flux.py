@@ -168,6 +168,7 @@ class AtmosphericNuMuFlux(FluxModel):
     @u.quantity_input
     def __init__(self, lower_energy: u.GeV, upper_energy: u.GeV, *args, **kwargs):
         super().__init__()
+        self._add_index = kwargs.pop("index", 0.)
         self._setup()
         self._parameters = {}
         if (lower_energy < self.EMIN) or (upper_energy > self.EMAX):
@@ -177,7 +178,11 @@ class AtmosphericNuMuFlux(FluxModel):
 
 
     def _create_spline(self, flux, e_grid, theta_grid):
+
+        def pl(E, index, E0):
+            return np.power(E / E0, index)
         # Signature flux 2d array, egrid and theta/zenith
+        flux = flux * pl(e_grid, self._add_index, 1e3)[np.newaxis, :]
         splined_flux = scipy.interpolate.RectBivariateSpline(
             np.cos(np.radians(theta_grid)),
             np.log10(e_grid),

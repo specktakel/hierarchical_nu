@@ -509,7 +509,7 @@ class Sources:
 
         self._point_source_spectrum = types[0]
 
-    def add_atmospheric_component(self):
+    def add_atmospheric_component(self, index: float = 0.):
         """
         Add an atmospheric flux component based on the IceCube observations.
         """
@@ -517,7 +517,7 @@ class Sources:
         Emin = Parameter.get_parameter("Emin").value.to(u.GeV)
         Emax = Parameter.get_parameter("Emax").value.to(u.GeV)
 
-        flux_model = AtmosphericNuMuFlux(Emin, Emax)
+        flux_model = AtmosphericNuMuFlux(Emin, Emax, index=index)
 
         atmospheric_component = DiffuseSource(
             "atmo_bg",
