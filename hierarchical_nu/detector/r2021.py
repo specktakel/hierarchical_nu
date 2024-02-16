@@ -73,7 +73,7 @@ class HistogramSampler:
 
     # These are fitted correction factors to low energy IRFs
     # used to better model the atmospheric background at ~1TeV
-    CORRECTION_FACTORS = {
+    CORRECTION_FACTOR = {
         # Season
         "IC86_II": {
             # dec bin
@@ -108,12 +108,7 @@ class HistogramSampler:
             for c_d, dec in enumerate(irf.declination_bins[:-1]):
                 if not (c_e, c_d) in irf.faulty:
                     # Get bins and values of ereco distribution
-                    try:
-                        corr = self.CORRECTION_FACTORS[self._season][c_d][c_e]
-                        shift = lambda x: corr["a"] * x + corr["b"]
-                    except KeyError:
-                        shift = lambda x: x
-                    b = shift(irf.reco_energy_bins[c_e, c_d])
+                    b = irf.reco_energy_bins[c_e, c_d]
                     n = irf.reco_energy[c_e, c_d].pdf(
                         irf.reco_energy_bins[c_e, c_d][:-1] + 0.01
                     )
@@ -540,7 +535,11 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self._season = season
         self.CACHE_FNAME_LOGNORM = f"energy_reso_lognorm_{season}.npz"
         self.CACHE_FNAME_HISTOGRAM = f"energy_reso_histogram_{season}.npz"
-        self.irf = R2021IRF.from_period(season)
+        try:
+            corr = self.CORRECTION_FACTOR[self._season]
+            self.irf = R2021IRF.from_period(self._season, correction_factor=corr)
+        except KeyError:
+            self.irf = R2021IRF.from_period(self._season)
         self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(
             season, np.linspace(1, 9, 25)
         )
