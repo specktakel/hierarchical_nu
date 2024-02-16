@@ -71,6 +71,20 @@ class HistogramSampler:
     Class to create histograms in stan-readable format.
     """
 
+    # These are fitted correction factors to low energy IRFs
+    # used to better model the atmospheric background at ~1TeV
+    CORRECTION_FACTORS = {
+        # Season
+        "IC86_II": {
+            # dec bin
+            1: {
+                # Etrue bin
+                0: {"a": 0.688, "b": 0.91},
+                1: {"a": 0.82, "b": 0.64},
+            }
+        }
+    }
+
     def __init__(self, rewrite: bool) -> None:
         pass
 
@@ -89,11 +103,17 @@ class HistogramSampler:
         bins = []
         values = []
         # Iterate over etrue and declination bins of IRF
+
         for c_e, etrue in enumerate(irf.true_energy_values):
             for c_d, dec in enumerate(irf.declination_bins[:-1]):
                 if not (c_e, c_d) in irf.faulty:
                     # Get bins and values of ereco distribution
-                    b = irf.reco_energy_bins[c_e, c_d]
+                    try:
+                        corr = self.CORRECTION_FACTORS[self._season][c_d][c_e]
+                        shift = lambda x: corr["a"] * x + corr["b"]
+                    except KeyError:
+                        shift = lambda x: x
+                    b = shift(irf.reco_energy_bins[c_e, c_d])
                     n = irf.reco_energy[c_e, c_d].pdf(
                         irf.reco_energy_bins[c_e, c_d][:-1] + 0.01
                     )
