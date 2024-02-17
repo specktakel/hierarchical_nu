@@ -102,3 +102,22 @@ real interpolate_log_y(vector x_values, vector log_y_values, real x) {
     
   return exp(y_left + dydx * (x - x_left));
 }
+
+
+real interp2d(real x, real y, array[] real xp, array[] real yp, array[,] real fp) {
+  int idx_y = binary_search(y, yp);
+  int idx_yp1 = idx_y + 1;
+  //safeguard against y values outside the defined range
+  // interpolate will take care of the same issue in x direction
+  if (idx_y == 0) {
+    // return result from lowest slice
+    return interpolate(to_vector(xp), to_vector(fp[:, 1]), x);
+  }
+  else if (idx_y >= size(yp)) {
+    return interpolate(to_vector(xp), to_vector(fp[:, size(yp)]), x);
+  }
+  real y_vals_low = interpolate(to_vector(xp), to_vector(fp[:, idx_y]), x);
+  real y_vals_high = interpolate(to_vector(xp), to_vector(fp[:, idx_yp1]), x);
+  real val = interpolate(to_vector(yp[idx_y:idx_yp1]), [y_vals_low, y_vals_high]', y);
+  return val;
+}
