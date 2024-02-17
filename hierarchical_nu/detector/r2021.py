@@ -1,9 +1,11 @@
-from typing import Sequence, Tuple, Iterable, List
+from typing import Sequence, Tuple, Iterable, List, Callable
 import os
 from itertools import product
 
 import numpy as np
 from scipy import stats
+from scipy.integrate import quad
+from scipy.interpolate import RectBivariateSpline
 from astropy import units as u
 import matplotlib.pyplot as plt
 
@@ -52,6 +54,55 @@ from icecube_tools.detector.r2021 import R2021IRF
 from icecube_tools.point_source_likelihood.energy_likelihood import (
     MarginalisedIntegratedEnergyLikelihood,
 )
+from skyllh.analyses.i3.publicdata_ps.utils import FctSpline1D, FctSpline2D
+from icecube_tools.detector.r2021 import R2021IRF
+from skyllh.analyses.i3.publicdata_ps.smearing_matrix import PDSmearingMatrix
+
+sm = PDSmearingMatrix(
+    "/home/iwsatlas1/kuhlmann/.icecube_data/20210126_PS-IC40-IC86_VII/icecube_10year_ps/irfs/IC86_II_smearing.csv"
+)
+
+
+@u.quantity_input
+def create_reco_e_pdf_for_true_e(
+    Etrue: u.GeV, dec: u.rad, hist: bool = False, shift: Callable = lambda x: x
+):
+    """This functions creates a spline for the reco energy
+    distribution given a true neutrino engery.
+    """
+
+    psi_edges_bw = sm.psi_upper_edges - sm.psi_lower_edges
+    ang_err_bw = sm.ang_err_upper_edges - sm.ang_err_lower_edges
+    # Select the slice of the smearing matrix corresponding to the
+    # source declination band.
+    true_dec_idx = sm.get_true_dec_idx(dec.to_value(u.rad))
+    true_e_idx = sm.get_log10_true_e_idx(np.log10(Etrue.to_value(u.GeV)))
+    sm_pdf = sm.pdf[:, true_dec_idx]
+    # Create the energy PDF f_e = P(log10_E_reco|dec) =
+    # \int dPsi dang_err P(E_reco,Psi,ang_err).
+    f_e = np.sum(
+        sm_pdf[true_e_idx]
+        * psi_edges_bw[true_e_idx, true_dec_idx, :, :, np.newaxis]
+        * ang_err_bw[true_e_idx, true_dec_idx, :, :, :],
+        axis=(-1, -2),
+    )
+
+    # manually correct for some zero-bin which does weird stuff to the spline
+    if true_e_idx == 3 and true_dec_idx == 1:
+        f_e[-3] = f_e[-2]
+    # Build the spline for this P(E_reco|E_nu). Weigh the pdf
+    # with the true neutrino energy probability (flux prob).
+    log10_reco_e_binedges = sm.log10_reco_e_binedges[true_e_idx, true_dec_idx].copy()
+
+    log10_reco_e_binedges = shift(log10_reco_e_binedges)
+
+    spline = FctSpline1D(f_e, log10_reco_e_binedges, norm=True)
+
+    if hist:
+        return f_e, log10_reco_e_binedges
+    else:
+        return spline
+
 
 import logging
 
@@ -73,7 +124,9 @@ class HistogramSampler:
 
     # These are fitted correction factors to low energy IRFs
     # used to better model the atmospheric background at ~1TeV
-    CORRECTION_FACTOR = {
+
+    CORRECTION_FACTOR = {}
+    """
         # Season
         "IC86_II": {
             # dec bin
@@ -84,6 +137,7 @@ class HistogramSampler:
             }
         }
     }
+    """
 
     def __init__(self, rewrite: bool) -> None:
         pass
@@ -985,6 +1039,82 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             self._Emin = np.power(10, self.irf.true_energy_bins[0])
             self._Emax = np.power(10, self.irf.true_energy_bins[-1])
 
+        # Read in all the required histograms in to some list attribute
+        # create a grid of evaluations of all splines
+        # manipulate the values of the splines with power law flanks wherever zero entries are
+
+        self._fill_index = 7
+        self._tE_binc = self.irf.true_energy_values
+        self._tE_bin_edges = self.irf.true_energy_bins
+        self._logEreco_grid = np.linspace(1, 9, 1024)
+
+        self._declination_bins_c = (
+            self._declination_bins[:-1] + np.diff(self._declination_bins) / 2
+        )
+        self._declination_bins_c << u.rad
+
+        self._ereco_splines = []
+        self._2dsplines = []
+
+        for c, dec in enumerate(self._declination_bins_c):
+            self._ereco_splines.append(
+                [
+                    create_reco_e_pdf_for_true_e(np.power(10, _) * u.GeV, dec * u.rad)
+                    for _ in self._tE_binc
+                ]
+            )
+
+        self._evaluations = np.zeros(
+            (
+                self._declination_bins_c.size,
+                self._logEreco_grid.size,
+                self._tE_binc.size,
+            )
+        )
+
+        for c, dec in enumerate(self._declination_bins_c):
+            # Evaluate the splines over a grid of Ereco x Etrue
+            self._evaluations[c] = np.vstack(
+                [
+                    self._ereco_splines[c][c_E](self._logEreco_grid)
+                    / self._ereco_splines[c][c_E].norm
+                    for c_E, E in enumerate(self._tE_binc)
+                ]
+            ).T
+            for c_E, E in enumerate(self._tE_binc):
+                # find the highest and lowest non-zero entry
+                # in each spline's evaluation
+                idx = np.max(np.argwhere(self._evaluations[c, :, c_E]))
+                # Needs linear scale because of power law definition
+                E_cont = np.power(
+                    10, self._logEreco_grid[idx + 1 :] - self._logEreco_grid[idx]
+                )
+                self._evaluations[c, idx + 1 :, c_E] = (
+                    np.power(
+                        E_cont,
+                        -self._fill_index,
+                    )
+                    * self._evaluations[c, idx, c_E]
+                )
+                # again with low energy end
+                # at this index, there already is a non-zero entry
+                # so the range indexing should be :idx
+                idx = np.min(np.argwhere(self._evaluations[c, :, c_E]))
+                # Needs linear scale because of power law definition
+                E_cont = np.power(
+                    10, self._logEreco_grid[:idx] - self._logEreco_grid[idx]
+                )
+                self._evaluations[c, :idx, c_E] = (
+                    # switch sign of index here because it should be a rising flank
+                    np.power(E_cont, self._fill_index)
+                    * self._evaluations[c, idx, c_E]
+                )
+            self._2dsplines.append(
+                RectBivariateSpline(
+                    self._logEreco_grid, self._tE_binc, self._evaluations[c], kx=1, ky=1
+                )
+            )
+
     @u.quantity_input
     def prob_Edet_above_threshold(
         self,
@@ -1005,7 +1135,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         :param lower_threshold_energy: Lower reconstructed muon energy in GeV
         :param dec: Declination of event in radian
         :param upper_threshold_energy: Optional upper reconstructe muon energy in GeV,
-                                       if none provided, use highest possible value
+            if none provided, use highest possible value,
+            assumes only one value is provided
         :param use_lognorm: bool, if True use lognormal parameterisation
         """
         # Truncate input energies to safe range
@@ -1030,7 +1161,16 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         if upper_threshold_energy is not None:
             upper_threshold_energy = np.atleast_1d(upper_threshold_energy)
+        else:
+            upper_threshold_energy = np.array([1e9]) * u.GeV
 
+        if upper_threshold_energy.size == 1:
+            upper_threshold_energy = (
+                np.full(energy_trunc.shape, upper_threshold_energy.to_value(u.GeV))
+                * u.GeV
+            )
+        else:
+            assert upper_threshold_energy.shape == energy_trunc.shape
         # Limits of Ereco in dec binning of effective area
         idx_dec_aeff = np.digitize(dec.to_value(u.rad), self._aeff_dec_bins) - 1
         # Get the according IRF dec bins (there are only 3)
@@ -1053,45 +1193,31 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         # apply stronger limit
         e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
 
-        # Get the according IRF dec bins (there are only 3)
-        irf_dec_idx = np.digitize(dec.to_value(u.rad), self._declination_bins) - 1
+        ethr_high = np.log10(upper_threshold_energy.to_value(u.GeV))
 
         if use_lognorm:
-            for c, d in enumerate(self._declination_bins[:-1]):
-                # Otherwise we will cause errors
-                if c not in irf_dec_idx:
+
+            for cE, cD in product(
+                range(self.irf.true_energy_bins.size - 1),
+                range(self.irf.declination_bins.size - 1),
+            ):
+                if cD not in idx_dec_eres:
                     continue
-                self.set_fit_params((d + 0.01) * u.rad)
 
-                model = self.make_cumulative_model(self.n_components)
-
-                model_params: List[float] = []
-
-                for comp in range(self.n_components):
-                    mu = np.poly1d(self._poly_params_mu[comp])(
-                        np.log10(energy_trunc[irf_dec_idx == c].to(u.GeV).value)
+                # find the slices of evaluations with Etrue including the queried
+                for c, Et in enumerate(energy_trunc):
+                    if cD != idx_dec_eres[c]:
+                        continue
+                    integrand = lambda x, y: self._2dsplines[cD](x, y)
+                    integral = quad(
+                        integrand,
+                        ethr_low[c],
+                        ethr_high,
+                        args=(np.log10(Et.to_value(u.GeV))),
                     )
-                    sigma = np.poly1d(self._poly_params_sd[comp])(
-                        np.log10(energy_trunc[irf_dec_idx == c].to(u.GeV).value)
-                    )
-                    model_params += [mu, sigma]
-
-                # Limits are in log10(E/GeV)
-                e_low = self._icecube_tools_eres._ereco_limits[
-                    idx_dec_aeff[np.nonzero(irf_dec_idx == c)], 0
-                ]
-                ethr_low = np.log10(lower_threshold_energy.to_value(u.GeV))
-                # print(ethr_low)
-                e_low[ethr_low > e_low] = ethr_low
-                if upper_threshold_energy is None:
-                    prob[irf_dec_idx == c] = 1.0 - model(e_low, model_params)
-
-                else:
-                    prob[irf_dec_idx == c] = model(
-                        np.log10(upper_threshold_energy.to_value(u.GeV)), model_params
-                    ) - model(e_low, model_params)
-
-            return prob
+                    if integral[1] / integral[0] > 1e-3:
+                        logger.warning("The integral has insufficient precision.")
+                    prob[c] = integral[0]
 
         else:
             idx_tE = (
@@ -1123,7 +1249,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                         ]
                     ) - pdf.cdf(e_low[(cE == idx_tE) & (cD == idx_dec_eres)])
 
-            return prob
+        return prob
 
     @staticmethod
     def make_fit_model(n_components):
@@ -1375,7 +1501,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             raise RuntimeError("Run setup() first")
 
         # Plot polynomial fits for each mixture component.
-        for comp in range(self._n_components):
+        for comp in range(int(fit_params.shape[1] / 2)):
             params_mu = self._poly_params_mu[comp]
             axs[0].plot(
                 xs, np.poly1d(params_mu)(xs), label="poly, mean", color=f"C{comp}"
@@ -1422,7 +1548,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         import matplotlib.pyplot as plt
 
-        plot_energies = np.power(10, np.arange(3.25, 7.75, step=0.5))  # GeV
+        plot_energies = np.power(10, np.arange(2.25, 7.76, step=0.5))  # GeV
         # plot_energies = [1e5, 3e5, 5e5, 8e5, 1e6, 3e6, 5e6, 8e6]  # GeV
 
         if self._poly_params_mu is None:
@@ -1430,16 +1556,16 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         plot_indices = np.digitize(plot_energies, tE_binc) - 1
 
-        fig, axs = plt.subplots(3, 3, figsize=(10, 10))
+        fig, axs = plt.subplots(4, 3, figsize=(10, 10))
 
-        model = self.make_fit_model(self._n_components)
+        model = self.make_fit_model(int(fit_params.shape[1] / 2))
         fl_ax = axs.ravel()
 
         for i, p_i in enumerate(plot_indices):
             log_plot_e = np.log10(plot_energies[i])
 
             model_params: List[float] = []
-            for comp in range(self.n_components):
+            for comp in range(int(fit_params.shape[1] / 2)):
                 mu = np.poly1d(self._poly_params_mu[comp])(log_plot_e)
                 sigma = np.poly1d(self._poly_params_sd[comp])(log_plot_e)
                 model_params += [mu, sigma]
@@ -1455,7 +1581,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             e_reso = self.irf.reco_energy[irf_tE_idx, c_dec].pdf(log10_rE_binc)
             fl_ax[i].plot(log10_rE_binc, e_reso, label="input eres")
             fl_ax[i].plot(xs, model(xs, *model_params), label="poly evaluated")
-            fl_ax[i].plot(xs, model(xs, *res), label="nearest bin's parameters")
+            fl_ax[i].plot(xs, model(xs, *res), label="lognormal fit")
             fl_ax[i].set_ylim(1e-4, 5)
             fl_ax[i].set_yscale("log")
             fl_ax[i].set_title("True E: {:.1E}".format(plot_energies[i]))
@@ -1558,14 +1684,15 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         # Define Stan interface
         with self:
             if self.mode == DistributionMode.PDF:
-                angular_parameterisation = RayleighParameterization(["true_dir", "reco_dir"], "sigma", self.mode)
+                angular_parameterisation = RayleighParameterization(
+                    ["true_dir", "reco_dir"], "sigma", self.mode
+                )
                 ReturnStatement([angular_parameterisation])
 
             elif self.mode == DistributionMode.RNG:
                 angular_parameterisation = RayleighParameterization(
                     ["true_dir"], "ang_err", self.mode
                 )
-
 
                 # Create all psf histogram
                 self._make_histogram(
@@ -1690,9 +1817,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 ang_err << StringExpression(["pi() * ang_err / 180.0"])
                 kappa = ForwardVariableDef("kappa", "real")
                 # Convert angular error to kappa
-                kappa << StringExpression(
-                    ["- (2 / ang_err^2) * log(1 - 0.683)"]
-                )
+                kappa << StringExpression(["- (2 / ang_err^2) * log(1 - 0.683)"])
 
                 # Stan code needs both deflected direction and kappa
                 # Make a vector of length 4, last component is kappa
@@ -1809,9 +1934,7 @@ class R2021DetectorModel(ABC, DetectorModel):
         elif mode == DistributionMode.RNG:
             self._func_name = f"{season}_rng"
 
-        self._angular_resolution = R2021AngularResolution(
-            mode, rewrite, season=season
-        )
+        self._angular_resolution = R2021AngularResolution(mode, rewrite, season=season)
 
         self._energy_resolution = R2021EnergyResolution(
             mode, rewrite, make_plots, n_components, ereco_cuts, season=season
@@ -1980,7 +2103,6 @@ class R2021DetectorModel(ABC, DetectorModel):
             diff[3] << diff[2]
 
             ReturnStatement(["(ps_eres, ps_aeff, diff)"])
-
 
     def generate_rng_function_code(self):
         """
