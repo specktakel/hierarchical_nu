@@ -1193,7 +1193,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         # apply stronger limit
         e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
 
-        ethr_high = np.log10(upper_threshold_energy.to_value(u.GeV))
+        e_high = np.log10(upper_threshold_energy.to_value(u.GeV))
 
         if use_lognorm:
 
@@ -1205,14 +1205,14 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     continue
 
                 # find the slices of evaluations with Etrue including the queried
-                for c, Et in enumerate(energy_trunc):
+                for c, (Et, Erl, Erh) in enumerate(zip(energy_trunc, e_low, e_high)):
                     if cD != idx_dec_eres[c]:
                         continue
                     integrand = lambda x, y: self._2dsplines[cD](x, y)
                     integral = quad(
                         integrand,
-                        ethr_low[c],
-                        ethr_high,
+                        Erl,
+                        Erh,
                         args=(np.log10(Et.to_value(u.GeV))),
                     )
                     if integral[1] / integral[0] > 1e-3:
