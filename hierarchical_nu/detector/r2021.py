@@ -125,8 +125,7 @@ class HistogramSampler:
     # These are fitted correction factors to low energy IRFs
     # used to better model the atmospheric background at ~1TeV
 
-    CORRECTION_FACTOR = {}
-    """
+    CORRECTION_FACTOR = {
         # Season
         "IC86_II": {
             # dec bin
@@ -137,7 +136,6 @@ class HistogramSampler:
             }
         }
     }
-    """
 
     def __init__(self, rewrite: bool) -> None:
         pass
@@ -566,6 +564,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
     """
 
+    _logEreco_grid = np.linspace(2, 8, 400)
+
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
@@ -631,15 +631,15 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         # initialise parent classes with proper signature for stan functions
         if self.mode == DistributionMode.PDF:
-            self.mixture_name = f"{self._season}_energy_res_mix"
+            # self.mixture_name = f"{self._season}_energy_res_mix"
             super().__init__(
                 self._func_name,
-                ["log_true_energy", "log_reco_energy", "omega"],
-                ["real", "real", "vector"],
+                ["log_true_energy", "log_reco_energy", "omega", "ereco_idx"],
+                ["real", "real", "vector", "int"],
                 "real",
             )
         elif self.mode == DistributionMode.RNG:
-            self.mixture_name = f"{self._season}_energy_res_mix_rng"
+            # self.mixture_name = f"{self._season}_energy_res_mix_rng"
             super().__init__(
                 self._func_name,
                 ["log_true_energy", "omega"],
@@ -650,91 +650,34 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         # Actual code generation
         # Differ between lognorm and histogram
         if self.gen_type == "lognorm":
-            logger.info("Generating stan code using lognorm")
+            logger.info("Generating stan code using grids from a spline")
             logger.warning(
                 "Further sampling of PSF and ang_err will probably fail, you have been warned. Yes, that means you!"
             )
             with self:
-                # self._poly_params_mu should have shape (3, n_components, poly_deg+1)
-                # 3 from declination
-
-                mu_poly_coeffs = StanArray(
-                    "EnergyResolutionMuPolyCoeffs",
-                    "real",
-                    self._poly_params_mu,
-                )
-                # same as above
-
-                sd_poly_coeffs = StanArray(
-                    "EnergyResolutionSdPolyCoeffs",
-                    "real",
-                    self._poly_params_sd,
-                )
-
-                poly_limits = StanArray("poly_limits", "real", self._poly_limits)
-
-                mu = ForwardArrayDef("mu_e_res", "real", ["[", self._n_components, "]"])
-                sigma = ForwardArrayDef(
-                    "sigma_e_res", "real", ["[", self._n_components, "]"]
-                )
-
-                weights = ForwardVariableDef(
-                    "weights", "vector[" + str(self._n_components) + "]"
-                )
-
+                ereco_idx = StringExpression(["ereco_idx"])
                 # Argument `omega` is cartesian vector, cos(z) (z is direction) is theta in spherical coords
-                declination = ForwardVariableDef("declination", "real")
-                declination << FunctionCall(["omega"], "omega_to_dec")
+                # declination = ForwardVariableDef("declination", "real")
+                # declination << FunctionCall(["omega"], "omega_to_dec")
 
-                declination_bins = StanArray("dec_bins", "real", self._declination_bins)
-                declination_index = ForwardVariableDef("dec_ind", "int")
-                declination_index << FunctionCall(
-                    [declination, declination_bins], "binary_search"
+                # return 2d interpolated grid evals
+                logEreco_c = StanArray("logEreco_c", "real", self._logEreco_grid)
+                logEtrue_c = StanArray("logEtrue_c", "real", self._tE_binc)
+                # TODO fix dec index, hard-coded 1 rn
+                grid_evals = StanArray("grid_evals", "real", self._evaluations[1])
+                # TODO: replace 2d interpolation with finding the correct slices of
+                # Ereco enclosing the actual value, hand these over to 2d interpolation
+                # make another 2d interpolation function skipping the useless first binary search?
+                likelihood = ForwardVariableDef("loglike", "real")
+                likelihood << FunctionCall(
+                    [
+                        FunctionCall([logEtrue_c], "to_vector"),
+                        FunctionCall([grid_evals[ereco_idx]], "to_vector"),
+                        "log_true_energy",
+                    ],
+                    "interpolate",
                 )
-
-                # All stan-side energies are in log10!
-                lognorm = LognormalMixture(
-                    self.mixture_name, self.n_components, self.mode
-                )
-                log_trunc_e = TruncatedParameterization(
-                    "log_true_energy",
-                    "log10(poly_limits[dec_ind, 1])",
-                    "log10(poly_limits[dec_ind, 2])",
-                )
-
-                with ForLoopContext(1, self._n_components, "i") as i:
-                    weights[i] << StringExpression(["1.0/", self._n_components])
-
-                log_mu = FunctionCall([mu], "log")
-
-                with ForLoopContext(1, self._n_components, "i") as i:
-                    mu[i] << [
-                        "eval_poly1d(",
-                        log_trunc_e,
-                        ", ",
-                        "to_vector(",
-                        mu_poly_coeffs[declination_index][i],
-                        "))",
-                    ]
-
-                    sigma[i] << [
-                        "eval_poly1d(",
-                        log_trunc_e,
-                        ", ",
-                        "to_vector(",
-                        sd_poly_coeffs[declination_index][i],
-                        "))",
-                    ]
-
-                log_mu_vec = FunctionCall([log_mu], "to_vector")
-                sigma_vec = FunctionCall([sigma], "to_vector")
-
-                if self.mode == DistributionMode.PDF:
-                    ReturnStatement(
-                        [lognorm("log_reco_energy", log_mu_vec, sigma_vec, weights)]
-                    )
-                else:
-                    ReturnStatement([lognorm(log_mu_vec, sigma_vec, weights)])
+                ReturnStatement([FunctionCall([likelihood], "log")])
 
         elif self.gen_type == "histogram":
             logger.info("Generating stan code using histograms")
@@ -1046,7 +989,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self._fill_index = 7
         self._tE_binc = self.irf.true_energy_values
         self._tE_bin_edges = self.irf.true_energy_bins
-        self._logEreco_grid = np.linspace(1, 9, 1024)
 
         self._declination_bins_c = (
             self._declination_bins[:-1] + np.diff(self._declination_bins) / 2
@@ -1194,6 +1136,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
 
         e_high = np.log10(upper_threshold_energy.to_value(u.GeV))
+        e_trunc = np.log10(energy_trunc.to_value(u.GeV))
 
         if use_lognorm:
 
@@ -1205,19 +1148,20 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     continue
 
                 # find the slices of evaluations with Etrue including the queried
-                for c, (Et, Erl, Erh) in enumerate(zip(energy_trunc, e_low, e_high)):
+                for c, (Et, logErl, logErh) in enumerate(zip(e_trunc, e_low, e_high)):
                     if cD != idx_dec_eres[c]:
                         continue
-                    integrand = lambda x, y: self._2dsplines[cD](x, y)
-                    integral = quad(
-                        integrand,
-                        Erl,
-                        Erh,
-                        args=(np.log10(Et.to_value(u.GeV))),
-                    )
-                    if integral[1] / integral[0] > 1e-3:
-                        logger.warning("The integral has insufficient precision.")
-                    prob[c] = integral[0]
+
+                    bins_per_dec = 40
+                    n_bins = int(np.ceil((logErh - logErl) * bins_per_dec))
+                    loge_edges = np.linspace(logErl, logErh, n_bins + 1)
+                    dloge = np.diff(loge_edges)
+                    loge_c = loge_edges[:-1] + dloge / 2
+
+                    evals = self._2dsplines[cD](loge_c, Et, grid=False)
+                    integral = np.sum(evals * dloge)
+
+                    prob[c] = integral
 
         else:
             idx_tE = (
@@ -1907,6 +1851,8 @@ class R2021DetectorModel(ABC, DetectorModel):
     logger = logging.getLogger(__name__ + ".R2021DetectorModel")
     logger.setLevel(logging.DEBUG)
 
+    _logEreco_grid = R2021EnergyResolution._logEreco_grid
+
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
@@ -2045,27 +1991,40 @@ class R2021DetectorModel(ABC, DetectorModel):
             UserDefinedFunction.__init__(
                 self,
                 self._func_name,
-                ["true_energy", "detected_energy", "omega_det", "src_pos"],
-                ["real", "real", "vector", "array[] vector"],
+                ["true_energy", "detected_energy", "omega_det", "src_pos", "reco_idx"],
+                ["real", "real", "vector", "array[] vector", "int"],
                 "tuple(array[] real, array[] real, array[] real)",
             )
         else:
             UserDefinedFunction.__init__(
                 self,
                 self._func_name,
-                ["true_energy", "detected_energy", "omega_det", "src_pos"],
-                ["real", "real", "vector", "vector"],
+                ["true_energy", "detected_energy", "omega_det", "src_pos", "reco_idx"],
+                ["real", "real", "vector", "vector", "int"],
                 "tuple(real, real, array[] real)",
             )
 
         with self:
+            log10Ereco = InstantVariableDef(
+                "log10Ereco", "real", ["log10(detected_energy)"]
+            )
+            log10Etrue = InstantVariableDef(
+                "log10Etrue", "real", ["log10(true_energy)"]
+            )
+            dec_bins_eres = StanArray(
+                "dec_bins", "real", self.energy_resolution._declination_bins
+            )
+            # dec_eres_idx = ForwardVariableDef("dec_ind", "int")
+            # declination = ForwardVariableDef("declination", "real")
+            # declination << FunctionCall(["omega"], "omega_to_dec")
+            # dec_eres_idx << FunctionCall([declination, dec_bins_eres], "binary_search")
             if not single_ps:
                 Ns = InstantVariableDef("Ns", "int", ["size(src_pos)"])
                 ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
                 ps_aeff = ForwardArrayDef("ps_aeff", "real", ["[", Ns, "]"])
                 with ForLoopContext(1, Ns, "i") as i:
                     ps_eres[i] << self.energy_resolution(
-                        "log10(true_energy)", "log10(detected_energy)", "src_pos[i]"
+                        log10Etrue, log10Ereco, "src_pos[i]", "reco_idx"
                     )
                     ps_aeff[i] << FunctionCall(
                         [
@@ -2078,7 +2037,7 @@ class R2021DetectorModel(ABC, DetectorModel):
                 ps_eres = ForwardVariableDef("ps_eres", "real")
                 ps_aeff = ForwardVariableDef("ps_aeff", "real")
                 ps_eres << self.energy_resolution(
-                    "log10(true_energy)", "log10(detected_energy)", "src_pos"
+                    log10Etrue, log10Ereco, "src_pos", "reco_idx"
                 )
                 ps_aeff << FunctionCall(
                     [
@@ -2090,7 +2049,7 @@ class R2021DetectorModel(ABC, DetectorModel):
             diff = ForwardArrayDef("diff", "real", ["[3]"])
 
             diff[1] << self.energy_resolution(
-                "log10(true_energy)", "log10(detected_energy)", "omega_det"
+                log10Etrue, log10Ereco, "omega_det", "reco_idx"
             )
 
             diff[2] << FunctionCall(
@@ -2125,12 +2084,13 @@ class R2021DetectorModel(ABC, DetectorModel):
 
         with self:
             return_this = ForwardVariableDef("return_this", "vector[5]")
-            return_this[1] << FunctionCall(
-                [10.0, self.energy_resolution("log10(true_energy)", "omega")], "pow"
+            log10Ereco = ForwardVariableDef("log10Ereco", "real")
+            log10Etrue = InstantVariableDef(
+                "log10Etrue", "real", ["log10(true_energy)"]
             )
-            return_this[2:5] << self.angular_resolution(
-                "log10(true_energy)", "log10(return_this[1])", "omega"
-            )
+            log10Ereco << self.energy_resolution(log10Etrue, "omega")
+            return_this[1] << FunctionCall([10.0, log10Ereco], "pow")
+            return_this[2:5] << self.angular_resolution(log10Etrue, log10Ereco, "omega")
             ReturnStatement([return_this])
 
 

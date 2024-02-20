@@ -1105,11 +1105,11 @@ class StanFit:
             fit_inputs["diff_index_sigma"] = self._priors.diff_index.sigma
 
         if self._sources.atmospheric:
-            fit_inputs[
-                "atmo_integrated_flux"
-            ] = self._sources.atmospheric.flux_model.total_flux_int.to(
-                1 / (u.m**2 * u.s)
-            ).value
+            fit_inputs["atmo_integrated_flux"] = (
+                self._sources.atmospheric.flux_model.total_flux_int.to(
+                    1 / (u.m**2 * u.s)
+                ).value
+            )
 
             # Priors for atmo model
             if self._priors.atmospheric_flux.name == "lognormal":
@@ -1119,16 +1119,29 @@ class StanFit:
                 fit_inputs["f_atmo_mu"] = self._priors.atmospheric_flux.mu.to_value(
                     self._priors.atmospheric_flux.UNITS
                 )
-                fit_inputs[
-                    "f_atmo_sigma"
-                ] = self._priors.atmospheric_flux.sigma.to_value(
-                    self._priors.atmospheric_flux.UNITS
+                fit_inputs["f_atmo_sigma"] = (
+                    self._priors.atmospheric_flux.sigma.to_value(
+                        self._priors.atmospheric_flux.UNITS
+                    )
                 )
             else:
                 raise ValueError(
                     "No other prior type for atmospheric flux implemented."
                 )
 
+        grid = self._event_types[0].model._logEreco_grid
+        fit_inputs["ereco_idx"] = np.argmin(
+            np.abs(
+                np.tile(np.log10(self.events.energies.to_value(u.GeV)), (grid.size, 1))
+                - grid[:, np.newaxis]
+            ),
+            axis=0,
+        )
+        # safeguard against index errors in stan
+        fit_inputs["ereco_idx"][
+            fit_inputs["ereco_idx"] == self._event_types[0].model._logEreco_grid.size
+        ] -= 1
+        fit_inputs["ereco_idx"][fit_inputs["ereco_idx"] == 0] += 1
         for c, event_type in enumerate(self._event_types):
             integral_grid.append(
                 [

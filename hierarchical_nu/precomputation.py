@@ -2,6 +2,7 @@
 Module for the precomputation of quantities
 to be passed to Stan models.
 """
+
 from collections import defaultdict
 from itertools import product
 import logging
@@ -175,6 +176,7 @@ class ExposureIntegral:
                 E_c,
                 self._min_det_energy,
                 np.full(E_c.shape, dec.to_value(u.rad)) * u.rad,
+                use_lognorm=True,
             )
             p_Edet = np.nan_to_num(p_Edet)
 
@@ -349,9 +351,7 @@ class ExposureIntegral:
                 cosz = np.cos(np.pi - np.arccos(unit_vector[2]))
                 cosz_bin = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
 
-                aeff_slice = (
-                    self.effective_area.eff_area[:, cosz_bin].copy() << u.m**2
-                )
+                aeff_slice = self.effective_area.eff_area[:, cosz_bin].copy() << u.m**2
 
                 self.pdet_grid.append(aeff_slice)
 
