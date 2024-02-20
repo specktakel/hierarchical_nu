@@ -183,6 +183,7 @@ class StanFitInterface(StanInterface):
                         self._Edet[i],
                         self._omega_det[i],
                         ps_pos,
+                        self._ereco_idx[i],
                     )
 
             self._eres_src << StringExpression(["irf_return.1"])
@@ -489,6 +490,10 @@ class StanFitInterface(StanInterface):
                         self._event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
                         self._event_tag << StringExpression(["int_data[3+N:2+2*N]"])
 
+                    # TODO fix indexing for event tags
+                    self._ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[N]"])
+                    self._ereco_idx << StringExpression("int_data[3+N:2+2*N]")
+
                     self._Edet = ForwardVariableDef("Edet", "vector[N]")
                     self._Edet << FunctionCall(["real_data[start:end]"], "to_vector")
                     # Shift indices appropriate amount for next batch of data
@@ -673,6 +678,9 @@ class StanFitInterface(StanInterface):
             if self._use_event_tag:
                 self._event_tag = ForwardArrayDef("event_tag", "int", self._N_str)
 
+            # To store the Ereco-grid index for each event, speeds up the 2d interpolation
+            self._ereco_idx = ForwardArrayDef("ereco_idx", "int", self._N_str)
+
             # Energy range at source
             self._Emin_src = ForwardVariableDef("Emin_src", "real")
             self._Emax_src = ForwardVariableDef("Emax_src", "real")
@@ -831,7 +839,7 @@ class StanFitInterface(StanInterface):
                 )
                 with ForLoopContext(1, self._N, "i") as i:
                     with ForLoopContext(1, self._Ns, "k") as k:
-                        # Insert loop over event types 
+                        # Insert loop over event types
                         for c, event_type in enumerate(self._event_types):
                             if c == 0:
                                 context = IfBlockContext
@@ -856,11 +864,10 @@ class StanFitInterface(StanInterface):
                                         self._varpi[k],
                                         self._omega_det[i],
                                         self._ang_errs[i],
-                                        self._kappa[i]
+                                        self._kappa[i],
                                     ],
-                                    event_type.F+"AngularResolution"
+                                    event_type.F + "AngularResolution",
                                 )
-
 
             # Find largest permitted range of energies at the detector
             # TODO: not sure about this construct...
@@ -923,9 +930,9 @@ class StanFitInterface(StanInterface):
                 )
 
                 if self._use_event_tag:
-                    size = "2+2*J"
+                    size = "2+3*J"
                 else:
-                    size = "2+J"
+                    size = "2+2*J"
                 self.int_data = ForwardArrayDef(
                     "int_data", "int", ["[", self._N_shards, ", ", size, "]"]
                 )
@@ -1000,6 +1007,7 @@ class StanFitInterface(StanInterface):
                             # The double-index is needed because of a bug with the code generator
                             # if I use [k, start:end], a single line of "k;" is printed after entering
                             # the for loop
+                            # TODO: fix this in code generator
                             (
                                 self.real_data[i, insert_start:insert_end]
                                 << self._spatial_loglike[k][start:end]
@@ -1042,15 +1050,28 @@ class StanFitInterface(StanInterface):
                     # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
                     self.int_data[i, 1] << insert_len
                     self.int_data[i, 2] << self._Ns
-                    self.int_data[i, 3:"2+insert_len"] << FunctionCall(
+                    insert_start << 3
+                    # end index is inclusive, subtract one
+                    insert_end << insert_start + insert_len - 1
+                    self.int_data[i, insert_start:insert_end] << FunctionCall(
                         [FunctionCall([self._event_type[start:end]], "to_array_1d")],
                         "to_int",
                     )
+
+                    insert_start << insert_start + insert_len
                     if self._use_event_tag:
+                        insert_end << insert_end + insert_len
                         (
-                            self.int_data[i, "3+insert_len:2+2*insert_len"]
+                            self.int_data[i, insert_start:insert_end]
                             << self._event_tag[start:end]
                         )
+                        insert_start << insert_start + insert_len
+
+                    insert_end << insert_end + insert_len
+                    (
+                        self.int_data[i, insert_start:insert_end]
+                        << self._ereco_idx[start:end]
+                    )
 
     def _parameters(self):
         """
