@@ -43,7 +43,8 @@ from ..backend import (
 )
 from .detector_model import (
     EffectiveArea,
-    EnergyResolution,
+    GridInterpolationEnergyResolution,
+    LogNormEnergyResolution,
     AngularResolution,
     DetectorModel,
 )
@@ -58,63 +59,20 @@ from skyllh.analyses.i3.publicdata_ps.utils import FctSpline1D, FctSpline2D
 from icecube_tools.detector.r2021 import R2021IRF
 from skyllh.analyses.i3.publicdata_ps.smearing_matrix import PDSmearingMatrix
 
-sm = PDSmearingMatrix(
-    "/home/iwsatlas1/kuhlmann/.icecube_data/20210126_PS-IC40-IC86_VII/icecube_10year_ps/irfs/IC86_II_smearing.csv"
-)
-
-
-@u.quantity_input
-def create_reco_e_pdf_for_true_e(
-    Etrue: u.GeV, dec: u.rad, hist: bool = False, shift: Callable = lambda x: x
-):
-    """This functions creates a spline for the reco energy
-    distribution given a true neutrino engery.
-    """
-
-    psi_edges_bw = sm.psi_upper_edges - sm.psi_lower_edges
-    ang_err_bw = sm.ang_err_upper_edges - sm.ang_err_lower_edges
-    # Select the slice of the smearing matrix corresponding to the
-    # source declination band.
-    true_dec_idx = sm.get_true_dec_idx(dec.to_value(u.rad))
-    true_e_idx = sm.get_log10_true_e_idx(np.log10(Etrue.to_value(u.GeV)))
-    sm_pdf = sm.pdf[:, true_dec_idx]
-    # Create the energy PDF f_e = P(log10_E_reco|dec) =
-    # \int dPsi dang_err P(E_reco,Psi,ang_err).
-    f_e = np.sum(
-        sm_pdf[true_e_idx]
-        * psi_edges_bw[true_e_idx, true_dec_idx, :, :, np.newaxis]
-        * ang_err_bw[true_e_idx, true_dec_idx, :, :, :],
-        axis=(-1, -2),
-    )
-
-    # manually correct for some zero-bin which does weird stuff to the spline
-    if true_e_idx == 3 and true_dec_idx == 1:
-        f_e[-3] = f_e[-2]
-    # Build the spline for this P(E_reco|E_nu). Weigh the pdf
-    # with the true neutrino energy probability (flux prob).
-    log10_reco_e_binedges = sm.log10_reco_e_binedges[true_e_idx, true_dec_idx].copy()
-
-    log10_reco_e_binedges = shift(log10_reco_e_binedges)
-
-    spline = FctSpline1D(f_e, log10_reco_e_binedges, norm=True)
-
-    if hist:
-        return f_e, log10_reco_e_binedges
-    else:
-        return spline
-
+from icecube_tools.utils.data import data_directory
 
 import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
+Cache.set_cache_dir(".cache")
+
 
 """
 Implements the 10 year muon track point source data set of IceCube.
 Makes use of existing `icecube_tools` package.
 Classes implement organisation of data and stan code generation.
 """
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
-Cache.set_cache_dir(".cache")
 
 
 class HistogramSampler:
@@ -125,7 +83,8 @@ class HistogramSampler:
     # These are fitted correction factors to low energy IRFs
     # used to better model the atmospheric background at ~1TeV
 
-    CORRECTION_FACTOR = {
+    CORRECTION_FACTOR = {}
+    """
         # Season
         "IC86_II": {
             # dec bin
@@ -136,6 +95,7 @@ class HistogramSampler:
             }
         }
     }
+    """
 
     def __init__(self, rewrite: bool) -> None:
         pass
@@ -558,7 +518,7 @@ class R2021EffectiveArea(EffectiveArea):
         self._rs_bbpl_params["gamma2_scale"] = 0.6
 
 
-class R2021EnergyResolution(EnergyResolution, HistogramSampler):
+class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler):
     """
     Energy resolution for the ten-year All Sky Point Source release:
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
@@ -570,8 +530,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         season: str = "IC86_II",
     ) -> None:
@@ -587,8 +545,10 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         """
 
         self._season = season
-        self.CACHE_FNAME_LOGNORM = f"energy_reso_lognorm_{season}.npz"
+        self.CACHE_FNAME_LOGNORM = f"energy_reso_grid_interp_{season}.npz"
         self.CACHE_FNAME_HISTOGRAM = f"energy_reso_histogram_{season}.npz"
+        # Instantiate the icecube_tools IRFs with the appropriate re-binning
+        # of reconstructed energies according to the correction factors
         try:
             corr = self.CORRECTION_FACTOR[self._season]
             self.irf = R2021IRF.from_period(self._season, correction_factor=corr)
@@ -597,32 +557,44 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(
             season, np.linspace(1, 9, 25)
         )
+        # Copy true energy bins from IRF
+        self._log_tE_bin_edges = self.irf.true_energy_bins
+        self._log_tE_binc = self.irf.true_energy_values
+        self._tE_bin_edges = np.power(10, self._log_tE_bin_edges)
+
+        # Setup reconstructed energy bins
+        self._log_rE_binc = self._logEreco_grid
+        diff = np.diff(self._log_rE_binc)[0]
+        self._log_rE_edges = np.linspace(
+            self._log_rE_binc[0] - diff / 2,
+            self._log_rE_binc[-1] + diff / 2,
+            self._log_rE_binc.size + 1,
+        )
+        self._fill_index = 7
+        self._dec_bin_edges = self.irf.declination_bins << u.rad
+        self._dec_binc = self._dec_bin_edges[:-1] + np.diff(self._dec_bin_edges) / 2
+        self._dec_binc << u.rad
+        self._sin_dec_edges = np.sin(self._dec_bin_edges.to_value(u.rad))
+        self._sin_dec_binc = self._sin_dec_edges[:-1] + np.diff(self._sin_dec_edges) / 2
+
         self._make_ereco_cuts = ereco_cuts
         self._ereco_cuts = self._icecube_tools_eres._ereco_limits
         self._aeff_dec_bins = self._icecube_tools_eres.declination_bins_aeff
+
         self.mode = mode
         if self.mode == DistributionMode.PDF:
             self._func_name = f"{season}EnergyResolution"
-            self.gen_type = "lognorm"
         elif self.mode == DistributionMode.RNG:
             self._func_name = f"{season}EnergyResolution_rng"
-            self.gen_type = "histogram"
-        self.mode = mode
         self._rewrite = rewrite
         logger.info("Forced energy rewriting: {}".format(rewrite))
-        self.make_plots = make_plots
-        self._poly_params_mu: Sequence = []
-        self._poly_params_sd: Sequence = []
-        self._poly_limits: Sequence = []
-        self._poly_limits_battery: Sequence = []
-        self._declination_bins = self.irf.declination_bins
-        # Find faulty bins (usually at low energy and in the Southern sky)
-        # and find pdet_limits according to this
-        # For prob_Edet_above_threshold
-        self._pdet_limits = (1e2, 1e8)
 
-        self._n_components = n_components
+        self._pdet_limits = (1e2, 1e9)
+
         self.setup()
+
+    def __call__(self, log_rE, log_tE):
+        pass
 
     def generate_code(self) -> None:
         """
@@ -631,7 +603,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         # initialise parent classes with proper signature for stan functions
         if self.mode == DistributionMode.PDF:
-            # self.mixture_name = f"{self._season}_energy_res_mix"
             super().__init__(
                 self._func_name,
                 ["log_true_energy", "log_reco_energy", "omega", "ereco_idx"],
@@ -639,7 +610,6 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 "real",
             )
         elif self.mode == DistributionMode.RNG:
-            # self.mixture_name = f"{self._season}_energy_res_mix_rng"
             super().__init__(
                 self._func_name,
                 ["log_true_energy", "omega"],
@@ -647,13 +617,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 "real",
             )
 
-        # Actual code generation
-        # Differ between lognorm and histogram
-        if self.gen_type == "lognorm":
-            logger.info("Generating stan code using grids from a spline")
-            logger.warning(
-                "Further sampling of PSF and ang_err will probably fail, you have been warned. Yes, that means you!"
-            )
+        if self.mode == DistributionMode.PDF:
+            logger.info("Generating pdf code using spline evaluations.")
             with self:
                 ereco_idx = StringExpression(["ereco_idx"])
                 # Argument `omega` is cartesian vector, cos(z) (z is direction) is theta in spherical coords
@@ -662,7 +627,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
                 # return 2d interpolated grid evals
                 logEreco_c = StanArray("logEreco_c", "real", self._logEreco_grid)
-                logEtrue_c = StanArray("logEtrue_c", "real", self._tE_binc)
+                logEtrue_c = StanArray("logEtrue_c", "real", self._log_tE_binc)
                 # TODO fix dec index, hard-coded 1 rn
                 grid_evals = StanArray("grid_evals", "real", self._evaluations[1])
                 # TODO: replace 2d interpolation with finding the correct slices of
@@ -679,8 +644,8 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                 )
                 ReturnStatement([FunctionCall([likelihood], "log")])
 
-        elif self.gen_type == "histogram":
-            logger.info("Generating stan code using histograms")
+        if self.mode == DistributionMode.RNG:
+            logger.info("Generating simulation code using histograms")
             with self:
                 # Create necessary lists/attributes, inherited from HistogramSampler
                 self._make_hist_lookup_functions(self._season)
@@ -820,216 +785,78 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         Setup all data fields, load data from cached file or create from scratch.
         """
 
-        if self.gen_type == "lognorm":
-            # Create empty lists
-            self._fit_params = []
-            # self._eres = []
-            self._rE_bin_edges = []
-            self._rE_binc = []
-            self._rebin_tE_binc = []
-            self._tE_binc = []
-            # Generate data and ragged arrays from icecube_tools IRF
-            self._generate_ragged_ereco_data(self.irf)
+        if self.CACHE_FNAME_HISTOGRAM in Cache and not self._rewrite:
+            logger.info("Loading energy pdf data from file.")
 
-            # Check cache
-            if self.CACHE_FNAME_LOGNORM in Cache and not self._rewrite:
-                logger.info("Loading energy lognorm data from file.")
-                with Cache.open(self.CACHE_FNAME_LOGNORM, "rb") as fr:
-                    data = np.load(fr, allow_pickle=True)
-                    self._tE_bin_edges = data["tE_bin_edges"]
-                    self._poly_params_mu = data["poly_params_mu"]
-                    self._poly_params_sd = data["poly_params_sd"]
-                    self._poly_limits = data["poly_limits"]
-                    fit_params_0 = data["fit_params_0"]
-                    fit_params_1 = data["fit_params_1"]
-                    fit_params_2 = data["fit_params_2"]
-                    tE_binc_0 = data["tE_binc_0"]
-                    tE_binc_1 = data["tE_binc_0"]
-                    tE_binc_2 = data["tE_binc_0"]
-
-                self._tE_binc = [tE_binc_0, tE_binc_1, tE_binc_2]
-                self._fit_params = [fit_params_0, fit_params_1, fit_params_2]
-
-                self._poly_params_mu__ = self._poly_params_mu.copy()
-                self._poly_params_sd__ = self._poly_params_sd.copy()
-                self._poly_limits__ = self._poly_limits.copy()
-                self._fit_params__ = self._fit_params.copy()
-                self._tE_binc__ = self._tE_binc.copy()
-
-            else:
-                logger.info("Re-doing energy lognorm data and saving files.")
-
-                self._dec_minuits = []
-
-                for c_dec, (dec_low, dec_high) in enumerate(
-                    zip(self._declination_bins[:-1], self._declination_bins[1:])
-                ):
-                    true_energy_bins = []
-                    for c_e, tE in enumerate(self.irf.true_energy_bins):
-                        if (c_e, c_dec) not in self.irf.faulty:
-                            true_energy_bins.append(tE)
-                        else:
-                            logger.warning(f"Faulty bin at {c_e, c_dec}")
-
-                    tE_bin_edges = np.array(true_energy_bins)
-                    tE_binc = np.power(10, 0.5 * (tE_bin_edges[:-1] + tE_bin_edges[1:]))
-
-                    # Fit lognormal mixture to pdf(reco|true) for each true energy bin
-                    # do not rebin -> rebin=1
-                    fit_params_temp, minuits = self._fit_energy_res(
-                        tE_binc, c_dec, self._n_components
-                    )
-                    self._dec_minuits.append(minuits)
-                    # check for label switching
-                    fit_params = np.zeros_like(fit_params_temp)
-                    for c, params in enumerate(fit_params_temp):
-                        idx = np.argsort(params[::2])
-                        fit_params[c, ::2] = params[::2][idx]
-                        fit_params[c, 1::2] = params[1::2][idx]
-
-                    self._fit_params.append(fit_params)
-
-                    # take entire range
-                    imin = 0
-                    imax = -1
-
-                    Emin = tE_binc[imin]
-                    Emax = tE_binc[imax]
-
-                    # Fit polynomial:
-                    poly_params_mu, poly_params_sd, poly_limits = self._fit_polynomial(
-                        fit_params, tE_binc, Emin, Emax, polydeg=6
-                    )
-
-                    self._poly_params_mu.append(poly_params_mu)
-                    self._poly_params_sd.append(poly_params_sd)
-                    self._poly_limits.append(poly_limits)
-                    self._tE_binc.append(tE_binc)
-
-                self._poly_limits__ = self._poly_limits.copy()
-                self._poly_params_mu__ = self._poly_params_mu.copy()
-                self._poly_params_sd__ = self._poly_params_sd.copy()
-                self._tE_binc__ = self._tE_binc.copy()
-                self._fit_params__ = self._fit_params.copy()
-
-                # Save values
-                self._tE_bin_edges = tE_bin_edges
-                if self.make_plots:
-                    for c, dec in enumerate(self._declination_bins[:-1]):
-                        self.set_fit_params((dec + 0.01) * u.rad)
-
-                        fig = self.plot_fit_params(self._fit_params, self._tE_binc)
-                        plt.show()
-
-                        fig = self.plot_parameterizations(
-                            self._fit_params,
-                            self._tE_binc,
-                            c,
-                        )
-                        plt.show()
-
-                self._poly_params_mu = self._poly_params_mu__.copy()
-                self._poly_params_sd = self._poly_params_sd__.copy()
-                self._poly_limits = self._poly_limits__.copy()
-                self._fit_params = self._fit_params__.copy()
-                self._tE_binc = self._tE_binc__.copy()
-
-                # Save polynomial
-                with Cache.open(self.CACHE_FNAME_LOGNORM, "wb") as fr:
-                    np.savez(
-                        fr,
-                        tE_bin_edges=self._tE_bin_edges,
-                        tE_binc_0=self._tE_binc[0],
-                        tE_binc_1=self._tE_binc[1],
-                        tE_binc_2=self._tE_binc[2],
-                        poly_params_mu=self._poly_params_mu,
-                        poly_params_sd=self._poly_params_sd,
-                        poly_limits=self.poly_limits,
-                        fit_params_0=self._fit_params[0],
-                        fit_params_1=self._fit_params[1],
-                        fit_params_2=self._fit_params[2],
-                    )
+            with Cache.open(self.CACHE_FNAME_HISTOGRAM, "rb") as fr:
+                data = np.load(fr, allow_pickle=True)
+                self._ereco_cum_num_vals = data["cum_num_of_values"]
+                self._ereco_cum_num_edges = data["cum_num_of_bins"]
+                self._ereco_num_vals = data["num_of_values"]
+                self._ereco_num_edges = data["num_of_bins"]
+                self._ereco_hist = data["values"]
+                self._ereco_edges = data["bins"]
+                self._tE_bin_edges = np.power(10, self.irf.true_energy_bins)
 
         else:
-            # Check cache
-            if self.CACHE_FNAME_HISTOGRAM in Cache and not self._rewrite:
-                logger.info("Loading energy pdf data from file.")
+            self._generate_ragged_ereco_data(self.irf)
+            with Cache.open(self.CACHE_FNAME_HISTOGRAM, "wb") as fr:
+                np.savez(
+                    fr,
+                    bins=self._ereco_edges,
+                    values=self._ereco_hist,
+                    num_of_bins=self._ereco_num_edges,
+                    num_of_values=self._ereco_num_vals,
+                    cum_num_of_bins=self._ereco_cum_num_edges,
+                    cum_num_of_values=self._ereco_cum_num_vals,
+                    tE_bin_edges=self._tE_bin_edges,
+                )
 
-                with Cache.open(self.CACHE_FNAME_HISTOGRAM, "rb") as fr:
-                    data = np.load(fr, allow_pickle=True)
-                    self._ereco_cum_num_vals = data["cum_num_of_values"]
-                    self._ereco_cum_num_edges = data["cum_num_of_bins"]
-                    self._ereco_num_vals = data["num_of_values"]
-                    self._ereco_num_edges = data["num_of_bins"]
-                    self._ereco_hist = data["values"]
-                    self._ereco_edges = data["bins"]
-                    self._tE_bin_edges = np.power(10, self.irf.true_energy_bins)
-
-            else:
-                self._generate_ragged_ereco_data(self.irf)
-                with Cache.open(self.CACHE_FNAME_HISTOGRAM, "wb") as fr:
-                    np.savez(
-                        fr,
-                        bins=self._ereco_edges,
-                        values=self._ereco_hist,
-                        num_of_bins=self._ereco_num_edges,
-                        num_of_values=self._ereco_num_vals,
-                        cum_num_of_bins=self._ereco_cum_num_edges,
-                        cum_num_of_values=self._ereco_cum_num_vals,
-                        tE_bin_edges=self._tE_bin_edges,
-                    )
-
-            self._Emin = np.power(10, self.irf.true_energy_bins[0])
-            self._Emax = np.power(10, self.irf.true_energy_bins[-1])
-
-        # Read in all the required histograms in to some list attribute
-        # create a grid of evaluations of all splines
-        # manipulate the values of the splines with power law flanks wherever zero entries are
-
-        self._fill_index = 7
-        self._tE_binc = self.irf.true_energy_values
-        self._tE_bin_edges = self.irf.true_energy_bins
-
-        self._declination_bins_c = (
-            self._declination_bins[:-1] + np.diff(self._declination_bins) / 2
-        )
-        self._declination_bins_c << u.rad
+        self._Emin = np.power(10, self.irf.true_energy_bins[0])
+        self._Emax = np.power(10, self.irf.true_energy_bins[-1])
 
         self._ereco_splines = []
         self._2dsplines = []
 
-        for c, dec in enumerate(self._declination_bins_c):
+        # Loop over declinations
+        for c, dec in enumerate(self._dec_binc):
+            # Create the IRF spline for each true energy
             self._ereco_splines.append(
                 [
-                    create_reco_e_pdf_for_true_e(np.power(10, _) * u.GeV, dec * u.rad)
-                    for _ in self._tE_binc
+                    create_reco_e_pdf_for_true_e(
+                        np.power(10, _) * u.GeV, dec, season=self._season
+                    )
+                    for _ in self._log_tE_binc
                 ]
             )
-
+        # Create empty array to store evaluated splines
         self._evaluations = np.zeros(
             (
-                self._declination_bins_c.size,
-                self._logEreco_grid.size,
-                self._tE_binc.size,
+                self._dec_binc.size,
+                self._log_rE_binc.size,
+                self._log_tE_binc.size,
             )
         )
 
-        for c, dec in enumerate(self._declination_bins_c):
+        # Loop over the declination bins of the IRF
+        for c, dec in enumerate(self._dec_binc):
             # Evaluate the splines over a grid of Ereco x Etrue
+            # Etrue is determined by the provided IRFs
+            # Ereco is set to a dense grid
             self._evaluations[c] = np.vstack(
                 [
-                    self._ereco_splines[c][c_E](self._logEreco_grid)
+                    self._ereco_splines[c][c_E](self._log_rE_binc)
                     / self._ereco_splines[c][c_E].norm
-                    for c_E, E in enumerate(self._tE_binc)
+                    for c_E, E in enumerate(self._log_tE_binc)
                 ]
             ).T
-            for c_E, E in enumerate(self._tE_binc):
-                # find the highest and lowest non-zero entry
-                # in each spline's evaluation
+            for c_E, logE in enumerate(self._log_tE_binc):
+                # Find the highest and lowest non-zero entry
+                # in each spline's evaluation, outside all values are zero
                 idx = np.max(np.argwhere(self._evaluations[c, :, c_E]))
                 # Needs linear scale because of power law definition
                 E_cont = np.power(
-                    10, self._logEreco_grid[idx + 1 :] - self._logEreco_grid[idx]
+                    10, self._log_rE_binc[idx + 1 :] - self._log_rE_binc[idx]
                 )
                 self._evaluations[c, idx + 1 :, c_E] = (
                     np.power(
@@ -1038,22 +865,25 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
                     )
                     * self._evaluations[c, idx, c_E]
                 )
-                # again with low energy end
+                # Again with low energy end
                 # at this index, there already is a non-zero entry
                 # so the range indexing should be :idx
                 idx = np.min(np.argwhere(self._evaluations[c, :, c_E]))
                 # Needs linear scale because of power law definition
-                E_cont = np.power(
-                    10, self._logEreco_grid[:idx] - self._logEreco_grid[idx]
-                )
+                E_cont = np.power(10, self._log_rE_binc[:idx] - self._log_rE_binc[idx])
                 self._evaluations[c, :idx, c_E] = (
                     # switch sign of index here because it should be a rising flank
                     np.power(E_cont, self._fill_index)
                     * self._evaluations[c, idx, c_E]
                 )
+            # Spline the evaluations linearly, used in `prob_Edet_above_threshold`
             self._2dsplines.append(
                 RectBivariateSpline(
-                    self._logEreco_grid, self._tE_binc, self._evaluations[c], kx=1, ky=1
+                    self._log_rE_binc,
+                    self._log_tE_binc,
+                    self._evaluations[c],
+                    kx=1,
+                    ky=1,
                 )
             )
 
@@ -1064,7 +894,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         lower_threshold_energy: u.GeV,
         dec: u.rad,
         upper_threshold_energy=None,
-        use_lognorm: bool = False,
+        use_interpolation: bool = False,
     ):
         """
         P(Edet > Edet_min | E) for use in precomputation.
@@ -1081,7 +911,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
             assumes only one value is provided
         :param use_lognorm: bool, if True use lognormal parameterisation
         """
-        # Truncate input energies to safe range
+        # Truncate input energies to safe range, i.e. range covered by IRFs
         energy_trunc = true_energy.to(u.GeV).value
         energy_trunc = np.atleast_1d(energy_trunc)
         energy_trunc[energy_trunc < self._pdet_limits[0]] = self._pdet_limits[0]
@@ -1116,7 +946,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         # Limits of Ereco in dec binning of effective area
         idx_dec_aeff = np.digitize(dec.to_value(u.rad), self._aeff_dec_bins) - 1
         # Get the according IRF dec bins (there are only 3)
-        idx_dec_eres = np.digitize(dec.to_value(u.rad), self._declination_bins) - 1
+        idx_dec_eres = np.digitize(dec.to(u.rad), self._dec_bin_edges) - 1
         idx_dec_aeff[
             np.nonzero(
                 (idx_dec_aeff == self._aeff_dec_bins.size - 1)
@@ -1138,7 +968,7 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
         e_high = np.log10(upper_threshold_energy.to_value(u.GeV))
         e_trunc = np.log10(energy_trunc.to_value(u.GeV))
 
-        if use_lognorm:
+        if use_interpolation:
 
             for cE, cD in product(
                 range(self.irf.true_energy_bins.size - 1),
@@ -1195,375 +1025,11 @@ class R2021EnergyResolution(EnergyResolution, HistogramSampler):
 
         return prob
 
-    @staticmethod
-    def make_fit_model(n_components):
-        """
-        Lognormal mixture with n_components.
-        """
-
-        # s is width of lognormal
-        # scale is ~expectation value
-        def _model(x, *pars):
-            result = 0
-            for i in range(n_components):
-                result += (1 / n_components) * stats.lognorm.pdf(
-                    x, scale=pars[2 * i], s=pars[2 * i + 1]
-                )
-
-            return result
-
-        return _model
-
-    @staticmethod
-    def make_cumulative_model(n_components):
-        """
-        Cumulative Lognormal mixture above xth with n_components.
-        """
-
-        def _cumulative_model(xth, pars):
-            result = 0
-            for i in range(n_components):
-                result += (1 / n_components) * stats.lognorm.cdf(
-                    xth, scale=pars[2 * i], s=pars[2 * i + 1]
-                )
-            return result
-
-        return _cumulative_model
-
-    @staticmethod
-    def make_cumulative_fit_model(bin_edges, n_components):
-        """
-        Integrate within the bin edges and make a fit model out of it
-        """
-
-        def _cumulative_model(*pars):
-            result = np.zeros(bin_edges.size - 1)
-            for i in range(n_components):
-                result += (
-                    (1 / n_components)
-                    * (
-                        stats.lognorm.cdf(
-                            bin_edges[1:], scale=pars[2 * i], s=pars[2 * i + 1]
-                        )
-                        - stats.lognorm.cdf(
-                            bin_edges[:-1], scale=pars[2 * i], s=pars[2 * i + 1]
-                        )
-                    )
-                    / np.diff(bin_edges)
-                )
-            return result
-
-        return _cumulative_model
-
-    @staticmethod
-    def make_likelihood_function(model, counts):
-        def likelihood_func(*pars):
-            eval = model(*pars)
-            mask = eval != 0.0
-            return -np.sum(counts[mask] * np.log(eval[mask]))
-
-        return likelihood_func
-
-    def _fit_energy_res(
-        self,
-        tE_binc: np.ndarray,
-        c_dec: int,
-        n_components: int,
-        fit_type: str = "likelihood",
-    ) -> np.ndarray:
-        """
-        Fit a lognormal mixture to P(Ereco | Etrue) in given Etrue bins.
-        A maximum likelihood approach is used. Although the data is binned in Ereco,
-        it is an unbinned likelihood: $L(\theta) = \prod_i f(x_i; \theta)$
-        with one data point $x_i$ per bin.
-        $f(x_i; \theta)$ here is the bin-averaged lognormal mixture evaluated at $\theta$.
-        Each factor of the product over the data points (or here conversely the bins $i$)
-        is weighted with the histogram's value in the bin, i.e. the histogram's pdf.
-        If we had the detector MC used to generate the histogram, we would have data points $x_i$
-        with relative frequency of the histogram's value in each bin.
-        This weighting in the above product is an exponential (more data points equals more factors),
-        thus the likelihood reads $L(\theta) = \prod_i f(x_i; \theta)^{h_i}$ with the histograms height $h_i$.
-        The loglike then trivially reads $\log{L} = \sum_i h_i \log{f(x_i; \theta)}$.
-
-        fit_type = "chi2" implements the previously used least square fit.
-        """
-
-        from scipy.optimize import least_squares
-        from iminuit import Minuit
-        from iminuit.cost import LeastSquares
-
-        fit_params = []
-        minuits = []
-        # Fitting loop
-        for tE in tE_binc:
-            # print(tE)
-            tE_idx = np.digitize(np.log10(tE), self.irf.true_energy_bins) - 1
-            # print(tE_idx)
-
-            # Ereco bins and fractional counts per bin
-            n, bins = self.irf._marginalisation(tE_idx, c_dec)
-            # normalisation to pdf
-            e_reso = n / np.sum(n * np.diff(bins))
-            bins_c = bins[:-1] + np.diff(bins) / 2
-            log10_rE_bin_edges = bins
-            log10_rE_binc = bins_c
-
-            if e_reso.sum() > 0:
-                if fit_type == "likelihood":
-                    # Lognormal mixture, averages the proposed mixture pdf over each of the histogram's bins.
-                    model = self.make_cumulative_fit_model(
-                        log10_rE_bin_edges, n_components
-                    )
-
-                    # Make the likelihood function as described above
-                    llh = self.make_likelihood_function(model, e_reso)
-
-                elif fit_type == "chi2":
-                    model = self.make_fit_model(n_components)
-                    # residuals = Residuals((log10_rE_binc, e_reso), model)
-                    ls = LeastSquares(
-                        log10_rE_binc, e_reso, np.ones_like(e_reso), model
-                    )
-
-                # Calculate seed as mean of the resolution to help minimizer
-                seed_mu = np.average(log10_rE_binc, weights=e_reso)
-                if ~np.isfinite(seed_mu):
-                    seed_mu = 3
-
-                seed = np.zeros(n_components * 2)
-                bounds_lo: List[float] = []
-                bounds_hi: List[float] = []
-                names: List[str] = []
-                for i in range(n_components):
-                    seed[2 * i] = seed_mu + 0.1 * (i + 1)
-                    seed[2 * i + 1] = (i + 1) * 0.05
-                    names += [f"scale_{i}", f"s_{i}"]
-                    bounds_lo += [1, 0.01]
-                    bounds_hi += [8, 1]
-
-                limits = [(l, h) for (l, h) in zip(bounds_lo, bounds_hi)]
-
-                if fit_type == "likelihood":
-                    m = Minuit(llh, *tuple(seed), name=names)
-                    m.errordef = 0.5
-                elif fit_type == "chi2":
-                    m = Minuit(ls, *tuple(seed), name=names)
-                    m.errordef = 1
-                m.errors = 0.05 * np.asarray(seed)
-                m.limits = limits
-                m.migrad()
-
-                if not m.fmin.is_valid:
-                    # if not converged, give it one more try, seems to do the trick
-                    m.migrad()
-
-                # Check for convergence
-                if not m.fmin.is_valid:
-                    logger.warning(
-                        f"Fit at {tE:.1f}GeV has not converged, please inspect."
-                    )
-                    fit_params.append(np.zeros(2 * n_components))
-                else:
-                    temp = []
-
-                    for i in range(n_components):
-                        temp += [m.values[f"scale_{i}"], m.values[f"s_{i}"]]
-
-                    # Check for label switching, ascending order of scale needs to be enforced
-                    # carry over possible swaps to the `s` parameter.
-                    hat = np.argsort(temp[::2])
-                    new_fit_pars = []
-                    for i in range(n_components):
-                        new_fit_pars.append(temp[::2][hat[i]])
-                        new_fit_pars.append(temp[1::2][hat[i]])
-                    fit_params.append(new_fit_pars)
-                minuits.append(m)
-
-            else:
-                fit_params.append(np.zeros(2 * n_components))
-        fit_params = np.asarray(fit_params)
-
-        return fit_params, minuits
-
-    def _fit_polynomial(
-        self,
-        fit_params: np.ndarray,
-        tE_binc: np.ndarray,
-        Emin: float,
-        Emax: float,
-        polydeg: int,
-    ):
-        """
-        Fit polynomial to energy dependence of lognorm mixture params.
-        """
-
-        def find_nearest_idx(array, value):
-            array = np.asarray(array)
-            idx = (np.abs(array - value)).argmin()
-            return idx
-
-        imin = find_nearest_idx(tE_binc, Emin)
-        imax = find_nearest_idx(tE_binc, Emax)
-
-        # Mask out entries where the lognormal-mixture-fit has not converged,
-        # i.e. zero entriesin fit_params
-        mask = np.nonzero(np.all(fit_params[imin:imax, ::2], axis=1))
-
-        log10_tE_binc = np.log10(tE_binc)
-        poly_params_mu = np.zeros((self._n_components, polydeg + 1))
-
-        # Fit polynomial
-        poly_params_sd = np.zeros_like(poly_params_mu)
-        for i in range(self.n_components):
-            poly_params_mu[i] = np.polyfit(
-                log10_tE_binc[imin:imax][mask],
-                fit_params[:, 2 * i][imin:imax][mask],
-                polydeg,
-            )
-            poly_params_sd[i] = np.polyfit(
-                log10_tE_binc[imin:imax][mask],
-                fit_params[:, 2 * i + 1][imin:imax][mask],
-                polydeg,
-            )
-
-            poly_limits = (Emin, Emax)
-
-        return poly_params_mu, poly_params_sd, poly_limits
-
-    def plot_fit_params(self, fit_params: np.ndarray, tE_binc: np.ndarray) -> None:
-        """
-        Plot the evolution of the lognormal parameters with true energy,
-        for each mixture component.
-        """
-
-        import matplotlib.pyplot as plt
-
-        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-        xs = np.linspace(*np.log10(self._poly_limits), num=100)
-
-        if self._poly_params_mu is None:
-            raise RuntimeError("Run setup() first")
-
-        # Plot polynomial fits for each mixture component.
-        for comp in range(int(fit_params.shape[1] / 2)):
-            params_mu = self._poly_params_mu[comp]
-            axs[0].plot(
-                xs, np.poly1d(params_mu)(xs), label="poly, mean", color=f"C{comp}"
-            )
-            axs[0].plot(
-                np.log10(tE_binc),
-                fit_params[:, 2 * comp],
-                label="Mean {}".format(comp),
-                color=f"C{comp}",
-                ls=":",
-            )
-
-            params_sigma = self._poly_params_sd[comp]
-            axs[1].plot(
-                xs, np.poly1d(params_sigma)(xs), label="poly, sigma", color=f"C{comp}"
-            )
-            axs[1].plot(
-                np.log10(tE_binc),
-                fit_params[:, 2 * comp + 1],
-                label="SD {}".format(comp),
-                color=f"C{comp}",
-                ls=":",
-            )
-
-        axs[0].set_xlabel("log10(True Energy / GeV)")
-        axs[0].set_ylabel("Parameter Value")
-        axs[0].legend()
-        axs[1].legend()
-        plt.tight_layout()
-        return fig
-
-    def plot_parameterizations(
-        self,
-        fit_params: np.ndarray,
-        tE_binc: np.ndarray,
-        c_dec: int,
-    ):
-        """
-        Plot fitted parameterizations
-        Args:
-            fit_params: np.ndarray
-                Fitted parameters for mu and sigma
-        """
-
-        import matplotlib.pyplot as plt
-
-        plot_energies = np.power(10, np.arange(2.25, 7.76, step=0.5))  # GeV
-        # plot_energies = [1e5, 3e5, 5e5, 8e5, 1e6, 3e6, 5e6, 8e6]  # GeV
-
-        if self._poly_params_mu is None:
-            raise RuntimeError("Run setup() first")
-
-        plot_indices = np.digitize(plot_energies, tE_binc) - 1
-
-        fig, axs = plt.subplots(4, 3, figsize=(10, 10))
-
-        model = self.make_fit_model(int(fit_params.shape[1] / 2))
-        fl_ax = axs.ravel()
-
-        for i, p_i in enumerate(plot_indices):
-            log_plot_e = np.log10(plot_energies[i])
-
-            model_params: List[float] = []
-            for comp in range(int(fit_params.shape[1] / 2)):
-                mu = np.poly1d(self._poly_params_mu[comp])(log_plot_e)
-                sigma = np.poly1d(self._poly_params_sd[comp])(log_plot_e)
-                model_params += [mu, sigma]
-
-            res = fit_params[p_i]
-            irf_tE_idx = (
-                np.digitize(np.log10(plot_energies[i]), self.irf.true_energy_bins) - 1
-            )
-            log10_rE_bin_edges = self.irf.reco_energy_bins[irf_tE_idx, c_dec]
-            log10_rE_binc = log10_rE_bin_edges[:-1] + np.diff(log10_rE_bin_edges) / 2.0
-            xs = np.linspace(log10_rE_bin_edges[0], log10_rE_bin_edges[-1], num=100)
-
-            e_reso = self.irf.reco_energy[irf_tE_idx, c_dec].pdf(log10_rE_binc)
-            fl_ax[i].plot(log10_rE_binc, e_reso, label="input eres")
-            fl_ax[i].plot(xs, model(xs, *model_params), label="poly evaluated")
-            fl_ax[i].plot(xs, model(xs, *res), label="lognormal fit")
-            fl_ax[i].set_ylim(1e-4, 5)
-            fl_ax[i].set_yscale("log")
-            fl_ax[i].set_title("True E: {:.1E}".format(plot_energies[i]))
-            fl_ax[i].set_xlim(1.5, 8.5)
-            fl_ax[i].legend()
-
-        ax = fig.add_subplot(111, frameon=False)
-
-        # Hide tick and tick label of the big axes
-        ax.tick_params(
-            labelcolor="none", top="off", bottom="off", left="off", right="off"
-        )
-        ax.grid(False)
-        ax.set_xlabel("log10(Reconstructed Energy /GeV)")
-        ax.set_ylabel("PDF")
-        plt.tight_layout()
-        return fig
-
     @classmethod
     def rewrite_files(cls, season: str = "IC86_II") -> None:
         # call this to rewrite npz files
         cls(DistributionMode.PDF, rewrite=True, season=season)
         cls(DistributionMode.RNG, rewrite=True, season=season)
-
-    @u.quantity_input
-    def set_fit_params(self, dec: u.rad) -> None:
-        """
-        Used in `sim_interface.py`
-        """
-        dec_idx = np.digitize(dec.to_value(u.rad), self._declination_bins) - 1
-        if dec == np.pi / 2:
-            dec_idx -= 1
-
-        self._poly_params_mu = self._poly_params_mu__[dec_idx]
-        self._poly_params_sd = self._poly_params_sd__[dec_idx]
-        self._poly_limits = self._poly_limits__[dec_idx]
-        self._fit_params = self._fit_params__[dec_idx]
-        self._tE_binc = self._tE_binc__[dec_idx]
 
 
 class R2021AngularResolution(AngularResolution, HistogramSampler):
@@ -1882,9 +1348,7 @@ class R2021DetectorModel(ABC, DetectorModel):
 
         self._angular_resolution = R2021AngularResolution(mode, rewrite, season=season)
 
-        self._energy_resolution = R2021EnergyResolution(
-            mode, rewrite, make_plots, n_components, ereco_cuts, season=season
-        )
+        self._energy_resolution = R2021EnergyResolution(mode, rewrite, season=season)
 
         self._eff_area = R2021EffectiveArea(mode, season=season)
 

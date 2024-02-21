@@ -137,13 +137,15 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         pass
 
 
-class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
+class EnergyResolution(metaclass=ABCMeta):
     """
     Abstract base class defining the energy resolution interface.
 
     Signature for __call__ of UserDefinedFunction for DistributionMode.PDF is
     log10(Etrue): real, log10(Edet): real, omega_det: unit_vector[3]
     even if some parameter might not be used
+
+    Since there are two implementations of
     """
 
     @abstractmethod
@@ -171,6 +173,63 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         """
 
         return self._tE_bin_edges
+
+    @abstractmethod
+    def generate_code(self):
+        """
+        Generates stan code.
+        """
+
+        pass
+
+
+class GridInterpolationEnergyResolution(
+    EnergyResolution, UserDefinedFunction, metaclass=ABCMeta
+):
+
+    @property
+    def log_rE_bin_edges(self):
+        return self._log_rE_bin_edges
+
+    @property
+    def log_rE_binc(self):
+        return self._log_rE_bin_edges
+
+    @property
+    def log_tE_bin_edges(self):
+        return self._log_tE_bin_edges
+
+    @property
+    def log_tE_binc(self):
+        return self._log_tE_binc
+
+    @property
+    def dec_bin_edges(self):
+        return self._dec_bin_edges
+
+    @property
+    def dec_binc(self):
+        return self._dec_binc
+
+    @property
+    def sin_dec_edges(self):
+        return self._sin_dec_edges
+
+    @property
+    def sin_dec_binc(self):
+        return self._sin_dec_binc
+
+    @property
+    def evaluations(self):
+        return self._evaluations
+
+    @abstractmethod
+    @u.quantity_input
+    def __call__(self, log_tE, log_rE, dec):
+        pass
+
+
+class LogNormEnergyResolution(EnergyResolution, UserDefinedFunction, metaclass=ABCMeta):
 
     @property
     def rE_bin_edges(self):
@@ -525,14 +584,6 @@ class EnergyResolution(UserDefinedFunction, metaclass=ABCMeta):
         prob = 1 - model(np.log10(threshold_energy.to(u.GeV).value), model_params)
 
         return prob
-
-    @abstractmethod
-    def generate_code(self):
-        """
-        Generates stan code.
-        """
-
-        pass
 
 
 class AngularResolution(UserDefinedFunction, metaclass=ABCMeta):
