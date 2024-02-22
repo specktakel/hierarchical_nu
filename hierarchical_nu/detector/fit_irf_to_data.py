@@ -113,7 +113,9 @@ class RateCalculator:
                                         [bin_c[c - 1], bin_c[next_idx]],
                                         [prev, next_val],
                                     )
-                        print(pdf)
+                        # re-normalise the histogram
+                        norm = np.sum(pdf * np.diff(bin_e))
+                        pdf /= norm
                     hists[c_d].append(pdf)
 
                 else:
