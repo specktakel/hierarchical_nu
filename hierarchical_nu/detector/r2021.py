@@ -1566,15 +1566,11 @@ class IC40DetectorModel(R2021DetectorModel):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
     ):
         super().__init__(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC40",
         )
@@ -1584,16 +1580,12 @@ class IC40DetectorModel(R2021DetectorModel):
         cls,
         mode: DistributionMode,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC40",
             path=path,
@@ -1608,15 +1600,11 @@ class IC59DetectorModel(R2021DetectorModel):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
     ):
         super().__init__(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC59",
         )
@@ -1626,16 +1614,12 @@ class IC59DetectorModel(R2021DetectorModel):
         cls,
         mode: DistributionMode,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC59",
             path=path,
@@ -1650,15 +1634,11 @@ class IC79DetectorModel(R2021DetectorModel):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
     ):
         super().__init__(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC79",
         )
@@ -1668,16 +1648,12 @@ class IC79DetectorModel(R2021DetectorModel):
         cls,
         mode: DistributionMode,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC79",
             path=path,
@@ -1692,15 +1668,11 @@ class IC86_IDetectorModel(R2021DetectorModel):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
     ):
         super().__init__(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC86_I",
         )
@@ -1710,16 +1682,12 @@ class IC86_IDetectorModel(R2021DetectorModel):
         cls,
         mode: DistributionMode,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC86_I",
             path=path,
@@ -1733,16 +1701,12 @@ class IC86_IIDetectorModel(R2021DetectorModel):
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
-        rewrite: bool = False,
-        make_plots: bool = False,
         n_components: int = 3,
         ereco_cuts: bool = True,
     ):
         super().__init__(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC86_II",
         )
@@ -1752,16 +1716,12 @@ class IC86_IIDetectorModel(R2021DetectorModel):
         cls,
         mode: DistributionMode,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC86_II",
             path=path,
