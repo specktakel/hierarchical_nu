@@ -76,25 +76,46 @@ class RateCalculator:
                 bin_edges[c_d].append(bin_e)
                 if (c_e, c_d) not in irf.faulty:
                     pdf = irf.reco_energy[c_e, c_d].pdf(bin_c)
-                    if season == IC86_II:
-                        # Manually correct for zero bins in the middle
-                        # of the energy space
-                        renorm = False
-                        if c_e == 3 and c_d == 1:
-                            pdf[-3] = (pdf[-2] + pdf[-4]) / 2
-                            renorm = True
-                        elif c_e == 0 and c_d == 2:
-                            pdf[-2] = (pdf[-1] + pdf[-3]) / 2
-                            renorm = True
-                        elif c_e == 1 and c_d == 2:
-                            pdf[-3] = (pdf[-2] + pdf[-4]) / 2
-                            renorm = True
-                        if renorm:
-                            dlogE = np.diff(bin_edges[c_d][c_e])
-                            # re-normalise to one
-                            norm = np.sum(pdf * dlogE)
-                            pdf /= norm
+                    diff = np.diff(np.nonzero(pdf)[0])
+                    if not np.all(np.isclose(diff, np.ones_like(diff))):
+                        print(pdf)
+                        # Found some zeros inbetween non zero values,
+                        # will mess up the interpolation of logs of evaluated splines
+                        # fix these by taking the linear interpolation with the next
+                        # non-zero value
+                        beginning = True
+                        for c in range(pdf.size):
+                            # avoid changing the object that's iterated over by using range
+                            val = pdf[c]
+                            if val == 0.0 and beginning:
+                                # If we are at the beginning, do noting
+                                continue
+                            if val != 0.0 and beginning:
+                                # if we find the first non zero entry, set beginning to false
+                                beginning = False
+                            if val == 0.0 and not beginning:
+                                # if value is zero and not beginning, check if we are at the end
+                                if np.all(np.isclose(pdf[c:], np.zeros_like(pdf[c:]))):
+                                    # nothing to see
+                                    break
+                                else:
+                                    # now we found some weird stuff
+                                    # find the next non-zero value and linearly interpolate between the encompassing non-zero values
+                                    prev = pdf[c - 1]
+                                    next_idx = c + np.min(np.nonzero(pdf[c:])[0])
+                                    next_val = pdf[next_idx]
+                                    # if the zero-entries are bunched up, fix all
+                                    next_zero_idxs = (
+                                        c + np.nonzero(pdf[c:next_idx] == 0)[0]
+                                    )
+                                    pdf[next_zero_idxs] = np.interp(
+                                        bin_c[next_zero_idxs],
+                                        [bin_c[c - 1], bin_c[next_idx]],
+                                        [prev, next_val],
+                                    )
+                        print(pdf)
                     hists[c_d].append(pdf)
+
                 else:
                     hists[c_d].append(np.zeros_like(bin_c))
         self.irf = irf
