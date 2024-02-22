@@ -29,7 +29,7 @@ from ..backend import (
 from joblib import Parallel, delayed
 
 mceq_config.debug_level = 0
-Cache.set_cache_dir(".cache")
+
 
 months = [
     "January",
@@ -43,11 +43,12 @@ months = [
     "September",
     "October",
     "November",
-    "December"
+    "December",
 ]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class _AtmosphericNuMuFluxStan(UserDefinedFunction):
     def __init__(
@@ -166,9 +167,11 @@ class AtmosphericNuMuFlux(FluxModel):
     THETA_BINS = 100
 
     @u.quantity_input
-    def __init__(self, lower_energy: u.GeV, upper_energy: u.GeV, *args, **kwargs):
+    def __init__(self, lower_energy: u.GeV, upper_energy: u.GeV, **kwargs):
+
+        self.cache_dir = kwargs.pop("cache_dir", ".cache")
         super().__init__()
-        self._add_index = kwargs.pop("index", 0.)
+        self._add_index = kwargs.pop("index", 0.0)
         self._setup()
         self._parameters = {}
         if (lower_energy < self.EMIN) or (upper_energy > self.EMAX):
@@ -176,11 +179,11 @@ class AtmosphericNuMuFlux(FluxModel):
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
 
-
     def _create_spline(self, flux, e_grid, theta_grid):
 
         def pl(E, index, E0):
             return np.power(E / E0, index)
+
         # Signature flux 2d array, egrid and theta/zenith
         flux = flux * pl(e_grid, self._add_index, 1e3)[np.newaxis, :]
         splined_flux = scipy.interpolate.RectBivariateSpline(
@@ -200,7 +203,6 @@ class AtmosphericNuMuFlux(FluxModel):
                 # is a tuple of flux, e_grid, theta_grid
                 (e_grid, theta_grid), flux = data
                 self._flux_spline = self._create_spline(flux, e_grid, theta_grid)
-
 
     def _load_from_monthly_files(self):
         for c, month in enumerate(months):
@@ -225,6 +227,7 @@ class AtmosphericNuMuFlux(FluxModel):
             pickle.dump(((e_grid, theta_grid), f_atmo), fr)
 
     def _setup(self):
+        Cache.set_cache_dir(self.cache_dir)
         if self.CACHE_FNAME in Cache:
             logger.debug("Loading flux from Cache.")
             self._load_from_file()
@@ -234,6 +237,7 @@ class AtmosphericNuMuFlux(FluxModel):
             self._load_from_monthly_files()
 
         else:
+
             def run(month):
                 # Calculate the spectrum for each month's atmosphere
                 mceq = MCEqRun(
@@ -252,10 +256,13 @@ class AtmosphericNuMuFlux(FluxModel):
                     mceq.set_theta_deg(theta)
                     mceq.solve()
                     numu_fluxes.append(
-                        (mceq.get_solution("total_numu") + mceq.get_solution("total_antinumu"))
+                        (
+                            mceq.get_solution("total_numu")
+                            + mceq.get_solution("total_antinumu")
+                        )
                     )
                 numu_fluxes = np.array(numu_fluxes)
-                    
+
                 with Cache.open(f"mceq_flux_{month}.pickle", "wb") as f:
                     pickle.dump(((mceq.e_grid, theta_grid), numu_fluxes), f)
 
@@ -265,10 +272,13 @@ class AtmosphericNuMuFlux(FluxModel):
                     run_for.append(month)
 
             logger.debug(f"Running simulation for {run_for}")
-            Parallel(n_jobs=len(run_for), backend="loky")(delayed(run)(month) for month in run_for)
+            Parallel(n_jobs=len(run_for), backend="loky")(
+                delayed(run)(month) for month in run_for
+            )
 
             self._load_from_monthly_files()
-            
+        Cache.set_cache_dir(".cache")
+
     def make_stan_function(self, energy_points=100, theta_points=50):
         log_energy_grid = np.linspace(
             np.log10(self._lower_energy.to_value(u.GeV)),
@@ -295,7 +305,8 @@ class AtmosphericNuMuFlux(FluxModel):
 
         try:
             result = np.power(
-                10, self._flux_spline(cosz, np.log10(energy.to_value(u.GeV)), grid=False)
+                10,
+                self._flux_spline(cosz, np.log10(energy.to_value(u.GeV)), grid=False),
             )
         except ValueError as e:
             print("Error in spline evaluation. Are the evaluation points ordered?")
@@ -375,7 +386,7 @@ class AtmosphericNuMuFlux(FluxModel):
             (-np.pi / 2) * u.rad,
             (np.pi / 2) * u.rad,
             0 * u.rad,
-            2 * np.pi * u.rad
+            2 * np.pi * u.rad,
         )
 
     @property
@@ -422,12 +433,12 @@ class AtmosphericNuMuFlux(FluxModel):
         vect_int = np.vectorize(_integral)
 
         # Check edge cases
-        e_low[
-            ((e_low < self._lower_energy) & (e_up > self._lower_energy))
-        ] = self._lower_energy
-        e_up[
-            ((e_low < self._upper_energy) & (e_up > self._upper_energy))
-        ] = self._upper_energy
+        e_low[((e_low < self._lower_energy) & (e_up > self._lower_energy))] = (
+            self._lower_energy
+        )
+        e_up[((e_low < self._upper_energy) & (e_up > self._upper_energy))] = (
+            self._upper_energy
+        )
 
         e_low = e_low.to_value(u.GeV)
         e_up = e_up.to_value(u.GeV)
