@@ -1,15 +1,12 @@
 from typing import Callable
 import sys
 from argparse import ArgumentParser
+
 import numpy as np
 import matplotlib.pyplot as plt
 from cycler import cycler
-from scipy import stats
 from scipy.integrate import quad
-from scipy.interpolate import RectBivariateSpline
 from astropy import units as u
-import pickle
-import os
 
 from hierarchical_nu.events import Events
 from hierarchical_nu.detector.icecube import (
@@ -23,19 +20,15 @@ from hierarchical_nu.detector.icecube import (
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.atmospheric_flux import months
 from hierarchical_nu.events import Events
 from hierarchical_nu.utils.lifetime import LifeTime
-from hierarchical_nu.utils.cache import Cache
-from hierarchical_nu.detector.r2021 import R2021EffectiveArea
 from hierarchical_nu.detector.detector_model import EffectiveArea
+from hierarchical_nu.detector.r2021 import R2021EffectiveArea
+from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.lifetime import LifeTime
-
-
-from skyllh.analyses.i3.publicdata_ps.utils import FctSpline1D, FctSpline2D
 from icecube_tools.detector.r2021 import R2021IRF
 
-from icecube_tools.utils.data import data_directory
+from skyllh.analyses.i3.publicdata_ps.utils import FctSpline1D
 
 from tqdm_joblib import tqdm_joblib
 from joblib import Parallel, delayed
@@ -83,7 +76,7 @@ class RateCalculator:
                 bin_edges[c_d].append(bin_e)
                 if (c_e, c_d) not in irf.faulty:
                     pdf = irf.reco_energy[c_e, c_d].pdf(bin_c)
-                    if season.P == "IC86_II":
+                    if season == IC86_II:
                         # Manually correct for zero bins in the middle
                         # of the energy space
                         if c_e == 3 and c_d == 1:
@@ -309,6 +302,7 @@ class RateCalculator:
         return fig, axs
 
 
+"""
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-s", "--season", type=str)
@@ -319,6 +313,11 @@ if __name__ == "__main__":
     dec_bin = parser.declination
     index = parser.index
 
-    calc = RateCalculator(season, flux_spline, aeff_spline)
-    print(calc.season)
+    flux = AtmosphericNuMuFlux(
+        1e1 * u.GeV, 1e9 * u.GeV, index=index, cache_dir="input/mceq"
+    )
+    aeff = R2021EffectiveArea(season=season)
+
+    calc = RateCalculator(Refrigerator.python2dm(season), flux, aeff, dec_bin)
     sys.exit()
+"""
