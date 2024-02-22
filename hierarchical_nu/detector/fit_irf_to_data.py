@@ -132,7 +132,6 @@ class RateCalculator:
 
         return ereco_pdfs
 
-    @u.quantity_input
     def create_shifted_reco_pdf(
         self,
         tE_idx: int,
@@ -300,6 +299,20 @@ class RateCalculator:
         ax.grid()
 
         return fig, axs
+
+    def plot_hist_and_spline(self, tE_idx, dec_idx):
+        spline = self.create_shifted_reco_pdf(tE_idx, dec_idx)
+        n, bins = self.create_shifted_reco_pdf(tE_idx, dec_idx, hist=True)
+        x = np.linspace(bins[0], bins[-1], 1_000)
+        fig, ax = plt.subplots(1, 1)
+        ax.plot(x, spline(x))
+        binc = bins[:-1] + np.diff(bins) / 2
+        ax.bar(binc, n, width=np.diff(bins), alpha=0.5, color="grey")
+        ax.set_yscale("log")
+        ax.set_xlabel(r"$\hat{E}~[\si{\giga\electronvolt}]$")
+        ax.set_ylabel("pdf")
+
+        return fig, ax
 
 
 """
