@@ -287,7 +287,9 @@ class HistogramSampler:
         )
         with self._dec_lookup:
             # do binary search for bin of declination
-            declination_bins = StanArray("dec_bins", "real", self._declination_bins)
+            declination_bins = StanArray(
+                "dec_bins", "real", self._dec_bin_edges.to_value(u.rad)
+            )
             ReturnStatement(["binary_search(declination, ", declination_bins, ")"])
 
     def _make_histogram(
@@ -596,6 +598,18 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
     def __call__(self, log_rE, log_tE):
         pass
 
+    @u.quantity_input
+    def generate_ereco_spline(self, log_tE, dec: u.rad):
+        tE_idx = np.digitize(log_tE, self.log_tE_bin_edges) - 1
+        dec_idx = np.digitize(dec, self._dec_bin_edges) - 1
+
+        bin_edges = self.irf.reco_energy_bins[tE_idx, dec_idx]
+        binc = bin_edges[:-1] + np.diff(bin_edges) / 2
+        pdf_vals = self.irf.reco_energy[tE_idx, dec_idx].pdf(binc)
+
+        spline = FctSpline1D(pdf_vals, bin_edges, norm=True)
+        return spline
+
     def generate_code(self) -> None:
         """
         Generates stan code by instanciating parent class and the other things.
@@ -822,12 +836,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         for c, dec in enumerate(self._dec_binc):
             # Create the IRF spline for each true energy
             self._ereco_splines.append(
-                [
-                    create_reco_e_pdf_for_true_e(
-                        np.power(10, _) * u.GeV, dec, season=self._season
-                    )
-                    for _ in self._log_tE_binc
-                ]
+                [self.generate_ereco_spline(_, dec) for _ in self._log_tE_binc]
             )
         # Create empty array to store evaluated splines
         self._evaluations = np.zeros(
@@ -911,6 +920,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
             assumes only one value is provided
         :param use_lognorm: bool, if True use lognormal parameterisation
         """
+
         # Truncate input energies to safe range, i.e. range covered by IRFs
         energy_trunc = true_energy.to(u.GeV).value
         energy_trunc = np.atleast_1d(energy_trunc)
@@ -935,6 +945,37 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
             upper_threshold_energy = np.atleast_1d(upper_threshold_energy)
         else:
             upper_threshold_energy = np.array([1e9]) * u.GeV
+
+        self._current_e = energy_trunc
+        self._current_dec = dec
+        self._current_e_low = lower_threshold_energy
+        self._current_e_up = upper_threshold_energy
+        self._current_interp = use_interpolation
+
+        try:
+            # Check if all of the values are the same as in the previous call
+            # If so, return the stored previous result
+            if not np.all(np.isclose(energy_trunc, self._last_e)):
+                raise AssertionError
+            if not np.all(np.isclose(dec, self._last_dec)):
+                raise AssertionError
+            if not np.all(np.isclose(lower_threshold_energy, self._last_e_low)):
+                raise AssertionError
+            if not use_interpolation == self._last_interp:
+                raise AssertionError
+
+            return self._last_call
+        except (AssertionError, ValueError, AttributeError):
+            # Either AssertionError from asserting above
+            # or ValueError from comparing arrays of different shape
+            # Or AttributeError if it is the first call of this method
+            # following instantiation means that we have different inputs
+
+            self._last_e = energy_trunc.copy()
+            self._last_dec = dec.copy()
+            self._last_e_low = lower_threshold_energy.copy()
+            self._last_e_up = upper_threshold_energy.copy()
+            self._last_interp = use_interpolation
 
         if upper_threshold_energy.size == 1:
             upper_threshold_energy = (
@@ -1022,6 +1063,8 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                             (cE == idx_tE) & (cD == idx_dec_eres)
                         ]
                     ) - pdf.cdf(e_low[(cE == idx_tE) & (cD == idx_dec_eres)])
+
+        self._last_call = prob
 
         return prob
 
@@ -1323,8 +1366,6 @@ class R2021DetectorModel(ABC, DetectorModel):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         season: str = "IC86_II",
     ) -> None:
@@ -1348,7 +1389,7 @@ class R2021DetectorModel(ABC, DetectorModel):
 
         self._angular_resolution = R2021AngularResolution(mode, rewrite, season=season)
 
-        self._energy_resolution = R2021EnergyResolution(mode, rewrite, season=season)
+        self._energy_resolution = R2021EnergyResolution(mode, True, season=season)
 
         self._eff_area = R2021EffectiveArea(mode, season=season)
 
@@ -1374,8 +1415,6 @@ class R2021DetectorModel(ABC, DetectorModel):
         cls,
         mode: DistributionMode,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
         season: str = "IC86_II",
@@ -1410,8 +1449,6 @@ class R2021DetectorModel(ABC, DetectorModel):
             instance = R2021DetectorModel(
                 mode=mode,
                 rewrite=rewrite,
-                make_plots=make_plots,
-                n_components=n_components,
                 ereco_cuts=ereco_cuts,
                 season=season,
             )
@@ -1701,7 +1738,7 @@ class IC86_IIDetectorModel(R2021DetectorModel):
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
-        n_components: int = 3,
+        rewrite: bool = False,
         ereco_cuts: bool = True,
     ):
         super().__init__(
