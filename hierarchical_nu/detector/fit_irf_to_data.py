@@ -128,7 +128,8 @@ class RateCalculator:
 
         # Create ROI in appropriate dec range covered by the IRF dec bin selected
         self._dec_idx = dec_idx
-        dec_min, dec_max = self.irf.declination_bins[dec_idx : dec_idx + 2]
+        dec_min = self.irf.declination_bins[dec_idx]
+        dec_max = self.irf.declination_bins[dec_idx + 1]
         dec_min = np.deg2rad(-5) if dec_min < np.deg2rad(-5) else dec_min
         ROIList.clear_registry()
         roi = RectangularROI(DEC_min=dec_min * u.rad, DEC_max=dec_max * u.rad)
