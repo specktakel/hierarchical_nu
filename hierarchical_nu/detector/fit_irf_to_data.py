@@ -245,8 +245,21 @@ class RateCalculator:
         llh = -2 * np.sum(Nex[mask] + self.exp_N[mask] * np.log(Nex[mask]))
         return llh
 
-    def scan():
-        pass
+    def scan(self, a1, a2, b1, b2, n_jobs: int = 20):
+        """
+        Scan over the parameter space
+        """
+        aa1, aa2, bb1, bb2 = np.meshgrid(a1, a2, b1, b2)
+        with tqdm_joblib(desc="likelihood", total=aa1.size) as progress_bar:
+            ll = Parallel(n_jobs=n_jobs, backend="loky", prefer="threads")(
+                delayed(self.likelihood)(a1, a2, b1, b2)
+                for (a1, a2, b1, b2) in zip(
+                    aa1.flatten(), aa2.flatten(), bb1.flatten(), bb2.flatten()
+                )
+            )
+        ll = np.array(ll).reshape(aa1.shape)
+        self.ll = ll
+        return ll
 
     def plot_detailed_rates(self, detailed_rates):
 
