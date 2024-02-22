@@ -79,8 +79,17 @@ class RateCalculator:
                     if season == IC86_II:
                         # Manually correct for zero bins in the middle
                         # of the energy space
+                        renorm = False
                         if c_e == 3 and c_d == 1:
-                            pdf[-3] = pdf[-2]
+                            pdf[-3] = (pdf[-2] + pdf[-4]) / 2
+                            renorm = True
+                        elif c_e == 0 and c_d == 2:
+                            pdf[-2] = (pdf[-1] + pdf[-3]) / 2
+                            renorm = True
+                        elif c_e == 1 and c_d == 2:
+                            pdf[-3] = (pdf[-2] + pdf[-4]) / 2
+                            renorm = True
+                        if renorm:
                             dlogE = np.diff(bin_edges[c_d][c_e])
                             # re-normalise to one
                             norm = np.sum(pdf * dlogE)
