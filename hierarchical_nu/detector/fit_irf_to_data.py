@@ -2,6 +2,8 @@ from typing import Callable
 import sys
 from argparse import ArgumentParser
 import numpy as np
+import matplotlib.pyplot as plt
+from cycler import cycler
 from scipy import stats
 from scipy.integrate import quad
 from scipy.interpolate import RectBivariateSpline
@@ -109,7 +111,7 @@ class RateCalculator:
         Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
         self.Ebins = np.geomspace(1e2, 1e5, 31)
         logEbins = np.log10(self.Ebins)
-        Ebins_c = np.power(10, logEbins[:-1] + np.diff(logEbins) / 2)
+        self.Ebins_c = np.power(10, logEbins[:-1] + np.diff(logEbins) / 2)
         events = Events.from_ev_file(season)
         exp_N = np.histogram(events.energies.to_value(u.GeV), self.Ebins)[0]
         self.exp_rate = exp_N / self.lifetime
@@ -245,6 +247,53 @@ class RateCalculator:
 
     def scan():
         pass
+
+    def plot_detailed_rates(self, detailed_rates):
+
+        colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+        linestyles = ["solid", "dashed", "dotted", "dashdot", (0, (3, 5, 1, 5, 1, 5))]
+        default_cycler = cycler(color=colors) * cycler(linestyle=linestyles)
+
+        fig, axs = plt.subplots(
+            2, 1, sharex=True, gridspec_kw={"height_ratios": [5, 1]}
+        )
+        ax = axs[0]
+        ax.plot(self.Ebins_c, detailed_rates.sum(axis=1), color="black")
+        _bin = 0
+        IRF_ebins = np.arange(2, 8.1, 0.5)
+        ax.set_prop_cycle(default_cycler)
+        for c, rate in enumerate(detailed_rates.T):
+            if c % 5 == 0:
+                ax.plot(
+                    self.Ebins_c,
+                    rate,
+                    label=f"IRF E={(IRF_ebins[_bin]+IRF_ebins[_bin+1])/2:.2f}",
+                )
+                _bin += 1
+            else:
+                ax.plot(self.Ebins_c, rate)
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlabel(r"$\hat{E}~[\si{\giga\electronvolt}]$")
+        ax.set_ylabel(r"event rate~[1/s]")
+        ax.scatter(self.Ebins_c, self.exp_rate, marker="+", color="red")
+        ax.set_xlim(1e2, 1e5)
+        _max = np.max(np.vstack((detailed_rates.sum(axis=1), self.exp_rate))) * 2
+        _min = np.min(self.exp_rate) / 2
+        ax.set_ylim(_min, _max)
+        ax.legend()
+        ax.grid()
+        ax = axs[1]
+        ax.scatter(
+            self.Ebins_c,
+            (self.exp_rate - detailed_rates.sum(axis=1)) / detailed_rates.sum(axis=1),
+            color="black",
+            marker="+",
+        )
+        ax.set_ylim(-0.5, 0.5)
+        ax.grid()
+
+        return fig, axs
 
 
 if __name__ == "__main__":
