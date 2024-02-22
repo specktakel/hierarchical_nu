@@ -19,12 +19,15 @@ from hierarchical_nu.detector.icecube import (
     EventType,
 )
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
+from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.atmospheric_flux import months
 from hierarchical_nu.events import Events
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.utils.cache import Cache
 from hierarchical_nu.detector.r2021 import R2021EffectiveArea
+from hierarchical_nu.detector.detector_model import EffectiveArea
+from hierarchical_nu.utils.lifetime import LifeTime
 
 
 from skyllh.analyses.i3.publicdata_ps.utils import FctSpline1D, FctSpline2D
@@ -41,14 +44,33 @@ class RateCalculator:
     def __init__(
         self,
         season: EventType,
-        flux_spline: Callable,
-        aeff_spline: Callable,
+        flux: AtmosphericNuMuFlux,
+        aeff: EffectiveArea,
         dec_idx: int,
     ):
+        """
+        :param season: EventType instance for which to calculate the rate. Must be of IC40 to IC86_II
+        :param flux: AtmosphericNuMuFlux to use for the rate calculation
+        :param aeff: EffectiveArea instance matching the season, needs to have a spline implementation
+        :dec_idx: Declination index of the IRF to use. Is fixed for the instance, not to be changed at run time.
+        """
         irf = R2021IRF.from_period(season.P)
+
+        if not isinstance(flux, AtmosphericNuMuFlux):
+            raise ValueError("'atmo' needs to be instance of `AtmosphericNuMuFlux`")
+        self._atmo = flux
+        if not isinstance(aeff, EffectiveArea) or not hasattr(aeff, "_eff_area_spline"):
+            raise ValueError("'aeff' is not a proper effective area")
+        self._aeff = aeff
 
         hists = []
         bin_edges = []
+
+        self.tE_size = irf.true_energy_values.size
+        self.tE_bin_edges = irf.true_energy_bins
+        self.aeff_tE_bin_edges = aeff.tE_bin_edges
+        self.dec_size = irf.declination_bins.size - 1
+        self.dec_bin_edges = irf.declination_bins << u.rad
 
         for c_d in range(irf.declination_bins.size - 1):
             hists.append([])
@@ -74,27 +96,43 @@ class RateCalculator:
         self.irf = irf
         self.hists = np.array(hists)
         self.bin_edges = np.array(bin_edges)
-        self.season = season
+        self._season = season
+        self.lifetime = LifeTime().lifetime_from_dm(season)[season].to_value(u.s)
 
+        # Create ROI in appropriate dec range covered by the IRF dec bin selected
+        self._dec_idx = dec_idx
         dec_min, dec_max = self.irf.declination_bins[dec_idx : dec_idx + 2]
         dec_min = np.deg2rad(-5) if dec_min < np.deg2rad(-5) else dec_min
+        ROIList.clear_registry()
         roi = RectangularROI(DEC_min=dec_min * u.rad, DEC_max=dec_max * u.rad)
-
-        Ebins = np.geomspace(1e2, 1e5, 31)
-        logEbins = np.log10(Ebins)
+        Parameter.clear_registry()
+        Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
+        self.Ebins = np.geomspace(1e2, 1e5, 31)
+        logEbins = np.log10(self.Ebins)
         Ebins_c = np.power(10, logEbins[:-1] + np.diff(logEbins) / 2)
         events = Events.from_ev_file(season)
-        exp_N = np.histogram(events.energies.to_value(u.GeV), Ebins)[0]
+        exp_N = np.histogram(events.energies.to_value(u.GeV), self.Ebins)[0]
+        self.exp_rate = exp_N / self.lifetime
         self.exp_N = exp_N
+        # Clean up
+        ROIList.clear_registry()
+        Parameter.clear_registry()
 
-    def make_shifted_ereco_pdfs(self, a1, a2, b1, b2, dec):
-        trueE = sm._true_e_bin_edges
-        trueE_c = trueE[:-1] + np.diff(trueE) / 2
+    @property
+    def season(self):
+        return self._season
+
+    @property
+    def dec_idx(self):
+        return self._dec_idx
+
+    def make_shifted_ereco_pdfs(self, a1, a2, b1, b2):
+
         ereco_pdfs = []
         shifts = [lambda x: x * a1 + b1, lambda x: x * a2 + b2] + [lambda x: x] * 20
-        for shift, tE in zip(shifts, trueE_c):
+        for c in range(self.tE_size):
             ereco_pdfs.append(
-                self.create_shifted_reco_pdf(np.power(10, tE) * u.GeV, dec, shift=shift)
+                self.create_shifted_reco_pdf(c, self.dec_idx, shift=shifts[c])
             )
 
         return ereco_pdfs
@@ -102,8 +140,8 @@ class RateCalculator:
     @u.quantity_input
     def create_shifted_reco_pdf(
         self,
-        Etrue: u.GeV,
-        dec: u.rad,
+        tE_idx: int,
+        dec_idx: int,
         hist: bool = False,
         shift: Callable = lambda x: x,
     ):
@@ -115,10 +153,6 @@ class RateCalculator:
 
         # manually correct for some zero-bin which does weird stuff to the spline
 
-        tE_idx = (
-            np.digitize(np.log10(Etrue.to_value(u.GeV)), self.irf.true_energy_bins) - 1
-        )
-        dec_idx = np.digitize(dec.to_value(u.rad), self.irf.declination_bins) - 1
         log10_reco_e_binedges = shift(self.bin_edges[dec_idx, tE_idx])
         pdf = self.hists[dec_idx, tE_idx]
 
@@ -136,20 +170,19 @@ class RateCalculator:
         a2: float = 1.0,
         b1: float = 0.0,
         b2: float = 0.0,
-        dec_min: u.rad = np.deg2rad(-5) * u.rad,
-        dec_max: u.rad = np.deg2rad(10) * u.rad,
         detailed: bool = False,
     ):
 
-        dec = (dec_max + dec_min) / 2
-        ereco_pdfs = self.make_shifted_ereco_pdfs(a1, a2, b1, b2, dec)
+        sindec_min = np.sin(self.dec_bin_edges[self.dec_idx].to_value(u.rad))
+        sindec_max = np.sin(self.dec_bin_edges[self._dec_idx + 1].to_value(u.rad))
+        ereco_pdfs = self.make_shifted_ereco_pdfs(a1, a2, b1, b2)
 
         def run(El, Eh):
             cdfs = []
+            # Precompute the pdf integrals, i.e. cdf, between the Ereco edges
+            # for all tE bins. When asked for the integrand, only look up value
             for c, logE in enumerate(np.arange(2.25, 8.76, 0.5)):
-                etrue_idx = sm.get_log10_true_e_idx(logE)
-                assert c == etrue_idx
-                pdf = ereco_pdfs[etrue_idx]
+                pdf = ereco_pdfs[c]
 
                 def _cdf(x):
                     return pdf(x) / pdf.norm
@@ -158,15 +191,23 @@ class RateCalculator:
                 cdfs.append(cdf)
 
             def integrand(logE):
-                etrue_idx = sm.get_log10_true_e_idx(logE)
+                etrue_idx = np.digitize(logE, self.tE_bin_edges) - 1
+                """
+                pdf = ereco_pdfs[etrue_idx]
+
+                def _cdf(x):
+                    return pdf(x) / pdf.norm
+
+                cdf = quad(_cdf, np.log10(El), np.log10(Eh))[0]
+                """
 
                 def sin_dec_int(sindec, logE):
-                    return aeff2dspline(sindec, logE)[0] * f_atmo_2dspline(
-                        np.arcsin(sindec), logE
+                    return self._aeff._eff_area_spline((logE, -sindec)) * np.power(
+                        10, self._atmo._flux_spline(-sindec, logE).squeeze()
                     )
 
                 sin_dec_integrated = quad(
-                    sin_dec_int, np.sin(dec_min), np.sin(dec_max), args=(logE)
+                    sin_dec_int, sindec_min, sindec_max, args=(logE)
                 )[0]
 
                 return (
@@ -179,7 +220,9 @@ class RateCalculator:
             if detailed:
                 integrals = [
                     quad(integrand, Elow, Ehigh)[0] * 2 * np.pi
-                    for Elow, Ehigh in zip(Etrue_bins[:-1], Etrue_bins[1:])
+                    for Elow, Ehigh in zip(
+                        np.log10(self.Ebins[:-1]), np.log10(self.Ebins[1:])
+                    )
                 ]
             else:
                 # integral is over true energy
@@ -187,11 +230,11 @@ class RateCalculator:
             return integrals
 
         # loop over reconstructed energies
-        rate = Parallel(n_jobs=20, backend="loky", prefer="threads")(
-            delayed(run)(El, Eh) for (El, Eh) in zip(Ebins[:-1], Ebins[1:])
+        rate = Parallel(n_jobs=self.Ebins.size - 1, backend="loky", prefer="threads")(
+            delayed(run)(El, Eh) for (El, Eh) in zip(self.Ebins[:-1], self.Ebins[1:])
         )
-
-        return np.array(rate)
+        # 1e4 to convert atmo flux from /cm**2 to /m**2
+        return np.array(rate) * 1e4
 
     def likelihood(self, a1, a2, b1, b2):
         rates = self.calc_rates(a1, a2, b1, b2)
@@ -204,41 +247,6 @@ class RateCalculator:
         pass
 
 
-def load_flux():
-    Cache.set_cache_dir("input/mceq")
-    for c, month in enumerate(months):
-        with Cache.open(f"mceq_flux_{month}.pickle", "rb") as fr:
-            if c == 0:
-                (e_grid, theta_grid), flux = pickle.load(fr)
-            else:
-                (_e_grid, _theta_grid), _flux = pickle.load(fr)
-
-                if not np.all(np.isclose(e_grid, _e_grid)):
-                    raise ValueError("Energy grids are incompatible.")
-                if not np.all(np.isclose(theta_grid, _theta_grid)):
-                    raise ValueError("Theta grids are incompatible.")
-                flux += _flux
-    f_atmo = flux / 12
-
-    return e_grid, theta_grid, f_atmo
-
-
-# define utility function used for the atmo spectrum
-def broken_pl(E, g1, g2, E0):
-    output = np.ones_like(E)
-    output[E <= E0] = np.power(E[E <= E0] / E0, g1)
-    output[E > E0] = np.power(E[E > E0] / E0, g2)
-    return output
-
-
-def pl(E, g, E0):
-    return broken_pl(E, g, g, E0)
-
-
-def calc_rates():
-    pass
-
-
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-s", "--season", type=str)
@@ -248,22 +256,6 @@ if __name__ == "__main__":
     season = args.season
     dec_bin = parser.declination
     index = parser.index
-
-    Parameter.clear_registry()
-    Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
-    # Bins for the rate calculation
-
-    log_E_edges, dec_nu_edges, f_atmo = load_flux()
-
-    E_factor = pl(np.power(10, log_E_edges), index, 1e3)
-    flux_spline = FctSpline2D(
-        f_atmo * E_factor[np.newaxis, :], dec_nu_edges, log_E_edges
-    )
-
-    aeff = R2021EffectiveArea(season=season)
-    aeff_spline = FctSpline2D(
-        aeff.cosz_bin_edges, np.log10(aeff.tE_bin_edges), aeff.eff_area
-    )
 
     calc = RateCalculator(season, flux_spline, aeff_spline)
     print(calc.season)
