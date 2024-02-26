@@ -223,11 +223,6 @@ class GridInterpolationEnergyResolution(
     def evaluations(self):
         return self._evaluations
 
-    @abstractmethod
-    @u.quantity_input
-    def __call__(self, log_tE, log_rE, dec):
-        pass
-
 
 class LogNormEnergyResolution(EnergyResolution, UserDefinedFunction, metaclass=ABCMeta):
 
