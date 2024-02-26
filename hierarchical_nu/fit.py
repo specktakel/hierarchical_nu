@@ -24,6 +24,7 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
+from hierarchical_nu.detector.r2021 import R2021EnergyResolution
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrior
@@ -524,7 +525,7 @@ class StanFit:
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
-
+        ax.set_xlim(8e1, 1.4e8)
         return ax, mapper
 
     def plot_energy_posterior(
@@ -662,6 +663,8 @@ class StanFit:
             hspace=0.05,
         )
 
+        axs = []
+
         ax = fig.add_subplot(gs[0, 1])
 
         if isinstance(center, int):
@@ -675,6 +678,7 @@ class StanFit:
         ax.yaxis.set_ticklabels([])
         ax.yaxis.set_ticks([])
         ax.set_ylabel("posterior pdf")
+        axs.append(ax)
         fig.colorbar(mapper, label=f"association probability to {assoc_idx:n}", ax=ax)
 
         ax = fig.add_subplot(
@@ -685,6 +689,7 @@ class StanFit:
         )
 
         ax, _ = self._plot_roi(center, ax, radius, assoc_idx, color_scale)
+        axs.insert(0, ax)
 
         return fig, ax
 
@@ -1129,19 +1134,19 @@ class StanFit:
                     "No other prior type for atmospheric flux implemented."
                 )
 
-        grid = self._event_types[0].model._logEreco_grid
-        fit_inputs["ereco_idx"] = np.argmin(
-            np.abs(
-                np.tile(np.log10(self.events.energies.to_value(u.GeV)), (grid.size, 1))
-                - grid[:, np.newaxis]
-            ),
-            axis=0,
+        idxs = np.digitize(
+            np.log10(self.events.energies.to_value(u.GeV)),
+            R2021EnergyResolution._logEreco_grid_edges,
         )
         # safeguard against index errors in stan
-        fit_inputs["ereco_idx"][
-            fit_inputs["ereco_idx"] == self._event_types[0].model._logEreco_grid.size
-        ] -= 1
-        fit_inputs["ereco_idx"][fit_inputs["ereco_idx"] == 0] += 1
+        idxs = np.where(idxs == 0, 1, idxs)
+        idxs = np.where(
+            idxs > R2021EnergyResolution._logEreco_grid.size,
+            R2021EnergyResolution._logEreco_grid.size,
+            idxs,
+        )
+        fit_inputs["ereco_idx"] = idxs
+
         for c, event_type in enumerate(self._event_types):
             integral_grid.append(
                 [
