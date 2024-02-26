@@ -20,7 +20,7 @@ from hierarchical_nu.utils.roi import (
 )
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.events import Events
+from hierarchical_nu.detector.input import mceq
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -157,7 +157,7 @@ class ConfigParser:
                 diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
             )
         if parameter_config.atmospheric:
-            sources.add_atmospheric_component()
+            sources.add_atmospheric_component(cache_dir=mceq)
 
         return sources
 
