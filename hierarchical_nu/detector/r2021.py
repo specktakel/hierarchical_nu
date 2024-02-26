@@ -50,14 +50,15 @@ from .detector_model import (
 )
 
 from ..source.source import Sources
+from ..utils.fitting_tools import Spline1D
 
 from icecube_tools.detector.r2021 import R2021IRF
 from icecube_tools.point_source_likelihood.energy_likelihood import (
     MarginalisedIntegratedEnergyLikelihood,
 )
-from skyllh.analyses.i3.publicdata_ps.utils import FctSpline1D, FctSpline2D
+
+
 from icecube_tools.detector.r2021 import R2021IRF
-from skyllh.analyses.i3.publicdata_ps.smearing_matrix import PDSmearingMatrix
 
 from icecube_tools.utils.data import data_directory
 
@@ -527,6 +528,11 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
     """
 
     _logEreco_grid = np.linspace(2, 8, 400)
+    _logEreco_grid_edges = np.linspace(
+        2 - np.diff(_logEreco_grid)[0] / 2,
+        8 + np.diff(_logEreco_grid)[0],
+        _logEreco_grid.size + 1,
+    )
 
     def __init__(
         self,
@@ -595,9 +601,6 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
 
         self.setup()
 
-    def __call__(self, log_rE, log_tE):
-        pass
-
     @u.quantity_input
     def generate_ereco_spline(self, log_tE, dec: u.rad):
         tE_idx = np.digitize(log_tE, self.log_tE_bin_edges) - 1
@@ -607,7 +610,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         binc = bin_edges[:-1] + np.diff(bin_edges) / 2
         pdf_vals = self.irf.reco_energy[tE_idx, dec_idx].pdf(binc)
 
-        spline = FctSpline1D(pdf_vals, bin_edges, norm=True)
+        spline = Spline1D(pdf_vals, bin_edges, norm=True)
         return spline
 
     def generate_code(self) -> None:
@@ -862,6 +865,8 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
             for c_E, logE in enumerate(self._log_tE_binc):
                 # Find the highest and lowest non-zero entry
                 # in each spline's evaluation, outside all values are zero
+                if (c_E, c) in self.irf.faulty:
+                    continue
                 idx = np.max(np.argwhere(self._evaluations[c, :, c_E]))
                 # Needs linear scale because of power law definition
                 E_cont = np.power(
@@ -1513,7 +1518,9 @@ class R2021DetectorModel(ABC, DetectorModel):
                 "log10Etrue", "real", ["log10(true_energy)"]
             )
             dec_bins_eres = StanArray(
-                "dec_bins", "real", self.energy_resolution._declination_bins
+                "dec_bins",
+                "real",
+                self.energy_resolution._dec_bin_edges.to_value(u.rad),
             )
             # dec_eres_idx = ForwardVariableDef("dec_ind", "int")
             # declination = ForwardVariableDef("declination", "real")
