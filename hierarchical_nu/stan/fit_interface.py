@@ -46,7 +46,7 @@ from hierarchical_nu.source.flux_model import (
     TwiceBrokenPowerLaw,
 )
 
-from hierarchical_nu.detector.icecube import EventType
+from hierarchical_nu.detector.icecube import EventType, NT, CAS
 
 
 class StanFitInterface(StanInterface):
@@ -178,13 +178,21 @@ class StanFitInterface(StanInterface):
                         ps_pos = self._varpi[self._event_tag[i]]
                     else:
                         ps_pos = self._varpi
-                    self._irf_return << self._dm[event_type](
-                        self._E[i],
-                        self._Edet[i],
-                        self._omega_det[i],
-                        ps_pos,
-                        self._ereco_idx[i],
-                    )
+                    if event_type in [NT, CAS]:
+                        self._irf_return << self._dm[event_type](
+                            self._E[i],
+                            self._Edet[i],
+                            self._omega_det[i],
+                            ps_pos,
+                        )
+                    else:
+                        self._irf_return << self._dm[event_type](
+                            self._E[i],
+                            self._Edet[i],
+                            self._omega_det[i],
+                            ps_pos,
+                            self._ereco_idx[i],
+                        )
 
             self._eres_src << StringExpression(["irf_return.1"])
             self._aeff_src << StringExpression(["irf_return.2"])
