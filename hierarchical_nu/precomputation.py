@@ -186,8 +186,6 @@ class ExposureIntegral:
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                     E_c, self._min_det_energy
                 )
-                p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
-
             p_Edet = np.nan_to_num(p_Edet)
 
             output = np.sum(aeff_vals * flux_vals * p_Edet * d_E)
