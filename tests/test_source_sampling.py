@@ -30,6 +30,8 @@ from hierarchical_nu.backend.expression import StringExpression
 
 from hierarchical_nu.stan.interface import STAN_PATH
 
+from hierarchical_nu.detector.input import mceq
+
 Parameter.clear_registry()
 
 index = Parameter(2.0, "index", fixed=False, par_range=(1.0, 4))
@@ -93,7 +95,7 @@ diffuse_flux_model = make_diffuse_flux()
 
 
 def test_atmo_flux():
-    atmo_bg_flux = AtmosphericNuMuFlux(1e2 * u.GeV, 1e9 * u.GeV)
+    atmo_bg_flux = AtmosphericNuMuFlux(1e2 * u.GeV, 1e9 * u.GeV, cache_dir=mceq)
 
     F = atmo_bg_flux.total_flux_int
 
@@ -121,7 +123,7 @@ def test_point_source_flux():
 def generate_source_test_code(output_directory):
     file_name = os.path.join(output_directory, "source_sample")
 
-    atmo_bg_flux = AtmosphericNuMuFlux(1e2 * u.GeV, 1e9 * u.GeV)
+    atmo_bg_flux = AtmosphericNuMuFlux(1e2 * u.GeV, 1e9 * u.GeV, cache_dir=mceq)
 
     with StanFileGenerator(file_name) as code_gen:
         with FunctionsContext():
@@ -197,7 +199,7 @@ def test_source_sampling(output_directory, random_seed):
     # assert np.mean(atmo_coszen) == pytest.approx(-0.012845337, 0.001)
 
     # Compare atmo with true spectrum
-    atmo_bg_flux = AtmosphericNuMuFlux(1e2 * u.GeV, 1e9 * u.GeV)
+    atmo_bg_flux = AtmosphericNuMuFlux(1e2 * u.GeV, 1e9 * u.GeV, cache_dir=mceq)
 
     energies = np.logspace(2, 9, 100) << u.GeV
 

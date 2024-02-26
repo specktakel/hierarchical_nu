@@ -8,6 +8,8 @@ from hierarchical_nu.detector.icecube import Refrigerator, NT, CAS
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
 
+from hierarchical_nu.detector.input import mceq
+
 
 def test_N():
     Parameter.clear_registry()
@@ -61,7 +63,7 @@ def test_N():
     my_sources.add_diffuse_component(
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
-    my_sources.add_atmospheric_component()
+    my_sources.add_atmospheric_component(cache_dir=mceq)
 
     sim = Simulation(
         my_sources,

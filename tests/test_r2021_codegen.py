@@ -6,7 +6,7 @@ from cmdstanpy import CmdStanModel
 
 from icecube_tools.utils.vMF import get_theta_p
 
-from hierarchical_nu.detector.r2021 import IC86_IIDetectorModel
+from hierarchical_nu.detector.r2021 import IC86_IIDetectorModel, R2021EnergyResolution
 from hierarchical_nu.backend.stan_generator import (
     GeneratedQuantitiesContext,
     DataContext,
@@ -100,6 +100,7 @@ class TestR2021:
 
             with DataContext():
                 size = ForwardVariableDef("size", "int")
+                ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[", size, "]"])
                 ereco = ForwardArrayDef("reco_energy", "real", ["[", size, "]"])
                 phi = ForwardVariableDef("phi", "real")
                 theta = ForwardVariableDef("theta", "real")
@@ -112,7 +113,7 @@ class TestR2021:
                 with ForLoopContext(1, size, "i") as i:
                     lp[i] << StringExpression(
                         [
-                            "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                            "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]', ereco_idx[i])"
                         ]
                     )
 
@@ -158,7 +159,7 @@ class TestR2021:
         etrue = np.power(10, irf.true_energy_values)
 
         for c_e, e in enumerate(etrue):
-            for c_d, t in enumerate(theta):
+            for c_d, t in enumerate(theta[1:], 1):
                 data = {"theta": t, "phi": phi, "true_energy": e}
 
                 output = stan_model.sample(
@@ -203,17 +204,26 @@ class TestR2021:
 
         irf = R2021IRF.from_period("IC86_II")
         phi = 0
-        theta = np.array([3 * np.pi / 4])  # , np.pi/2, np.pi/4])
+        theta = np.array(
+            [
+                3 * np.pi / 4,
+                np.pi / 2,
+            ]
+        )  # np.pi/4])
         etrue = irf.true_energy_values[:-2]
         size = 100
         num_samples = 1000
         for c_e, e in enumerate(etrue[1:-1], 1):
-            for c_d, t in enumerate(theta):
+            for c_d, t in enumerate(theta[1:], 1):
+                ereco = np.random.choice(test_samples[c_e, c_d], size)
                 data = {
                     "theta": t,
                     "phi": phi,
-                    "reco_energy": np.random.choice(test_samples[c_e, c_d], size),
+                    "reco_energy": ereco,
                     "size": size,
+                    "ereco_idx": np.digitize(
+                        ereco, R2021EnergyResolution._logEreco_grid_edges
+                    ),
                 }
 
                 output = stan_model.sample(

@@ -28,7 +28,7 @@ from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.lifetime import LifeTime
 from icecube_tools.detector.r2021 import R2021IRF
 
-from skyllh.analyses.i3.publicdata_ps.utils import FctSpline1D
+from hierarchical_nu.utils.fitting_tools import Spline1D
 
 from tqdm_joblib import tqdm_joblib
 from joblib import Parallel, delayed
@@ -63,6 +63,7 @@ class RateCalculator:
 
         self.tE_size = irf.true_energy_values.size
         self.tE_bin_edges = irf.true_energy_bins
+        self.tE_binc = self.tE_bin_edges[:-1] + np.diff(self.tE_bin_edges) / 2
         self.aeff_tE_bin_edges = aeff.tE_bin_edges
         self.dec_size = irf.declination_bins.size - 1
         self.dec_bin_edges = irf.declination_bins << u.rad
@@ -72,13 +73,14 @@ class RateCalculator:
             bin_edges.append([])
             for c_e in range(irf.true_energy_values.size):
                 bin_e = irf.reco_energy_bins[c_e, c_d]
+                if bin_e.size == 1:
+                    bin_e = irf.reco_energy_bins[4, c_d]
                 bin_c = bin_e[:-1] + np.diff(bin_e) / 2
                 bin_edges[c_d].append(bin_e)
                 if (c_e, c_d) not in irf.faulty:
                     pdf = irf.reco_energy[c_e, c_d].pdf(bin_c)
                     diff = np.diff(np.nonzero(pdf)[0])
                     if not np.all(np.isclose(diff, np.ones_like(diff))):
-                        print(pdf)
                         # Found some zeros inbetween non zero values,
                         # will mess up the interpolation of logs of evaluated splines
                         # fix these by taking the linear interpolation with the next
@@ -136,7 +138,9 @@ class RateCalculator:
         Parameter.clear_registry()
         Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
         self.Ebins = np.geomspace(1e2, 1e5, 31)
+        self.all_Ebins = np.geomspace(1e2, 1e9, 71)
         logEbins = np.log10(self.Ebins)
+        self.logE_binc = logEbins[:-1] + np.diff(logEbins) / 2
         self.Ebins_c = np.power(10, logEbins[:-1] + np.diff(logEbins) / 2)
         events = Events.from_ev_file(season)
         exp_N = np.histogram(events.energies.to_value(u.GeV), self.Ebins)[0]
@@ -183,7 +187,7 @@ class RateCalculator:
         log10_reco_e_binedges = shift(self.bin_edges[dec_idx, tE_idx])
         pdf = self.hists[dec_idx, tE_idx]
 
-        spline = FctSpline1D(pdf, log10_reco_e_binedges, norm=True)
+        spline = Spline1D(pdf, log10_reco_e_binedges, norm=True)
 
         if hist:
             return pdf, log10_reco_e_binedges
@@ -197,7 +201,7 @@ class RateCalculator:
         a2: float = 1.0,
         b1: float = 0.0,
         b2: float = 0.0,
-        detailed: bool = False,
+        detailed: int = 0,
     ):
 
         sindec_min = np.sin(self.dec_bin_edges[self.dec_idx].to_value(u.rad))
@@ -214,7 +218,9 @@ class RateCalculator:
                 def _cdf(x):
                     return pdf(x) / pdf.norm
 
-                cdf = quad(_cdf, np.log10(El), np.log10(Eh))[0]
+                cdf = quad(_cdf, np.log10(El), np.log10(Eh), limit=200, full_output=1)[
+                    0
+                ]
                 cdfs.append(cdf)
 
             def integrand(logE):
@@ -234,7 +240,7 @@ class RateCalculator:
                     )
 
                 sin_dec_integrated = quad(
-                    sin_dec_int, sindec_min, sindec_max, args=(logE)
+                    sin_dec_int, sindec_min, sindec_max, args=(logE), limit=200
                 )[0]
 
                 return (
@@ -244,16 +250,33 @@ class RateCalculator:
                     * np.log(10)
                 )
 
-            if detailed:
+            if detailed == 2:
+                # use effective area binning, 10 bins per decade
                 integrals = [
-                    quad(integrand, Elow, Ehigh)[0] * 2 * np.pi
+                    quad(integrand, Elow, Ehigh - 1e-4, limit=200, full_output=0)[0]
+                    * 2
+                    * np.pi
                     for Elow, Ehigh in zip(
-                        np.log10(self.Ebins[:-1]), np.log10(self.Ebins[1:])
+                        np.log10(self.all_Ebins[:-1]), np.log10(self.all_Ebins[1:])
                     )
                 ]
+            elif detailed == 1:
+                # use IRF binning, 2 bins per decade
+                integrals = [
+                    quad(integrand, Elow, Ehigh - 1e-4, limit=200, full_output=0)[0]
+                    * 2
+                    * np.pi
+                    for Elow, Ehigh in zip(
+                        self.tE_bin_edges[:-1], self.tE_bin_edges[1:]
+                    )
+                ]
+            elif detailed == 0:
+                # integral is over true energy, no splitting of true energies
+                integrals = (
+                    quad(integrand, 2, 9, limit=10_000, full_output=0)[0] * 2 * np.pi
+                )
             else:
-                # integral is over true energy
-                integrals = quad(integrand, 2, 8)[0] * 2 * np.pi
+                raise ValueError("`detailed` must be 0, 1 or 2.")
             return integrals
 
         # loop over reconstructed energies
@@ -263,27 +286,58 @@ class RateCalculator:
         # 1e4 to convert atmo flux from /cm**2 to /m**2
         return np.array(rate) * 1e4
 
-    def likelihood(self, a1, a2, b1, b2):
-        rates = self.calc_rates(a1, a2, b1, b2)
+    def exp_value(self, rates):
+        # Calculates the (log) exp value of reconstructed energies
+        # only use detailed==1
+        assert rates.shape == (self.Ebins_c.size, self.tE_binc.size)
+
+        # only calculate for the lowest three Etrue bins, rest is not interesting for the fit
+        av = np.zeros(3)
+        for c in range(3):
+            av[c] = np.average(self.logE_binc, weights=rates[:, c])
+        return av
+
+    def likelihood(self, a1, a2, b1, b2, detailed: int = 0):
+        # TODO implement detailed kwarg
+
+        r = self.calc_rates(a1, a2, b1, b2, detailed)
+        if detailed:
+            rates = r.sum(axis=1)
+        else:
+            rates = r
         mask = rates > 0.0
         Nex = rates * self.lifetime
-        llh = -2 * np.sum(Nex[mask] + self.exp_N[mask] * np.log(Nex[mask]))
-        return llh
+        scale = self.exp_N.sum() / Nex.sum()
+        llh = -2 * np.sum(
+            scale * Nex[mask] + self.exp_N[mask] * np.log(scale * Nex[mask])
+        )
+        if detailed == 1:
+            exp = self.exp_value(r)
 
-    def scan(self, a1, a2, b1, b2, n_jobs: int = 20):
+        return llh, exp
+
+    def scan(self, a1, a2, b1, b2, n_jobs: int = 20, detailed: int = 0):
         """
         Scan over the parameter space
         """
+        if detailed > 1:
+            raise ValueError("`detailed` must be 0 or 1 for a scan")
         aa1, aa2, bb1, bb2 = np.meshgrid(a1, a2, b1, b2)
+        ll = np.zeros(aa1.shape).flatten()
+        exp = np.zeros((aa1.size, 3))
         with tqdm_joblib(desc="likelihood", total=aa1.size) as progress_bar:
-            ll = Parallel(n_jobs=n_jobs, backend="loky", prefer="threads")(
-                delayed(self.likelihood)(a1, a2, b1, b2)
+            ret = Parallel(n_jobs=n_jobs, backend="loky", prefer="threads")(
+                delayed(self.likelihood)(a1, a2, b1, b2, detailed=detailed)
                 for (a1, a2, b1, b2) in zip(
                     aa1.flatten(), aa2.flatten(), bb1.flatten(), bb2.flatten()
                 )
             )
-        ll = np.array(ll).reshape(aa1.shape)
-        self.ll = ll
+
+        for c, (llh, expect) in enumerate(ret):
+            ll[c] = llh
+            exp[c] = expect
+        self.ll = ll.reshape(aa1.shape)
+        self.exp = exp.reshape((*aa1.shape, 3))
         return ll
 
     def plot_detailed_rates(self, detailed_rates):
@@ -293,14 +347,17 @@ class RateCalculator:
         default_cycler = cycler(color=colors) * cycler(linestyle=linestyles)
 
         fig, axs = plt.subplots(
-            2, 1, sharex=True, gridspec_kw={"height_ratios": [5, 1]}
+            2, 1, sharex=True, gridspec_kw={"height_ratios": [5, 1], "hspace": 0}
         )
         ax = axs[0]
-        ax.plot(self.Ebins_c, detailed_rates.sum(axis=1), color="black")
+        ax.scatter(self.Ebins_c, self.exp_rate, marker="+", color="red", label="data")
+        ax.plot(self.Ebins_c, detailed_rates.sum(axis=1), color="black", label="sum")
         _bin = 0
         IRF_ebins = np.arange(2, 8.1, 0.5)
         ax.set_prop_cycle(default_cycler)
         for c, rate in enumerate(detailed_rates.T):
+            if c == 5 * 7:
+                break
             if c % 5 == 0:
                 ax.plot(
                     self.Ebins_c,
@@ -310,11 +367,12 @@ class RateCalculator:
                 _bin += 1
             else:
                 ax.plot(self.Ebins_c, rate)
+
         ax.set_xscale("log")
         ax.set_yscale("log")
-        ax.set_xlabel(r"$\hat{E}~[\si{\giga\electronvolt}]$")
+
         ax.set_ylabel(r"event rate~[1/s]")
-        ax.scatter(self.Ebins_c, self.exp_rate, marker="+", color="red")
+
         ax.set_xlim(1e2, 1e5)
         _max = np.max(np.vstack((detailed_rates.sum(axis=1), self.exp_rate))) * 2
         _min = np.min(self.exp_rate) / 2
@@ -328,8 +386,10 @@ class RateCalculator:
             color="black",
             marker="+",
         )
-        ax.set_ylim(-0.5, 0.5)
+        ax.set_ylim(-0.6, 0.6)
         ax.grid()
+        ax.set_xlabel(r"$\hat{E}~[\si{\giga\electronvolt}]$")
+        ax.set_ylabel(r"$\frac{\text{data} - \text{sim}}{\text{sim}}$")
 
         return fig, axs
 

@@ -7,6 +7,7 @@ from hierarchical_nu.detector.icecube import IC86_II, NT
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import PointSource, Sources
 from hierarchical_nu.simulation import Simulation
+from hierarchical_nu.detector.input import mceq
 import pytest
 
 import logging
@@ -172,7 +173,7 @@ def test_multiple_rois():
     my_sources.add_diffuse_component(
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
-    my_sources.add_atmospheric_component()
+    my_sources.add_atmospheric_component(cache_dir=mceq)
     sim = Simulation(my_sources, IC86_II, 5 * u.year)
 
     roi = CircularROI(
@@ -228,7 +229,7 @@ def test_compare_precomputation():
     my_sources.add_diffuse_component(
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
-    my_sources.add_atmospheric_component()
+    my_sources.add_atmospheric_component(cache_dir=mceq)
     sim = Simulation(my_sources, IC86_II, 5 * u.year)
 
     roi = RectangularROI(DEC_min=np.deg2rad(-5) * u.rad)
