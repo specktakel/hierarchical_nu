@@ -12,6 +12,11 @@ from .r2021 import (
     IC79DetectorModel,
     IC86_IDetectorModel,
     IC86_IIDetectorModel,
+    IC40GridDetectorModel,
+    IC59GridDetectorModel,
+    IC79GridDetectorModel,
+    IC86_IGridDetectorModel,
+    IC86_IIGridDetectorModel,
 )
 
 
@@ -73,6 +78,46 @@ class IC86_II(EventType):
     F = P
     S = 6
     model = IC86_IIDetectorModel
+
+
+@dataclass
+class IC40Grid(EventType):
+    P = "IC40"
+    F = P
+    S = 2
+    model = IC40GridDetectorModel
+
+
+@dataclass
+class IC59Grid(EventType):
+    P = "IC59"
+    F = P
+    S = 3
+    model = IC59GridDetectorModel
+
+
+@dataclass
+class IC79Grid(EventType):
+    P = "IC79"
+    F = P
+    S = 4
+    model = IC79GridDetectorModel
+
+
+@dataclass
+class IC86_IGrid(EventType):
+    P = "IC86_I"
+    F = P
+    S = 5
+    model = IC86_IGridDetectorModel
+
+
+@dataclass
+class IC86_IIGrid(EventType):
+    P = "IC86_II"
+    F = P
+    S = 6
+    model = IC86_IIGridDetectorModel
 
 
 class Refrigerator:

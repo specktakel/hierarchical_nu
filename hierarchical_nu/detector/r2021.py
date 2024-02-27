@@ -2824,11 +2824,11 @@ class R2021DetectorModel(ABC, DetectorModel):
             log10Etrue = InstantVariableDef(
                 "log10Etrue", "real", ["log10(true_energy)"]
             )
-            dec_bins_eres = StanArray(
-                "dec_bins",
-                "real",
-                self.energy_resolution._dec_bin_edges.to_value(u.rad),
-            )
+            # dec_bins_eres = StanArray(
+            #     "dec_bins",
+            #     "real",
+            #     self.energy_resolution._dec_bin_edges.to_value(u.rad),
+            # )
             # dec_eres_idx = ForwardVariableDef("dec_ind", "int")
             # declination = ForwardVariableDef("declination", "real")
             # declination << FunctionCall(["omega"], "omega_to_dec")

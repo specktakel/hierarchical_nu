@@ -1,13 +1,18 @@
 from cmdstanpy import CmdStanModel
 import numpy as np
 import pytest
+import inspect
+from os import path
+from pathlib import Path
 
 from hierarchical_nu.stan.interface import STAN_PATH
+
+wd = path.abspath(path.dirname(__file__)) / Path("stan")
 
 
 def test_interpolation():
     interpolation_model = CmdStanModel(
-        stan_file="stan/interpolation_test.stan",
+        stan_file=wd / Path("interpolation_test.stan"),
         stanc_options={"include-paths": [STAN_PATH]},
     )
 
@@ -36,7 +41,8 @@ def test_interpolation():
 def test_binary_search():
 
     search_model = CmdStanModel(
-        stan_file="stan/binary_test.stan", stanc_options={"include-paths": [STAN_PATH]}
+        stan_file=wd / Path("binary_test.stan"),
+        stanc_options={"include-paths": [STAN_PATH]},
     )
 
     data = {
@@ -57,7 +63,7 @@ def test_binary_search():
 def test_angles():
 
     geometry_model = CmdStanModel(
-        stan_file="stan/utils_test.stan",
+        stan_file=wd / Path("utils_test.stan"),
         stanc_options={"include-paths": [STAN_PATH]},
     )
 
