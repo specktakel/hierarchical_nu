@@ -1,3 +1,8 @@
-import os.path as path
+import inspect
+from os import path
 
-mceq = path.join(path.dirname(__file__), "mceq")
+from ..icecube import Refrigerator
+
+mceq = path.join(
+    path.abspath(path.dirname(inspect.getfile(Refrigerator))), "input", "mceq"
+)

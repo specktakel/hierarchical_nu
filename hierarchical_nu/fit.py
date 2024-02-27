@@ -24,7 +24,7 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
-from hierarchical_nu.detector.r2021 import R2021EnergyResolution
+from hierarchical_nu.detector.r2021 import R2021GridInterpEnergyResolution
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrior
@@ -1136,13 +1136,13 @@ class StanFit:
 
         idxs = np.digitize(
             np.log10(self.events.energies.to_value(u.GeV)),
-            R2021EnergyResolution._logEreco_grid_edges,
+            R2021GridInterpEnergyResolution._logEreco_grid_edges,
         )
         # safeguard against index errors in stan
         idxs = np.where(idxs == 0, 1, idxs)
         idxs = np.where(
-            idxs > R2021EnergyResolution._logEreco_grid.size,
-            R2021EnergyResolution._logEreco_grid.size,
+            idxs > R2021GridInterpEnergyResolution._logEreco_grid.size,
+            R2021GridInterpEnergyResolution._logEreco_grid.size,
             idxs,
         )
         fit_inputs["ereco_idx"] = idxs

@@ -20,7 +20,10 @@ from hierarchical_nu.source.source import (
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import ParScale, Parameter
 from hierarchical_nu.backend.stan_generator import StanGenerator
-from hierarchical_nu.detector.r2021 import R2021EnergyResolution
+from hierarchical_nu.detector.r2021 import (
+    R2021LogNormEnergyResolution,
+    R2021GridInterpEnergyResolution,
+)
 from hierarchical_nu.utils.roi import CircularROI, ROIList
 from hierarchical_nu.detector.icecube import (
     EventType,
@@ -174,12 +177,20 @@ class ExposureIntegral:
                     ).T,
                 ) << (u.m**2)
 
-            if isinstance(self.energy_resolution, R2021EnergyResolution):
+            if isinstance(self.energy_resolution, R2021GridInterpEnergyResolution):
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                     E_c,
                     self._min_det_energy,
                     np.full(E_c.shape, dec.to_value(u.rad)) * u.rad,
                     use_interpolation=True,
+                )
+
+            if isinstance(self.energy_resolution, R2021LogNormEnergyResolution):
+                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                    E_c,
+                    self._min_det_energy,
+                    np.full(E_c.shape, dec.to_value(u.rad)) * u.rad,
+                    use_lognorm=True,
                 )
 
             else:
@@ -260,12 +271,20 @@ class ExposureIntegral:
 
             flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
 
-            if isinstance(self.energy_resolution, R2021EnergyResolution):
+            if isinstance(self.energy_resolution, R2021GridInterpEnergyResolution):
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                     E_grid.flatten(),
                     self._min_det_energy,
                     dec_grid.flatten(),
                     use_interpolation=True,
+                ).reshape(E_grid.shape)
+
+            elif isinstance(self.energy_resolution, R2021LogNormEnergyResolution):
+                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                    E_grid.flatten(),
+                    self._min_det_energy,
+                    dec_grid.flatten(),
+                    use_lognorm=True,
                 ).reshape(E_grid.shape)
 
             else:

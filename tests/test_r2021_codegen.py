@@ -6,7 +6,9 @@ from cmdstanpy import CmdStanModel
 
 from icecube_tools.utils.vMF import get_theta_p
 
-from hierarchical_nu.detector.r2021 import IC86_IIDetectorModel, R2021EnergyResolution
+from hierarchical_nu.detector.r2021 import (
+    IC86_IIDetectorModel,
+)  # , R2021GridInterpEnergyResolution
 from hierarchical_nu.backend.stan_generator import (
     GeneratedQuantitiesContext,
     DataContext,
@@ -100,7 +102,7 @@ class TestR2021:
 
             with DataContext():
                 size = ForwardVariableDef("size", "int")
-                ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[", size, "]"])
+                # ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[", size, "]"])
                 ereco = ForwardArrayDef("reco_energy", "real", ["[", size, "]"])
                 phi = ForwardVariableDef("phi", "real")
                 theta = ForwardVariableDef("theta", "real")
@@ -113,7 +115,8 @@ class TestR2021:
                 with ForLoopContext(1, size, "i") as i:
                     lp[i] << StringExpression(
                         [
-                            "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]', ereco_idx[i])"
+                            #     "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]', ereco_idx[i])"
+                            "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
                         ]
                     )
 
@@ -221,9 +224,9 @@ class TestR2021:
                     "phi": phi,
                     "reco_energy": ereco,
                     "size": size,
-                    "ereco_idx": np.digitize(
-                        ereco, R2021EnergyResolution._logEreco_grid_edges
-                    ),
+                    # "ereco_idx": np.digitize(
+                    #     ereco, R2021GridInterpEnergyResolution._logEreco_grid_edges
+                    # ),
                 }
 
                 output = stan_model.sample(
