@@ -2758,7 +2758,10 @@ class R2021DetectorModel(ABC, DetectorModel):
         code = code.removesuffix("\n}\n")
         if not os.path.isdir(path):
             os.makedirs(path)
+        if eres_type == R2021GridInterpEnergyResolution:
+            season += "_grid"
         if mode == DistributionMode.PDF:
+
             with open(os.path.join(path, cls._PDF_FILENAME(season)), "w+") as f:
                 f.write(code)
             return os.path.join(path, cls._PDF_FILENAME(season))

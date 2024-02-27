@@ -24,7 +24,7 @@ def test_interpolation():
         "L": 5,
     }
     samples = interpolation_model.sample(
-        data=data, iter_warmup=0, iter_sampling=1, fixed_param=True
+        data=data, iter_warmup=0, iter_sampling=1, fixed_param=True, adapt_engaged=False
     )
     # output is truncated at lowest and highest value
     assert samples.stan_variable("interpolated").squeeze() == pytest.approx(
@@ -52,9 +52,7 @@ def test_binary_search():
         "L": 5,
     }
 
-    samples = search_model.sample(
-        data=data, iter_warmup=0, iter_sampling=1, fixed_param=True
-    )
+    samples = search_model.sample(data=data, iter_sampling=1, fixed_param=True)
     assert samples.stan_variable("search").squeeze() == pytest.approx(
         np.array([0.0, 1.0, 9.0, 9.0, 11.0])
     )
@@ -77,7 +75,9 @@ def test_angles():
         ),
     }
     samples = geometry_model.sample(
-        data=data, iter_warmup=0, iter_sampling=1, fixed_param=True, show_console=True
+        data=data,
+        iter_sampling=1,
+        fixed_param=True,
     )
 
     assert samples.stan_variable("weights").squeeze() == pytest.approx(

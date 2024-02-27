@@ -185,7 +185,7 @@ class ExposureIntegral:
                     use_interpolation=True,
                 )
 
-            if isinstance(self.energy_resolution, R2021LogNormEnergyResolution):
+            elif isinstance(self.energy_resolution, R2021LogNormEnergyResolution):
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                     E_c,
                     self._min_det_energy,
