@@ -28,6 +28,7 @@ from hierarchical_nu.detector.r2021 import R2021GridInterpEnergyResolution
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrior
+from hierarchical_nu.source.source import spherical_to_icrs, uv_to_icrs
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -1133,7 +1134,48 @@ class StanFit:
                 raise ValueError(
                     "No other prior type for atmospheric flux implemented."
                 )
+        # use the Eres slices for each event as data input
+        # evaluate the splines at eadch event's reco energy
+        # make this a loop over the IRFs
+        # fix the number of Etrue vals to 14 because we only use it for this one data release
+        # first index is event, second IRF Etrue bin
 
+        self._ereco_spline_evals = np.zeros((self.events.N, 14))
+        # energy_resolution.ereco_splines has first index as declination of IRF, bin_edges=-[90, -10, 10, 90] in degrees
+        _, dec = uv_to_icrs(self.events.unit_vectors)
+        dec_idx = np.zeros(self.events.N, dtype=int)
+        for et in self._event_types:
+            dec_idx[et.S == self.events.types] = (
+                np.digitize(
+                    dec, self._exposure_integral[et].energy_resolution.dec_bin_edges
+                )
+                - 1
+            )
+        log_energies = np.log10(self.events.energies.to_value(u.GeV))
+        for et in self._event_types:
+            for c_d in range(
+                self._exposure_integral[et].energy_resolution.dec_binc.size
+            ):
+                self._ereco_spline_evals[
+                    (et.S == self.events.types) & (dec_idx == c_d)
+                ] = np.array(
+                    [
+                        self._exposure_integral[et].energy_resolution._ereco_splines[
+                            c_d
+                        ][c_E](
+                            log_energies[(et.S == self.events.types) & (dec_idx == c_d)]
+                        )
+                        for c_E in range(
+                            self._exposure_integral[
+                                et
+                            ].energy_resolution.log_tE_binc.size
+                        )
+                    ]
+                ).T
+
+        fit_inputs["ereco_grid"] = self._ereco_spline_evals
+
+        """
         idxs = np.digitize(
             np.log10(self.events.energies.to_value(u.GeV)),
             R2021GridInterpEnergyResolution._logEreco_grid_edges,
@@ -1146,6 +1188,7 @@ class StanFit:
             idxs,
         )
         fit_inputs["ereco_idx"] = idxs
+        """
 
         for c, event_type in enumerate(self._event_types):
             integral_grid.append(

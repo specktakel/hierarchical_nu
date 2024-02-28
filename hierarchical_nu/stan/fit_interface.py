@@ -196,10 +196,11 @@ class StanFitInterface(StanInterface):
                     ):
                         self._irf_return << self._dm[event_type](
                             self._E[i],
-                            self._Edet[i],
+                            FunctionCall([self._ereco_grid[i]], "to_vector"),
+                            # self._Edet[i],
                             self._omega_det[i],
                             ps_pos,
-                            self._ereco_idx[i],
+                            # self._ereco_idx[i],
                         )
                     else:
                         self._irf_return << self._dm[event_type](
@@ -514,14 +515,24 @@ class StanFitInterface(StanInterface):
                         self._event_tag << StringExpression(["int_data[3+N:2+2*N]"])
 
                     # TODO fix indexing for event tags
-                    self._ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[N]"])
-                    self._ereco_idx << StringExpression("int_data[3+N:2+2*N]")
+                    # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[N]"])
+                    # self._ereco_idx << StringExpression("int_data[3+N:2+2*N]")
 
                     self._Edet = ForwardVariableDef("Edet", "vector[N]")
                     self._Edet << FunctionCall(["real_data[start:end]"], "to_vector")
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
 
+                    self._ereco_grid = ForwardArrayDef(
+                        "ereco_grid", "real", ["[N, 14]"]
+                    )
+
+                    with ForLoopContext(1, "N", "f") as f:
+                        end << end + 14
+                        self._ereco_grid[f] << StringExpression(
+                            ["real_data[start:end]"]
+                        )
+                        start << start + 14
                     self._omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
                     # Loop over events to unpack reconstructed direction
                     with ForLoopContext(1, self._N, "i") as i:
@@ -702,7 +713,8 @@ class StanFitInterface(StanInterface):
                 self._event_tag = ForwardArrayDef("event_tag", "int", self._N_str)
 
             # To store the Ereco-grid index for each event, speeds up the 2d interpolation
-            self._ereco_idx = ForwardArrayDef("ereco_idx", "int", self._N_str)
+            # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", self._N_str)
+            self._ereco_grid = ForwardArrayDef("ereco_grid", "real", ["[N, 14]"])
 
             # Energy range at source
             self._Emin_src = ForwardVariableDef("Emin_src", "real")
@@ -934,7 +946,7 @@ class StanFitInterface(StanInterface):
                 self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
                 self._N_mod_J << self._N % self._J
                 # Find size for real_data array
-                sd_events_J = 4  # reco energy, reco dir (unit vector)
+                sd_events_J = 4 + 14  # reco energy, reco dir (unit vector)
                 sd_varpi_Ns = 3  # coords of PS in the sky (unit vector)
                 sd_if_diff = 3  # redshift of diffuse component, Emin_diff/max
                 sd_z_Ns = 1  # redshift of PS
@@ -953,9 +965,9 @@ class StanFitInterface(StanInterface):
                 )
 
                 if self._use_event_tag:
-                    size = "2+3*J"
-                else:
                     size = "2+2*J"
+                else:
+                    size = "2+J"
                 self.int_data = ForwardArrayDef(
                     "int_data", "int", ["[", self._N_shards, ", ", size, "]"]
                 )
@@ -989,6 +1001,14 @@ class StanFitInterface(StanInterface):
                         [self._Edet[start:end]], "to_array_1d"
                     )
                     insert_start << insert_start + insert_len
+
+                    with ForLoopContext(start, end, "f") as f:
+                        insert_end << insert_end + 14
+                        (
+                            self.real_data[i, insert_start:insert_end]
+                            << self._ereco_grid[f]
+                        )
+                        insert_start << insert_start + 14
 
                     with ForLoopContext(start, end, "f") as f:
                         insert_end << insert_end + 3
@@ -1089,12 +1109,13 @@ class StanFitInterface(StanInterface):
                             << self._event_tag[start:end]
                         )
                         insert_start << insert_start + insert_len
-
+                    """
                     insert_end << insert_end + insert_len
                     (
                         self.int_data[i, insert_start:insert_end]
                         << self._ereco_idx[start:end]
                     )
+                    """
 
     def _parameters(self):
         """

@@ -37,6 +37,7 @@ from ..backend import (
     ForwardArrayDef,
     ForwardVectorDef,
     StanArray,
+    StanVector,
     StringExpression,
     UserDefinedFunction,
     TwoDimHistInterpolation,
@@ -1801,10 +1802,10 @@ class R2021GridInterpEnergyResolution(
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
     """
 
-    _logEreco_grid = np.linspace(2, 8, 400)
+    _logEreco_grid = np.linspace(2, 5, 300)
     _logEreco_grid_edges = np.linspace(
-        2 - np.diff(_logEreco_grid)[0] / 2,
-        8 + np.diff(_logEreco_grid)[0],
+        _logEreco_grid[0] - np.diff(_logEreco_grid)[0] / 2,
+        _logEreco_grid[-1] + np.diff(_logEreco_grid)[0],
         _logEreco_grid.size + 1,
     )
 
@@ -1918,8 +1919,8 @@ class R2021GridInterpEnergyResolution(
                 # declination << FunctionCall(["omega"], "omega_to_dec")
 
                 # return 2d interpolated grid evals
-                logEreco_c = StanArray("logEreco_c", "real", self._logEreco_grid)
-                logEtrue_c = StanArray("logEtrue_c", "real", self._log_tE_binc)
+                # logEreco_c = StanArray("logEreco_c", "real", self._logEreco_grid)
+                logEtrue_c = StanVector("logEtrue_c", self._log_tE_binc)
                 # TODO fix dec index, hard-coded 1 rn
                 grid_evals = StanArray("grid_evals", "real", self._evaluations[1])
                 # TODO: replace 2d interpolation with finding the correct slices of
@@ -1928,7 +1929,7 @@ class R2021GridInterpEnergyResolution(
                 likelihood = ForwardVariableDef("loglike", "real")
                 likelihood << FunctionCall(
                     [
-                        FunctionCall([logEtrue_c], "to_vector"),
+                        logEtrue_c,
                         FunctionCall([grid_evals[ereco_idx]], "to_vector"),
                         "log_true_energy",
                     ],
@@ -2792,26 +2793,26 @@ class R2021DetectorModel(ABC, DetectorModel):
         if not single_ps:
             signature = [
                 "true_energy",
-                "detected_energy",
+                "ereco_grid",
                 "omega_det",
                 "src_pos",
             ]
-            sig_type = ["real", "real", "vector", "array[] vector"]
+            sig_type = ["real", "vector", "vector", "array[] vector"]
             return_type = "tuple(array[] real, array[] real, array[] real)"
 
         else:
             signature = [
                 "true_energy",
-                "detected_energy",
+                "ereco_grid",
                 "omega_det",
                 "src_pos",
             ]
-            sig_type = ["real", "real", "vector", "vector"]
+            sig_type = ["real", "vector", "vector", "vector"]
             return_type = "tuple(real, real, array[] real)"
 
-        if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
-            signature += ["reco_idx"]
-            sig_type += ["int"]
+        # if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
+        #     signature += ["reco_idx"]
+        #     sig_type += ["int"]
         UserDefinedFunction.__init__(
             self,
             self._func_name,
@@ -2821,11 +2822,14 @@ class R2021DetectorModel(ABC, DetectorModel):
         )
 
         with self:
-            log10Ereco = InstantVariableDef(
-                "log10Ereco", "real", ["log10(detected_energy)"]
-            )
+            # log10Ereco = InstantVariableDef(
+            #     "log10Ereco", "real", ["log10(detected_energy)"]
+            # )
             log10Etrue = InstantVariableDef(
                 "log10Etrue", "real", ["log10(true_energy)"]
+            )
+            log10EtrueGrid = StanVector(
+                "etrue_grid", self.energy_resolution._log_tE_binc
             )
             # dec_bins_eres = StanArray(
             #     "dec_bins",
@@ -2844,13 +2848,27 @@ class R2021DetectorModel(ABC, DetectorModel):
                     if isinstance(
                         self.energy_resolution, GridInterpolationEnergyResolution
                     ):
-                        ps_eres[i] << self.energy_resolution(
-                            log10Etrue, log10Ereco, "src_pos[i]", "reco_idx"
+                        # ps_eres[i] << self.energy_resolution(
+                        #    log10Etrue, log10Ereco, "src_pos[i]", "reco_idx"
+                        # )
+                        ps_eres[i] << FunctionCall(
+                            [
+                                FunctionCall(
+                                    [
+                                        log10EtrueGrid,
+                                        "ereco_grid",
+                                        log10Etrue,
+                                    ],
+                                    "interpolate",
+                                )
+                            ],
+                            "log",
                         )
                     else:
-                        ps_eres[i] << self.energy_resolution(
-                            log10Etrue, log10Ereco, "src_pos[i]"
-                        )
+                        # ps_eres[i] << self.energy_resolution(
+                        #    log10Etrue, log10Ereco, "src_pos[i]"
+                        # )
+                        pass
                     ps_aeff[i] << FunctionCall(
                         [
                             self.effective_area("true_energy", "src_pos[i]"),
@@ -2864,11 +2882,25 @@ class R2021DetectorModel(ABC, DetectorModel):
                 if isinstance(
                     self.energy_resolution, GridInterpolationEnergyResolution
                 ):
-                    ps_eres << self.energy_resolution(
-                        log10Etrue, log10Ereco, "src_pos", "reco_idx"
+                    # ps_eres << self.energy_resolution(
+                    #     log10Etrue, log10Ereco, "src_pos", "reco_idx"
+                    # )
+                    ps_eres[i] << FunctionCall(
+                        [
+                            FunctionCall(
+                                [
+                                    log10EtrueGrid,
+                                    "ereco_grid",
+                                    log10Etrue,
+                                ],
+                                "interpolate",
+                            )
+                        ],
+                        "log",
                     )
                 else:
-                    ps_eres << self.energy_resolution(log10Etrue, log10Ereco, "src_pos")
+                    # ps_eres << self.energy_resolution(log10Etrue, log10Ereco, "src_pos")
+                    pass
                 ps_aeff << FunctionCall(
                     [
                         self.effective_area("true_energy", "src_pos"),
@@ -2879,12 +2911,25 @@ class R2021DetectorModel(ABC, DetectorModel):
             diff = ForwardArrayDef("diff", "real", ["[3]"])
 
             if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
-                diff[1] << self.energy_resolution(
-                    log10Etrue, log10Ereco, "omega_det", "reco_idx"
+                # diff[1] << self.energy_resolution(
+                #     log10Etrue, log10Ereco, "omega_det", "reco_idx"
+                # )
+                diff[1] << FunctionCall(
+                    [
+                        FunctionCall(
+                            [
+                                log10EtrueGrid,
+                                "ereco_grid",
+                                log10Etrue,
+                            ],
+                            "interpolate",
+                        )
+                    ],
+                    "log",
                 )
             else:
-                diff[1] << self.energy_resolution(log10Etrue, log10Ereco, "omega_det")
-
+                # diff[1] << self.energy_resolution(log10Etrue, log10Ereco, "omega_det")
+                pass
             diff[2] << FunctionCall(
                 [
                     self.effective_area("true_energy", "omega_det"),
