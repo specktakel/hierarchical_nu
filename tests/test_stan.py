@@ -24,7 +24,9 @@ def test_interpolation():
         "L": 5,
     }
     samples = interpolation_model.sample(
-        data=data, iter_warmup=0, iter_sampling=1, fixed_param=True, adapt_engaged=False
+        data=data,
+        iter_sampling=1,
+        fixed_param=True,
     )
     # output is truncated at lowest and highest value
     assert samples.stan_variable("interpolated").squeeze() == pytest.approx(
