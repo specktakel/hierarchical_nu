@@ -546,14 +546,26 @@ class Simulation:
             N = np.rint(self._Nex_et.sum(axis=0)).astype(int)
             self._N = np.zeros_like(self._Nex_et)
             for c, _ in enumerate(self._sources):
+
                 weights = self._Nex_et[:, c] / self._Nex_et[:, c].sum()
-                self._N[:, c] = np.rint(weights * N[c])
+
+                # Sample et_idx for each source
+                et_idx = np.random.choice(
+                    range(len(self._event_types)),
+                    p=weights,
+                    size=np.rint(self._Nex_et[:, c].sum()).astype(int),
+                )
+
+                for i, et in enumerate(self._event_types):
+                    # Count number at each idx
+                    self._N[i, c] = np.count_nonzero(et_idx == i)
             N = {}
-            for c, et in enumerate(self._event_types):
-                N[et] = self._N[c].astype(int).tolist()
+            for i, et in enumerate(self._event_types):
+                N[et] = self._N[i].astype(int).tolist()
+
             self._N = N
 
-        for c, event_type in enumerate(self._event_types):
+        for event_type in self._event_types:
             if self._force_N:
                 forced_N.append(self._N[event_type])
 
