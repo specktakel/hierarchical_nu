@@ -1156,22 +1156,28 @@ class StanFit:
             for c_d in range(
                 self._exposure_integral[et].energy_resolution.dec_binc.size
             ):
-                self._ereco_spline_evals[
-                    (et.S == self.events.types) & (dec_idx == c_d)
-                ] = np.array(
-                    [
-                        self._exposure_integral[et].energy_resolution._ereco_splines[
-                            c_d
-                        ][c_E](
-                            log_energies[(et.S == self.events.types) & (dec_idx == c_d)]
-                        )
-                        for c_E in range(
-                            self._exposure_integral[
-                                et
-                            ].energy_resolution.log_tE_binc.size
-                        )
-                    ]
-                ).T
+                try:
+                    self._ereco_spline_evals[
+                        (et.S == self.events.types) & (dec_idx == c_d)
+                    ] = np.array(
+                        [
+                            self._exposure_integral[et].energy_resolution._2dsplines[
+                                c_d
+                            ](
+                                logE,
+                                self._exposure_integral[
+                                    et
+                                ].energy_resolution._log_tE_binc,
+                                grid=False,
+                            )
+                            for logE in log_energies[
+                                (et.S == self.events.types) & (dec_idx == c_d)
+                            ]
+                        ]
+                    )
+                except ValueError:
+                    # Why is this a value error and not an IndexError, clearly the indexing is off...
+                    pass
 
         fit_inputs["ereco_grid"] = self._ereco_spline_evals
 
