@@ -1802,7 +1802,7 @@ class R2021GridInterpEnergyResolution(
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
     """
 
-    _logEreco_grid_edges = _logEreco_grid_edges = np.arange(1.995, 8.01, 0.01)
+    _logEreco_grid_edges = _logEreco_grid_edges = np.arange(1.045, 8.01, 0.01)
     _logEreco_grid = _logEreco_grid_edges[:-1] + np.diff(_logEreco_grid_edges) / 2
 
     assert np.all(

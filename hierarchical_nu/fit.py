@@ -1162,12 +1162,12 @@ class StanFit:
             - 1
         )
         # safeguard against index errors in stan
-        # idxs = np.where(idxs == -1, 0, idxs)
-        # idxs = np.where(
-        #     idxs > R2021GridInterpEnergyResolution._logEreco_grid.size,
-        #     R2021GridInterpEnergyResolution._logEreco_grid.size,
-        #     idxs,
-        # )
+        idxs = np.where(idxs == -1, 0, idxs)
+        idxs = np.where(
+            idxs > R2021GridInterpEnergyResolution._logEreco_grid.size - 1,
+            R2021GridInterpEnergyResolution._logEreco_grid.size - 1,
+            idxs,
+        )
         ereco_indexed = R2021GridInterpEnergyResolution._logEreco_grid[idxs]
         fit_inputs["ereco_idx"] = idxs
         for et in self._event_types:
