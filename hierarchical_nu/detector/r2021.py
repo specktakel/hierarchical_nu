@@ -1802,11 +1802,14 @@ class R2021GridInterpEnergyResolution(
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
     """
 
-    _logEreco_grid = np.linspace(2, 8, 600)
-    _logEreco_grid_edges = np.linspace(
-        _logEreco_grid[0] - np.diff(_logEreco_grid)[0] / 2,
-        _logEreco_grid[-1] + np.diff(_logEreco_grid)[0],
-        _logEreco_grid.size + 1,
+    _logEreco_grid_edges = _logEreco_grid_edges = np.arange(1.995, 8.01, 0.01)
+    _logEreco_grid = _logEreco_grid_edges[:-1] + np.diff(_logEreco_grid_edges) / 2
+
+    assert np.all(
+        np.isclose(
+            _logEreco_grid_edges[:-1] + np.diff(_logEreco_grid_edges) / 2,
+            _logEreco_grid,
+        )
     )
 
     _log_tE_grid = np.arange(2.25, 8.76, 0.25)
