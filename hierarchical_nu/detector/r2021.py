@@ -1802,7 +1802,7 @@ class R2021GridInterpEnergyResolution(
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
     """
 
-    _logEreco_grid = np.linspace(2, 5, 300)
+    _logEreco_grid = np.linspace(2, 8, 600)
     _logEreco_grid_edges = np.linspace(
         _logEreco_grid[0] - np.diff(_logEreco_grid)[0] / 2,
         _logEreco_grid[-1] + np.diff(_logEreco_grid)[0],
@@ -2853,17 +2853,13 @@ class R2021DetectorModel(ABC, DetectorModel):
                         # )
                         ps_eres[i] << FunctionCall(
                             [
-                                FunctionCall(
-                                    [
-                                        log10EtrueGrid,
-                                        "ereco_grid",
-                                        log10Etrue,
-                                    ],
-                                    "interpolate",
-                                )
+                                log10EtrueGrid,
+                                "ereco_grid",
+                                log10Etrue,
                             ],
-                            "log",
+                            "interpolate",
                         )
+
                     else:
                         # ps_eres[i] << self.energy_resolution(
                         #    log10Etrue, log10Ereco, "src_pos[i]"
@@ -2887,16 +2883,11 @@ class R2021DetectorModel(ABC, DetectorModel):
                     # )
                     ps_eres[i] << FunctionCall(
                         [
-                            FunctionCall(
-                                [
-                                    log10EtrueGrid,
-                                    "ereco_grid",
-                                    log10Etrue,
-                                ],
-                                "interpolate",
-                            )
+                            log10EtrueGrid,
+                            "ereco_grid",
+                            log10Etrue,
                         ],
-                        "log",
+                        "interpolate",
                     )
                 else:
                     # ps_eres << self.energy_resolution(log10Etrue, log10Ereco, "src_pos")
@@ -2916,16 +2907,11 @@ class R2021DetectorModel(ABC, DetectorModel):
                 # )
                 diff[1] << FunctionCall(
                     [
-                        FunctionCall(
-                            [
-                                log10EtrueGrid,
-                                "ereco_grid",
-                                log10Etrue,
-                            ],
-                            "interpolate",
-                        )
+                        log10EtrueGrid,
+                        "ereco_grid",
+                        log10Etrue,
                     ],
-                    "log",
+                    "interpolate",
                 )
             else:
                 # diff[1] << self.energy_resolution(log10Etrue, log10Ereco, "omega_det")

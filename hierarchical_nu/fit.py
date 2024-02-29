@@ -1151,7 +1151,21 @@ class StanFit:
                 )
                 - 1
             )
-        log_energies = np.log10(self.events.energies.to_value(u.GeV))
+        # log_energies = np.log10(self.events.energies.to_value(u.GeV))
+
+        idxs = np.digitize(
+            np.log10(self.events.energies.to_value(u.GeV)),
+            R2021GridInterpEnergyResolution._logEreco_grid_edges,
+        )
+        # safeguard against index errors in stan
+        idxs = np.where(idxs == 0, 1, idxs)
+        idxs = np.where(
+            idxs > R2021GridInterpEnergyResolution._logEreco_grid.size,
+            R2021GridInterpEnergyResolution._logEreco_grid.size,
+            idxs,
+        )
+        ereco_indexed = R2021GridInterpEnergyResolution._logEreco_grid[idxs]
+        fit_inputs["ereco_idx"] = idxs
         for et in self._event_types:
             for c_d in range(
                 self._exposure_integral[et].energy_resolution.dec_binc.size
@@ -1170,7 +1184,7 @@ class StanFit:
                                 ].energy_resolution._log_tE_binc,
                                 grid=False,
                             )
-                            for logE in log_energies[
+                            for logE in ereco_indexed[
                                 (et.S == self.events.types) & (dec_idx == c_d)
                             ]
                         ]
@@ -1179,7 +1193,7 @@ class StanFit:
                     # Why is this a value error and not an IndexError, clearly the indexing is off...
                     pass
 
-        fit_inputs["ereco_grid"] = self._ereco_spline_evals
+        fit_inputs["ereco_grid"] = np.log(self._ereco_spline_evals)
 
         """
         idxs = np.digitize(
