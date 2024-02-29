@@ -1809,6 +1809,8 @@ class R2021GridInterpEnergyResolution(
         _logEreco_grid.size + 1,
     )
 
+    _log_tE_grid = np.arange(2.25, 8.76, 0.25)
+
     def __init__(
         self,
         mode: DistributionMode = DistributionMode.PDF,
