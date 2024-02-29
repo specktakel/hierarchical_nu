@@ -1147,7 +1147,8 @@ class StanFit:
         for et in self._event_types:
             dec_idx[et.S == self.events.types] = (
                 np.digitize(
-                    dec, self._exposure_integral[et].energy_resolution.dec_bin_edges
+                    dec[et.S == self.events.types],
+                    self._exposure_integral[et].energy_resolution.dec_bin_edges,
                 )
                 - 1
             )

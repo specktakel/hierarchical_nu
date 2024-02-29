@@ -86,7 +86,7 @@ class HistogramSampler:
     # These are fitted correction factors to low energy IRFs
     # used to better model the atmospheric background at ~1TeV
 
-    CORRECTION_FACTOR = {}
+    # CORRECTION_FACTOR = {}
     """
         # Season
         "IC86_II": {
@@ -1833,11 +1833,11 @@ class R2021GridInterpEnergyResolution(
         self.CACHE_FNAME_HISTOGRAM = f"energy_reso_histogram_{season}.npz"
         # Instantiate the icecube_tools IRFs with the appropriate re-binning
         # of reconstructed energies according to the correction factors
-        try:
-            corr = self.CORRECTION_FACTOR[self._season]
-            self.irf = R2021IRF.from_period(self._season, correction_factor=corr)
-        except KeyError:
-            self.irf = R2021IRF.from_period(self._season)
+        # try:
+        #     corr = self.CORRECTION_FACTOR[self._season]
+        #     self.irf = R2021IRF.from_period(self._season, correction_factor=corr)
+        # except KeyError:
+        self.irf = R2021IRF.from_period(self._season)
         self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(
             season, np.linspace(1, 9, 25)
         )
@@ -1898,8 +1898,8 @@ class R2021GridInterpEnergyResolution(
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 self._func_name,
-                ["log_true_energy", "log_reco_energy", "omega", "ereco_idx"],
-                ["real", "real", "vector", "int"],
+                ["log_true_energy", "eres_slice"],
+                ["real", "vector"],
                 "real",
             )
         elif self.mode == DistributionMode.RNG:
@@ -1913,7 +1913,7 @@ class R2021GridInterpEnergyResolution(
         if self.mode == DistributionMode.PDF:
             logger.info("Generating pdf code using spline evaluations.")
             with self:
-                ereco_idx = StringExpression(["ereco_idx"])
+                # ereco_idx = StringExpression(["ereco_idx"])
                 # Argument `omega` is cartesian vector, cos(z) (z is direction) is theta in spherical coords
                 # declination = ForwardVariableDef("declination", "real")
                 # declination << FunctionCall(["omega"], "omega_to_dec")
@@ -1922,7 +1922,7 @@ class R2021GridInterpEnergyResolution(
                 # logEreco_c = StanArray("logEreco_c", "real", self._logEreco_grid)
                 logEtrue_c = StanVector("logEtrue_c", self._log_tE_binc)
                 # TODO fix dec index, hard-coded 1 rn
-                grid_evals = StanArray("grid_evals", "real", self._evaluations[1])
+                # grid_evals = StanArray("grid_evals", "real", self._evaluations[1])
                 # TODO: replace 2d interpolation with finding the correct slices of
                 # Ereco enclosing the actual value, hand these over to 2d interpolation
                 # make another 2d interpolation function skipping the useless first binary search?
@@ -1930,12 +1930,12 @@ class R2021GridInterpEnergyResolution(
                 likelihood << FunctionCall(
                     [
                         logEtrue_c,
-                        FunctionCall([grid_evals[ereco_idx]], "to_vector"),
+                        "eres_slice",
                         "log_true_energy",
                     ],
                     "interpolate",
                 )
-                ReturnStatement([FunctionCall([likelihood], "log")])
+                ReturnStatement([likelihood])
 
         if self.mode == DistributionMode.RNG:
             logger.info("Generating simulation code using histograms")
@@ -2828,9 +2828,9 @@ class R2021DetectorModel(ABC, DetectorModel):
             log10Etrue = InstantVariableDef(
                 "log10Etrue", "real", ["log10(true_energy)"]
             )
-            log10EtrueGrid = StanVector(
-                "etrue_grid", self.energy_resolution._log_tE_binc
-            )
+            # log10EtrueGrid = StanVector(
+            #     "etrue_grid", self.energy_resolution._log_tE_binc
+            # )
             # dec_bins_eres = StanArray(
             #     "dec_bins",
             #     "real",
@@ -2848,17 +2848,15 @@ class R2021DetectorModel(ABC, DetectorModel):
                     if isinstance(
                         self.energy_resolution, GridInterpolationEnergyResolution
                     ):
-                        # ps_eres[i] << self.energy_resolution(
-                        #    log10Etrue, log10Ereco, "src_pos[i]", "reco_idx"
+                        ps_eres[i] << self.energy_resolution(log10Etrue, "ereco_grid")
+                        # ps_eres[i] << FunctionCall(
+                        #     [
+                        #         log10EtrueGrid,
+                        #         "ereco_grid",
+                        #         log10Etrue,
+                        #     ],
+                        #     "interpolate",
                         # )
-                        ps_eres[i] << FunctionCall(
-                            [
-                                log10EtrueGrid,
-                                "ereco_grid",
-                                log10Etrue,
-                            ],
-                            "interpolate",
-                        )
 
                     else:
                         # ps_eres[i] << self.energy_resolution(
@@ -2881,14 +2879,7 @@ class R2021DetectorModel(ABC, DetectorModel):
                     # ps_eres << self.energy_resolution(
                     #     log10Etrue, log10Ereco, "src_pos", "reco_idx"
                     # )
-                    ps_eres[i] << FunctionCall(
-                        [
-                            log10EtrueGrid,
-                            "ereco_grid",
-                            log10Etrue,
-                        ],
-                        "interpolate",
-                    )
+                    ps_eres[i] << self.energy_resolution(log10Etrue, "ereco_grid")
                 else:
                     # ps_eres << self.energy_resolution(log10Etrue, log10Ereco, "src_pos")
                     pass
@@ -2905,14 +2896,7 @@ class R2021DetectorModel(ABC, DetectorModel):
                 # diff[1] << self.energy_resolution(
                 #     log10Etrue, log10Ereco, "omega_det", "reco_idx"
                 # )
-                diff[1] << FunctionCall(
-                    [
-                        log10EtrueGrid,
-                        "ereco_grid",
-                        log10Etrue,
-                    ],
-                    "interpolate",
-                )
+                diff[1] << self.energy_resolution(log10Etrue, "ereco_grid")
             else:
                 # diff[1] << self.energy_resolution(log10Etrue, log10Ereco, "omega_det")
                 pass
