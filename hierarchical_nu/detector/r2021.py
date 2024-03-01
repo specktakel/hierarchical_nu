@@ -1073,7 +1073,7 @@ class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
         e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
 
         # Get the according IRF dec bins (there are only 3)
-        irf_dec_idx = np.digitize(dec, self._dec_bin_edges) - 1
+        irf_dec_idx = np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
 
         if use_lognorm:
             for c, d in enumerate(self._dec_binc):
@@ -1883,7 +1883,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
     @u.quantity_input
     def generate_ereco_spline(self, log_tE, dec: u.rad):
         tE_idx = np.digitize(log_tE, self.log_tE_bin_edges) - 1
-        dec_idx = np.digitize(dec, self._dec_bin_edges) - 1
+        dec_idx = np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
 
         bin_edges = self.irf.reco_energy_bins[tE_idx, dec_idx]
         binc = bin_edges[:-1] + np.diff(bin_edges) / 2
@@ -2228,7 +2228,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         # Limits of Ereco in dec binning of effective area
         idx_dec_aeff = np.digitize(dec.to_value(u.rad), self._aeff_dec_bins) - 1
         # Get the according IRF dec bins (there are only 3)
-        idx_dec_eres = np.digitize(dec.to(u.rad), self._dec_bin_edges) - 1
+        idx_dec_eres = np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
         idx_dec_aeff[
             np.nonzero(
                 (idx_dec_aeff == self._aeff_dec_bins.size - 1)
