@@ -1794,9 +1794,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         cls(DistributionMode.RNG, rewrite=True, season=season)
 
 
-class R2021GridInterpEnergyResolution(
-    GridInterpolationEnergyResolution, HistogramSampler
-):
+class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler):
     """
     Energy resolution for the ten-year All Sky Point Source release:
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
@@ -1834,7 +1832,7 @@ class R2021GridInterpEnergyResolution(
         """
 
         self._season = season
-        self.CACHE_FNAME_LOGNORM = f"energy_reso_grid_interp_{season}.npz"
+        # self.CACHE_FNAME_LOGNORM = f"energy_reso_grid_interp_{season}.npz"
         self.CACHE_FNAME_HISTOGRAM = f"energy_reso_histogram_{season}.npz"
         # Instantiate the icecube_tools IRFs with the appropriate re-binning
         # of reconstructed energies according to the correction factors
@@ -1980,89 +1978,26 @@ class R2021GridInterpEnergyResolution(
                     ["log_true_energy"], f"{self._season}_etrue_lookup"
                 )
 
-                if self.mode == DistributionMode.PDF:
-                    with IfBlockContext(["etrue_idx == 0 || etrue_idx > 14"]):
-                        ReturnStatement(["negative_infinity()"])
-
                 ereco_hist_idx << FunctionCall(
                     [etrue_idx, dec_idx], f"{self._season}_ereco_get_ragged_index"
                 )
 
-                if self.mode == DistributionMode.PDF:
-                    ereco_idx = ForwardVariableDef("ereco_idx", "int")
-                    ereco_idx << FunctionCall(
-                        [
-                            "log_reco_energy",
-                            FunctionCall(
-                                [ereco_hist_idx],
-                                f"{self._season}_ereco_get_ragged_edges",
-                            ),
-                        ],
-                        "binary_search",
+                # Discard all events below lowest Ereco of data in the respective Aeff declination bin,
+                # Sample until an event passes the cut, return this Ereco
+                if self._make_ereco_cuts:
+                    ereco_cuts = StanArray("ereco_cuts", "real", self._ereco_cuts)
+                    aeff_dec_bins = StanArray(
+                        "aeff_dec_bins", "real", self._aeff_dec_bins
+                    )
+                    aeff_dec_idx = ForwardVariableDef("aeff_dec_idx", "int")
+                    aeff_dec_idx << FunctionCall(
+                        [declination, aeff_dec_bins], "binary_search"
                     )
 
-                    # Intercept outside of hist range here:
-                    with IfBlockContext(
-                        [
-                            f"ereco_idx == 0 || ereco_idx > {self._season}_ereco_get_num_vals(ereco_hist_idx)"
-                        ]
-                    ):
-                        ReturnStatement(["negative_infinity()"])
+                ereco = ForwardVariableDef("ereco", "real")
 
-                    return_value = ForwardVariableDef("return_value", "real")
-                    return_value << StringExpression(
-                        [
-                            FunctionCall(
-                                [ereco_hist_idx],
-                                f"{self._season}_ereco_get_ragged_hist",
-                            ),
-                            "[ereco_idx]",
-                        ]
-                    )
-
-                    with IfBlockContext(["return_value == 0."]):
-                        ReturnStatement(["negative_infinity()"])
-
-                    with ElseBlockContext():
-                        ReturnStatement([FunctionCall([return_value], "log")])
-
-                else:
-                    # Discard all events below lowest Ereco of data in the respective Aeff declination bin,
-                    # Sample until an event passes the cut, return this Ereco
-                    if self._make_ereco_cuts:
-                        ereco_cuts = StanArray("ereco_cuts", "real", self._ereco_cuts)
-                        aeff_dec_bins = StanArray(
-                            "aeff_dec_bins", "real", self._aeff_dec_bins
-                        )
-                        aeff_dec_idx = ForwardVariableDef("aeff_dec_idx", "int")
-                        aeff_dec_idx << FunctionCall(
-                            [declination, aeff_dec_bins], "binary_search"
-                        )
-
-                    ereco = ForwardVariableDef("ereco", "real")
-
-                    if self._make_ereco_cuts:
-                        with WhileLoopContext([1]):
-                            ereco << FunctionCall(
-                                [
-                                    FunctionCall(
-                                        [ereco_hist_idx],
-                                        f"{self._season}_ereco_get_ragged_hist",
-                                    ),
-                                    FunctionCall(
-                                        [ereco_hist_idx],
-                                        f"{self._season}_ereco_get_ragged_edges",
-                                    ),
-                                ],
-                                "histogram_rng",
-                            )
-                            # Apply lower energy cut, Ereco_sim >= Ereco_data at the appropriate Aeff declination bin
-                            # Only apply this lower limit
-                            with IfBlockContext(
-                                [ereco, " >= ", ereco_cuts[aeff_dec_idx, 1]]
-                            ):
-                                StringExpression(["break"])
-                    else:
+                if self._make_ereco_cuts:
+                    with WhileLoopContext([1]):
                         ereco << FunctionCall(
                             [
                                 FunctionCall(
@@ -2076,7 +2011,27 @@ class R2021GridInterpEnergyResolution(
                             ],
                             "histogram_rng",
                         )
-                    ReturnStatement([ereco])
+                        # Apply lower energy cut, Ereco_sim >= Ereco_data at the appropriate Aeff declination bin
+                        # Only apply this lower limit
+                        with IfBlockContext(
+                            [ereco, " >= ", ereco_cuts[aeff_dec_idx, 1]]
+                        ):
+                            StringExpression(["break"])
+                else:
+                    ereco << FunctionCall(
+                        [
+                            FunctionCall(
+                                [ereco_hist_idx],
+                                f"{self._season}_ereco_get_ragged_hist",
+                            ),
+                            FunctionCall(
+                                [ereco_hist_idx],
+                                f"{self._season}_ereco_get_ragged_edges",
+                            ),
+                        ],
+                        "histogram_rng",
+                    )
+                ReturnStatement([ereco])
 
     def setup(self) -> None:
         """
@@ -2361,281 +2316,6 @@ class R2021GridInterpEnergyResolution(
         cls(DistributionMode.RNG, rewrite=True, season=season)
 
 
-class R2021AngularResolution(AngularResolution, HistogramSampler):
-    """
-    Angular resolution for the ten-year All Sky Point Source release:
-    https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
-    """
-
-    def __init__(
-        self,
-        mode: DistributionMode = DistributionMode.PDF,
-        rewrite: bool = False,
-        season: str = "IC86_II",
-    ) -> None:
-        """
-        Instanciate class.
-        :param mode: DistributionMode.PDF or .RNG (fitting or simulating)
-        :parm rewrite: bool, True if cached files should be overwritten,
-                       if there are no cached files they will be generated either way
-        :param season: String identifying the detector season
-        """
-
-        self._season = season
-        self.CACHE_FNAME = f"angular_reso_{season}.npz"
-
-        self.irf = R2021IRF.from_period(season)
-        self.mode = mode
-        self._rewrite = rewrite
-        logger.info("Forced angular rewriting: {}".format(rewrite))
-
-        if mode == DistributionMode.PDF:
-            self._func_name = f"{season}AngularResolution"
-        else:
-            self._func_name = f"{season}AngularResolution_rng"
-
-        self._Emin: float = float("nan")
-        self._Emax: float = float("nan")
-
-        self.setup()
-
-    def generate_code(self) -> None:
-        """
-        Generates stan code by instanciating parent class and the other things.
-        """
-
-        if self.mode == DistributionMode.PDF:
-            super().__init__(
-                f"{self._season}AngularResolution",
-                ["true_dir", "reco_dir", "sigma", "kappa"],
-                ["vector", "vector", "real", "real"],
-                "real",
-            )
-
-        else:
-            super().__init__(
-                f"{self._season}AngularResolution_rng",
-                ["log_true_energy", "log_reco_energy", "true_dir"],
-                ["real", "real", "vector"],
-                "vector",
-            )
-
-        # Define Stan interface
-        with self:
-            if self.mode == DistributionMode.PDF:
-                angular_parameterisation = RayleighParameterization(
-                    ["true_dir", "reco_dir"], "sigma", self.mode
-                )
-                ReturnStatement([angular_parameterisation])
-
-            elif self.mode == DistributionMode.RNG:
-                angular_parameterisation = RayleighParameterization(
-                    ["true_dir"], "ang_err", self.mode
-                )
-
-                # Create all psf histogram
-                self._make_histogram(
-                    "psf", self._psf_hist, self._psf_edges, self._season
-                )
-                # Create indexing function
-                self._make_psf_hist_index(self._season)
-
-                # Create lookup functions used for indexing
-                for name, array in zip(
-                    [
-                        "psf_get_cum_num_vals",
-                        "psf_get_cum_num_edges",
-                        "psf_get_num_vals",
-                        "psf_get_num_edges",
-                    ],
-                    [
-                        self._psf_cum_num_vals,
-                        self._psf_cum_num_edges,
-                        self._psf_num_vals,
-                        self._psf_num_edges,
-                    ],
-                ):
-                    self._make_lookup_functions(name, array, self._season)
-
-                # Create ang_err histogram
-                self._make_histogram(
-                    "ang", self._ang_hist, self._ang_edges, self._season
-                )
-                # You know the drill by now
-                self._make_ang_hist_index(self._season)
-                for name, array in zip(
-                    [
-                        "ang_get_cum_num_vals",
-                        "ang_get_cum_num_edges",
-                        "ang_get_num_vals",
-                        "ang_get_num_edges",
-                    ],
-                    [
-                        self._ang_cum_num_vals,
-                        self._ang_cum_num_edges,
-                        self._ang_num_vals,
-                        self._ang_num_edges,
-                    ],
-                ):
-                    self._make_lookup_functions(name, array, self._season)
-
-                # Re-uses lookup functions from energy resolution
-                etrue_idx = ForwardVariableDef("etrue_idx", "int")
-                etrue_idx << FunctionCall(
-                    ["log_true_energy"], f"{self._season}_etrue_lookup"
-                )
-
-                declination = ForwardVariableDef("declination", "real")
-                declination << FunctionCall(["true_dir"], "omega_to_dec")
-                dec_idx = ForwardVariableDef("dec_idx ", "int")
-                dec_idx << FunctionCall(["declination"], f"{self._season}_dec_lookup")
-
-                ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
-                ereco_hist_idx << FunctionCall(
-                    [etrue_idx, dec_idx], f"{self._season}_ereco_get_ragged_index"
-                )
-                ereco_idx = ForwardVariableDef("ereco_idx", "int")
-                ereco_idx << FunctionCall(
-                    [
-                        "log_reco_energy",
-                        FunctionCall(
-                            [ereco_hist_idx], f"{self._season}_ereco_get_ragged_edges"
-                        ),
-                    ],
-                    "binary_search",
-                )
-
-                # Find appropriate section of psf ragged hist for sampling
-                psf_hist_idx = ForwardVariableDef("psf_hist_idx", "int")
-                psf_hist_idx << FunctionCall(
-                    [etrue_idx, dec_idx, ereco_idx],
-                    f"{self._season}_psf_get_ragged_index",
-                )
-                psf_idx = ForwardVariableDef("psf_idx", "int")
-                psf_idx << FunctionCall(
-                    [
-                        FunctionCall(
-                            [psf_hist_idx], f"{self._season}_psf_get_ragged_hist"
-                        ),
-                        FunctionCall(
-                            [psf_hist_idx], f"{self._season}_psf_get_ragged_edges"
-                        ),
-                    ],
-                    "hist_cat_rng",
-                )
-
-                # Repeat with angular error
-                ang_hist_idx = ForwardVariableDef("ang_hist_idx", "int")
-                ang_hist_idx << FunctionCall(
-                    [etrue_idx, dec_idx, ereco_idx, psf_idx],
-                    f"{self._season}_ang_get_ragged_index",
-                )
-                ang_err = ForwardVariableDef("ang_err", "real")
-                # Samples angular uncertainty in degrees
-                ang_err << FunctionCall(
-                    [
-                        10,
-                        FunctionCall(
-                            [
-                                FunctionCall(
-                                    [ang_hist_idx],
-                                    f"{self._season}_ang_get_ragged_hist",
-                                ),
-                                FunctionCall(
-                                    [ang_hist_idx],
-                                    f"{self._season}_ang_get_ragged_edges",
-                                ),
-                            ],
-                            "histogram_rng",
-                        ),
-                    ],
-                    "pow",
-                )
-
-                # Convert to radian
-                ang_err << StringExpression(["pi() * ang_err / 180.0"])
-                kappa = ForwardVariableDef("kappa", "real")
-                # Convert angular error to kappa
-                kappa << StringExpression(["- (2 / ang_err^2) * log(1 - 0.683)"])
-
-                # Stan code needs both deflected direction and kappa
-                # Make a vector of length 4, last component is kappa
-                return_vec = ForwardVectorDef("return_this", [4])
-                # Deflect true direction
-                StringExpression(["return_this[1:3] = ", angular_parameterisation])
-                StringExpression(["return_this[4] = kappa"])
-                ReturnStatement([return_vec])
-
-    def setup(self) -> None:
-        """
-        Setup all data fields, load data from cached file or create from scratch.
-        """
-
-        self._pdet_limits = (1e2, 1e8)
-        self._Emin, self._Emax = self._pdet_limits
-
-        if self.mode == DistributionMode.PDF:
-            pass
-
-        elif self.mode == DistributionMode.RNG:
-            # party in the back
-            # extract *all* the histograms bar ereco
-            # check for loading of data
-            if self.CACHE_FNAME in Cache and not self._rewrite:
-                logger.info("Loading angular data from file.")
-                with Cache.open(self.CACHE_FNAME, "rb") as fr:
-                    data = np.load(fr, allow_pickle=True)
-                    self._psf_cum_num_edges = data["psf_cum_num_edges"]
-                    self._psf_cum_num_vals = data["psf_cum_num_vals"]
-                    self._psf_num_vals = data["psf_num_vals"]
-                    self._psf_num_edges = data["psf_num_edges"]
-                    self._psf_hist = data["psf_vals"]
-                    self._psf_edges = data["psf_edges"]
-                    self._ang_edges = data["ang_edges"]
-                    self._ang_hist = data["ang_vals"]
-                    self._ang_num_vals = data["ang_num_vals"]
-                    self._ang_num_edges = data["ang_num_edges"]
-                    self._ang_cum_num_vals = data["ang_cum_num_vals"]
-                    self._ang_cum_num_edges = data["ang_cum_num_edges"]
-
-            else:
-                logger.info("Re-doing angular data and saving to file.")
-                self._generate_ragged_psf_data(self.irf)
-                with Cache.open(self.CACHE_FNAME, "wb") as fr:
-                    np.savez(
-                        fr,
-                        psf_cum_num_edges=self._psf_cum_num_edges,
-                        psf_cum_num_vals=self._psf_cum_num_vals,
-                        psf_num_vals=self._psf_num_vals,
-                        psf_num_edges=self._psf_num_edges,
-                        psf_vals=self._psf_hist,
-                        psf_edges=self._psf_edges,
-                        ang_edges=self._ang_edges,
-                        ang_vals=self._ang_hist,
-                        ang_num_vals=self._ang_num_vals,
-                        ang_num_edges=self._ang_num_edges,
-                        ang_cum_num_vals=self._ang_cum_num_vals,
-                        ang_cum_num_edges=self._ang_cum_num_edges,
-                    )
-
-        else:
-            raise ValueError("You weren't supposed to do that.")
-
-    def kappa(self) -> None:
-        """
-        Dummy method s.t. the parents don't complain
-        """
-        pass
-
-    @classmethod
-    def rewrite_files(cls, season: str = "IC86_II"):
-        """
-        Rewrite cached file
-        """
-
-        cls(DistributionMode.RNG, rewrite=True, season=season)
-
-
 class R2021DetectorModel(ABC, DetectorModel):
     """
     Detector model class of ten-year All Sky Point Source release:
@@ -2646,12 +2326,13 @@ class R2021DetectorModel(ABC, DetectorModel):
     logger = logging.getLogger(__name__ + ".R2021DetectorModel")
     logger.setLevel(logging.DEBUG)
 
-    _logEreco_grid = R2021GridInterpEnergyResolution._logEreco_grid
+    _logEreco_grid = R2021EnergyResolution._logEreco_grid
+    _logEreco_grid_edges = R2021EnergyResolution._logEreco_grid_edges
 
     def __init__(
         self,
         mode: DistributionMode,
-        eres_type: EnergyResolution = R2021LogNormEnergyResolution,
+        eres_type: EnergyResolution = R2021EnergyResolution,
         rewrite: bool = False,
         ereco_cuts: bool = True,
         season: str = "IC86_II",
@@ -2694,7 +2375,7 @@ class R2021DetectorModel(ABC, DetectorModel):
 
     def _get_energy_resolution(
         self,
-    ) -> Union[R2021LogNormEnergyResolution, R2021GridInterpEnergyResolution]:
+    ) -> Union[R2021LogNormEnergyResolution, R2021EnergyResolution]:
         return self._energy_resolution
 
     def _get_angular_resolution(self) -> R2021AngularResolution:
@@ -2712,7 +2393,7 @@ class R2021DetectorModel(ABC, DetectorModel):
     def __generate_code(
         cls,
         mode: DistributionMode,
-        eres_type: EnergyResolution = R2021LogNormEnergyResolution,
+        eres_type: EnergyResolution = R2021EnergyResolution,
         rewrite: bool = False,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
@@ -2764,8 +2445,8 @@ class R2021DetectorModel(ABC, DetectorModel):
         code = code.removesuffix("\n}\n")
         if not os.path.isdir(path):
             os.makedirs(path)
-        if eres_type == R2021GridInterpEnergyResolution:
-            season += "_grid"
+        if eres_type == R2021LogNormEnergyResolution:
+            season += "_ln"
         if mode == DistributionMode.PDF:
 
             with open(os.path.join(path, cls._PDF_FILENAME(season)), "w+") as f:
@@ -2798,26 +2479,29 @@ class R2021DetectorModel(ABC, DetectorModel):
         if not single_ps:
             signature = [
                 "true_energy",
-                "ereco_grid",
                 "omega_det",
                 "src_pos",
             ]
-            sig_type = ["real", "vector", "vector", "array[] vector"]
+            sig_type = ["real", "vector", "array[] vector"]
             return_type = "tuple(array[] real, array[] real, array[] real)"
 
         else:
             signature = [
                 "true_energy",
-                "ereco_grid",
                 "omega_det",
                 "src_pos",
             ]
             sig_type = ["real", "vector", "vector", "vector"]
             return_type = "tuple(real, real, array[] real)"
 
-        # if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
-        #     signature += ["reco_idx"]
-        #     sig_type += ["int"]
+        if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
+            signature += ["eres_slice"]
+            sig_type += ["vector"]
+        elif isinstance(self.energy_resolution, LogNormEnergyResolution):
+            signature += ["log_ereco"]
+            sig_type += ["real"]
+        else:
+            raise ValueError("This should not happen")
         UserDefinedFunction.__init__(
             self,
             self._func_name,
@@ -2827,24 +2511,14 @@ class R2021DetectorModel(ABC, DetectorModel):
         )
 
         with self:
-            # log10Ereco = InstantVariableDef(
-            #     "log10Ereco", "real", ["log10(detected_energy)"]
-            # )
+            if isinstance(self.energy_resolution, LogNormEnergyResolution):
+                log10Ereco = InstantVariableDef(
+                    "log10Ereco", "real", ["log10(detected_energy)"]
+                )
             log10Etrue = InstantVariableDef(
                 "log10Etrue", "real", ["log10(true_energy)"]
             )
-            # log10EtrueGrid = StanVector(
-            #     "etrue_grid", self.energy_resolution._log_tE_binc
-            # )
-            # dec_bins_eres = StanArray(
-            #     "dec_bins",
-            #     "real",
-            #     self.energy_resolution._dec_bin_edges.to_value(u.rad),
-            # )
-            # dec_eres_idx = ForwardVariableDef("dec_ind", "int")
-            # declination = ForwardVariableDef("declination", "real")
-            # declination << FunctionCall(["omega"], "omega_to_dec")
-            # dec_eres_idx << FunctionCall([declination, dec_bins_eres], "binary_search")
+
             if not single_ps:
                 Ns = InstantVariableDef("Ns", "int", ["size(src_pos)"])
                 ps_eres = ForwardArrayDef("ps_eres", "real", ["[", Ns, "]"])
@@ -2853,21 +2527,12 @@ class R2021DetectorModel(ABC, DetectorModel):
                     if isinstance(
                         self.energy_resolution, GridInterpolationEnergyResolution
                     ):
-                        ps_eres[i] << self.energy_resolution(log10Etrue, "ereco_grid")
-                        # ps_eres[i] << FunctionCall(
-                        #     [
-                        #         log10EtrueGrid,
-                        #         "ereco_grid",
-                        #         log10Etrue,
-                        #     ],
-                        #     "interpolate",
-                        # )
+                        ps_eres[i] << self.energy_resolution(log10Etrue, "eres_slice")
 
                     else:
-                        # ps_eres[i] << self.energy_resolution(
-                        #    log10Etrue, log10Ereco, "src_pos[i]"
-                        # )
-                        pass
+                        ps_eres[i] << self.energy_resolution(
+                            log10Etrue, log10Ereco, "src_pos[i]"
+                        )
                     ps_aeff[i] << FunctionCall(
                         [
                             self.effective_area("true_energy", "src_pos[i]"),
@@ -2881,12 +2546,9 @@ class R2021DetectorModel(ABC, DetectorModel):
                 if isinstance(
                     self.energy_resolution, GridInterpolationEnergyResolution
                 ):
-                    # ps_eres << self.energy_resolution(
-                    #     log10Etrue, log10Ereco, "src_pos", "reco_idx"
-                    # )
-                    ps_eres[i] << self.energy_resolution(log10Etrue, "ereco_grid")
+                    ps_eres[i] << self.energy_resolution(log10Etrue, "eres_slice")
                 else:
-                    # ps_eres << self.energy_resolution(log10Etrue, log10Ereco, "src_pos")
+                    ps_eres << self.energy_resolution(log10Etrue, log10Ereco, "src_pos")
                     pass
                 ps_aeff << FunctionCall(
                     [
@@ -2898,13 +2560,9 @@ class R2021DetectorModel(ABC, DetectorModel):
             diff = ForwardArrayDef("diff", "real", ["[3]"])
 
             if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
-                # diff[1] << self.energy_resolution(
-                #     log10Etrue, log10Ereco, "omega_det", "reco_idx"
-                # )
-                diff[1] << self.energy_resolution(log10Etrue, "ereco_grid")
+                diff[1] << self.energy_resolution(log10Etrue, "eres_slice")
             else:
-                # diff[1] << self.energy_resolution(log10Etrue, log10Ereco, "omega_det")
-                pass
+                diff[1] << self.energy_resolution(log10Etrue, log10Ereco, "omega_det")
             diff[2] << FunctionCall(
                 [
                     self.effective_area("true_energy", "omega_det"),
@@ -2947,186 +2605,6 @@ class R2021DetectorModel(ABC, DetectorModel):
             ReturnStatement([return_this])
 
 
-class IC40GridDetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC40_grid_rng.stan"
-    PDF_FILENAME = "IC40_grid_pdf.stan"
-
-    def __init__(
-        self,
-        mode: DistributionMode = DistributionMode.PDF,
-        rewrite: bool = False,
-        ereco_cuts: bool = True,
-    ):
-        super().__init__(
-            mode=mode,
-            eres_type=R2021GridInterpEnergyResolution,
-            rewrite=rewrite,
-            ereco_cuts=ereco_cuts,
-            season="IC40",
-        )
-
-    @classmethod
-    def generate_code(
-        cls,
-        mode: DistributionMode,
-        rewrite: bool = False,
-        ereco_cuts: bool = True,
-        path: str = STAN_GEN_PATH,
-    ):
-        cls._R2021DetectorModel__generate_code(
-            mode=mode,
-            eres_type=R2021GridInterpEnergyResolution,
-            rewrite=rewrite,
-            ereco_cuts=ereco_cuts,
-            season="IC40",
-            path=path,
-        )
-
-
-class IC59GridDetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC59_grid_rng.stan"
-    PDF_FILENAME = "IC59_grid_pdf.stan"
-
-    def __init__(
-        self,
-        mode: DistributionMode = DistributionMode.PDF,
-        rewrite: bool = False,
-        ereco_cuts: bool = True,
-    ):
-        super().__init__(
-            mode=mode,
-            eres_type=R2021GridInterpEnergyResolution,
-            rewrite=rewrite,
-            ereco_cuts=ereco_cuts,
-            season="IC59",
-        )
-
-    @classmethod
-    def generate_code(
-        cls,
-        mode: DistributionMode,
-        rewrite: bool = False,
-        ereco_cuts: bool = True,
-        path: str = STAN_GEN_PATH,
-    ):
-        cls._R2021DetectorModel__generate_code(
-            mode=mode,
-            eres_type=R2021GridInterpEnergyResolution,
-            rewrite=rewrite,
-            ereco_cuts=ereco_cuts,
-            season="IC59",
-            path=path,
-        )
-
-
-class IC79GridDetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC79_grid_rng.stan"
-    PDF_FILENAME = "IC79_grid_pdf.stan"
-
-    def __init__(
-        self,
-        mode: DistributionMode = DistributionMode.PDF,
-        rewrite: bool = False,
-        ereco_cuts: bool = True,
-    ):
-        super().__init__(
-            mode=mode,
-            eres_type=R2021GridInterpEnergyResolution,
-            rewrite=rewrite,
-            ereco_cuts=ereco_cuts,
-            season="IC79",
-        )
-
-    @classmethod
-    def generate_code(
-        cls,
-        mode: DistributionMode,
-        rewrite: bool = False,
-        ereco_cuts: bool = True,
-        path: str = STAN_GEN_PATH,
-    ):
-        cls._R2021DetectorModel__generate_code(
-            mode=mode,
-            eres_type=R2021GridInterpEnergyResolution,
-            rewrite=rewrite,
-            ereco_cuts=ereco_cuts,
-            season="IC79",
-            path=path,
-        )
-
-
-class IC86_IGridDetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC86_I_grid_rng.stan"
-    PDF_FILENAME = "IC86_I_grid_pdf.stan"
-
-    def __init__(
-        self,
-        mode: DistributionMode = DistributionMode.PDF,
-        rewrite: bool = False,
-        ereco_cuts: bool = True,
-    ):
-        super().__init__(
-            mode=mode,
-            eres_type=R2021GridInterpEnergyResolution,
-            rewrite=rewrite,
-            ereco_cuts=ereco_cuts,
-            season="IC86_I",
-        )
-
-    @classmethod
-    def generate_code(
-        cls,
-        mode: DistributionMode,
-        rewrite: bool = False,
-        ereco_cuts: bool = True,
-        path: str = STAN_GEN_PATH,
-    ):
-        cls._R2021DetectorModel__generate_code(
-            mode=mode,
-            eres_type=R2021GridInterpEnergyResolution,
-            rewrite=rewrite,
-            ereco_cuts=ereco_cuts,
-            season="IC86_I",
-            path=path,
-        )
-
-
-class IC86_IIGridDetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC86_II_grid_rng.stan"
-    PDF_FILENAME = "IC86_II_grid_pdf.stan"
-
-    def __init__(
-        self,
-        mode: DistributionMode = DistributionMode.PDF,
-        rewrite: bool = False,
-        ereco_cuts: bool = True,
-    ):
-        super().__init__(
-            mode=mode,
-            eres_type=R2021GridInterpEnergyResolution,
-            rewrite=rewrite,
-            ereco_cuts=ereco_cuts,
-            season="IC86_II",
-        )
-
-    @classmethod
-    def generate_code(
-        cls,
-        mode: DistributionMode,
-        rewrite: bool = False,
-        ereco_cuts: bool = True,
-        path: str = STAN_GEN_PATH,
-    ):
-        cls._R2021DetectorModel__generate_code(
-            mode=mode,
-            eres_type=R2021GridInterpEnergyResolution,
-            rewrite=rewrite,
-            ereco_cuts=ereco_cuts,
-            season="IC86_II",
-            path=path,
-        )
-
-
 class IC40DetectorModel(R2021DetectorModel):
     RNG_FILENAME = "IC40_rng.stan"
     PDF_FILENAME = "IC40_pdf.stan"
@@ -3135,15 +2613,11 @@ class IC40DetectorModel(R2021DetectorModel):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
     ):
         super().__init__(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC40",
         )
@@ -3153,16 +2627,12 @@ class IC40DetectorModel(R2021DetectorModel):
         cls,
         mode: DistributionMode,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC40",
             path=path,
@@ -3177,15 +2647,11 @@ class IC59DetectorModel(R2021DetectorModel):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
     ):
         super().__init__(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC59",
         )
@@ -3195,16 +2661,12 @@ class IC59DetectorModel(R2021DetectorModel):
         cls,
         mode: DistributionMode,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC59",
             path=path,
@@ -3219,15 +2681,11 @@ class IC79DetectorModel(R2021DetectorModel):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
     ):
         super().__init__(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC79",
         )
@@ -3237,16 +2695,12 @@ class IC79DetectorModel(R2021DetectorModel):
         cls,
         mode: DistributionMode,
         rewrite: bool = False,
-        make_plots: bool = False,
-        n_components: int = 3,
         ereco_cuts: bool = True,
         path: str = STAN_GEN_PATH,
     ):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
             rewrite=rewrite,
-            make_plots=make_plots,
-            n_components=n_components,
             ereco_cuts=ereco_cuts,
             season="IC79",
             path=path,
@@ -3261,6 +2715,74 @@ class IC86_IDetectorModel(R2021DetectorModel):
         self,
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
+        ereco_cuts: bool = True,
+    ):
+        super().__init__(
+            mode=mode,
+            rewrite=rewrite,
+            ereco_cuts=ereco_cuts,
+            season="IC86_I",
+        )
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        rewrite: bool = False,
+        ereco_cuts: bool = True,
+        path: str = STAN_GEN_PATH,
+    ):
+        cls._R2021DetectorModel__generate_code(
+            mode=mode,
+            rewrite=rewrite,
+            ereco_cuts=ereco_cuts,
+            season="IC86_I",
+            path=path,
+        )
+
+
+class IC86_IIDetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC86_II_rng.stan"
+    PDF_FILENAME = "IC86_II_pdf.stan"
+
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
+        ereco_cuts: bool = True,
+    ):
+        super().__init__(
+            mode=mode,
+            rewrite=rewrite,
+            ereco_cuts=ereco_cuts,
+            season="IC86_II",
+        )
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        rewrite: bool = False,
+        ereco_cuts: bool = True,
+        path: str = STAN_GEN_PATH,
+    ):
+        cls._R2021DetectorModel__generate_code(
+            mode=mode,
+            rewrite=rewrite,
+            ereco_cuts=ereco_cuts,
+            season="IC86_II",
+            path=path,
+        )
+
+
+class IC40LogNormDetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC40_ln_rng.stan"
+    PDF_FILENAME = "IC40_ln_pdf.stan"
+
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
         make_plots: bool = False,
         n_components: int = 3,
         ereco_cuts: bool = True,
@@ -3268,6 +2790,139 @@ class IC86_IDetectorModel(R2021DetectorModel):
         super().__init__(
             mode=mode,
             rewrite=rewrite,
+            eres_type=R2021LogNormEnergyResolution,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC40",
+        )
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+        path: str = STAN_GEN_PATH,
+    ):
+        cls._R2021DetectorModel__generate_code(
+            mode=mode,
+            rewrite=rewrite,
+            eres_type=R2021LogNormEnergyResolution,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC40",
+            path=path,
+        )
+
+
+class IC59LogNormDetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC59_ln_rng.stan"
+    PDF_FILENAME = "IC59_ln_pdf.stan"
+
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+    ):
+        super().__init__(
+            mode=mode,
+            rewrite=rewrite,
+            eres_type=R2021LogNormEnergyResolution,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC59",
+        )
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+        path: str = STAN_GEN_PATH,
+    ):
+        cls._R2021DetectorModel__generate_code(
+            mode=mode,
+            rewrite=rewrite,
+            eres_type=R2021LogNormEnergyResolution,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC59",
+            path=path,
+        )
+
+
+class IC79LogNormDetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC79_ln_rng.stan"
+    PDF_FILENAME = "IC79_ln_pdf.stan"
+
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+    ):
+        super().__init__(
+            mode=mode,
+            rewrite=rewrite,
+            eres_type=R2021LogNormEnergyResolution,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC79",
+        )
+
+    @classmethod
+    def generate_code(
+        cls,
+        mode: DistributionMode,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+        path: str = STAN_GEN_PATH,
+    ):
+        cls._R2021DetectorModel__generate_code(
+            mode=mode,
+            rewrite=rewrite,
+            eres_type=R2021LogNormEnergyResolution,
+            make_plots=make_plots,
+            n_components=n_components,
+            ereco_cuts=ereco_cuts,
+            season="IC79",
+            path=path,
+        )
+
+
+class IC86_ILogNormDetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC86_I_ln_rng.stan"
+    PDF_FILENAME = "IC86_I_ln_pdf.stan"
+
+    def __init__(
+        self,
+        mode: DistributionMode = DistributionMode.PDF,
+        rewrite: bool = False,
+        make_plots: bool = False,
+        n_components: int = 3,
+        ereco_cuts: bool = True,
+    ):
+        super().__init__(
+            mode=mode,
+            rewrite=rewrite,
+            eres_type=R2021LogNormEnergyResolution,
             make_plots=make_plots,
             n_components=n_components,
             ereco_cuts=ereco_cuts,
@@ -3287,6 +2942,7 @@ class IC86_IDetectorModel(R2021DetectorModel):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
             rewrite=rewrite,
+            eres_type=R2021LogNormEnergyResolution,
             make_plots=make_plots,
             n_components=n_components,
             ereco_cuts=ereco_cuts,
@@ -3295,9 +2951,9 @@ class IC86_IDetectorModel(R2021DetectorModel):
         )
 
 
-class IC86_IIDetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC86_II_rng.stan"
-    PDF_FILENAME = "IC86_II_pdf.stan"
+class IC86_IILogNormDetectorModel(R2021DetectorModel):
+    RNG_FILENAME = "IC86_II_ln_rng.stan"
+    PDF_FILENAME = "IC86_II_ln_pdf.stan"
 
     def __init__(
         self,
@@ -3310,6 +2966,7 @@ class IC86_IIDetectorModel(R2021DetectorModel):
         super().__init__(
             mode=mode,
             rewrite=rewrite,
+            eres_type=R2021LogNormEnergyResolution,
             make_plots=make_plots,
             n_components=n_components,
             ereco_cuts=ereco_cuts,
@@ -3329,6 +2986,7 @@ class IC86_IIDetectorModel(R2021DetectorModel):
         cls._R2021DetectorModel__generate_code(
             mode=mode,
             rewrite=rewrite,
+            eres_type=R2021LogNormEnergyResolution,
             make_plots=make_plots,
             n_components=n_components,
             ereco_cuts=ereco_cuts,

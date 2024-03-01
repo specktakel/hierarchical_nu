@@ -196,18 +196,16 @@ class StanFitInterface(StanInterface):
                     ):
                         self._irf_return << self._dm[event_type](
                             self._E[i],
-                            FunctionCall([self._ereco_grid[i]], "to_vector"),
-                            # self._Edet[i],
                             self._omega_det[i],
                             ps_pos,
-                            # self._ereco_idx[i],
+                            FunctionCall([self._ereco_grid[i]], "to_vector"),
                         )
                     else:
                         self._irf_return << self._dm[event_type](
                             self._E[i],
-                            self._Edet[i],
                             self._omega_det[i],
                             ps_pos,
+                            self._Edet[i],
                         )
 
             self._eres_src << StringExpression(["irf_return.1"])
