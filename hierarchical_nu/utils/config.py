@@ -193,5 +193,5 @@ class HierarchicalNuConfig:
         Load default config
         """
 
-        hnu_config = OmegaConf(cls)
+        hnu_config = OmegaConf.structured(cls)
         return hnu_config

@@ -22,7 +22,7 @@ from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
-from hierarchical_nu.utils.config import hnu_config
+from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.utils.config_parser import ConfigParser
 from hierarchical_nu.utils.roi import (
     CircularROI,
@@ -46,6 +46,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+hnu_config = HierarchicalNuConfig.load_default()
 
 parser = ConfigParser(hnu_config)
 
@@ -64,7 +65,7 @@ class ModelCheck:
         else:
             logger.info("Loading priors from config")
 
-            self.priors = parser.priors()
+            self.priors = parser.priors
 
         if truths:
             logger.info("Found true values")
@@ -74,17 +75,17 @@ class ModelCheck:
             logger.info("Loading true values from config")
             # Config
             parameter_config = hnu_config["parameter_config"]
-            parser.ROI()
+            parser.ROI
 
             asimov = parameter_config.asimov
             # Sources
-            self._sources = parser.sources()
+            self._sources = parser.sources
             f_arr = self._sources.f_arr().value
             f_arr_astro = self._sources.f_arr_astro().value
 
             # Detector
-            self._detector_model_type = parser.detector_model()
-            self._obs_time = parser.obs_time()
+            self._detector_model_type = parser.detector_model
+            self._obs_time = parser.obs_time
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
 
@@ -185,7 +186,7 @@ class ModelCheck:
 
         asimov = parameter_config.asimov
 
-        parser.ROI()
+        parser.ROI
 
         if not STAN_GEN_PATH in file_config["include_paths"]:
             file_config["include_paths"].append(STAN_GEN_PATH)
@@ -194,9 +195,8 @@ class ModelCheck:
         logger.info("Setting up MCEq run for AtmopshericNumuFlux")
 
         # Build necessary details to define simulation and fit code
-        detector_model_type = parser.detector_model()
-
-        sources = parser.sources()
+        detector_model_type = parser.detector_model
+        sources = parser.sources
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
         stan_sim_interface = StanSimInterface(
@@ -211,7 +211,7 @@ class ModelCheck:
         nshards = threads_per_chain
         fit_name = file_config["fit_filename"][:-5]
 
-        priors = parser.priors()
+        priors = parser.priors
 
         stan_fit_interface = StanFitInterface(
             fit_name,
@@ -580,9 +580,9 @@ class ModelCheck:
 
         sys.stderr.write("Random seed: %i\n" % seed)
 
-        parser.ROI()
+        parser.ROI
 
-        self._sources = parser.sources()
+        self._sources = parser.sources
 
         file_config = hnu_config["file_config"]
 
@@ -644,10 +644,6 @@ class ModelCheck:
             diff = np.sum(lambd == 2.0)
             atmo = np.sum(lambd == 3.0)
             lam = np.array([ps, diff, atmo])
-
-            # Skip if no detected events
-            if not sim.events:
-                continue
 
             # Fit
             # Same as above, save time

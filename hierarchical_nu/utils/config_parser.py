@@ -10,7 +10,7 @@ from hierarchical_nu.priors import (
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.source.source import Sources, PointSource
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.detector.icecube import Refrigerator, IC40
+from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.roi import (
     ROIList,
     CircularROI,
@@ -35,138 +35,136 @@ class ConfigParser:
 
     @property
     def sources(self):
-        try:
-            return self._sources
-        except AttributeError:
-            parameter_config = self._hnu_config["parameter_config"]
-            share_L = parameter_config["share_L"]
-            share_src_index = parameter_config["share_src_index"]
 
-            Parameter.clear_registry()
-            indices = []
-            if not share_src_index:
-                for c, idx in enumerate(parameter_config["src_index"]):
-                    name = f"ps_{c}_src_index"
-                    indices.append(
-                        Parameter(
-                            idx,
-                            name,
-                            fixed=False,
-                            par_range=parameter_config["src_index_range"],
-                        )
-                    )
-            else:
+        parameter_config = self._hnu_config["parameter_config"]
+        share_L = parameter_config["share_L"]
+        share_src_index = parameter_config["share_src_index"]
+
+        Parameter.clear_registry()
+        indices = []
+        if not share_src_index:
+            for c, idx in enumerate(parameter_config["src_index"]):
+                name = f"ps_{c}_src_index"
                 indices.append(
                     Parameter(
-                        parameter_config["src_index"][0],
-                        "src_index",
+                        idx,
+                        name,
                         fixed=False,
                         par_range=parameter_config["src_index_range"],
                     )
                 )
-            diff_index = Parameter(
-                parameter_config["diff_index"],
-                "diff_index",
-                fixed=False,
-                par_range=parameter_config["diff_index_range"],
+        else:
+            indices.append(
+                Parameter(
+                    parameter_config["src_index"][0],
+                    "src_index",
+                    fixed=False,
+                    par_range=parameter_config["src_index_range"],
+                )
             )
-            L = []
-            if not share_L:
-                for c, Lumi in enumerate(parameter_config["L"]):
-                    name = f"ps_{c}_luminosity"
-                    L.append(
-                        Parameter(
-                            Lumi * u.erg / u.s,
-                            name,
-                            fixed=True,
-                            par_range=parameter_config["L_range"] * u.erg / u.s,
-                        )
-                    )
-            else:
+        diff_index = Parameter(
+            parameter_config["diff_index"],
+            "diff_index",
+            fixed=False,
+            par_range=parameter_config["diff_index_range"],
+        )
+        L = []
+        if not share_L:
+            for c, Lumi in enumerate(parameter_config["L"]):
+                name = f"ps_{c}_luminosity"
                 L.append(
                     Parameter(
-                        parameter_config["L"][0] * u.erg / u.s,
-                        "luminosity",
-                        fixed=False,
+                        Lumi * u.erg / u.s,
+                        name,
+                        fixed=True,
                         par_range=parameter_config["L_range"] * u.erg / u.s,
                     )
                 )
-            diffuse_norm = Parameter(
-                parameter_config["diff_norm"] * 1 / (u.GeV * u.m**2 * u.s),
-                "diffuse_norm",
-                fixed=True,
-                par_range=(0, np.inf),
+        else:
+            L.append(
+                Parameter(
+                    parameter_config["L"][0] * u.erg / u.s,
+                    "luminosity",
+                    fixed=False,
+                    par_range=parameter_config["L_range"] * u.erg / u.s,
+                )
             )
-            Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
-            Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
-            Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
+        diffuse_norm = Parameter(
+            parameter_config["diff_norm"] * 1 / (u.GeV * u.m**2 * u.s),
+            "diffuse_norm",
+            fixed=True,
+            par_range=(0, np.inf),
+        )
+        Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
+        Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
+        Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
 
-            Emin_src = Parameter(
-                parameter_config["Emin_src"] * u.GeV, "Emin_src", fixed=True
-            )
-            Emax_src = Parameter(
-                parameter_config["Emax_src"] * u.GeV, "Emax_src", fixed=True
+        Emin_src = Parameter(
+            parameter_config["Emin_src"] * u.GeV, "Emin_src", fixed=True
+        )
+        Emax_src = Parameter(
+            parameter_config["Emax_src"] * u.GeV, "Emax_src", fixed=True
+        )
+
+        Emin_diff = Parameter(
+            parameter_config["Emin_diff"] * u.GeV, "Emin_diff", fixed=True
+        )
+        Emax_diff = Parameter(
+            parameter_config["Emax_diff"] * u.GeV, "Emax_diff", fixed=True
+        )
+
+        if parameter_config["Emin_det_eq"]:
+            Emin_det = Parameter(
+                parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
             )
 
-            Emin_diff = Parameter(
-                parameter_config["Emin_diff"] * u.GeV, "Emin_diff", fixed=True
-            )
-            Emax_diff = Parameter(
-                parameter_config["Emax_diff"] * u.GeV, "Emax_diff", fixed=True
-            )
-
-            if parameter_config["Emin_det_eq"]:
-                Emin_det = Parameter(
-                    parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
+        else:
+            for dm in Refrigerator.detectors:
+                # Create a parameter for each detector
+                # If the detector is not used, the parameter is disregarded
+                _ = Parameter(
+                    parameter_config[f"Emin_det_{dm.P}"] * u.GeV,
+                    f"Emin_det_{dm.P}",
+                    fixed=True,
                 )
 
+        dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
+        ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
+
+        sources = Sources()
+
+        for c in range(len(dec)):
+            if share_L:
+                Lumi = L[0]
             else:
-                for dm in Refrigerator.detectors:
-                    # Create a parameter for each detector
-                    # If the detector is not used, the parameter is disregarded
-                    _ = Parameter(
-                        parameter_config[f"Emin_det_{dm.P}"] * u.GeV,
-                        f"Emin_det_{dm.P}",
-                        fixed=True,
-                    )
+                Lumi = L[c]
 
-            dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
-            ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
+            if share_src_index:
+                idx = indices[0]
+            else:
+                idx = indices[c]
+            point_source = PointSource.make_powerlaw_source(
+                f"ps_{c}",
+                dec[c],
+                ra[c],
+                Lumi,
+                idx,
+                parameter_config["z"][c],
+                Emin_src,
+                Emax_src,
+            )
 
-            sources = Sources()
+            sources.add(point_source)
+        if parameter_config.diffuse:
+            sources.add_diffuse_component(
+                diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
+            )
+        if parameter_config.atmospheric:
+            sources.add_atmospheric_component(cache_dir=mceq)
 
-            for c in range(len(dec)):
-                if share_L:
-                    Lumi = L[0]
-                else:
-                    Lumi = L[c]
+        self._sources = sources
 
-                if share_src_index:
-                    idx = indices[0]
-                else:
-                    idx = indices[c]
-                point_source = PointSource.make_powerlaw_source(
-                    f"ps_{c}",
-                    dec[c],
-                    ra[c],
-                    Lumi,
-                    idx,
-                    parameter_config["z"][c],
-                    Emin_src,
-                    Emax_src,
-                )
-
-                sources.add(point_source)
-            if parameter_config.diffuse:
-                sources.add_diffuse_component(
-                    diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
-                )
-            if parameter_config.atmospheric:
-                sources.add_atmospheric_component(cache_dir=mceq)
-
-            self._sources = sources
-
-            return sources
+        return sources
 
     @property
     def MJD_min(self):
@@ -236,19 +234,17 @@ class ConfigParser:
 
     @property
     def obs_time(self):
-        mjd_min = self.MJD_min
-        mjd_max = self.MJD_max
-        lifetime = LifeTime()
-        time = lifetime.lifetime_from_mjd(mjd_min, mjd_max)
-        try:
-            assert np.isclose(time[IC40], 0.0 * u.yr)
-            # Use list instead
-            dm_keys = self._hnu_config.parameter_config.detector_model_type
+        if self._is_dm_list():
+            dm_keys = [
+                Refrigerator.python2dm(_)
+                for _ in self._hnu_config.parameter_config.detector_model_type
+            ]
             obs_time = self._hnu_config.parameter_config.obs_time
             return self._get_obs_time_from_config(dm_keys, obs_time)
-        except (AssertionError, KeyError):
-            # sensible output from LifeTime
-            return time
+        else:
+            lifetime = LifeTime()
+            _time = lifetime.lifetime_from_mjd(self.MJD_min, self.MJD_max)
+            return _time
 
     @property
     def events(self):
