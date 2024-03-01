@@ -225,7 +225,7 @@ class ConfigParser:
     def _is_dm_list(self):
         mjd_min = self.MJD_min
         mjd_max = self.MJD_max
-        if not np.isclose(mjd_min, 99.0) and not np.isclose(mjd_max, 99.0):
+        if not np.isclose(mjd_min, 98.0) and not np.isclose(mjd_max, 100.0):
             return 0
         else:
             return 1
@@ -267,7 +267,14 @@ class ConfigParser:
         priors = self.priors
 
         nshards = self._hnu_config.parameter_config.threads_per_chain
-        fit = StanFit(sources, detector_models, events, obs_time, priors, nshards)
+        fit = StanFit(
+            sources,
+            detector_models,
+            events,
+            obs_time,
+            priors=priors,
+            nshards=nshards,
+        )
         return fit
 
     @property

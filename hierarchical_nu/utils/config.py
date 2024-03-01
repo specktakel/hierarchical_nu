@@ -88,8 +88,9 @@ class ParameterConfig:
     detector_model_type: List[str] = field(default_factory=lambda: ["IC86_II"])
     obs_time: List[float] = field(default_factory=lambda: [6.0])  # years
 
-    mjd_min: float = 99.0
-    mjd_max: float = 99.0
+    # With these default values obs_time takes precedence
+    mjd_min: float = 98.0
+    mjd_max: float = 100.0
 
     # Within-chain parallelisation
     threads_per_chain: int = 1
