@@ -550,7 +550,11 @@ class LogNormEnergyResolution(EnergyResolution, UserDefinedFunction, metaclass=A
 
     @u.quantity_input
     def prob_Edet_above_threshold(
-        self, true_energy: u.GeV, threshold_energy: u.GeV, dec: u.rad = 0.0 * u.rad
+        self,
+        true_energy: u.GeV,
+        threshold_energy: u.GeV,
+        dec: u.rad = 0.0 * u.rad,
+        use_lognorm: bool = True,
     ):
         """
         P(Edet > Edet_min | E) for use in precomputation.

@@ -1197,9 +1197,11 @@ class StanFit:
                         ]
                     )
                 except ValueError as e:
-                    # Why is this a value error and not an IndexError, clearly the indexing is off...
+                    # When there is no match, ValueError is raised
+                    # Clearly this should be an IndexError...
                     pass
 
+        # Cath possible issues with the indexing
         if np.all(np.isclose(self._ereco_spline_evals, 0.0)):
             raise ValueError("Something is wrong, please fix me")
         fit_inputs["ereco_grid"] = np.log(self._ereco_spline_evals)

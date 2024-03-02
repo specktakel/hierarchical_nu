@@ -102,10 +102,12 @@ class TestR2021:
 
             with DataContext():
                 size = ForwardVariableDef("size", "int")
+                eres_grid = ForwardArrayDef("eres_grid", "vector[14]", ["[size]"])
                 # ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[", size, "]"])
-                ereco = ForwardArrayDef("reco_energy", "real", ["[", size, "]"])
-                phi = ForwardVariableDef("phi", "real")
-                theta = ForwardVariableDef("theta", "real")
+                # ereco = ForwardArrayDef("reco_energy", "real", ["[", size, "]"])
+                # phi = ForwardVariableDef("phi", "real")
+                # theta = ForwardVariableDef("theta", "real")
+                # add the eres slice for each event here
 
             with ParametersContext():
                 true_energy = ParameterDef("true_energy", "real", 2.25, 8.0)
@@ -116,7 +118,8 @@ class TestR2021:
                     lp[i] << StringExpression(
                         [
                             #     "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]', ereco_idx[i])"
-                            "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                            # "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                            "IC86_IIEnergyResolution(true_energy, eres_grid[i])"
                         ]
                     )
 
@@ -214,11 +217,21 @@ class TestR2021:
             ]
         )  # np.pi/4])
         etrue = irf.true_energy_values[:-2]
+        det = IC86_IIDetectorModel()
+        eres = det.energy_resolution
         size = 100
         num_samples = 1000
         for c_e, e in enumerate(etrue[1:-1], 1):
             for c_d, t in enumerate(theta[1:], 1):
                 ereco = np.random.choice(test_samples[c_e, c_d], size)
+                idxs = np.digitize(np.log10(ereco), eres._logEreco_grid) - 1
+                ereco_indexed = eres._logEreco_grid[idxs]
+                eres_grid = np.array(
+                    [
+                        eres._2dsplines[c_d](logE, eres._log_tE_binc, grid=False)
+                        for logE in ereco_indexed
+                    ]
+                )
                 data = {
                     "theta": t,
                     "phi": phi,
@@ -227,6 +240,7 @@ class TestR2021:
                     # "ereco_idx": np.digitize(
                     #     ereco, R2021GridInterpEnergyResolution._logEreco_grid_edges
                     # ),
+                    "eres_grid": eres_grid,
                 }
 
                 output = stan_model.sample(
