@@ -252,7 +252,6 @@ class ConfigParser:
             # check if parameter_config.detector_model_type should be used
             # through parameter_config.restrict_to_list being True
             _time = lifetime.lifetime_from_mjd(self.MJD_min, self.MJD_max)
-            print(_time)
             if self._hnu_config.parameter_config.restrict_to_list:
                 dms = self._hnu_config.parameter_config.detector_model_type
                 time = {}
@@ -263,7 +262,6 @@ class ConfigParser:
                     except KeyError:
                         continue
                 _time = time
-                print(_time)
                 if not _time.keys():
                     raise ValueError(
                         "Empty dm list, change MJD or dm selection to sensible values."
