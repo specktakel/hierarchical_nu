@@ -33,7 +33,8 @@ class LifeTime:
         for s in [IC40, IC59, IC79, IC86_I, IC86_II]:
             try:
                 lt = lifetime[s.P]
-                output[s] = lt * u.year
+                if lt > 0.0:
+                    output[s] = lt * u.year
             except KeyError:
                 pass
 
@@ -50,5 +51,8 @@ class LifeTime:
 
     def mjd_from_dm(self, event_type: EventType) -> tuple[float]:
         mjd_min = self._uptime._data[event_type.P].min()
-        mjd_max = self._uptime._data[event_type.P].max()
+        if event_type == IC86_II:
+            mjd_max = self._uptime._data["IC86_VII"].max()
+        else:
+            mjd_max = self._uptime._data[event_type.P].max()
         return mjd_min, mjd_max
