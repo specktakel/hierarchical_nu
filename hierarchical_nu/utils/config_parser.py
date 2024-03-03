@@ -189,14 +189,16 @@ class ConfigParser:
 
         if apply_roi and len(dec) > 1 and not roi_config.roi_type == "CircularROI":
             raise ValueError("Only CircularROIs can be stacked")
+        MJD_min = self.MJD_min if not np.isclose(self.MJD_min, 98.0) else 0.0
+        MJD_max = self.MJD_max if not np.isclose(self.MJD_max, 100.0) else 99999.0
         if roi_config.roi_type == "CircularROI":
             for c in range(len(dec)):
                 CircularROI(
                     center[c],
                     size,
                     apply_roi=apply_roi,
-                    MJD_min=self.MJD_min,
-                    MJD_max=self.MJD_max,
+                    MJD_min=MJD_min,
+                    MJD_max=MJD_max,
                 )
         elif roi_config.roi_type == "RectangularROI":
             size = size.to(u.rad)
@@ -205,19 +207,19 @@ class ConfigParser:
                 RA_max=ra[0] + size,
                 DEC_min=dec[0] - size,
                 DEC_max=dec[0] + size,
-                MJD_min=self.MJD_min,
-                MJD_max=self.MJD_max,
+                MJD_min=MJD_min,
+                MJD_max=MJD_max,
                 apply_roi=apply_roi,
             )
         elif roi_config.roi_type == "FullSkyROI":
             FullSkyROI(
-                MJD_min=self.MJD_min,
-                MJD_max=self.MJD_max,
+                MJD_min=MJD_min,
+                MJD_max=MJD_max,
             )
         elif roi_config.roi_type == "NorthernSkyROI":
             NorthernSkyROI(
-                MJD_min=self.MJD_min,
-                MJD_max=self.MJD_max,
+                MJD_min=MJD_min,
+                MJD_max=MJD_max,
             )
 
     def _is_dm_list(self):
