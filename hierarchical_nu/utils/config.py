@@ -86,11 +86,14 @@ class ParameterConfig:
     # OR
     # provide mjd_min, mjd_max to automatically determine the detectors and their obs times
     detector_model_type: List[str] = field(default_factory=lambda: ["IC86_II"])
-    obs_time: List[float] = field(default_factory=lambda: [6.0])  # years
+    obs_time: List = field(default_factory=lambda: [6.0])  # years
 
     # With these default values obs_time takes precedence
-    mjd_min: float = 98.0
-    mjd_max: float = 100.0
+    MJD_min: float = 98.0
+    MJD_max: float = 100.0
+    # restrict DM selection from MJD to selection in detector_model_type
+    # useful because of overlap near season changes
+    restrict_to_list: bool = False
 
     # Within-chain parallelisation
     threads_per_chain: int = 1

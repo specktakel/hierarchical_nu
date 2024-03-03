@@ -168,11 +168,11 @@ class ConfigParser:
 
     @property
     def MJD_min(self):
-        return self._hnu_config.parameter_config.mjd_min
+        return self._hnu_config.parameter_config.MJD_min
 
     @property
     def MJD_max(self):
-        return self._hnu_config.parameter_config.mjd_max
+        return self._hnu_config.parameter_config.MJD_max
 
     @property
     def ROI(self):
@@ -234,16 +234,40 @@ class ConfigParser:
 
     @property
     def obs_time(self):
+
         if self._is_dm_list():
             dm_keys = [
                 Refrigerator.python2dm(_)
                 for _ in self._hnu_config.parameter_config.detector_model_type
             ]
             obs_time = self._hnu_config.parameter_config.obs_time
-            return self._get_obs_time_from_config(dm_keys, obs_time)
+            if obs_time == ["season"]:
+                lifetime = LifeTime()
+                obs_time = lifetime.lifetime_from_dm(*dm_keys)
+                return obs_time
+            else:
+                return self._get_obs_time_from_config(dm_keys, obs_time)
         else:
             lifetime = LifeTime()
+            # check if parameter_config.detector_model_type should be used
+            # through parameter_config.restrict_to_list being True
             _time = lifetime.lifetime_from_mjd(self.MJD_min, self.MJD_max)
+            print(_time)
+            if self._hnu_config.parameter_config.restrict_to_list:
+                dms = self._hnu_config.parameter_config.detector_model_type
+                time = {}
+                for dm in dms:
+                    dm = Refrigerator.python2dm(dm)
+                    try:
+                        time[dm] = _time[dm]
+                    except KeyError:
+                        continue
+                _time = time
+                print(_time)
+                if not _time.keys():
+                    raise ValueError(
+                        "Empty dm list, change MJD or dm selection to sensible values."
+                    )
             return _time
 
     @property
