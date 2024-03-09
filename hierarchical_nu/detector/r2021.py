@@ -1073,7 +1073,9 @@ class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
         e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
 
         # Get the according IRF dec bins (there are only 3)
-        irf_dec_idx = np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
+        irf_dec_idx = (
+            np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
+        )
 
         if use_lognorm:
             for c, d in enumerate(self._dec_binc):
@@ -1810,7 +1812,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         )
     )
 
-    _log_tE_grid = np.arange(2.25, 8.76, 0.25)
+    _log_tE_grid = np.linspace(2.0, 8.0, 100)
 
     def __init__(
         self,
@@ -1883,7 +1885,9 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
     @u.quantity_input
     def generate_ereco_spline(self, log_tE, dec: u.rad):
         tE_idx = np.digitize(log_tE, self.log_tE_bin_edges) - 1
-        dec_idx = np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
+        dec_idx = (
+            np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
+        )
 
         bin_edges = self.irf.reco_energy_bins[tE_idx, dec_idx]
         binc = bin_edges[:-1] + np.diff(bin_edges) / 2
@@ -1923,7 +1927,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
 
                 # return 2d interpolated grid evals
                 # logEreco_c = StanArray("logEreco_c", "real", self._logEreco_grid)
-                logEtrue_c = StanVector("logEtrue_c", self._log_tE_binc)
+                logEtrue_c = StanVector("logEtrue_c", self._log_tE_grid)
                 # TODO fix dec index, hard-coded 1 rn
                 # grid_evals = StanArray("grid_evals", "real", self._evaluations[1])
                 # TODO: replace 2d interpolation with finding the correct slices of
@@ -2131,9 +2135,9 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                 RectBivariateSpline(
                     self._log_rE_binc,
                     self._log_tE_binc,
-                    self._evaluations[c],
-                    kx=1,
-                    ky=1,
+                    np.log(self._evaluations[c]),
+                    kx=3,
+                    ky=3,
                 )
             )
 
@@ -2228,7 +2232,9 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         # Limits of Ereco in dec binning of effective area
         idx_dec_aeff = np.digitize(dec.to_value(u.rad), self._aeff_dec_bins) - 1
         # Get the according IRF dec bins (there are only 3)
-        idx_dec_eres = np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
+        idx_dec_eres = (
+            np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
+        )
         idx_dec_aeff[
             np.nonzero(
                 (idx_dec_aeff == self._aeff_dec_bins.size - 1)
@@ -2270,7 +2276,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                     dloge = np.diff(loge_edges)
                     loge_c = loge_edges[:-1] + dloge / 2
 
-                    evals = self._2dsplines[cD](loge_c, Et, grid=False)
+                    evals = np.exp(self._2dsplines[cD](loge_c, Et, grid=False))
                     integral = np.sum(evals * dloge)
 
                     prob[c] = integral

@@ -52,6 +52,7 @@ from hierarchical_nu.detector.detector_model import (
     LogNormEnergyResolution,
     GridInterpolationEnergyResolution,
 )
+from hierarchical_nu.detector.r2021 import R2021EnergyResolution
 
 
 class StanFitInterface(StanInterface):
@@ -520,17 +521,17 @@ class StanFitInterface(StanInterface):
                     self._Edet << FunctionCall(["real_data[start:end]"], "to_vector")
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
-
+                    grid_size = R2021EnergyResolution._log_tE_grid.size
                     self._ereco_grid = ForwardArrayDef(
-                        "ereco_grid", "real", ["[N, 14]"]
+                        "ereco_grid", "real", ["[N, ", str(grid_size), "]"]
                     )
 
                     with ForLoopContext(1, "N", "f") as f:
-                        end << end + 14
+                        end << end + grid_size
                         self._ereco_grid[f] << StringExpression(
                             ["real_data[start:end]"]
                         )
-                        start << start + 14
+                        start << start + grid_size
                     self._omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
                     # Loop over events to unpack reconstructed direction
                     with ForLoopContext(1, self._N, "i") as i:
@@ -712,7 +713,10 @@ class StanFitInterface(StanInterface):
 
             # To store the Ereco-grid index for each event, speeds up the 2d interpolation
             # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", self._N_str)
-            self._ereco_grid = ForwardArrayDef("ereco_grid", "real", ["[N, 14]"])
+            grid_size = R2021EnergyResolution._log_tE_grid.size
+            self._ereco_grid = ForwardArrayDef(
+                "ereco_grid", "real", ["[N, ", str(grid_size), "]"]
+            )
 
             # Energy range at source
             self._Emin_src = ForwardVariableDef("Emin_src", "real")
@@ -938,13 +942,14 @@ class StanFitInterface(StanInterface):
                     self._Emax_at_det << self._Emax_diff / (1.0 + self._z[self._Ns + 1])
 
             if self._nshards not in [0, 1]:
+                grid_size = R2021EnergyResolution._log_tE_grid.size
                 self._N_shards_use_this = ForwardVariableDef("N_shards_loop", "int")
                 self._N_shards_use_this << self._N_shards
                 # Create the rectangular data blocks for use in `map_rect`
                 self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
                 self._N_mod_J << self._N % self._J
                 # Find size for real_data array
-                sd_events_J = 4 + 14  # reco energy, reco dir (unit vector)
+                sd_events_J = 4 + grid_size  # reco energy, reco dir (unit vector)
                 sd_varpi_Ns = 3  # coords of PS in the sky (unit vector)
                 sd_if_diff = 3  # redshift of diffuse component, Emin_diff/max
                 sd_z_Ns = 1  # redshift of PS
@@ -1001,12 +1006,12 @@ class StanFitInterface(StanInterface):
                     insert_start << insert_start + insert_len
 
                     with ForLoopContext(start, end, "f") as f:
-                        insert_end << insert_end + 14
+                        insert_end << insert_end + grid_size
                         (
                             self.real_data[i, insert_start:insert_end]
                             << self._ereco_grid[f]
                         )
-                        insert_start << insert_start + 14
+                        insert_start << insert_start + grid_size
 
                     with ForLoopContext(start, end, "f") as f:
                         insert_end << insert_end + 3

@@ -1143,7 +1143,9 @@ class StanFit:
         # fix the number of Etrue vals to 14 because we only use it for this one data release
         # first index is event, second IRF Etrue bin
 
-        self._ereco_spline_evals = np.zeros((self.events.N, 14))
+        self._ereco_spline_evals = np.zeros(
+            (self.events.N, R2021EnergyResolution._log_tE_grid.size)
+        )
         # energy_resolution.ereco_splines has first index as declination of IRF, bin_edges=-[90, -10, 10, 90] in degrees
         _, dec = uv_to_icrs(self.events.unit_vectors)
         dec_idx = np.zeros(self.events.N, dtype=int)
@@ -1188,7 +1190,7 @@ class StanFit:
                                 logE,
                                 self._exposure_integral[
                                     et
-                                ].energy_resolution._log_tE_binc,
+                                ].energy_resolution._log_tE_grid,
                                 grid=False,
                             )
                             for logE in ereco_indexed[
@@ -1202,9 +1204,9 @@ class StanFit:
                     pass
 
         # Cath possible issues with the indexing
-        if np.all(np.isclose(self._ereco_spline_evals, 0.0)):
-            raise ValueError("Something is wrong, please fix me")
-        fit_inputs["ereco_grid"] = np.log(self._ereco_spline_evals)
+        # if np.all(np.isclose(self._ereco_spline_evals, 0.0)):
+        #    raise ValueError("Something is wrong, please fix me")
+        fit_inputs["ereco_grid"] = self._ereco_spline_evals
 
         """
         idxs = np.digitize(
