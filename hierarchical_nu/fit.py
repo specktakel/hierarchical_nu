@@ -1204,8 +1204,10 @@ class StanFit:
                     pass
 
         # Cath possible issues with the indexing
-        # if np.all(np.isclose(self._ereco_spline_evals, 0.0)):
-        #    raise ValueError("Something is wrong, please fix me")
+        if np.any(np.isnan(self._ereco_spline_evals)) or np.any(
+            np.isinf(self._ereco_spline_evals)
+        ):
+            raise ValueError("Something is wrong, please fix me")
         fit_inputs["ereco_grid"] = self._ereco_spline_evals
 
         """

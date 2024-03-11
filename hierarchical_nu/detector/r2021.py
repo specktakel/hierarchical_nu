@@ -1893,6 +1893,45 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         binc = bin_edges[:-1] + np.diff(bin_edges) / 2
         pdf_vals = self.irf.reco_energy[tE_idx, dec_idx].pdf(binc)
 
+        # Check for empty bins that are surrounded by non-empty bins
+        # Not treating these leads to issues with the splining of log-values
+        # Insert a linear interpolation from the neighbouring non-empty bins
+        # Copied from `fit_irf_to_data.py`
+
+        diff = np.diff(np.nonzero(pdf_vals)[0])
+        if not np.all(np.isclose(diff, np.ones_like(diff))):
+            beginning = True
+            for c in range(pdf_vals.size):
+                # avoid changing the object that's iterated over by using range
+                val = pdf_vals[c]
+                if val == 0.0 and beginning:
+                    # If we are at the beginning, do noting
+                    continue
+                if val != 0.0 and beginning:
+                    # if we find the first non zero entry, set beginning to false
+                    beginning = False
+                if val == 0.0 and not beginning:
+                    # if value is zero and not beginning, check if we are at the end
+                    if np.all(np.isclose(pdf_vals[c:], np.zeros_like(pdf_vals[c:]))):
+                        # nothing to see
+                        break
+                    else:
+                        # now we found some weird stuff
+                        # find the next non-zero value and linearly interpolate between the encompassing non-zero values
+                        prev = pdf_vals[c - 1]
+                        next_idx = c + np.min(np.nonzero(pdf_vals[c:])[0])
+                        next_val = pdf_vals[next_idx]
+                        # if the zero-entries are bunched up, fix all
+                        next_zero_idxs = c + np.nonzero(pdf_vals[c:next_idx] == 0)[0]
+                        pdf_vals[next_zero_idxs] = np.interp(
+                            binc[next_zero_idxs],
+                            [binc[c - 1], binc[next_idx]],
+                            [prev, next_val],
+                        )
+            # re-normalise the histogram
+            norm = np.sum(pdf_vals * np.diff(bin_edges))
+            pdf_vals /= norm
+
         spline = Spline1D(pdf_vals, bin_edges, norm=True)
         return spline
 
