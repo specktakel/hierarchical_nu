@@ -8,6 +8,7 @@ from icecube_tools.utils.vMF import get_theta_p
 
 from hierarchical_nu.detector.r2021 import (
     IC86_IIDetectorModel,
+    R2021EnergyResolution,
 )  # , R2021GridInterpEnergyResolution
 from hierarchical_nu.backend.stan_generator import (
     GeneratedQuantitiesContext,
@@ -102,7 +103,11 @@ class TestR2021:
 
             with DataContext():
                 size = ForwardVariableDef("size", "int")
-                eres_grid = ForwardArrayDef("eres_grid", "vector[14]", ["[size]"])
+                eres_grid = ForwardArrayDef(
+                    "eres_grid",
+                    f"vector[{R2021EnergyResolution._log_tE_grid.size}]",
+                    ["[size]"],
+                )
                 # ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[", size, "]"])
                 # ereco = ForwardArrayDef("reco_energy", "real", ["[", size, "]"])
                 # phi = ForwardVariableDef("phi", "real")
@@ -110,7 +115,7 @@ class TestR2021:
                 # add the eres slice for each event here
 
             with ParametersContext():
-                true_energy = ParameterDef("true_energy", "real", 2.25, 8.0)
+                true_energy = ParameterDef("true_energy", "real", 2.0, 8.0)
 
             with TransformedParametersContext():
                 lp = ForwardArrayDef("lp", "real", ["[", size, "]"])
@@ -210,25 +215,20 @@ class TestR2021:
 
         irf = R2021IRF.from_period("IC86_II")
         phi = 0
-        theta = np.array(
-            [
-                3 * np.pi / 4,
-                np.pi / 2,
-            ]
-        )  # np.pi/4])
+        theta = np.array([3 * np.pi / 4, np.pi / 2, np.pi / 4])
         etrue = irf.true_energy_values[:-2]
         det = IC86_IIDetectorModel()
         eres = det.energy_resolution
         size = 100
         num_samples = 1000
-        for c_e, e in enumerate(etrue[1:-1], 1):
+        for c_e, e in enumerate(etrue[2:-1], 2):
             for c_d, t in enumerate(theta[1:], 1):
                 ereco = np.random.choice(test_samples[c_e, c_d], size)
-                idxs = np.digitize(np.log10(ereco), eres._logEreco_grid) - 1
+                idxs = np.digitize(ereco, eres._logEreco_grid_edges) - 1
                 ereco_indexed = eres._logEreco_grid[idxs]
                 eres_grid = np.array(
                     [
-                        eres._2dsplines[c_d](logE, eres._log_tE_binc, grid=False)
+                        eres._2dsplines[c_d](logE, eres._log_tE_grid, grid=False)
                         for logE in ereco_indexed
                     ]
                 )
