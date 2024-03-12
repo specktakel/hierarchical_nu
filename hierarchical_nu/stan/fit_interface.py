@@ -131,7 +131,7 @@ class StanFitInterface(StanInterface):
             if self._shared_luminosity:
                 key = "luminosity"
             else:
-                key = "ps_0_luminosity"
+                key = "%s_luminosity" % self._sources.point_source[0].name
 
             self._lumi_par_range = Parameter.get_parameter(key).par_range
             self._lumi_par_range = self._lumi_par_range.to(u.GeV / u.s).value
@@ -139,7 +139,7 @@ class StanFitInterface(StanInterface):
             if self._shared_src_index:
                 key = "src_index"
             else:
-                key = "ps_0_src_index"
+                key = "%s_src_index" % self._sources.point_source[0].name
 
             self._src_index_par_range = Parameter.get_parameter(key).par_range
 
@@ -831,7 +831,7 @@ class StanFitInterface(StanInterface):
                 )
                 with ForLoopContext(1, self._N, "i") as i:
                     with ForLoopContext(1, self._Ns, "k") as k:
-                        # Insert loop over event types 
+                        # Insert loop over event types
                         for c, event_type in enumerate(self._event_types):
                             if c == 0:
                                 context = IfBlockContext
@@ -856,11 +856,10 @@ class StanFitInterface(StanInterface):
                                         self._varpi[k],
                                         self._omega_det[i],
                                         self._ang_errs[i],
-                                        self._kappa[i]
+                                        self._kappa[i],
                                     ],
-                                    event_type.F+"AngularResolution"
+                                    event_type.F + "AngularResolution",
                                 )
-
 
             # Find largest permitted range of energies at the detector
             # TODO: not sure about this construct...
