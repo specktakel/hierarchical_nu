@@ -30,6 +30,7 @@ from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrio
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
+from hierarchical_nu.utils.git import git_hash
 
 
 logger = logging.getLogger(__name__)
@@ -725,6 +726,7 @@ class StanFit:
             )
             meta_folder.create_dataset("runset", data=str(self._fit_output.runset))
             meta_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
+            f.create_dataset("version", data=git_hash)
 
             summary = self._fit_output.summary()
 
@@ -1105,11 +1107,11 @@ class StanFit:
             fit_inputs["diff_index_sigma"] = self._priors.diff_index.sigma
 
         if self._sources.atmospheric:
-            fit_inputs[
-                "atmo_integrated_flux"
-            ] = self._sources.atmospheric.flux_model.total_flux_int.to(
-                1 / (u.m**2 * u.s)
-            ).value
+            fit_inputs["atmo_integrated_flux"] = (
+                self._sources.atmospheric.flux_model.total_flux_int.to(
+                    1 / (u.m**2 * u.s)
+                ).value
+            )
 
             # Priors for atmo model
             if self._priors.atmospheric_flux.name == "lognormal":
@@ -1119,10 +1121,10 @@ class StanFit:
                 fit_inputs["f_atmo_mu"] = self._priors.atmospheric_flux.mu.to_value(
                     self._priors.atmospheric_flux.UNITS
                 )
-                fit_inputs[
-                    "f_atmo_sigma"
-                ] = self._priors.atmospheric_flux.sigma.to_value(
-                    self._priors.atmospheric_flux.UNITS
+                fit_inputs["f_atmo_sigma"] = (
+                    self._priors.atmospheric_flux.sigma.to_value(
+                        self._priors.atmospheric_flux.UNITS
+                    )
                 )
             else:
                 raise ValueError(
