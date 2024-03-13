@@ -925,6 +925,7 @@ class StanFit:
         return wrong, assumed, correct
 
     def _get_event_classifications(self):
+        # logprob is a misnomer, this is actually the rate parameter of each source component
         try:
             logprob = self._fit_output.stan_variable("lp").transpose(1, 2, 0)
         except AttributeError:
@@ -941,9 +942,12 @@ class StanFit:
                 .transpose(1, 2, 0)
             )
 
+        # the sum normalises to all source components
         ratio = np.exp(logprob) / np.sum(np.exp(logprob), axis=1)[:, np.newaxis, :]
-        instead = np.average(ratio, axis=-1).tolist()
-        return instead
+        # axes are now event, component, sample
+        # average over samples, hence axis=-1
+        assoc_prob = np.average(ratio, axis=-1).tolist()
+        return assoc_prob
 
     def _get_fit_inputs(self):
         fit_inputs = {}
@@ -1081,11 +1085,11 @@ class StanFit:
             fit_inputs["diff_index_sigma"] = self._priors.diff_index.sigma
 
         if self._sources.atmospheric:
-            fit_inputs[
-                "atmo_integrated_flux"
-            ] = self._sources.atmospheric.flux_model.total_flux_int.to(
-                1 / (u.m**2 * u.s)
-            ).value
+            fit_inputs["atmo_integrated_flux"] = (
+                self._sources.atmospheric.flux_model.total_flux_int.to(
+                    1 / (u.m**2 * u.s)
+                ).value
+            )
 
             # Priors for atmo model
             if self._priors.atmospheric_flux.name == "lognormal":
@@ -1095,10 +1099,10 @@ class StanFit:
                 fit_inputs["f_atmo_mu"] = self._priors.atmospheric_flux.mu.to_value(
                     self._priors.atmospheric_flux.UNITS
                 )
-                fit_inputs[
-                    "f_atmo_sigma"
-                ] = self._priors.atmospheric_flux.sigma.to_value(
-                    self._priors.atmospheric_flux.UNITS
+                fit_inputs["f_atmo_sigma"] = (
+                    self._priors.atmospheric_flux.sigma.to_value(
+                        self._priors.atmospheric_flux.UNITS
+                    )
                 )
             else:
                 raise ValueError(
