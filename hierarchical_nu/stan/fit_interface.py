@@ -137,7 +137,7 @@ class StanFitInterface(StanInterface):
             if self._shared_luminosity:
                 key = "luminosity"
             else:
-                key = "ps_0_luminosity"
+                key = "%s_luminosity" % self._sources.point_source[0].name
 
             self._lumi_par_range = Parameter.get_parameter(key).par_range
             self._lumi_par_range = self._lumi_par_range.to(u.GeV / u.s).value
@@ -145,7 +145,7 @@ class StanFitInterface(StanInterface):
             if self._shared_src_index:
                 key = "src_index"
             else:
-                key = "ps_0_src_index"
+                key = "%s_src_index" % self._sources.point_source[0].name
 
             self._src_index_par_range = Parameter.get_parameter(key).par_range
 
