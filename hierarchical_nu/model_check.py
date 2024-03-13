@@ -14,9 +14,7 @@ from scipy.stats import uniform
 from typing import List, Union
 
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.source import PointSource, Sources
 
-from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
@@ -24,31 +22,14 @@ from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.utils.config_parser import ConfigParser
-from hierarchical_nu.utils.roi import (
-    CircularROI,
-    RectangularROI,
-    FullSkyROI,
-    NorthernSkyROI,
-    ROIList,
-)
 from hierarchical_nu.priors import (
     Priors,
-    LogNormalPrior,
-    NormalPrior,
-    ParetoPrior,
-    LuminosityPrior,
-    IndexPrior,
-    FluxPrior,
 )
 
 import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-hnu_config = HierarchicalNuConfig.load_default()
-
-parser = ConfigParser(hnu_config)
 
 
 class ModelCheck:
@@ -57,7 +38,21 @@ class ModelCheck:
     fitting simulated data using different random seeds.
     """
 
-    def __init__(self, truths=None, priors=None):
+    def __init__(
+        self,
+        hnu_config: Union[None, HierarchicalNuConfig] = None,
+        truths=None,
+        priors=None,
+    ):
+
+        if hnu_config is None:
+            logger.info("Loading default config")
+            self.hnu_config = HierarchicalNuConfig.load_default()
+
+        else:
+            self.hnu_config = hnu_config
+        self.parser = ConfigParser(self.hnu_config)
+
         if priors:
             self.priors = priors
             logger.info("Found priors")
@@ -65,7 +60,7 @@ class ModelCheck:
         else:
             logger.info("Loading priors from config")
 
-            self.priors = parser.priors
+            self.priors = self.parser.priors
 
         if truths:
             logger.info("Found true values")
@@ -74,18 +69,18 @@ class ModelCheck:
         else:
             logger.info("Loading true values from config")
             # Config
-            parameter_config = hnu_config["parameter_config"]
-            parser.ROI
+            parameter_config = self.hnu_config["parameter_config"]
+            self.parser.ROI
 
             asimov = parameter_config.asimov
             # Sources
-            self._sources = parser.sources
+            self._sources = self.parser.sources
             f_arr = self._sources.f_arr().value
             f_arr_astro = self._sources.f_arr_astro().value
 
             # Detector
-            self._detector_model_type = parser.detector_model
-            self._obs_time = parser.obs_time
+            self._detector_model_type = self.parser.detector_model
+            self._obs_time = self.parser.obs_time
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
 
@@ -170,7 +165,9 @@ class ModelCheck:
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
     @staticmethod
-    def initialise_env(output_dir):
+    def initialise_env(
+        output_dir, hnu_config: Union[None, HierarchicalNuConfig] = None
+    ):
         """
         Script to set up enviroment for parallel
         model checking runs.
@@ -181,6 +178,12 @@ class ModelCheck:
         """
 
         # Config
+        if hnu_config is None:
+            logger.info("Loading default config")
+            hnu_config = HierarchicalNuConfig.load_default()
+
+        parser = ConfigParser(hnu_config)
+
         parameter_config = hnu_config["parameter_config"]
         file_config = hnu_config["file_config"]
 
@@ -355,7 +358,7 @@ class ModelCheck:
                     # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
                     sim_N.extend(sim_folder["sim_%i" % i][()])
 
-        output = cls(truths, priors)
+        output = cls(truths=truths, priors=priors)
         output.results = results
         output.sim_Lambdas = sim
         output.sim_N = sim_N
@@ -580,13 +583,13 @@ class ModelCheck:
 
         sys.stderr.write("Random seed: %i\n" % seed)
 
-        parser.ROI
+        self.parser.ROI
 
-        self._sources = parser.sources
+        self._sources = self.parser.sources
 
-        file_config = hnu_config["file_config"]
+        file_config = self.hnu_config["file_config"]
 
-        asimov = hnu_config.parameter_config.asimov
+        asimov = self.hnu_config.parameter_config.asimov
 
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
@@ -665,8 +668,8 @@ class ModelCheck:
 
             start_time = time.time()
 
-            share_L = hnu_config.parameter_config.share_L
-            share_src_index = hnu_config.parameter_config.share_src_index
+            share_L = self.hnu_config.parameter_config.share_L
+            share_src_index = self.hnu_config.parameter_config.share_src_index
 
             if not share_L:
                 L_init = [1e49] * len(self._sources.point_source)
