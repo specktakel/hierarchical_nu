@@ -12,7 +12,8 @@ def run_model_check(output_directory, random_seed):
 
     output_file = os.path.join(output_directory, f"fit_sim_{random_seed}_test.h5")
 
-    model_check = ModelCheck()
+    config = HierarchicalNuConfig.from_path(_local_config_file)
+    model_check = ModelCheck(config=config)
 
     # Run
     model_check.parallel_run(n_jobs=n_jobs, n_subjobs=n_subjobs, seed=random_seed)
@@ -35,7 +36,7 @@ def test_short_run_r2021(output_directory, random_seed):
     with _local_config_file.open("w") as f:
         OmegaConf.save(config=hnu_config, f=f.name)
 
-    ModelCheck.initialise_env(output_dir=output_directory)
+    ModelCheck.initialise_env(output_dir=output_directory, config=hnu_config)
 
     model_check = run_model_check(output_directory, random_seed)
 
