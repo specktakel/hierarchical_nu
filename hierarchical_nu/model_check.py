@@ -40,18 +40,18 @@ class ModelCheck:
 
     def __init__(
         self,
-        hnu_config: Union[None, HierarchicalNuConfig] = None,
+        config: Union[None, HierarchicalNuConfig] = None,
         truths=None,
         priors=None,
     ):
 
-        if hnu_config is None:
+        if config is None:
             logger.info("Loading default config")
-            self.hnu_config = HierarchicalNuConfig.load_default()
+            self.config = HierarchicalNuConfig.load_default()
 
         else:
-            self.hnu_config = hnu_config
-        self.parser = ConfigParser(self.hnu_config)
+            self.config = config
+        self.parser = ConfigParser(self.config)
 
         if priors:
             self.priors = priors
@@ -69,7 +69,7 @@ class ModelCheck:
         else:
             logger.info("Loading true values from config")
             # Config
-            parameter_config = self.hnu_config["parameter_config"]
+            parameter_config = self.config["parameter_config"]
             self.parser.ROI
 
             asimov = parameter_config.asimov
@@ -165,9 +165,7 @@ class ModelCheck:
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
     @staticmethod
-    def initialise_env(
-        output_dir, hnu_config: Union[None, HierarchicalNuConfig] = None
-    ):
+    def initialise_env(output_dir, config: Union[None, HierarchicalNuConfig] = None):
         """
         Script to set up enviroment for parallel
         model checking runs.
@@ -178,14 +176,14 @@ class ModelCheck:
         """
 
         # Config
-        if hnu_config is None:
+        if config is None:
             logger.info("Loading default config")
-            hnu_config = HierarchicalNuConfig.load_default()
+            config = HierarchicalNuConfig.load_default()
 
-        parser = ConfigParser(hnu_config)
+        parser = ConfigParser(config)
 
-        parameter_config = hnu_config["parameter_config"]
-        file_config = hnu_config["file_config"]
+        parameter_config = config["parameter_config"]
+        file_config = config["file_config"]
 
         asimov = parameter_config.asimov
 
@@ -587,9 +585,9 @@ class ModelCheck:
 
         self._sources = self.parser.sources
 
-        file_config = self.hnu_config["file_config"]
+        file_config = self.config["file_config"]
 
-        asimov = self.hnu_config.parameter_config.asimov
+        asimov = self.config.parameter_config.asimov
 
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
@@ -668,8 +666,8 @@ class ModelCheck:
 
             start_time = time.time()
 
-            share_L = self.hnu_config.parameter_config.share_L
-            share_src_index = self.hnu_config.parameter_config.share_src_index
+            share_L = self.config.parameter_config.share_L
+            share_src_index = self.config.parameter_config.share_src_index
 
             if not share_L:
                 L_init = [1e49] * len(self._sources.point_source)
