@@ -346,7 +346,12 @@ class ModelCheck:
                     [
                         key
                         for key in f
-                        if (key != "truths" and key != "priors" and key != "sim")
+                        if (
+                            key != "truths"
+                            and key != "priors"
+                            and key != "sim"
+                            and key != "version"
+                        )
                     ]
                 )
 
