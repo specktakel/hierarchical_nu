@@ -14,31 +14,16 @@ from scipy.stats import uniform
 from typing import List, Union
 
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.source import PointSource, Sources
 
-from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
-from hierarchical_nu.utils.config import hnu_config
+from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.utils.config_parser import ConfigParser
-from hierarchical_nu.utils.roi import (
-    CircularROI,
-    RectangularROI,
-    FullSkyROI,
-    NorthernSkyROI,
-    ROIList,
-)
 from hierarchical_nu.priors import (
     Priors,
-    LogNormalPrior,
-    NormalPrior,
-    ParetoPrior,
-    LuminosityPrior,
-    IndexPrior,
-    FluxPrior,
 )
 from hierarchical_nu.utils.git import git_hash
 
@@ -48,16 +33,27 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-parser = ConfigParser(hnu_config)
-
-
 class ModelCheck:
     """
     Check statistical model by repeatedly
     fitting simulated data using different random seeds.
     """
 
-    def __init__(self, truths=None, priors=None):
+    def __init__(
+        self,
+        config: Union[None, HierarchicalNuConfig] = None,
+        truths=None,
+        priors=None,
+    ):
+
+        if config is None:
+            logger.info("Loading default config")
+            self.config = HierarchicalNuConfig.load_default()
+
+        else:
+            self.config = config
+        self.parser = ConfigParser(self.config)
+
         if priors:
             self.priors = priors
             logger.info("Found priors")
@@ -65,7 +61,7 @@ class ModelCheck:
         else:
             logger.info("Loading priors from config")
 
-            self.priors = parser.priors()
+            self.priors = self.parser.priors
 
         if truths:
             logger.info("Found true values")
@@ -74,18 +70,18 @@ class ModelCheck:
         else:
             logger.info("Loading true values from config")
             # Config
-            parameter_config = hnu_config["parameter_config"]
-            parser.ROI()
+            parameter_config = self.config["parameter_config"]
+            self.parser.ROI
 
             asimov = parameter_config.asimov
             # Sources
-            self._sources = parser.sources()
+            self._sources = self.parser.sources
             f_arr = self._sources.f_arr().value
             f_arr_astro = self._sources.f_arr_astro().value
 
             # Detector
-            self._detector_model_type = parser.detector_model()
-            self._obs_time = parser.obs_time()
+            self._detector_model_type = self.parser.detector_model
+            self._obs_time = self.parser.obs_time
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
 
@@ -170,7 +166,7 @@ class ModelCheck:
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
     @staticmethod
-    def initialise_env(output_dir):
+    def initialise_env(output_dir, config: Union[None, HierarchicalNuConfig] = None):
         """
         Script to set up enviroment for parallel
         model checking runs.
@@ -181,12 +177,18 @@ class ModelCheck:
         """
 
         # Config
-        parameter_config = hnu_config["parameter_config"]
-        file_config = hnu_config["file_config"]
+        if config is None:
+            logger.info("Loading default config")
+            config = HierarchicalNuConfig.load_default()
+
+        parser = ConfigParser(config)
+
+        parameter_config = config["parameter_config"]
+        file_config = config["file_config"]
 
         asimov = parameter_config.asimov
 
-        parser.ROI()
+        parser.ROI
 
         if not STAN_GEN_PATH in file_config["include_paths"]:
             file_config["include_paths"].append(STAN_GEN_PATH)
@@ -195,9 +197,8 @@ class ModelCheck:
         logger.info("Setting up MCEq run for AtmopshericNumuFlux")
 
         # Build necessary details to define simulation and fit code
-        detector_model_type = parser.detector_model()
-
-        sources = parser.sources()
+        detector_model_type = parser.detector_model
+        sources = parser.sources
         # Generate sim Stan file
         sim_name = file_config["sim_filename"][:-5]
         stan_sim_interface = StanSimInterface(
@@ -212,7 +213,7 @@ class ModelCheck:
         nshards = threads_per_chain
         fit_name = file_config["fit_filename"][:-5]
 
-        priors = parser.priors()
+        priors = parser.priors
 
         stan_fit_interface = StanFitInterface(
             fit_name,
@@ -362,7 +363,7 @@ class ModelCheck:
                     # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
                     sim_N.extend(sim_folder["sim_%i" % i][()])
 
-        output = cls(truths, priors)
+        output = cls(truths=truths, priors=priors)
         output.results = results
         output.sim_Lambdas = sim
         output.sim_N = sim_N
@@ -587,13 +588,13 @@ class ModelCheck:
 
         sys.stderr.write("Random seed: %i\n" % seed)
 
-        parser.ROI()
+        self.parser.ROI
 
-        self._sources = parser.sources()
+        self._sources = self.parser.sources
 
-        file_config = hnu_config["file_config"]
+        file_config = self.config["file_config"]
 
-        asimov = hnu_config.parameter_config.asimov
+        asimov = self.config.parameter_config.asimov
 
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
@@ -652,10 +653,6 @@ class ModelCheck:
             atmo = np.sum(lambd == 3.0)
             lam = np.array([ps, diff, atmo])
 
-            # Skip if no detected events
-            if not sim.events:
-                continue
-
             # Fit
             # Same as above, save time
             # Also handle in case first sim has no events
@@ -676,8 +673,8 @@ class ModelCheck:
 
             start_time = time.time()
 
-            share_L = hnu_config.parameter_config.share_L
-            share_src_index = hnu_config.parameter_config.share_src_index
+            share_L = self.config.parameter_config.share_L
+            share_src_index = self.config.parameter_config.share_src_index
 
             if not share_L:
                 L_init = [1e49] * len(self._sources.point_source)

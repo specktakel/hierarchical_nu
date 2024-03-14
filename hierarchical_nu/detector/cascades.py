@@ -24,7 +24,7 @@ from ..backend import (
 )
 from .detector_model import (
     EffectiveArea,
-    EnergyResolution,
+    LogNormEnergyResolution,
     AngularResolution,
     DetectorModel,
 )
@@ -115,7 +115,7 @@ class CascadesEffectiveArea(EffectiveArea):
         self._rs_bbpl_params["gamma2_scale"] = 0.5
 
 
-class CascadesEnergyResolution(EnergyResolution):
+class CascadesEnergyResolution(LogNormEnergyResolution):
     """
     Energy resolution based on the cascade_model simulation.
     """
@@ -392,7 +392,9 @@ class CascadesAngularResolution(AngularResolution):
                 )
 
                 kappa = PolynomialParameterization(
-                    clipped_log_e, self._poly_params, "CascadesAngularResolutionPolyCoeffs"
+                    clipped_log_e,
+                    self._poly_params,
+                    "CascadesAngularResolutionPolyCoeffs",
                 )
                 pre_event = ForwardVariableDef("pre_event", "vector[4]")
                 vmf = VMFParameterization(["true_dir"], kappa, self.mode)

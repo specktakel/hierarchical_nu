@@ -46,7 +46,13 @@ from hierarchical_nu.source.flux_model import (
     TwiceBrokenPowerLaw,
 )
 
-from hierarchical_nu.detector.icecube import EventType
+from hierarchical_nu.detector.icecube import EventType, NT, CAS
+
+from hierarchical_nu.detector.detector_model import (
+    LogNormEnergyResolution,
+    GridInterpolationEnergyResolution,
+)
+from hierarchical_nu.detector.r2021 import R2021EnergyResolution
 
 
 class StanFitInterface(StanInterface):
@@ -178,12 +184,30 @@ class StanFitInterface(StanInterface):
                         ps_pos = self._varpi[self._event_tag[i]]
                     else:
                         ps_pos = self._varpi
-                    self._irf_return << self._dm[event_type](
-                        self._E[i],
-                        self._Edet[i],
-                        self._omega_det[i],
-                        ps_pos,
-                    )
+                    if event_type in [NT, CAS]:
+                        self._irf_return << self._dm[event_type](
+                            self._E[i],
+                            self._Edet[i],
+                            self._omega_det[i],
+                            ps_pos,
+                        )
+                    elif isinstance(
+                        self._dm[event_type].energy_resolution,
+                        GridInterpolationEnergyResolution,
+                    ):
+                        self._irf_return << self._dm[event_type](
+                            self._E[i],
+                            self._omega_det[i],
+                            ps_pos,
+                            FunctionCall([self._ereco_grid[i]], "to_vector"),
+                        )
+                    else:
+                        self._irf_return << self._dm[event_type](
+                            self._E[i],
+                            self._omega_det[i],
+                            ps_pos,
+                            self._Edet[i],
+                        )
 
             self._eres_src << StringExpression(["irf_return.1"])
             self._aeff_src << StringExpression(["irf_return.2"])
@@ -489,11 +513,25 @@ class StanFitInterface(StanInterface):
                         self._event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
                         self._event_tag << StringExpression(["int_data[3+N:2+2*N]"])
 
+                    # TODO fix indexing for event tags
+                    # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[N]"])
+                    # self._ereco_idx << StringExpression("int_data[3+N:2+2*N]")
+
                     self._Edet = ForwardVariableDef("Edet", "vector[N]")
                     self._Edet << FunctionCall(["real_data[start:end]"], "to_vector")
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
+                    grid_size = R2021EnergyResolution._log_tE_grid.size
+                    self._ereco_grid = ForwardArrayDef(
+                        "ereco_grid", "real", ["[N, ", str(grid_size), "]"]
+                    )
 
+                    with ForLoopContext(1, "N", "f") as f:
+                        end << end + grid_size
+                        self._ereco_grid[f] << StringExpression(
+                            ["real_data[start:end]"]
+                        )
+                        start << start + grid_size
                     self._omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
                     # Loop over events to unpack reconstructed direction
                     with ForLoopContext(1, self._N, "i") as i:
@@ -672,6 +710,13 @@ class StanFitInterface(StanInterface):
             # Event tags
             if self._use_event_tag:
                 self._event_tag = ForwardArrayDef("event_tag", "int", self._N_str)
+
+            # To store the Ereco-grid index for each event, speeds up the 2d interpolation
+            # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", self._N_str)
+            grid_size = R2021EnergyResolution._log_tE_grid.size
+            self._ereco_grid = ForwardArrayDef(
+                "ereco_grid", "real", ["[N, ", str(grid_size), "]"]
+            )
 
             # Energy range at source
             self._Emin_src = ForwardVariableDef("Emin_src", "real")
@@ -897,13 +942,14 @@ class StanFitInterface(StanInterface):
                     self._Emax_at_det << self._Emax_diff / (1.0 + self._z[self._Ns + 1])
 
             if self._nshards not in [0, 1]:
+                grid_size = R2021EnergyResolution._log_tE_grid.size
                 self._N_shards_use_this = ForwardVariableDef("N_shards_loop", "int")
                 self._N_shards_use_this << self._N_shards
                 # Create the rectangular data blocks for use in `map_rect`
                 self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
                 self._N_mod_J << self._N % self._J
                 # Find size for real_data array
-                sd_events_J = 4  # reco energy, reco dir (unit vector)
+                sd_events_J = 4 + grid_size  # reco energy, reco dir (unit vector)
                 sd_varpi_Ns = 3  # coords of PS in the sky (unit vector)
                 sd_if_diff = 3  # redshift of diffuse component, Emin_diff/max
                 sd_z_Ns = 1  # redshift of PS
@@ -960,6 +1006,14 @@ class StanFitInterface(StanInterface):
                     insert_start << insert_start + insert_len
 
                     with ForLoopContext(start, end, "f") as f:
+                        insert_end << insert_end + grid_size
+                        (
+                            self.real_data[i, insert_start:insert_end]
+                            << self._ereco_grid[f]
+                        )
+                        insert_start << insert_start + grid_size
+
+                    with ForLoopContext(start, end, "f") as f:
                         insert_end << insert_end + 3
                         self.real_data[i, insert_start:insert_end] << FunctionCall(
                             [self._omega_det[f]], "to_array_1d"
@@ -999,6 +1053,7 @@ class StanFitInterface(StanInterface):
                             # The double-index is needed because of a bug with the code generator
                             # if I use [k, start:end], a single line of "k;" is printed after entering
                             # the for loop
+                            # TODO: fix this in code generator
                             (
                                 self.real_data[i, insert_start:insert_end]
                                 << self._spatial_loglike[k][start:end]
@@ -1041,15 +1096,29 @@ class StanFitInterface(StanInterface):
                     # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
                     self.int_data[i, 1] << insert_len
                     self.int_data[i, 2] << self._Ns
-                    self.int_data[i, 3:"2+insert_len"] << FunctionCall(
+                    insert_start << 3
+                    # end index is inclusive, subtract one
+                    insert_end << insert_start + insert_len - 1
+                    self.int_data[i, insert_start:insert_end] << FunctionCall(
                         [FunctionCall([self._event_type[start:end]], "to_array_1d")],
                         "to_int",
                     )
+
+                    insert_start << insert_start + insert_len
                     if self._use_event_tag:
+                        insert_end << insert_end + insert_len
                         (
-                            self.int_data[i, "3+insert_len:2+2*insert_len"]
+                            self.int_data[i, insert_start:insert_end]
                             << self._event_tag[start:end]
                         )
+                        insert_start << insert_start + insert_len
+                    """
+                    insert_end << insert_end + insert_len
+                    (
+                        self.int_data[i, insert_start:insert_end]
+                        << self._ereco_idx[start:end]
+                    )
+                    """
 
     def _parameters(self):
         """

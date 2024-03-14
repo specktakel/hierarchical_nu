@@ -2,6 +2,7 @@
 Module for the precomputation of quantities
 to be passed to Stan models.
 """
+
 from collections import defaultdict
 from itertools import product
 import logging
@@ -19,13 +20,18 @@ from hierarchical_nu.source.source import (
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 from hierarchical_nu.source.parameter import ParScale, Parameter
 from hierarchical_nu.backend.stan_generator import StanGenerator
-from hierarchical_nu.detector.r2021 import R2021EnergyResolution
+from hierarchical_nu.detector.detector_model import (
+    LogNormEnergyResolution,
+    GridInterpolationEnergyResolution,
+)
 from hierarchical_nu.utils.roi import CircularROI, ROIList
 from hierarchical_nu.detector.icecube import (
     EventType,
     Refrigerator,
     CAS,
 )
+
+from tqdm.autonotebook import tqdm
 
 m_to_cm = 100  # cm
 
@@ -171,11 +177,26 @@ class ExposureIntegral:
                     ).T,
                 ) << (u.m**2)
 
-            p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                E_c,
-                self._min_det_energy,
-                np.full(E_c.shape, dec.to_value(u.rad)) * u.rad,
-            )
+            if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
+                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                    E_c,
+                    self._min_det_energy,
+                    np.full(E_c.shape, dec.to_value(u.rad)) * u.rad,
+                    use_interpolation=True,
+                )
+
+            elif isinstance(self.energy_resolution, LogNormEnergyResolution):
+                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                    E_c,
+                    self._min_det_energy,
+                    np.full(E_c.shape, dec.to_value(u.rad)) * u.rad,
+                    use_lognorm=True,
+                )
+
+            else:
+                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                    E_c, self._min_det_energy
+                )
             p_Edet = np.nan_to_num(p_Edet)
 
             output = np.sum(aeff_vals * flux_vals * p_Edet * d_E)
@@ -250,11 +271,20 @@ class ExposureIntegral:
 
             flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
 
-            if isinstance(self.energy_resolution, R2021EnergyResolution):
+            if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
                     E_grid.flatten(),
                     self._min_det_energy,
                     dec_grid.flatten(),
+                    use_interpolation=True,
+                ).reshape(E_grid.shape)
+
+            elif isinstance(self.energy_resolution, LogNormEnergyResolution):
+                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                    E_grid.flatten(),
+                    self._min_det_energy,
+                    dec_grid.flatten(),
+                    use_lognorm=True,
                 ).reshape(E_grid.shape)
 
             else:
@@ -287,49 +317,58 @@ class ExposureIntegral:
 
         self._integral_fixed_vals = []
 
-        for k, source in enumerate(self._sources.sources):
-            if not self._source_parameter_map[source]:
-                if (
-                    isinstance(source.flux_model, AtmosphericNuMuFlux)
-                    and self._detector_model == CAS
-                ):
-                    self._integral_fixed_vals.append(0.0 * u.m**2)
-                else:
-                    self._integral_fixed_vals.append(
-                        self.calculate_rate(source)
-                        / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
-                    )
-                continue
+        with tqdm(total=self._sources.N) as pbar:
+            for k, source in enumerate(self._sources.sources):
+                pbar.set_description(f"Source {k}")
 
-            this_free_pars = self._source_parameter_map[source]
-            this_par_grids = [self._par_grids[par_name] for par_name in this_free_pars]
-            integral_grids_tmp = np.zeros(
-                [self._n_grid_points] * len(this_par_grids)
-            ) << (u.m**2)
+                if not self._source_parameter_map[source]:
+                    if (
+                        isinstance(source.flux_model, AtmosphericNuMuFlux)
+                        and self._detector_model == CAS
+                    ):
+                        self._integral_fixed_vals.append(0.0 * u.m**2)
+                    else:
+                        self._integral_fixed_vals.append(
+                            self.calculate_rate(source)
+                            / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
+                        )
+                    pbar.update(1)
+                    continue
 
-            for i, grid_points in enumerate(product(*this_par_grids)):
-                indices = np.unravel_index(i, integral_grids_tmp.shape)
+                this_free_pars = self._source_parameter_map[source]
+                this_par_grids = [
+                    self._par_grids[par_name] for par_name in this_free_pars
+                ]
+                integral_grids_tmp = np.zeros(
+                    [self._n_grid_points] * len(this_par_grids)
+                ) << (u.m**2)
 
-                for par_name, par_value in zip(this_free_pars, grid_points):
+                with tqdm(total=integral_grids_tmp.size) as pbar_parameter:
+                    for i, grid_points in enumerate(product(*this_par_grids)):
+                        pbar_parameter.set_description(f"Parameter value {i}")
+                        indices = np.unravel_index(i, integral_grids_tmp.shape)
+
+                        for par_name, par_value in zip(this_free_pars, grid_points):
+                            par = Parameter.get_parameter(par_name)
+                            par.value = par_value
+
+                        # To make units compatible with Stan model parametrisation
+                        integral_grids_tmp[indices] += self.calculate_rate(
+                            source
+                        ) / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
+                        pbar_parameter.update(1)
+
+                # Reset free parameters to original values
+                for par_name in this_free_pars:
                     par = Parameter.get_parameter(par_name)
-                    par.value = par_value
+                    original_values = self._original_param_values[par_name]
 
-                # To make units compatible with Stan model parametrisation
-                integral_grids_tmp[indices] += self.calculate_rate(
-                    source
-                ) / source.flux_model.total_flux_int.to(1 / (u.m**2 * u.s))
-
-            # Reset free parameters to original values
-            for par_name in this_free_pars:
-                par = Parameter.get_parameter(par_name)
-                original_values = self._original_param_values[par_name]
-
-                if len(original_values) > 1:
-                    par.value = original_values[k]
-                else:
-                    par.value = original_values[0]
-
-            self._integral_grid.append(integral_grids_tmp)
+                    if len(original_values) > 1:
+                        par.value = original_values[k]
+                    else:
+                        par.value = original_values[0]
+                pbar.update(1)
+                self._integral_grid.append(integral_grids_tmp)
 
     def _slice_aeff_for_point_sources(self):
         """
@@ -349,9 +388,7 @@ class ExposureIntegral:
                 cosz = np.cos(np.pi - np.arccos(unit_vector[2]))
                 cosz_bin = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
 
-                aeff_slice = (
-                    self.effective_area.eff_area[:, cosz_bin].copy() << u.m**2
-                )
+                aeff_slice = self.effective_area.eff_area[:, cosz_bin].copy() << u.m**2
 
                 self.pdet_grid.append(aeff_slice)
 

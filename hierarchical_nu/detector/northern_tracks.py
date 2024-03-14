@@ -24,7 +24,7 @@ from ..backend import (
 )
 from .detector_model import (
     EffectiveArea,
-    EnergyResolution,
+    LogNormEnergyResolution,
     AngularResolution,
     DetectorModel,
 )
@@ -117,8 +117,7 @@ class NorthernTracksEffectiveArea(EffectiveArea):
         self._rs_bbpl_params["gamma2_scale"] = 1.2
 
 
-class NorthernTracksEnergyResolution(EnergyResolution):
-
+class NorthernTracksEnergyResolution(LogNormEnergyResolution):
     """
     Energy resolution for Northern Tracks Sample
 
@@ -405,7 +404,9 @@ class NorthernTracksAngularResolution(AngularResolution):
 
         with self:
             if self.mode == DistributionMode.PDF:
-                angular_parameterisation = VMFParameterization(["true_dir", "reco_dir"], "sigma", self.mode)
+                angular_parameterisation = VMFParameterization(
+                    ["true_dir", "reco_dir"], "sigma", self.mode
+                )
                 ReturnStatement([angular_parameterisation])
 
             elif self.mode == DistributionMode.RNG:

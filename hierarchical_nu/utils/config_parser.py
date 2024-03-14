@@ -7,7 +7,7 @@ from hierarchical_nu.priors import (
     IndexPrior,
     FluxPrior,
 )
-from hierarchical_nu.utils.config import hnu_config, HierarchicalNuConfig
+from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.source.source import Sources, PointSource
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.detector.icecube import Refrigerator
@@ -20,6 +20,8 @@ from hierarchical_nu.utils.roi import (
 )
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
+from hierarchical_nu.detector.input import mceq
+from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
 
 from astropy import units as u
@@ -31,8 +33,9 @@ class ConfigParser:
     def __init__(self, hnu_config: HierarchicalNuConfig):
         self._hnu_config = hnu_config
 
+    @property
     def sources(self):
-        sources = Sources()
+
         parameter_config = self._hnu_config["parameter_config"]
         share_L = parameter_config["share_L"]
         share_src_index = parameter_config["share_src_index"]
@@ -157,27 +160,46 @@ class ConfigParser:
                 diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
             )
         if parameter_config.atmospheric:
-            sources.add_atmospheric_component()
+            sources.add_atmospheric_component(cache_dir=mceq)
+
+        self._sources = sources
 
         return sources
 
+    @property
+    def MJD_min(self):
+        return self._hnu_config.parameter_config.MJD_min
+
+    @property
+    def MJD_max(self):
+        return self._hnu_config.parameter_config.MJD_max
+
+    @property
     def ROI(self):
         ROIList.clear_registry()
         parameter_config = self._hnu_config.parameter_config
-        roi_config = hnu_config.roi_config
+        roi_config = self._hnu_config.roi_config
         dec = np.deg2rad(parameter_config.src_dec) * u.rad
         ra = np.deg2rad(parameter_config.src_ra) * u.rad
         center = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        roi_config = hnu_config.roi_config
+        roi_config = self._hnu_config.roi_config
         size = roi_config.size * u.deg
         apply_roi = roi_config.apply_roi
 
         if apply_roi and len(dec) > 1 and not roi_config.roi_type == "CircularROI":
             raise ValueError("Only CircularROIs can be stacked")
+        MJD_min = self.MJD_min if not np.isclose(self.MJD_min, 98.0) else 0.0
+        MJD_max = self.MJD_max if not np.isclose(self.MJD_max, 100.0) else 99999.0
         if roi_config.roi_type == "CircularROI":
             for c in range(len(dec)):
-                CircularROI(center[c], size, apply_roi=apply_roi)
+                CircularROI(
+                    center[c],
+                    size,
+                    apply_roi=apply_roi,
+                    MJD_min=MJD_min,
+                    MJD_max=MJD_max,
+                )
         elif roi_config.roi_type == "RectangularROI":
             size = size.to(u.rad)
             RectangularROI(
@@ -185,34 +207,97 @@ class ConfigParser:
                 RA_max=ra[0] + size,
                 DEC_min=dec[0] - size,
                 DEC_max=dec[0] + size,
+                MJD_min=MJD_min,
+                MJD_max=MJD_max,
                 apply_roi=apply_roi,
             )
         elif roi_config.roi_type == "FullSkyROI":
-            FullSkyROI()
+            FullSkyROI(
+                MJD_min=MJD_min,
+                MJD_max=MJD_max,
+            )
         elif roi_config.roi_type == "NorthernSkyROI":
-            NorthernSkyROI()
+            NorthernSkyROI(
+                MJD_min=MJD_min,
+                MJD_max=MJD_max,
+            )
 
+    def _is_dm_list(self):
+        mjd_min = self.MJD_min
+        mjd_max = self.MJD_max
+        if not np.isclose(mjd_min, 98.0) and not np.isclose(mjd_max, 100.0):
+            return 0
+        else:
+            return 1
+
+    @property
     def detector_model(self):
-        dm_keys = self._hnu_config.parameter_config.detector_model_type
-        return self._get_dm_from_config(dm_keys)
+        return list(self.obs_time.keys())
 
+    @property
     def obs_time(self):
-        dm_keys = self.detector_model()
-        obs_time = self._hnu_config.parameter_config.obs_time
-        return self._get_obs_time_from_config(dm_keys, obs_time)
 
-    def simulation(self, sources, detector_models, obs_time):
+        if self._is_dm_list():
+            dm_keys = [
+                Refrigerator.python2dm(_)
+                for _ in self._hnu_config.parameter_config.detector_model_type
+            ]
+            obs_time = self._hnu_config.parameter_config.obs_time
+            if obs_time == ["season"]:
+                lifetime = LifeTime()
+                obs_time = lifetime.lifetime_from_dm(*dm_keys)
+                return obs_time
+            else:
+                return self._get_obs_time_from_config(dm_keys, obs_time)
+        else:
+            lifetime = LifeTime()
+            # check if parameter_config.detector_model_type should be used
+            # through parameter_config.restrict_to_list being True
+            _time = lifetime.lifetime_from_mjd(self.MJD_min, self.MJD_max)
+            if self._hnu_config.parameter_config.restrict_to_list:
+                dms = self._hnu_config.parameter_config.detector_model_type
+                time = {}
+                for dm in dms:
+                    dm = Refrigerator.python2dm(dm)
+                    try:
+                        time[dm] = _time[dm]
+                    except KeyError:
+                        continue
+                _time = time
+                if not _time.keys():
+                    raise ValueError(
+                        "Empty dm list, change MJD or dm selection to sensible values."
+                    )
+            return _time
+
+    @property
+    def events(self):
+        _events = Events.from_ev_file(
+            *self.detector_model,
+            scramble_ra=self._hnu_config.parameter_config.scramble_ra,
+        )
+        return _events
+
+    def create_simulation(self, sources, detector_models, obs_time):
         asimov = self._hnu_config.parameter_config.asimov
         sim = Simulation(sources, detector_models, obs_time, asimov=asimov)
         return sim
 
-    def fit(self, sources, events, detector_models, obs_time):
-        priors = self.priors()
+    def create_fit(self, sources, events, detector_models, obs_time):
+        priors = self.priors
 
         nshards = self._hnu_config.parameter_config.threads_per_chain
-        fit = StanFit(sources, detector_models, events, obs_time, priors, nshards)
+        fit = StanFit(
+            sources,
+            detector_models,
+            events,
+            obs_time,
+            priors=priors,
+            nshards=nshards,
+        )
         return fit
 
+    @property
     def priors(self):
         """
         Make priors from config file.

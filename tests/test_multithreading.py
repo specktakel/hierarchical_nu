@@ -4,19 +4,12 @@ import astropy.units as u
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.priors import Priors
 from hierarchical_nu.source.source import Sources, PointSource
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
 from hierarchical_nu.detector.icecube import IC86_II
-from hierarchical_nu.backend import DistributionMode
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Circle
-from matplotlib.gridspec import GridSpec
-import matplotlib.cm as cm
-import matplotlib.colors as colors
 import os
 
 
@@ -26,7 +19,6 @@ def sources():
     ROIList.clear_registry()
     ra = np.deg2rad(77.35)
     dec = np.deg2rad(5.7)
-    source_coords = SkyCoord(ra=ra * u.rad, dec=dec * u.rad, frame="icrs")
     bandwidth = np.deg2rad(5)
     DEC_min = (dec - bandwidth) * u.rad
     DEC_max = (dec + bandwidth) * u.rad
@@ -45,9 +37,7 @@ def sources():
         par_range=(0, 1e60) * (u.erg / u.s),
     )
     diffuse_norm = Parameter(
-        (0.9e-18 / u.GeV / u.cm**2 * 4 * np.pi / u.s).to(
-            1 / (u.GeV * u.m**2 * u.s)
-        ),
+        (0.9e-18 / u.GeV / u.cm**2 * 4 * np.pi / u.s).to(1 / (u.GeV * u.m**2 * u.s)),
         "diffuse_norm",
         fixed=True,
         par_range=(0, np.inf),

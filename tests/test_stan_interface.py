@@ -11,6 +11,7 @@ from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
 from hierarchical_nu.detector.icecube import Refrigerator, NT, CAS, IC86_I, IC86_II
+from hierarchical_nu.detector.input import mceq
 import logging
 
 logger = logging.getLogger(__name__)
@@ -80,7 +81,7 @@ def test_stan_sim_interface(output_directory):
     my_sources.add_diffuse_component(
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
-    my_sources.add_atmospheric_component()
+    my_sources.add_atmospheric_component(cache_dir=mceq)
     file_name = os.path.join(output_directory, "test_sim_interface")
 
     for dm in detector_list:
@@ -148,7 +149,7 @@ def test_stan_fit_interface(output_directory):
     my_sources.add_diffuse_component(
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
-    my_sources.add_atmospheric_component()
+    my_sources.add_atmospheric_component(cache_dir=mceq)
     file_name = os.path.join(output_directory, "test_fit_interface")
 
     for dm in detector_list:

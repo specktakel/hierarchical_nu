@@ -10,11 +10,10 @@ import logging
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.detector.icecube import Refrigerator, EventType, IC86_II
 
-_config_path = Path("~/.config/hierarchical_nu/").expanduser()
+
 _local_config_path = Path(".")
 _config_name = Path("hnu_config.yml")
 
-_config_file = _config_path / _config_name
 
 # Overwrite global config with local config
 _local_config_file = _local_config_path / _config_name
@@ -80,9 +79,21 @@ class ParameterConfig:
     # see `hierarchical_nu.detector.icecube.Refrigerator`
     # needs to be the Python-string, accessed through e.g. NT.P
     # due to merging of the yaml config and this config here
-    detector_model_type: List[str] = field(default_factory=lambda: ["IC86_II"])
 
-    obs_time: List[float] = field(default_factory=lambda: [6.0])  # years
+    # two options:
+    # either provide a list of detector names and in the same order
+    # the obs times
+    # OR
+    # provide mjd_min, mjd_max to automatically determine the detectors and their obs times
+    detector_model_type: List[str] = field(default_factory=lambda: ["IC86_II"])
+    obs_time: List = field(default_factory=lambda: [6.0])  # years
+
+    # With these default values obs_time takes precedence
+    MJD_min: float = 98.0
+    MJD_max: float = 100.0
+    # restrict DM selection from MJD to selection in detector_model_type
+    # useful because of overlap near season changes
+    restrict_to_list: bool = False
 
     # Within-chain parallelisation
     threads_per_chain: int = 1
@@ -96,6 +107,9 @@ class ParameterConfig:
 
     # Asimov data - fix simulated event numbers to nearest integer of expected number
     asimov: bool = False
+
+    # exp event selection
+    scramble_ra: bool = False
 
 
 @dataclass
@@ -138,7 +152,9 @@ class ROIConfig:
     roi_type: str = (
         "CircularROI"  # can be "CircularROI", "FullSkyROI", or "RectangularROI"
     )
-    size: float = 5.0  # size in degrees; for circular: radius, fullsky: disregarded, rectangular: center +/- size in RA and DEC
+    size: float = (
+        5.0  # size in degrees; for circular: radius, fullsky: disregarded, rectangular: center +/- size in RA and DEC
+    )
     apply_roi: bool = False
 
 
@@ -149,32 +165,36 @@ class HierarchicalNuConfig:
     prior_config: PriorConfig = field(default_factory=lambda: PriorConfig())
     roi_config: ROIConfig = field(default_factory=lambda: ROIConfig())
 
+    @classmethod
+    def from_path(cls, path):
+        """
+        Load config from path
+        """
 
-# Load default config
-hnu_config: HierarchicalNuConfig = OmegaConf.structured(HierarchicalNuConfig)
+        hnu_config = OmegaConf.structured(cls)
+        local_config = OmegaConf.load(path)
+        hnu_config = OmegaConf.merge(hnu_config, local_config)
+        return hnu_config
 
-if _local_config_file.is_file():
-    logger.info("local config found")
-    _local_config = OmegaConf.load(_local_config_file)
+    @classmethod
+    def save_default(cls, path: Path = _local_config_file):
+        """
+        Save default config to path.
+        If the path does not exist, it is created
+        """
 
-    hnu_config: HierarchicalNuConfig = OmegaConf.merge(
-        hnu_config,
-        _local_config,
-    )
+        if not isinstance(path, Path):
+            path = Path(path)
+        hnu_config = OmegaConf.structured(cls)
+        path.mkdir(parents=True, exist_ok=True)
+        with path.open("w") as f:
+            OmegaConf.save(config=hnu_config, f=f.name)
 
-elif _config_file.is_file():
-    logger.info("global config found")
-    _local_config = OmegaConf.load(_config_file)
+    @classmethod
+    def load_default(cls):
+        """
+        Load default config
+        """
 
-    hnu_config: HierarchicalNuConfig = OmegaConf.merge(
-        hnu_config,
-        _local_config,
-    )
-
-else:
-    # Prints should be converted to logger at some point
-    logger.info("No config found, creating new global config from default")
-    _config_path.mkdir(parents=True, exist_ok=True)
-
-    with _config_file.open("w") as f:
-        OmegaConf.save(config=hnu_config, f=f.name)
+        hnu_config = OmegaConf.structured(cls)
+        return hnu_config

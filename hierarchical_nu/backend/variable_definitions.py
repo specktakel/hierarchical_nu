@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Iterable
+from typing import Iterable, Union
 import numpy as np  # type:ignore
 from .expression import NamedExpression, TListTExpression, Expression
 from .stan_generator import DefinitionContext
@@ -7,7 +7,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["VariableDef", "StanArray", "StanVector", "ForwardArrayDef", "ForwardVariableDef", "ForwardVectorDef", "InstantVariableDef"]
+__all__ = [
+    "VariableDef",
+    "StanArray",
+    "StanVector",
+    "ForwardArrayDef",
+    "ForwardVariableDef",
+    "ForwardVectorDef",
+    "InstantVariableDef",
+]
 
 
 class VariableDef(NamedExpression):
@@ -118,7 +126,6 @@ class ForwardArrayDef(VariableDef):
         return ["array"] + self._array_dim + [" " + self._var_type + " " + self.name]
 
 
-
 class ForwardVectorDef(VariableDef):
     """Define a vector of variables"""
 
@@ -166,10 +173,17 @@ class StanArray(VariableDef):
         name: Variable name to use in stan code
     """
 
-    def __init__(self, name: str, type_name: str, array_data: Iterable):
+    def __init__(
+        self,
+        name: str,
+        type_name: str,
+        array_data: Iterable,
+        array_shape: Union[Iterable, None] = None,
+    ):
 
         self._array_data = np.asarray(array_data)
         self._type = type_name
+        self._array_shape = array_shape
         VariableDef.__init__(self, name)
 
     def _gen_def_code(self) -> TListTExpression:
@@ -179,10 +193,14 @@ class StanArray(VariableDef):
 
         # Variable Definition
         stan_code = self._type
-
-        shape_str = "[" + ",".join([str(shape_d) for shape_d in self._array_data.shape])
+        if self._array_shape is None:
+            shape_str = "[" + ",".join(
+                [str(shape_d) for shape_d in self._array_data.shape]
+            )
+        else:
+            shape_str = "[" + ",".join([str(shape_d) for shape_d in self._array_shape])
         shape_str += "]"
-        if self._type in ["vector"]:
+        if self._type in ["vector", "row_vector"]:
             stan_code += shape_str + " " + self.name
 
         else:
@@ -190,12 +208,14 @@ class StanArray(VariableDef):
 
         # Fill array
         arraystr = np.array2string(self._array_data, threshold=np.inf, separator=",")
-        if self._type != "vector":
+        if "vector" not in self._type:
+            arraystr = arraystr[1:-1]
             arraystr = arraystr.replace("[", "{")
             arraystr = arraystr.replace("]", "}")
+            arraystr = "{" + arraystr + "}"
         stan_code += " = " + arraystr
-        if self._type == "vector":
-            stan_code += "'"  # FU Stan
+        if self._type in ["vector"]:
+            stan_code += "'"  # FU Stan, I feel your pain
         stan_code += ""
 
         return [stan_code]
@@ -224,7 +244,7 @@ class StanVector(VariableDef):
         stan_code = self._type
 
         shape_str = "[" + str(self._array_data.size) + "]"
-        
+
         stan_code += shape_str + " " + self.name
 
         # Fill array

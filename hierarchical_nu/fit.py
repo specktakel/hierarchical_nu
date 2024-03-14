@@ -24,9 +24,14 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
+from hierarchical_nu.detector.r2021 import (
+    R2021EnergyResolution,
+    R2021LogNormEnergyResolution,
+)
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrior
+from hierarchical_nu.source.source import spherical_to_icrs, uv_to_icrs
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -525,7 +530,7 @@ class StanFit:
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
-
+        ax.set_xlim(8e1, 1.4e8)
         return ax, mapper
 
     def plot_energy_posterior(
@@ -663,6 +668,8 @@ class StanFit:
             hspace=0.05,
         )
 
+        axs = []
+
         ax = fig.add_subplot(gs[0, 1])
 
         if isinstance(center, int):
@@ -676,6 +683,7 @@ class StanFit:
         ax.yaxis.set_ticklabels([])
         ax.yaxis.set_ticks([])
         ax.set_ylabel("posterior pdf")
+        axs.append(ax)
         fig.colorbar(mapper, label=f"association probability to {assoc_idx:n}", ax=ax)
 
         ax = fig.add_subplot(
@@ -686,6 +694,7 @@ class StanFit:
         )
 
         ax, _ = self._plot_roi(center, ax, radius, assoc_idx, color_scale)
+        axs.insert(0, ax)
 
         return fig, ax
 
@@ -1121,6 +1130,93 @@ class StanFit:
                 raise ValueError(
                     "No other prior type for atmospheric flux implemented."
                 )
+        # use the Eres slices for each event as data input
+        # evaluate the splines at eadch event's reco energy
+        # make this a loop over the IRFs
+        # fix the number of Etrue vals to 14 because we only use it for this one data release
+        # first index is event, second IRF Etrue bin
+
+        self._ereco_spline_evals = np.zeros(
+            (self.events.N, R2021EnergyResolution._log_tE_grid.size)
+        )
+        # energy_resolution.ereco_splines has first index as declination of IRF, bin_edges=-[90, -10, 10, 90] in degrees
+        _, dec = uv_to_icrs(self.events.unit_vectors)
+        dec_idx = np.zeros(self.events.N, dtype=int)
+        for et in self._event_types:
+            dec_idx[et.S == self.events.types] = (
+                np.digitize(
+                    dec[et.S == self.events.types].to_value(u.rad),
+                    self._exposure_integral[
+                        et
+                    ].energy_resolution.dec_bin_edges.to_value(u.rad),
+                )
+                - 1
+            )
+        # log_energies = np.log10(self.events.energies.to_value(u.GeV))
+        idxs = (
+            np.digitize(
+                np.log10(self.events.energies.to_value(u.GeV)),
+                R2021EnergyResolution._logEreco_grid_edges,
+            )
+            - 1
+        )
+        # safeguard against index errors in stan
+        idxs = np.where(idxs == -1, 0, idxs)
+        idxs = np.where(
+            idxs > R2021EnergyResolution._logEreco_grid.size - 1,
+            R2021EnergyResolution._logEreco_grid.size - 1,
+            idxs,
+        )
+        ereco_indexed = R2021EnergyResolution._logEreco_grid[idxs]
+        for et in self._event_types:
+            for c_d in range(
+                self._exposure_integral[et].energy_resolution.dec_binc.size
+            ):
+                try:
+                    self._ereco_spline_evals[
+                        (et.S == self.events.types) & (dec_idx == c_d)
+                    ] = np.array(
+                        [
+                            self._exposure_integral[et].energy_resolution._2dsplines[
+                                c_d
+                            ](
+                                logE,
+                                self._exposure_integral[
+                                    et
+                                ].energy_resolution._log_tE_grid,
+                                grid=False,
+                            )
+                            for logE in ereco_indexed[
+                                (et.S == self.events.types) & (dec_idx == c_d)
+                            ]
+                        ]
+                    )
+                except ValueError as e:
+                    # When there is no match, ValueError is raised
+                    # Clearly this should be an IndexError...
+                    pass
+
+        # Cath possible issues with the indexing
+        if np.any(np.isnan(self._ereco_spline_evals)) or np.any(
+            np.isinf(self._ereco_spline_evals)
+        ):
+            raise ValueError("Something is wrong, please fix me")
+        fit_inputs["ereco_grid"] = self._ereco_spline_evals
+
+        """
+        idxs = np.digitize(
+            np.log10(self.events.energies.to_value(u.GeV)),
+            R2021EnergyResolution._logEreco_grid_edges,
+        )
+        # safeguard against index errors in stan
+        idxs = np.where(idxs == 0, 1, idxs)
+        idxs = np.where(
+            idxs > R2021EnergyResolution._logEreco_grid.size,
+            R2021EnergyResolution._logEreco_grid.size,
+            idxs,
+        )
+        fit_inputs["ereco_idx"] = idxs
+        """
 
         for c, event_type in enumerate(self._event_types):
             integral_grid.append(

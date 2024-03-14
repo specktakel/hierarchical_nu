@@ -56,9 +56,9 @@ class Events:
 
         self._recognised_types = [_.S for _ in Refrigerator.detectors]
 
-        self._energies = energies
+        self._energies = np.atleast_1d(energies)
 
-        self._mjd = mjd
+        self._mjd = np.atleast_1d(mjd)
 
         coords.representation_type = "spherical"
         self._coords = coords
@@ -68,11 +68,11 @@ class Events:
         ).T
 
         if all([t in self._recognised_types for t in types]):
-            self._types = types
+            self._types = np.atleast_1d(types)
         else:
             raise ValueError("Event types not recognised")
 
-        self._ang_errs = ang_errs
+        self._ang_errs = np.atleast_1d(ang_errs)
 
     def remove(self, i):
         """
