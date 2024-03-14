@@ -27,6 +27,7 @@ from hierarchical_nu.utils.roi import ROI, CircularROI, ROIList
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
+from hierarchical_nu.utils.git import git_hash
 
 
 sim_logger = logging.getLogger(__name__)
@@ -291,6 +292,7 @@ class Simulation:
             outputs_folder.create_dataset(
                 "expected_Nnu_per_comp", data=self._expected_Nnu_per_comp
             )
+            f.create_dataset("version", data=git_hash)
 
         self.events.to_file(filename, append=True)
 

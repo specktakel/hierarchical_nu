@@ -30,6 +30,7 @@ from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrio
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
+from hierarchical_nu.utils.git import git_hash
 
 
 logger = logging.getLogger(__name__)
@@ -725,6 +726,7 @@ class StanFit:
             )
             meta_folder.create_dataset("runset", data=str(self._fit_output.runset))
             meta_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
+            f.create_dataset("version", data=git_hash)
 
             summary = self._fit_output.summary()
 

@@ -40,6 +40,7 @@ from hierarchical_nu.priors import (
     IndexPrior,
     FluxPrior,
 )
+from hierarchical_nu.utils.git import git_hash
 
 import logging
 
@@ -292,6 +293,7 @@ class ModelCheck:
                             sim_folder.create_dataset(
                                 f"event_Lambda_{i}_{c}", data=data
                             )
+            f.create_dataset("version", data=git_hash)
 
         if save_events and "events" in res.keys():
             for i, res in enumerate(self._results):
@@ -344,7 +346,12 @@ class ModelCheck:
                     [
                         key
                         for key in f
-                        if (key != "truths" and key != "priors" and key != "sim")
+                        if (
+                            key != "truths"
+                            and key != "priors"
+                            and key != "sim"
+                            and key != "version"
+                        )
                     ]
                 )
 
