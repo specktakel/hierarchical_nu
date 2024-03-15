@@ -356,7 +356,7 @@ class ConfigParser:
                         prior, mu=mu * FluxPrior.UNITS, sigma=sigma * FluxPrior.UNITS
                     )
                 elif prior == LogNormalPrior:
-                    priors.atmospheric = FluxPrior(
+                    priors.atmospheric_flux = FluxPrior(
                         prior, mu=mu * FluxPrior.UNITS, sigma=sigma
                     )
                 else:
