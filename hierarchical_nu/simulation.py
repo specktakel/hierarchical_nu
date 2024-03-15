@@ -722,15 +722,10 @@ class Simulation:
             ).value
 
         if self._sources.atmospheric:
-            atmo_bg = self._sources.atmospheric
-            try:
-                sim_inputs["F_atmo"] = (
-                    Parameter.get_parameter("F_atmo").value.to(flux_units).value
-                )
-            except ValueError:
-                sim_inputs["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
-                    flux_units
-                ).value
+            # Parameter F_atmo is created when adding atmo to the source list
+            sim_inputs["F_atmo"] = (
+                Parameter.get_parameter("F_atmo").value.to(flux_units).value
+            )
         lumi_units = u.GeV / u.s
 
         if self._sources.point_source:

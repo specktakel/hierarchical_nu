@@ -705,7 +705,7 @@ class StanFitInterface(StanInterface):
             self._Emax = ForwardVariableDef("Emax", "real")
             if self.sources.point_source:
                 self._src_index_min = ForwardVariableDef("src_index_min", "real")
-                self._src_index_max = ForwardVariableDef("src_index_max")
+                self._src_index_max = ForwardVariableDef("src_index_max", "real")
                 self._Lmin = ForwardVariableDef("Lmin", "real")
                 self._Lmax = ForwardVariableDef("Lmax", "real")
 

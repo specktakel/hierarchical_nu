@@ -518,10 +518,14 @@ class Sources:
         Emax = Parameter.get_parameter("Emax").value.to(u.GeV)
 
         flux_model = AtmosphericNuMuFlux(Emin, Emax, index=index, cache_dir=cache_dir)
+
+        # Create a parameter for F_atmo to carry information on the par_range
+        # The value itself is irrelevant for fits
         F_atmo = Parameter(
             flux_model.total_flux_int,
             "F_atmo",
             par_range=(0, 3.0) * (1 / (u.m**2 * u.s)),
+            fixed=True,
         )
 
         atmospheric_component = DiffuseSource(
