@@ -96,7 +96,7 @@ class ParameterConfig:
     restrict_to_list: bool = False
 
     # Within-chain parallelisation
-    threads_per_chain: int = 4
+    threads_per_chain: int = 1
     chains: int = 1
     iterations: int = 1000
     iter_warmup: int = 1000
