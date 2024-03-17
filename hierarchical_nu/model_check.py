@@ -638,10 +638,6 @@ class ModelCheck:
                 sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
 
             sim.run(seed=s, verbose=True)
-            sim.save(
-                "/home/iwsatlas1/kuhlmann/icecube/hierarchical_nu/tests/output/sim.h5",
-                overwrite=True,
-            )
             # self.sim = sim
 
             # Skip if no detected events
@@ -708,10 +704,6 @@ class ModelCheck:
                 show_progress=True,
                 inits=inits,
                 **kwargs,
-            )
-            fit.save(
-                "/home/iwsatlas1/kuhlmann/icecube/hierarchical_nu/tests/output/fit.h5",
-                overwrite=True,
             )
             self.fit = fit
 
