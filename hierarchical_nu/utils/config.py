@@ -40,18 +40,18 @@ class ParameterConfig:
     diff_index: float = 2.5
     diff_index_range: tuple = (1.0, 4.0)
     L: List[float] = field(
-        default_factory=lambda: [4e46]
+        default_factory=lambda: [8e45]
     )  # u.erg / u.s, defined in the source frame
     share_L: bool = True
     L_range: tuple = (0, 1e60)
     src_dec: List[float] = field(default_factory=lambda: [0.0])  # u.deg
     src_ra: List[float] = field(default_factory=lambda: [90.0])  # u.deg
     Enorm: float = 1e5  # u.GeV, defined in the detector frame
-    Emin: float = 5e4  # u.GeV, defined in the detector frame
+    Emin: float = 1e2  # u.GeV, defined in the detector frame
     Emax: float = 1e8  # u.GeV
-    Emin_src: float = 1.4e5  # u.GeV, defined in the source frame at redshift z
+    Emin_src: float = 1.4e2  # u.GeV, defined in the source frame at redshift z
     Emax_src: float = 1.4e8  # u.GeV
-    Emin_diff: float = 5e4  # u.GeV, defined in the detector frame
+    Emin_diff: float = 1e2  # u.GeV, defined in the detector frame
     Emax_diff: float = 1e8  # u.GeV
     diff_norm: float = (
         2e-13  # 1 / (u.GeV * u.m**2 * u.s), defined in the detector frame
@@ -62,11 +62,11 @@ class ParameterConfig:
 
     # If True, use same Emin_det for all
     # If False, use separate for tracks and cascades
-    Emin_det_eq: bool = False
+    Emin_det_eq: bool = True
 
     # Entries for un-used detector models are disregarded by the sim/fit/model check
     # defined in the detector frame
-    Emin_det: float = 1e5  # u.GeV
+    Emin_det: float = 1e4  # u.GeV
     Emin_det_northern_tracks: float = 6e4  # u.GeV
     Emin_det_cascades: float = 6e4  # u.GeV
     Emin_det_IC40: float = 6e4  # u.GeV
@@ -86,7 +86,7 @@ class ParameterConfig:
     # OR
     # provide mjd_min, mjd_max to automatically determine the detectors and their obs times
     detector_model_type: List[str] = field(default_factory=lambda: ["IC86_II"])
-    obs_time: List = field(default_factory=lambda: [6.0])  # years
+    obs_time: List = field(default_factory=lambda: [3.0])  # years
 
     # With these default values obs_time takes precedence
     MJD_min: float = 98.0
@@ -126,7 +126,7 @@ class PriorConfig:
     )
     diff_index: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=2.37, sigma=0.09
+            name="NormalPrior", mu=2.52, sigma=0.04
         )
     )
     L: SinglePriorConfig = field(
@@ -137,12 +137,12 @@ class PriorConfig:
 
     diff_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=9.4e-5, sigma=1.0
+            name="LogNormalPrior", mu=3e-8, sigma=0.5
         )
     )
     atmo_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=3e-1, sigma=0.08
+            name="NormalPrior", mu=0.3, sigma=0.08
         )
     )
 

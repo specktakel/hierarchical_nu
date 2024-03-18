@@ -107,8 +107,6 @@ class StanFitInterface(StanInterface):
 
         self._atmo_flux_theta_points = atmo_flux_theta_points
 
-        self._get_par_ranges()
-
         assert isinstance(nshards, int)
         assert nshards >= 0
         self._nshards = nshards
@@ -126,31 +124,6 @@ class StanFitInterface(StanInterface):
                 DistributionMode.PDF,
                 rewrite=False,
             )
-
-    def _get_par_ranges(self):
-        """
-        Extract the parameter ranges to use in Stan from the
-        defined parameters.
-        """
-
-        if self.sources.point_source:
-            if self._shared_luminosity:
-                key = "luminosity"
-            else:
-                key = "%s_luminosity" % self._sources.point_source[0].name
-
-            self._lumi_par_range = Parameter.get_parameter(key).par_range
-            self._lumi_par_range = self._lumi_par_range.to(u.GeV / u.s).value
-
-            if self._shared_src_index:
-                key = "src_index"
-            else:
-                key = "%s_src_index" % self._sources.point_source[0].name
-
-            self._src_index_par_range = Parameter.get_parameter(key).par_range
-
-        if self.sources.diffuse:
-            self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range
 
     def _model_likelihood(self):
         """
@@ -730,6 +703,19 @@ class StanFitInterface(StanInterface):
             # Energy range at the detector
             self._Emin = ForwardVariableDef("Emin", "real")
             self._Emax = ForwardVariableDef("Emax", "real")
+            if self.sources.point_source:
+                self._src_index_min = ForwardVariableDef("src_index_min", "real")
+                self._src_index_max = ForwardVariableDef("src_index_max", "real")
+                self._Lmin = ForwardVariableDef("Lmin", "real")
+                self._Lmax = ForwardVariableDef("Lmax", "real")
+
+            if self.sources.diffuse:
+                self._diff_index_min = ForwardVariableDef("diff_index_min", "real")
+                self._diff_index_max = ForwardVariableDef("diff_index_max", "real")
+
+            if self.sources.atmospheric:
+                self._F_atmo_min = ForwardVariableDef("F_atmo_min", "real")
+                self._F_atmo_max = ForwardVariableDef("F_atmo_max", "real")
 
             # Number of point sources
             self._Ns = ForwardVariableDef("Ns", "int")
@@ -1129,27 +1115,25 @@ class StanFitInterface(StanInterface):
             # For point sources, L and src_index can be shared or
             # independent.
             if self.sources.point_source:
-                Lmin, Lmax = self._lumi_par_range
-                src_index_min, src_index_max = self._src_index_par_range
 
                 if self._shared_luminosity:
-                    self._L = ParameterDef("L", "real", Lmin, Lmax)
+                    self._L = ParameterDef("L", "real", self._Lmin, self._Lmax)
 
                 else:
                     self._L = ParameterVectorDef(
                         "L",
                         "vector",
                         self._Ns_str,
-                        Lmin,
-                        Lmax,
+                        self._Lmin,
+                        self._Lmax,
                     )
 
                 if self._shared_src_index:
                     self._src_index = ParameterDef(
                         "src_index",
                         "real",
-                        src_index_min,
-                        src_index_max,
+                        self._src_index_min,
+                        self._src_index_max,
                     )
 
                 else:
@@ -1157,22 +1141,22 @@ class StanFitInterface(StanInterface):
                         "src_index",
                         "vector",
                         self._Ns_str,
-                        src_index_min,
-                        src_index_max,
+                        self._src_index_min,
+                        self._src_index_max,
                     )
 
             # Specify F_diff and diff_index to characterise the diffuse comp
             if self.sources.diffuse:
-                diff_index_min, diff_index_max = self._diff_index_par_range
-
                 self._F_diff = ParameterDef("F_diff", "real", 0, None)
                 self._diff_index = ParameterDef(
-                    "diff_index", "real", diff_index_min, diff_index_max
+                    "diff_index", "real", self._diff_index_min, self._diff_index_max
                 )
 
             # Atmo spectral shape is fixed, but normalisation can move.
             if self.sources.atmospheric:
-                self._F_atmo = ParameterDef("F_atmo", "real", 0.1, 0.5)
+                self._F_atmo = ParameterDef(
+                    "F_atmo", "real", self._F_atmo_min, self._F_atmo_max
+                )
 
             # Vector of latent true source energies for each event
             self._E = ParameterVectorDef(

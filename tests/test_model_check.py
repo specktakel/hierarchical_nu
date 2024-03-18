@@ -16,7 +16,9 @@ def run_model_check(output_directory, random_seed):
     model_check = ModelCheck(config=config)
 
     # Run
-    model_check.parallel_run(n_jobs=n_jobs, n_subjobs=n_subjobs, seed=random_seed)
+    model_check.parallel_run(
+        n_jobs=n_jobs, n_subjobs=n_subjobs, seed=random_seed, adapt_delta=0.95
+    )
 
     # Save
     model_check.save(output_file)

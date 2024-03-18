@@ -665,7 +665,7 @@ class ModelCheck:
                     priors=self.priors,
                     nshards=self._threads_per_chain,
                 )
-                fit.precomputation()
+                fit.precomputation(sim._exposure_integral)
                 fit.setup_stan_fit(os.path.splitext(file_config["fit_filename"])[0])
 
             else:
@@ -685,9 +685,16 @@ class ModelCheck:
                 src_init = [2.3] * len(self._sources.point_source)
             else:
                 src_init = 2.3
+
+            try:
+                F_atmo_range = Parameter.get_parameter("F_atmo").par_range
+                F_atmo_init = np.sum(F_atmo_range) / 2
+            except ValueError:
+                F_atmo_init = 0.3 / u.m**2 / u.s
+
             inits = {
                 "F_diff": 1e-4,
-                "F_atmo": 0.3,
+                "F_atmo": F_atmo_init.to_value(1 / (u.m**2 * u.s)),
                 "E": [1e5] * fit.events.N,
                 "L": L_init,
                 "src_index": src_init,
@@ -698,7 +705,6 @@ class ModelCheck:
                 inits=inits,
                 **kwargs,
             )
-
             self.fit = fit
 
             # Store output

@@ -621,7 +621,7 @@ class StanFit:
         Create plot of the ROI.
         Events are colour-coded dots, color corresponding
         to the association probability to the point source proposed.
-        Assumes there is a point source in self.sources[0].
+        Assumes there is a point source in self._sources[0].
         Size of events are meaningless.
         :param center: either SkyCoord or PS index to center the plot on
         :param radius: Radius of sky plot
@@ -971,6 +971,8 @@ class StanFit:
         return assoc_prob
 
     def _get_fit_inputs(self):
+
+        self._get_par_ranges()
         fit_inputs = {}
         fit_inputs["N"] = self._events.N
         if self._nshards not in [0, 1]:
@@ -1060,6 +1062,13 @@ class StanFit:
                 event_type
             ].par_grids[key]
 
+            # PS parameter limits
+            fit_inputs["src_index_min"] = self._src_index_par_range[0]
+            fit_inputs["src_index_max"] = self._src_index_par_range[1]
+
+            fit_inputs["Lmin"] = self._lumi_par_range[0]
+            fit_inputs["Lmax"] = self._lumi_par_range[1]
+
         # Inputs for priors of point sources
         if self._priors.src_index.name not in ["normal", "lognormal"]:
             raise ValueError("No other prior type for source index implemented.")
@@ -1088,6 +1097,9 @@ class StanFit:
                 event_type
             ].par_grids["diff_index"]
 
+            fit_inputs["diff_index_min"] = self._diff_index_par_range[0]
+            fit_inputs["diff_index_max"] = self._diff_index_par_range[1]
+
             # Priors for diffuse model
             if self._priors.diffuse_flux.name == "normal":
                 fit_inputs["f_diff_mu"] = self._priors.diffuse_flux.mu.to_value(
@@ -1112,6 +1124,9 @@ class StanFit:
                     1 / (u.m**2 * u.s)
                 ).value
             )
+
+            fit_inputs["F_atmo_min"] = self._F_atmo_par_range[0]
+            fit_inputs["F_atmo_max"] = self._F_atmo_par_range[1]
 
             # Priors for atmo model
             if self._priors.atmospheric_flux.name == "lognormal":
@@ -1244,3 +1259,33 @@ class StanFit:
         }
 
         return fit_inputs
+
+    def _get_par_ranges(self):
+        """
+        Extract the parameter ranges to use in Stan from the
+        defined parameters.
+        """
+
+        if self._sources.point_source:
+            if self._shared_luminosity:
+                key = "luminosity"
+            else:
+                key = "%s_luminosity" % self._sources.point_source[0].name
+
+            self._lumi_par_range = Parameter.get_parameter(key).par_range
+            self._lumi_par_range = self._lumi_par_range.to_value(u.GeV / u.s)
+
+            if self._shared_src_index:
+                key = "src_index"
+            else:
+                key = "%s_src_index" % self._sources.point_source[0].name
+
+            self._src_index_par_range = Parameter.get_parameter(key).par_range
+
+        if self._sources.diffuse:
+            self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range
+
+        if self._sources.atmospheric:
+            self._F_atmo_par_range = Parameter.get_parameter(
+                "F_atmo"
+            ).par_range.to_value(1 / u.m**2 / u.s)
