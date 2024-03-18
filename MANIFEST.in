@@ -3,3 +3,4 @@ include hierarchical_nu/_version.py
 recursive-include hierarchical_nu *.csv
 recursive-include hierarchical_nu *.h5
 recursive-include hierarchical_nu *.stan
+recursive-include hierarchical_nu *.pickle
