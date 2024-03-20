@@ -99,7 +99,7 @@ class ModelCheck:
                 )
             self.sim = sim
             sim.precomputation()
-            self._exposure_integtral = sim._exposure_integral
+            self._exposure_integral = sim._exposure_integral
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
@@ -603,7 +603,7 @@ class ModelCheck:
                 sim = self.parser.create_simulation(
                     sources, self.parser.detector_model, self.parser.obs_time
                 )
-                sim.precomputation(self._exposure_integtral)
+                sim.precomputation(self._exposure_integral)
                 sim.setup_stan_sim(".stan_files/sim_code")
 
             sim.run(seed=s, verbose=True)
@@ -629,7 +629,7 @@ class ModelCheck:
                 fit = self.parser.create_fit(
                     sources, events, self.parser.detector_model, self.parser.obs_time
                 )
-                fit.precomputation(self._exposure_integtral)
+                fit.precomputation(self._exposure_integral)
                 fit.setup_stan_fit(".stan_files/model_code")
 
             else:
