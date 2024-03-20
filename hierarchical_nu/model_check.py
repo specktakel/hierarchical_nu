@@ -185,12 +185,7 @@ class ModelCheck:
 
         parser = ConfigParser(config)
 
-        file_config = config["file_config"]
-
         parser.ROI
-
-        if not STAN_GEN_PATH in file_config["include_paths"]:
-            file_config["include_paths"].append(STAN_GEN_PATH)
 
         # Run MCEq computation
         logger.info("Setting up MCEq run for AtmopshericNumuFlux")
