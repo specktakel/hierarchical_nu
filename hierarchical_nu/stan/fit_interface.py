@@ -225,39 +225,18 @@ class StanFitInterface(StanInterface):
                             src_index_ref = self._src_index[k]
 
                         # log_prob += log(p(Esrc|src_index))
-                        if self._ps_spectrum == PowerLawSpectrum:
-                            StringExpression(
-                                [
-                                    _lp,
-                                    " += ",
-                                    self._src_spectrum_lpdf(
-                                        self._E[i],
-                                        src_index_ref,
-                                        self._Emin_src / (1 + self._z[k]),
-                                        self._Emax_src / (1 + self._z[k]),
-                                    ),
-                                ]
-                            )
-                        elif self._ps_spectrum == TwiceBrokenPowerLaw:
-                            StringExpression(
-                                [
-                                    _lp,
-                                    " += ",
-                                    self._src_spectrum_lpdf(
-                                        self._E[i],
-                                        -10.0,
-                                        src_index_ref,
-                                        10.0,
-                                        self._Emin,
-                                        self._Emin_src / (1 + self._z[k]),
-                                        self._Emax_src / (1 + self._z[k]),
-                                        self._Emax,
-                                    ),
-                                ]
-                            )
-                        else:
-                            raise ValueError(f"{self._ps_spectrum} not recognised.")
-
+                        StringExpression(
+                            [
+                                _lp,
+                                " += ",
+                                self._src_spectrum_lpdf(
+                                    self._E[i],
+                                    src_index_ref,
+                                    self._Emin_src / (1 + self._z[k]),
+                                    self._Emax_src / (1 + self._z[k]),
+                                ),
+                            ]
+                        )
                         # E = Esrc / (1+z)
                         self._Esrc[i] << StringExpression(
                             [self._E[i], " * (", 1 + self._z[k], ")"]
