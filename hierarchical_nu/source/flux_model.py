@@ -13,7 +13,7 @@ from ..backend.stan_generator import (
     ElseIfBlockContext,
 )
 from ..backend.operations import FunctionCall
-from ..backend.variable_definitions import ForwardVariableDef
+from ..backend.variable_definitions import ForwardVariableDef, InstantVariableDef
 from ..backend.expression import StringExpression, ReturnStatement
 
 """
@@ -322,12 +322,12 @@ class PowerLawSpectrum(SpectralShape):
         index = self._parameters["index"].value
 
         # Check edge cases
-        lower[
-            ((lower < self._lower_energy) & (upper > self._lower_energy))
-        ] = self._lower_energy
-        upper[
-            ((lower < self._upper_energy) & (upper > self._upper_energy))
-        ] = self._upper_energy
+        lower[((lower < self._lower_energy) & (upper > self._lower_energy))] = (
+            self._lower_energy
+        )
+        upper[((lower < self._upper_energy) & (upper > self._upper_energy))] = (
+            self._upper_energy
+        )
 
         if index == 1:
             # special case
@@ -526,13 +526,17 @@ class PowerLawSpectrum(SpectralShape):
         return func
 
 
-class TwiceBrokenPowerLaw(SpectralShape):
+class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
     """
-    Power law shape
+    Twice broken power law.
+    Adds very steep flanks outside of lower and upper energy to restrict
+    the energy range to a defined range while keeping the numerics of stan satisfied.
+    Inherits flux integrals etc. from PowerLawSpectrum, meaning that the flanks are not included
+    in any of those calculations.
     """
 
-    _index0 = -10.0
-    _index2 = 10.0
+    _index0 = -15.0
+    _index2 = 15.0
 
     @u.quantity_input
     def __init__(
@@ -561,517 +565,65 @@ class TwiceBrokenPowerLaw(SpectralShape):
             Upper energy bound [GeV], unbounded by default.
         """
 
-        super().__init__()
-        print("This is workin progress, be careful")
-        self._e0 = Parameter.get_parameter("Emin").value
-        self._e3 = Parameter.get_parameter("Emax").value
+        super(SpectralShape, self).__init__()
         self._normalisation_energy = normalisation_energy
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
         self._parameters = {"norm": normalisation, "index": index}
 
-    @property
-    def I0(self):
-        return self._piecewise_integral(self._e0, self._lower_energy, self._index0)
-
-    @property
-    def I1(self):
-        return (
-            self._piecewise_integral(
-                self._lower_energy, self._upper_energy, self._parameters["index"].value
-            )
-            * self.N1
-        )
-
-    @property
-    def I2(self):
-        return (
-            self._piecewise_integral(self._upper_energy, self._e3, self._index2)
-            * self.N2
-        )
-
-    @property
-    def N0(self):
-        return 1.0
-
-    @property
-    def N1(self):
-        """
-        Normalisation factor, defined s.t. the broken power law has no jumps but only kinks
-        """
-
-        return np.power(
-            self._lower_energy / self._normalisation_energy,
-            self._parameters["index"].value - self._index0,
-        )
-
-    @property
-    def N2(self):
-        return self.N1 * np.power(
-            self._upper_energy / self._normalisation_energy,
-            self._index2 - self._parameters["index"].value,
-        )
-
-    @property
-    def Itot(self):
-        return self.I0 + self.I1 + self.I2
-
-    @u.quantity_input
-    def _piecewise_integral(self, x1: u.GeV, x2: u.GeV, gamma: float):
-        """
-        Returns the dimensionless integral x^(-gamma) dx
-        """
-
-        if x2 <= x1:
-            return 0.0
-        if gamma != 1.0:
-            return (
-                (np.power(x2 / u.GeV, 1.0 - gamma) - np.power(x1 / u.GeV, 1.0 - gamma))
-                / (1.0 - gamma)
-                / np.power(self._normalisation_energy / u.GeV, -gamma)
-            )
-        else:
-            return (
-                np.log((x2 / u.GeV) / (x1 / u.GeV)) * self._normalisation_energy / u.GeV
-            )
-
-    @property
-    def energy_bounds(self):
-        return (self._e0, self._e3)
-
-    def set_parameter(self, par_name: str, par_value: float):
-        if par_name not in self._parameters:
-            raise ValueError("Parameter name {} not found".format(par_name))
-        par = self._parameters[par_name]
-        if not (par.par_range[0] <= self._par_value <= par.par_range[1]):
-            raise ValueError("Parameter {} is out of bounds".format(par_name))
-
-        par.value = par_value
-
-    @u.quantity_input
-    def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
-        """
-        dN/(dEdAdt).
-        """
-        norm = self._parameters["norm"].value
-        index = self._parameters["index"].value
-        index0 = self._index0
-        index2 = self._index2
-        norm_energy = self._normalisation_energy
-
-        if energy.size > 1:
-            output = np.zeros(energy.shape) << 1 / u.GeV / u.m**2 / u.s
-            # Go through all parts of the broken power law
-            lower = np.nonzero((energy <= self._lower_energy) & (energy >= self._e0))
-            output[lower] = (
-                np.power(energy[lower] / norm_energy, -index0) / self.norm_norm * norm
-            )
-            middle = np.nonzero(
-                (energy <= self._upper_energy) & (energy > self._lower_energy)
-            )
-            output[middle] = (
-                np.power(energy[middle] / norm_energy, -index)
-                * self.N1
-                / self.norm_norm
-                * norm
-            )
-            upper = np.nonzero((energy <= self._e3) & (energy > self._upper_energy))
-            output[upper] = (
-                np.power(energy[upper] / norm_energy, -index2)
-                * self.N2
-                / self.norm_norm
-                * norm
-            )
-            return output
-        else:
-            if (energy >= self._e0) and (energy < self._lower_energy):
-                return np.power(energy / norm_energy, -index0) / self.norm_norm * norm
-            elif energy >= self._lower_energy and energy <= self._upper_energy:
-                return (
-                    np.power(energy / norm_energy, -index)
-                    * self.N1
-                    / self.norm_norm
-                    * norm
-                )
-            elif energy > self._upper_energy and energy <= self._e3:
-                return (
-                    np.power(energy / norm_energy, -index2)
-                    * self.N2
-                    / self.norm_norm
-                    * norm
-                )
-            else:
-                return 0 * norm
-
-    @property
-    def norm_norm(self):
-        """
-        Please propose a better name for this method
-        Find the part of the broken power law in which normalisation_energy lies
-        and return its Nx factor.
-        """
-
-        norm_energy = self._normalisation_energy
-
-        # Go through all parts of the broken power law
-        if (norm_energy >= self._e0) and (norm_energy < self._lower_energy):
-            return 1.0
-        elif norm_energy >= self._lower_energy and norm_energy <= self._upper_energy:
-            return self.N1
-        elif norm_energy > self._upper_energy and norm_energy <= self._e3:
-            return self.N2
-        else:
-            raise ValueError("Norm energy is outside of the spectrum's energy range")
-
-    @u.quantity_input
-    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
-        r"""
-        \int spectrum dE over finite energy bounds.
-
-        Arguments:
-            lower: float
-                [GeV]
-            upper: float
-                [GeV]
-        """
-
-        norm = self._parameters["norm"].value
-        index = self._parameters["index"].value
-
-        indices = [self._index0, index, self._index2]
-        energy_bounds = [self._e0, self._lower_energy, self._upper_energy, self._e3]
-
-        norms = [self.N0, self.N1, self.N2]
-        if lower.size > 1:
-            squeeze = False
-        else:
-            squeeze = True
-        lower = np.atleast_1d(lower)
-        upper = np.atleast_1d(upper)
-
-        # Check edge cases
-        lower[((lower < self._e0) & (upper > self._e0))] = self._e0
-        upper[((lower < self._e3) & (upper > self._e3))] = self._e3
-
-        output = np.zeros(upper.shape) << 1 / u.m**2 / u.s
-
-        for c, (_l, _u) in enumerate(zip(lower, upper)):
-            l_idx = np.digitize(_l, energy_bounds) - 1
-            u_idx = np.digitize(_u, energy_bounds, right=True) - 1
-
-            if l_idx == u_idx:
-                output[c] = (
-                    self._piecewise_integral(_l, _u, indices[l_idx])
-                    * norms[l_idx]
-                    * norm
-                    * u.GeV
-                )
-            else:
-                for i in range(l_idx, u_idx + 1):
-                    if i == l_idx:
-                        output[c] += (
-                            self._piecewise_integral(
-                                _l, energy_bounds[i + 1], indices[i]
-                            )
-                            * norms[i]
-                            * norm
-                            * u.GeV
-                        )
-                    elif i == u_idx:
-                        output[c] += (
-                            self._piecewise_integral(energy_bounds[i], _u, indices[i])
-                            * norms[i]
-                            * norm
-                            * u.GeV
-                        )
-                    else:
-                        output[c] += (
-                            self._piecewise_integral(
-                                energy_bounds[i], energy_bounds[i + 1], indices[i]
-                            )
-                            * norms[i]
-                            * norm
-                            * u.GeV
-                        )
-
-        output = output / self.norm_norm
-        # Correct if outside bounds
-        output[(upper < self._e0)] = 0.0 * 1 / (u.m**2 * u.s)
-        output[(lower > self._e3)] = 0.0 * 1 / (u.m**2 * u.s)
-
-        if squeeze:
-            output = output[0]
-        return output
-
-    def _integral(self, lower, upper):
-        raise NotImplementedError
-        norm = self._parameters["norm"].value.value
-        index = self._parameters["index"].value
-
-        e0 = self._normalisation_energy.value
-
-        if index == 1:
-            # special case
-            int_norm = norm / (np.power(e0, -index))
-            return int_norm * (np.log(upper / lower))
-
-        # Pull out the units here because astropy screwes this up sometimes
-        int_norm = norm / (np.power(e0, -index) * (1 - index))
-        return int_norm * (np.power(upper, 1 - index) - np.power(lower, 1 - index))
-
-    @property
-    @u.quantity_input
-    def total_flux_density(self) -> u.erg / u.s / u.m**2:
-        norm = self._parameters["norm"].value
-        index = self._parameters["index"].value
-
-        indices = [self._index0, index, self._index2]
-        energy_bounds = [self._e0, self._lower_energy, self._upper_energy, self._e3]
-
-        norms = [self.N0, self.N1, self.N2]
-
-        lower = np.atleast_1d(self._e0)
-        upper = np.atleast_1d(self._e3)
-
-        output = np.zeros(upper.shape) << u.GeV / u.m**2 / u.s
-
-        for c, (_l, _u) in enumerate(zip(lower, upper)):
-            l_idx = np.digitize(_l, energy_bounds) - 1
-            u_idx = np.digitize(_u, energy_bounds, right=True) - 1
-
-            if l_idx == u_idx:
-                output[c] = (
-                    self._piecewise_integral(_l, _u, indices[l_idx] - 1.0)
-                    * norms[l_idx]
-                    * norm
-                    * u.GeV
-                    * self._normalisation_energy
-                )
-            else:
-                for i in range(l_idx, u_idx + 1):
-                    if i == l_idx:
-                        output[c] += (
-                            self._piecewise_integral(
-                                _l, energy_bounds[i + 1], indices[i] - 1.0
-                            )
-                            * norms[i]
-                            * norm
-                            * u.GeV
-                            * self._normalisation_energy
-                        )
-                    elif i == u_idx:
-                        output[c] += (
-                            self._piecewise_integral(
-                                energy_bounds[i], _u, indices[i] - 1.0
-                            )
-                            * norms[i]
-                            * norm
-                            * u.GeV
-                            * self._normalisation_energy
-                        )
-                    else:
-                        output[c] += (
-                            self._piecewise_integral(
-                                energy_bounds[i], energy_bounds[i + 1], indices[i] - 1.0
-                            )
-                            * norms[i]
-                            * norm
-                            * u.GeV
-                            * self._normalisation_energy
-                        )
-
-        output = output / self.norm_norm
-
-        output = output.to(u.erg / u.m**2 / u.s)
-
-        return output.squeeze()
-
-    def sample(self, N):
-        """
-        Sample energies from the power law.
-        Uses inverse transform sampling.
-
-        :param min_energy: Minimum energy to sample from [GeV].
-        :param N: Number of samples.
-        """
-
-        raise NotImplementedError
-        index = self._parameters["index"].value
-        self.power_law = BoundedPowerLaw(
-            index,
-            self._lower_energy.to_value(u.GeV),
-            self._upper_energy.to_value(u.GeV),
-        )
-
-        return self.power_law.samples(N)
-
-    @u.quantity_input
-    def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV, *args, **kwargs):
-        """
-        Return PDF.
-        """
-
-        integral = self.integral(Emin, Emax)
-        value = self.__call__(E)
-        return value / integral * u.GeV
-
-    @classmethod
-    def make_stan_sampling_func(cls, f_name) -> UserDefinedFunction:
-        raise NotImplementedError
-
     @classmethod
     def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
         func = UserDefinedFunction(
             f_name,
-            ["E", "alpha1", "alpha2", "alpha3", "e1", "e2", "e3", "e4"],
-            ["real", "real", "real", "real", "real", "real", "real", "real"],
+            [
+                "E",
+                "alpha2",
+                "e2",
+                "e3",
+            ],
+            ["real", "real", "real", "real"],
             "real",
         )
 
         with func:
-            alpha1 = StringExpression(["alpha1"])
+            alpha1 = InstantVariableDef("alpha1", "real", [cls._index0])
             alpha2 = StringExpression(["alpha2"])
-            alpha3 = StringExpression(["alpha3"])
-            e1 = StringExpression(["e1"])
+            alpha3 = InstantVariableDef("alpha3", "real", [cls._index2])
             e2 = StringExpression(["e2"])
             e3 = StringExpression(["e3"])
-            e4 = StringExpression(["e4"])
             E = StringExpression(["E"])
 
-            I1 = ForwardVariableDef("I1", "real")
-            I1 << (
-                FunctionCall([e2, 1.0 - alpha1], "pow")
-                - FunctionCall([e1, 1.0 - alpha1], "pow")
-            ) / (1.0 - alpha1)
-            N2 = ForwardVariableDef("N2", "real")
-            N2 << FunctionCall([e2, alpha2 - alpha1], "pow")
-            I2 = ForwardVariableDef("I2", "real")
+            I = ForwardVariableDef("I2", "real")
             with IfBlockContext([alpha2, "==", 1.0]):
-                I2 << FunctionCall([e3 / e2], "log") * N2
+                I << FunctionCall([e3 / e2], "log")
             with ElseBlockContext():
                 (
-                    I2
+                    I
                     << (
                         FunctionCall([e3, 1.0 - alpha2], "pow")
                         - FunctionCall([e2, 1.0 - alpha2], "pow")
                     )
                     / (1.0 - alpha2)
-                    * N2
                 )
-            N3 = ForwardVariableDef("N3", "real")
-            N3 << FunctionCall([e3, alpha3 - alpha2], "pow") * N2
-            I3 = ForwardVariableDef("I3", "real")
-            (
-                I3
-                << (
-                    FunctionCall([e4, 1.0 - alpha3], "pow")
-                    - FunctionCall([e3, 1.0 - alpha3], "pow")
-                )
-                / (1.0 - alpha3)
-                * N3
-            )
-            I = ForwardVariableDef("I", "real")
-            I << I1 + I2 + I3
             p = ForwardVariableDef("p", "real")
             with IfBlockContext([E, "<", e2]):
-                p << FunctionCall([E, alpha1 * -1], "pow")
+                (
+                    p
+                    << FunctionCall([E / e2, alpha1 * -1], "pow")
+                    * FunctionCall([e2, alpha2 * -1], "pow")
+                    / I
+                )
             with ElseIfBlockContext([E, "<", e3]):
-                p << FunctionCall([E, alpha2 * -1], "pow") * N2
-            with ElseBlockContext():
-                p << FunctionCall([E, alpha3 * -1], "pow") * N3
-
-            ReturnStatement([FunctionCall([p / I], "log")])
-
-        return func
-
-    @classmethod
-    def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
-        """
-        Factor to convert from total_flux_density to total_flux_int.
-        Keep for now and disregard the flanks.
-        """
-
-        func = UserDefinedFunction(
-            f_name,
-            ["alpha1", "alpha2", "alpha3", "e1", "e2", "e3", "e4"],
-            ["real", "real", "real", "real", "real", "real", "real"],
-            "real",
-        )
-
-        with func:
-            alpha1 = StringExpression(["alpha1"])
-            alpha2 = StringExpression(["alpha2"])
-            alpha3 = StringExpression(["alpha3"])
-            e1 = StringExpression(["e1"])
-            e2 = StringExpression(["e2"])
-            e3 = StringExpression(["e3"])
-            e4 = StringExpression(["e4"])
-            f1 = ForwardVariableDef("f1", "real")
-            f2 = ForwardVariableDef("f2", "real")
-
-            I1 = ForwardVariableDef("I1", "real")
-            I2 = ForwardVariableDef("I2", "real")
-            I3 = ForwardVariableDef("I3", "real")
-
-            N2 = ForwardVariableDef("N2", "real")
-            N3 = ForwardVariableDef("N3", "real")
-
-            I1 << (
-                FunctionCall([e2, 1.0 - alpha1], "pow")
-                - FunctionCall([e1, 1.0 - alpha1], "pow")
-            ) / (1.0 - alpha1)
-            N2 << FunctionCall([e2, alpha2 - alpha1], "pow")
-            with IfBlockContext([alpha2, "==", 1.0]):
-                I2 << FunctionCall([e3 / e2], "log") * N2
+                p << FunctionCall([E, alpha2 * -1], "pow") / I
             with ElseBlockContext():
                 (
-                    I2
-                    << (
-                        FunctionCall([e3, 1.0 - alpha2], "pow")
-                        - FunctionCall([e2, 1.0 - alpha2], "pow")
-                    )
-                    / (1.0 - alpha2)
-                    * N2
+                    p
+                    << FunctionCall([E / e3, alpha3 * -1], "pow")
+                    * FunctionCall([e3, alpha2 * -1], "pow")
+                    / I
                 )
-            N3 << FunctionCall([e3, alpha3 - alpha2], "pow") * N2
-            (
-                I3
-                << (
-                    FunctionCall([e4, 1.0 - alpha3], "pow")
-                    - FunctionCall([e3, 1.0 - alpha3], "pow")
-                )
-                / (1.0 - alpha3)
-                * N3
-            )
-            f1 << I1 + I2 + I3
 
-            I1 << (
-                FunctionCall([e2, 2.0 - alpha1], "pow")
-                - FunctionCall([e1, 2.0 - alpha1], "pow")
-            ) / (2.0 - alpha1)
-            with IfBlockContext([alpha2, "==", 1.0]):
-                I2 << FunctionCall([e3 / e2], "log") * N2
-            with ElseBlockContext():
-                (
-                    I2
-                    << (
-                        FunctionCall([e3, 2.0 - alpha2], "pow")
-                        - FunctionCall([e2, 2.0 - alpha2], "pow")
-                    )
-                    / (2.0 - alpha2)
-                    * N2
-                )
-            (
-                I3
-                << (
-                    FunctionCall([e4, 2.0 - alpha3], "pow")
-                    - FunctionCall([e3, 2.0 - alpha3], "pow")
-                )
-                / (2.0 - alpha3)
-                * N3
-            )
-            f2 << I1 + I2 + I3
-            ReturnStatement([f1 / f2])
+            ReturnStatement([FunctionCall([p], "log")])
 
         return func
 
