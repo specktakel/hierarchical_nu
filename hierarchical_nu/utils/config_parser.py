@@ -337,7 +337,6 @@ class ConfigParser:
                     )
                 elif prior == ParetoPrior:
                     raise NotImplementedError("Prior not recognised.")
-                    # priors.luminosity = LuminosityPrior(prior,
             elif p == "diff_flux":
                 if prior == NormalPrior:
                     priors.diffuse_flux = FluxPrior(

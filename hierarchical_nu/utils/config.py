@@ -23,16 +23,6 @@ logger.setLevel(logging.INFO)
 
 
 @dataclass
-class FileConfig:
-    sim_filename: str = os.path.join(STAN_GEN_PATH, "sim_code.stan")
-    fit_filename: str = os.path.join(STAN_GEN_PATH, "model_code.stan")
-    include_paths: List[str] = field(default_factory=list)
-
-    def __post_init__(self):
-        self.include_paths = [STAN_PATH]
-
-
-@dataclass
 class ParameterConfig:
     src_index: List[float] = field(default_factory=lambda: [2.3])
     share_src_index: bool = True
@@ -160,7 +150,6 @@ class ROIConfig:
 
 @dataclass
 class HierarchicalNuConfig:
-    file_config: FileConfig = field(default_factory=lambda: FileConfig())
     parameter_config: ParameterConfig = field(default_factory=lambda: ParameterConfig())
     prior_config: PriorConfig = field(default_factory=lambda: PriorConfig())
     roi_config: ROIConfig = field(default_factory=lambda: ROIConfig())

@@ -26,6 +26,7 @@ from hierarchical_nu.priors import (
     Priors,
 )
 from hierarchical_nu.utils.git import git_hash
+from hierarchical_nu.events import Events
 
 import logging
 
@@ -98,6 +99,7 @@ class ModelCheck:
                 )
             self.sim = sim
             sim.precomputation()
+            self._exposure_integral = sim._exposure_integral
             sim_inputs = sim._get_sim_inputs()
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
@@ -183,68 +185,42 @@ class ModelCheck:
 
         parser = ConfigParser(config)
 
-        parameter_config = config["parameter_config"]
-        file_config = config["file_config"]
-
-        asimov = parameter_config.asimov
-
         parser.ROI
-
-        if not STAN_GEN_PATH in file_config["include_paths"]:
-            file_config["include_paths"].append(STAN_GEN_PATH)
 
         # Run MCEq computation
         logger.info("Setting up MCEq run for AtmopshericNumuFlux")
 
         # Build necessary details to define simulation and fit code
         detector_model_type = parser.detector_model
+        obs_time = parser.obs_time
         sources = parser.sources
         # Generate sim Stan file
-        sim_name = file_config["sim_filename"][:-5]
-        stan_sim_interface = StanSimInterface(
-            sim_name, sources, detector_model_type, force_N=asimov
-        )
-
-        stan_sim_interface.generate()
-        logger.info(f"Generated sim_code Stan file at: {sim_name}")
+        sim = parser.create_simulation(sources, detector_model_type, obs_time)
+        sim.generate_stan_code()
+        logger.info(f"Generated stan sim code")
+        sim.compile_stan_code()
+        logger.info("Compiled stan sim code")
 
         # Generate fit Stan file
-        threads_per_chain = parameter_config["threads_per_chain"]
-        nshards = threads_per_chain
-        fit_name = file_config["fit_filename"][:-5]
-
-        priors = parser.priors
-
-        stan_fit_interface = StanFitInterface(
-            fit_name,
+        fit = parser.create_fit(
             sources,
+            Events(
+                np.array([1e5]) * u.GeV,
+                SkyCoord(ra=0 * u.deg, dec=0 * u.deg, frame="icrs"),
+                [6],
+                np.array([0.2]) * u.deg,
+                [99.0],
+            ),
             detector_model_type,
-            nshards=nshards,
-            priors=priors,
+            obs_time,
         )
-
-        stan_fit_interface.generate()
-        logger.info(f"Generated fit Stan file at: {fit_name}")
+        fit.generate_stan_code()
+        logger.info("Generated fit stan file")
+        fit.compile_stan_code()
+        logger.info("Compiled fit stan file")
 
         # Comilation of Stan models
         logger.info("Compile Stan models")
-        # Why are we using this? the automatically created lists of StanSimInterface and StanFitInterface take care of this
-        # and we don't have to manually create these entries preventing configs from being copied freely
-        stanc_options = {"include-paths": list(file_config["include_paths"])}
-        cpp_options = None
-
-        if nshards not in [0, 1]:
-            cpp_options = {"STAN_THREADS": True}
-
-        _ = CmdStanModel(
-            stan_file=file_config["sim_filename"],
-            stanc_options=stanc_options,
-        )
-        _ = CmdStanModel(
-            stan_file=file_config["fit_filename"],
-            stanc_options=stanc_options,
-            cpp_options=cpp_options,
-        )
 
         # Create output directory
         if not os.path.exists(output_dir):
@@ -307,6 +283,8 @@ class ModelCheck:
 
     @classmethod
     def load(cls, filename_list):
+        if not isinstance(filename_list, list):
+            filename_list = [filename_list]
         with h5py.File(filename_list[0], "r") as f:
             job_folder = f["results_0"]
             _result_names = [key for key in job_folder]
@@ -590,11 +568,7 @@ class ModelCheck:
 
         self.parser.ROI
 
-        self._sources = self.parser.sources
-
-        file_config = self.config["file_config"]
-
-        asimov = self.config.parameter_config.asimov
+        sources = self.parser.sources
 
         subjob_seeds = [(seed + subjob) * 10 for subjob in range(n_subjobs)]
 
@@ -621,21 +595,11 @@ class ModelCheck:
             # Simulation
             # Should reduce time consumption if only on first iteration model is compiled
             if i == 0:
-                if asimov:
-                    sim = Simulation(
-                        self._sources,
-                        self._detector_model_type,
-                        self._obs_time,
-                        N=self._N,
-                    )
-                else:
-                    sim = Simulation(
-                        self._sources,
-                        self._detector_model_type,
-                        self._obs_time,
-                    )
-                sim.precomputation()
-                sim.setup_stan_sim(os.path.splitext(file_config["sim_filename"])[0])
+                sim = self.parser.create_simulation(
+                    sources, self.parser.detector_model, self.parser.obs_time
+                )
+                sim.precomputation(self._exposure_integral)
+                sim.setup_stan_sim(".stan_files/sim_code")
 
             sim.run(seed=s, verbose=True)
             # self.sim = sim
@@ -657,16 +621,11 @@ class ModelCheck:
             # Same as above, save time
             # Also handle in case first sim has no events
             if not fit:
-                fit = StanFit(
-                    self._sources,
-                    self._detector_model_type,
-                    events,
-                    self._obs_time,
-                    priors=self.priors,
-                    nshards=self._threads_per_chain,
+                fit = self.parser.create_fit(
+                    sources, events, self.parser.detector_model, self.parser.obs_time
                 )
-                fit.precomputation(sim._exposure_integral)
-                fit.setup_stan_fit(os.path.splitext(file_config["fit_filename"])[0])
+                fit.precomputation(self._exposure_integral)
+                fit.setup_stan_fit(".stan_files/model_code")
 
             else:
                 fit.events = events

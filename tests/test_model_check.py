@@ -24,8 +24,7 @@ def run_model_check(output_directory, random_seed):
     model_check.save(output_file)
 
     # Load
-    file_list = [output_file]
-    model_check = ModelCheck.load(file_list)
+    model_check = ModelCheck.load(output_file)
 
     return model_check
 
@@ -33,8 +32,6 @@ def run_model_check(output_directory, random_seed):
 def test_short_run_r2021(output_directory, random_seed):
     # Edit configuration and save
     hnu_config = HierarchicalNuConfig.load_default()
-    # hnu_config["parameter_config"]["detector_model_type"] = ["IC86_II"]
-    print(hnu_config)
     with _local_config_file.open("w") as f:
         OmegaConf.save(config=hnu_config, f=f.name)
 
