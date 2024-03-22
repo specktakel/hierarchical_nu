@@ -10,6 +10,7 @@ from cmdstanpy import CmdStanModel
 import logging
 import collections
 import ligo.skymap.plot
+from pathlib import Path
 
 from icecube_tools.utils.vMF import get_theta_p
 
@@ -178,7 +179,7 @@ class Simulation:
             stanc_options=stanc_options,
         )
 
-    def setup_stan_sim(self, exe_file):
+    def setup_stan_sim(self, exe_file: Union[str, Path] = ".stan_files/sim_code"):
         """
         Reuse previously compiled model
         """
