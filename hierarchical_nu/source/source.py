@@ -167,7 +167,6 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
-        pivot: Parameter,
     ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
@@ -207,10 +206,14 @@ class PointSource(Source):
             par_range=(0, np.inf),
             scale=ParScale.log,
         )
+        try:
+            Enorm_value = Parameter.get_parameter("Enorm").value
+        except ValueError:
+            Enorm_value = 1e5 * u.GeV
 
         shape = TwiceBrokenPowerLaw(
             norm,
-            pivot.value / (1 + redshift),
+            Enorm_value,
             index,
             lower.value / (1 + redshift),
             upper.value / (1 + redshift),
@@ -307,6 +310,106 @@ class PointSource(Source):
 
             # Create source
             source = PointSource.make_powerlaw_source(
+                "ps_%i" % i,
+                dec,
+                ra,
+                luminosity,
+                src_index,
+                z,
+                lower_energy,
+                upper_energy,
+            )
+
+            source_list.append(source)
+
+        return source_list
+
+    @classmethod
+    def make_broken_powerlaw_sources_from_file(
+        cls,
+        file_name: str,
+        lower_energy: Parameter,
+        upper_energy: Parameter,
+        include_undetected: bool = False,
+    ):
+        """
+        Factory for power law sources defined in
+        HDF5 files ( update: output from popsynth).
+
+        :param lower_energy: Lower energy bound in definition of the luminosity.
+        :param upper_energy: Upper energy bound in definition of the luminosity.
+        :param include_undetected: Include sources that are not detected in population.
+        """
+
+        # Sensible bounds on luminosity
+        lumi_range = (0, 1e60) * (u.erg / u.s)
+
+        # Load values
+        with h5py.File(file_name, "r") as f:
+            luminosities = f["luminosities"][()] * (u.erg / u.s)
+
+            spectral_indices = f["auxiliary_quantities/spectral_index/obs_values"][()]
+
+            redshifts = f["distances"][()]
+
+            ras = f["phi"][()] * u.rad
+
+            decs = -(f["theta"][()] - np.pi / 2) * u.rad
+
+            selection = f["selection"][()]
+
+        # Apply selection
+        if not include_undetected:
+            luminosities = luminosities[selection]
+
+            spectral_indices = spectral_indices[selection]
+
+            redshifts = redshifts[selection]
+
+            ras = ras[selection]
+
+            decs = decs[selection]
+
+        # Make list of point sources
+        source_list = []
+
+        for i, (L, index, ra, dec, z) in enumerate(
+            zip(
+                luminosities,
+                spectral_indices,
+                ras,
+                decs,
+                redshifts,
+            )
+        ):
+            # Check for shared luminosity parameter
+            try:
+                luminosity = Parameter.get_parameter("luminosity")
+
+            # Else, create individual ps_%i_luminosity parameters
+            except ValueError:
+                luminosity = Parameter(
+                    L,
+                    "ps_%i_luminosity" % i,
+                    fixed=True,
+                    par_range=lumi_range,
+                )
+
+            # Check for shared src_index parameter
+            try:
+                src_index = Parameter.get_parameter("src_index")
+
+            # Else, create individual ps_%i_src_index parameters
+            except ValueError:
+                src_index = Parameter(
+                    index,
+                    "ps_%i_src_index" % i,
+                    fixed=False,
+                    par_range=(1, 4),
+                )
+
+            # Create source
+            source = PointSource.make_twicebroken_powerlaw_source(
                 "ps_%i" % i,
                 dec,
                 ra,
