@@ -85,6 +85,8 @@ class Events:
         self._types = np.delete(self._types, i)
         self._ang_errs = np.delete(self._ang_errs, i)
         self._mjd = np.delete(self._mjd, i)
+        # Guess I die
+        del self._idxs
 
     @property
     def N(self):
