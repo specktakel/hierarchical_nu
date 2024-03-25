@@ -175,7 +175,7 @@ class HierarchicalNuConfig:
         if not isinstance(path, Path):
             path = Path(path)
         hnu_config = OmegaConf.structured(cls)
-        path.mkdir(parents=True, exist_ok=True)
+        path.parents[0].mkdir(parents=True, exist_ok=True)
         with path.open("w") as f:
             OmegaConf.save(config=hnu_config, f=f.name)
 
