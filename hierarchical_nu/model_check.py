@@ -5,13 +5,15 @@ import h5py
 import arviz as av
 import time
 from matplotlib import pyplot as plt
+from matplotlib import colors
 import matplotlib.patches as mpl_patches
+import matplotlib.cm as cm
 from joblib import Parallel, delayed
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from cmdstanpy import CmdStanModel
 from scipy.stats import uniform
-from typing import List, Union
+from typing import List, Union, Iterable
 
 from hierarchical_nu.source.parameter import Parameter
 
@@ -239,7 +241,9 @@ class ModelCheck:
                         if not save_events:
                             continue
                         for c, prob in enumerate(value):
-                            folder.create_dataset(f"association_prob_{c}", data=prob)
+                            folder.create_dataset(
+                                f"association_prob_{c}", data=np.vstack(prob)
+                            )
                     elif key == "parameter_names":
                         for c, data in enumerate(res[key]):
                             folder.create_dataset(f"par_names_{c}", data=data)
@@ -270,7 +274,7 @@ class ModelCheck:
         self.priors.addto(filename, "priors")
 
     @classmethod
-    def load(cls, filename_list):
+    def load(cls, filename_list, config: HierarchicalNuConfig):
         if not isinstance(filename_list, list):
             filename_list = [filename_list]
         with h5py.File(filename_list[0], "r") as f:
@@ -288,6 +292,7 @@ class ModelCheck:
 
         sim = {}
         sim_N = []
+        events = []
 
         for filename in filename_list:
             file_priors = Priors.from_group(filename, "priors")
@@ -333,10 +338,13 @@ class ModelCheck:
 
                     for res_key in job_folder:
                         results[res_key].extend(job_folder[res_key][()])
-                    sim["sim_%i_Lambda" % i] = [
-                        sim_folder[f"event_Lambda_{i}_{c}"][()]
-                        for c in range(n_subjobs)
-                    ]
+                    try:
+                        sim["sim_%i_Lambda" % i] = [
+                            sim_folder[f"event_Lambda_{i}_{c}"][()]
+                            for c in range(n_subjobs)
+                        ]
+                    except KeyError:
+                        pass
                     sim_N.extend(sim_folder["sim_%i" % i][()])
 
         output = cls(truths=truths, priors=priors)
@@ -344,7 +352,112 @@ class ModelCheck:
         output.sim_Lambdas = sim
         output.sim_N = sim_N
 
+        output.config = config
+        output.parser = ConfigParser(config)
+        output.filename_list = filename_list
+
         return output
+
+    @u.quantity_input
+    def plot_roi(
+        self,
+        n_job: int,
+        n_subjob: int,
+        center_idx: int = 0,
+        assoc_idx: int = 0,
+        radius: u.Quantity[u.deg] = 5.0 * u.deg,
+    ):
+        try:
+            self.results
+        except AttributeError:
+            raise ValueError("Can only be accessed in a loaded state")
+
+        try:
+            self.sim_Lambdas
+        except AttributeError:
+            raise ValueError("Needed information from running ModelCheck is missing")
+
+        sources = self.parser.sources
+
+        ra, dec = (
+            sources.point_source[center_idx].ra,
+            sources.point_source[center_idx].dec,
+        )
+        center = SkyCoord(ra=ra, dec=dec, frame="icrs")
+        radius = self.config.roi_config.radius
+        fig, ax = plt.subplots(
+            subplot_kw={
+                "projection": "astro degrees zoom",
+                "center": center,
+                "radius": f"{radius.to_value(u.deg)} deg",
+            },
+            dpi=150,
+        )
+
+        # true association from simulations
+        true_assoc = self.sim_Lambdas[f"sim_{n_job:n}_Lambda"][n_subjob]
+
+        if isinstance(true_assoc, list):
+            true_assoc = np.vstack(true_assoc)
+
+        assoc_prob = true_assoc[:, assoc_idx]
+
+        min = 0.0
+        max = 1.0
+
+        color_scale = "lin"
+        if color_scale == "lin":
+            norm = colors.Normalize(min, max, clip=True)
+        elif color_scale == "log":
+            norm = colors.LogNorm(1e-8, max, clip=True)
+        else:
+            raise ValueError("No other scale supported")
+        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        color = mapper.to_rgba(assoc_prob)
+
+        events = self.events
+        events.coords.representation_type = "spherical"
+        coords = events.coords
+
+        sep = events.coords.separation(center).deg
+        mask = sep < radius.to_value(u.deg)
+        indices = np.arange(self._events.N, dtype=int)[mask]
+
+        ax.scatter(
+            center.ra.deg,
+            center.dec.deg,
+            marker="x",
+            color="black",
+            zorder=10,
+            alpha=0.4,
+            transform=ax.get_transform("icrs"),
+        )
+
+        # for c, (colour, coord, zorder) in enumerate(
+        #     zip(color[mask], events.coords[mask], assoc_prob[mask])
+        # ):
+        for c, i in enumerate(indices):
+            edgecolor = "none"
+            if true_assoc is not None:
+                if true_assoc[i] == assoc_idx:
+                    edgecolor = colors.colorConverter.to_rgba("black", alpha=0.5)
+
+            ax.scatter(
+                coords[i].ra.deg,
+                coords[i].dec.deg,
+                color=color[i],
+                zorder=assoc_prob[i] + 1,
+                transform=ax.get_transform("icrs"),
+                edgecolor=edgecolor,
+                s=30,
+            )
+
+        ax.set_xlabel("RA")
+        ax.set_ylabel("DEC")
+        ax.grid()
+
+        # user self.parser to get all the source positions
+        pass
 
     def compare(
         self,

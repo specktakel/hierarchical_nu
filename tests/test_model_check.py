@@ -17,11 +17,15 @@ def run_model_check(output_directory, random_seed):
 
     # Run
     model_check.parallel_run(
-        n_jobs=n_jobs, n_subjobs=n_subjobs, seed=random_seed, adapt_delta=0.95
+        n_jobs=n_jobs,
+        n_subjobs=n_subjobs,
+        seed=random_seed,
+        adapt_delta=0.95,
+        save_events=True,
     )
 
     # Save
-    model_check.save(output_file)
+    model_check.save(output_file, save_events=True)
 
     # Load
     model_check = ModelCheck.load(output_file)
