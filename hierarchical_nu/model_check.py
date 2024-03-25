@@ -324,9 +324,19 @@ class ModelCheck:
 
                 for i in range(n_jobs):
                     job_folder = f["results_%i" % i]
+                    n_subjobs = 0
+                    keys = job_folder.keys()
+                    # Count the number of ran subjobs by
+                    # counting the number of debugging variables
+                    for k in keys:
+                        n_subjobs += 1 if "N_Eff" in k else 0
+
                     for res_key in job_folder:
                         results[res_key].extend(job_folder[res_key][()])
-                    # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
+                    sim["sim_%i_Lambda" % i] = [
+                        sim_folder[f"event_Lambda_{i}_{c}"][()]
+                        for c in range(n_subjobs)
+                    ]
                     sim_N.extend(sim_folder["sim_%i" % i][()])
 
         output = cls(truths=truths, priors=priors)
