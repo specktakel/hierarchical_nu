@@ -85,6 +85,8 @@ class Events:
         self._types = np.delete(self._types, i)
         self._ang_errs = np.delete(self._ang_errs, i)
         self._mjd = np.delete(self._mjd, i)
+        # Guess I die
+        del self._idxs
 
     @property
     def N(self):
@@ -100,6 +102,11 @@ class Events:
         """
 
         assert len(mask) == self.N
+
+        try:
+            self._idxs[self._idxs] = np.logical_and(self._idxs[self._idxs], mask)
+        except AttributeError:
+            pass
 
         self._energies = self._energies[mask]
         self._coords = self._coords[mask]
@@ -137,7 +144,13 @@ class Events:
         return self._mjd
 
     @classmethod
-    def from_file(cls, filename, apply_tags: bool = False, group_name=None):
+    def from_file(
+        cls,
+        filename,
+        apply_tags: bool = False,
+        group_name=None,
+        scramble_ra: bool = False,
+    ):
         with h5py.File(filename, "r") as f:
             if group_name is None:
                 events_folder = f["events"]
@@ -163,8 +176,15 @@ class Events:
 
         coords.representation_type = "spherical"
 
-        ra = coords.ra.rad * u.rad
         dec = coords.dec.rad * u.rad
+        ra = coords.ra.rad * u.rad
+        if scramble_ra:
+            logger.warning(
+                "Scrambling RA, only sensible for simulations of the entire sky."
+            )
+            rng = np.random.default_rng()
+            ra = rng.random(ra.size) * 2 * np.pi * u.rad
+            coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         coords.representation_type = "cartesian"
         mask = []
@@ -200,12 +220,18 @@ class Events:
 
             idxs = np.logical_or.reduce(mask)
 
-            return cls(
+            events = cls(
                 energies[idxs], coords[idxs], types[idxs], ang_errs[idxs], time[idxs]
             )
+            # Add the selection mask for easier comparison between simulations and fits
+            # when using a subselection of the data
+            events._idxs = idxs
+            return events
         else:
             logger.info("Applying no ROIs to event selection")
-            return cls(energies, coords, types, ang_errs, time)
+            events = cls(energies, coords, types, ang_errs, time)
+            events._idxs = np.full(events.N, True)
+            return events
 
     def to_file(self, filename, append=False, group_name=None):
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]
@@ -330,9 +356,11 @@ class Events:
 
         idxs = np.logical_or.reduce(mask)
 
-        return cls(
+        events = cls(
             reco_energy[idxs], coords[idxs], types[idxs], ang_err[idxs], mjd[idxs]
         )
+        events._idxs = idxs
+        return events
 
     def merge(self, events):
         self.coords.representation_type = "spherical"
