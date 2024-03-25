@@ -74,7 +74,6 @@ class ModelCheck:
             parameter_config = self.config["parameter_config"]
             self.parser.ROI
 
-            asimov = parameter_config.asimov
             # Sources
             self._sources = self.parser.sources
             f_arr = self._sources.f_arr().value
@@ -86,17 +85,10 @@ class ModelCheck:
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = parameter_config["threads_per_chain"]
 
-            if asimov:
-                N = {}
-                for dm in self._obs_time.keys():
-                    N[dm] = [1] * self._sources.N
-                sim = Simulation(
-                    self._sources, self._detector_model_type, self._obs_time, N=N
-                )
-            else:
-                sim = Simulation(
-                    self._sources, self._detector_model_type, self._obs_time
-                )
+            sim = self.parser.create_simulation(
+                self._sources, self._detector_model_type, self._obs_time
+            )
+
             self.sim = sim
             sim.precomputation()
             self._exposure_integral = sim._exposure_integral
@@ -104,11 +96,6 @@ class ModelCheck:
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
             self._Nex_et = sim._Nex_et
-            if asimov:
-                N = {}
-                for c, dm in enumerate(self._obs_time.keys()):
-                    N[dm] = np.rint(self._Nex_et[c]).astype(int).tolist()
-                self._N = N
 
             # Truths
             self.truths = {}
@@ -204,6 +191,7 @@ class ModelCheck:
         # Generate fit Stan file
         fit = parser.create_fit(
             sources,
+            # use some dummy event to create a fit
             Events(
                 np.array([1e5]) * u.GeV,
                 SkyCoord(ra=0 * u.deg, dec=0 * u.deg, frame="icrs"),
