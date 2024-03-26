@@ -96,9 +96,7 @@ class StanSimInterface(StanInterface):
 
         for et in self._event_types:
             # Include the PDF mode of the detector model
-            dm = et.model(
-                DistributionMode.RNG
-            )
+            dm = et.model(DistributionMode.RNG)
 
             if dm.RNG_FILENAME not in self._includes:
                 self._includes.append(dm.RNG_FILENAME)
@@ -125,8 +123,13 @@ class StanSimInterface(StanInterface):
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
             if self.sources.point_source:
-                self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
-                    "src_spectrum_logpdf"
+                self._src_spectrum_lpdf = (
+                    # Use a different function here
+                    # because for the twicebroken powerlaw we
+                    # do not want to sample the steep flanks
+                    self._ps_spectrum.make_stan_sampling_lpdf_func(
+                        "src_spectrum_logpdf"
+                    )
                 )
 
                 self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
@@ -938,28 +941,12 @@ class StanSimInterface(StanInterface):
                                     )
 
                                 # Store the value of the source PDF at this energy
-                                if self._ps_spectrum == PowerLawSpectrum:
-                                    self._src_factor << self._src_spectrum_lpdf(
-                                        self._E[i],
-                                        src_index_ref,
-                                        self._Emin_src / (1 + self._z[self._lam[i]]),
-                                        self._Emax_src / (1 + self._z[self._lam[i]]),
-                                    )
-                                elif self._ps_spectrum == TwiceBrokenPowerLaw:
-                                    self._src_factor << self._src_spectrum_lpdf(
-                                        self._E[i],
-                                        -10.0,
-                                        src_index_ref,
-                                        10.0,
-                                        self._Emin,
-                                        self._Emin_src / (1 + self._z[self._lam[i]]),
-                                        self._Emax_src / (1 + self._z[self._lam[i]]),
-                                        self._Emax,
-                                    )
-                                else:
-                                    raise ValueError(
-                                        f"{self._ps_spectrum} not recognised."
-                                    )
+                                self._src_factor << self._src_spectrum_lpdf(
+                                    self._E[i],
+                                    src_index_ref,
+                                    self._Emin_src / (1 + self._z[self._lam[i]]),
+                                    self._Emax_src / (1 + self._z[self._lam[i]]),
+                                )
 
                                 # It is log, to take the exp()
                                 self._src_factor << FunctionCall(

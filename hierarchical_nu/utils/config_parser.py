@@ -143,7 +143,11 @@ class ConfigParser:
                 idx = indices[0]
             else:
                 idx = indices[c]
-            point_source = PointSource.make_powerlaw_source(
+            if parameter_config.source_type == "twice-broken-power-law":
+                method = PointSource.make_twicebroken_powerlaw_source
+            elif parameter_config.source_type == "power-law":
+                method = PointSource.make_powerlaw_source
+            point_source = method(
                 f"ps_{c}",
                 dec[c],
                 ra[c],

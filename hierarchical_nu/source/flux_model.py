@@ -494,6 +494,10 @@ class PowerLawSpectrum(SpectralShape):
         return func
 
     @classmethod
+    def make_stan_sampling_lpdf_func(cls, f_name) -> UserDefinedFunction:
+        return cls.make_stan_lpdf_func(f_name)
+
+    @classmethod
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
         """
         Factor to convert from total_flux_density to total_flux_int.
