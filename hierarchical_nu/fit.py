@@ -976,7 +976,7 @@ class StanFit:
 
                 print("The correct component is", source_labels[int(event_labels[i])])
                 correct.append(source_labels[int(event_labels[i])])
-                assumed.append(event_labels[i])
+                assumed.append(source_labels[np.argmax(prob_each_src[i])])
 
         if not wrong:
             print("All events are correctly classified")
