@@ -11,16 +11,14 @@ import matplotlib.pyplot as plt
 
 from abc import ABC
 
-from hierarchical_nu.utils.roi import ROI, ROIList, CircularROI
+from hierarchical_nu.utils.roi import ROIList
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.backend.stan_generator import (
     ElseBlockContext,
     IfBlockContext,
     StanGenerator,
 )
-from hierarchical_nu.stan.interface import STAN_PATH
 from ..utils.cache import Cache
-from ..utils.fitting_tools import Residuals
 from ..backend import (
     VMFParameterization,
     RayleighParameterization,
@@ -51,7 +49,6 @@ from .detector_model import (
     DetectorModel,
 )
 
-from ..source.source import Sources
 from ..utils.fitting_tools import Spline1D
 
 from icecube_tools.detector.r2021 import R2021IRF
@@ -61,8 +58,6 @@ from icecube_tools.point_source_likelihood.energy_likelihood import (
 
 
 from icecube_tools.detector.r2021 import R2021IRF
-
-from icecube_tools.utils.data import data_directory
 
 import logging
 
@@ -2591,7 +2586,7 @@ class R2021DetectorModel(ABC, DetectorModel):
                 if isinstance(
                     self.energy_resolution, GridInterpolationEnergyResolution
                 ):
-                    ps_eres[i] << self.energy_resolution(log10Etrue, "eres_slice")
+                    ps_eres << self.energy_resolution(log10Etrue, "eres_slice")
                 else:
                     ps_eres << self.energy_resolution(log10Etrue, log10Ereco, "src_pos")
                     pass

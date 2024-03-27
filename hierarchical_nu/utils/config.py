@@ -24,6 +24,9 @@ logger.setLevel(logging.INFO)
 
 @dataclass
 class ParameterConfig:
+    source_type: str = (
+        "twice-broken-power-law"  # Currently only support one type for all sources, other option "power-law" covering the entire energy range
+    )
     src_index: List[float] = field(default_factory=lambda: [2.3])
     share_src_index: bool = True
     src_index_range: tuple = (1.0, 4.0)
@@ -39,8 +42,8 @@ class ParameterConfig:
     Enorm: float = 1e5  # u.GeV, defined in the detector frame
     Emin: float = 1e2  # u.GeV, defined in the detector frame
     Emax: float = 1e8  # u.GeV
-    Emin_src: float = 1.4e2  # u.GeV, defined in the source frame at redshift z
-    Emax_src: float = 1.4e8  # u.GeV
+    Emin_src: float = 1.4e4  # u.GeV, defined in the source frame at redshift z
+    Emax_src: float = 1.4e7  # u.GeV
     Emin_diff: float = 1e2  # u.GeV, defined in the detector frame
     Emax_diff: float = 1e8  # u.GeV
     diff_norm: float = (
