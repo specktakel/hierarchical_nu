@@ -1807,7 +1807,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         )
     )
 
-    _log_tE_grid = np.linspace(2.0, 8.0, 100)
+    _log_tE_grid = np.linspace(2.0, 9.0, 100)
 
     def __init__(
         self,
