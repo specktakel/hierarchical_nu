@@ -127,7 +127,7 @@ class ParetoPrior(PriorDistribution):
     def sample(self, N):
         return stats.pareto(b=self._alpha).rvs(N) * self._xmin
 
-    def to_dict(self):
+    def to_dict(self, units):
         prior_dict = {}
 
         prior_dict["name"] = self._name
@@ -135,6 +135,8 @@ class ParetoPrior(PriorDistribution):
         prior_dict["xmin"] = self._xmin
 
         prior_dict["alpha"] = self._alpha
+
+        prior_dict["units"] = units
 
         return prior_dict
 
@@ -152,9 +154,11 @@ class PriorDictHandler:
         }
         prior_name = prior_dict["name"]
         prior = translate[prior_dict["quantity"]]
-        if prior_name == "pareto":
-            raise NotImplementedError
         units = u.Unit(prior_dict["units"])
+        if prior_name == "pareto":
+            xmin = prior_dict["xmin"]
+            alpha = prior_dict["alpha"]
+            return prior(ParetoPrior, xmin=xmin * units, alpha=alpha)
         mu = prior_dict["mu"]
         sigma = prior_dict["sigma"]
         if prior_name == "normal":
@@ -168,7 +172,11 @@ class PriorDictHandler:
 class UnitPrior:
     def __init__(self, name, **kwargs):
         if name == ParetoPrior:
-            raise NotImplementedError
+            xmin = kwargs.get("xmin")
+            alpha = kwargs.get("alpha")
+            units = kwargs.get("units")
+            self._units = units
+            self._prior = name(xmin=xmin.to_value(units), alpha=alpha)
 
         else:
             mu = kwargs.get("mu")
@@ -189,8 +197,8 @@ class UnitPrior:
                 self._prior = name(mu=mu.to_value(units), sigma=sigma.to_value(units))
             elif name == ParetoPrior:
                 pass
-            self._pdf = self._prior.pdf
-            self._pdf_logspace = self._prior.pdf_logspace
+        self._pdf = self._prior.pdf
+        self._pdf_logspace = self._prior.pdf_logspace
 
     def pdf(self, x):
         return self._pdf(x.to_value(self._units))
@@ -221,7 +229,9 @@ class UnitPrior:
 class UnitlessPrior:
     def __init__(self, name, **kwargs):
         if name == ParetoPrior:
-            raise NotImplementedError
+            alpha = kwargs.get("alpha")
+            xmin = kwargs.get("xmin")
+            self._prior = name(xmin=xmin, alpha=alpha)
 
         else:
             mu = kwargs.get("mu")
@@ -247,14 +257,16 @@ class LuminosityPrior(UnitPrior):
         name=LogNormalPrior,
         mu: Union[u.Quantity[u.GeV / u.s], None] = 1e49 * u.GeV / u.s,
         sigma: Union[u.Quantity[u.GeV / u.s], u.Quantity[1], None] = 3.0,
-        xmin: Union[u.Quantity[u.GeV / u.s], u.Quantity[1]] = None,
+        xmin: Union[u.Quantity[u.GeV / u.s], None] = None,
         alpha: Union[float, None] = None,
     ):
         """
         Converts automatically to log of values, be aware of misuse of notation.
         """
         # This sigma thing is weird due to the log
-        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
+        super().__init__(
+            name, mu=mu, sigma=sigma, xmin=xmin, alpha=alpha, units=self.UNITS
+        )
 
 
 class FluxPrior(UnitPrior):
@@ -266,9 +278,7 @@ class FluxPrior(UnitPrior):
         self,
         name=NormalPrior,
         mu: 1 / u.m**2 / u.s = 0.314 / u.m**2 / u.s,
-        sigma: Union[u.Quantity[1 / u.m**2 / u.s], u.Quantity[1]] = 0.08
-        / u.m**2
-        / u.s,
+        sigma: Union[u.Quantity[1 / u.m**2 / u.s], u.Quantity[1]] = 0.08 / u.m**2 / u.s,
     ):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
