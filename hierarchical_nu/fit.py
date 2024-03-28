@@ -410,7 +410,7 @@ class StanFit:
                 # would be, e.g. for 3 sources, (chains, iter_sampling, 3)
                 if len(np.shape(chain[key])) > 2:
                     for i, src in zip(
-                        range(np.shape(chain[key][-1])), self._sources.point_source
+                        range(np.shape(chain[key])[-1]), self._sources.point_source
                     ):
                         if key == "L" or key == "src_index":
                             label = "%s_" % src.name + key
@@ -483,7 +483,7 @@ class StanFit:
         # Try to get the true associations from the events
         if true_assoc is not None:
             true_assoc = np.atleast_1d(true_assoc)
-            assert true_assoc.size == assoc_prob.size
+            assert true_assoc.size == mask.size
 
         if color_scale == "lin":
             norm = colors.Normalize(0.0, 1.0, clip=True)
