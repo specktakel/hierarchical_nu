@@ -234,17 +234,24 @@ class Events:
         try:
             _Emin_det = Parameter.get_parameter("Emin_det")
             mask = events.energies >= _Emin_det.value
+            logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
 
         except ValueError:
             _types = np.unique(events.types)
             mask = np.full(events.energies.size, True)
             for _t in _types:
-                _Emin_det = Parameter.get_parameter(
-                    f"Emin_det_{Refrigerator.stan2python(_t)}"
-                )
-                mask[events.types == _t] = (
-                    events.energies[events.types == _t] >= _Emin_det.value
-                )
+                try:
+                    _Emin_det = Parameter.get_parameter(
+                        f"Emin_det_{Refrigerator.stan2python(_t)}"
+                    )
+                    mask[events.types == _t] = (
+                        events.energies[events.types == _t] >= _Emin_det.value
+                    )
+                    logger.info(
+                        f"Applying Emin_det={_Emin_det.value} to event selection."
+                    )
+                except ValueError:
+                    pass
 
         events.select(mask)
 
