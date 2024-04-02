@@ -410,7 +410,7 @@ class StanFit:
                 # would be, e.g. for 3 sources, (chains, iter_sampling, 3)
                 if len(np.shape(chain[key])) > 2:
                     for i, src in zip(
-                        range(np.shape(chain[key][-1])), self._sources.point_source
+                        range(np.shape(chain[key])[-1]), self._sources.point_source
                     ):
                         if key == "L" or key == "src_index":
                             label = "%s_" % src.name + key
@@ -483,7 +483,7 @@ class StanFit:
         # Try to get the true associations from the events
         if true_assoc is not None:
             true_assoc = np.atleast_1d(true_assoc)
-            assert true_assoc.size == assoc_prob.size
+            assert true_assoc.size == mask.size
 
         if color_scale == "lin":
             norm = colors.Normalize(0.0, 1.0, clip=True)
@@ -762,6 +762,17 @@ class StanFit:
             inputs_folder.create_dataset(
                 "event_types", data=[_.S for _ in self._event_types]
             )
+            try:
+                Emin_det = Parameter.get_parameter("Emin_det")
+                inputs_folder.create_dataset(
+                    "Emin_det", data=Emin_det.value.to_value(u.GeV)
+                )
+            except ValueError:
+                for dm in self._event_types:
+                    Emin_det = Parameter.get_parameter(f"Emin_det_{dm.P}")
+                    inputs_folder.create_dataset(
+                        f"Emin_det_{dm.P}", data=Emin_det.value.to_value(u.GeV)
+                    )
 
             for key, value in self._fit_output.stan_variables().items():
                 outputs_folder.create_dataset(key, data=value)
@@ -895,6 +906,23 @@ class StanFit:
             priors = Priors()
 
         events = Events.from_file(filename)
+
+        try:
+            Emin_det = fit_inputs["Emin_det"]
+            mask = events.energies >= Emin_det * u.GeV
+            events.select(mask)
+        except KeyError:
+            mask = np.full(events.N, True)
+            for dm in event_types:
+                try:
+                    Emin_det = fit_inputs[f"Emin_det_{dm.P}"]
+                    mask[events.types == dm.S] = (
+                        events.energies[events.types == dm.S] >= Emin_det * u.GeV
+                    )
+                except KeyError:
+                    # backwards compatibility
+                    pass
+            events.select(mask)
 
         fit = cls(Sources(), event_types, events, obs_time_dict, priors)
 

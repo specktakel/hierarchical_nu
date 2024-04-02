@@ -189,7 +189,7 @@ class CircularROI(ROI):
     @property
     def DEC_min(self):
         self._center.representation_type = "spherical"
-        dec_min = self.center.dec.rad * u.drad - self.radius.to(u.rad)
+        dec_min = self.center.dec.rad * u.rad - self.radius.to(u.rad)
         if dec_min < -np.pi / 2 * u.rad:
             return -np.pi / 2 * u.rad
         else:

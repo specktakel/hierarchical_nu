@@ -1797,7 +1797,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
     """
 
-    _logEreco_grid_edges = _logEreco_grid_edges = np.arange(1.045, 8.01, 0.01)
+    _logEreco_grid_edges = _logEreco_grid_edges = np.arange(1.045, 9.01, 0.01)
     _logEreco_grid = _logEreco_grid_edges[:-1] + np.diff(_logEreco_grid_edges) / 2
 
     assert np.all(
@@ -1807,7 +1807,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         )
     )
 
-    _log_tE_grid = np.linspace(2.0, 8.0, 100)
+    _log_tE_grid = np.linspace(2.0, 9.0, 100)
 
     def __init__(
         self,

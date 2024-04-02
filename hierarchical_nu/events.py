@@ -147,7 +147,6 @@ class Events:
     def from_file(
         cls,
         filename,
-        apply_tags: bool = False,
         group_name=None,
         scramble_ra: bool = False,
     ):
@@ -188,10 +187,10 @@ class Events:
 
         coords.representation_type = "cartesian"
         mask = []
+
         if ROIList.STACK:
             logger.info("Applying ROIs to event selection")
             for roi in ROIList.STACK:
-                # TODO add reco energy cut for all event types
                 if isinstance(roi, CircularROI):
                     mask.append(
                         (roi.radius >= roi.center.separation(coords))
@@ -226,12 +225,37 @@ class Events:
             # Add the selection mask for easier comparison between simulations and fits
             # when using a subselection of the data
             events._idxs = idxs
-            return events
         else:
             logger.info("Applying no ROIs to event selection")
             events = cls(energies, coords, types, ang_errs, time)
             events._idxs = np.full(events.N, True)
-            return events
+
+        # Apply energy cuts
+        try:
+            _Emin_det = Parameter.get_parameter("Emin_det")
+            mask = events.energies >= _Emin_det.value
+            logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
+
+        except ValueError:
+            _types = np.unique(events.types)
+            mask = np.full(events.energies.size, True)
+            for _t in _types:
+                try:
+                    _Emin_det = Parameter.get_parameter(
+                        f"Emin_det_{Refrigerator.stan2python(_t)}"
+                    )
+                    mask[events.types == _t] = (
+                        events.energies[events.types == _t] >= _Emin_det.value
+                    )
+                    logger.info(
+                        f"Applying Emin_det={_Emin_det.value} to event selection."
+                    )
+                except ValueError:
+                    pass
+
+        events.select(mask)
+
+        return events
 
     def to_file(self, filename, append=False, group_name=None):
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]
@@ -386,27 +410,29 @@ class Events:
             dpi=150,
         )
 
+        mask = center_coords.separation(self._coords) <= radius
+
         logNorm = colors.LogNorm(
-            self.energies.to_value(u.GeV).min(),
-            self.energies.to_value(u.GeV).max(),
+            self.energies[mask].to_value(u.GeV).min(),
+            self.energies[mask].to_value(u.GeV).max(),
             clip=True,
         )
         linNorm = colors.Normalize(
-            self.energies.to_value(u.GeV).min(),
-            self.energies.to_value(u.GeV).max(),
+            self.energies[mask].to_value(u.GeV).min(),
+            self.energies[mask].to_value(u.GeV).max(),
             clip=True,
         )
 
         mapper = cm.ScalarMappable(norm=logNorm, cmap=cm.viridis_r)
-        color = mapper.to_rgba(self.energies.to_value(u.GeV))
+        color = mapper.to_rgba(self.energies[mask].to_value(u.GeV))
 
         self.coords.representation_type = "spherical"
         for r, d, c, e, energy in zip(
-            self.coords.icrs.ra,
-            self.coords.icrs.dec,
+            self.coords.icrs.ra[mask],
+            self.coords.icrs.dec[mask],
             color,
-            self.ang_errs,
-            np.log10(self.energies.to_value(u.GeV)),
+            self.ang_errs[mask],
+            np.log10(self.energies[mask].to_value(u.GeV)),
         ):
             circle = SphericalCircle(
                 (r, d),

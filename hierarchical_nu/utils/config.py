@@ -7,10 +7,6 @@ import numpy as np
 import logging
 
 
-from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
-from hierarchical_nu.detector.icecube import Refrigerator, EventType, IC86_II
-
-
 _local_config_path = Path(".")
 _config_name = Path("hnu_config.yml")
 
