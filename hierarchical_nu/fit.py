@@ -505,7 +505,7 @@ class StanFit:
                     ax.plot(
                         np.power(10, supp),
                         pdf,
-                        color="black",
+                        color="magenta",
                         zorder=assoc_prob[c] + 1 - 1e-4,
                         lw=3,
                         alpha=0.4,
@@ -630,7 +630,7 @@ class StanFit:
             edgecolor = "none"
             if true_assoc is not None:
                 if true_assoc[i] == assoc_idx:
-                    edgecolor = colors.colorConverter.to_rgba("black", alpha=0.5)
+                    edgecolor = colors.colorConverter.to_rgba("magenta", alpha=0.5)
 
             ax.scatter(
                 coords[i].ra.deg,
