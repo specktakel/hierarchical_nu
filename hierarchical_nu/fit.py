@@ -444,17 +444,18 @@ class StanFit:
             truths_list = []
 
             for key in var_names:
-                if truths[key].size > 1:
+                try:
                     for t in truths[key]:
                         truths_list.append(t)
 
-                else:
+                except TypeError:
                     truths_list.append(truths[key])
 
         else:
             truths_list = None
 
         samples = np.column_stack(samples_list)
+        print(truths_list)
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
