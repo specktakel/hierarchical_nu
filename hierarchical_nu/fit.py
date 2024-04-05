@@ -373,6 +373,9 @@ class StanFit:
         true values if working with simulated data.
         """
 
+        logger.warning(
+            "If you are in a reloaded state with multiple point sources, add the used source list through <StanFit._sources = sources>"
+        )
         if not var_names:
             var_names = self._def_var_names
 
@@ -475,7 +478,7 @@ class StanFit:
             events.coords.representation_type = "spherical"
 
             sep = events.coords.separation(center).deg
-            mask = sep < radius.to_value(u.deg)
+            mask = sep <= radius.to_value(u.deg)
         else:
             mask = np.ones(ev_class.shape[0], dtype=bool)
 
@@ -611,7 +614,7 @@ class StanFit:
         coords = events.coords
 
         sep = events.coords.separation(center).deg
-        mask = sep < radius.to_value(u.deg)
+        mask = sep <= radius.to_value(u.deg)
         indices = np.arange(self._events.N, dtype=int)[mask]
 
         ax.scatter(
@@ -624,9 +627,6 @@ class StanFit:
             transform=ax.get_transform("icrs"),
         )
 
-        # for c, (colour, coord, zorder) in enumerate(
-        #     zip(color[mask], events.coords[mask], assoc_prob[mask])
-        # ):
         for c, i in enumerate(indices):
             edgecolor = "none"
             if true_assoc is not None:
