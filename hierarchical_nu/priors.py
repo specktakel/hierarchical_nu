@@ -258,6 +258,23 @@ class UnitPrior:
         else:
             self._prior.sigma = val
 
+    @property
+    def xmin(self):
+        return self._prior.xmin * self._units
+
+    @xmin.setter
+    def xmin(self, val):
+        if isinstance(self._prior, ParetoPrior):
+            self._prior.xmin = val.to_value(self._units)
+
+    @property
+    def alpha(self):
+        return self._prior.alpha
+
+    @alpha.setter
+    def alpha(self, val):
+        self._prior.alpha = val
+
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897
     def __getattr__(self, name):
@@ -348,7 +365,7 @@ class FluxPrior(UnitPrior):
     def __init__(
         self,
         name=NormalPrior,
-        mu: 1 / u.m**2 / u.s = 0.314 / u.m**2 / u.s,
+        mu: u.Quantity[1 / u.m**2 / u.s] = 0.314 / u.m**2 / u.s,
         sigma: Union[u.Quantity[1 / u.m**2 / u.s], u.Quantity[1]] = 0.08 / u.m**2 / u.s,
     ):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
