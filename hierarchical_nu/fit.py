@@ -1158,7 +1158,9 @@ class StanFit:
                 self._priors.luminosity.UNITS
             )
         elif self._priors.luminosity.name == "pareto":
-            fit_inputs["lumi_xmin"] = self._priors.luminosity.xmin
+            fit_inputs["lumi_xmin"] = self._priors.luminosity.xmin.to_value(
+                self._priors.luminosity.UNITS
+            )
             fit_inputs["lumi_alpha"] = self._priors.luminosity.alpha
         else:
             raise ValueError("No other prior type for luminosity implemented.")
