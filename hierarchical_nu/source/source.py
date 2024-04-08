@@ -4,6 +4,7 @@ from astropy import units as u
 import numpy as np
 import numpy.typing as npt
 from collections.abc import Callable
+from typing import Union
 
 from .flux_model import (
     PointSourceFluxModel,
@@ -15,6 +16,7 @@ from .flux_model import (
 from .atmospheric_flux import AtmosphericNuMuFlux
 from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
+from ..utils.config import HierarchicalNuConfig
 
 
 class Source(ABC):
@@ -225,24 +227,19 @@ class PointSource(Source):
         return cls(name, dec, ra, redshift, shape, luminosity)
 
     @classmethod
-    def make_powerlaw_sources_from_file(
+    def _make_sources_from_file(
         cls,
         file_name: str,
         lower_energy: Parameter,
         upper_energy: Parameter,
+        method: Callable,
         include_undetected: bool = False,
+        config: Union[None, HierarchicalNuConfig] = None,
     ):
-        """
-        Factory for power law sources defined in
-        HDF5 files ( update: output from popsynth).
-
-        :param lower_energy: Lower energy bound in definition of the luminosity.
-        :param upper_energy: Upper energy bound in definition of the luminosity.
-        :param include_undetected: Include sources that are not detected in population.
-        """
-
         # Sensible bounds on luminosity
         lumi_range = (0, 1e60) * (u.erg / u.s)
+        if config is not None:
+            lumi_range = tuple(config.parameter_config.L_range) * u.erg / u.s
 
         # Load values
         with h5py.File(file_name, "r") as f:
@@ -301,15 +298,18 @@ class PointSource(Source):
 
             # Else, create individual ps_%i_src_index parameters
             except ValueError:
+                par_range = (1, 4)
+                if config is not None:
+                    par_range = config.parameter_config.src_index_range
                 src_index = Parameter(
                     index,
                     "ps_%i_src_index" % i,
                     fixed=False,
-                    par_range=(1, 4),
+                    par_range=par_range,
                 )
 
             # Create source
-            source = PointSource.make_powerlaw_source(
+            source = method(
                 "ps_%i" % i,
                 dec,
                 ra,
@@ -325,102 +325,66 @@ class PointSource(Source):
         return source_list
 
     @classmethod
+    def make_powerlaw_sources_from_file(
+        cls,
+        file_name: str,
+        lower_energy: Parameter,
+        upper_energy: Parameter,
+        include_undetected: bool = False,
+        config: Union[None, HierarchicalNuConfig] = None,
+    ):
+        """
+        Factory for power law sources defined in
+        HDF5 files ( update: output from popsynth).
+
+        :param file_name: File name of source list.
+        :param lower_energy: Lower energy bound in definition of the luminosity.
+        :param upper_energy: Upper energy bound in definition of the luminosity.
+        :param include_undetected: Include sources that are not detected in population.
+        :param config: Instance of HierarchicalNuConfig to check for parameter bounds.
+            Overwrites lower_energy and upper_energy.
+        """
+
+        source_list = cls._make_sources_from_file(
+            file_name,
+            lower_energy,
+            upper_energy,
+            cls.make_powerlaw_source,
+            include_undetected,
+            config,
+        )
+
+        return source_list
+
+    @classmethod
     def make_broken_powerlaw_sources_from_file(
         cls,
         file_name: str,
         lower_energy: Parameter,
         upper_energy: Parameter,
         include_undetected: bool = False,
+        config: Union[None, HierarchicalNuConfig] = None,
     ):
         """
         Factory for power law sources defined in
         HDF5 files ( update: output from popsynth).
 
+        :param file_name: File name of source list.
         :param lower_energy: Lower energy bound in definition of the luminosity.
         :param upper_energy: Upper energy bound in definition of the luminosity.
         :param include_undetected: Include sources that are not detected in population.
+        :param config: Instance of HierarchicalNuConfig to check for parameter bounds.
+            Overwrites lower_energy and upper_energy.
         """
 
-        # Sensible bounds on luminosity
-        lumi_range = (0, 1e60) * (u.erg / u.s)
-
-        # Load values
-        with h5py.File(file_name, "r") as f:
-            luminosities = f["luminosities"][()] * (u.erg / u.s)
-
-            spectral_indices = f["auxiliary_quantities/spectral_index/obs_values"][()]
-
-            redshifts = f["distances"][()]
-
-            ras = f["phi"][()] * u.rad
-
-            decs = -(f["theta"][()] - np.pi / 2) * u.rad
-
-            selection = f["selection"][()]
-
-        # Apply selection
-        if not include_undetected:
-            luminosities = luminosities[selection]
-
-            spectral_indices = spectral_indices[selection]
-
-            redshifts = redshifts[selection]
-
-            ras = ras[selection]
-
-            decs = decs[selection]
-
-        # Make list of point sources
-        source_list = []
-
-        for i, (L, index, ra, dec, z) in enumerate(
-            zip(
-                luminosities,
-                spectral_indices,
-                ras,
-                decs,
-                redshifts,
-            )
-        ):
-            # Check for shared luminosity parameter
-            try:
-                luminosity = Parameter.get_parameter("luminosity")
-
-            # Else, create individual ps_%i_luminosity parameters
-            except ValueError:
-                luminosity = Parameter(
-                    L,
-                    "ps_%i_luminosity" % i,
-                    fixed=True,
-                    par_range=lumi_range,
-                )
-
-            # Check for shared src_index parameter
-            try:
-                src_index = Parameter.get_parameter("src_index")
-
-            # Else, create individual ps_%i_src_index parameters
-            except ValueError:
-                src_index = Parameter(
-                    index,
-                    "ps_%i_src_index" % i,
-                    fixed=False,
-                    par_range=(1, 4),
-                )
-
-            # Create source
-            source = PointSource.make_twicebroken_powerlaw_source(
-                "ps_%i" % i,
-                dec,
-                ra,
-                luminosity,
-                src_index,
-                z,
-                lower_energy,
-                upper_energy,
-            )
-
-            source_list.append(source)
+        source_list = cls._make_sources_from_file(
+            file_name,
+            lower_energy,
+            upper_energy,
+            cls.make_twicebroken_powerlaw_source,
+            include_undetected,
+            config,
+        )
 
         return source_list
 
@@ -458,14 +422,14 @@ class PointSource(Source):
 
     @property
     @u.quantity_input
-    def luminosity(self) -> u.erg / u.s:
+    def luminosity(self) -> u.Quantity[u.erg / u.s]:
         return self._luminosity
 
     @luminosity.setter
     @u.quantity_input
     # TODO add calculation for fluxes etc.
     # needs to be defined in the source frame
-    def luminosity(self, value: u.erg / u.s):
+    def luminosity(self, value: u.Quantity[u.erg / u.s]):
         self._luminosity = value
 
 
