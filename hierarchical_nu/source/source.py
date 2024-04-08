@@ -342,7 +342,6 @@ class PointSource(Source):
         :param upper_energy: Upper energy bound in definition of the luminosity.
         :param include_undetected: Include sources that are not detected in population.
         :param config: Instance of HierarchicalNuConfig to check for parameter bounds.
-            Overwrites lower_energy and upper_energy.
         """
 
         source_list = cls._make_sources_from_file(
@@ -374,7 +373,6 @@ class PointSource(Source):
         :param upper_energy: Upper energy bound in definition of the luminosity.
         :param include_undetected: Include sources that are not detected in population.
         :param config: Instance of HierarchicalNuConfig to check for parameter bounds.
-            Overwrites lower_energy and upper_energy.
         """
 
         source_list = cls._make_sources_from_file(
