@@ -373,6 +373,9 @@ class StanFit:
         true values if working with simulated data.
         """
 
+        logger.warning(
+            "If you are in a reloaded state with multiple point sources, add the used source list through <StanFit._sources = sources>"
+        )
         if not var_names:
             var_names = self._def_var_names
 
@@ -444,11 +447,11 @@ class StanFit:
             truths_list = []
 
             for key in var_names:
-                if truths[key].size > 1:
+                try:
                     for t in truths[key]:
                         truths_list.append(t)
 
-                else:
+                except TypeError:
                     truths_list.append(truths[key])
 
         else:
@@ -474,7 +477,7 @@ class StanFit:
             events.coords.representation_type = "spherical"
 
             sep = events.coords.separation(center).deg
-            mask = sep < radius.to_value(u.deg)
+            mask = sep <= radius.to_value(u.deg)
         else:
             mask = np.ones(ev_class.shape[0], dtype=bool)
 
@@ -505,7 +508,7 @@ class StanFit:
                     ax.plot(
                         np.power(10, supp),
                         pdf,
-                        color="black",
+                        color="magenta",
                         zorder=assoc_prob[c] + 1 - 1e-4,
                         lw=3,
                         alpha=0.4,
@@ -610,7 +613,7 @@ class StanFit:
         coords = events.coords
 
         sep = events.coords.separation(center).deg
-        mask = sep < radius.to_value(u.deg)
+        mask = sep <= radius.to_value(u.deg)
         indices = np.arange(self._events.N, dtype=int)[mask]
 
         ax.scatter(
@@ -623,14 +626,11 @@ class StanFit:
             transform=ax.get_transform("icrs"),
         )
 
-        # for c, (colour, coord, zorder) in enumerate(
-        #     zip(color[mask], events.coords[mask], assoc_prob[mask])
-        # ):
         for c, i in enumerate(indices):
             edgecolor = "none"
             if true_assoc is not None:
                 if true_assoc[i] == assoc_idx:
-                    edgecolor = colors.colorConverter.to_rgba("black", alpha=0.5)
+                    edgecolor = colors.colorConverter.to_rgba("magenta", alpha=0.5)
 
             ax.scatter(
                 coords[i].ra.deg,
@@ -950,6 +950,12 @@ class StanFit:
 
         return fit
 
+    def diagnose(self):
+        try:
+            print(self._fit_output.diagnose().decode("ascii"))
+        except AttributeError:
+            print(self._fit_meta["diagnose"].decode("ascii"))
+
     def check_classification(self, sim_outputs):
         """
         For the case of simulated data, check if
@@ -1157,7 +1163,9 @@ class StanFit:
                 self._priors.luminosity.UNITS
             )
         elif self._priors.luminosity.name == "pareto":
-            fit_inputs["lumi_xmin"] = self._priors.luminosity.xmin
+            fit_inputs["lumi_xmin"] = self._priors.luminosity.xmin.to_value(
+                self._priors.luminosity.UNITS
+            )
             fit_inputs["lumi_alpha"] = self._priors.luminosity.alpha
         else:
             raise ValueError("No other prior type for luminosity implemented.")
