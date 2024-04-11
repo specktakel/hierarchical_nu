@@ -941,6 +941,18 @@ class SimInfo:
 
         Lambdas = np.hstack((Lambdas_ps, Lambdas_bg_for_merging))
 
+        try:
+            ps.inputs["forced_N"]
+            ps_forced_N = True
+        except KeyError:
+            ps_forced_N = False
+
+        try:
+            bg.inputs["forced_N"]
+            bg_forced_N = True
+        except KeyError:
+            bg_forced_N = False
+
         with h5py.File(output, "w") as f:
             # Dummy folders
             sim_folder = f.create_group("sim")
@@ -950,6 +962,13 @@ class SimInfo:
                 inputs_folder.create_dataset(key, data=ps.inputs[key])
             for key in bg_keys:
                 inputs_folder.create_dataset(key, data=bg.inputs[key])
+            if ps_forced_N and bg_forced_N:
+                inputs_folder.create_dataset(
+                    "forced_N",
+                    data=np.hstack((ps.inputs["forced_N"], bg.inputs["forced_N"])),
+                )
+            elif ps_forced_N:
+                inputs_folder.create_dataset("forced_N", data=ps.inputs["forced_N"])
             outputs_folder = sim_folder.create_group("outputs")
             for key, value in truths.items():
                 outputs_folder.create_dataset(key, data=value)
