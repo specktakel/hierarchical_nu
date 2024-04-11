@@ -163,7 +163,8 @@ class PointSource(Source):
                 lower.value / (1 + redshift),
                 upper.value / (1 + redshift),
             )
-            total_power = shape.total_flux_density
+
+        total_power = shape.total_flux_density
         norm.value *= total_flux / total_power
         norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
         norm.fixed = True
