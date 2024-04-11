@@ -179,7 +179,8 @@ class StanSimInterface(StanInterface):
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
 
             # Distance of sources in Mpc
-            self._D = ForwardVariableDef("D", "vector[Ns]")
+            if self.sources.point_source:
+                self._D = ForwardVariableDef("D", "vector[Ns]")
 
             # For diffuse and point sources, we have an interpolation grid
             # for the integral of expected number of events to pass
