@@ -98,6 +98,7 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
+        E_range_at_det: bool = False,
     ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
@@ -120,6 +121,8 @@ class PointSource(Source):
                 Lower energy bound
             upper: Parameter
                 Upper energy bound
+            E_range_at_det: bool
+                Define energy range at detector, not source
         All parameters are taken to be defined in the source frame.
         """
 
@@ -144,14 +147,23 @@ class PointSource(Source):
         except ValueError:
             Enorm_value = 1e5 * u.GeV
 
-        shape = PowerLawSpectrum(
-            norm,
-            Enorm_value,
-            index,
-            lower.value / (1 + redshift),
-            upper.value / (1 + redshift),
-        )
-        total_power = shape.total_flux_density
+        if E_range_at_det:
+            shape = PowerLawSpectrum(
+                norm,
+                Enorm_value,
+                index,
+                lower.value,
+                upper.value,
+            )
+        else:
+            shape = PowerLawSpectrum(
+                norm,
+                Enorm_value,
+                index,
+                lower.value / (1 + redshift),
+                upper.value / (1 + redshift),
+            )
+            total_power = shape.total_flux_density
         norm.value *= total_flux / total_power
         norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
         norm.fixed = True
@@ -169,6 +181,7 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
+        E_range_at_det: bool = False,
     ):
         """
         Factory class for creating sources with powerlaw spectrum and given luminosity.
@@ -191,9 +204,11 @@ class PointSource(Source):
                 Lower energy bound
             upper: Parameter
                 Upper energy bound
+            E_range_at_det: bool
+                Define energy range at detector, not source
         All parameters are taken to be defined in the source frame.
         """
-        # raise NotImplementedError
+
         total_flux = luminosity.value / (
             4 * np.pi * luminosity_distance(redshift) ** 2
         )  # here flux is W / m^2, lives in the detector frame
@@ -213,13 +228,23 @@ class PointSource(Source):
         except ValueError:
             Enorm_value = 1e5 * u.GeV
 
-        shape = TwiceBrokenPowerLaw(
-            norm,
-            Enorm_value,
-            index,
-            lower.value / (1 + redshift),
-            upper.value / (1 + redshift),
-        )
+        if E_range_at_det:
+            shape = TwiceBrokenPowerLaw(
+                norm,
+                Enorm_value,
+                index,
+                lower.value,
+                upper.value,
+            )
+        else:
+            shape = TwiceBrokenPowerLaw(
+                norm,
+                Enorm_value,
+                index,
+                lower.value / (1 + redshift),
+                upper.value / (1 + redshift),
+            )
+
         total_power = shape.total_flux_density
         norm.value *= total_flux / total_power
         norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
@@ -235,6 +260,7 @@ class PointSource(Source):
         method: Callable,
         include_undetected: bool = False,
         config: Union[None, HierarchicalNuConfig] = None,
+        E_range_at_det: bool = False,
     ):
         # Sensible bounds on luminosity
         lumi_range = (0, 1e60) * (u.erg / u.s)
@@ -318,6 +344,7 @@ class PointSource(Source):
                 z,
                 lower_energy,
                 upper_energy,
+                E_range_at_det,
             )
 
             source_list.append(source)
@@ -332,6 +359,7 @@ class PointSource(Source):
         upper_energy: Parameter,
         include_undetected: bool = False,
         config: Union[None, HierarchicalNuConfig] = None,
+        E_range_at_det: bool = False,
     ):
         """
         Factory for power law sources defined in
@@ -342,6 +370,7 @@ class PointSource(Source):
         :param upper_energy: Upper energy bound in definition of the luminosity.
         :param include_undetected: Include sources that are not detected in population.
         :param config: Instance of HierarchicalNuConfig to check for parameter bounds.
+        :param E_range_at_det: Define lower_energy and upper_energy in the detector frame instead of source.
         """
 
         source_list = cls._make_sources_from_file(
@@ -351,6 +380,7 @@ class PointSource(Source):
             cls.make_powerlaw_source,
             include_undetected,
             config,
+            E_range_at_det,
         )
 
         return source_list
@@ -363,6 +393,7 @@ class PointSource(Source):
         upper_energy: Parameter,
         include_undetected: bool = False,
         config: Union[None, HierarchicalNuConfig] = None,
+        E_range_at_det: bool = False,
     ):
         """
         Factory for power law sources defined in
@@ -373,6 +404,7 @@ class PointSource(Source):
         :param upper_energy: Upper energy bound in definition of the luminosity.
         :param include_undetected: Include sources that are not detected in population.
         :param config: Instance of HierarchicalNuConfig to check for parameter bounds.
+        :param E_range_at_det: Define lower_energy and upper_energy in the detector frame instead of source.
         """
 
         source_list = cls._make_sources_from_file(
@@ -382,6 +414,7 @@ class PointSource(Source):
             cls.make_twicebroken_powerlaw_source,
             include_undetected,
             config,
+            E_range_at_det,
         )
 
         return source_list
