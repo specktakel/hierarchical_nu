@@ -458,7 +458,6 @@ class StanFit:
             truths_list = None
 
         samples = np.column_stack(samples_list)
-        print(truths_list)
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
@@ -950,6 +949,12 @@ class StanFit:
             fit._def_var_names.append("f_det")
 
         return fit
+
+    def diagnose(self):
+        try:
+            print(self._fit_output.diagnose().decode("ascii"))
+        except AttributeError:
+            print(self._fit_meta["diagnose"].decode("ascii"))
 
     def check_classification(self, sim_outputs):
         """
