@@ -604,17 +604,6 @@ class Simulation:
                 event_type
             ].par_grids[key]
 
-        if self._sources.diffuse:
-            # Same as for point sources
-            sim_inputs["Ngrid"] = len(
-                self._exposure_integral[event_type].par_grids["diff_index"]
-            )
-
-            sim_inputs["diff_index_grid"] = self._exposure_integral[
-                event_type
-            ].par_grids["diff_index"]
-
-        if self._sources.point_source:
             # Check for shared src_index parameter
             if self._shared_src_index:
                 sim_inputs["src_index"] = Parameter.get_parameter("src_index").value
@@ -626,25 +615,34 @@ class Simulation:
                     for s in self._sources.point_source
                 ]
 
+            sim_inputs["Emin_src"] = (
+                Parameter.get_parameter("Emin_src").value.to(u.GeV).value
+            )
+            sim_inputs["Emax_src"] = (
+                Parameter.get_parameter("Emax_src").value.to(u.GeV).value
+            )
+
         if self._sources.diffuse:
+            # Same as for point sources
+            sim_inputs["Ngrid"] = len(
+                self._exposure_integral[event_type].par_grids["diff_index"]
+            )
+
+            sim_inputs["diff_index_grid"] = self._exposure_integral[
+                event_type
+            ].par_grids["diff_index"]
+
             sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
 
-        sim_inputs["Emin_src"] = (
-            Parameter.get_parameter("Emin_src").value.to(u.GeV).value
-        )
-        sim_inputs["Emax_src"] = (
-            Parameter.get_parameter("Emax_src").value.to(u.GeV).value
-        )
+            sim_inputs["Emin_diff"] = (
+                Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
+            )
+            sim_inputs["Emax_diff"] = (
+                Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
+            )
 
         sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
-
-        sim_inputs["Emin_diff"] = (
-            Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
-        )
-        sim_inputs["Emax_diff"] = (
-            Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
-        )
 
         for event_type in self._event_types:
             effective_area = self._exposure_integral[event_type].effective_area
@@ -746,7 +744,8 @@ class Simulation:
                 ]
 
         sim_inputs["integral_grid"] = integral_grid
-        sim_inputs["atmo_integ_val"] = atmo_integ_val
+        if self._sources.atmospheric:
+            sim_inputs["atmo_integ_val"] = atmo_integ_val
         sim_inputs["Emin_det"] = Emin_det
         sim_inputs["rs_cvals"] = rs_cvals
         sim_inputs["rs_bbpl_Eth"] = rs_bbpl_Eth
