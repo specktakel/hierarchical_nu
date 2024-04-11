@@ -47,9 +47,17 @@ class NormalPrior(PriorDistribution):
     def mu(self):
         return self._mu
 
+    @mu.setter
+    def mu(self, val: float):
+        self._mu = val
+
     @property
     def sigma(self):
         return self._sigma
+
+    @sigma.setter
+    def sigma(self, val: float):
+        self._sigma = val
 
     def pdf(self, x):
         return stats.norm(loc=self._mu, scale=self._sigma).pdf(x)
@@ -88,9 +96,17 @@ class LogNormalPrior(PriorDistribution):
     def mu(self):
         return self._mu
 
+    @mu.setter
+    def mu(self, val: float):
+        self._mu = val
+
     @property
     def sigma(self):
         return self._sigma
+
+    @sigma.setter
+    def sigma(self, val: float):
+        self._sigma = val
 
     def to_dict(self, units):
         prior_dict = {}
@@ -117,9 +133,17 @@ class ParetoPrior(PriorDistribution):
     def xmin(self):
         return self._xmin
 
+    @xmin.setter
+    def xmin(self, val: float):
+        self._xmin = val
+
     @property
     def alpha(self):
         return self._alpha
+
+    @alpha.setter
+    def alpha(self, val: float):
+        self._alpha = val
 
     def pdf(self, x):
         return stats.pareto(b=self._alpha).pdf(x)
@@ -213,12 +237,43 @@ class UnitPrior:
         else:
             return self._prior.mu
 
+    @mu.setter
+    def mu(self, val):
+        if isinstance(self._prior, NormalPrior):
+            self._prior.mu = val.to_value(self._units)
+        else:
+            self._prior.mu = val
+
     @property
     def sigma(self):
         if isinstance(self._prior, NormalPrior):
             return self._prior.sigma * self._units
         else:
             return self._prior.sigma
+
+    @sigma.setter
+    def sigma(self, val):
+        if isinstance(self._prior, NormalPrior):
+            self._prior.sigma = val.to_value(self._units)
+        else:
+            self._prior.sigma = val
+
+    @property
+    def xmin(self):
+        return self._prior.xmin * self._units
+
+    @xmin.setter
+    def xmin(self, val):
+        if isinstance(self._prior, ParetoPrior):
+            self._prior.xmin = val.to_value(self._units)
+
+    @property
+    def alpha(self):
+        return self._prior.alpha
+
+    @alpha.setter
+    def alpha(self, val):
+        self._prior.alpha = val
 
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897
@@ -241,8 +296,41 @@ class UnitlessPrior:
             elif name == NormalPrior:
                 self._prior = name(mu=mu, sigma=sigma)
 
+    @property
+    def mu(self):
+        return self._prior.mu
+
+    @mu.setter
+    def mu(self, val: float):
+        self._prior.mu = val
+
+    @property
+    def sigma(self):
+        return self._prior.sigma
+
+    @sigma.setter
+    def sigma(self, val: float):
+        self._prior.sigma = val
+
+    @property
+    def xmin(self):
+        return self._prior.xmin
+
+    @xmin.setter
+    def xmin(self, val: float):
+        self._prior.xmin = val
+
+    @property
+    def alpha(self):
+        return self._prior.alpha
+
+    @alpha.setter
+    def alpha(self, val: float):
+        self._prior.alpha = val
+
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897
+    # only in case someone tries to do self._mu or similar, then the private attribute should be accessed
     def __getattr__(self, name):
         return self._prior.__getattribute__(name)
 
@@ -277,7 +365,7 @@ class FluxPrior(UnitPrior):
     def __init__(
         self,
         name=NormalPrior,
-        mu: 1 / u.m**2 / u.s = 0.314 / u.m**2 / u.s,
+        mu: u.Quantity[1 / u.m**2 / u.s] = 0.314 / u.m**2 / u.s,
         sigma: Union[u.Quantity[1 / u.m**2 / u.s], u.Quantity[1]] = 0.08 / u.m**2 / u.s,
     ):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
