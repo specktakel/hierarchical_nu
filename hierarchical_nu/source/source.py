@@ -17,11 +17,9 @@ from .atmospheric_flux import AtmosphericNuMuFlux
 from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
-from ..backend.stan_generator import (
-    UserDefinedFunction,
-    InstantVariableDef,
-    ReturnStatement,
-)
+from ..backend.stan_generator import UserDefinedFunction
+from ..backend.variable_definitions import InstantVariableDef
+from ..backend.expression import ReturnStatement
 
 
 class ReferenceFrame(ABC):
@@ -94,7 +92,7 @@ class Source(ABC):
     Abstract base class for sources.
     """
 
-    def __init__(self, name: str, frame: Frame, *args, **kwargs):
+    def __init__(self, name: str, frame: ReferenceFrame, *args, **kwargs):
         self._name = name
         self._frame = None
         self._parameters = []

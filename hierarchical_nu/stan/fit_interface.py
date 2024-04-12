@@ -232,14 +232,16 @@ class StanFitInterface(StanInterface):
                                 self._src_spectrum_lpdf(
                                     self._E[i],
                                     src_index_ref,
-                                    self._Emin_src / (1 + self._z[k]),
-                                    self._Emax_src / (1 + self._z[k]),
+                                    self._Emin_src
+                                    / self._src_frame_transform(self._z[k]),
+                                    self._Emax_src
+                                    / self._src_frame_transform(self._z[k]),
                                 ),
                             ]
                         )
-                        # E = Esrc / (1+z)
-                        self._Esrc[i] << StringExpression(
-                            [self._E[i], " * (", 1 + self._z[k], ")"]
+                        # Frame transformation
+                        self._Esrc[i] << self._E[i] * self._src_frame_transform(
+                            self._z[k]
                         )
 
                 # Diffuse component
@@ -366,10 +368,18 @@ class StanFitInterface(StanInterface):
                     "flux_conv"
                 )
 
+                self._src_frame_transform = self._ps_frame.make_stan_transform_func(
+                    "src_frame_transform"
+                )
+
             # If we have diffuse sources, include the shape of their PDF
             if self.sources.diffuse:
                 self._diff_spectrum_lpdf = self._diff_spectrum.make_stan_lpdf_func(
                     "diff_spectrum_logpdf"
+                )
+
+                self._diff_frame_transform = self._diff_frame.make_stan_transform_func(
+                    "diff_frame_transform"
                 )
 
             # If we have atmospheric sources, include the atmospheric flux table
@@ -881,30 +891,52 @@ class StanFitInterface(StanInterface):
             # Find the largest energy range over all source components, transformed in the detector frame
             with ForLoopContext(1, self._Ns, "k") as k:
                 with IfBlockContext(
-                    [self._Emin_src / (1 + self._z[k]), " < ", self._Emin_at_det]
-                ):
-                    self._Emin_at_det << self._Emin_src / (1 + self._z[k])
-                with IfBlockContext(
-                    [self._Emax_src / (1 + self._z[k]), " > ", self._Emax_at_det]
-                ):
-                    self._Emax_at_det << self._Emax_src / (1 + self._z[k])
-            if self.sources.diffuse:
-                with IfBlockContext(
                     [
-                        self._Emin_diff / (1 + self._z[self._Ns + 1]),
+                        self._Emin_src / self._src_frame_transform(self._z[k]),
                         " < ",
                         self._Emin_at_det,
                     ]
                 ):
-                    self._Emin_at_det << self._Emin_diff / (1.0 + self._z[self._Ns + 1])
+                    self._Emin_at_det << self._Emin_src / self._src_frame_transform(
+                        self._z[k]
+                    )
                 with IfBlockContext(
                     [
-                        self._Emax_diff / (1 + self._z[self._Ns + 1]),
+                        self._Emax_src / self._src_frame_transform(self._z[k]),
                         " > ",
                         self._Emax_at_det,
                     ]
                 ):
-                    self._Emax_at_det << self._Emax_diff / (1.0 + self._z[self._Ns + 1])
+                    self._Emax_at_det << self._Emax_src / self._src_frame_transform(
+                        self._z[k]
+                    )
+            if self.sources.diffuse:
+                with IfBlockContext(
+                    [
+                        self._Emin_diff
+                        / self._diff_frame_transform(self._z[self._Ns + 1]),
+                        " < ",
+                        self._Emin_at_det,
+                    ]
+                ):
+                    (
+                        self._Emin_at_det
+                        << self._Emin_diff
+                        / self._diff_frame_transform(self._z[self._Ns + 1])
+                    )
+                with IfBlockContext(
+                    [
+                        self._Emax_diff
+                        / self._diff_frame_transform(self._z[self._Ns + 1]),
+                        " > ",
+                        self._Emax_at_det,
+                    ]
+                ):
+                    (
+                        self._Emax_at_det
+                        << self._Emax_diff
+                        / self._diff_frame_transform(self._z[self._Ns + 1])
+                    )
 
             if self._nshards not in [0, 1]:
                 grid_size = R2021EnergyResolution._log_tE_grid.size
@@ -1326,8 +1358,8 @@ class StanFitInterface(StanInterface):
                             "*=",
                             self._flux_conv(
                                 src_index_ref,
-                                self._Emin_src / (1 + self._z[k]),
-                                self._Emax_src / (1 + self._z[k]),
+                                self._Emin_src / self._src_frame_transform(self._z[k]),
+                                self._Emax_src / self._src_frame_transform(self._z[k]),
                             ),
                         ]
                     )

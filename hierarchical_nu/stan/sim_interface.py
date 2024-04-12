@@ -142,7 +142,7 @@ class StanSimInterface(StanInterface):
                     "diff_spectrum_logpdf"
                 )
 
-                self._diff_frame_transform = self._ps_frame.make_stan_transform_func(
+                self._diff_frame_transform = self._diff_frame.make_stan_transform_func(
                     "diff_frame_transform"
                 )
 
