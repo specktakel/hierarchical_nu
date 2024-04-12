@@ -53,7 +53,11 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._ps_spectrum = None
 
+        self._ps_frame = None
+
         self._diff_spectrum = None
+
+        self._diff_frame = None
 
         self._shared_luminosity = True
 
@@ -61,6 +65,7 @@ class StanInterface(object, metaclass=ABCMeta):
 
         if self.sources.point_source:
             self._ps_spectrum = self.sources.point_source_spectrum
+            self._ps_frame = self.sources.point_source_frame
 
             try:
                 Parameter.get_parameter("luminosity")
@@ -76,6 +81,7 @@ class StanInterface(object, metaclass=ABCMeta):
 
         if self.sources.diffuse:
             self._diff_spectrum = self.sources.diffuse_spectrum
+            self._diff_frame = self.sources.diffuse.frame
 
         if self.sources.atmospheric:
             self._atmo_flux = self.sources.atmospheric_flux

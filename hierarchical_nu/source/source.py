@@ -17,6 +17,11 @@ from .atmospheric_flux import AtmosphericNuMuFlux
 from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
+from ..backend.stan_generator import (
+    UserDefinedFunction,
+    InstantVariableDef,
+    ReturnStatement,
+)
 
 
 class ReferenceFrame(ABC):
@@ -32,8 +37,14 @@ class ReferenceFrame(ABC):
     def name(self):
         return self._name
 
-    def transform(self, z):
+    @classmethod
+    @abstractmethod
+    def transform(cls, z):
+        pass
 
+    @classmethod
+    @abstractmethod
+    def make_stan_transform_func(cls, fname) -> UserDefinedFunction:
         pass
 
 
@@ -43,20 +54,39 @@ class DetectorFrame(ReferenceFrame):
 
         self._name = "detector"
 
-    def transform(self, z):
-
+    @classmethod
+    def transform(cls, z):
         return 1.0
+
+    @classmethod
+    def make_stan_transform_func(cls, fname: str) -> UserDefinedFunction:
+        func = UserDefinedFunction(fname, ["z"])
+
+        with func:
+            ret = InstantVariableDef("ret", "real", [1.0])
+            ReturnStatement([ret])
+
+        return func
 
 
 class SourceFrame(ReferenceFrame):
 
     def __init__(self):
-
         self._name = "source"
 
-    def transform(self, z):
-
+    @classmethod
+    def transform(cls, z):
         return 1.0 + z
+
+    @classmethod
+    def make_stan_transform_func(cls, fname: str) -> UserDefinedFunction:
+        func = UserDefinedFunction(fname, ["z"])
+
+        with func:
+            ret = InstantVariableDef("ret", "real", [1.0, "+ z"])
+            ReturnStatement([ret])
+
+        return func
 
 
 class Source(ABC):
@@ -631,7 +661,7 @@ class Sources:
 
         return max(z)
 
-    def _get_ps_frame(self):
+    def _get_point_source_frame(self):
         """
         Check what frame point sources are defined in.
         """
@@ -646,7 +676,7 @@ class Sources:
                 "All point sources must be defined in the same RefrenceFrame"
             )
 
-        return frames[0]
+        self._point_source_frame = frames[0]
 
     def _get_point_source_spectrum(self):
         """
@@ -832,6 +862,7 @@ class Sources:
 
         if self._point_source:
             self._get_point_source_spectrum()
+            self._get_point_source_frame()
 
         new_list = self._point_source.copy()
 
@@ -855,9 +886,16 @@ class Sources:
 
         if self._point_source:
             return self._point_source_spectrum
-
         else:
             raise ValueError("No point sources in  source list")
+
+    def point_source_frame(self):
+        self.organise()
+
+        if self._point_source:
+            return self._point_source_frame
+        else:
+            raise ValueError("No point sources in source list")
 
     @property
     def diffuse(self):
