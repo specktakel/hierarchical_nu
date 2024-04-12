@@ -34,12 +34,8 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.detector.icecube import EventType
 
 from hierarchical_nu.source.source import Sources
-from hierarchical_nu.source.flux_model import (
-    PowerLawSpectrum,
-    TwiceBrokenPowerLaw,
-)
 
-from hierarchical_nu.utils.roi import ROI, CircularROI, ROIList
+from hierarchical_nu.utils.roi import CircularROI, ROIList
 
 
 class StanSimInterface(StanInterface):
@@ -183,7 +179,8 @@ class StanSimInterface(StanInterface):
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
 
             # Distance of sources in Mpc
-            self._D = ForwardVariableDef("D", "vector[Ns]")
+            if self.sources.point_source:
+                self._D = ForwardVariableDef("D", "vector[Ns]")
 
             # For diffuse and point sources, we have an interpolation grid
             # for the integral of expected number of events to pass
@@ -215,8 +212,9 @@ class StanSimInterface(StanInterface):
                 )
 
             # The energy range is specified at the source
-            self._Emin_src = ForwardVariableDef("Emin_src", "real")
-            self._Emax_src = ForwardVariableDef("Emax_src", "real")
+            if self.sources.point_source:
+                self._Emin_src = ForwardVariableDef("Emin_src", "real")
+                self._Emax_src = ForwardVariableDef("Emax_src", "real")
 
             # Energy range that the detector should consider
             # Is influenced by parameterisation of energy resolution
@@ -224,8 +222,9 @@ class StanSimInterface(StanInterface):
             self._Emax = ForwardVariableDef("Emax", "real")
 
             # Energy range considered for diffuse astrophysical sources, defined at redshift z of shell
-            self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
-            self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
+            if self.sources.diffuse:
+                self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
+                self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
 
             # For tracks, we specify Emin_det, and several parameters for the
             # rejection sampling, denoted by rs_...
@@ -246,11 +245,12 @@ class StanSimInterface(StanInterface):
                 "rs_cvals", "real", ["[", self._Net, ",", Ns_string, "]"]
             )
 
-            self._integral_grid = ForwardArrayDef(
-                "integral_grid",
-                "vector[Ngrid]",
-                ["[", self._Net, ",", Ns_string_int_grid, "]"],
-            )
+            if self.sources.diffuse or self.sources.point_source:
+                self._integral_grid = ForwardArrayDef(
+                    "integral_grid",
+                    "vector[Ngrid]",
+                    ["[", self._Net, ",", Ns_string_int_grid, "]"],
+                )
 
             if self._force_N:
                 self._forced_N = ForwardArrayDef(
@@ -365,7 +365,7 @@ class StanSimInterface(StanInterface):
                 self._Nex_src_comp = ForwardArrayDef(
                     "Nex_src_comp", "real", ["[", self._Net, "]"]
                 )
-                self._Nex_src = ForwardVariableDef("Nex_src", "real")
+            self._Nex_src = InstantVariableDef("Nex_src", "real", [0])
             if self.sources.diffuse:
                 self._Nex_diff_comp = ForwardArrayDef(
                     "Nex_diff_comp", "real", ["[", self._Net, "]"]
@@ -381,9 +381,9 @@ class StanSimInterface(StanInterface):
             self._N = ForwardVariableDef("N", "int")
 
             self._F_src << 0.0
-            with ForLoopContext(1, self._Net_stan, "i") as i:
-                self._Nex_src_comp[i] << 0.0
-            self._Nex_src << 0.0
+            if self.sources.point_source:
+                with ForLoopContext(1, self._Net_stan, "i") as i:
+                    self._Nex_src_comp[i] << 0.0
 
             if self.sources.point_source:
                 with ForLoopContext(1, self._Ns, "k") as k:
@@ -545,7 +545,10 @@ class StanSimInterface(StanInterface):
                         ["poisson_rng(", self._Nex[i], ")"]
                     )
 
-            self._Nex_src << StringExpression(["sum(", self._Nex_src_comp, ")"])
+            if self.sources.point_source:
+                self._Nex_src << StringExpression(["sum(", self._Nex_src_comp, ")"])
+            else:
+                self._Nex_src << StringExpression(["0"])
             if self.sources.diffuse:
                 self._Nex_diff << StringExpression(["sum(", self._Nex_diff_comp, ")"])
             if self.sources.atmospheric:

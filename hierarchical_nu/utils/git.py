@@ -10,7 +10,11 @@ cwd = path.abspath(path.dirname(inspect.getfile(LifeTime)))
 
 try:
     process = subprocess.Popen(
-        ["git", "rev-parse", "HEAD"], shell=False, stdout=subprocess.PIPE, cwd=cwd
+        ["git", "rev-parse", "HEAD"],
+        shell=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        cwd=cwd,
     )
     git_hash = process.communicate()[0].strip().decode("ascii")
     if "fatal" in git_hash:
@@ -18,7 +22,11 @@ try:
         raise ValueError
 except ValueError:
     process = subprocess.Popen(
-        ["pip", "show", "hierarchical_nu"], shell=False, stdout=subprocess.PIPE, cwd=cwd
+        ["pip", "show", "hierarchical_nu"],
+        shell=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        cwd=cwd,
     )
     git_hash = process.communicate()[0].strip().decode("ascii")
     git_hash = git_hash.split("\n")[1].lstrip("Version: ")

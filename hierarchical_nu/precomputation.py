@@ -208,7 +208,7 @@ class ExposureIntegral:
                 raise ValueError("An ROI is needed at this point.")
 
             # Setup coordinate grids at which to evaulate effective area and flux
-            NSIDE = 256
+            NSIDE = 128
             NPIX = hp.nside2npix(NSIDE)
             # Surface element
             d_omega = 4 * np.pi / NPIX * u.sr
