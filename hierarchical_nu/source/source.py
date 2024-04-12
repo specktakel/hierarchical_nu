@@ -58,7 +58,7 @@ class DetectorFrame(ReferenceFrame):
 
     @classmethod
     def make_stan_transform_func(cls, fname: str) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["z"])
+        func = UserDefinedFunction(fname, ["z"], ["real"], "real")
 
         with func:
             ret = InstantVariableDef("ret", "real", [1.0])
@@ -78,7 +78,7 @@ class SourceFrame(ReferenceFrame):
 
     @classmethod
     def make_stan_transform_func(cls, fname: str) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["z"])
+        func = UserDefinedFunction(fname, ["z"], ["real"], "real")
 
         with func:
             ret = InstantVariableDef("ret", "real", [1.0, "+ z"])
@@ -94,7 +94,7 @@ class Source(ABC):
 
     def __init__(self, name: str, frame: ReferenceFrame, *args, **kwargs):
         self._name = name
-        self._frame = None
+        self._frame = frame
         self._parameters = []
         self._flux_model = None
 
@@ -232,7 +232,7 @@ class PointSource(Source):
         norm.value *= total_flux / total_power
         norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
         norm.fixed = True
-        return cls(name, dec, ra, redshift, spectral_shape, luminosity, frame)
+        return cls(name, dec, ra, redshift, spectral_shape, frame)
 
     @classmethod
     @u.quantity_input
@@ -304,7 +304,7 @@ class PointSource(Source):
         norm.value *= total_flux / total_power
         norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
         norm.fixed = True
-        return cls(name, dec, ra, redshift, shape, luminosity)
+        return cls(name, dec, ra, redshift, spectral_shape, frame)
 
     @classmethod
     def _make_sources_from_file(
@@ -887,6 +887,7 @@ class Sources:
         else:
             raise ValueError("No point sources in  source list")
 
+    @property
     def point_source_frame(self):
         self.organise()
 
