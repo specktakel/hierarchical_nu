@@ -515,23 +515,26 @@ class Simulation:
             if isinstance(s, PointSource)
             or isinstance(s.flux_model, IsotropicDiffuseBG)
         ]
-        D = [
-            luminosity_distance(s.redshift).value
-            for s in self._sources.sources
-            if isinstance(s, PointSource)
-        ]
-        src_pos = [
-            icrs_to_uv(s.dec.to_value(u.rad), s.ra.to_value(u.rad))
-            for s in self._sources.sources
-            if isinstance(s, PointSource)
-        ]
+        if self._sources.point_source:
+            D = [
+                luminosity_distance(s.redshift).value
+                for s in self._sources.sources
+                if isinstance(s, PointSource)
+            ]
+            src_pos = [
+                icrs_to_uv(s.dec.to_value(u.rad), s.ra.to_value(u.rad))
+                for s in self._sources.sources
+                if isinstance(s, PointSource)
+            ]
+            sim_inputs["D"] = D
+            sim_inputs["varpi"] = src_pos
+            sim_inputs["Ns"] = len(
+                [s for s in self._sources.sources if isinstance(s, PointSource)]
+            )
+        else:
+            sim_inputs["Ns"] = 0
 
-        sim_inputs["Ns"] = len(
-            [s for s in self._sources.sources if isinstance(s, PointSource)]
-        )
         sim_inputs["z"] = redshift
-        sim_inputs["D"] = D
-        sim_inputs["varpi"] = src_pos
 
         integral_grid = []
         atmo_integ_val = []
@@ -604,17 +607,6 @@ class Simulation:
                 event_type
             ].par_grids[key]
 
-        if self._sources.diffuse:
-            # Same as for point sources
-            sim_inputs["Ngrid"] = len(
-                self._exposure_integral[event_type].par_grids["diff_index"]
-            )
-
-            sim_inputs["diff_index_grid"] = self._exposure_integral[
-                event_type
-            ].par_grids["diff_index"]
-
-        if self._sources.point_source:
             # Check for shared src_index parameter
             if self._shared_src_index:
                 sim_inputs["src_index"] = Parameter.get_parameter("src_index").value
@@ -626,25 +618,34 @@ class Simulation:
                     for s in self._sources.point_source
                 ]
 
+            sim_inputs["Emin_src"] = (
+                Parameter.get_parameter("Emin_src").value.to(u.GeV).value
+            )
+            sim_inputs["Emax_src"] = (
+                Parameter.get_parameter("Emax_src").value.to(u.GeV).value
+            )
+
         if self._sources.diffuse:
+            # Same as for point sources
+            sim_inputs["Ngrid"] = len(
+                self._exposure_integral[event_type].par_grids["diff_index"]
+            )
+
+            sim_inputs["diff_index_grid"] = self._exposure_integral[
+                event_type
+            ].par_grids["diff_index"]
+
             sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
 
-        sim_inputs["Emin_src"] = (
-            Parameter.get_parameter("Emin_src").value.to(u.GeV).value
-        )
-        sim_inputs["Emax_src"] = (
-            Parameter.get_parameter("Emax_src").value.to(u.GeV).value
-        )
+            sim_inputs["Emin_diff"] = (
+                Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
+            )
+            sim_inputs["Emax_diff"] = (
+                Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
+            )
 
         sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
-
-        sim_inputs["Emin_diff"] = (
-            Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
-        )
-        sim_inputs["Emax_diff"] = (
-            Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
-        )
 
         for event_type in self._event_types:
             effective_area = self._exposure_integral[event_type].effective_area
@@ -746,7 +747,8 @@ class Simulation:
                 ]
 
         sim_inputs["integral_grid"] = integral_grid
-        sim_inputs["atmo_integ_val"] = atmo_integ_val
+        if self._sources.atmospheric:
+            sim_inputs["atmo_integ_val"] = atmo_integ_val
         sim_inputs["Emin_det"] = Emin_det
         sim_inputs["rs_cvals"] = rs_cvals
         sim_inputs["rs_bbpl_Eth"] = rs_bbpl_Eth
@@ -878,14 +880,101 @@ class SimInfo:
 
         if atmo:
             truths["F_atmo"] = inputs["F_atmo"]
-
-        truths["Ftot"] = inputs["total_flux_int"]
-        truths["f_arr"] = outputs["f_arr"]
-        truths["f_arr_astro"] = outputs["f_arr_astro"]
-        truths["f_det"] = outputs["f_det"]
-        truths["f_det_astro"] = outputs["f_det_astro"]
+        try:
+            truths["Ftot"] = inputs["total_flux_int"]
+            truths["f_arr"] = outputs["f_arr"]
+            truths["f_arr_astro"] = outputs["f_arr_astro"]
+            truths["f_det"] = outputs["f_det"]
+            truths["f_det_astro"] = outputs["f_det_astro"]
+        except KeyError:
+            pass
 
         return cls(truths, inputs, outputs)
+
+    @classmethod
+    def merge(cls, background, point_source, output):
+        """
+        Check if two simulations are compatible to merge and do so
+        Intended to merge pure background and pure point source simulations
+        Does not recalculate all derived quantities, e.g. fractional fluxes
+        """
+
+        # Meow
+        from astropy.coordinates import concatenate as cat
+        from astropy.time import Time
+
+        bg = cls.from_file(background)
+        ps = cls.from_file(point_source)
+
+        bg_events = Events.from_file(background)
+        ps_events = Events.from_file(point_source)
+
+        energies = np.hstack((ps_events.energies, bg_events.energies))
+        coords = cat((ps_events.coords, bg_events.coords))
+        types = np.hstack((ps_events.types, bg_events.types))
+        mjd = np.hstack((ps_events.mjd.to_value("mjd"), bg_events.mjd.to_value("mjd")))
+        mjd = Time(mjd, format="mjd")
+        ang_errs = np.hstack((ps_events.ang_errs, bg_events.ang_errs))
+
+        # Create common event objects
+        events = Events(energies, coords, types, ang_errs, mjd)
+
+        # Truths keys
+        ps_keys = ["L", "src_index"]
+        bg_keys = ["F_atmo", "F_diff", "diff_index"]
+
+        truths = {}
+        for key in ps_keys:
+            truths[key] = ps.truths[key]
+        for key in bg_keys:
+            truths[key] = bg.truths[key]
+
+        # Need to merge Lambda values for true associations
+        # Keep to usual order: first point sources, diffuse astro, diffuse atmo
+        Lambdas_ps = ps.outputs["Lambda"]
+        N_ps = ps.inputs["D"].size
+        Lambdas_bg = bg.outputs["Lambda"]
+        Lambdas_bg_for_merging = np.zeros_like(Lambdas_bg)
+        bg_components = np.unique(bg.outputs["Lambda"]).size
+        for i in range(1, bg_components + 1):
+            Lambdas_bg_for_merging[Lambdas_bg == i] = N_ps + i
+
+        Lambdas = np.hstack((Lambdas_ps, Lambdas_bg_for_merging))
+
+        try:
+            ps.inputs["forced_N"]
+            ps_forced_N = True
+        except KeyError:
+            ps_forced_N = False
+
+        try:
+            bg.inputs["forced_N"]
+            bg_forced_N = True
+        except KeyError:
+            bg_forced_N = False
+
+        with h5py.File(output, "w") as f:
+            # Dummy folders
+            sim_folder = f.create_group("sim")
+            source_folder = sim_folder.create_group("source")
+            inputs_folder = sim_folder.create_group("inputs")
+            for key in ps_keys:
+                inputs_folder.create_dataset(key, data=ps.inputs[key])
+            for key in bg_keys:
+                inputs_folder.create_dataset(key, data=bg.inputs[key])
+            if ps_forced_N and bg_forced_N:
+                inputs_folder.create_dataset(
+                    "forced_N",
+                    data=np.hstack((ps.inputs["forced_N"], bg.inputs["forced_N"])),
+                )
+            elif ps_forced_N:
+                inputs_folder.create_dataset("forced_N", data=ps.inputs["forced_N"])
+            outputs_folder = sim_folder.create_group("outputs")
+            for key, value in truths.items():
+                outputs_folder.create_dataset(key, data=value)
+            outputs_folder.create_dataset("Lambda", data=Lambdas)
+
+        events.to_file(output, append=True)
 
 
 def _get_expected_Nnu_(

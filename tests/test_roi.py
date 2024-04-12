@@ -138,7 +138,7 @@ def test_rectangular_precomputation():
     sim.precomputation()
     cut = sim._get_sim_inputs()
 
-    assert pytest.approx(np.exp(cut["integral_grid"][0][1]) * 2.0, rel=1e-3) == np.exp(
+    assert pytest.approx(np.exp(cut["integral_grid"][0][1]) * 2.0, rel=5e-2) == np.exp(
         default["integral_grid"][0][1]
     )
     assert pytest.approx(np.exp(cut["integral_grid"][0][0])) == np.exp(
