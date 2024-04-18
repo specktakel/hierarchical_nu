@@ -221,10 +221,7 @@ class ConfigParser:
                 MJD_max=MJD_max,
             )
         elif roi_config.roi_type == "NorthernSkyROI":
-            NorthernSkyROI(
-                MJD_min=MJD_min,
-                MJD_max=MJD_max,
-            )
+            NorthernSkyROI(MJD_min=MJD_min, MJD_max=MJD_max, apply_roi=apply_roi)
 
     def _is_dm_list(self):
         mjd_min = self.MJD_min
