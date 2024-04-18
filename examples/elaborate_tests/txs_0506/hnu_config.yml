@@ -1,0 +1,62 @@
+parameter_config:
+  src_index:
+  - 2.3
+  share_src_index: true
+  src_index_range:
+  - 1.0
+  - 4.0
+  diff_index: 2.5
+  diff_index_range:
+  - 1.0
+  - 4.0
+  L:
+  - 1.2e+47
+  share_L: true
+  L_range:
+  - 0
+  - 1.0e+60
+  src_dec:
+  - 5.7
+  src_ra:
+  - 77.35
+  Enorm: 100000.0
+  Emin: 1e2
+  Emax: 1e8
+  Emin_src: 1.3365e2
+  Emax_src: 1.3365e8
+  Emin_diff: 1e2
+  Emax_diff: 1e8
+  diff_norm: 2.0e-13
+  z:
+  - 0.3365
+  Emin_det_eq: true
+  Emin_det: 2e2
+  MJD_min: 56917
+  MJD_max: 57113
+  threads_per_chain: 40
+  asimov: false
+prior_config:
+  src_index:
+    name: NormalPrior
+    mu: 2.0
+    sigma: 1.5
+  diff_index:
+    name: NormalPrior
+    mu: 2.52
+    sigma: 0.09
+  L:
+    name: LogNormalPrior
+    mu: 18.1e49
+    sigma: 4.0
+  diff_flux:
+    name: LogNormalPrior
+    mu: 5.4e-4
+    sigma: 0.5
+  atmo_flux:
+    name: NormalPrior
+    mu: 0.3
+    sigma: 0.08
+roi_config:
+  roi_type: CircularROI
+  size: 5.0
+  apply_roi: true
