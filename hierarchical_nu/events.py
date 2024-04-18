@@ -22,14 +22,14 @@ from hierarchical_nu.utils.roi import (
     FullSkyROI,
     ROIList,
 )
-from hierarchical_nu.source.source import Sources
+from hierarchical_nu.source.source import Sources, PointSource
 from hierarchical_nu.utils.plotting import SphericalCircle
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.detector.icecube import EventType
 
 import logging
 
-from typing import List
+from typing import List, Union
 import numpy.typing as npt
 
 logger = logging.getLogger(__name__)
@@ -400,7 +400,18 @@ class Events:
         return Events(energies, coords, types, ang_errs, mjd)
 
     @u.quantity_input
-    def plot_energy(self, center_coords: SkyCoord, radius: 3 * u.deg, lw: float = 1.0):
+    def plot_energy(
+        self,
+        position: Union[SkyCoord, PointSource],
+        radius: u.deg = 3 * u.deg,
+        lw: float = 1.0,
+    ):
+        if isinstance(position, PointSource):
+            center_coords = SkyCoord(ra=position.ra, dec=position.dec, frame="icrs")
+        elif isinstance(position, SkyCoord):
+            center_coords = position
+        else:
+            raise ValueError
         fig, ax = plt.subplots(
             subplot_kw={
                 "projection": "astro degrees zoom",
@@ -455,7 +466,9 @@ class Events:
         return fig, ax
 
     @u.quantity_input
-    def plot_radial_excess(self, center: SkyCoord, radius: u.deg = 5 * u.deg):
+    def plot_radial_excess(
+        self, position: Union[SkyCoord, PointSource], radius: u.deg = 5 * u.deg
+    ):
         """
         Plot histogram of radial distance to a source located at center.
         Bin edges are equdistant in angle squared such that equal areas in polar coordinates
@@ -463,11 +476,17 @@ class Events:
         :param center: SkyCoord of center
         :param radius: Max radius of histogram
         """
+        if isinstance(position, PointSource):
+            center_coords = SkyCoord(ra=position.ra, dec=position.dec, frame="icrs")
+        elif isinstance(position, SkyCoord):
+            center_coords = position
+        else:
+            raise ValueError
 
         r2_bins = np.arange(
             0.0, np.power(radius.to_value(u.deg), 2) + 1.0 / 3.0, 1.0 / 3.0
         )
-        sep = center.separation(self.coords).deg
+        sep = center_coords.separation(self.coords).deg
 
         fig, ax = plt.subplots()
         ax.hist(sep**2, r2_bins, histtype="step")
