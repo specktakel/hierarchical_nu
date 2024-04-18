@@ -53,16 +53,38 @@ class DetectorFrame(ReferenceFrame):
         self._name = "detector"
 
     @classmethod
-    def transform(cls, z):
-        return 1.0
+    @u.quantity_input
+    def transform_to_detector_frame(
+        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int, None] = None
+    ):
+        return E
 
     @classmethod
-    def make_stan_transform_func(cls, fname: str) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["z"], ["real"], "real")
+    @u.quantity_input
+    def transform_to_source_frame(
+        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int]
+    ):
+        return E * (1.0 + z)
+
+    @classmethod
+    def make_stan_transform_func_to_detector_frame(
+        cls, fname: str
+    ) -> UserDefinedFunction:
+        func = UserDefinedFunction(fname, ["E", "z"], ["real"], "real")
 
         with func:
-            ret = InstantVariableDef("ret", "real", [1.0])
-            ReturnStatement([ret])
+            ReturnStatement(["E"])
+
+        return func
+
+    @classmethod
+    def make_stan_transform_func_to_source_frame(
+        cls, fname: str
+    ) -> UserDefinedFunction:
+        func = UserDefinedFunction(fname, ["E", "z"], ["real", "real"], "real")
+
+        with func:
+            ReturnStatement([["E * (1. + z)"]])
 
         return func
 
@@ -73,16 +95,38 @@ class SourceFrame(ReferenceFrame):
         self._name = "source"
 
     @classmethod
-    def transform(cls, z):
-        return 1.0 + z
+    @u.quantity_input
+    def transform_to_detector_frame(
+        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int]
+    ):
+        return E / (1.0 + z)
 
     @classmethod
-    def make_stan_transform_func(cls, fname: str) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["z"], ["real"], "real")
+    @u.quantity_input
+    def transform_to_source_frame(
+        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int, None] = None
+    ):
+        return E
+
+    @classmethod
+    def make_stan_transform_func_to_detector_frame(
+        cls, fname: str
+    ) -> UserDefinedFunction:
+        func = UserDefinedFunction(fname, ["E", "z"], ["real", "real"], "real")
 
         with func:
-            ret = InstantVariableDef("ret", "real", [1.0, "+ z"])
-            ReturnStatement([ret])
+            ReturnStatement(["E / (1. + z)"])
+
+        return func
+
+    @classmethod
+    def make_stan_transform_func_to_source_frame(
+        cls, fname: str
+    ) -> UserDefinedFunction:
+        func = UserDefinedFunction(fname, ["E", "z"], ["real", "real"], "real")
+
+        with func:
+            ReturnStatement(["E"])
 
         return func
 
@@ -113,7 +157,7 @@ class Source(ABC):
     @u.quantity_input
     def flux(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.m**2 * u.s * u.sr):
+    ) -> u.Quantity[1 / (u.GeV * u.m**2 * u.s * u.sr)]:
         return self._flux_model(energy, dec, ra)
 
     @property
