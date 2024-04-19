@@ -2176,7 +2176,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                     np.power(E_cont, self._fill_index)
                     * self._evaluations[c, idx, c_E]
                 )
-
+            """
             evals = np.log(self._evaluations[c])
             # Copy first and last entry along true energy axis
             expanded = np.hstack(
@@ -2194,13 +2194,14 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
             )[np.newaxis, :]
 
             convolved -= np.log(norm)
-
+            """
             # Spline the evaluations linearly, used in `prob_Edet_above_threshold`
             self._2dsplines.append(
                 RectBivariateSpline(
                     self._log_rE_binc,
                     self._log_tE_binc,
-                    convolved,
+                    # convolved,
+                    np.log(self._evaluations[c]),
                     kx=2,
                     ky=2,
                 )
