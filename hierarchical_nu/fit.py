@@ -1246,7 +1246,8 @@ class StanFit:
                 )
                 - 1
             )
-        # log_energies = np.log10(self.events.energies.to_value(u.GeV))
+        log_energies = np.log10(self.events.energies.to_value(u.GeV))
+        """
         idxs = (
             np.digitize(
                 np.log10(self.events.energies.to_value(u.GeV)),
@@ -1262,6 +1263,7 @@ class StanFit:
             idxs,
         )
         ereco_indexed = R2021EnergyResolution._logEreco_grid[idxs]
+        """
         for et in self._event_types:
             for c_d in range(
                 self._exposure_integral[et].energy_resolution.dec_binc.size
@@ -1280,7 +1282,7 @@ class StanFit:
                                 ].energy_resolution._log_tE_grid,
                                 grid=False,
                             )
-                            for logE in ereco_indexed[
+                            for logE in log_energies[
                                 (et.S == self.events.types) & (dec_idx == c_d)
                             ]
                         ]
