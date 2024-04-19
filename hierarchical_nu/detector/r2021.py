@@ -6,6 +6,7 @@ import numpy as np
 from scipy import stats
 from scipy.integrate import quad
 from scipy.interpolate import RectBivariateSpline
+from scipy.signal import convolve
 from astropy import units as u
 import matplotlib.pyplot as plt
 
@@ -2132,7 +2133,6 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                 self._log_tE_binc.size,
             )
         )
-        
 
         # Loop over the declination bins of the IRF
         for c, dec in enumerate(self._dec_binc):
@@ -2177,12 +2177,30 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                     * self._evaluations[c, idx, c_E]
                 )
 
-            #Spline the evaluations linearly, used in `prob_Edet_above_threshold`
+            evals = np.log(self._evaluations[c])
+            # Copy first and last entry along true energy axis
+            expanded = np.hstack(
+                (evals[:, 0][:, np.newaxis], evals, evals[:, -1][:, np.newaxis])
+            )
+            # Define kernel for smoothing along true energy in log(p) space
+            tE_kernel = np.array([0.2, 1.0, 0.2])
+            kernel = np.expand_dims(tE_kernel, 0)
+            # Convolve with kernel
+            convolved = convolve(expanded, kernel, mode="same")[:, 1:-1]
+            # Normalise, using the linear values
+            norm = np.sum(
+                np.exp(convolved) * np.diff(self._logEreco_grid_edges)[:, np.newaxis],
+                axis=0,
+            )[np.newaxis, :]
+
+            convolved -= np.log(norm)
+
+            # Spline the evaluations linearly, used in `prob_Edet_above_threshold`
             self._2dsplines.append(
                 RectBivariateSpline(
                     self._log_rE_binc,
                     self._log_tE_binc,
-                    np.log(self._evaluations[c]),
+                    convolved,
                     kx=2,
                     ky=2,
                 )
