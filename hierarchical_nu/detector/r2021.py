@@ -2313,15 +2313,15 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
 
         ## Make strongest limits on ereco_low
         # limits from exp data selection
-        e_low = self._icecube_tools_eres._ereco_limits[idx_dec_aeff, 0]
+        # e_low = self._icecube_tools_eres._ereco_limits[idx_dec_aeff, 0]
         # make log of input value
-        ethr_low = np.log10(lower_threshold_energy.to_value(u.GeV))
+        #ethr_low = np.log10(lower_threshold_energy.to_value(u.GeV))
         # apply stronger limit
-        e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
+        #e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
 
         e_high = np.log10(upper_threshold_energy.to_value(u.GeV))
         e_trunc = np.log10(energy_trunc.to_value(u.GeV))
-
+        e_low = np.log10(lower_threshold_energy.to_value(u.GeV))
         if use_interpolation:
 
             for cE, cD in product(
@@ -2337,6 +2337,9 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                         continue
 
                     bins_per_dec = 40
+                    if logErh <= logErl:
+                        prob[c] = 0.0
+                        continue
                     n_bins = int(np.ceil((logErh - logErl) * bins_per_dec))
                     loge_edges = np.linspace(logErl, logErh, n_bins + 1)
                     dloge = np.diff(loge_edges)
