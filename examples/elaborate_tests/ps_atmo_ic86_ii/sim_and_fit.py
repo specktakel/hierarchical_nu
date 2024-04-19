@@ -22,11 +22,21 @@ from hierarchical_nu.source.source import Sources, PointSource, DetectorFrame
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.utils.lifetime import LifeTime
-from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, FluxPrior, LuminosityPrior, IndexPrior
+from hierarchical_nu.priors import (
+    Priors,
+    LogNormalPrior,
+    NormalPrior,
+    FluxPrior,
+    LuminosityPrior,
+    IndexPrior,
+)
 from hierarchical_nu.utils.plotting import SphericalCircle
 from hierarchical_nu.utils.roi import CircularROI, ROIList
 from hierarchical_nu.detector.icecube import IC86_II, IC40, IC59, IC79, IC86_I
-from hierarchical_nu.detector.r2021 import R2021LogNormEnergyResolution, R2021EnergyResolution
+from hierarchical_nu.detector.r2021 import (
+    R2021LogNormEnergyResolution,
+    R2021EnergyResolution,
+)
 from hierarchical_nu.backend import DistributionMode
 from hierarchical_nu.detector.input import mceq
 from icecube_tools.utils.data import Uptime
@@ -98,12 +108,12 @@ fit.run(
     seed=43,
 )
 
+fit.save("test_fit.h5", overwrite=True)
+
 print(fit._fit_output.diagnose())
 
 fig, axs = fit.plot_energy_and_roi()
 fig.savefig("roi.pdf", dpi=150)
 
-fig, axs = fit.plot_trace_and_priors(fit._def_var_names+["Nex_src", "Nex_atmo"])
+fig, axs = fit.plot_trace_and_priors(fit._def_var_names + ["Nex_src", "Nex_atmo"])
 fig.savefig("trace.pdf", dpi=150, bbox_inches="tight")
-
-
