@@ -691,6 +691,8 @@ class StanFitInterface(StanInterface):
             if self.sources.diffuse:
                 self._diff_index_min = ForwardVariableDef("diff_index_min", "real")
                 self._diff_index_max = ForwardVariableDef("diff_index_max", "real")
+                self._F_diff_min = ForwardVariableDef("F_diff_min", "real")
+                self._F_diff_max = ForwardVariableDef("F_diff_max", "real")
 
             if self.sources.atmospheric:
                 self._F_atmo_min = ForwardVariableDef("F_atmo_min", "real")
@@ -1126,7 +1128,7 @@ class StanFitInterface(StanInterface):
 
             # Specify F_diff and diff_index to characterise the diffuse comp
             if self.sources.diffuse:
-                self._F_diff = ParameterDef("F_diff", "real", 0, None)
+                self._F_diff = ParameterDef("F_diff", "real", self._F_diff_min, self._F_diff_max)
                 self._diff_index = ParameterDef(
                     "diff_index", "real", self._diff_index_min, self._diff_index_max
                 )
