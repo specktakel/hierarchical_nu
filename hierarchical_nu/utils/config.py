@@ -28,6 +28,8 @@ class ParameterConfig:
     src_index_range: tuple = (1.0, 4.0)
     diff_index: float = 2.5
     diff_index_range: tuple = (1.0, 4.0)
+    F_diff_range: tuple = (1e-6, 1e-3) # 1 / m**2 / s
+    F_atmo_range: tuple = (0.1, 0.5) # 1 / m**2 / s
     L: List[float] = field(
         default_factory=lambda: [8e45]
     )  # u.erg / u.s, defined in the source frame
