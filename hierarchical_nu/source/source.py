@@ -17,118 +17,6 @@ from .atmospheric_flux import AtmosphericNuMuFlux
 from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
-from ..backend.stan_generator import UserDefinedFunction
-from ..backend.variable_definitions import InstantVariableDef
-from ..backend.expression import ReturnStatement
-
-
-class ReferenceFrame(ABC):
-    """
-    Abstract base class for source frames.
-    """
-
-    def __init__(self, name: str):
-
-        self._name = name
-
-    @property
-    def name(self):
-        return self._name
-
-    @classmethod
-    @abstractmethod
-    def transform(cls, z):
-        pass
-
-    @classmethod
-    @abstractmethod
-    def make_stan_transform_func(cls, fname) -> UserDefinedFunction:
-        pass
-
-
-class DetectorFrame(ReferenceFrame):
-
-    def __init__(self):
-
-        self._name = "detector"
-
-    @classmethod
-    @u.quantity_input
-    def transform_to_detector_frame(
-        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int, None] = None
-    ):
-        return E
-
-    @classmethod
-    @u.quantity_input
-    def transform_to_source_frame(
-        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int]
-    ):
-        return E * (1.0 + z)
-
-    @classmethod
-    def make_stan_transform_func_to_detector_frame(
-        cls, fname: str
-    ) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["E", "z"], ["real"], "real")
-
-        with func:
-            ReturnStatement(["E"])
-
-        return func
-
-    @classmethod
-    def make_stan_transform_func_to_source_frame(
-        cls, fname: str
-    ) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["E", "z"], ["real", "real"], "real")
-
-        with func:
-            ReturnStatement([["E * (1. + z)"]])
-
-        return func
-
-
-class SourceFrame(ReferenceFrame):
-
-    def __init__(self):
-        self._name = "source"
-
-    @classmethod
-    @u.quantity_input
-    def transform_to_detector_frame(
-        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int]
-    ):
-        return E / (1.0 + z)
-
-    @classmethod
-    @u.quantity_input
-    def transform_to_source_frame(
-        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int, None] = None
-    ):
-        return E
-
-    @classmethod
-    def make_stan_transform_func_to_detector_frame(
-        cls, fname: str
-    ) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["E", "z"], ["real", "real"], "real")
-
-        with func:
-            ReturnStatement(["E / (1. + z)"])
-
-        return func
-
-    @classmethod
-    def make_stan_transform_func_to_source_frame(
-        cls, fname: str
-    ) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["E", "z"], ["real", "real"], "real")
-
-        with func:
-            ReturnStatement(["E"])
-
-        return func
 
 
 class Source(ABC):
@@ -156,7 +44,7 @@ class Source(ABC):
     @u.quantity_input
     def flux(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> u.Quantity[1 / (u.GeV * u.m**2 * u.s * u.sr)]:
+    ) -> 1 / (u.GeV * u.m**2 * u.s * u.sr):
         return self._flux_model(energy, dec, ra)
 
 
