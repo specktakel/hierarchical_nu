@@ -36,8 +36,8 @@ class ReferenceFrame(ABC):
         prev = args[-1]
         try:
             for arg in reversed(args[:-1]):
-                current = arg[prev]
-            out = list[current]
+                prev = arg[prev]
+            out = list[prev]
         except UnboundLocalError:
             out = list[prev]
         return out
