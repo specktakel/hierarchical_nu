@@ -33,7 +33,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.detector.icecube import EventType
 
-from hierarchical_nu.source.source import Sources
+from hierarchical_nu.source.source import Sources, DetectorFrame
 
 from hierarchical_nu.utils.roi import CircularROI, ROIList
 
@@ -130,10 +130,6 @@ class StanSimInterface(StanInterface):
 
                 self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
                     "flux_conv"
-                )
-
-                self._src_frame_transform = self._ps_frame.make_stan_transform_func(
-                    "src_frame_transform"
                 )
 
             # If we have diffuse sources, include the shape of their PDF
@@ -425,8 +421,8 @@ class StanSimInterface(StanInterface):
                             "*=",
                             self._flux_conv(
                                 src_index_ref,
-                                self._Emin_src / self._src_frame_transform(self._z[k]),
-                                self._Emax_src / self._src_frame_transform(self._z[k]),
+                                self._ps_frame.stan_to_det(self._Emin_src, self._z, k),
+                                self._ps_frame.stan_to_det(self._Emax_src, self._z, k),
                             ),
                         ]
                     )
@@ -806,11 +802,15 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax > Eth - use broken pl
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
-                                self._Emin_src_arr << self._Emin_src / (
-                                    self._src_frame_transform(self._z[self._lam[i]])
+                                self._Emin_src_arr << (
+                                    self._ps_frame.stan_to_det(
+                                        self._Emin_src, self._z, self._lam[i]
+                                    )
                                 )
-                                self._Emax_src_arr << self._Emax_src / (
-                                    self._src_frame_transform(self._z[self._lam[i]])
+                                self._Emax_src_arr << (
+                                    self._ps_frame.stan_to_det(
+                                        self._Emax_src, self._z, self._lam[i]
+                                    )
                                 )
 
                                 with IfBlockContext(
@@ -955,10 +955,12 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._src_spectrum_lpdf(
                                     self._E[i],
                                     src_index_ref,
-                                    self._Emin_src
-                                    / self._src_frame_transform(self._z[self._lam[i]]),
-                                    self._Emax_src
-                                    / self._src_frame_transform(self._z[self._lam[i]]),
+                                    self._ps_frame.stan_to_det(
+                                        self._Emin_src, self._z, self._lam, i
+                                    ),
+                                    self._ps_frame.stan_to_det(
+                                        self._Emax_src, self._z, self._lam, i
+                                    ),
                                 )
 
                                 # It is log, to take the exp()
@@ -967,8 +969,8 @@ class StanSimInterface(StanInterface):
                                 )
 
                                 # Account for energy redshift losses
-                                self._Esrc[i] << self._E[i] * self._src_frame_transform(
-                                    self._z[self._lam[i]]
+                                self._Esrc[i] << DetectorFrame.stan_to_src(
+                                    self._E[i], self._z, self._lam, i
                                 )
 
                         # Treat the atmospheric and diffuse components similarly
@@ -1149,13 +1151,15 @@ class StanSimInterface(StanInterface):
 
                                 (
                                     self._Emin_src_arr
-                                    << self._Emin_diff
-                                    / self._diff_frame_transform(self._z[self._lam[i]])
+                                    << self._diff_frame.stan_to_det(
+                                        self._Emin_diff, self._z, self._lam, i
+                                    )
                                 )
                                 (
                                     self._Emax_src_arr
-                                    << self._Emax_diff
-                                    / self._diff_frame_transform(self._z[self._lam[i]])
+                                    << self._diff_frame.stan_to_det(
+                                        self._Emax_diff, self._z, self._lam, i
+                                    )
                                 )
 
                                 with IfBlockContext(
@@ -1299,18 +1303,20 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    self._Emin_diff
-                                    / self._diff_frame_transform(self._z[self._lam[i]]),
-                                    self._Emax_diff
-                                    / self._diff_frame_transform(self._z[self._lam[i]]),
+                                    self._diff_frame.stan_to_det(
+                                        self._Emin_diff, self._z, self._lam, i
+                                    ),
+                                    self._diff_frame.stan_to_det(
+                                        self._Emax_diff, self._z, self._lam, i
+                                    ),
                                 )
                                 self._src_factor << FunctionCall(
                                     [self._src_factor], "exp"
                                 )
 
-                                self._Esrc[i] << self._E[
-                                    i
-                                ] * self._diff_frame_transform(self._z[self._lam[i]])
+                                self._Esrc[i] << DetectorFrame.stan_to_src(
+                                    self._E[i], self._z, self._lam[i]
+                                )
 
                         if self.sources.diffuse and self.sources.atmospheric:
                             with IfBlockContext(

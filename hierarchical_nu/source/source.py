@@ -31,6 +31,17 @@ class ReferenceFrame(ABC):
 
         self._name = name
 
+    @staticmethod
+    def func(list, *args):
+        prev = args[-1]
+        try:
+            for arg in reversed(args[:-1]):
+                current = arg[prev]
+            out = list[current]
+        except UnboundLocalError:
+            out = list[prev]
+        return out
+
     @property
     def name(self):
         return self._name
@@ -68,11 +79,11 @@ class DetectorFrame(ReferenceFrame):
         return E
 
     @classmethod
-    def stan_to_src(cls, E, z, index):
-        return E * (1 + z[index])
+    def stan_to_src(cls, E, z, *indices):
+        return E * (1 + cls.func(z, *indices))
 
     @classmethod
-    def stan_to_det(cls, E, z, index):
+    def stan_to_det(cls, E, z, *indices):
         return E
 
 
@@ -87,12 +98,12 @@ class SourceFrame(ReferenceFrame):
         return E / (1.0 + z)
 
     @classmethod
-    def stan_to_src(cls, E, z, index):
+    def stan_to_src(cls, E, z, *indices):
         return E
 
     @classmethod
-    def stan_to_det(cls, E, z, index):
-        return E / (1.0 + z[index])
+    def stan_to_det(cls, E, z, *indices):
+        return E / (1.0 + cls.func(z, *indices))
 
 
 class Source(ABC):
