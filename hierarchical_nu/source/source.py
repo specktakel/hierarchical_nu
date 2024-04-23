@@ -19,7 +19,7 @@ from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
 from ..backend.stan_generator import UserDefinedFunction
 from ..backend.variable_definitions import InstantVariableDef
-from ..backend.expression import ReturnStatement
+from ..backend.expression import ReturnStatement, TListTExpression
 
 
 class ReferenceFrame(ABC):
@@ -34,6 +34,16 @@ class ReferenceFrame(ABC):
     @property
     def name(self):
         return self._name
+
+    @classmethod
+    @abstractmethod
+    def stan_to_det(cls, E, z):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def stan_to_src(cls, E, z):
+        pass
 
     @classmethod
     @abstractmethod
@@ -54,39 +64,16 @@ class DetectorFrame(ReferenceFrame):
 
     @classmethod
     @u.quantity_input
-    def transform_to_detector_frame(
-        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int, None] = None
-    ):
+    def transform(cls, E: u.GeV, z: Union[int, float, None] = None):
         return E
 
     @classmethod
-    @u.quantity_input
-    def transform_to_source_frame(
-        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int]
-    ):
-        return E * (1.0 + z)
+    def stan_to_src(cls, E, z, index):
+        return E * (1 + z[index])
 
     @classmethod
-    def make_stan_transform_func_to_detector_frame(
-        cls, fname: str
-    ) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["E", "z"], ["real"], "real")
-
-        with func:
-            ReturnStatement(["E"])
-
-        return func
-
-    @classmethod
-    def make_stan_transform_func_to_source_frame(
-        cls, fname: str
-    ) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["E", "z"], ["real", "real"], "real")
-
-        with func:
-            ReturnStatement([["E * (1. + z)"]])
-
-        return func
+    def stan_to_det(cls, E, z, index):
+        return E
 
 
 class SourceFrame(ReferenceFrame):
@@ -96,39 +83,16 @@ class SourceFrame(ReferenceFrame):
 
     @classmethod
     @u.quantity_input
-    def transform_to_detector_frame(
-        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int]
-    ):
+    def transform(cls, E: u.GeV, z: Union[int, float]):
         return E / (1.0 + z)
 
     @classmethod
-    @u.quantity_input
-    def transform_to_source_frame(
-        cls, E: Union[u.Quantity[u.GeV], float], z: Union[float, int, None] = None
-    ):
+    def stan_to_src(cls, E, z, index):
         return E
 
     @classmethod
-    def make_stan_transform_func_to_detector_frame(
-        cls, fname: str
-    ) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["E", "z"], ["real", "real"], "real")
-
-        with func:
-            ReturnStatement(["E / (1. + z)"])
-
-        return func
-
-    @classmethod
-    def make_stan_transform_func_to_source_frame(
-        cls, fname: str
-    ) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["E", "z"], ["real", "real"], "real")
-
-        with func:
-            ReturnStatement(["E"])
-
-        return func
+    def stan_to_det(cls, E, z, index):
+        return E / (1.0 + z[index])
 
 
 class Source(ABC):
@@ -268,8 +232,8 @@ class PointSource(Source):
             norm,
             Enorm_value,
             index,
-            lower.value / frame.transform(redshift),
-            upper.value / frame.transform(redshift),
+            frame.transform(lower.value, redshift),
+            frame.transform(upper.value, redshift),
         )
 
         total_power = spectral_shape.total_flux_density
@@ -340,8 +304,8 @@ class PointSource(Source):
             norm,
             Enorm_value,
             index,
-            lower.value / frame.transform(redshift),
-            upper.value / frame.transform(redshift),
+            frame.transform(lower.value, redshift),
+            frame.transform(upper.value, redshift),
         )
 
         total_power = spectral_shape.total_flux_density
@@ -679,8 +643,8 @@ class Sources:
             flux_norm,
             norm_energy,
             diff_index,
-            lower.value / frame.transform(z),
-            upper.value / frame.transform(z),
+            frame.transform(lower.value, z),
+            frame.transform(upper.value, z),
         )
         flux_model = IsotropicDiffuseBG(spectral_shape)
 
