@@ -28,6 +28,7 @@ from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.detector.icecube import EventType
 
 import logging
+from pathlib import Path
 
 from typing import List
 import numpy.typing as npt
@@ -283,6 +284,21 @@ class Events:
 
                 for key, value in zip(self._file_keys, self._file_values):
                     event_folder.create_dataset(key, data=value)
+
+    def export_to_csv(self, basepath):
+        header = "log10(E/GeV)\tAngErr[dec]\tRA[deg]\tDEC[deg]"
+        energy = np.log10(self.energies.to_value(u.GeV))
+        ang_errs = self.ang_errs.to_value(u.deg)
+        self.coords.representation_type = "spherical"
+        ra = self.coords.ra.deg
+        dec = self.coords.dec.deg
+        fmt = ("%3.2f", "%3.2f", "%3.3f", "%3.3f")
+        for t in np.unique(self.types):
+            filename = basepath / Path(f"{Refrigerator.stan2python(t)}_exp.csv")
+            mask = self.types == t
+            array = np.vstack((energy, ang_errs, ra, dec)).T[mask]
+            np.savetxt(filename, array, fmt=fmt, delimiter="\t\t", header=header)
+        return
 
     def get_tags(self, sources: Sources):
         """
