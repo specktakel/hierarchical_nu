@@ -10,7 +10,7 @@ parameter_config:
   - 1.0
   - 4.0
   L:
-  - 1.2e+47
+  - 1.0e+46
   share_L: true
   L_range:
   - 0
@@ -19,7 +19,7 @@ parameter_config:
   - 5.7
   src_ra:
   - 77.35
-  Enorm: 100000.0
+  Enorm: 1e5
   Emin: 1e2
   Emax: 1e8
   Emin_src: 1.3365e2
@@ -31,14 +31,14 @@ parameter_config:
   - 0.3365
   Emin_det_eq: true
   Emin_det: 2e2
-  threads_per_chain: 60
+  threads_per_chain: 144
   asimov: true
   atmospheric: true
   diffuse: true
   detector_model_type:
     - IC86_II
   obs_time:
-    - 0.5
+    - 6.
 prior_config:
   src_index:
     name: NormalPrior

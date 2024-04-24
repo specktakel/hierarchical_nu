@@ -31,6 +31,7 @@ from hierarchical_nu.backend import DistributionMode
 from hierarchical_nu.detector.input import mceq
 from icecube_tools.utils.data import Uptime
 import h5py
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import arviz as av
@@ -63,23 +64,10 @@ sim.precomputation()
 print(sim._get_expected_Nnu(sim._get_sim_inputs()))
 print(sim._expected_Nnu_per_comp)
 
-
-# fix-what w/o convolution
-sim._Nex_et
-
-# Master
-sim._Nex_et
-
-# with convolved Eres
-sim._Nex_et
-
 sim.generate_stan_code()
 sim.compile_stan_code()
 
 sim.run()
-
-sim.show_skymap()
-sim.show_spectrum()
 
 sim.events.N
 
@@ -108,13 +96,7 @@ fit.run(
 print(fit._fit_output.diagnose())
 
 fig, axs = fit.plot_energy_and_roi(assoc_idx=0)
-# fig.savefig("roi.pdf", dpi=150)
-
-sim_info = SimInfo.from_file("test_events.h5")
-true_assoc = np.ones(events.N)
-true_assoc[sim_info.outputs["Lambda"] - 1 == 0] = 0.
-
-fig, axs = fit.plot_energy_and_roi(assoc_idx=0, true_assoc=true_assoc)
+fig.savefig("roi.pdf", dpi=150)
 
 
 fig, axs = fit.plot_trace_and_priors(fit._def_var_names+["Nex_src", "Nex_diff", "Nex_atmo"])

@@ -41,6 +41,7 @@ from hierarchical_nu.backend import DistributionMode
 from hierarchical_nu.detector.input import mceq
 from icecube_tools.utils.data import Uptime
 import h5py
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import arviz as av
@@ -79,8 +80,8 @@ sim.compile_stan_code()
 
 sim.run()
 
-sim.show_skymap()
-sim.show_spectrum()
+#sim.show_skymap()
+#sim.show_spectrum()
 
 sim.events.N
 
@@ -89,8 +90,8 @@ sim.save("test_events.h5", overwrite=True)
 events = Events.from_file("test_events.h5")
 events.N
 
-fig, axs = events.plot_energy(sources[0])
-fig.savefig("events.pdf", dpi=150)
+#fig, axs = events.plot_energy(sources[0])
+#fig.savefig("events.pdf", dpi=150)
 
 fit = parser.create_fit(sources, events, dm, obs_time)
 

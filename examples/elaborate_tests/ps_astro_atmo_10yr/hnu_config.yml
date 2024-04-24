@@ -10,7 +10,7 @@ parameter_config:
   - 1.0
   - 4.0
   L:
-  - 1.2e+46
+  - 6.5e+45
   share_L: true
   L_range:
   - 0
@@ -30,8 +30,8 @@ parameter_config:
   z:
   - 0.3365
   Emin_det_eq: true
-  Emin_det: 5e3
-  threads_per_chain: 60
+  Emin_det: 2e2
+  threads_per_chain: 144
   asimov: true
   atmospheric: true
   diffuse: true

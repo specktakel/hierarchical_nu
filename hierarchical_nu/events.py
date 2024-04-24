@@ -149,6 +149,7 @@ class Events:
         filename,
         group_name=None,
         scramble_ra: bool = False,
+        seed: int = 42,
     ):
         with h5py.File(filename, "r") as f:
             if group_name is None:
@@ -181,7 +182,7 @@ class Events:
             logger.warning(
                 "Scrambling RA, only sensible for simulations of the entire sky."
             )
-            rng = np.random.default_rng()
+            rng = np.random.default_rng(seed=seed)
             ra = rng.random(ra.size) * 2 * np.pi * u.rad
             coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
@@ -303,7 +304,7 @@ class Events:
         return tags
 
     @classmethod
-    def from_ev_file(cls, *seasons: EventType, scramble_ra: bool = False):
+    def from_ev_file(cls, *seasons: EventType, scramble_ra: bool = False, seed: int = 42):
         """
         Load events from the 2021 data release
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
@@ -334,7 +335,7 @@ class Events:
 
         ra = np.hstack([events.ra[s.P] * u.rad for s in seasons])
         if scramble_ra:
-            rng = np.random.default_rng()
+            rng = np.random.default_rng(seed=seed)
             ra = rng.random(ra.size) * 2 * np.pi * u.rad
 
         dec = np.hstack([events.dec[s.P] * u.rad for s in seasons])
