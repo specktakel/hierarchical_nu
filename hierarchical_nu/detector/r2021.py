@@ -6,6 +6,7 @@ import numpy as np
 from scipy import stats
 from scipy.integrate import quad
 from scipy.interpolate import RectBivariateSpline
+from scipy.signal import convolve
 from astropy import units as u
 import matplotlib.pyplot as plt
 
@@ -1918,10 +1919,12 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                         next_val = pdf_vals[next_idx]
                         # if the zero-entries are bunched up, fix all
                         next_zero_idxs = c + np.nonzero(pdf_vals[c:next_idx] == 0)[0]
-                        pdf_vals[next_zero_idxs] = np.interp(
-                            binc[next_zero_idxs],
-                            [binc[c - 1], binc[next_idx]],
-                            [prev, next_val],
+                        pdf_vals[next_zero_idxs] = np.exp(
+                            np.interp(
+                                binc[next_zero_idxs],
+                                [binc[c - 1], binc[next_idx]],
+                                np.log([prev, next_val]),
+                            )
                         )
             # re-normalise the histogram
             norm = np.sum(pdf_vals * np.diff(bin_edges))
@@ -2123,6 +2126,13 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                 self._log_tE_binc.size,
             )
         )
+        self._evaluations_wo_flanks = np.zeros(
+            (
+                self._dec_binc.size,
+                self._log_rE_binc.size,
+                self._log_tE_binc.size,
+            )
+        )
 
         # Loop over the declination bins of the IRF
         for c, dec in enumerate(self._dec_binc):
@@ -2136,6 +2146,8 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                     for c_E, E in enumerate(self._log_tE_binc)
                 ]
             ).T
+            self._evaluations_wo_flanks[c] = self._evaluations[c].copy()
+
             for c_E, logE in enumerate(self._log_tE_binc):
                 # Find the highest and lowest non-zero entry
                 # in each spline's evaluation, outside all values are zero
@@ -2164,14 +2176,34 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                     np.power(E_cont, self._fill_index)
                     * self._evaluations[c, idx, c_E]
                 )
+            """
+            evals = np.log(self._evaluations[c])
+            # Copy first and last entry along true energy axis
+            expanded = np.hstack(
+                (evals[:, 0][:, np.newaxis], evals, evals[:, -1][:, np.newaxis])
+            )
+            # Define kernel for smoothing along true energy in log(p) space
+            tE_kernel = np.array([0.2, 1.0, 0.2])
+            kernel = np.expand_dims(tE_kernel, 0)
+            # Convolve with kernel
+            convolved = convolve(expanded, kernel, mode="same")[:, 1:-1]
+            # Normalise, using the linear values
+            norm = np.sum(
+                np.exp(convolved) * np.diff(self._logEreco_grid_edges)[:, np.newaxis],
+                axis=0,
+            )[np.newaxis, :]
+
+            convolved -= np.log(norm)
+            """
             # Spline the evaluations linearly, used in `prob_Edet_above_threshold`
             self._2dsplines.append(
                 RectBivariateSpline(
                     self._log_rE_binc,
                     self._log_tE_binc,
+                    # convolved,
                     np.log(self._evaluations[c]),
-                    kx=3,
-                    ky=3,
+                    kx=2,
+                    ky=2,
                 )
             )
 

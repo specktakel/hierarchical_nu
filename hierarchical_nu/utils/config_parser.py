@@ -159,12 +159,19 @@ class ConfigParser:
             )
 
             sources.add(point_source)
+
         if parameter_config.diffuse:
             sources.add_diffuse_component(
                 diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
             )
+            F_diff = Parameter.get_parameter("F_diff")
+            F_diff.par_range = parameter_config.F_diff_range * (1 / u.m**2 / u.s)
+
         if parameter_config.atmospheric:
             sources.add_atmospheric_component(cache_dir=mceq)
+            F_atmo = Parameter.get_parameter("F_atmo")
+            F_atmo.par_range = parameter_config.F_atmo_range * (1 / u.m**2 / u.s)
+
 
         self._sources = sources
 
@@ -221,10 +228,7 @@ class ConfigParser:
                 MJD_max=MJD_max,
             )
         elif roi_config.roi_type == "NorthernSkyROI":
-            NorthernSkyROI(
-                MJD_min=MJD_min,
-                MJD_max=MJD_max,
-            )
+            NorthernSkyROI(MJD_min=MJD_min, MJD_max=MJD_max, apply_roi=apply_roi)
 
     def _is_dm_list(self):
         mjd_min = self.MJD_min

@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Union
 import sys
 from argparse import ArgumentParser
 
@@ -23,7 +23,7 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.events import Events
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.detector.detector_model import EffectiveArea
-from hierarchical_nu.detector.r2021 import R2021EffectiveArea
+from hierarchical_nu.detector.r2021 import R2021EffectiveArea, R2021EnergyResolution
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.lifetime import LifeTime
 from icecube_tools.detector.r2021 import R2021IRF
@@ -40,7 +40,6 @@ class RateCalculator:
         self,
         season: EventType,
         flux: AtmosphericNuMuFlux,
-        aeff: EffectiveArea,
         dec_idx: int,
     ):
         """
@@ -51,12 +50,16 @@ class RateCalculator:
         """
         irf = R2021IRF.from_period(season.P)
 
+        aeff = R2021EffectiveArea(season=season.P)
+        eres = R2021EnergyResolution(season=season.P)
+
         if not isinstance(flux, AtmosphericNuMuFlux):
             raise ValueError("'atmo' needs to be instance of `AtmosphericNuMuFlux`")
         self._atmo = flux
         if not isinstance(aeff, EffectiveArea) or not hasattr(aeff, "_eff_area_spline"):
             raise ValueError("'aeff' is not a proper effective area")
         self._aeff = aeff
+        self._eres = eres
 
         hists = []
         bin_edges = []
@@ -133,6 +136,7 @@ class RateCalculator:
         dec_min = self.irf.declination_bins[dec_idx]
         dec_max = self.irf.declination_bins[dec_idx + 1]
         dec_min = np.deg2rad(-5) if dec_min < np.deg2rad(-5) else dec_min
+        self._dec_middle = (dec_max + dec_min) / 2 * u.rad
         ROIList.clear_registry()
         roi = RectangularROI(DEC_min=dec_min * u.rad, DEC_max=dec_max * u.rad)
         Parameter.clear_registry()
@@ -245,6 +249,77 @@ class RateCalculator:
 
                 return (
                     cdfs[etrue_idx]
+                    * sin_dec_integrated
+                    * np.power(10, logE)
+                    * np.log(10)
+                )
+
+            if detailed == 2:
+                # use effective area binning, 10 bins per decade
+                integrals = [
+                    quad(integrand, Elow, Ehigh - 1e-4, limit=200, full_output=0)[0]
+                    * 2
+                    * np.pi
+                    for Elow, Ehigh in zip(
+                        np.log10(self.all_Ebins[:-1]), np.log10(self.all_Ebins[1:])
+                    )
+                ]
+            elif detailed == 1:
+                # use IRF binning, 2 bins per decade
+                integrals = [
+                    quad(integrand, Elow, Ehigh - 1e-4, limit=200, full_output=0)[0]
+                    * 2
+                    * np.pi
+                    for Elow, Ehigh in zip(
+                        self.tE_bin_edges[:-1], self.tE_bin_edges[1:]
+                    )
+                ]
+            elif detailed == 0:
+                # integral is over true energy, no splitting of true energies
+                integrals = (
+                    quad(integrand, 2, 9, limit=10_000, full_output=0)[0] * 2 * np.pi
+                )
+            else:
+                raise ValueError("`detailed` must be 0, 1 or 2.")
+            return integrals
+
+        # loop over reconstructed energies
+        rate = Parallel(n_jobs=self.Ebins.size - 1, backend="loky", prefer="threads")(
+            delayed(run)(El, Eh) for (El, Eh) in zip(self.Ebins[:-1], self.Ebins[1:])
+        )
+        # 1e4 to convert atmo flux from /cm**2 to /m**2
+        return np.array(rate) * 1e4
+
+    def calc_rates_from_2d_splines(self, detailed: int = 0):
+        sindec_min = np.sin(self.dec_bin_edges[self.dec_idx].to_value(u.rad))
+        sindec_max = np.sin(self.dec_bin_edges[self._dec_idx + 1].to_value(u.rad))
+
+        # Boundaries are reconstructed energies
+        def run(El, Eh):
+            # Precompute the pdf integrals, i.e. cdf, between the Ereco edges
+            # for all tE bins. When asked for the integrand, only look up value
+
+            def integrand(logE):
+
+                # This part can be split of from the energy integral and be calculated outside
+                # energies (true, in this case) is only a parameter but not an actual variable
+                def sin_dec_int(sindec, logE):
+                    return self._aeff._eff_area_spline((logE, -sindec)) * np.power(
+                        10, self._atmo._flux_spline(-sindec, logE).squeeze()
+                    )
+
+                sin_dec_integrated = quad(
+                    sin_dec_int, sindec_min, sindec_max, args=(logE), limit=200
+                )[0]
+
+                return (
+                    self._eres.prob_Edet_above_threshold(
+                        np.power(10, logE) * u.GeV,
+                        El * u.GeV,
+                        self._dec_middle,
+                        Eh * u.GeV,
+                        use_interpolation=True,
+                    )
                     * sin_dec_integrated
                     * np.power(10, logE)
                     * np.log(10)

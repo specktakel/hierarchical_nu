@@ -1178,6 +1178,8 @@ class StanFit:
 
             fit_inputs["diff_index_min"] = self._diff_index_par_range[0]
             fit_inputs["diff_index_max"] = self._diff_index_par_range[1]
+            fit_inputs["F_diff_min"] = self._F_diff_par_range[0]
+            fit_inputs["F_diff_max"] = self._F_diff_par_range[1]
 
             # Priors for diffuse model
             if self._priors.diffuse_flux.name == "normal":
@@ -1247,6 +1249,7 @@ class StanFit:
                 - 1
             )
         # log_energies = np.log10(self.events.energies.to_value(u.GeV))
+
         idxs = (
             np.digitize(
                 np.log10(self.events.energies.to_value(u.GeV)),
@@ -1262,6 +1265,7 @@ class StanFit:
             idxs,
         )
         ereco_indexed = R2021EnergyResolution._logEreco_grid[idxs]
+
         for et in self._event_types:
             for c_d in range(
                 self._exposure_integral[et].energy_resolution.dec_binc.size
@@ -1363,6 +1367,7 @@ class StanFit:
 
         if self._sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range
+            self._F_diff_par_range = Parameter.get_parameter("F_diff").par_range.to_value(1 / u.m**2 / u.s)
 
         if self._sources.atmospheric:
             self._F_atmo_par_range = Parameter.get_parameter(
