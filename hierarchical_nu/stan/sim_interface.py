@@ -804,12 +804,12 @@ class StanSimInterface(StanInterface):
                                 # Emin >= Eth and Emax > Eth - use pl
                                 self._Emin_src_arr << (
                                     self._ps_frame.stan_to_det(
-                                        self._Emin_src, self._z, self._lam[i]
+                                        self._Emin_src, self._z, self._lam, i,
                                     )
                                 )
                                 self._Emax_src_arr << (
                                     self._ps_frame.stan_to_det(
-                                        self._Emax_src, self._z, self._lam[i]
+                                        self._Emax_src, self._z, self._lam, i,
                                     )
                                 )
 
