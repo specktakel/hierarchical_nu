@@ -19,7 +19,7 @@ from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
 from ..backend.stan_generator import UserDefinedFunction
 from ..backend.variable_definitions import InstantVariableDef
-from ..backend.expression import ReturnStatement
+from ..backend.expression import ReturnStatement, TListTExpression
 
 
 class ReferenceFrame(ABC):
@@ -31,9 +31,30 @@ class ReferenceFrame(ABC):
 
         self._name = name
 
+    @staticmethod
+    def func(list, *args):
+        prev = args[-1]
+        try:
+            for arg in reversed(args[:-1]):
+                prev = arg[prev]
+            out = list[prev]
+        except UnboundLocalError:
+            out = list[prev]
+        return out
+
     @property
     def name(self):
         return self._name
+
+    @classmethod
+    @abstractmethod
+    def stan_to_det(cls, E, z):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def stan_to_src(cls, E, z):
+        pass
 
     @classmethod
     @abstractmethod
@@ -53,18 +74,17 @@ class DetectorFrame(ReferenceFrame):
         self._name = "detector"
 
     @classmethod
-    def transform(cls, z):
-        return 1.0
+    @u.quantity_input
+    def transform(cls, E: u.GeV, z: Union[int, float, None] = None):
+        return E
 
     @classmethod
-    def make_stan_transform_func(cls, fname: str) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["z"], ["real"], "real")
+    def stan_to_src(cls, E, z, *indices):
+        return E * (1 + cls.func(z, *indices))
 
-        with func:
-            ret = InstantVariableDef("ret", "real", [1.0])
-            ReturnStatement([ret])
-
-        return func
+    @classmethod
+    def stan_to_det(cls, E, z, *indices):
+        return E
 
 
 class SourceFrame(ReferenceFrame):
@@ -73,18 +93,17 @@ class SourceFrame(ReferenceFrame):
         self._name = "source"
 
     @classmethod
-    def transform(cls, z):
-        return 1.0 + z
+    @u.quantity_input
+    def transform(cls, E: u.GeV, z: Union[int, float]):
+        return E / (1.0 + z)
 
     @classmethod
-    def make_stan_transform_func(cls, fname: str) -> UserDefinedFunction:
-        func = UserDefinedFunction(fname, ["z"], ["real"], "real")
+    def stan_to_src(cls, E, z, *indices):
+        return E
 
-        with func:
-            ret = InstantVariableDef("ret", "real", [1.0, "+ z"])
-            ReturnStatement([ret])
-
-        return func
+    @classmethod
+    def stan_to_det(cls, E, z, *indices):
+        return E / (1.0 + cls.func(z, *indices))
 
 
 class Source(ABC):
@@ -113,7 +132,7 @@ class Source(ABC):
     @u.quantity_input
     def flux(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
-    ) -> 1 / (u.GeV * u.m**2 * u.s * u.sr):
+    ) -> u.Quantity[1 / (u.GeV * u.m**2 * u.s * u.sr)]:
         return self._flux_model(energy, dec, ra)
 
     @property
@@ -224,8 +243,8 @@ class PointSource(Source):
             norm,
             Enorm_value,
             index,
-            lower.value / frame.transform(redshift),
-            upper.value / frame.transform(redshift),
+            frame.transform(lower.value, redshift),
+            frame.transform(upper.value, redshift),
         )
 
         total_power = spectral_shape.total_flux_density
@@ -296,8 +315,8 @@ class PointSource(Source):
             norm,
             Enorm_value,
             index,
-            lower.value / frame.transform(redshift),
-            upper.value / frame.transform(redshift),
+            frame.transform(lower.value, redshift),
+            frame.transform(upper.value, redshift),
         )
 
         total_power = spectral_shape.total_flux_density
@@ -635,10 +654,19 @@ class Sources:
             flux_norm,
             norm_energy,
             diff_index,
-            lower.value / frame.transform(z),
-            upper.value / frame.transform(z),
+            frame.transform(lower.value, z),
+            frame.transform(upper.value, z),
         )
         flux_model = IsotropicDiffuseBG(spectral_shape)
+
+        # Create a parameter for F_atmo to carry information on the par_range
+        # The value itself is irrelevant for fits
+        F_diff = Parameter(
+            flux_model.total_flux_int,
+            "F_diff",
+            par_range=(1e-6, 1e-3) * (1 / (u.m**2 * u.s)),
+            fixed=True,
+        )
 
         # define component
         diffuse_component = DiffuseSource(
