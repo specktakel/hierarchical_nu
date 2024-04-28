@@ -741,8 +741,20 @@ class StanFit:
 
         return fig, ax
 
-    def save(self, filename, overwrite: bool = False):
-        if os.path.exists(filename) and not overwrite:
+    def save(self, path, overwrite: bool = False):
+        
+        # Check if filename consists of a path to some directory as well as the filename
+        dirname = os.path.dirname(path)
+        filename = os.path.basename(path)
+        if dirname:
+            if not os.path.exists(dirname):
+                logger.warning(f"{dirname} does not exist, saving instead to {os.getcwd()}")
+                dirname = os.getcwd()
+        else: 
+            dirname = os.getcwd()
+        path = Path(dirname) / Path(filename)
+        
+        if os.path.exists(path) and not overwrite:
             logger.warning(f"File {filename} already exists.")
             file = os.path.splitext(filename)[0]
             ext = os.path.splitext(filename)[1]
