@@ -287,7 +287,7 @@ class Events:
                     event_folder.create_dataset(key, data=value)
 
     def export_to_csv(self, basepath):
-        header = "log10(E/GeV)\tAngErr[dec]\tRA[deg]\tDEC[deg]"
+        header = "log10(E/GeV)\tAngErr[deg]\tRA[deg]\tDec[deg]"
         energy = np.log10(self.energies.to_value(u.GeV))
         ang_errs = self.ang_errs.to_value(u.deg)
         self.coords.representation_type = "spherical"
@@ -404,11 +404,9 @@ class Events:
         return events
 
     def merge(self, events):
-        self.coords.representation_type = "spherical"
-        events.coords.representation_type = "spherical"
-        ra = np.hstack([self.coords.ra.deg, events.coords.ra.deg]) * u.deg
-        dec = np.hstack([self.coords.dec.deg, events.coords.dec.deg]) * u.deg
-        coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
+        # Meow
+        from astropy.coordinates import concatenate as cat
+        coords = cat((self.coords, events.coords))
         energies = np.hstack([self.energies, events.energies])
         ang_errs = np.hstack([self.ang_errs, events.ang_errs])
         types = np.hstack([self.types, events.types])
