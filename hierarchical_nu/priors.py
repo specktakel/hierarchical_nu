@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union
+from typing import Union, Iterable
 import astropy.units as u
 from astropy.units.core import UnitConversionError
 import numpy as np
@@ -385,6 +385,35 @@ class IndexPrior(UnitlessPrior):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
 
+class MultiSourcePrior(metaclass=ABCMeta):
+
+    def __init__(self, priors):
+        self._priors = priors
+
+    def __getitem__(self, index):
+        return self._priors[index]
+    
+    def __len__(self):
+        return len(self._priors)
+
+
+class MultiSourceLuminosityPrior(LuminosityPrior, MultiSourcePrior):
+    def __init__(self, priors: Iterable[LuminosityPrior]):
+        assert all ([isinstance(_, LuminosityPrior) for _ in priors])
+        super().__init__(self, priors)
+
+
+
+class MultiSourceIndexPrior(IndexPrior, MultiSourcePrior):
+    def __init__(self, priors: Iterable[IndexPrior]):
+        # Check if list is necessary, I think otherwise it will evaluate all(generator expression)
+        # which is True
+        assert all ([isinstance(_, IndexPrior) for _ in priors])
+        super().__init__(self, priors)
+
+
+    
+
 class Priors(object):
     """
     Container for model priors.
@@ -478,11 +507,20 @@ class Priors(object):
     def _writeto(self, f):
         priors_dict = self.to_dict()
 
+        def create_dataset(g, prior):
+            for key, value in prior.to_dict(prior.UNIT_STRING).items():
+                g.create_dataset(key, data=value)
+
         for key, value in priors_dict.items():
             g = f.create_group(key)
 
-            for key, value in value.to_dict(value.UNITS_STRING).items():
-                g.create_dataset(key, data=value)
+            if isinstance(value, MultiSourcePrior):
+                for c, prior in enumerate(value):
+                    sub_g = g.create_group(f"ps_{c}")
+                    create_dataset(sub_g, prior)
+
+            else:
+                create_dataset(g, value)
 
     def addto(self, file_name: str, group_name: str):
         with h5py.File(file_name, "r+") as f:
