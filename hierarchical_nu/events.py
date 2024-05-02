@@ -404,9 +404,11 @@ class Events:
         return events
 
     def merge(self, events):
-        # Meow
-        from astropy.coordinates import concatenate as cat
-        coords = cat((self.coords, events.coords))
+        self.coords.representation_type = "spherical"
+        events.coords.representation_type = "spherical"
+        ra = np.hstack((self.coords.ra.deg * u.deg, events.coords.ra.deg * u.deg))
+        dec = np.hstack((self.coords.dec.deg * u.deg, events.coords.dec.deg * u.deg))
+        coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
         energies = np.hstack([self.energies, events.energies])
         ang_errs = np.hstack([self.ang_errs, events.ang_errs])
         types = np.hstack([self.types, events.types])
