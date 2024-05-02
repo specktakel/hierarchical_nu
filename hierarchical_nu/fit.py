@@ -461,7 +461,6 @@ class StanFit:
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
-    @u.quantity_input
     def _plot_energy_posterior(
         self,
         ax,
@@ -532,6 +531,18 @@ class StanFit:
                 lw=1,
                 zorder=assoc_prob[c] + 1,
             )
+            if true_assoc is not None and assoc_idx == true_assoc[i]:
+                ax.vlines(
+                    self.events.energies[mask][c].to_value(u.GeV),
+                    yhigh,
+                    1.05 * yhigh,
+                    color="magenta",
+                    lw=3,
+                    alpha=0.4,
+                    zorder=assoc_prob[c] + 1 - 1e-4,
+                )
+                
+
             if assoc_prob[c] > 0.2:
                 # if we have more than 20% association prob, link both lines up
                 x, y = self._get_kde("E", i, lambda x: np.log10(x))
