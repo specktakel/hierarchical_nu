@@ -468,8 +468,8 @@ class StanFit:
         assoc_idx,
         radius,
         color_scale,
-        true_assoc: Union[Iterable, None] = None,
-        assoc_threshold: float = 0.2,
+        highlight: Union[Iterable, None] = None,
+        assoc_threshold: Union[float, None] = 0.2,
     ):
         ev_class = np.array(self._get_event_classifications())
         if radius is not None and center is not None:
@@ -484,9 +484,9 @@ class StanFit:
         assoc_prob = ev_class[:, assoc_idx][mask]
 
         # Try to get the true associations from the events
-        if true_assoc is not None:
-            true_assoc = np.atleast_1d(true_assoc)
-            assert true_assoc.size == mask.size
+        if highlight is not None:
+            highlight = np.atleast_1d(highlight)
+            assert highlight.size == mask.size
 
         if color_scale == "lin":
             norm = colors.Normalize(0.0, 1.0, clip=True)
@@ -521,7 +521,7 @@ class StanFit:
                 lw=1,
                 zorder=assoc_prob[c] + 1,
             )
-            if true_assoc is not None and assoc_idx == true_assoc[i]:
+            if highlight is not None and highlight[i]:
                 x, y = self._get_kde("E", i, lambda x: np.log10(x))
                 idx_posterior = np.argmax(y)
                 ax.plot(
@@ -534,22 +534,23 @@ class StanFit:
                     color="black",
                     ls="--",
                 )
-                
+              
 
-            elif true_assoc is None and assoc_prob[c] >= assoc_threshold:
-                # if we have more than 20% association prob, link both lines up
-                x, y = self._get_kde("E", i, lambda x: np.log10(x))
-                idx_posterior = np.argmax(y)
-                ax.plot(
-                    [
-                        np.power(10, x[idx_posterior]),
-                        self.events.energies[mask][c].to_value(u.GeV),
-                    ],
-                    [y[idx_posterior], yhigh],
-                    lw=0.5,
-                    color="black",
-                    ls="--",
-                )
+            elif highlight is None and assoc_threshold is not None:
+                if assoc_prob[c] >= assoc_threshold:
+                    # if we have more than threshold prob, link both lines up
+                    x, y = self._get_kde("E", i, lambda x: np.log10(x))
+                    idx_posterior = np.argmax(y)
+                    ax.plot(
+                        [
+                            np.power(10, x[idx_posterior]),
+                            self.events.energies[mask][c].to_value(u.GeV),
+                        ],
+                        [y[idx_posterior], yhigh],
+                        lw=0.5,
+                        color="black",
+                        ls="--",
+                    )
 
         ax.text(1e7, yhigh, "$\hat E$")
 
@@ -564,8 +565,8 @@ class StanFit:
         assoc_idx: int = 0,
         radius: Union[u.Quantity[u.deg], None] = None,
         color_scale: str = "lin",
-        true_assoc: Union[Iterable, None] = None,
-        assoc_threshold: float = 0.2,
+        highlight: Union[Iterable, None] = None,
+        assoc_threshold: Union[float, None] = 0.2,
     ):
         """
         Plot energy posteriors in log10-space.
@@ -580,7 +581,7 @@ class StanFit:
         if isinstance(center, int):
             center = self.get_src_position(center)
         ax, mapper = self._plot_energy_posterior(
-            ax, center, assoc_idx, radius, color_scale, true_assoc, assoc_threshold,
+            ax, center, assoc_idx, radius, color_scale, highlight, assoc_threshold,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -593,14 +594,14 @@ class StanFit:
         radius,
         assoc_idx,
         color_scale,
-        true_assoc: Union[Iterable, None] = None,
+        highlight: Union[Iterable, None] = None,
     ):
         ev_class = np.array(self._get_event_classifications())
         assoc_prob = ev_class[:, assoc_idx]
 
-        if true_assoc is not None:
-            true_assoc = np.atleast_1d(true_assoc)
-            assert true_assoc.size == assoc_prob.size
+        if highlight is not None:
+            highlight = np.atleast_1d(highlight)
+            assert highlight.size == assoc_prob.size
 
         min = 0.0
         max = 1.0
@@ -633,8 +634,8 @@ class StanFit:
 
         for c, i in enumerate(indices):
             edgecolor = "none"
-            if true_assoc is not None:
-                if true_assoc[i] == assoc_idx:
+            if highlight is not None:
+                if highlight[i]:
                     edgecolor = colors.colorConverter.to_rgba("magenta", alpha=0.5)
                     ax.scatter(
                         coords[i].ra.deg,
@@ -669,7 +670,7 @@ class StanFit:
         radius: u.Quantity[u.deg] = 5.0 * u.deg,
         assoc_idx: int = 0,
         color_scale: str = "lin",
-        true_assoc: Union[Iterable, None] = None,
+        highlight: Union[Iterable, None] = None,
     ):
         """
         Create plot of the ROI.
@@ -697,7 +698,7 @@ class StanFit:
         )
 
         ax, mapper = self._plot_roi(
-            center, ax, radius, assoc_idx, color_scale, true_assoc
+            center, ax, radius, assoc_idx, color_scale, highlight
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -710,7 +711,7 @@ class StanFit:
         assoc_idx: int = 0,
         radius: u.Quantity[u.deg] = 5 * u.deg,
         color_scale: str = "lin",
-        true_assoc: Union[Iterable, None] = None,
+        highlight: Union[Iterable, None] = None,
         assoc_threshold: float = 0.2,
     ):
         fig = plt.figure(dpi=150, figsize=(8, 3))
@@ -734,7 +735,7 @@ class StanFit:
             center = self.get_src_position(center)
 
         ax, mapper = self._plot_energy_posterior(
-            ax, center, assoc_idx, radius, color_scale, true_assoc, assoc_threshold,
+            ax, center, assoc_idx, radius, color_scale, highlight, assoc_threshold,
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -751,7 +752,7 @@ class StanFit:
             radius=f"{radius.to_value(u.deg)} deg",
         )
 
-        ax, _ = self._plot_roi(center, ax, radius, assoc_idx, color_scale, true_assoc)
+        ax, _ = self._plot_roi(center, ax, radius, assoc_idx, color_scale, highlight)
         axs.insert(0, ax)
 
         return fig, ax
