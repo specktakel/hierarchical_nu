@@ -469,6 +469,7 @@ class StanFit:
         radius,
         color_scale,
         true_assoc: Union[Iterable, None] = None,
+        assoc_threshold: float = 0.2,
     ):
         ev_class = np.array(self._get_event_classifications())
         if radius is not None and center is not None:
@@ -502,17 +503,6 @@ class StanFit:
             # get the support (is then log10(E/GeV) and the pdf values
             supp, pdf = self._get_kde("E", i, lambda x: np.log10(x))
             # exponentiate the support, because we rescale the axis in the end
-            if true_assoc is not None:
-                if assoc_idx == true_assoc[i]:
-                    ax.plot(
-                        np.power(10, supp),
-                        pdf,
-                        color="magenta",
-                        zorder=assoc_prob[c] + 1 - 1e-4,
-                        lw=3,
-                        alpha=0.4,
-                    )
-
             ax.plot(
                 np.power(10, supp),
                 pdf,
@@ -532,18 +522,21 @@ class StanFit:
                 zorder=assoc_prob[c] + 1,
             )
             if true_assoc is not None and assoc_idx == true_assoc[i]:
-                ax.vlines(
-                    self.events.energies[mask][c].to_value(u.GeV),
-                    yhigh,
-                    1.05 * yhigh,
-                    color="magenta",
-                    lw=3,
-                    alpha=0.4,
-                    zorder=assoc_prob[c] + 1 - 1e-4,
+                x, y = self._get_kde("E", i, lambda x: np.log10(x))
+                idx_posterior = np.argmax(y)
+                ax.plot(
+                    [
+                        np.power(10, x[idx_posterior]),
+                        self.events.energies[mask][c].to_value(u.GeV),
+                    ],
+                    [y[idx_posterior], yhigh],
+                    lw=0.5,
+                    color="black",
+                    ls="--",
                 )
                 
 
-            if assoc_prob[c] > 0.2:
+            elif true_assoc is None and assoc_prob[c] >= assoc_threshold:
                 # if we have more than 20% association prob, link both lines up
                 x, y = self._get_kde("E", i, lambda x: np.log10(x))
                 idx_posterior = np.argmax(y)
@@ -572,6 +565,7 @@ class StanFit:
         radius: Union[u.Quantity[u.deg], None] = None,
         color_scale: str = "lin",
         true_assoc: Union[Iterable, None] = None,
+        assoc_threshold: float = 0.2,
     ):
         """
         Plot energy posteriors in log10-space.
@@ -586,7 +580,7 @@ class StanFit:
         if isinstance(center, int):
             center = self.get_src_position(center)
         ax, mapper = self._plot_energy_posterior(
-            ax, center, assoc_idx, radius, color_scale, true_assoc
+            ax, center, assoc_idx, radius, color_scale, true_assoc, assoc_threshold,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -642,6 +636,16 @@ class StanFit:
             if true_assoc is not None:
                 if true_assoc[i] == assoc_idx:
                     edgecolor = colors.colorConverter.to_rgba("magenta", alpha=0.5)
+                    ax.scatter(
+                        coords[i].ra.deg,
+                        coords[i].dec.deg,
+                        color=color[i],
+                        zorder=2.,
+                        transform=ax.get_transform("icrs"),
+                        edgecolor=edgecolor,
+                        facecolor="none",
+                        s=30,
+                    )
 
             ax.scatter(
                 coords[i].ra.deg,
@@ -649,7 +653,6 @@ class StanFit:
                 color=color[i],
                 zorder=assoc_prob[i] + 1,
                 transform=ax.get_transform("icrs"),
-                edgecolor=edgecolor,
                 s=30,
             )
 
@@ -708,6 +711,7 @@ class StanFit:
         radius: u.Quantity[u.deg] = 5 * u.deg,
         color_scale: str = "lin",
         true_assoc: Union[Iterable, None] = None,
+        assoc_threshold: float = 0.2,
     ):
         fig = plt.figure(dpi=150, figsize=(8, 3))
         gs = fig.add_gridspec(
@@ -730,7 +734,7 @@ class StanFit:
             center = self.get_src_position(center)
 
         ax, mapper = self._plot_energy_posterior(
-            ax, center, assoc_idx, radius, color_scale, true_assoc
+            ax, center, assoc_idx, radius, color_scale, true_assoc, assoc_threshold,
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
