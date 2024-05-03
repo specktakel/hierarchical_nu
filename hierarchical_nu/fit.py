@@ -31,7 +31,7 @@ from hierarchical_nu.detector.r2021 import (
 )
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
-from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrior
+from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrior, MultiSourcePrior
 from hierarchical_nu.source.source import spherical_to_icrs, uv_to_icrs
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
@@ -858,8 +858,6 @@ class StanFit:
         make plots and run classification check.
         """
 
-        # priors_dict = {}
-
         fit_inputs = {}
         fit_outputs = {}
         fit_meta = {}
@@ -876,8 +874,6 @@ class StanFit:
                 fit_meta["iter_sampling"] = 1000
 
             for k, v in f["fit/inputs"].items():
-                # if "mu" in k or "sigma" in k:
-                #    priors_dict[k] = v[()]
 
                 fit_inputs[k] = v[()]
 

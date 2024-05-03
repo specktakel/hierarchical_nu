@@ -275,6 +275,10 @@ class UnitPrior:
     def alpha(self, val):
         self._prior.alpha = val
 
+    @property
+    def name(self):
+        return self._prior.name
+
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897
     # def __getattr__(self, name):
@@ -330,6 +334,10 @@ class UnitlessPrior:
     @alpha.setter
     def alpha(self, val: float):
         self._prior.alpha = val
+
+    @property
+    def name(self):
+        return self._prior.name
 
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897
@@ -401,6 +409,10 @@ class MultiSourcePrior:
     
     def __len__(self):
         return len(self._priors)
+    
+    @property
+    def name(self):
+        return self._priors[0]._prior.name
 
 
 class MultiSourceLuminosityPrior(MultiSourcePrior, LuminosityPrior):
@@ -428,15 +440,11 @@ class MultiSourceLuminosityPrior(MultiSourcePrior, LuminosityPrior):
             return np.array([_.xmin for _ in self._priors])
         except TypeError:
             return np.array([_.xmin.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
-
     
     @property
     def alpha(self):
         return np.array([_.alpha for _ in self._priors])
-        
-
-
-
+      
 
 class MultiSourceIndexPrior(MultiSourcePrior, IndexPrior):
     def __init__(self, priors: Iterable[IndexPrior]):
@@ -450,8 +458,6 @@ class MultiSourceIndexPrior(MultiSourcePrior, IndexPrior):
     @property
     def sigma(self):
         return np.array([_.sigma for _ in self._priors])
-
-
     
 
 class Priors(object):
