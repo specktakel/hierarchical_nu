@@ -277,8 +277,8 @@ class UnitPrior:
 
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897
-    def __getattr__(self, name):
-        return self._prior.__getattribute__(name)
+    # def __getattr__(self, name):
+    #     return self._prior.__getattribute__(name)
 
 
 class UnitlessPrior:
@@ -331,8 +331,8 @@ class UnitlessPrior:
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897
     # only in case someone tries to do self._mu or similar, then the private attribute should be accessed
-    def __getattr__(self, name):
-        return self._prior.__getattribute__(name)
+    # def __getattr__(self, name):
+    #     return self._prior.__getattribute__(name)
 
 
 class LuminosityPrior(UnitPrior):
@@ -388,6 +388,7 @@ class IndexPrior(UnitlessPrior):
 class MultiSourcePrior(metaclass=ABCMeta):
 
     def __init__(self, priors):
+        assert all(isinstance(_._prior, type(priors[0]._prior)) for _ in priors)
         self._priors = priors
 
     def __getitem__(self, index):
@@ -399,16 +400,14 @@ class MultiSourcePrior(metaclass=ABCMeta):
 
 class MultiSourceLuminosityPrior(LuminosityPrior, MultiSourcePrior):
     def __init__(self, priors: Iterable[LuminosityPrior]):
-        assert all ([isinstance(_, LuminosityPrior) for _ in priors])
+        assert all (isinstance(_, LuminosityPrior) for _ in priors)
         super().__init__(self, priors)
 
 
 
 class MultiSourceIndexPrior(IndexPrior, MultiSourcePrior):
     def __init__(self, priors: Iterable[IndexPrior]):
-        # Check if list is necessary, I think otherwise it will evaluate all(generator expression)
-        # which is True
-        assert all ([isinstance(_, IndexPrior) for _ in priors])
+        assert all (isinstance(_, IndexPrior) for _ in priors)
         super().__init__(self, priors)
 
 
