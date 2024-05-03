@@ -16,7 +16,7 @@ import arviz as av
 from pathlib import Path
 
 from math import ceil, floor
-from time import time
+from time import time as thyme
 
 from cmdstanpy import CmdStanModel
 
@@ -769,10 +769,12 @@ class StanFit:
             logger.warning(f"File {filename} already exists.")
             file = os.path.splitext(filename)[0]
             ext = os.path.splitext(filename)[1]
-            file += f"_{int(time())}"
+            file += f"_{int(thyme())}"
             filename = file + ext
 
-        with h5py.File(filename, "w") as f:
+        path = Path(dirname) / Path(filename)
+
+        with h5py.File(path, "w") as f:
             fit_folder = f.create_group("fit")
             inputs_folder = fit_folder.create_group("inputs")
             outputs_folder = fit_folder.create_group("outputs")
@@ -850,10 +852,10 @@ class StanFit:
             meta_folder.create_dataset("R_hat", data=R_hat)
             meta_folder.create_dataset("parameters", data=np.array(keys, dtype="S"))
 
-        self.events.to_file(filename, append=True)
+        self.events.to_file(path, append=True)
 
         # Add priors separately
-        self.priors.addto(filename, "priors")
+        self.priors.addto(path, "priors")
 
     def save_csvfiles(self, directory):
         """
