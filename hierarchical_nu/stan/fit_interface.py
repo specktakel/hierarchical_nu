@@ -38,7 +38,7 @@ from hierarchical_nu.backend.variable_definitions import (
 from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
 
-from hierarchical_nu.source.source import Sources, DetectorFrame
+from hierarchical_nu.source.source import Sources, DetectorFrame, SourceFrame
 from hierarchical_nu.detector.icecube import EventType, NT, CAS
 
 from hierarchical_nu.detector.detector_model import (
@@ -928,27 +928,46 @@ class StanFitInterface(StanInterface):
             self._Emax_at_det << self._Emax
 
             # Find the largest energy range over all source components, transformed in the detector frame
-            with ForLoopContext(1, self._Ns, "k") as k:
+            if self._ps_frame == SourceFrame:
+                with ForLoopContext(1, self._Ns, "k") as k:
+                    with IfBlockContext(
+                        [
+                            self._ps_frame.stan_to_det(self._Emin_src, self._z, k),
+                            " < ",
+                            self._Emin_at_det,
+                        ]
+                    ):
+                        self._Emin_at_det << self._ps_frame.stan_to_det(
+                            self._Emin_src, self._z, k
+                        )
+                    with IfBlockContext(
+                        [
+                            self._ps_frame.stan_to_det(self._Emax_src, self._z, k),
+                            " > ",
+                            self._Emax_at_det,
+                        ]
+                    ):
+                        self._Emax_at_det << self._ps_frame.stan_to_det(
+                            self._Emax_src, self._z, k
+                    )
+            else:
+                # Necessary to circumvent issues with the stan generator
                 with IfBlockContext(
                     [
-                        self._ps_frame.stan_to_det(self._Emin_src, self._z, k),
+                        self._Emin_src,
                         " < ",
                         self._Emin_at_det,
                     ]
                 ):
-                    self._Emin_at_det << self._ps_frame.stan_to_det(
-                        self._Emin_src, self._z, k
-                    )
+                    self._Emin_at_det << self._Emin_src 
                 with IfBlockContext(
                     [
-                        self._ps_frame.stan_to_det(self._Emax_src, self._z, k),
+                        self._Emax_src,
                         " > ",
                         self._Emax_at_det,
                     ]
                 ):
-                    self._Emax_at_det << self._ps_frame.stan_to_det(
-                        self._Emax_src, self._z, k
-                    )
+                    self._Emax_at_det << self._Emax_src
             if self.sources.diffuse:
                 with IfBlockContext(
                     [

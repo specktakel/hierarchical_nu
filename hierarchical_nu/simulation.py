@@ -12,6 +12,8 @@ import collections
 import ligo.skymap.plot
 from pathlib import Path
 
+from time import time as thyme
+
 from icecube_tools.utils.vMF import get_theta_p
 
 
@@ -256,17 +258,34 @@ class Simulation:
 
         return energies, coords, event_types, ang_errs
 
-    def save(self, filename, overwrite: bool = False):
+    def save(self, path, overwrite: bool = False):
         """
         Save simulation
-        :param filename: filename of simulation, should have extension `.h5`
+        :param path: filename of simulation, should have extension `.h5`
         :param overwrite: if True, overwrite files with identical name
         """
 
-        if os.path.exists(filename) and not overwrite:
-            raise FileExistsError(f"File {filename} already exists.")
+        # Check if filename consists of a path to some directory as well as the filename
+        dirname = os.path.dirname(path)
+        filename = os.path.basename(path)
+        if dirname:
+            if not os.path.exists(dirname):
+                sim_logger.warning(f"{dirname} does not exist, saving instead to {os.getcwd()}")
+                dirname = os.getcwd()
+        else: 
+            dirname = os.getcwd()
+        path = Path(dirname) / Path(filename)
+        
+        if os.path.exists(path) and not overwrite:
+            sim_logger.warning(f"File {filename} already exists.")
+            file = os.path.splitext(filename)[0]
+            ext = os.path.splitext(filename)[1]
+            file += f"_{int(thyme())}"
+            filename = file + ext
 
-        with h5py.File(filename, "w") as f:
+        path = Path(dirname) / Path(filename)
+
+        with h5py.File(path, "w") as f:
             sim_folder = f.create_group("sim")
 
             inputs_folder = sim_folder.create_group("inputs")
@@ -295,7 +314,7 @@ class Simulation:
             )
             f.create_dataset("version", data=git_hash)
 
-        self.events.to_file(filename, append=True)
+        self.events.to_file(path, append=True)
 
     def show_spectrum(
         self, *components: str, scale: str = "linear", population: bool = False
