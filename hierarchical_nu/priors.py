@@ -408,12 +408,48 @@ class MultiSourceLuminosityPrior(MultiSourcePrior, LuminosityPrior):
         assert all (isinstance(_, LuminosityPrior) for _ in priors)
         super().__init__(priors)
 
+    @property
+    def mu(self):
+        try:
+            return np.array([_.mu for _ in self._priors])
+        except TypeError:
+            return np.array([_.mu.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
+    
+    @property
+    def sigma(self):
+        try:
+            return np.array([_.sigma for _ in self._priors])
+        except TypeError:
+            return np.array([_.sigma.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
+    
+    @property
+    def xmin(self):
+        try:
+            return np.array([_.xmin for _ in self._priors])
+        except TypeError:
+            return np.array([_.xmin.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
+
+    
+    @property
+    def alpha(self):
+        return np.array([_.alpha for _ in self._priors])
+        
+
+
 
 
 class MultiSourceIndexPrior(MultiSourcePrior, IndexPrior):
     def __init__(self, priors: Iterable[IndexPrior]):
         assert all (isinstance(_, IndexPrior) for _ in priors)
         super().__init__(priors)
+
+    @property
+    def mu(self):
+        return np.array([_.mu for _ in self._priors])
+       
+    @property
+    def sigma(self):
+        return np.array([_.sigma for _ in self._priors])
 
 
     
@@ -559,11 +595,9 @@ class Priors(object):
                     d[k] = v[()]
             return d
 
-
         for key, value in f.items():
             prior_dict = {}
             prior_dict["quantity"] = key
-
 
             # for k, v in value.items():
             try:
@@ -582,9 +616,6 @@ class Priors(object):
                 elif key == "L":
                     priors_dict[key] = MultiSourceLuminosityPrior(container)
 
-
-
-            
         return cls.from_dict(priors_dict)
 
     @classmethod
