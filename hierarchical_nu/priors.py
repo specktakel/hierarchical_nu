@@ -280,6 +280,9 @@ class UnitPrior:
     # def __getattr__(self, name):
     #     return self._prior.__getattribute__(name)
 
+    def to_dict(self, units):
+        return self._prior.to_dict(units)
+
 
 class UnitlessPrior:
     def __init__(self, name, **kwargs):
@@ -333,6 +336,9 @@ class UnitlessPrior:
     # only in case someone tries to do self._mu or similar, then the private attribute should be accessed
     # def __getattr__(self, name):
     #     return self._prior.__getattribute__(name)
+
+    def to_dict(self, units):
+        return self._prior.to_dict(units)
 
 
 class LuminosityPrior(UnitPrior):
@@ -506,7 +512,7 @@ class Priors(object):
         priors_dict = self.to_dict()
 
         def create_dataset(g, prior):
-            for key, value in prior.to_dict(prior.UNIT_STRING).items():
+            for key, value in prior.to_dict(prior.UNITS_STRING).items():
                 g.create_dataset(key, data=value)
 
         for key, value in priors_dict.items():
@@ -542,18 +548,47 @@ class Priors(object):
     def _load_from(cls, f):
         priors_dict = {}
 
-        for key, value in f.items():
-            prior_dict = {}
-            prior_dict["quantity"] = key
-            for k, v in value.items():
+
+        def make_dict_entry(d, arg):
+            for k, v in arg.items():
+                print(k, v)
                 if k == "name":
                     # name should be replaces by LuminosityPrior etc.
-                    prior_dict[k] = v[()].decode("ascii")
+                    d[k] = v[()].decode("ascii")
 
                 else:
-                    prior_dict[k] = v[()]
+                    d[k] = v[()]
+            return d
 
-            priors_dict[key] = PriorDictHandler.from_dict(prior_dict)
+        print(f)
+
+        for key, value in f.items():
+            print(key, value)
+            prior_dict = {}
+            prior_dict["quantity"] = key
+
+
+            # for k, v in value.items():
+            try:
+                prior_dict = make_dict_entry(prior_dict, value)
+                priors_dict[key] = PriorDictHandler.from_dict(prior_dict)
+            except TypeError:
+                # Found the multi source prior
+                
+                container = []
+                for _, b in value.items():
+                    print(_, b)
+                    prior_dict = {"quantity": key}
+                    prior_dict = make_dict_entry(prior_dict, b)
+                    container.append(PriorDictHandler.from_dict(prior_dict))
+                if key == "src_index":
+                    priors_dict[key] = MultiSourceIndexPrior(container)
+                elif key == "L":
+                    priors_dict[key] = MultiSourceLuminosityPrior(container)
+
+
+
+            
         return cls.from_dict(priors_dict)
 
     @classmethod
