@@ -221,14 +221,12 @@ class UnitPrior:
                 self._prior = name(mu=mu.to_value(units), sigma=sigma.to_value(units))
             elif name == ParetoPrior:
                 pass
-        self._pdf = self._prior.pdf
-        self._pdf_logspace = self._prior.pdf_logspace
 
     def pdf(self, x):
-        return self._pdf(x.to_value(self._units))
+        return self._prior.pdf(x.to_value(self._units))
 
     def pdf_logspace(self, x):
-        return self._pdf_logspace(x.to_value(self._units))
+        return self._prior.pdf_logspace(x.to_value(self._units))
 
     @property
     def mu(self):
@@ -338,6 +336,12 @@ class UnitlessPrior:
     @property
     def name(self):
         return self._prior.name
+    
+    def pdf(self, x):
+        return self._prior.pdf(x)
+
+    def pdf_logspace(self, x):
+        return self._prior.pdf_logspace(x)
 
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897

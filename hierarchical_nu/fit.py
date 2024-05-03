@@ -308,6 +308,21 @@ class StanFit:
 
         priors_dict = self._priors.to_dict()
 
+        def draw_prior_transform(prior, ax, x):
+            pdf = prior.pdf_logspace
+            ax.plot(
+                x,
+                pdf(np.power(10, x) * prior.UNITS),
+                color="black",
+                alpha=0.4,
+                zorder=0,
+            )
+
+        def draw_prior(prior, ax, x):
+            pdf = prior.pdf
+            ax.plot(x, pdf(x * prior.UNITS), color="black", alpha=0.4, zorder=0)
+
+
         for ax_double in axs:
             name = ax_double[0].get_title()
             # check if there is a prior available for the variable
@@ -320,18 +335,20 @@ class StanFit:
 
                 if "transform" in kwargs.keys():
                     # Assumes that the only sensible transformation is log10
-                    pdf = prior.pdf_logspace
-                    ax.plot(
-                        x,
-                        pdf(np.power(10, x) * prior.UNITS),
-                        color="black",
-                        alpha=0.4,
-                        zorder=0,
-                    )
+                    if isinstance(prior, MultiSourcePrior):
+                        for p in prior:
+                            draw_prior_transform(p, ax, x)
+                    else:
+                        draw_prior_transform(prior, ax, x)
+                            
 
                 else:
-                    pdf = prior.pdf
-                    ax.plot(x, pdf(x * prior.UNITS), color="black", alpha=0.4, zorder=0)
+                    if isinstance(prior, MultiSourcePrior):
+                        for p in prior:
+                            draw_prior(p, ax, x)
+                    else:
+                        draw_prior(prior, ax, x)
+
                 if isinstance(prior, UnitPrior):
                     try:
                         unit = prior.UNITS.unit
