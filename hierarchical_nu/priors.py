@@ -385,8 +385,7 @@ class IndexPrior(UnitlessPrior):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
 
-class MultiSourcePrior(metaclass=ABCMeta):
-
+class MultiSourcePrior:
     def __init__(self, priors):
         assert all(isinstance(_._prior, type(priors[0]._prior)) for _ in priors)
         self._priors = priors
@@ -398,17 +397,17 @@ class MultiSourcePrior(metaclass=ABCMeta):
         return len(self._priors)
 
 
-class MultiSourceLuminosityPrior(LuminosityPrior, MultiSourcePrior):
+class MultiSourceLuminosityPrior(MultiSourcePrior, LuminosityPrior):
     def __init__(self, priors: Iterable[LuminosityPrior]):
         assert all (isinstance(_, LuminosityPrior) for _ in priors)
-        super().__init__(self, priors)
+        super().__init__(priors)
 
 
 
-class MultiSourceIndexPrior(IndexPrior, MultiSourcePrior):
+class MultiSourceIndexPrior(MultiSourcePrior, IndexPrior):
     def __init__(self, priors: Iterable[IndexPrior]):
         assert all (isinstance(_, IndexPrior) for _ in priors)
-        super().__init__(self, priors)
+        super().__init__(priors)
 
 
     
