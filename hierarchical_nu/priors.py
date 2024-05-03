@@ -551,7 +551,6 @@ class Priors(object):
 
         def make_dict_entry(d, arg):
             for k, v in arg.items():
-                print(k, v)
                 if k == "name":
                     # name should be replaces by LuminosityPrior etc.
                     d[k] = v[()].decode("ascii")
@@ -560,10 +559,8 @@ class Priors(object):
                     d[k] = v[()]
             return d
 
-        print(f)
 
         for key, value in f.items():
-            print(key, value)
             prior_dict = {}
             prior_dict["quantity"] = key
 
@@ -577,7 +574,6 @@ class Priors(object):
                 
                 container = []
                 for _, b in value.items():
-                    print(_, b)
                     prior_dict = {"quantity": key}
                     prior_dict = make_dict_entry(prior_dict, b)
                     container.append(PriorDictHandler.from_dict(prior_dict))
