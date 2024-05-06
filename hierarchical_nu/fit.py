@@ -31,7 +31,7 @@ from hierarchical_nu.detector.r2021 import (
 )
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
-from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrior
+from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrior, MultiSourcePrior
 from hierarchical_nu.source.source import spherical_to_icrs, uv_to_icrs
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
@@ -308,6 +308,21 @@ class StanFit:
 
         priors_dict = self._priors.to_dict()
 
+        def draw_prior_transform(prior, ax, x):
+            pdf = prior.pdf_logspace
+            ax.plot(
+                x,
+                pdf(np.power(10, x) * prior.UNITS),
+                color="black",
+                alpha=0.4,
+                zorder=0,
+            )
+
+        def draw_prior(prior, ax, x):
+            pdf = prior.pdf
+            ax.plot(x, pdf(x * prior.UNITS), color="black", alpha=0.4, zorder=0)
+
+
         for ax_double in axs:
             name = ax_double[0].get_title()
             # check if there is a prior available for the variable
@@ -320,18 +335,20 @@ class StanFit:
 
                 if "transform" in kwargs.keys():
                     # Assumes that the only sensible transformation is log10
-                    pdf = prior.pdf_logspace
-                    ax.plot(
-                        x,
-                        pdf(np.power(10, x) * prior.UNITS),
-                        color="black",
-                        alpha=0.4,
-                        zorder=0,
-                    )
+                    if isinstance(prior, MultiSourcePrior):
+                        for p in prior:
+                            draw_prior_transform(p, ax, x)
+                    else:
+                        draw_prior_transform(prior, ax, x)
+                            
 
                 else:
-                    pdf = prior.pdf
-                    ax.plot(x, pdf(x * prior.UNITS), color="black", alpha=0.4, zorder=0)
+                    if isinstance(prior, MultiSourcePrior):
+                        for p in prior:
+                            draw_prior(p, ax, x)
+                    else:
+                        draw_prior(prior, ax, x)
+
                 if isinstance(prior, UnitPrior):
                     try:
                         unit = prior.UNITS.unit
@@ -872,8 +889,6 @@ class StanFit:
         make plots and run classification check.
         """
 
-        # priors_dict = {}
-
         fit_inputs = {}
         fit_outputs = {}
         fit_meta = {}
@@ -890,8 +905,6 @@ class StanFit:
                 fit_meta["iter_sampling"] = 1000
 
             for k, v in f["fit/inputs"].items():
-                # if "mu" in k or "sigma" in k:
-                #    priors_dict[k] = v[()]
 
                 fit_inputs[k] = v[()]
 

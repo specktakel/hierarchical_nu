@@ -2,7 +2,7 @@ import numpy as np
 from typing import List
 from collections import OrderedDict
 
-from hierarchical_nu.priors import Priors
+from hierarchical_nu.priors import Priors, MultiSourcePrior
 from hierarchical_nu.stan.interface import StanInterface
 
 from hierarchical_nu.backend.stan_generator import (
@@ -792,25 +792,44 @@ class StanFitInterface(StanInterface):
                 self._atmo_integrated_flux = ForwardVariableDef(
                     "atmo_integrated_flux", "real"
                 )
-
+                
             if self._sources.point_source:
-                self._stan_prior_src_index_mu = ForwardVariableDef(
-                    "src_index_mu", "real"
-                )
-                self._stan_prior_src_index_sigma = ForwardVariableDef(
-                    "src_index_sigma", "real"
-                )
+                if isinstance(self._priors.src_index, MultiSourcePrior):
+                    mu_def = ForwardArrayDef("src_index_mu", "real", self._Ns_str)
+                    sigma_def = ForwardArrayDef("src_index_sigma", "real", self._Ns_str)
+                else:
+                    mu_def = ForwardVariableDef(
+                        "src_index_mu", "real"
+                    )
+                    sigma_def = ForwardVariableDef(
+                        "src_index_sigma", "real"
+                    )
+                self._stan_prior_src_index_mu = mu_def
+                self._stan_prior_src_index_sigma = sigma_def
                 # check for luminosity, if they all have the same prior
                 if self._priors.luminosity.name in ["normal", "lognormal"]:
-                    self._stan_prior_lumi_mu = ForwardVariableDef("lumi_mu", "real")
-                    self._stan_prior_lumi_sigma = ForwardVariableDef(
+                    if isinstance(self._priors.luminosity, MultiSourcePrior):
+                        mu_def = ForwardArrayDef("lumi_mu", "real", self._Ns_str)
+                        sigma_def = ForwardArrayDef("lumi_sigma", "real", self._Ns_str)
+                    else:
+                        mu_def = ForwardVariableDef("lumi_mu", "real")
+                        sigma_def = ForwardVariableDef(
                         "lumi_sigma", "real"
                     )
+                    self._stan_prior_lumi_mu = mu_def
+                    self._stan_prior_lumi_sigma = sigma_def
                 elif self._priors.luminosity.name == "pareto":
-                    self._stan_prior_lumi_xmin = ForwardVariableDef("lumi_xmin", "real")
-                    self._stan_prior_lumi_alpha = ForwardVariableDef(
-                        "lumi_alpha", "real"
-                    )
+                    if isinstance(self._priors.luminosity, MultiSourcePrior):
+                        xmin_def = ForwardArrayDef("lumi_xmin", "real", self._Ns_str)
+                        alpha_def = ForwardArrayDef("lumi_alpha", "real", self._Ns_str)
+                    else:
+                        xmin_def = ForwardVariableDef("lumi_xmin", "real")
+                        alpha_def = ForwardVariableDef(
+                            "lumi_alpha", "real"
+                        )
+
+                    self._stan_prior_lumi_xmin = xmin_def
+                    self._stan_prior_lumi_alpha = alpha_def
 
             if self._sources.diffuse:
                 self._stan_prior_f_diff_mu = ForwardVariableDef("f_diff_mu", "real")
@@ -1600,34 +1619,67 @@ class StanFitInterface(StanInterface):
             # Priors
             if self.sources.point_source:
                 if self._priors.luminosity.name in ["normal", "lognormal"]:
-                    StringExpression(
-                        [
-                            self._L,
-                            " ~ ",
-                            FunctionCall(
-                                [
-                                    self._stan_prior_lumi_mu,
-                                    self._stan_prior_lumi_sigma,
-                                ],
-                                self._priors.luminosity.name,
-                            ),
-                        ]
-                    )
+                    if isinstance(self._priors.luminosity, MultiSourcePrior):
+                        with ForLoopContext(1, self._Ns, "i") as i:
+                            StringExpression(
+                            [
+                                self._L[i],
+                                " ~ ",
+                                FunctionCall(
+                                    [
+                                        self._stan_prior_lumi_mu[i],
+                                        self._stan_prior_lumi_sigma[i],
+                                    ],
+                                    self._priors.luminosity.name,
+                                ),
+                            ]
+                        )
+                    else:
+                        StringExpression(
+                            [
+                                self._L,
+                                " ~ ",
+                                FunctionCall(
+                                    [
+                                        self._stan_prior_lumi_mu,
+                                        self._stan_prior_lumi_sigma,
+                                    ],
+                                    self._priors.luminosity.name,
+                                ),
+                            ]
+                        )
 
                 elif self._priors.luminosity.name == "pareto":
-                    StringExpression(
-                        [
-                            self._L,
-                            " ~ ",
-                            FunctionCall(
+                    if isinstance(self._priors.luminosity, MultiSourcePrior):
+                        with ForLoopContext(1, self._Ns, "i") as i:
+                            StringExpression(
                                 [
-                                    self._stan_prior_lumi_xmin,
-                                    self._stan_prior_lumi_alpha,
-                                ],
-                                self._priors.luminosity.name,
-                            ),
-                        ]
-                    )
+                                    self._L[i],
+                                    " ~ ",
+                                    FunctionCall(
+                                        [
+                                            self._stan_prior_lumi_xmin[i],
+                                            self._stan_prior_lumi_alpha[i],
+                                        ],
+                                        self._priors.luminosity.name,
+                                    ),
+                                ]
+                            )
+
+                    else:
+                        StringExpression(
+                            [
+                                self._L,
+                                " ~ ",
+                                FunctionCall(
+                                    [
+                                        self._stan_prior_lumi_xmin,
+                                        self._stan_prior_lumi_alpha,
+                                    ],
+                                    self._priors.luminosity.name,
+                                ),
+                            ]
+                        )
 
                 else:
                     raise NotImplementedError(
@@ -1636,19 +1688,35 @@ class StanFitInterface(StanInterface):
 
                 if self._priors.src_index.name not in ["normal", "lognormal"]:
                     raise ValueError("Prior type for source index not recognised.")
-                StringExpression(
-                    [
-                        self._src_index,
-                        " ~ ",
-                        FunctionCall(
+                if isinstance(self._priors.src_index, MultiSourcePrior):
+                    with ForLoopContext(1, self._Ns, "i") as i:
+                        StringExpression(
                             [
-                                self._stan_prior_src_index_mu,
-                                self._stan_prior_src_index_sigma,
-                            ],
-                            self._priors.src_index.name,
-                        ),
-                    ]
-                )
+                                self._src_index[i],
+                                " ~ ",
+                                FunctionCall(
+                                    [
+                                        self._stan_prior_src_index_mu[i],
+                                        self._stan_prior_src_index_sigma[i],
+                                    ],
+                                    self._priors.src_index.name,
+                                ),
+                            ]
+                        )
+                else:
+                    StringExpression(
+                        [
+                            self._src_index,
+                            " ~ ",
+                            FunctionCall(
+                                [
+                                    self._stan_prior_src_index_mu,
+                                    self._stan_prior_src_index_sigma,
+                                ],
+                                self._priors.src_index.name,
+                            ),
+                        ]
+                    )
 
             if self.sources.diffuse:
                 if self._priors.diffuse_flux.name not in ["normal", "lognormal"]:

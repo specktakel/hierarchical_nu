@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union
+from typing import Union, Iterable
 import astropy.units as u
 from astropy.units.core import UnitConversionError
 import numpy as np
@@ -221,14 +221,12 @@ class UnitPrior:
                 self._prior = name(mu=mu.to_value(units), sigma=sigma.to_value(units))
             elif name == ParetoPrior:
                 pass
-        self._pdf = self._prior.pdf
-        self._pdf_logspace = self._prior.pdf_logspace
 
     def pdf(self, x):
-        return self._pdf(x.to_value(self._units))
+        return self._prior.pdf(x.to_value(self._units))
 
     def pdf_logspace(self, x):
-        return self._pdf_logspace(x.to_value(self._units))
+        return self._prior.pdf_logspace(x.to_value(self._units))
 
     @property
     def mu(self):
@@ -275,10 +273,17 @@ class UnitPrior:
     def alpha(self, val):
         self._prior.alpha = val
 
+    @property
+    def name(self):
+        return self._prior.name
+
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897
-    def __getattr__(self, name):
-        return self._prior.__getattribute__(name)
+    # def __getattr__(self, name):
+    #     return self._prior.__getattribute__(name)
+
+    def to_dict(self, units):
+        return self._prior.to_dict(units)
 
 
 class UnitlessPrior:
@@ -328,11 +333,24 @@ class UnitlessPrior:
     def alpha(self, val: float):
         self._prior.alpha = val
 
+    @property
+    def name(self):
+        return self._prior.name
+    
+    def pdf(self, x):
+        return self._prior.pdf(x)
+
+    def pdf_logspace(self, x):
+        return self._prior.pdf_logspace(x)
+
     # Poor man's conditional inheritance
     # copied from https://stackoverflow.com/a/65754897
     # only in case someone tries to do self._mu or similar, then the private attribute should be accessed
-    def __getattr__(self, name):
-        return self._prior.__getattribute__(name)
+    # def __getattr__(self, name):
+    #     return self._prior.__getattribute__(name)
+
+    def to_dict(self, units):
+        return self._prior.to_dict(units)
 
 
 class LuminosityPrior(UnitPrior):
@@ -384,6 +402,67 @@ class IndexPrior(UnitlessPrior):
     ):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
+
+class MultiSourcePrior:
+    def __init__(self, priors):
+        assert all(isinstance(_._prior, type(priors[0]._prior)) for _ in priors)
+        self._priors = priors
+
+    def __getitem__(self, index):
+        return self._priors[index]
+    
+    def __len__(self):
+        return len(self._priors)
+    
+    @property
+    def name(self):
+        return self._priors[0]._prior.name
+
+
+class MultiSourceLuminosityPrior(MultiSourcePrior, LuminosityPrior):
+    def __init__(self, priors: Iterable[LuminosityPrior]):
+        assert all (isinstance(_, LuminosityPrior) for _ in priors)
+        super().__init__(priors)
+
+    @property
+    def mu(self):
+        try:
+            return np.array([_.mu for _ in self._priors])
+        except TypeError:
+            return np.array([_.mu.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
+    
+    @property
+    def sigma(self):
+        try:
+            return np.array([_.sigma for _ in self._priors])
+        except TypeError:
+            return np.array([_.sigma.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
+    
+    @property
+    def xmin(self):
+        try:
+            return np.array([_.xmin for _ in self._priors])
+        except TypeError:
+            return np.array([_.xmin.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
+    
+    @property
+    def alpha(self):
+        return np.array([_.alpha for _ in self._priors])
+      
+
+class MultiSourceIndexPrior(MultiSourcePrior, IndexPrior):
+    def __init__(self, priors: Iterable[IndexPrior]):
+        assert all (isinstance(_, IndexPrior) for _ in priors)
+        super().__init__(priors)
+
+    @property
+    def mu(self):
+        return np.array([_.mu for _ in self._priors])
+       
+    @property
+    def sigma(self):
+        return np.array([_.sigma for _ in self._priors])
+    
 
 class Priors(object):
     """
@@ -478,11 +557,20 @@ class Priors(object):
     def _writeto(self, f):
         priors_dict = self.to_dict()
 
+        def create_dataset(g, prior):
+            for key, value in prior.to_dict(prior.UNITS_STRING).items():
+                g.create_dataset(key, data=value)
+
         for key, value in priors_dict.items():
             g = f.create_group(key)
 
-            for key, value in value.to_dict(value.UNITS_STRING).items():
-                g.create_dataset(key, data=value)
+            if isinstance(value, MultiSourcePrior):
+                for c, prior in enumerate(value):
+                    sub_g = g.create_group(f"ps_{c}")
+                    create_dataset(sub_g, prior)
+
+            else:
+                create_dataset(g, value)
 
     def addto(self, file_name: str, group_name: str):
         with h5py.File(file_name, "r+") as f:
@@ -506,18 +594,38 @@ class Priors(object):
     def _load_from(cls, f):
         priors_dict = {}
 
+
+        def make_dict_entry(d, arg):
+            for k, v in arg.items():
+                if k == "name":
+                    # name should be replaces by LuminosityPrior etc.
+                    d[k] = v[()].decode("ascii")
+
+                else:
+                    d[k] = v[()]
+            return d
+
         for key, value in f.items():
             prior_dict = {}
             prior_dict["quantity"] = key
-            for k, v in value.items():
-                if k == "name":
-                    # name should be replaces by LuminosityPrior etc.
-                    prior_dict[k] = v[()].decode("ascii")
 
-                else:
-                    prior_dict[k] = v[()]
+            # for k, v in value.items():
+            try:
+                prior_dict = make_dict_entry(prior_dict, value)
+                priors_dict[key] = PriorDictHandler.from_dict(prior_dict)
+            except TypeError:
+                # Found the multi source prior
+                
+                container = []
+                for _, b in value.items():
+                    prior_dict = {"quantity": key}
+                    prior_dict = make_dict_entry(prior_dict, b)
+                    container.append(PriorDictHandler.from_dict(prior_dict))
+                if key == "src_index":
+                    priors_dict[key] = MultiSourceIndexPrior(container)
+                elif key == "L":
+                    priors_dict[key] = MultiSourceLuminosityPrior(container)
 
-            priors_dict[key] = PriorDictHandler.from_dict(prior_dict)
         return cls.from_dict(priors_dict)
 
     @classmethod
