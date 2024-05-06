@@ -894,6 +894,80 @@ class StanFit:
         make plots and run classification check.
         """
 
+
+        if len(filename) == 1:
+            
+            event_types, events, obs_time_dict, priors, fit_inputs, fit_outputs, fit_meta = cls._from_file(filename[0])
+
+            fit = cls(Sources(), event_types, events, obs_time_dict, priors)
+
+        else:
+            fit_outputs = []
+            fit_meta = []
+            for file in filename:
+                event_types, events, obs_time_dict, priors, fit_inputs, outputs, meta = cls._from_file(file)
+                fit_outputs.append(outputs)
+                fit_meta.append(meta)
+
+
+        fit._fit_output = fit_outputs
+        fit._fit_inputs = fit_inputs
+        fit._fit_meta = fit_meta
+
+        if "src_index_grid" in fit_inputs.keys():
+            fit._def_var_names.append("L")
+            fit._def_var_names.append("src_index")
+
+        if "diff_index_grid" in fit_inputs.keys():
+            fit._def_var_names.append("F_diff")
+            fit._def_var_names.append("diff_index")
+
+        if "atmo_integ_val" in fit_inputs.keys():
+            fit._def_var_names.append("F_atmo")
+
+        if "src_index_grid" in fit_inputs.keys() and (
+            "atmo_integ_val" in fit_inputs.keys()
+            or "diff_index_grid" in fit_inputs.keys()
+        ):
+            fit._def_var_names.append("f_arr")
+            fit._def_var_names.append("f_det")
+
+        return fit
+
+        
+
+
+
+        fit = cls(Sources(), event_types, events, obs_time_dict, priors)
+
+        fit._fit_output = fit_outputs
+        fit._fit_inputs = fit_inputs
+        fit._fit_meta = fit_meta
+
+        if "src_index_grid" in fit_inputs.keys():
+            fit._def_var_names.append("L")
+            fit._def_var_names.append("src_index")
+
+        if "diff_index_grid" in fit_inputs.keys():
+            fit._def_var_names.append("F_diff")
+            fit._def_var_names.append("diff_index")
+
+        if "atmo_integ_val" in fit_inputs.keys():
+            fit._def_var_names.append("F_atmo")
+
+        if "src_index_grid" in fit_inputs.keys() and (
+            "atmo_integ_val" in fit_inputs.keys()
+            or "diff_index_grid" in fit_inputs.keys()
+        ):
+            fit._def_var_names.append("f_arr")
+            fit._def_var_names.append("f_det")
+
+        return fit
+
+
+    @staticmethod
+    def _from_file(filename):
+
         fit_inputs = {}
         fit_outputs = {}
         fit_meta = {}
@@ -967,31 +1041,9 @@ class StanFit:
                     pass
             events.select(mask)
 
-        fit = cls(Sources(), event_types, events, obs_time_dict, priors)
+        return event_types, events, obs_time_dict, priors, fit_inputs, fit_outputs, fit_meta
 
-        fit._fit_output = fit_outputs
-        fit._fit_inputs = fit_inputs
-        fit._fit_meta = fit_meta
-
-        if "src_index_grid" in fit_inputs.keys():
-            fit._def_var_names.append("L")
-            fit._def_var_names.append("src_index")
-
-        if "diff_index_grid" in fit_inputs.keys():
-            fit._def_var_names.append("F_diff")
-            fit._def_var_names.append("diff_index")
-
-        if "atmo_integ_val" in fit_inputs.keys():
-            fit._def_var_names.append("F_atmo")
-
-        if "src_index_grid" in fit_inputs.keys() and (
-            "atmo_integ_val" in fit_inputs.keys()
-            or "diff_index_grid" in fit_inputs.keys()
-        ):
-            fit._def_var_names.append("f_arr")
-            fit._def_var_names.append("f_det")
-
-        return fit
+        
 
     def diagnose(self):
         try:
