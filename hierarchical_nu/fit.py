@@ -952,9 +952,12 @@ class StanFit:
             for key in keys:
                 if key == "parameters":
                     meta[key] = fit_meta[0][key]
-                elif key == "iter_sampling" or key == "chains":
+                elif key == "iter_sampling":
                     assert np.unique(np.array([_[key] for _ in fit_meta])).size == 1
                     meta[key] = fit_meta[0][key]
+                elif key == "chains":
+                    assert np.unique(np.array([_[key] for _ in fit_meta])).size == 1
+                    meta[key] = np.sum([_[key] for _ in fit_meta])
                 else:
                     meta[key] = np.vstack([_[key] for _ in fit_meta])
 
