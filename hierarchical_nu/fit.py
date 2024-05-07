@@ -31,7 +31,13 @@ from hierarchical_nu.detector.r2021 import (
 )
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
-from hierarchical_nu.priors import Priors, NormalPrior, LogNormalPrior, UnitPrior, MultiSourcePrior
+from hierarchical_nu.priors import (
+    Priors,
+    NormalPrior,
+    LogNormalPrior,
+    UnitPrior,
+    MultiSourcePrior,
+)
 from hierarchical_nu.source.source import spherical_to_icrs, uv_to_icrs
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
@@ -322,7 +328,6 @@ class StanFit:
             pdf = prior.pdf
             ax.plot(x, pdf(x * prior.UNITS), color="black", alpha=0.4, zorder=0)
 
-
         for ax_double in axs:
             name = ax_double[0].get_title()
             # check if there is a prior available for the variable
@@ -340,7 +345,6 @@ class StanFit:
                             draw_prior_transform(p, ax, x)
                     else:
                         draw_prior_transform(prior, ax, x)
-                            
 
                 else:
                     if isinstance(prior, MultiSourcePrior):
@@ -551,7 +555,6 @@ class StanFit:
                     color="black",
                     ls="--",
                 )
-              
 
             elif highlight is None and assoc_threshold is not None:
                 if assoc_prob[c] >= assoc_threshold:
@@ -598,7 +601,13 @@ class StanFit:
         if isinstance(center, int):
             center = self.get_src_position(center)
         ax, mapper = self._plot_energy_posterior(
-            ax, center, assoc_idx, radius, color_scale, highlight, assoc_threshold,
+            ax,
+            center,
+            assoc_idx,
+            radius,
+            color_scale,
+            highlight,
+            assoc_threshold,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -658,7 +667,7 @@ class StanFit:
                         coords[i].ra.deg,
                         coords[i].dec.deg,
                         color=color[i],
-                        zorder=2.,
+                        zorder=2.0,
                         transform=ax.get_transform("icrs"),
                         edgecolor=edgecolor,
                         facecolor="none",
@@ -752,7 +761,13 @@ class StanFit:
             center = self.get_src_position(center)
 
         ax, mapper = self._plot_energy_posterior(
-            ax, center, assoc_idx, radius, color_scale, highlight, assoc_threshold,
+            ax,
+            center,
+            assoc_idx,
+            radius,
+            color_scale,
+            highlight,
+            assoc_threshold,
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -775,18 +790,20 @@ class StanFit:
         return fig, ax
 
     def save(self, path, overwrite: bool = False):
-        
+
         # Check if filename consists of a path to some directory as well as the filename
         dirname = os.path.dirname(path)
         filename = os.path.basename(path)
         if dirname:
             if not os.path.exists(dirname):
-                logger.warning(f"{dirname} does not exist, saving instead to {os.getcwd()}")
+                logger.warning(
+                    f"{dirname} does not exist, saving instead to {os.getcwd()}"
+                )
                 dirname = os.getcwd()
-        else: 
+        else:
             dirname = os.getcwd()
         path = Path(dirname) / Path(filename)
-        
+
         if os.path.exists(path) and not overwrite:
             logger.warning(f"File {filename} already exists.")
             file = os.path.splitext(filename)[0]
@@ -894,25 +911,55 @@ class StanFit:
         make plots and run classification check.
         """
 
-
         if len(filename) == 1:
-            
-            event_types, events, obs_time_dict, priors, fit_inputs, fit_outputs, fit_meta = cls._from_file(filename[0])
+
+            (
+                event_types,
+                events,
+                obs_time_dict,
+                priors,
+                fit_inputs,
+                fit_outputs,
+                fit_meta,
+            ) = cls._from_file(filename[0])
 
             fit = cls(Sources(), event_types, events, obs_time_dict, priors)
 
         else:
+            outputs = {}
+            meta = {}
             fit_outputs = []
             fit_meta = []
             for file in filename:
-                event_types, events, obs_time_dict, priors, fit_inputs, outputs, meta = cls._from_file(file)
+                (
+                    event_types,
+                    events,
+                    obs_time_dict,
+                    priors,
+                    fit_inputs,
+                    outputs,
+                    meta,
+                ) = cls._from_file(file)
                 fit_outputs.append(outputs)
                 fit_meta.append(meta)
 
+            keys = fit_outputs[0].keys()
+            for key in keys:
+                outputs[key] = np.vstack([_[key] for _ in fit_outputs])
+                # Some assert statement for the correct stacking?
 
-        fit._fit_output = fit_outputs
+            keys = fit_meta[0].keys()
+            for key in keys:
+                if key == "parameters":
+                    meta[key] = fit_meta[0][key]
+                else:
+                    meta[key] = np.vstack([_[key] for _ in fit_meta])
+
+            fit = cls(Sources(), event_types, events, obs_time_dict, priors)
+
+        fit._fit_output = outputs
         fit._fit_inputs = fit_inputs
-        fit._fit_meta = fit_meta
+        fit._fit_meta = meta
 
         if "src_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("L")
@@ -933,37 +980,6 @@ class StanFit:
             fit._def_var_names.append("f_det")
 
         return fit
-
-        
-
-
-
-        fit = cls(Sources(), event_types, events, obs_time_dict, priors)
-
-        fit._fit_output = fit_outputs
-        fit._fit_inputs = fit_inputs
-        fit._fit_meta = fit_meta
-
-        if "src_index_grid" in fit_inputs.keys():
-            fit._def_var_names.append("L")
-            fit._def_var_names.append("src_index")
-
-        if "diff_index_grid" in fit_inputs.keys():
-            fit._def_var_names.append("F_diff")
-            fit._def_var_names.append("diff_index")
-
-        if "atmo_integ_val" in fit_inputs.keys():
-            fit._def_var_names.append("F_atmo")
-
-        if "src_index_grid" in fit_inputs.keys() and (
-            "atmo_integ_val" in fit_inputs.keys()
-            or "diff_index_grid" in fit_inputs.keys()
-        ):
-            fit._def_var_names.append("f_arr")
-            fit._def_var_names.append("f_det")
-
-        return fit
-
 
     @staticmethod
     def _from_file(filename):
@@ -1041,9 +1057,15 @@ class StanFit:
                     pass
             events.select(mask)
 
-        return event_types, events, obs_time_dict, priors, fit_inputs, fit_outputs, fit_meta
-
-        
+        return (
+            event_types,
+            events,
+            obs_time_dict,
+            priors,
+            fit_inputs,
+            fit_outputs,
+            fit_meta,
+        )
 
     def diagnose(self):
         try:
@@ -1462,7 +1484,9 @@ class StanFit:
 
         if self._sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range
-            self._F_diff_par_range = Parameter.get_parameter("F_diff").par_range.to_value(1 / u.m**2 / u.s)
+            self._F_diff_par_range = Parameter.get_parameter(
+                "F_diff"
+            ).par_range.to_value(1 / u.m**2 / u.s)
 
         if self._sources.atmospheric:
             self._F_atmo_par_range = Parameter.get_parameter(
