@@ -905,7 +905,7 @@ class StanFit:
         self._fit_output.save_csvfiles(directory)
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, *filename):
         """
         Load fit output from file. Allows to
         make plots and run classification check.
@@ -919,8 +919,8 @@ class StanFit:
                 obs_time_dict,
                 priors,
                 fit_inputs,
-                fit_outputs,
-                fit_meta,
+                outputs,
+                meta,
             ) = cls._from_file(filename[0])
 
             fit = cls(Sources(), event_types, events, obs_time_dict, priors)
@@ -951,6 +951,9 @@ class StanFit:
             keys = fit_meta[0].keys()
             for key in keys:
                 if key == "parameters":
+                    meta[key] = fit_meta[0][key]
+                elif key == "iter_sampling" or key == "chains":
+                    assert np.unique(np.array([_[key] for _ in fit_meta])).size == 1
                     meta[key] = fit_meta[0][key]
                 else:
                     meta[key] = np.vstack([_[key] for _ in fit_meta])
