@@ -14,7 +14,11 @@ from ..backend.stan_generator import (
     ElseIfBlockContext,
 )
 from ..backend.operations import FunctionCall
-from ..backend.variable_definitions import ForwardVariableDef, InstantVariableDef
+from ..backend.variable_definitions import (
+    ForwardVariableDef,
+    InstantVariableDef,
+    ForwardArrayDef,
+)
 from ..backend.expression import StringExpression, ReturnStatement
 
 """
@@ -765,12 +769,145 @@ class LogParabolaSpectrum(SpectralShape):
         pass
 
     @classmethod
-    def make_stan_lpdf_func(cls):
-        pass
+    def make_stan_utility_func(cls):
+        # Needs to be passed to integrate_1d
+        lp = UserDefinedFunction(
+            "logparabola_dN_dE",
+            ["x", "xc", "theta", "x_r", "x_i"],
+            ["real", "real", "array[] real", "array[] real", "array[] int"],
+        )
+        with lp:
+            x = StringExpression(["x"])
+            a = InstantVariableDef("a", "real", ["theta[1]"])
+            b = InstantVariableDef("b", "real", ["theta[2]"])
+            # x0 = InstantVariableDef("x0", "real", ["x_r[1]"])
+            ReturnStatement(
+                [FunctionCall([(1.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
+            )
+
+        lp = UserDefinedFunction(
+            "logparabola_E_dN_dE",
+            ["x", "xc", "theta", "x_r", "x_i"],
+            ["real", "real", "array[] real", "array[] real", "array[] int"],
+        )
+        with lp:
+            x = StringExpression(["x"])
+            a = InstantVariableDef("a", "real", ["theta[1]"])
+            b = InstantVariableDef("b", "real", ["theta[2]"])
+            # x0 = InstantVariableDef("x0", "real", ["x_r[1]"])
+            ReturnStatement(
+                [FunctionCall([(2.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
+            )
+
+    @classmethod
+    def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
+        func = UserDefinedFunction(
+            f_name,
+            ["E", "E0", "alpha", "beta", "e_low", "e_up"],
+            ["real", "real", "real", "real", "real", "real"],
+            "real",
+        )
+
+        with func:
+            alpha = StringExpression(["alpha"])
+            beta = StringExpression(["beta"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
+            E = StringExpression(["E"])
+            E0 = StringExpression(["E0"])
+
+            N = ForwardVariableDef("N", "real")
+            p = ForwardVariableDef("p", "real")
+
+            with IfBlockContext([E, ">", e_up]):
+                ReturnStatement(["negative_infinity()"])
+            with ElseIfBlockContext([E, "<", e_low]):
+                ReturnStatement(["negative_infinity()"])
+
+            theta = ForwardArrayDef("theta", "real", ["[2]"])
+            x_i = ForwardArrayDef("x_i", "int", ["[0]"])
+            x_r = ForwardArrayDef("x_r", "real", ["[0]"])
+            theta[1] << alpha
+            theta[2] << beta
+            logEE0 = InstantVariableDef("logEE0", "real", ["log(E/E0)"])
+
+            N << FunctionCall(
+                [
+                    FunctionCall(
+                        [
+                            "logparabola_dN_dE",
+                            "log(e_low/E0)",
+                            "log(e_up/E0)",
+                            theta,
+                            x_r,
+                            x_i,
+                        ],
+                        "integrate_1d",
+                    )
+                ],
+                "log",
+            )
+            p << logEE0 * (-alpha - beta * logEE0)
 
     @classmethod
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
-        pass
+        func = UserDefinedFunction(
+            f_name,
+            ["E0", "alpha", "beta", "e_low", "e_up"],
+            ["real", "real", "real", "real", "real"],
+            "real",
+        )
+
+        with func:
+            alpha = StringExpression(["alpha"])
+            beta = StringExpression(["beta"])
+
+            f1 = ForwardVariableDef("f1", "real")
+            f2 = ForwardVariableDef("f2", "real")
+
+            theta = ForwardArrayDef("theta", "real", ["[2]"])
+            x_i = ForwardArrayDef("x_i", "int", ["[0]"])
+            x_r = ForwardArrayDef("x_r", "real", ["[0]"])
+            theta[1] << alpha
+            theta[2] << beta
+            logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
+            logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
+
+            f1 << FunctionCall(
+                [
+                    FunctionCall(
+                        [
+                            "logparabola_dN_dE",
+                            logEL_E0,
+                            logEU_E0,
+                            theta,
+                            x_r,
+                            x_i,
+                        ],
+                        "integrate_1d",
+                    )
+                ],
+                "log",
+            )
+
+            f2 << FunctionCall(
+                [
+                    FunctionCall(
+                        [
+                            "logparabola_E_dN_dE",
+                            logEL_E0,
+                            logEU_E0,
+                            theta,
+                            x_r,
+                            x_i,
+                        ],
+                        "integrate_1d",
+                    )
+                ],
+                "log",
+            )
+
+            ReturnStatement([f1 / f2])
 
 
 @u.quantity_input

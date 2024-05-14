@@ -114,7 +114,7 @@ class Expression(_BaseExpression):
 
         if isinstance(key, tuple):
             stan_code: TListTExpression = [self, "["]
-            for c, k in enumerate(key, start=-len(key)+1):
+            for c, k in enumerate(key, start=-len(key) + 1):
                 if isinstance(k, slice):
                     stan_code += [k.start, ":", k.stop]
                 else:
@@ -168,8 +168,7 @@ class Expression(_BaseExpression):
         inputs: TListTExpression = [self]
         inputs += other
         return Expression(inputs, stan_code)
-    """   
-
+    """
 
     def _make_operator_expression(self, other: TExpression, op_code, invert=False):
         stan_code: TListTExpression = []
@@ -228,6 +227,8 @@ class Expression(_BaseExpression):
     def __rmod__(self: "Expression", other: TExpression) -> "Expression":
         return self._make_operator_expression(other, "%", True)
 
+    def __neg__(self: "Expression") -> "Expression":
+        return self._make_operator_expression("", "-", True)
 
     """
     Comparisons are used internally to sort contexts, FIX
