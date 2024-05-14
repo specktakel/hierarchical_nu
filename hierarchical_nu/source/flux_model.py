@@ -3,6 +3,7 @@ from typing import Dict, Tuple, Union
 
 import astropy.units as u
 import numpy as np
+from scipy.integrate import quad
 
 from .power_law import BoundedPowerLaw
 from .parameter import Parameter
@@ -630,6 +631,146 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
             ReturnStatement([FunctionCall([p], "log")])
 
         return func
+
+
+class LogParabolaSpectrum(SpectralShape):
+    @u.quantity_input
+    def __init__(
+        self,
+        normalisation: Parameter,
+        normalisation_energy: u.GeV,
+        alpha: Parameter,
+        beta: Parameter,
+        lower_energy: u.GeV = 1e2 * u.GeV,
+        upper_energy: u.GeV = np.inf * u.GeV,
+        *args,
+        **kwargs
+    ):
+        """
+        Power law flux models.
+        Lives in the detector frame.
+
+        normalisation: float
+            Flux normalisation [GeV^-1 m^-2 s^-1]
+        normalisation_energy: float
+            Energy at which flux is normalised [GeV].
+        alpha: Parameter
+            Slope parameter of spectral shape
+        beta: Parameter
+            Curvature parameter of spectral shape
+        lower_energy: float
+            Lower energy bound [GeV].
+        upper_energy: float
+            Upper energy bound [GeV], unbounded by default.
+        """
+
+        super().__init__()
+        self._normalisation = normalisation
+        self._normalisation_energy = normalisation_energy
+        self._lower_energy = lower_energy
+        self._upper_energy = upper_energy
+        self._parameters = {"norm": normalisation, "alpha": alpha, "beta": beta}
+
+    @property
+    def energy_bounds(self):
+        return (self._lower_energy, self._upper_energy)
+
+    def set_parameter(self, par_name: str, par_value: float):
+        if par_name not in self._parameters:
+            raise ValueError("Parameter name {} not found".format(par_name))
+        par = self._parameters[par_name]
+        if not (par.par_range[0] <= self._par_value <= par.par_range[1]):
+            raise ValueError("Parameter {} is out of bounds".format(par_name))
+
+        par.value = par_value
+
+    @u.quantity_input
+    def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
+        alpha = self.parameters["alpha"].value
+        beta = self.parameters["beta"].value
+        E = energy.to_value(u.GeV)
+        E0 = self._normalisation_energy.to_value(u.GeV)
+        norm = self.parameters["norm"].value
+        if isinstance(energy, np.ndarray):
+            output = np.zeros_like(energy.value) * norm
+            mask = np.nonzero(
+                ((energy <= self._upper_energy) & (energy >= self._lower_energy))
+            )
+            output[mask] = norm * np.power(
+                E[mask] / E0, -alpha - beta * np.log(E[mask] / E0)
+            )
+            return output
+        if (energy < self._lower_energy) or (energy > self._upper_energy):
+            return 0.0 * norm
+        else:
+            return norm * np.power(E / E0, -alpha - beta * np.log(E / E0))
+
+    @u.quantity_input
+    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
+        # Calculate numerically in log space
+        # Transformed integrand reads
+        # exp((1-alpha) * x - beta * x**2
+        alpha = self.parameters["alpha"].value
+        beta = self.parameters["beta"].value
+        E0 = self._normalisation_energy.to_value(u.GeV)
+        norm = self.parameters["norm"].value
+
+        lower = np.atleast_1d(lower)
+        upper = np.atleast_1d(upper)
+        xl = np.log(lower.to_value(u.GeV) / E0)
+        xh = np.log(upper.to_value(u.GeV) / E0)
+
+        # Check edge cases
+        lower[((lower < self._lower_energy) & (upper > self._lower_energy))] = (
+            self._lower_energy
+        )
+        upper[((lower < self._upper_energy) & (upper > self._upper_energy))] = (
+            self._upper_energy
+        )
+
+        def integrand(x):
+            return np.exp((1 - alpha) * x - beta * np.power(x, 2))
+
+        results = np.zeros_like(xl)
+        for c in range(xl.size):
+            results[c] = quad(integrand, xl[c], xh[c])[0]
+        return results * norm * E0 * u.GeV
+
+    @property
+    @u.quantity_input
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
+        # Calculate numerically in log space
+        # Transformed integrand reads
+        # exp((2-alpha) * x - beta * x**2
+        alpha = self.parameters["alpha"].value
+        beta = self.parameters["beta"].value
+        E0 = self._normalisation_energy.to_value(u.GeV)
+        norm = self.parameters["norm"].value
+
+        xl = np.log(self._lower_energy.to_value(u.GeV) / E0)
+        xh = np.log(self._upper_energy.to_value(u.GeV) / E0)
+
+        def integrand(x):
+            return np.exp((2 - alpha) * x - beta * np.power(x, 2))
+
+        result = quad(integrand, xl, xh)[0]
+        return result * norm * np.power(E0, 2) * u.GeV**2
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    @classmethod
+    def make_stan_sampling_func(cls):
+        pass
+
+    @classmethod
+    def make_stan_lpdf_func(cls):
+        pass
+
+    @classmethod
+    def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
+        pass
 
 
 @u.quantity_input
