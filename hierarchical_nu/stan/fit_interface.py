@@ -218,22 +218,41 @@ class StanFitInterface(StanInterface):
                             src_index_ref = self._src_index[k]
 
                         # log_prob += log(p(Esrc|src_index))
-                        StringExpression(
-                            [
-                                _lp,
-                                " += ",
-                                self._src_spectrum_lpdf(
-                                    self._E[i],
-                                    src_index_ref,
-                                    self._ps_frame.stan_to_det(
-                                        self._Emin_src, self._z, k
+                        if isinstance(self._ps_spectrum, LogParabolaSpectrum):
+
+                            StringExpression(
+                                [
+                                    _lp,
+                                    " += ",
+                                    self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        src_index_ref,
+                                        self._ps_frame.stan_to_det(
+                                            self._Emin_src, self._z, k
+                                        ),
+                                        self._ps_frame.stan_to_det(
+                                            self._Emax_src, self._z, k
+                                        ),
                                     ),
-                                    self._ps_frame.stan_to_det(
-                                        self._Emax_src, self._z, k
+                                ]
+                            )
+                        else:
+                            StringExpression(
+                                [
+                                    _lp,
+                                    " += ",
+                                    self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        src_index_ref,
+                                        self._ps_frame.stan_to_det(
+                                            self._Emin_src, self._z, k
+                                        ),
+                                        self._ps_frame.stan_to_det(
+                                            self._Emax_src, self._z, k
+                                        ),
                                     ),
-                                ),
-                            ]
-                        )
+                                ]
+                            )
                         # Frame transformation
                         self._Esrc[i] << DetectorFrame.stan_to_src(
                             self._E[i], self._z, k
@@ -716,6 +735,9 @@ class StanFitInterface(StanInterface):
                 self._src_index_max = ForwardVariableDef("src_index_max", "real")
                 self._Lmin = ForwardVariableDef("Lmin", "real")
                 self._Lmax = ForwardVariableDef("Lmax", "real")
+                if isinstance(self._ps_spectrum, LogParabolaSpectrum):
+                    self._beta_min = ForwardVariableDef("beta_min", "real")
+                    self._beta_max = ForwardVariableDef("beta_max", "real")
 
             if self.sources.diffuse:
                 self._diff_index_min = ForwardVariableDef("diff_index_min", "real")
@@ -793,18 +815,14 @@ class StanFitInterface(StanInterface):
                 self._atmo_integrated_flux = ForwardVariableDef(
                     "atmo_integrated_flux", "real"
                 )
-                
+
             if self._sources.point_source:
                 if isinstance(self._priors.src_index, MultiSourcePrior):
                     mu_def = ForwardArrayDef("src_index_mu", "real", self._Ns_str)
                     sigma_def = ForwardArrayDef("src_index_sigma", "real", self._Ns_str)
                 else:
-                    mu_def = ForwardVariableDef(
-                        "src_index_mu", "real"
-                    )
-                    sigma_def = ForwardVariableDef(
-                        "src_index_sigma", "real"
-                    )
+                    mu_def = ForwardVariableDef("src_index_mu", "real")
+                    sigma_def = ForwardVariableDef("src_index_sigma", "real")
                 self._stan_prior_src_index_mu = mu_def
                 self._stan_prior_src_index_sigma = sigma_def
                 # check for luminosity, if they all have the same prior
@@ -814,9 +832,7 @@ class StanFitInterface(StanInterface):
                         sigma_def = ForwardArrayDef("lumi_sigma", "real", self._Ns_str)
                     else:
                         mu_def = ForwardVariableDef("lumi_mu", "real")
-                        sigma_def = ForwardVariableDef(
-                        "lumi_sigma", "real"
-                    )
+                        sigma_def = ForwardVariableDef("lumi_sigma", "real")
                     self._stan_prior_lumi_mu = mu_def
                     self._stan_prior_lumi_sigma = sigma_def
                 elif self._priors.luminosity.name == "pareto":
@@ -825,9 +841,7 @@ class StanFitInterface(StanInterface):
                         alpha_def = ForwardArrayDef("lumi_alpha", "real", self._Ns_str)
                     else:
                         xmin_def = ForwardVariableDef("lumi_xmin", "real")
-                        alpha_def = ForwardVariableDef(
-                            "lumi_alpha", "real"
-                        )
+                        alpha_def = ForwardVariableDef("lumi_alpha", "real")
 
                     self._stan_prior_lumi_xmin = xmin_def
                     self._stan_prior_lumi_alpha = alpha_def
@@ -950,7 +964,7 @@ class StanFitInterface(StanInterface):
                     ):
                         self._Emax_at_det << self._ps_frame.stan_to_det(
                             self._Emax_src, self._z, k
-                    )
+                        )
             else:
                 # Necessary to circumvent issues with the stan generator
                 with IfBlockContext(
@@ -960,7 +974,7 @@ class StanFitInterface(StanInterface):
                         self._Emin_at_det,
                     ]
                 ):
-                    self._Emin_at_det << self._Emin_src 
+                    self._Emin_at_det << self._Emin_src
                 with IfBlockContext(
                     [
                         self._Emax_src,
@@ -1209,6 +1223,13 @@ class StanFitInterface(StanInterface):
                         self._src_index_min,
                         self._src_index_max,
                     )
+                    if isinstance(self._ps_spectrum, LogParabolaSpectrum):
+                        self._beta = ParameterDef(
+                            "beta_index",
+                            "real",
+                            self._beta_min,
+                            self._beta_max,
+                        )
 
                 else:
                     self._src_index = ParameterVectorDef(
@@ -1218,10 +1239,19 @@ class StanFitInterface(StanInterface):
                         self._src_index_min,
                         self._src_index_max,
                     )
+                    if isinstance(self._ps_spectrum, LogParabolaSpectrum):
+                        self._beta = ParameterVectorDef(
+                            "beta_index",
+                            "real",
+                            self._beta_min,
+                            self._beta_max,
+                        )
 
             # Specify F_diff and diff_index to characterise the diffuse comp
             if self.sources.diffuse:
-                self._F_diff = ParameterDef("F_diff", "real", self._F_diff_min, self._F_diff_max)
+                self._F_diff = ParameterDef(
+                    "F_diff", "real", self._F_diff_min, self._F_diff_max
+                )
                 self._diff_index = ParameterDef(
                     "diff_index", "real", self._diff_index_min, self._diff_index_max
                 )
@@ -1623,18 +1653,18 @@ class StanFitInterface(StanInterface):
                     if isinstance(self._priors.luminosity, MultiSourcePrior):
                         with ForLoopContext(1, self._Ns, "i") as i:
                             StringExpression(
-                            [
-                                self._L[i],
-                                " ~ ",
-                                FunctionCall(
-                                    [
-                                        self._stan_prior_lumi_mu[i],
-                                        self._stan_prior_lumi_sigma[i],
-                                    ],
-                                    self._priors.luminosity.name,
-                                ),
-                            ]
-                        )
+                                [
+                                    self._L[i],
+                                    " ~ ",
+                                    FunctionCall(
+                                        [
+                                            self._stan_prior_lumi_mu[i],
+                                            self._stan_prior_lumi_sigma[i],
+                                        ],
+                                        self._priors.luminosity.name,
+                                    ),
+                                ]
+                            )
                     else:
                         StringExpression(
                             [
