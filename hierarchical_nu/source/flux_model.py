@@ -760,6 +760,26 @@ class LogParabolaSpectrum(SpectralShape):
         result = quad(integrand, xl, xh)[0]
         return result * norm * np.power(E0, 2) * u.GeV**2
 
+    def flux_conv(self):
+        # Calculate (\int dN / dE / dA /dt dE)/(\int E dN / dE / dA / dt dE)
+        def dN_dx(x, alpha, beta):
+            return np.exp((1.0 - alpha) * x - beta * np.power(x, 2))
+
+        def x_dN_dx(x, alpha, beta):
+            return np.exp((2.0 - alpha) * x - beta * np.power(x, 2))
+
+        alpha = self.parameters["alpha"].value
+        beta = self.parameters["beta"].value
+        E0 = self._normalisation_energy.to_value(u.GeV)
+
+        xl = np.log(self._lower_energy.to_value(u.GeV) / E0)
+        xh = np.log(self._upper_energy.to_value(u.GeV) / E0)
+
+        f1 = quad(dN_dx, xl, xh, (alpha, beta))[0]
+        f2 = quad(x_dN_dx, xl, xh, (alpha, beta))[0]
+
+        return f1 / f2 / E0
+
     @property
     def parameters(self):
         return self._parameters
@@ -889,7 +909,7 @@ class LogParabolaSpectrum(SpectralShape):
                 ],
                 "log",
             )
-
+            # Additional factor of E0 due to further transformation of E->log(E/E0)->x
             f2 << FunctionCall(
                 [
                     FunctionCall(
@@ -905,7 +925,7 @@ class LogParabolaSpectrum(SpectralShape):
                     )
                 ],
                 "log",
-            )
+            ) * E0
 
             ReturnStatement([f1 / f2])
 
