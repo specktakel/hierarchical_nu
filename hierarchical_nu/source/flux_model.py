@@ -932,6 +932,8 @@ class LogParabolaSpectrum(SpectralShape):
             p << logE_E0 * (-theta[1] - theta[2] * logE_E0)
             ReturnStatement([p - N])
 
+        return func
+
     @classmethod
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
         func = UserDefinedFunction(
@@ -994,6 +996,8 @@ class LogParabolaSpectrum(SpectralShape):
             )
 
             ReturnStatement([f1 / f2])
+
+        return func
 
 
 @u.quantity_input
