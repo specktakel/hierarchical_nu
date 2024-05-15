@@ -787,7 +787,7 @@ class LogParabolaSpectrum(SpectralShape):
             )
         # Same here
         lp = UserDefinedFunction(
-            "logparabola_dN_dx",
+            "logparabola_x_dN_dx",
             ["x", "xc", "theta", "x_r", "x_i"],
             ["real", "real", "array[] real", "data array[] real", "data array[] int"],
             "real",
@@ -854,23 +854,22 @@ class LogParabolaSpectrum(SpectralShape):
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
         func = UserDefinedFunction(
             f_name,
-            ["E0", "alpha", "beta", "e_low", "e_up"],
-            ["real", "real", "real", "real", "real"],
+            ["theta", "x_r", "x_i"],
+            ["array[] real", "data array[] real", "data array[] int"],
             "real",
         )
 
         with func:
-            alpha = StringExpression(["alpha"])
-            beta = StringExpression(["beta"])
+            theta = StringExpression(["theta"])
+
+            # Unpack variables
+            E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
+            e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
+            e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
 
             f1 = ForwardVariableDef("f1", "real")
             f2 = ForwardVariableDef("f2", "real")
 
-            theta = ForwardArrayDef("theta", "real", ["[2]"])
-            x_i = ForwardArrayDef("x_i", "int", ["[0]"])
-            x_r = ForwardArrayDef("x_r", "real", ["[0]"])
-            theta[1] << alpha
-            theta[2] << beta
             logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
             logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
 
@@ -882,8 +881,8 @@ class LogParabolaSpectrum(SpectralShape):
                             logEL_E0,
                             logEU_E0,
                             theta,
-                            x_r,
-                            x_i,
+                            "x_r",
+                            "x_i",
                         ],
                         "integrate_1d",
                     )
@@ -899,8 +898,8 @@ class LogParabolaSpectrum(SpectralShape):
                             logEL_E0,
                             logEU_E0,
                             theta,
-                            x_r,
-                            x_i,
+                            "x_r",
+                            "x_i",
                         ],
                         "integrate_1d",
                     )
