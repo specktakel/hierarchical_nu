@@ -9,6 +9,7 @@ from typing import Union
 from .flux_model import (
     PointSourceFluxModel,
     PowerLawSpectrum,
+    LogParabolaSpectrum,
     TwiceBrokenPowerLaw,
     IsotropicDiffuseBG,
     integral_power_law,
@@ -315,6 +316,84 @@ class PointSource(Source):
             norm,
             Enorm_value,
             index,
+            frame.transform(lower.value, redshift),
+            frame.transform(upper.value, redshift),
+        )
+
+        total_power = spectral_shape.total_flux_density
+        norm.value *= total_flux / total_power
+        norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
+        norm.fixed = True
+        return cls(name, dec, ra, redshift, spectral_shape, frame)
+
+    @classmethod
+    @u.quantity_input
+    def make_logparabola_source(
+        cls,
+        name: str,
+        dec: u.rad,
+        ra: u.rad,
+        luminosity: Parameter,
+        alpha: Parameter,
+        beta: Parameter,
+        redshift: float,
+        lower: Parameter,
+        upper: Parameter,
+        frame: ReferenceFrame = SourceFrame,
+    ):
+        """
+        Factory class for creating sources with powerlaw spectrum and given luminosity.
+        Luminosity and all energies given as arguments/parameters live in the source frame
+        and are converted to detector frame internally.
+
+        Parameters:
+            name: str
+                Source name
+            dec: u.rad,
+                Declination of the source
+            ra: u.rad,
+                Right Ascension of the source
+            luminosity: Parameter,
+                luminosity
+            alpha: Parameter
+                Spectral index
+            beta: Parameter
+                Curvature parameter
+            redshift: float
+            lower: Parameter
+                Lower energy bound
+            upper: Parameter
+                Upper energy bound
+            frame: ReferenceFrame
+                Reference frame in which source energy is defined
+        """
+
+        total_flux = luminosity.value / (
+            4 * np.pi * luminosity_distance(redshift) ** 2
+        )  # here flux is W / m^2, lives in the detector frame
+
+        # Each source has an independent normalization, thus use the source name as identifier
+        # Normalisation to dN/(dEdtdA)
+        norm = Parameter(
+            # is defined at the detector!
+            1 / (u.GeV * u.s * u.m**2),
+            "{}_norm".format(name),
+            fixed=False,
+            par_range=(0, np.inf),
+            scale=ParScale.log,
+        )
+
+        # Use Enorm if set, otherwise fix to 1e5 GeV
+        try:
+            Enorm_value = Parameter.get_parameter("Enorm").value
+        except ValueError:
+            Enorm_value = 1e5 * u.GeV
+
+        spectral_shape = LogParabolaSpectrum(
+            norm,
+            Enorm_value,
+            alpha,
+            beta,
             frame.transform(lower.value, redshift),
             frame.transform(upper.value, redshift),
         )

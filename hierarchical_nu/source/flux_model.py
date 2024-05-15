@@ -788,8 +788,33 @@ class LogParabolaSpectrum(SpectralShape):
         return self._parameters
 
     @classmethod
-    def make_stan_sampling_func(cls):
-        pass
+    def make_stan_sampling_func(cls, f_name):
+        raise NotImplementedError
+        # no inverse transform sampling for you!
+        func = UserDefinedFunction(
+            f_name, ["alpha", "beta", "e_low", "e_up"], ["real", "real", "real"], "real"
+        )
+
+        with func:
+            uni_sample = ForwardVariableDef("uni_sample", "real")
+            norm = ForwardVariableDef("norm", "real")
+            a = StringExpression(["a"])
+            b = StringExpression(["b"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
+            E0 = StringExpression(["E0"])
+
+            norm << FunctionCall(["logparabola_dN_dx"], "integrate_1d")
+
+            uni_sample << FunctionCall([0, 1], "uniform_rng")
+            ReturnStatement(
+                [
+                    (uni_sample * (1 - alpha) / norm + e_low ** (1 - alpha))
+                    ** (1 / (1 - alpha))
+                ]
+            )
+
+        return func
 
     @classmethod
     def make_stan_utility_func(cls):
