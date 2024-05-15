@@ -39,6 +39,7 @@ from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.source.source import Sources, DetectorFrame, SourceFrame
+from hierarchical_nu.source.flux_model import LogParabolaSpectrum
 from hierarchical_nu.detector.icecube import EventType, NT, CAS
 
 from hierarchical_nu.detector.detector_model import (

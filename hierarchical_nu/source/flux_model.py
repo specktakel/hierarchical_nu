@@ -673,7 +673,7 @@ class LogParabolaSpectrum(SpectralShape):
         self._normalisation_energy = normalisation_energy
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
-        self._parameters = {"norm": normalisation, "alpha": alpha, "beta": beta}
+        self._parameters = {"norm": normalisation, "index": alpha, "beta": beta}
 
     @property
     def energy_bounds(self):
@@ -690,7 +690,7 @@ class LogParabolaSpectrum(SpectralShape):
 
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
-        alpha = self.parameters["alpha"].value
+        alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
         E = energy.to_value(u.GeV)
         E0 = self._normalisation_energy.to_value(u.GeV)
@@ -714,7 +714,7 @@ class LogParabolaSpectrum(SpectralShape):
         # Calculate numerically in log space
         # Transformed integrand reads
         # exp((1-alpha) * x - beta * x**2
-        alpha = self.parameters["alpha"].value
+        alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
         E0 = self._normalisation_energy.to_value(u.GeV)
         norm = self.parameters["norm"].value
@@ -732,16 +732,28 @@ class LogParabolaSpectrum(SpectralShape):
             self._upper_energy
         )
 
-        def integrand(x):
-            return np.exp((1 - alpha) * x - beta * np.power(x, 2))
-
         results = np.zeros(xl.shape) << 1 / u.m**2 / u.s
         for c in range(xl.size):
-            results[c] = quad(integrand, xl[c], xh[c])[0] * norm * E0 * u.GeV
+            results[c] = (
+                quad(self._dN_dx, xl[c], xh[c], (alpha, beta))[0] * norm * E0 * u.GeV
+            )
 
         if results.size == 1:
             return results[0]
         return results
+
+    @staticmethod
+    def _dN_dE(E, E0, alpha, beta):
+        # Unnormalised pdf
+        return np.power(E / E0, -alpha - beta * np.log(E / E0))
+
+    @staticmethod
+    def _dN_dx(x, alpha, beta):
+        return np.exp((1.0 - alpha) * x - beta * np.power(x, 2))
+
+    @staticmethod
+    def _x_dN_dx(x, alpha, beta):
+        return np.exp((2.0 - alpha) * x - beta * np.power(x, 2))
 
     @property
     @u.quantity_input
@@ -749,7 +761,7 @@ class LogParabolaSpectrum(SpectralShape):
         # Calculate numerically in log space
         # Transformed integrand reads
         # exp((2-alpha) * x - beta * x**2
-        alpha = self.parameters["alpha"].value
+        alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
         E0 = self._normalisation_energy.to_value(u.GeV)
         norm = self.parameters["norm"].value
@@ -757,35 +769,57 @@ class LogParabolaSpectrum(SpectralShape):
         xl = np.log(self._lower_energy.to_value(u.GeV) / E0)
         xh = np.log(self._upper_energy.to_value(u.GeV) / E0)
 
-        def integrand(x):
-            return np.exp((2 - alpha) * x - beta * np.power(x, 2))
-
-        result = quad(integrand, xl, xh)[0]
+        result = quad(self._x_dN_dx, xl, xh, (alpha, beta))[0]
         return result * norm * np.power(E0, 2) * u.GeV**2
 
     def flux_conv(self):
         # Calculate (\int dN / dE / dA /dt dE)/(\int E dN / dE / dA / dt dE)
-        def dN_dx(x, alpha, beta):
-            return np.exp((1.0 - alpha) * x - beta * np.power(x, 2))
-
-        def x_dN_dx(x, alpha, beta):
-            return np.exp((2.0 - alpha) * x - beta * np.power(x, 2))
-
-        alpha = self.parameters["alpha"].value
+        alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
         E0 = self._normalisation_energy.to_value(u.GeV)
 
         xl = np.log(self._lower_energy.to_value(u.GeV) / E0)
         xh = np.log(self._upper_energy.to_value(u.GeV) / E0)
 
-        f1 = quad(dN_dx, xl, xh, (alpha, beta))[0]
-        f2 = quad(x_dN_dx, xl, xh, (alpha, beta))[0]
+        f1 = quad(self._dN_dx, xl, xh, (alpha, beta))[0]
+        f2 = quad(self._x_dN_dx, xl, xh, (alpha, beta))[0]
 
         return f1 / f2 / E0
 
     @property
     def parameters(self):
         return self._parameters
+
+    @u.quantity_input
+    def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV, apply_lim: bool = True):
+        """
+        Return PDF.
+        """
+
+        E_input = np.atleast_1d(E.to_value(u.GeV))
+        Emin_input = Emin.to_value(u.GeV)
+        Emax_input = Emax.to_value(u.GeV)
+        alpha = self._parameters["index"].value
+        beta = self._parameters["beta"].value
+        E0 = self._normalisation_energy.to_value(u.GeV)
+
+        norm = (
+            quad(
+                self._dN_dx,
+                np.log(Emin_input / E0),
+                np.log(Emax_input / E0),
+                (alpha, beta),
+            )[0]
+            * E0
+        )
+
+        pdf = self._dN_dE(E_input, E0, alpha, beta) / norm
+        if apply_lim:
+            pdf[E_input < Emin_input] = 0.0
+            pdf[E_input > Emax_input] = 0.0
+        if pdf.size == 1:
+            return pdf[0]
+        return pdf
 
     @classmethod
     def make_stan_sampling_func(cls, f_name):
