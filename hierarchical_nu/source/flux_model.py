@@ -775,6 +775,7 @@ class LogParabolaSpectrum(SpectralShape):
             "logparabola_dN_dE",
             ["x", "xc", "theta", "x_r", "x_i"],
             ["real", "real", "array[] real", "array[] real", "array[] int"],
+            "real",
         )
         with lp:
             x = StringExpression(["x"])
@@ -789,6 +790,7 @@ class LogParabolaSpectrum(SpectralShape):
             "logparabola_E_dN_dE",
             ["x", "xc", "theta", "x_r", "x_i"],
             ["real", "real", "array[] real", "array[] real", "array[] int"],
+            "real",
         )
         with lp:
             x = StringExpression(["x"])
@@ -803,18 +805,17 @@ class LogParabolaSpectrum(SpectralShape):
     def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
         func = UserDefinedFunction(
             f_name,
-            ["E", "E0", "alpha", "beta", "e_low", "e_up"],
+            ["E", "E0", "a", "b", "e_low", "e_up"],
             ["real", "real", "real", "real", "real", "real"],
             "real",
         )
 
         with func:
-            alpha = StringExpression(["alpha"])
-            beta = StringExpression(["beta"])
+            a = StringExpression(["a"])
+            b = StringExpression(["b"])
             e_low = StringExpression(["e_low"])
             e_up = StringExpression(["e_up"])
             E = StringExpression(["E"])
-            E0 = StringExpression(["E0"])
 
             N = ForwardVariableDef("N", "real")
             p = ForwardVariableDef("p", "real")
@@ -827,17 +828,19 @@ class LogParabolaSpectrum(SpectralShape):
             theta = ForwardArrayDef("theta", "real", ["[2]"])
             x_i = ForwardArrayDef("x_i", "int", ["[0]"])
             x_r = ForwardArrayDef("x_r", "real", ["[0]"])
-            theta[1] << alpha
-            theta[2] << beta
-            logEE0 = InstantVariableDef("logEE0", "real", ["log(E/E0)"])
+            theta[1] << a
+            theta[2] << b
+            logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
+            logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
+            logE_E0 = InstantVariableDef("logEE0", "real", ["log(E/E0)"])
 
             N << FunctionCall(
                 [
                     FunctionCall(
                         [
                             "logparabola_dN_dE",
-                            "log(e_low/E0)",
-                            "log(e_up/E0)",
+                            logEL_E0,
+                            logEU_E0,
                             theta,
                             x_r,
                             x_i,
@@ -847,7 +850,8 @@ class LogParabolaSpectrum(SpectralShape):
                 ],
                 "log",
             )
-            p << logEE0 * (-alpha - beta * logEE0)
+            p << logE_E0 * (-a - b * logE_E0)
+            ReturnStatement([p - N])
 
     @classmethod
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
