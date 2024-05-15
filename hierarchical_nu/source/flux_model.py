@@ -787,7 +787,7 @@ class LogParabolaSpectrum(SpectralShape):
             )
         # Same here
         lp = UserDefinedFunction(
-            "logparabola_x_dN_dx",
+            "logparabola_dN_dx",
             ["x", "xc", "theta", "x_r", "x_i"],
             ["real", "real", "array[] real", "data array[] real", "data array[] int"],
             "real",
