@@ -735,10 +735,13 @@ class LogParabolaSpectrum(SpectralShape):
         def integrand(x):
             return np.exp((1 - alpha) * x - beta * np.power(x, 2))
 
-        results = np.zeros_like(xl)
+        results = np.zeros(xl.shape) << 1 / u.m**2 / u.s
         for c in range(xl.size):
-            results[c] = quad(integrand, xl[c], xh[c])[0]
-        return results * norm * E0 * u.GeV
+            results[c] = quad(integrand, xl[c], xh[c])[0] * norm * E0 * u.GeV
+
+        if results.size == 1:
+            return results[0]
+        return results
 
     @property
     @u.quantity_input
@@ -910,22 +913,26 @@ class LogParabolaSpectrum(SpectralShape):
                 "log",
             )
             # Additional factor of E0 due to further transformation of E->log(E/E0)->x
-            f2 << FunctionCall(
-                [
-                    FunctionCall(
-                        [
-                            "logparabola_x_dN_dx",
-                            logEL_E0,
-                            logEU_E0,
-                            theta,
-                            "x_r",
-                            "x_i",
-                        ],
-                        "integrate_1d",
-                    )
-                ],
-                "log",
-            ) * E0
+            (
+                f2
+                << FunctionCall(
+                    [
+                        FunctionCall(
+                            [
+                                "logparabola_x_dN_dx",
+                                logEL_E0,
+                                logEU_E0,
+                                theta,
+                                "x_r",
+                                "x_i",
+                            ],
+                            "integrate_1d",
+                        )
+                    ],
+                    "log",
+                )
+                * E0
+            )
 
             ReturnStatement([f1 / f2])
 
