@@ -22,7 +22,7 @@ from cmdstanpy import CmdStanModel
 
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_to_icrs
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
+from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, LogParabolaSpectrum
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.detector.r2021 import (
@@ -1233,6 +1233,7 @@ class StanFit:
             )
 
         integral_grid = []
+        integral_grid_2d = []
         atmo_integ_val = []
         obs_time = []
 
@@ -1252,11 +1253,21 @@ class StanFit:
             # Check for shared source index
             if self._shared_src_index:
                 key = "src_index"
+                if isinstance(
+                    self._sources.point_source[0].flux_model.spectral_shape,
+                    LogParabolaSpectrum,
+                ):
+                    key_beta = "beta_index"
 
             # Otherwise just use first source in the list
             # src_index_grid is identical for all point sources
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
+                if isinstance(
+                    self._sources.point_source[0].flux_model.spectral_shape,
+                    LogParabolaSpectrum,
+                ):
+                    key_beta = "%s_beta_index" % self._sources.point_source[0].name
 
             fit_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
@@ -1269,11 +1280,24 @@ class StanFit:
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
 
+            if isinstance(
+                self._sources.point_source[0].flux_model.spectral_shape,
+                LogParabolaSpectrum,
+            ):
+                fit_inputs["beta_index_grid"] = self._exposure_integral[
+                    event_type
+                ].par_grids[key_beta]
+                fit_inputs["beta_index_min"] = self._beta_index_par_range[0]
+                fit_inputs["beta_index_max"] = self._beta_index_par_range[1]
+                fit_inputs["E0"] = self._sources.point_source[0].flux_model.spectral_shape._normalisation_energy.to_value(u.GeV)
+
         # Inputs for priors of point sources
         if self._priors.src_index.name not in ["normal", "lognormal"]:
             raise ValueError("No other prior type for source index implemented.")
         fit_inputs["src_index_mu"] = self._priors.src_index.mu
         fit_inputs["src_index_sigma"] = self._priors.src_index.sigma
+
+        # TODO add beta prior
 
         if self._priors.luminosity.name == "lognormal":
             fit_inputs["lumi_mu"] = self._priors.luminosity.mu
@@ -1440,12 +1464,21 @@ class StanFit:
         """
 
         for c, event_type in enumerate(self._event_types):
-            integral_grid.append(
+            for grid in self._exposure_integral[event_type].integral_grid:
+                integral_grid.append([])
+                integral_grid_2d.append([])
+                if len(grid.shape) == 2:
+                    integral_grid_2d[-1].append(np.log(grid.to_value(u.m**2)).tolist())
+                    print(type(integral_grid_2d[-1]))
+
+                else:
+                    integral_grid[-1].append(np.log(grid.to_value(u.m**2)).tolist())
+            """ntegral_grid.append(
                 [
                     np.log(_.to(u.m**2).value).tolist()
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
-            )
+            )"""
 
             if self._sources.atmospheric:
                 atmo_integ_val.append(
@@ -1456,6 +1489,7 @@ class StanFit:
                 )
 
         fit_inputs["integral_grid"] = integral_grid
+        fit_inputs["integral_grid_2d"] = integral_grid_2d
         fit_inputs["atmo_integ_val"] = atmo_integ_val
         fit_inputs["T"] = obs_time
         # To work with cmdstanpy serialization
@@ -1483,10 +1517,17 @@ class StanFit:
 
             if self._shared_src_index:
                 key = "src_index"
+                key_beta = "beta_index"
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
+                key_beta = "%s_beta_index" % self._sources.point_source[0].name
 
             self._src_index_par_range = Parameter.get_parameter(key).par_range
+            if isinstance(
+                self._sources.point_source[0].flux_model.spectral_shape,
+                LogParabolaSpectrum,
+            ):
+                self._beta_index_par_range = Parameter.get_parameter(key_beta).par_range
 
         if self._sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range

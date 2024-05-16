@@ -752,8 +752,8 @@ class StanFitInterface(StanInterface):
                 self._Lmin = ForwardVariableDef("Lmin", "real")
                 self._Lmax = ForwardVariableDef("Lmax", "real")
                 if self._ps_spectrum == LogParabolaSpectrum:
-                    self._beta_min = ForwardVariableDef("beta_min", "real")
-                    self._beta_max = ForwardVariableDef("beta_max", "real")
+                    self._beta_index_min = ForwardVariableDef("beta_index_min", "real")
+                    self._beta_index_max = ForwardVariableDef("beta_index_max", "real")
                     self._E0 = ForwardVariableDef("E0", "real")
 
             if self.sources.diffuse:
@@ -1265,8 +1265,8 @@ class StanFitInterface(StanInterface):
                         self._beta_index = ParameterDef(
                             "beta_index",
                             "real",
-                            self._beta_min,
-                            self._beta_max,
+                            self._beta_index_min,
+                            self._beta_index_max,
                         )
 
                 else:
