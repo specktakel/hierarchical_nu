@@ -174,6 +174,7 @@ class PriorDictHandler:
             "F_diff": FluxPrior,
             "F_atmo": FluxPrior,
             "src_index": IndexPrior,
+            "beta_index": IndexPrior,
             "diff_index": IndexPrior,
         }
         prior_name = prior_dict["name"]
@@ -277,11 +278,6 @@ class UnitPrior:
     def name(self):
         return self._prior.name
 
-    # Poor man's conditional inheritance
-    # copied from https://stackoverflow.com/a/65754897
-    # def __getattr__(self, name):
-    #     return self._prior.__getattribute__(name)
-
     def to_dict(self, units):
         return self._prior.to_dict(units)
 
@@ -336,7 +332,7 @@ class UnitlessPrior:
     @property
     def name(self):
         return self._prior.name
-    
+
     def pdf(self, x):
         return self._prior.pdf(x)
 
@@ -410,10 +406,10 @@ class MultiSourcePrior:
 
     def __getitem__(self, index):
         return self._priors[index]
-    
+
     def __len__(self):
         return len(self._priors)
-    
+
     @property
     def name(self):
         return self._priors[0]._prior.name
@@ -421,7 +417,7 @@ class MultiSourcePrior:
 
 class MultiSourceLuminosityPrior(MultiSourcePrior, LuminosityPrior):
     def __init__(self, priors: Iterable[LuminosityPrior]):
-        assert all (isinstance(_, LuminosityPrior) for _ in priors)
+        assert all(isinstance(_, LuminosityPrior) for _ in priors)
         super().__init__(priors)
 
     @property
@@ -429,40 +425,48 @@ class MultiSourceLuminosityPrior(MultiSourcePrior, LuminosityPrior):
         try:
             return np.array([_.mu for _ in self._priors])
         except TypeError:
-            return np.array([_.mu.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
-    
+            return (
+                np.array([_.mu.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
+            )
+
     @property
     def sigma(self):
         try:
             return np.array([_.sigma for _ in self._priors])
         except TypeError:
-            return np.array([_.sigma.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
-    
+            return (
+                np.array([_.sigma.to_value(self.UNITS) for _ in self._priors])
+                * self.UNITS
+            )
+
     @property
     def xmin(self):
         try:
             return np.array([_.xmin for _ in self._priors])
         except TypeError:
-            return np.array([_.xmin.to_value(self.UNITS) for _ in self._priors]) * self.UNITS
-    
+            return (
+                np.array([_.xmin.to_value(self.UNITS) for _ in self._priors])
+                * self.UNITS
+            )
+
     @property
     def alpha(self):
         return np.array([_.alpha for _ in self._priors])
-      
+
 
 class MultiSourceIndexPrior(MultiSourcePrior, IndexPrior):
     def __init__(self, priors: Iterable[IndexPrior]):
-        assert all (isinstance(_, IndexPrior) for _ in priors)
+        assert all(isinstance(_, IndexPrior) for _ in priors)
         super().__init__(priors)
 
     @property
     def mu(self):
         return np.array([_.mu for _ in self._priors])
-       
+
     @property
     def sigma(self):
         return np.array([_.sigma for _ in self._priors])
-    
+
 
 class Priors(object):
     """
@@ -480,6 +484,8 @@ class Priors(object):
         )
 
         self.src_index = IndexPrior()
+
+        self.beta_index = IndexPrior(mu=0.0, sigma=0.1)
 
         self.diff_index = IndexPrior()
 
@@ -516,6 +522,16 @@ class Priors(object):
         self._src_index = prior
 
     @property
+    def beta_index(self):
+        return self._beta_index
+    
+    @beta_index.setter
+    def beta_index(self, prior: IndexPrior):
+        if not isinstance(prior, IndexPrior):
+            raise ValueError("Wrong prior type")
+        self._beta_index = prior
+
+    @property
     def diff_index(self):
         return self._diff_index
 
@@ -545,6 +561,8 @@ class Priors(object):
         priors_dict["F_atmo"] = self._atmospheric_flux
 
         priors_dict["src_index"] = self._src_index
+
+        priors_dict["beta_index"] = self._beta_index
 
         priors_dict["diff_index"] = self._diff_index
 
@@ -594,7 +612,6 @@ class Priors(object):
     def _load_from(cls, f):
         priors_dict = {}
 
-
         def make_dict_entry(d, arg):
             for k, v in arg.items():
                 if k == "name":
@@ -615,13 +632,15 @@ class Priors(object):
                 priors_dict[key] = PriorDictHandler.from_dict(prior_dict)
             except TypeError:
                 # Found the multi source prior
-                
+
                 container = []
                 for _, b in value.items():
                     prior_dict = {"quantity": key}
                     prior_dict = make_dict_entry(prior_dict, b)
                     container.append(PriorDictHandler.from_dict(prior_dict))
                 if key == "src_index":
+                    priors_dict[key] = MultiSourceIndexPrior(container)
+                elif key == "beta_index":
                     priors_dict[key] = MultiSourceIndexPrior(container)
                 elif key == "L":
                     priors_dict[key] = MultiSourceLuminosityPrior(container)
@@ -639,6 +658,12 @@ class Priors(object):
         priors.atmospheric_flux = priors_dict["F_atmo"]
 
         priors.src_index = priors_dict["src_index"]
+
+        try:
+            # Backwards compatiblity
+            priors.beta_index = priors_dict["beta_index"]
+        except:
+            pass
 
         priors.diff_index = priors_dict["diff_index"]
 
