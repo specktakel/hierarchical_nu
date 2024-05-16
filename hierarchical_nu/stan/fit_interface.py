@@ -693,10 +693,12 @@ class StanFitInterface(StanInterface):
             else:
                 Ns_string = "Ns"
 
-            if self.sources.diffuse:
-                Ns_string_int_grid = "Ns+1"
-            else:
-                Ns_string_int_grid = "Ns"
+            if self.sources.diffuse and self._ps_spectrum != LogParabolaSpectrum:
+                self._Ns_string_int_grid = "Ns+1"
+            elif self.sources.diffuse:
+                self._Ns_string_int_grid = "1"
+            elif self._ps_spectrum != LogParabolaSpectrum:
+                self._Ns_string_int_grid = "Ns"
 
             if self._nshards not in [0, 1]:
                 # Number of shards for multi-threading
@@ -833,9 +835,9 @@ class StanFitInterface(StanInterface):
                     self._integral_grid = ForwardArrayDef(
                         "integral_grid",
                         "vector[Ngrid]",
-                        ["[", self._Net, ",", Ns_string_int_grid, "]"],
+                        ["[", self._Net, ",", self._Ns_string_int_grid, "]"],
                     )
-
+            # Is this needed?
             if self.sources.diffuse and self.sources.atmospheric:
                 N_pdet_str = self._Ns_2p_str
 
@@ -857,10 +859,16 @@ class StanFitInterface(StanInterface):
             if self._sources.point_source:
                 if isinstance(self._priors.src_index, MultiSourcePrior):
                     index_mu_def = ForwardArrayDef("src_index_mu", "real", self._Ns_str)
-                    index_sigma_def = ForwardArrayDef("src_index_sigma", "real", self._Ns_str)
+                    index_sigma_def = ForwardArrayDef(
+                        "src_index_sigma", "real", self._Ns_str
+                    )
                     if self._ps_spectrum == LogParabolaSpectrum:
-                        beta_mu_def = ForwardArrayDef("beta_index_mu", "real", self._Ns_str)
-                        beta_sigma_def = ForwardArrayDef("beta_index_sigma", "real", self._Ns_str)
+                        beta_mu_def = ForwardArrayDef(
+                            "beta_index_mu", "real", self._Ns_str
+                        )
+                        beta_sigma_def = ForwardArrayDef(
+                            "beta_index_sigma", "real", self._Ns_str
+                        )
                 else:
                     index_mu_def = ForwardVariableDef("src_index_mu", "real")
                     index_sigma_def = ForwardVariableDef("src_index_sigma", "real")
@@ -1572,6 +1580,7 @@ class StanFitInterface(StanInterface):
                             self._integral_grid_2d[i, k],
                         ]
                         method = "interp2dlog"
+
                     else:
                         args = [
                             self._src_index_grid,
@@ -1604,7 +1613,7 @@ class StanFitInterface(StanInterface):
                         << FunctionCall(
                             [
                                 self._diff_index_grid,
-                                self._integral_grid[i, "Ns + 1"],
+                                self._integral_grid[i, self._Ns_string_int_grid],
                                 self._diff_index,
                             ],
                             "interpolate_log_y",
@@ -1632,7 +1641,7 @@ class StanFitInterface(StanInterface):
                         << FunctionCall(
                             [
                                 self._diff_index_grid,
-                                self._integral_grid[i, "Ns + 1"],
+                                self._integral_grid[i, self._Ns_string_int_grid],
                                 self._diff_index,
                             ],
                             "interpolate_log_y",
@@ -1878,7 +1887,6 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
-
 
             if self.sources.diffuse:
                 if self._priors.diffuse_flux.name not in ["normal", "lognormal"]:
