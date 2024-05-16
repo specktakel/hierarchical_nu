@@ -1174,6 +1174,8 @@ class StanFit:
 
         self._get_par_ranges()
         fit_inputs = {}
+        if self._events.N == 0:
+            raise ValueError("Cannot perform fits with zero events")
         fit_inputs["N"] = self._events.N
         if self._nshards not in [0, 1]:
             # Number of shards and max. events per shards only used if multithreading is desired
