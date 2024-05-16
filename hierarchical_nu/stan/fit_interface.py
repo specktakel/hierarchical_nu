@@ -856,13 +856,22 @@ class StanFitInterface(StanInterface):
 
             if self._sources.point_source:
                 if isinstance(self._priors.src_index, MultiSourcePrior):
-                    mu_def = ForwardArrayDef("src_index_mu", "real", self._Ns_str)
-                    sigma_def = ForwardArrayDef("src_index_sigma", "real", self._Ns_str)
+                    index_mu_def = ForwardArrayDef("src_index_mu", "real", self._Ns_str)
+                    index_sigma_def = ForwardArrayDef("src_index_sigma", "real", self._Ns_str)
+                    if self._ps_spectrum == LogParabolaSpectrum:
+                        beta_mu_def = ForwardArrayDef("beta_index_mu", "real", self._Ns_str)
+                        beta_sigma_def = ForwardArrayDef("beta_index_sigma", "real", self._Ns_str)
                 else:
-                    mu_def = ForwardVariableDef("src_index_mu", "real")
-                    sigma_def = ForwardVariableDef("src_index_sigma", "real")
-                self._stan_prior_src_index_mu = mu_def
-                self._stan_prior_src_index_sigma = sigma_def
+                    index_mu_def = ForwardVariableDef("src_index_mu", "real")
+                    index_sigma_def = ForwardVariableDef("src_index_sigma", "real")
+                    if self._ps_spectrum == LogParabolaSpectrum:
+                        beta_mu_def = ForwardVariableDef("beta_index_mu", "real")
+                        beta_sigma_def = ForwardVariableDef("beta_index_sigma", "real")
+                self._stan_prior_src_index_mu = index_mu_def
+                self._stan_prior_src_index_sigma = index_sigma_def
+                if self._ps_spectrum == LogParabolaSpectrum:
+                    self._stan_prior_beta_index_mu = beta_mu_def
+                    self._stan_prior_beta_index_sigma = beta_sigma_def
                 # check for luminosity, if they all have the same prior
                 if self._priors.luminosity.name in ["normal", "lognormal"]:
                     if isinstance(self._priors.luminosity, MultiSourcePrior):
@@ -1838,6 +1847,38 @@ class StanFitInterface(StanInterface):
                             ),
                         ]
                     )
+
+                if self._ps_spectrum == LogParabolaSpectrum:
+                    if isinstance(self._priors.src_index, MultiSourcePrior):
+                        with ForLoopContext(1, self._Ns, "i") as i:
+                            StringExpression(
+                                [
+                                    self._beta_index[i],
+                                    " ~ ",
+                                    FunctionCall(
+                                        [
+                                            self._stan_prior_beta_index_mu[i],
+                                            self._stan_prior_beta_index_sigma[i],
+                                        ],
+                                        self._priors.beta_index.name,
+                                    ),
+                                ]
+                            )
+                    else:
+                        StringExpression(
+                            [
+                                self._beta_index,
+                                " ~ ",
+                                FunctionCall(
+                                    [
+                                        self._stan_prior_beta_index_mu,
+                                        self._stan_prior_beta_index_sigma,
+                                    ],
+                                    self._priors.beta_index.name,
+                                ),
+                            ]
+                        )
+
 
             if self.sources.diffuse:
                 if self._priors.diffuse_flux.name not in ["normal", "lognormal"]:
