@@ -1,4 +1,5 @@
 """Module for autogenerating Stan code"""
+
 from typing import Iterable, Union, Sequence
 from .code_generator import (
     CodeGenerator,
@@ -43,6 +44,7 @@ __all__ = [
     "ElseBlockContext",
     "DefinitionContext",
     "ForLoopContext",
+    "DummyContext",
 ]
 
 
@@ -131,6 +133,18 @@ class WhileLoopContext(Contextable, ContextStack):
         with header_ctx:
             _ = PlainStatement(header_code)
 
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        self._name = ""
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return None
+
+
+class DummyContext(Contextable, ContextStack):
+    def __init__(self) -> None:
         ContextStack.__init__(self)
         Contextable.__init__(self)
 

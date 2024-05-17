@@ -9,6 +9,7 @@ from hierarchical_nu.backend.stan_generator import (
     FunctionsContext,
     Include,
     DataContext,
+    DummyContext,
     TransformedDataContext,
     ParametersContext,
     TransformedParametersContext,
@@ -232,21 +233,30 @@ class StanFitInterface(StanInterface):
                                     "}",
                                 ]
                             )
-                            x_r = StringExpression(
-                                [
-                                    "{",
-                                    self._E0,
-                                    ",",
-                                    self._ps_frame.stan_to_det(
-                                        self._Emin_src, self._z, k
-                                    ),
-                                    ",",
-                                    self._ps_frame.stan_to_det(
-                                        self._Emax_src, self._z, k
-                                    ),
-                                    "}",
-                                ]
-                            )
+                            try:
+                                # If this works, we are coming from lp_reduce
+                                # TODO Fix transformations in this case to detector frame
+                                x_r = StringExpression(
+                                    ["real_data[", self._x_r_idxs, "]"]
+                                )
+                                del self._x_r_idxs
+                            except AttributeError:
+                                # Otherwise single thread or generated quantities
+                                x_r = StringExpression(
+                                    [
+                                        "{",
+                                        self._E0,
+                                        ",",
+                                        self._ps_frame.stan_to_det(
+                                            self._Emin_src, self._z, k
+                                        ),
+                                        ",",
+                                        self._ps_frame.stan_to_det(
+                                            self._Emax_src, self._z, k
+                                        ),
+                                        "}",
+                                    ]
+                                )
                             x_i = StringExpression(
                                 [
                                     "{",
@@ -259,7 +269,10 @@ class StanFitInterface(StanInterface):
                                     _lp,
                                     " += ",
                                     self._src_spectrum_lpdf(
-                                        self._E[i], theta, x_r, x_i
+                                        self._E[i],
+                                        theta,
+                                        x_r,
+                                        x_i,
                                     ),
                                 ]
                             )
@@ -451,7 +464,7 @@ class StanFitInterface(StanInterface):
                 lp_reduce = UserDefinedFunction(
                     "lp_reduce",
                     ["global", "local", "real_data", "int_data"],
-                    ["vector", "vector", "array[] real", "array[] int"],
+                    ["vector", "vector", "data array[] real", "data array[] int"],
                     "vector",
                 )
 
@@ -460,6 +473,8 @@ class StanFitInterface(StanInterface):
                     # Use InstantVariableDef to save on lines
                     self._N = InstantVariableDef("N", "int", ["int_data[1]"])
                     self._Ns = InstantVariableDef("Ns", "int", ["int_data[2]"])
+                    glob = StringExpression(["global"])
+                    # loc = StringExpression(["loc"])
 
                     if self._sources.diffuse and self._sources.atmospheric:
                         self._Ns_tot = "Ns+2"
@@ -471,28 +486,45 @@ class StanFitInterface(StanInterface):
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
                     length = ForwardVariableDef("length", "int")
-
+                    beta = self._ps_spectrum == LogParabolaSpectrum
+                    if beta:
+                        self._x_r_idxs = ForwardArrayDef("x_r_idxs", "int", ["[3]"])
+                    start << 1
                     # Get global parameters
                     # Check for shared index
                     if self._shared_src_index:
+                        end << 1
                         self._src_index = ForwardVariableDef("src_index", "real")
-                        self._src_index << StringExpression(["global[1]"])
-                        idx = "2"
+                        self._src_index << glob[start]
+                        start << start + 1
+                        if beta:
+                            end << end + 1
+                            self._beta_index = ForwardVariableDef("beta_index", "real")
+                            self._beta_index << glob[start]
+                            start << start + 1
                     else:
+                        end << end + self._Ns
                         self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
-                        self._src_index << StringExpression(["global[1:Ns]"])
-                        idx = "Ns+1"
-
+                        self._src_index << glob[start:end]
+                        start << start + self._Ns
+                        if beta:
+                            end << end + self._Ns
+                            self._beta_index = ForwardVariableDef(
+                                "beta_index", "vector[Ns]"
+                            )
+                            self._beta_index << glob[start:end]
+                            start << start + self._Ns
                     # Get diffuse index
                     if self.sources.diffuse:
+                        end << end + 1
                         self._diff_index = ForwardVariableDef("diff_index", "real")
-                        self._diff_index << StringExpression(["global[", idx, "]"])
-                        idx += "+1"
-
+                        self._diff_index << glob[start]
+                        start << start + 1
+                    end << end + self._Ns_tot
                     self._logF = ForwardVariableDef(
                         "logF", "vector[" + self._Ns_tot + "]"
                     )
-                    self._logF << StringExpression(["global[", idx, ":]"])
+                    self._logF << glob[start:end]
 
                     # Local pars are only source energies
                     self._E = ForwardVariableDef("E", "vector[N]")
@@ -609,10 +641,14 @@ class StanFitInterface(StanInterface):
 
                     end << end + 1
                     self._Emin_src << StringExpression(["real_data[start]"])
+                    if beta:
+                        self._x_r_idxs[2] << start
                     start << start + 1
 
                     end << end + 1
                     self._Emax_src << StringExpression(["real_data[start]"])
+                    if beta:
+                        self._x_r_idxs[3] << start
                     start << start + 1
 
                     if self.sources.diffuse:
@@ -639,6 +675,11 @@ class StanFitInterface(StanInterface):
                     end << end + 1
                     self._Emax_at_det << StringExpression(["real_data[start]"])
                     start << start + 1
+
+                    if beta:
+                        self._E0 = ForwardVariableDef("E0", "real")
+                        self._E0 << StringExpression(["real_data[start]"])
+                        self._x_r_idxs[1] << start
 
                     # Define tracks and cascades to sort events into correct detector response
                     if self._use_event_tag:
@@ -1090,6 +1131,9 @@ class StanFitInterface(StanInterface):
                 sd_string = f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other} + J*Ns"
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_diff}"
+                if self._ps_spectrum == LogParabolaSpectrum:
+                    # Needs E0 for spectral shape
+                    sd_string += "+1"
 
                 # Create data arrays
                 self.real_data = ForwardArrayDef(
@@ -1172,7 +1216,7 @@ class StanFitInterface(StanInterface):
 
                     if self.sources.atmospheric:
                         insert_end << insert_end + 1
-                        self.real_data[i, insert_start] << self._atmo_integrated_flux
+                        (self.real_data[i, insert_start] << self._atmo_integrated_flux)
                         insert_start << insert_start + 1
 
                     if self.sources.point_source:
@@ -1221,6 +1265,11 @@ class StanFitInterface(StanInterface):
                     insert_end << insert_end + 1
                     self.real_data[i, insert_start] << self._Emax_at_det
                     insert_start << insert_start + 1
+
+                    if self._ps_spectrum == LogParabolaSpectrum:
+                        insert_end << insert_end + 1
+                        self.real_data[i, insert_start] << self._E0
+                        insert_start << insert_start + 1
 
                     # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
                     self.int_data[i, 1] << insert_len
@@ -1412,12 +1461,18 @@ class StanFitInterface(StanInterface):
 
             if self._nshards not in [0, 1]:
                 # Create vector of parameters
-                # Global pars are src_index, diff_index, logF
+                # Global pars are src_index, optionally beta_index, diff_index, logF
                 # Count number of pars:
                 num_of_pars = "Ns"
 
-                if self._shared_src_index:
+                beta = self._ps_spectrum == LogParabolaSpectrum
+
+                if self._shared_src_index and beta:
+                    num_of_pars += " + 2"
+                elif self._shared_src_index:
                     num_of_pars += " + 1"
+                elif ~self._shared_src_index and beta:
+                    num_of_pars += " + 2 * Ns"
                 else:
                     num_of_pars += " + Ns"
 
@@ -1716,18 +1771,34 @@ class StanFitInterface(StanInterface):
             self._logF << StringExpression(["log(", self._F, ")"])
 
             if self._nshards not in [0, 1]:
-                if self._shared_src_index:
-                    self._global_pars[1] << self._src_index
-                    idx = "2"
-                else:
-                    self._global_pars[1 : self._Ns] << self._src_index
-                    idx = "Ns+1"
-                if self.sources.diffuse:
-                    self._global_pars[idx] << self._diff_index
-                    idx += "+1"
+                beta = self._ps_spectrum == LogParabolaSpectrum
+                with DummyContext():
+                    start = InstantVariableDef("start", "int", [1])
+                    end = ForwardVariableDef("end", "int")
 
-                self._global_pars[idx : idx + "+size(logF)-1"] << self._logF
-                # Likelihood is evaluated in `lp_reduce`
+                    if self._shared_src_index:
+                        end << 1
+                        self._global_pars[start] << self._src_index
+                        start << start + 1
+                        if beta:
+                            end << end + 1
+                            self._global_pars[start] << self._beta_index
+                            start << start + 1
+                    else:
+                        end << self._Ns
+                        (self._global_pars[start:end] << self._src_index)
+                        start << start + 1
+                        if beta:
+                            end << end + self._Ns
+                            (self._global_pars[start:end] << self._beta_index)
+                            start << start + self._Ns
+                    if self.sources.diffuse:
+                        end << end + 1
+                        self._global_pars[start] << self._diff_index
+                        start << start + 1
+                    end << end + StringExpression(["size(logF)"])
+                    self._global_pars[start:end] << self._logF
+                    # Likelihood is evaluated in `lp_reduce`
 
             else:
                 self._model_likelihood()
