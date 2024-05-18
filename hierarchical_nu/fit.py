@@ -1468,12 +1468,12 @@ class StanFit:
         """
 
         for c, event_type in enumerate(self._event_types):
+            integral_grid.append([])
+            integral_grid_2d.append([])
             for grid in self._exposure_integral[event_type].integral_grid:
-                integral_grid.append([])
-                integral_grid_2d.append([])
+                
                 if len(grid.shape) == 2:
                     integral_grid_2d[-1].append(np.log(grid.to_value(u.m**2)).tolist())
-                    print(type(integral_grid_2d[-1]))
 
                 else:
                     integral_grid[-1].append(np.log(grid.to_value(u.m**2)).tolist())
