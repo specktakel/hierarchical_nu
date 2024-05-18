@@ -474,7 +474,9 @@ class StanFitInterface(StanInterface):
                     self._N = InstantVariableDef("N", "int", ["int_data[1]"])
                     self._Ns = InstantVariableDef("Ns", "int", ["int_data[2]"])
                     glob = StringExpression(["global"])
-                    # loc = StringExpression(["loc"])
+                    loc = StringExpression(["local"])
+                    int_data = StringExpression(["int_data"])
+                    real_data = StringExpression(["real_data"])
 
                     if self._sources.diffuse and self._sources.atmospheric:
                         self._Ns_tot = "Ns+2"
@@ -528,14 +530,11 @@ class StanFitInterface(StanInterface):
 
                     # Local pars are only source energies
                     self._E = ForwardVariableDef("E", "vector[N]")
-                    self._E << StringExpression(["local[:N]"])
+                    self._E << loc[1 : self._N]
                     # This is always defined at redshift z, irregardless of the source's frame
                     self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
 
-                    # Define indices for unpacking of real_data
-                    start << 1
-                    length << self._N
-                    end << self._N
+                   
 
                     # Define variable to store loglikelihood
                     if self._use_event_tag:
@@ -553,20 +552,36 @@ class StanFitInterface(StanInterface):
                             "lp", "vector[" + self._Ns_tot + "]", ["[N]"]
                         )
 
-                    # Unpack event types (track or cascade)
+                    # Unpack event types (Tracks, cascades, IC40...)
                     self._event_type = ForwardArrayDef("event_type", "int", ["[N]"])
-                    self._event_type << StringExpression(["int_data[3:2+N]"])
+
+                     # Define indices for unpacking of real_data
+                    start << 3
+                    end << 2 + self._N
+                    
+                    self._event_type << int_data[start:end]
+                    # StringExpression(["int_data[3:2+N]"])
 
                     if self._use_event_tag:
                         self._event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
-                        self._event_tag << StringExpression(["int_data[3+N:2+2*N]"])
+                        start << start + self._N
+                        end << end + self._N
+                        self._event_tag << int_data[3 + self._N : 2 + 2 * self._N]
+                        # StringExpression(["int_data[3+N:2+2*N]"])
 
                     # TODO fix indexing for event tags
                     # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[N]"])
                     # self._ereco_idx << StringExpression("int_data[3+N:2+2*N]")
 
+                     # Define indices for unpacking of real_data
+                    start << 1
+                    length << self._N
+                    end << self._N
+
                     self._Edet = ForwardVariableDef("Edet", "vector[N]")
-                    self._Edet << FunctionCall(["real_data[start:end]"], "to_vector")
+                    self._Edet << FunctionCall(
+                        [real_data[start:end]], "to_vector"
+                    )  # FunctionCall(["real_data[start:end]"], "to_vector")
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
                     grid_size = R2021EnergyResolution._log_tE_grid.size
@@ -576,37 +591,45 @@ class StanFitInterface(StanInterface):
 
                     with ForLoopContext(1, "N", "f") as f:
                         end << end + grid_size
-                        self._ereco_grid[f] << StringExpression(
-                            ["real_data[start:end]"]
-                        )
+                        self._ereco_grid[f] << real_data[start:end]  # StringExpression(
+                        #     ["real_data[start:end]"]
+                        # )
                         start << start + grid_size
                     self._omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
                     # Loop over events to unpack reconstructed direction
                     with ForLoopContext(1, self._N, "i") as i:
                         end << end + 3
-                        self._omega_det[i] << StringExpression(
-                            ["to_vector(real_data[start:end])"]
-                        )
+                        self._omega_det[i] << FunctionCall(
+                            [real_data[start:end]], "to_vector"
+                        )  # StringExpression(
+                        #    ["to_vector(real_data[start:end])"]
+                        # )
                         start << start + 3
 
                     self._varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
                     # Loop over sources to unpack source direction (for point sources only)
                     with ForLoopContext(1, self._Ns, "i") as i:
                         end << end + 3
-                        self._varpi[i] << StringExpression(
-                            ["to_vector(real_data[start:end])"]
-                        )
+                        self._varpi[i] << FunctionCall(
+                            [real_data[start:end]], "to_vector"
+                        )  # StringExpression(
+                        #    ["to_vector(real_data[start:end])"]
+                        # )
                         start << start + 3
                     # If diffuse source, z is longer by 1 element
                     if self.sources.diffuse:
                         end << end + self._Ns + 1
                         self._z = ForwardVariableDef("z", "vector[Ns+1]")
-                        self._z << StringExpression(["to_vector(real_data[start:end])"])
+                        self._z << FunctionCall(
+                            [real_data[start:end]], "to_vector"
+                        )  # StringExpression(["to_vector(real_data[start:end])"])
                         start << start + self._Ns + 1
                     else:
                         end << end + self._Ns
                         self._z = ForwardVariableDef("z", "vector[Ns]")
-                        self._z << StringExpression(["to_vector(real_data[start:end])"])
+                        self._z << FunctionCall(
+                            [real_data[start:end]], "to_vector"
+                        )  # StringExpression(["to_vector(real_data[start:end])"])
                         start << start + self._Ns
 
                     if self.sources.atmospheric:
@@ -614,9 +637,11 @@ class StanFitInterface(StanInterface):
                             "atmo_integrated_flux", "real"
                         )
                         end << end + 1
-                        self._atmo_integrated_flux << StringExpression(
-                            ["real_data[start]"]
-                        )
+                        (
+                            self._atmo_integrated_flux << real_data[start]
+                        )  # StringExpression(
+                        #    ["real_data[start]"]
+                        # )
                         start << start + 1
 
                     if self.sources.point_source:
@@ -625,9 +650,11 @@ class StanFitInterface(StanInterface):
                         )
                         with ForLoopContext(1, self._Ns, "k") as k:
                             end << end + length
-                            self._spatial_loglike[k] << StringExpression(
-                                ["real_data[start:end]"]
-                            )
+                            (
+                                self._spatial_loglike[k] << real_data[start:end]
+                            )  # StringExpression(
+                            #    ["real_data[start:end]"]
+                            # )
                             start << start + length
                     self._Emin_src = ForwardVariableDef("Emin_src", "real")
                     self._Emax_src = ForwardVariableDef("Emax_src", "real")
@@ -640,45 +667,63 @@ class StanFitInterface(StanInterface):
                     self._Emax_at_det = ForwardVariableDef("Emax_at_det", "real")
 
                     end << end + 1
-                    self._Emin_src << StringExpression(["real_data[start]"])
+                    (
+                        self._Emin_src << real_data[start]
+                    )  # StringExpression(["real_data[start]"])
                     if beta:
                         self._x_r_idxs[2] << start
                     start << start + 1
 
                     end << end + 1
-                    self._Emax_src << StringExpression(["real_data[start]"])
+                    (
+                        self._Emax_src << real_data[start]
+                    )  # StringExpression(["real_data[start]"])
                     if beta:
                         self._x_r_idxs[3] << start
                     start << start + 1
 
                     if self.sources.diffuse:
                         end << end + 1
-                        self._Emin_diff << StringExpression(["real_data[start]"])
+                        (
+                            self._Emin_diff << real_data[start]
+                        )  # StringExpression(["real_data[start]"])
                         start << start + 1
 
                         end << end + 1
-                        self._Emax_diff << StringExpression(["real_data[start]"])
+                        (
+                            self._Emax_diff << real_data[start]
+                        )  # StringExpression(["real_data[start]"])
                         start << start + 1
 
                     end << end + 1
-                    self._Emin << StringExpression(["real_data[start]"])
+                    (
+                        self._Emin << real_data[start]
+                    )  # StringExpression(["real_data[start]"])
                     start << start + 1
 
                     end << end + 1
-                    self._Emax << StringExpression(["real_data[start]"])
+                    (
+                        self._Emax << real_data[start]
+                    )  # StringExpression(["real_data[start]"])
                     start << start + 1
 
                     end << end + 1
-                    self._Emin_at_det << StringExpression(["real_data[start]"])
+                    (
+                        self._Emin_at_det << real_data[start]
+                    )  # StringExpression(["real_data[start]"])
                     start << start + 1
 
                     end << end + 1
-                    self._Emax_at_det << StringExpression(["real_data[start]"])
+                    (
+                        self._Emax_at_det << real_data[start]
+                    )  # StringExpression(["real_data[start]"])
                     start << start + 1
 
                     if beta:
                         self._E0 = ForwardVariableDef("E0", "real")
-                        self._E0 << StringExpression(["real_data[start]"])
+                        (
+                            self._E0 << real_data[start]
+                        )  # StringExpression(["real_data[start]"])
                         self._x_r_idxs[1] << start
 
                     # Define tracks and cascades to sort events into correct detector response
