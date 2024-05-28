@@ -1477,7 +1477,7 @@ class StanFit:
 
                 else:
                     integral_grid[-1].append(np.log(grid.to_value(u.m**2)).tolist())
-            """ntegral_grid.append(
+            """integral_grid.append(
                 [
                     np.log(_.to(u.m**2).value).tolist()
                     for _ in self._exposure_integral[event_type].integral_grid

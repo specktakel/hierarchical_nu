@@ -4,6 +4,7 @@ from typing import Union, List, Dict
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
+from scipy.interpolate import RegularGridInterpolator
 import h5py
 from matplotlib import pyplot as plt
 from cmdstanpy import CmdStanModel
@@ -23,7 +24,9 @@ from hierarchical_nu.detector.icecube import EventType, NT, CAS
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, flux_conv_
+from hierarchical_nu.source.flux_model import (
+    IsotropicDiffuseBG, flux_conv_, LogParabolaSpectrum
+)
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.events import Events
 from hierarchical_nu.utils.roi import ROI, CircularROI, ROIList
@@ -556,6 +559,7 @@ class Simulation:
         sim_inputs["z"] = redshift
 
         integral_grid = []
+        integral_grid_2d = []
         atmo_integ_val = []
         Emin_det = []
         rs_cvals = []
@@ -590,45 +594,51 @@ class Simulation:
 
             self._N = N
 
-        for event_type in self._event_types:
-            if self._force_N:
-                forced_N.append(self._N[event_type])
-
-            integral_grid.append(
-                [
-                    np.log(_.to(u.m**2).value).tolist()
-                    for _ in self._exposure_integral[event_type].integral_grid
-                ]
-            )
-
-            if self._sources.atmospheric:
-                atmo_integ_val.append(
-                    self._exposure_integral[event_type]
-                    .integral_fixed_vals[0]
-                    .to(u.m**2)
-                    .value
-                )
-
+        for c, event_type in enumerate(self._event_types):
             obs_time.append(self._observation_time[event_type].to(u.s).value)
 
         if self._sources.point_source:
-            # Grids are the same over all event types, just pick one to get the grids
+            # Check for shared source index
             if self._shared_src_index:
                 key = "src_index"
+                if isinstance(
+                    self._sources.point_source[0].flux_model.spectral_shape,
+                    LogParabolaSpectrum,
+                ):
+                    key_beta = "beta_index"
+
+            # Otherwise just use first source in the list
+            # src_index_grid is identical for all point sources
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
-
-            sim_inputs["Ngrid"] = len(
-                self._exposure_integral[event_type].par_grids[key]
-            )
+                if isinstance(
+                    self._sources.point_source[0].flux_model.spectral_shape,
+                    LogParabolaSpectrum,
+                ):
+                    key_beta = "%s_beta_index" % self._sources.point_source[0].name
 
             sim_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
             ].par_grids[key]
 
+            if isinstance(
+                self._sources.point_source[0].flux_model.spectral_shape,
+                LogParabolaSpectrum,
+            ):
+                sim_inputs["beta_index_grid"] = self._exposure_integral[
+                    event_type
+                ].par_grids[key_beta]
+                sim_inputs["E0"] = self._sources.point_source[0].flux_model.spectral_shape._normalisation_energy.to_value(u.GeV)
+
             # Check for shared src_index parameter
             if self._shared_src_index:
                 sim_inputs["src_index"] = Parameter.get_parameter("src_index").value
+                if isinstance(
+                    self._sources.point_source[0].flux_model.spectral_shape,
+                    LogParabolaSpectrum,
+                ):
+                    sim_inputs["beta_index"] = Parameter.get_parameter("beta_index").value
+                
 
             # Otherwise look for individual src_index parameters
             else:
@@ -636,6 +646,15 @@ class Simulation:
                     Parameter.get_parameter("%s_src_index" % s.name).value
                     for s in self._sources.point_source
                 ]
+
+                if isinstance(
+                    self._sources.point_source[0].flux_model.spectral_shape,
+                    LogParabolaSpectrum,
+                ):
+                    sim_inputs["beta_index"] = [
+                        Parameter.get_parameter("%s_beta_index" % s.name).value
+                        for s in self._sources.point_source
+                    ]
 
             sim_inputs["Emin_src"] = (
                 Parameter.get_parameter("Emin_src").value.to(u.GeV).value
@@ -666,7 +685,7 @@ class Simulation:
         sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
         sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
 
-        for event_type in self._event_types:
+        for c, event_type in enumerate(self._event_types):
             effective_area = self._exposure_integral[event_type].effective_area
 
             try:
@@ -686,6 +705,29 @@ class Simulation:
             rs_bbpl_gamma1.append(effective_area.rs_bbpl_params["gamma1"])
             rs_bbpl_gamma2_scale.append(effective_area.rs_bbpl_params["gamma2_scale"])
             rs_cvals.append(self._exposure_integral[event_type].c_values)
+
+            if self._force_N:
+                forced_N.append(self._N[event_type])
+
+            integral_grid.append([])
+            integral_grid_2d.append([])
+
+
+            for grid in self._exposure_integral[event_type].integral_grid:
+                
+                if len(grid.shape) == 2:
+                    integral_grid_2d[-1].append(np.log(grid.to_value(u.m**2)).tolist())
+
+                else:
+                    integral_grid[-1].append(np.log(grid.to_value(u.m**2)).tolist())
+
+            if self._sources.atmospheric:
+                atmo_integ_val.append(
+                    self._exposure_integral[event_type]
+                    .integral_fixed_vals[0]
+                    .to(u.m**2)
+                    .value
+                )
 
         try:
             ROIList.STACK[0]
@@ -766,6 +808,7 @@ class Simulation:
                 ]
 
         sim_inputs["integral_grid"] = integral_grid
+        sim_inputs["integral_grid_2d"] = integral_grid_2d
         if self._sources.atmospheric:
             sim_inputs["atmo_integ_val"] = atmo_integ_val
         sim_inputs["Emin_det"] = Emin_det
@@ -798,10 +841,12 @@ class Simulation:
         Nex_et = np.zeros((len(self._event_types), self._sources.N))
         for c, event_type in enumerate(self._event_types):
             integral_grid = sim_inputs_["integral_grid"][c]
+            integral_grid_2d = sim_inputs_["integral_grid_2d"][c]
             Nex_et[c] = _get_expected_Nnu_(
                 c,
                 sim_inputs_,
                 integral_grid,
+                integral_grid_2d,
                 self._sources.point_source,
                 self._sources.diffuse,
                 self._sources.atmospheric,
@@ -1000,6 +1045,7 @@ def _get_expected_Nnu_(
     c,
     sim_inputs,
     integral_grid,
+    integral_grid_2d,
     point_source=False,
     diffuse=False,
     atmospheric=False,
@@ -1013,9 +1059,19 @@ def _get_expected_Nnu_(
 
     if point_source:
         if shared_src_index:
+            try:
+                beta_index = sim_inputs["beta_index"]
+                beta_index_grid = sim_inputs["beta_index_grid"]
+            except KeyError:
+                beta_index = None
             src_index = sim_inputs["src_index"]
         else:
             src_index_list = sim_inputs["src_index"]
+            try:
+                beta_index_list = sim_inputs["beta_index"]
+                beta_index_grid = sim_inputs["beta_index_grid"]
+            except KeyError:
+                beta_index = None
         src_index_grid = sim_inputs["src_index_grid"]
 
     if diffuse:
@@ -1029,15 +1085,30 @@ def _get_expected_Nnu_(
     if point_source:
         for i in range(Ns):
             if shared_src_index:
+                src_index_ref = src_index
+                if beta_index is not None:
+                    beta_index_ref = beta_index
+            else:
+                src_index_ref = src_index_list[i]
+                if beta_index:
+                    beta_index_ref = beta_index_list[i]
+            if beta_index is not None:
+                interp = RegularGridInterpolator((src_index_grid, beta_index_grid), integral_grid_2d[i])
                 eps.append(
-                    np.exp(np.interp(src_index, src_index_grid, integral_grid[i]))
+                    np.exp(interp(np.array([src_index_ref, beta_index_ref])))
                 )
+            else:
+                eps.append(
+                    np.exp(np.interp(src_index_ref, src_index_grid, integral_grid[i]))
+                )
+            """
             else:
                 eps.append(
                     np.exp(
                         np.interp(src_index_list[i], src_index_grid, integral_grid[i])
                     )
                 )
+            """
 
     if diffuse:
         eps.append(np.exp(np.interp(diff_index, diff_index_grid, integral_grid[Ns])))

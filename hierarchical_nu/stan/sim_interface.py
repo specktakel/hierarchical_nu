@@ -34,6 +34,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.detector.icecube import EventType
 
 from hierarchical_nu.source.source import Sources, DetectorFrame
+from hierarchical_nu.source.flux_model import LogParabolaSpectrum
 
 from hierarchical_nu.utils.roi import CircularROI, ROIList
 
@@ -174,10 +175,12 @@ class StanSimInterface(StanInterface):
             else:
                 Ns_string = "Ns"
 
-            if self.sources.diffuse:
-                Ns_string_int_grid = "Ns+1"
-            else:
-                Ns_string_int_grid = "Ns"
+            if self.sources.diffuse and self._ps_spectrum != LogParabolaSpectrum:
+                self._Ns_string_int_grid = "Ns+1"
+            elif self.sources.diffuse:
+                self._Ns_string_int_grid = "1"
+            elif self._ps_spectrum != LogParabolaSpectrum:
+                self._Ns_string_int_grid = "Ns"
 
             # True directions of point sources as a unit vector
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
@@ -208,17 +211,24 @@ class StanSimInterface(StanInterface):
             if self.sources.point_source:
                 if self._shared_src_index:
                     self._src_index = ForwardVariableDef("src_index", "real")
+                    if self._ps_spectrum == LogParabolaSpectrum:
+                        self._beta_index = ForwardVariableDef("beta_index", "real")
                 else:
                     self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
+                    if self._ps_spectrum == LogParabolaSpectrum:
+                        self._beta_index = ForwardVariableDef("beta_index", "vector[Ns]")
 
                 self._src_index_grid = ForwardVariableDef(
                     "src_index_grid", "vector[Ngrid]"
                 )
+                if self._ps_spectrum == LogParabolaSpectrum:
+                        self._beta_index_grid = ForwardVariableDef("beta_index_grid", "vector[Ngrid]")
 
-            # The energy range is specified at the source
-            if self.sources.point_source:
+                # The energy range is specified at the source
                 self._Emin_src = ForwardVariableDef("Emin_src", "real")
                 self._Emax_src = ForwardVariableDef("Emax_src", "real")
+                if self._ps_spectrum == LogParabolaSpectrum:
+                    self._E0 = ForwardVariableDef("E0", "real")
 
             # Energy range that the detector should consider
             # Is influenced by parameterisation of energy resolution
@@ -249,11 +259,28 @@ class StanSimInterface(StanInterface):
                 "rs_cvals", "real", ["[", self._Net, ",", Ns_string, "]"]
             )
 
-            if self.sources.diffuse or self.sources.point_source:
+
+            if self._ps_spectrum == LogParabolaSpectrum:
+                self._integral_grid_2d = ForwardArrayDef(
+                    "integral_grid_2d",
+                    "real",
+                    [
+                        "[",
+                        self._Net,
+                        ",",
+                        self._Ns,
+                        ",",
+                        self._Ngrid,
+                        ",",
+                        self._Ngrid,
+                        "]",
+                    ],
+                )
+            if self.sources.diffuse or self._ps_spectrum != LogParabolaSpectrum:
                 self._integral_grid = ForwardArrayDef(
                     "integral_grid",
                     "vector[Ngrid]",
-                    ["[", self._Net, ",", Ns_string_int_grid, "]"],
+                    ["[", self._Net, ",", self._Ns_string_int_grid, "]"],
                 )
 
             if self._force_N:
@@ -398,8 +425,12 @@ class StanSimInterface(StanInterface):
 
                     if self._shared_src_index:
                         src_index_ref = self._src_index
+                        if self._ps_spectrum == LogParabolaSpectrum:
+                            beta_index_ref = self._beta_index
                     else:
                         src_index_ref = self._src_index[k]
+                        if self._ps_spectrum == LogParabolaSpectrum:
+                            beta_index_ref = self._beta_index[k]
 
                     # Calculate energy flux from L and D
                     self._F[k] << StringExpression(
@@ -415,17 +446,43 @@ class StanSimInterface(StanInterface):
 
                     # Convert energy flux to number flux based on spectral
                     # shape and energy bounds
-                    StringExpression(
-                        [
-                            self._F[k],
-                            "*=",
-                            self._flux_conv(
-                                src_index_ref,
-                                self._ps_frame.stan_to_det(self._Emin_src, self._z, k),
-                                self._ps_frame.stan_to_det(self._Emax_src, self._z, k),
-                            ),
-                        ]
-                    )
+                    if self._ps_spectrum == LogParabolaSpectrum:
+                        theta = StringExpression(
+                            ["{", src_index_ref, ",", beta_index_ref, "}"]
+                        )
+                        x_r = StringExpression(
+                            ["{", self._E0, ",", self._Emin, ",", self._Emax, "}"]
+                        )
+                        x_i = StringExpression(
+                            [
+                                "{",
+                                0,
+                                "}",
+                            ]
+                        )
+                        StringExpression(
+                            [
+                                self._F[k],
+                                "*=",
+                                self._flux_conv(
+                                    theta,
+                                    x_r,
+                                    x_i,
+                                ),
+                            ]
+                        )
+                    else:
+                        StringExpression(
+                            [
+                                self._F[k],
+                                "*=",
+                                self._flux_conv(
+                                    src_index_ref,
+                                    self._ps_frame.stan_to_det(self._Emin_src, self._z, k),
+                                    self._ps_frame.stan_to_det(self._Emax_src, self._z, k),
+                                ),
+                            ]
+                        )
 
                     # Sum point source flux
                     StringExpression([self._F_src, " += ", self._F[k]])
@@ -445,19 +502,37 @@ class StanSimInterface(StanInterface):
                 with ForLoopContext(1, self._Ns, "k") as k:
                     if self._shared_src_index:
                         src_index_ref = self._src_index
+                        if self._ps_spectrum == LogParabolaSpectrum:
+                            beta_index_ref = self._beta_index
                     else:
                         src_index_ref = self._src_index[k]
+                        if self._ps_spectrum == LogParabolaSpectrum:
+                            beta_index_ref = self._beta_index[k]
+
+                    if self._ps_spectrum == LogParabolaSpectrum:
+                        args = [
+                            src_index_ref,
+                            beta_index_ref,
+                            FunctionCall([self._src_index_grid], "to_array_1d"),
+                            FunctionCall([self._beta_index_grid], "to_array_1d"),
+                            self._integral_grid_2d[i, k],
+                        ]
+                        method = "interp2dlog"
+
+                    else:
+                        args = [
+                            self._src_index_grid,
+                            self._integral_grid[i, k],
+                            src_index_ref,
+                        ]
+                        method = "interpolate_log_y"
 
                     with ForLoopContext(1, self._Net_stan, "i") as i:
                         (
                             self._eps[i, k]
                             << FunctionCall(
-                                [
-                                    self._src_index_grid,
-                                    self._integral_grid[i, k],
-                                    src_index_ref,
-                                ],
-                                "interpolate_log_y",
+                                args,
+                                method,
                             )
                             * self._T[i]
                         )
@@ -475,7 +550,7 @@ class StanSimInterface(StanInterface):
                         << FunctionCall(
                             [
                                 self._diff_index_grid,
-                                self._integral_grid[i, "Ns + 1"],
+                                self._integral_grid[i, self._Ns_String_int_grid],
                                 self._diff_index,
                             ],
                             "interpolate_log_y",
@@ -503,7 +578,7 @@ class StanSimInterface(StanInterface):
                         << FunctionCall(
                             [
                                 self._diff_index_grid,
-                                self._integral_grid[i, "Ns + 1"],
+                                self._integral_grid[i, self._Ns_string_int_grid],
                                 self._diff_index,
                             ],
                             "interpolate_log_y",
@@ -787,8 +862,12 @@ class StanSimInterface(StanInterface):
                             ):
                                 if self._shared_src_index:
                                     src_index_ref = self._src_index
+                                    if self._ps_spectrum == LogParabolaSpectrum:
+                                        beta_index_ref = self._beta_index
                                 else:
                                     src_index_ref = self._src_index[self._lam[i]]
+                                    if self._ps_spectrum == LogParabolaSpectrum:
+                                        beta_index_ref = self._beta_index[self._lam[i]]
 
                                 # The shape of the envelope to use depends on the
                                 # source spectrum. This is to make things more efficient.
