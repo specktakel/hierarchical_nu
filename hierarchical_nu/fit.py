@@ -1180,7 +1180,7 @@ class StanFit:
             fit_inputs["N_shards"] = self._nshards
             fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
         fit_inputs["Ns_tot"] = len([s for s in self._sources.sources])
-        fit_inputs["Edet"] = self._events.energies.to(u.GeV).value
+        fit_inputs["Edet"] = self._events.energies.to_value(u.GeV)
         fit_inputs["omega_det"] = self._events.unit_vectors
         fit_inputs["omega_det"] = [
             (_ / np.linalg.norm(_)).tolist() for _ in fit_inputs["omega_det"]
@@ -1214,30 +1214,38 @@ class StanFit:
         fit_inputs["varpi"] = src_pos
 
         if self._sources.point_source:
-            fit_inputs["Emin_src"] = (
-                Parameter.get_parameter("Emin_src").value.to(u.GeV).value
-            )
-            fit_inputs["Emax_src"] = (
-                Parameter.get_parameter("Emax_src").value.to(u.GeV).value
-            )
+            fit_inputs["Emin_src"] = [
+                ps.frame.transform(
+                    Parameter.get_parameter("Emin_src").value,
+                    ps.redshift
+                ).to_value(u.GeV) for ps in self._sources.point_source
+            ]
+            fit_inputs["Emax_src"] = [
+                ps.frame.transform(
+                    Parameter.get_parameter("Emax_src").value,
+                    ps.redshift
+                ).to_value(u.GeV) for ps in self._sources.point_source
+            ]
 
-        fit_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
-        fit_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+        fit_inputs["Emin"] = Parameter.get_parameter("Emin").value.to_value(u.GeV)
+        fit_inputs["Emax"] = Parameter.get_parameter("Emax").value.to_value(u.GeV)
 
         if self._sources.diffuse:
-            fit_inputs["Emin_diff"] = (
-                Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
-            )
-            fit_inputs["Emax_diff"] = (
-                Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
-            )
+            fit_inputs["Emin_diff"] = self._sources.diffuse.frame.transform(
+                Parameter.get_parameter("Emin_diff").value,
+                self._sources.diffuse.redshift
+            ).to_value(u.GeV)
+            fit_inputs["Emax_diff"] = self._sources.diffuse.frame.transform(
+                Parameter.get_parameter("Emax_diff").value,
+                self._sources.diffuse.redshift
+            ).to_value(u.GeV)
 
         integral_grid = []
         atmo_integ_val = []
         obs_time = []
 
         for c, event_type in enumerate(self._event_types):
-            obs_time.append(self._observation_time[event_type].to(u.s).value)
+            obs_time.append(self._observation_time[event_type].to_value(u.s))
 
             # event_type = self._detector_model_type.event_types[0]
 
@@ -1324,9 +1332,9 @@ class StanFit:
 
         if self._sources.atmospheric:
             fit_inputs["atmo_integrated_flux"] = (
-                self._sources.atmospheric.flux_model.total_flux_int.to(
+                self._sources.atmospheric.flux_model.total_flux_int.to_value(
                     1 / (u.m**2 * u.s)
-                ).value
+                )
             )
 
             fit_inputs["F_atmo_min"] = self._F_atmo_par_range[0]
@@ -1442,7 +1450,7 @@ class StanFit:
         for c, event_type in enumerate(self._event_types):
             integral_grid.append(
                 [
-                    np.log(_.to(u.m**2).value).tolist()
+                    np.log(_.to_value(u.m**2)).tolist()
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
             )
@@ -1451,8 +1459,7 @@ class StanFit:
                 atmo_integ_val.append(
                     self._exposure_integral[event_type]
                     .integral_fixed_vals[0]
-                    .to(u.m**2)
-                    .value
+                    .to_value(u.m**2)
                 )
 
         fit_inputs["integral_grid"] = integral_grid

@@ -217,8 +217,8 @@ class StanSimInterface(StanInterface):
 
             # The energy range is specified at the source
             if self.sources.point_source:
-                self._Emin_src = ForwardVariableDef("Emin_src", "real")
-                self._Emax_src = ForwardVariableDef("Emax_src", "real")
+                self._Emin_src = ForwardVariableDef("Emin_src", "vector[Ns]")
+                self._Emax_src = ForwardVariableDef("Emax_src", "vector[Ns]")
 
             # Energy range that the detector should consider
             # Is influenced by parameterisation of energy resolution
@@ -421,8 +421,8 @@ class StanSimInterface(StanInterface):
                             "*=",
                             self._flux_conv(
                                 src_index_ref,
-                                self._ps_frame.stan_to_det(self._Emin_src, self._z, k),
-                                self._ps_frame.stan_to_det(self._Emax_src, self._z, k),
+                                self._Emin_src[k],
+                                self._Emax_src[k],
                             ),
                         ]
                     )
@@ -803,15 +803,11 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
                                 self._Emin_src_arr << (
-                                    self._ps_frame.stan_to_det(
-                                        self._Emin_src, self._z, self._lam, i,
+                                    self._Emin_src[self._lam[i]]
                                     )
-                                )
                                 self._Emax_src_arr << (
-                                    self._ps_frame.stan_to_det(
-                                        self._Emax_src, self._z, self._lam, i,
+                                    self._Emax_src[self._lam[i]]
                                     )
-                                )
 
                                 with IfBlockContext(
                                     [
@@ -955,12 +951,8 @@ class StanSimInterface(StanInterface):
                                 self._src_factor << self._src_spectrum_lpdf(
                                     self._E[i],
                                     src_index_ref,
-                                    self._ps_frame.stan_to_det(
-                                        self._Emin_src, self._z, self._lam, i
-                                    ),
-                                    self._ps_frame.stan_to_det(
-                                        self._Emax_src, self._z, self._lam, i
-                                    ),
+                                    self._Emin_src[self._lam[i]],
+                                    self._Emax_src[self._lam[i]]
                                 )
 
                                 # It is log, to take the exp()
@@ -1149,18 +1141,8 @@ class StanSimInterface(StanInterface):
                                 # Emin < Eth and Emax <= Eth - use pl
                                 # Emin >= Eth and Emax > Eth - use pl
 
-                                (
-                                    self._Emin_src_arr
-                                    << self._diff_frame.stan_to_det(
-                                        self._Emin_diff, self._z, self._lam, i
-                                    )
-                                )
-                                (
-                                    self._Emax_src_arr
-                                    << self._diff_frame.stan_to_det(
-                                        self._Emax_diff, self._z, self._lam, i
-                                    )
-                                )
+                                self._Emin_src_arr << self._Emin_diff
+                                self._Emax_src_arr << self._Emax_diff
 
                                 with IfBlockContext(
                                     [
