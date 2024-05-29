@@ -594,9 +594,7 @@ class Simulation:
 
             self._N = N
 
-<<<<<<< HEAD
-        for c, event_type in enumerate(self._event_types):
-=======
+
         for event_type in self._event_types:
             if self._force_N:
                 forced_N.append(self._N[event_type])
@@ -615,7 +613,6 @@ class Simulation:
                     .to_value(u.m**2)
                 )
 
->>>>>>> stan-frames
             obs_time.append(self._observation_time[event_type].to(u.s).value)
 
         if self._sources.point_source:
@@ -667,7 +664,6 @@ class Simulation:
                     Parameter.get_parameter("%s_src_index" % s.name).value
                     for s in self._sources.point_source
                 ]
-<<<<<<< HEAD
 
                 if isinstance(
                     self._sources.point_source[0].flux_model.spectral_shape,
@@ -678,13 +674,6 @@ class Simulation:
                         for s in self._sources.point_source
                     ]
 
-            sim_inputs["Emin_src"] = (
-                Parameter.get_parameter("Emin_src").value.to(u.GeV).value
-            )
-            sim_inputs["Emax_src"] = (
-                Parameter.get_parameter("Emax_src").value.to(u.GeV).value
-            )
-=======
             sim_inputs["Emin_src"] = [
                 ps.frame.transform(
                     Parameter.get_parameter("Emin_src").value,
@@ -697,7 +686,6 @@ class Simulation:
                     ps.redshift
                 ).to_value(u.GeV) for ps in self._sources.point_source
             ]
->>>>>>> stan-frames
 
         if self._sources.diffuse:
             # Same as for point sources
