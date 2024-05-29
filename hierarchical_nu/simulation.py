@@ -594,7 +594,28 @@ class Simulation:
 
             self._N = N
 
+<<<<<<< HEAD
         for c, event_type in enumerate(self._event_types):
+=======
+        for event_type in self._event_types:
+            if self._force_N:
+                forced_N.append(self._N[event_type])
+
+            integral_grid.append(
+                [
+                    np.log(_.to_value(u.m**2)).tolist()
+                    for _ in self._exposure_integral[event_type].integral_grid
+                ]
+            )
+
+            if self._sources.atmospheric:
+                atmo_integ_val.append(
+                    self._exposure_integral[event_type]
+                    .integral_fixed_vals[0]
+                    .to_value(u.m**2)
+                )
+
+>>>>>>> stan-frames
             obs_time.append(self._observation_time[event_type].to(u.s).value)
 
         if self._sources.point_source:
@@ -646,6 +667,7 @@ class Simulation:
                     Parameter.get_parameter("%s_src_index" % s.name).value
                     for s in self._sources.point_source
                 ]
+<<<<<<< HEAD
 
                 if isinstance(
                     self._sources.point_source[0].flux_model.spectral_shape,
@@ -662,6 +684,20 @@ class Simulation:
             sim_inputs["Emax_src"] = (
                 Parameter.get_parameter("Emax_src").value.to(u.GeV).value
             )
+=======
+            sim_inputs["Emin_src"] = [
+                ps.frame.transform(
+                    Parameter.get_parameter("Emin_src").value,
+                    ps.redshift
+                ).to_value(u.GeV) for ps in self._sources.point_source
+            ]
+            sim_inputs["Emax_src"] = [
+                ps.frame.transform(
+                    Parameter.get_parameter("Emax_src").value,
+                    ps.redshift
+                ).to_value(u.GeV) for ps in self._sources.point_source
+            ]
+>>>>>>> stan-frames
 
         if self._sources.diffuse:
             # Same as for point sources
@@ -675,29 +711,30 @@ class Simulation:
 
             sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
 
-            sim_inputs["Emin_diff"] = (
-                Parameter.get_parameter("Emin_diff").value.to(u.GeV).value
-            )
-            sim_inputs["Emax_diff"] = (
-                Parameter.get_parameter("Emax_diff").value.to(u.GeV).value
-            )
+            sim_inputs["Emin_diff"] = self._sources.diffuse.frame.transform(
+                Parameter.get_parameter("Emin_diff").value,
+                self._sources.diffuse.redshift
+            ).to_value(u.GeV)
+            sim_inputs["Emax_diff"] = self._sources.diffuse.frame.transform(
+                Parameter.get_parameter("Emax_diff").value,
+                self._sources.diffuse.redshift
+            ).to_value(u.GeV)
 
-        sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to(u.GeV).value
-        sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to(u.GeV).value
+        sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to_value(u.GeV)
+        sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to_value(u.GeV)
 
         for c, event_type in enumerate(self._event_types):
             effective_area = self._exposure_integral[event_type].effective_area
 
             try:
                 Emin_det.append(
-                    Parameter.get_parameter("Emin_det").value.to(u.GeV).value
+                    Parameter.get_parameter("Emin_det").value.to_value(u.GeV)
                 )
 
             except ValueError:
                 Emin_det.append(
                     Parameter.get_parameter(f"Emin_det_{event_type.P}")
-                    .value.to(u.GeV)
-                    .value
+                    .value.to_value(u.GeV)
                 )
 
             # Rejection sampling
@@ -780,14 +817,14 @@ class Simulation:
 
         if self._sources.diffuse:
             diffuse_bg = self._sources.diffuse
-            sim_inputs["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
+            sim_inputs["F_diff"] = diffuse_bg.flux_model.total_flux_int.to_value(
                 flux_units
-            ).value
+            )
 
         if self._sources.atmospheric:
             # Parameter F_atmo is created when adding atmo to the source list
             sim_inputs["F_atmo"] = (
-                Parameter.get_parameter("F_atmo").value.to(flux_units).value
+                Parameter.get_parameter("F_atmo").value.to_value(flux_units)
             )
         lumi_units = u.GeV / u.s
 
@@ -795,15 +832,14 @@ class Simulation:
             # Check for shared luminosity parameter
             if self._shared_luminosity:
                 sim_inputs["L"] = (
-                    Parameter.get_parameter("luminosity").value.to(lumi_units).value
+                    Parameter.get_parameter("luminosity").value.to_value(lumi_units)
                 )
 
             # Otherwise, look for individual luminosity parameters
             else:
                 sim_inputs["L"] = [
                     Parameter.get_parameter("%s_luminosity" % s.name)
-                    .value.to(lumi_units)
-                    .value
+                    .value.to_value(lumi_units)
                     for s in self._sources.point_source
                 ]
 
@@ -1122,36 +1158,45 @@ def _get_expected_Nnu_(
 
     if point_source:
         if shared_luminosity:
-            for i, d in enumerate(sim_inputs["D"]):
+            for i, (d, Emin_src, Emax_src) in enumerate(
+                zip(sim_inputs["D"], sim_inputs["Emin_src"], sim_inputs["Emax_src"])
+            ):
                 flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
                 if shared_src_index:
                     flux = flux * flux_conv_(
                         src_index,
-                        sim_inputs["Emin_src"] / (1 + sim_inputs["z"][i]),
-                        sim_inputs["Emax_src"] / (1 + sim_inputs["z"][i]),
+                        Emin_src,
+                        Emax_src,
                     )
                 else:
                     flux = flux * flux_conv_(
                         src_index_list[i],
-                        sim_inputs["Emin_src"] / (1 + sim_inputs["z"][i]),
-                        sim_inputs["Emax_src"] / (1 + sim_inputs["z"][i]),
+                        Emin_src,
+                        Emax_src,
                     )
                 F.append(flux)
 
         else:
-            for i, (d, l) in enumerate(zip(sim_inputs["D"], sim_inputs["L"])):
+            for i, (d, l, Emin_src, Emax_src) in enumerate(
+                zip(
+                    sim_inputs["D"],
+                    sim_inputs["L"],
+                    sim_inputs["Emin_src"],
+                    sim_inputs["Emax_src"]
+                )
+            ):
                 flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
                 if shared_src_index:
                     flux = flux * flux_conv_(
                         src_index,
-                        sim_inputs["Emin_src"] / (1 + sim_inputs["z"][i]),
-                        sim_inputs["Emax_src"] / (1 + sim_inputs["z"][i]),
+                        Emin_src,
+                        Emax_src,
                     )
                 else:
                     flux = flux * flux_conv_(
                         src_index_list[i],
-                        sim_inputs["Emin_src"] / (1 + sim_inputs["z"][i]),
-                        sim_inputs["Emax_src"] / (1 + sim_inputs["z"][i]),
+                        Emin_src,
+                        Emax_src,
                     )
                 F.append(flux)
 

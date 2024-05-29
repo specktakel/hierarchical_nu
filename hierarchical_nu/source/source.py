@@ -234,12 +234,13 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
-        # Use Enorm if set, otherwise fix to 1e5 GeV
+        # Use Enorm if set, otherwise fix to 1e5 GeV, arbitrary in any case
         try:
             Enorm_value = Parameter.get_parameter("Enorm").value
         except ValueError:
             Enorm_value = 1e5 * u.GeV
 
+        # Transform energies to detector frame
         spectral_shape = PowerLawSpectrum(
             norm,
             Enorm_value,
@@ -312,6 +313,7 @@ class PointSource(Source):
         except ValueError:
             Enorm_value = 1e5 * u.GeV
 
+        # Transform energies to detector frame
         spectral_shape = TwiceBrokenPowerLaw(
             norm,
             Enorm_value,
