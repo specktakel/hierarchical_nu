@@ -534,6 +534,20 @@ class PowerLawSpectrum(SpectralShape):
 
         return func
 
+    @staticmethod
+    def flux_conv_(alpha, e_low, e_up, beta, e_0):
+        if alpha == 1.0:
+            f1 = np.log(e_up) - np.log(e_low)
+        else:
+            f1 = 1 / (1 - alpha) * (np.power(e_up, 1 - alpha) - np.power(e_low, 1 - alpha))
+
+        if alpha == 2.0:
+            f2 = np.log(e_up) - np.log(e_low)
+        else:
+            f2 = 1 / (2 - alpha) * (np.power(e_up, 2 - alpha) - np.power(e_low, 2 - alpha))
+
+        return f1 / f2
+
 
 class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
     """
@@ -742,17 +756,17 @@ class LogParabolaSpectrum(SpectralShape):
             return results[0]
         return results
 
-    @staticmethod
-    def _dN_dE(E, E0, alpha, beta):
+    @classmethod
+    def _dN_dE(cls, E, E0, alpha, beta):
         # Unnormalised pdf
         return np.power(E / E0, -alpha - beta * np.log(E / E0))
 
-    @staticmethod
-    def _dN_dx(x, alpha, beta):
+    @classmethod
+    def _dN_dx(cls, x, alpha, beta):
         return np.exp((1.0 - alpha) * x - beta * np.power(x, 2))
 
-    @staticmethod
-    def _x_dN_dx(x, alpha, beta):
+    @classmethod
+    def _x_dN_dx(cls, x, alpha, beta):
         return np.exp((2.0 - alpha) * x - beta * np.power(x, 2))
 
     @property
@@ -785,6 +799,16 @@ class LogParabolaSpectrum(SpectralShape):
         f2 = quad(self._x_dN_dx, xl, xh, (alpha, beta))[0]
 
         return f1 / f2 / E0
+
+    @classmethod
+    def flux_conv_(cls, alpha, e_low, e_up, beta, e_0):
+        xl = np.log(e_low / e_0)
+        xh = np.log(e_up / e_0)
+
+        f1 = quad(cls._dN_dx, xl, xh, (alpha, beta))[0]
+        f2 = quad(cls._x_dN_dx, xl, xh, (alpha, beta))[0]
+
+        return f1 / f2 / e_0
 
     @property
     def parameters(self):
@@ -820,6 +844,10 @@ class LogParabolaSpectrum(SpectralShape):
         if pdf.size == 1:
             return pdf[0]
         return pdf
+    
+    @classmethod
+    def make_stan_sampling_lpdf_func(cls, f_name) -> UserDefinedFunction:
+        return cls.make_stan_lpdf_func(f_name)
 
     @classmethod
     def make_stan_sampling_func(cls, f_name):
@@ -959,41 +987,27 @@ class LogParabolaSpectrum(SpectralShape):
 
             f1 << FunctionCall(
                 [
-                    FunctionCall(
-                        [
-                            "logparabola_dN_dx",
-                            logEL_E0,
-                            logEU_E0,
-                            theta,
-                            "x_r",
-                            "x_i",
-                        ],
-                        "integrate_1d",
-                    )
+                    "logparabola_dN_dx",
+                    logEL_E0,
+                    logEU_E0,
+                    theta,
+                    "x_r",
+                    "x_i",
                 ],
-                "log",
+                "integrate_1d",
             )
             # Additional factor of E0 due to further transformation of E->log(E/E0)->x
-            (
-                f2
-                << FunctionCall(
-                    [
-                        FunctionCall(
-                            [
-                                "logparabola_x_dN_dx",
-                                logEL_E0,
-                                logEU_E0,
-                                theta,
-                                "x_r",
-                                "x_i",
-                            ],
-                            "integrate_1d",
-                        )
-                    ],
-                    "log",
-                )
-                * E0
-            )
+            f2 << FunctionCall(
+                [
+                    "logparabola_x_dN_dx",
+                    logEL_E0,
+                    logEU_E0,
+                    theta,
+                    "x_r",
+                    "x_i",
+                ],
+                "integrate_1d",
+            ) * E0
 
             ReturnStatement([f1 / f2])
 
@@ -1022,17 +1036,3 @@ def integral_power_law(
         )
     else:
         return np.power(x0, n + 1) * np.log(x2 / x1)
-
-
-def flux_conv_(alpha, e_low, e_up):
-    if alpha == 1.0:
-        f1 = np.log(e_up) - np.log(e_low)
-    else:
-        f1 = 1 / (1 - alpha) * (np.power(e_up, 1 - alpha) - np.power(e_low, 1 - alpha))
-
-    if alpha == 2.0:
-        f2 = np.log(e_up) - np.log(e_low)
-    else:
-        f2 = 1 / (2 - alpha) * (np.power(e_up, 2 - alpha) - np.power(e_low, 2 - alpha))
-
-    return f1 / f2

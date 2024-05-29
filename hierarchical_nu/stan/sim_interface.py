@@ -120,6 +120,8 @@ class StanSimInterface(StanInterface):
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
             if self.sources.point_source:
+                if self._ps_spectrum == LogParabolaSpectrum:
+                    self._ps_spectrum.make_stan_utility_func()
                 self._src_spectrum_lpdf = (
                     # Use a different function here
                     # because for the twicebroken powerlaw we
@@ -453,7 +455,7 @@ class StanSimInterface(StanInterface):
                             ["{", src_index_ref, ",", beta_index_ref, "}"]
                         )
                         x_r = StringExpression(
-                            ["{", self._E0, ",", self._Emin_src[k], ",", self._Emax_src[k], "}"]
+                            ["{", self._E0[k], ",", self._Emin_src[k], ",", self._Emax_src[k], "}"]
                         )
                         x_i = StringExpression(
                             [
@@ -552,7 +554,7 @@ class StanSimInterface(StanInterface):
                         << FunctionCall(
                             [
                                 self._diff_index_grid,
-                                self._integral_grid[i, self._Ns_String_int_grid],
+                                self._integral_grid[i, self._Ns_string_int_grid],
                                 self._diff_index,
                             ],
                             "interpolate_log_y",
@@ -1029,12 +1031,47 @@ class StanSimInterface(StanInterface):
                                     )
 
                                 # Store the value of the source PDF at this energy
-                                self._src_factor << self._src_spectrum_lpdf(
-                                    self._E[i],
-                                    src_index_ref,
-                                    self._Emin_src[self._lam[i]],
-                                    self._Emax_src[self._lam[i]]
-                                )
+                                if self._ps_spectrum == LogParabolaSpectrum:
+                                    theta = StringExpression(
+                                        [
+                                            "{",
+                                            src_index_ref,
+                                            ",",
+                                            beta_index_ref,
+                                            "}",
+                                        ]
+                                    )
+                                    x_r = StringExpression(
+                                        [
+                                            "{",
+                                            self._E0[self._lam[i]],
+                                            ",",
+                                            self._Emin_src[self._lam[i]],
+                                            ",",
+                                            self._Emax_src[self._lam[i]],
+                                            "}",
+                                        ]
+                                    )
+                                    x_i = StringExpression(
+                                        [
+                                            "{",
+                                            0,
+                                            "}",
+                                        ]
+                                    )
+                                    self._src_factor << self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        theta,
+                                        x_r,
+                                        x_i,
+                                    )
+                                else:
+                                    self._src_factor << self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        src_index_ref,
+                                        self._Emin_src[self._lam[i]],
+                                        self._Emax_src[self._lam[i]]
+                                    )
 
                                 # It is log, to take the exp()
                                 self._src_factor << FunctionCall(

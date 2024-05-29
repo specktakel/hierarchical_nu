@@ -341,6 +341,7 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
+        normalisation_energy: Parameter,
         frame: ReferenceFrame = SourceFrame,
     ):
         """
@@ -800,6 +801,11 @@ class Sources:
             raise ValueError("Not all point sources have the same spectral_shape")
 
         self._point_source_spectrum = types[0]
+
+    @property
+    def point_source_spectrum(self):
+        self._get_point_source_spectrum()
+        return self._point_source_spectrum
 
     def add_atmospheric_component(self, index: float = 0.0, cache_dir: str = ".cache"):
         """

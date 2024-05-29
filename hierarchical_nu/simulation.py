@@ -25,7 +25,7 @@ from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import (
-    IsotropicDiffuseBG, flux_conv_, LogParabolaSpectrum
+    IsotropicDiffuseBG, LogParabolaSpectrum
 )
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.events import Events
@@ -594,27 +594,6 @@ class Simulation:
 
             self._N = N
 
-
-        for event_type in self._event_types:
-            if self._force_N:
-                forced_N.append(self._N[event_type])
-
-            integral_grid.append(
-                [
-                    np.log(_.to_value(u.m**2)).tolist()
-                    for _ in self._exposure_integral[event_type].integral_grid
-                ]
-            )
-
-            if self._sources.atmospheric:
-                atmo_integ_val.append(
-                    self._exposure_integral[event_type]
-                    .integral_fixed_vals[0]
-                    .to_value(u.m**2)
-                )
-
-            obs_time.append(self._observation_time[event_type].to(u.s).value)
-
         if self._sources.point_source:
             # Check for shared source index
             if self._shared_src_index:
@@ -625,7 +604,6 @@ class Simulation:
                 ):
                     key_beta = "beta_index"
 
-            # Otherwise just use first source in the list
             # src_index_grid is identical for all point sources
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
@@ -636,17 +614,25 @@ class Simulation:
                     key_beta = "%s_beta_index" % self._sources.point_source[0].name
 
             sim_inputs["src_index_grid"] = self._exposure_integral[
-                event_type
+                self._event_types[0]
             ].par_grids[key]
+
+            sim_inputs["Ngrid"] = len(
+                self._exposure_integral[self._event_types[0]].par_grids[key]
+            )
 
             if isinstance(
                 self._sources.point_source[0].flux_model.spectral_shape,
                 LogParabolaSpectrum,
             ):
                 sim_inputs["beta_index_grid"] = self._exposure_integral[
-                    event_type
+                    self._event_types[0]
                 ].par_grids[key_beta]
-                sim_inputs["E0"] = self._sources.point_source[0].flux_model.spectral_shape._normalisation_energy.to_value(u.GeV)
+                sim_inputs["E0"] = [
+                        ps.flux_model.spectral_shape._normalisation_energy.to_value(
+                            u.GeV
+                        ) for ps in self._sources.point_source
+                ]
 
             # Check for shared src_index parameter
             if self._shared_src_index:
@@ -690,11 +676,11 @@ class Simulation:
         if self._sources.diffuse:
             # Same as for point sources
             sim_inputs["Ngrid"] = len(
-                self._exposure_integral[event_type].par_grids["diff_index"]
+                self._exposure_integral[self._event_types[0]].par_grids["diff_index"]
             )
 
             sim_inputs["diff_index_grid"] = self._exposure_integral[
-                event_type
+                self._event_types[0]
             ].par_grids["diff_index"]
 
             sim_inputs["diff_index"] = Parameter.get_parameter("diff_index").value
@@ -713,6 +699,7 @@ class Simulation:
 
         for c, event_type in enumerate(self._event_types):
             effective_area = self._exposure_integral[event_type].effective_area
+            obs_time.append(self._observation_time[event_type].to(u.s).value)
 
             try:
                 Emin_det.append(
@@ -869,6 +856,7 @@ class Simulation:
             Nex_et[c] = _get_expected_Nnu_(
                 c,
                 sim_inputs_,
+                self._sources.point_source_spectrum.flux_conv_,
                 integral_grid,
                 integral_grid_2d,
                 self._sources.point_source,
@@ -1068,6 +1056,7 @@ class SimInfo:
 def _get_expected_Nnu_(
     c,
     sim_inputs,
+    flux_conv_,
     integral_grid,
     integral_grid_2d,
     point_source=False,
@@ -1104,35 +1093,52 @@ def _get_expected_Nnu_(
 
     Ns = sim_inputs["Ns"]
 
+    F = []
     eps = []
 
     if point_source:
-        for i in range(Ns):
+        for i, (d, Emin_src, Emax_src) in enumerate(
+                zip(sim_inputs["D"], sim_inputs["Emin_src"], sim_inputs["Emax_src"])
+            ):
             if shared_src_index:
                 src_index_ref = src_index
                 if beta_index is not None:
                     beta_index_ref = beta_index
+                else:
+                    beta_index_ref = None
             else:
                 src_index_ref = src_index_list[i]
                 if beta_index:
                     beta_index_ref = beta_index_list[i]
+                else:
+                    beta_index_ref = None
             if beta_index is not None:
                 interp = RegularGridInterpolator((src_index_grid, beta_index_grid), integral_grid_2d[i])
                 eps.append(
                     np.exp(interp(np.array([src_index_ref, beta_index_ref])))
                 )
+                E0 = sim_inputs["E0"][i]
             else:
                 eps.append(
                     np.exp(np.interp(src_index_ref, src_index_grid, integral_grid[i]))
                 )
-            """
+                # arbitrary value to fulfill function signature
+                E0 = 0.
+
+            if shared_luminosity:
+                l = sim_inputs["L"]
             else:
-                eps.append(
-                    np.exp(
-                        np.interp(src_index_list[i], src_index_grid, integral_grid[i])
-                    )
-                )
-            """
+                l = sim_inputs["L"][i]
+
+            flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
+            flux = flux * flux_conv_(
+                alpha=src_index_ref,
+                e_low=Emin_src,
+                e_up=Emax_src,
+                beta=beta_index_ref,
+                e_0=E0,
+            )
+            F.append(flux)
 
     if diffuse:
         eps.append(np.exp(np.interp(diff_index, diff_index_grid, integral_grid[Ns])))
@@ -1141,52 +1147,6 @@ def _get_expected_Nnu_(
         eps.append(sim_inputs["atmo_integ_val"][c])
 
     eps = np.array(eps) * sim_inputs["T"][c]
-
-    F = []
-
-    if point_source:
-        if shared_luminosity:
-            for i, (d, Emin_src, Emax_src) in enumerate(
-                zip(sim_inputs["D"], sim_inputs["Emin_src"], sim_inputs["Emax_src"])
-            ):
-                flux = sim_inputs["L"] / (4 * np.pi * np.power(d * 3.086e22, 2))
-                if shared_src_index:
-                    flux = flux * flux_conv_(
-                        src_index,
-                        Emin_src,
-                        Emax_src,
-                    )
-                else:
-                    flux = flux * flux_conv_(
-                        src_index_list[i],
-                        Emin_src,
-                        Emax_src,
-                    )
-                F.append(flux)
-
-        else:
-            for i, (d, l, Emin_src, Emax_src) in enumerate(
-                zip(
-                    sim_inputs["D"],
-                    sim_inputs["L"],
-                    sim_inputs["Emin_src"],
-                    sim_inputs["Emax_src"]
-                )
-            ):
-                flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
-                if shared_src_index:
-                    flux = flux * flux_conv_(
-                        src_index,
-                        Emin_src,
-                        Emax_src,
-                    )
-                else:
-                    flux = flux * flux_conv_(
-                        src_index_list[i],
-                        Emin_src,
-                        Emax_src,
-                    )
-                F.append(flux)
 
     if diffuse:
         F.append(sim_inputs["F_diff"])
