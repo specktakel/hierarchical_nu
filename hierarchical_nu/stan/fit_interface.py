@@ -234,7 +234,18 @@ class StanFitInterface(StanInterface):
                             )
                             try:
                                 # If this works, we are coming from lp_reduce
-                                # TODO Fix transformations in this case to detector frame
+                                # use self._x_r_idxs to get k-th entry of Emin/max_src, E0
+                                x_r = StringExpression(
+                                    [
+                                        "real_data[{",
+                                        self._x_r_idxs[3]+k-1,
+                                        ",",
+                                        self._x_r_idxs[1]+k-1,
+                                        ",",
+                                        self._x_r_idxs[2]+k-1,
+                                        "}]",
+                                    ]
+                                )
                                 x_r = StringExpression(
                                     ["real_data[", self._x_r_idxs, "]"]
                                 )
@@ -626,14 +637,14 @@ class StanFitInterface(StanInterface):
                     end << end + self._Ns
                     self._Emin_src << StringExpression(["real_data[start:end]"])
                     if beta:
-                        self._x_r_idxs[3] << start
+                        self._x_r_idxs[2] << start
                     start << start + self._Ns
 
-                    # INsert Emax_src
+                    # Insert Emax_src
                     end << end + self._Ns
                     self._Emax_src << StringExpression(["real_data[start:end]"])
                     if beta:
-                        self._x_r_idxs[2] << start
+                        self._x_r_idxs[3] << start
                     start << start + self._Ns
 
                     if self.sources.diffuse:
