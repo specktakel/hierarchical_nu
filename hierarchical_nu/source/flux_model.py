@@ -919,22 +919,17 @@ class LogParabolaSpectrum(SpectralShape):
 
             N << FunctionCall(
                 [
-                    FunctionCall(
-                        [
-                            "logparabola_dN_dx",
-                            logEL_E0,
-                            logEU_E0,
-                            theta,
-                            "x_r",
-                            "x_i",
-                        ],
-                        "integrate_1d",
-                    )
+                    "logparabola_dN_dx",
+                    logEL_E0,
+                    logEU_E0,
+                    theta,
+                    "x_r",
+                    "x_i",
                 ],
-                "log",
+                "integrate_1d",
             )
-            p << logE_E0 * (-theta[1] - theta[2] * logE_E0)
-            ReturnStatement([p - N])
+            p << FunctionCall([E / E0, -theta[1] - theta[2] * logE_E0], "pow")
+            ReturnStatement([FunctionCall([p / N], "log")])
 
         return func
 

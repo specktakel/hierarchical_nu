@@ -8,7 +8,7 @@ from hierarchical_nu.priors import (
     FluxPrior,
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
-from hierarchical_nu.source.source import Sources, PointSource
+from hierarchical_nu.source.source import Sources, PointSource, SourceFrame, DetectorFrame
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.roi import (
@@ -130,6 +130,13 @@ class ConfigParser:
 
         dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
         ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
+        _frame = parameter_config["frame"]
+        if _frame == "detector":
+            frame = DetectorFrame
+        elif _frame == "source":
+            frame = SourceFrame
+        else:
+            raise ValueError("No other frame implemented")
 
         sources = Sources()
 
@@ -156,6 +163,7 @@ class ConfigParser:
                 parameter_config["z"][c],
                 Emin_src,
                 Emax_src,
+                frame,
             )
 
             sources.add(point_source)
