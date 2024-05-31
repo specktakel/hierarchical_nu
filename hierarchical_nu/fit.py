@@ -1299,7 +1299,11 @@ class StanFit:
                 ].par_grids[key_beta]
                 fit_inputs["beta_index_min"] = self._beta_index_par_range[0]
                 fit_inputs["beta_index_max"] = self._beta_index_par_range[1]
-                fit_inputs["E0"] = self._sources.point_source[0].flux_model.spectral_shape._normalisation_energy.to_value(u.GeV)
+                fit_inputs["E0"] = [
+                        ps.flux_model.spectral_shape._normalisation_energy.to_value(
+                            u.GeV
+                        ) for ps in self._sources.point_source
+                ]
                 fit_inputs["beta_index_mu"] = self._priors.beta_index.mu
                 fit_inputs["beta_index_sigma"] = self._priors.beta_index.sigma
 
