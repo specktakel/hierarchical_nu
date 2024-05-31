@@ -9,7 +9,6 @@ from hierarchical_nu.source.flux_model import (
     integral_power_law,
     LogParabolaSpectrum,
     PowerLawSpectrum,
-    flux_conv_,
 )
 
 Parameter.clear_registry()
@@ -125,7 +124,7 @@ def test_logparabola():
     pl = PowerLawSpectrum(norm, Enorm, index, Emin, Emax)
     log = LogParabolaSpectrum(norm, Enorm, alpha, beta, Emin, Emax)
 
-    factor_pl = flux_conv_(index.value, Emin.to_value(u.GeV), Emax.to_value(u.GeV))
+    factor_pl = PowerLawSpectrum.flux_conv_(index.value, Emin.to_value(u.GeV), Emax.to_value(u.GeV), 0., 0.)
     factor_log = log.flux_conv()
 
     flux_density_pl = pl.total_flux_density.to_value(u.erg / u.m**2 / u.s)
