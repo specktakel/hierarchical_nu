@@ -1145,7 +1145,7 @@ def _get_expected_Nnu_(
             F.append(flux)
 
     if diffuse:
-        eps.append(np.exp(np.interp(diff_index, diff_index_grid, integral_grid[Ns])))
+        eps.append(np.exp(np.interp(diff_index, diff_index_grid, integral_grid[-1])))
 
     if atmospheric:
         eps.append(sim_inputs["atmo_integ_val"][c])

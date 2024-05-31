@@ -77,6 +77,7 @@ class ParameterConfig:
     # OR
     # provide mjd_min, mjd_max to automatically determine the detectors and their obs times
     detector_model_type: List[str] = field(default_factory=lambda: ["IC86_II"])
+    frame: str = "source"
     obs_time: List = field(default_factory=lambda: [3.0])  # years
 
     # With these default values obs_time takes precedence
