@@ -238,17 +238,19 @@ class StanFitInterface(StanInterface):
                                 x_r = StringExpression(
                                     [
                                         "real_data[{",
-                                        self._x_r_idxs[3]+k-1,
-                                        ",",
                                         self._x_r_idxs[1]+k-1,
                                         ",",
                                         self._x_r_idxs[2]+k-1,
+                                        ",",
+                                        self._x_r_idxs[3]+k-1,
                                         "}]",
                                     ]
                                 )
+                                """
                                 x_r = StringExpression(
                                     ["real_data[", self._x_r_idxs, "]"]
                                 )
+                                """
                                 del self._x_r_idxs
                             except AttributeError:
                                 # Otherwise single thread or generated quantities
@@ -799,7 +801,7 @@ class StanFitInterface(StanInterface):
                 if self._ps_spectrum == LogParabolaSpectrum:
                     self._beta_index_min = ForwardVariableDef("beta_index_min", "real")
                     self._beta_index_max = ForwardVariableDef("beta_index_max", "real")
-                    self._E0 = ForwardVariableDef("E0", "real")
+                    self._E0 = ForwardArrayDef("E0", "real", ["[Ns]"])
 
             if self.sources.diffuse:
                 self._diff_index_min = ForwardVariableDef("diff_index_min", "real")
