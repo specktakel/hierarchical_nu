@@ -853,10 +853,14 @@ class Simulation:
         for c, event_type in enumerate(self._event_types):
             integral_grid = sim_inputs_["integral_grid"][c]
             integral_grid_2d = sim_inputs_["integral_grid_2d"][c]
+            try:
+                flux_conv_ = self._sources.point_source_spectrum.flux_conv_,
+            except ValueError:
+                flux_conv_ = lambda x: x
             Nex_et[c] = _get_expected_Nnu_(
                 c,
                 sim_inputs_,
-                self._sources.point_source_spectrum.flux_conv_,
+                flux_conv_,
                 integral_grid,
                 integral_grid_2d,
                 self._sources.point_source,
