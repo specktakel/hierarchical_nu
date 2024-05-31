@@ -256,6 +256,8 @@ class Events:
                     pass
 
         events.select(mask)
+        if events.N == 0:
+            logger.warning("No events selected, check your ROI and MJD")
 
         return events
 
@@ -401,6 +403,10 @@ class Events:
             reco_energy[idxs], coords[idxs], types[idxs], ang_err[idxs], mjd[idxs]
         )
         events._idxs = idxs
+
+        if events.N == 0:
+            logger.warning("No events selected, check your ROI and MJD")
+
         return events
 
     def merge(self, events):
