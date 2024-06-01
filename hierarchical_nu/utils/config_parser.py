@@ -192,19 +192,19 @@ class ConfigParser:
                 method = PointSource.make_powerlaw_source
             elif parameter_config.source_type == "logparabola":
                 method = PointSource.make_logparabola_source
-            args = (
-                f"ps_{c}",
-                dec[c],
-                ra[c],
-                Lumi,
-                idx,
-                idx_beta,
-                parameter_config["z"][c],
-                Emin_src,
-                Emax_src,
-                Enorm,
-                frame,
-            )
+                args = (
+                    f"ps_{c}",
+                    dec[c],
+                    ra[c],
+                    Lumi,
+                    idx,
+                    idx_beta,
+                    parameter_config["z"][c],
+                    Emin_src,
+                    Emax_src,
+                    Enorm,
+                    frame,
+                )
             point_source = method(*args)
 
             sources.add(point_source)

@@ -927,7 +927,7 @@ class LogParabolaSpectrum(SpectralShape):
                     "x_i",
                 ],
                 "integrate_1d",
-            )
+            ) * E0
             p << FunctionCall([E / E0, -theta[1] - theta[2] * logE_E0], "pow")
             ReturnStatement([FunctionCall([p / N], "log")])
 
