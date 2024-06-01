@@ -854,8 +854,9 @@ class Simulation:
             integral_grid = sim_inputs_["integral_grid"][c]
             integral_grid_2d = sim_inputs_["integral_grid_2d"][c]
             try:
-                flux_conv_ = self._sources.point_source_spectrum.flux_conv_,
+                flux_conv_ = self._sources.point_source_spectrum.flux_conv_
             except ValueError:
+                # In this case flux_conv_ is not used
                 flux_conv_ = lambda x: x
             Nex_et[c] = _get_expected_Nnu_(
                 c,
@@ -1119,7 +1120,7 @@ def _get_expected_Nnu_(
             if beta_index is not None:
                 interp = RegularGridInterpolator((src_index_grid, beta_index_grid), integral_grid_2d[i])
                 eps.append(
-                    np.exp(interp(np.array([src_index_ref, beta_index_ref])))
+                    np.exp(interp(np.array([src_index_ref, beta_index_ref])))[0]
                 )
                 E0 = sim_inputs["E0"][i]
             else:

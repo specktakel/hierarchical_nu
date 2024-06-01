@@ -21,11 +21,13 @@ logger.setLevel(logging.INFO)
 @dataclass
 class ParameterConfig:
     source_type: str = (
-        "twice-broken-power-law"  # Currently only support one type for all sources, other option "power-law" covering the entire energy range
+        "twice-broken-power-law"  # Currently only support one type for all sources, other option "power-law" covering the entire energy range or logparabola
     )
     src_index: List[float] = field(default_factory=lambda: [2.3])
     share_src_index: bool = True
     src_index_range: tuple = (1.0, 4.0)
+    beta_index: List[float] = field(default_factory=lambda: [0.0])
+    beta_index_range: tuple = (-1., 1.)
     diff_index: float = 2.5
     diff_index_range: tuple = (1.0, 4.0)
     F_diff_range: tuple = (1e-6, 1e-3) # 1 / m**2 / s

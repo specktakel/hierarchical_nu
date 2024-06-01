@@ -42,8 +42,14 @@ class ConfigParser:
 
         Parameter.clear_registry()
         indices = []
+        beta = []
         if not share_src_index:
-            for c, idx in enumerate(parameter_config["src_index"]):
+            for c, (idx, idx_beta) in enumerate(
+                zip(
+                    parameter_config["src_index"], 
+                    parameter_config["beta_index"],
+                )
+            ):
                 name = f"ps_{c}_src_index"
                 indices.append(
                     Parameter(
@@ -53,6 +59,15 @@ class ConfigParser:
                         par_range=parameter_config["src_index_range"],
                     )
                 )
+                name = f"ps_{c}_beta_index"
+                beta.append(
+                    Parameter(
+                        idx_beta,
+                        name,
+                        fixed=False,
+                        par_range=parameter_config["beta_index_range"],
+                    )
+                )
         else:
             indices.append(
                 Parameter(
@@ -60,6 +75,14 @@ class ConfigParser:
                     "src_index",
                     fixed=False,
                     par_range=parameter_config["src_index_range"],
+                )
+            )
+            beta.append(
+                Parameter(
+                    parameter_config["beta_index"][0],
+                    "beta_index",
+                    fixed=False,
+                    par_range=parameter_config["beta_index_range"],
                 )
             )
         diff_index = Parameter(
@@ -148,13 +171,11 @@ class ConfigParser:
 
             if share_src_index:
                 idx = indices[0]
+                idx_beta = beta[0]
             else:
                 idx = indices[c]
-            if parameter_config.source_type == "twice-broken-power-law":
-                method = PointSource.make_twicebroken_powerlaw_source
-            elif parameter_config.source_type == "power-law":
-                method = PointSource.make_powerlaw_source
-            point_source = method(
+                idx_beta = beta[c]
+            args = (
                 f"ps_{c}",
                 dec[c],
                 ra[c],
@@ -165,6 +186,26 @@ class ConfigParser:
                 Emax_src,
                 frame,
             )
+            if parameter_config.source_type == "twice-broken-power-law":
+                method = PointSource.make_twicebroken_powerlaw_source
+            elif parameter_config.source_type == "power-law":
+                method = PointSource.make_powerlaw_source
+            elif parameter_config.source_type == "logparabola":
+                method = PointSource.make_logparabola_source
+            args = (
+                f"ps_{c}",
+                dec[c],
+                ra[c],
+                Lumi,
+                idx,
+                idx_beta,
+                parameter_config["z"][c],
+                Emin_src,
+                Emax_src,
+                Enorm,
+                frame,
+            )
+            point_source = method(*args)
 
             sources.add(point_source)
 
