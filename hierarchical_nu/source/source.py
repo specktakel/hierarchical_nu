@@ -486,7 +486,6 @@ class PointSource(Source):
                 )
 
             # Create source
-            # TODO add logparabola
             source = method(
                 "ps_%i" % i,
                 dec,
@@ -608,6 +607,7 @@ class PointSource(Source):
 
         return source_list
     '''
+
 
     @property
     def dec(self):

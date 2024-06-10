@@ -1080,16 +1080,18 @@ def _get_expected_Nnu_(
             try:
                 beta_index = sim_inputs["beta_index"]
                 beta_index_grid = sim_inputs["beta_index_grid"]
+                logparabola = True
             except KeyError:
-                beta_index = None
+                logparabola = False
             src_index = sim_inputs["src_index"]
         else:
             src_index_list = sim_inputs["src_index"]
             try:
                 beta_index_list = sim_inputs["beta_index"]
                 beta_index_grid = sim_inputs["beta_index_grid"]
+                logparabola = True
             except KeyError:
-                beta_index = None
+                logparabola = False
         src_index_grid = sim_inputs["src_index_grid"]
 
     if diffuse:
@@ -1107,17 +1109,15 @@ def _get_expected_Nnu_(
             ):
             if shared_src_index:
                 src_index_ref = src_index
-                if beta_index is not None:
+                if logparabola:
                     beta_index_ref = beta_index
-                else:
-                    beta_index_ref = None
+
             else:
                 src_index_ref = src_index_list[i]
-                if beta_index:
+                if logparabola:
                     beta_index_ref = beta_index_list[i]
-                else:
-                    beta_index_ref = None
-            if beta_index is not None:
+
+            if logparabola:
                 interp = RegularGridInterpolator((src_index_grid, beta_index_grid), integral_grid_2d[i])
                 eps.append(
                     np.exp(interp(np.array([src_index_ref, beta_index_ref])))[0]
@@ -1127,8 +1127,9 @@ def _get_expected_Nnu_(
                 eps.append(
                     np.exp(np.interp(src_index_ref, src_index_grid, integral_grid[i]))
                 )
-                # arbitrary value to fulfill function signature
+                # arbitrary values to fulfill function signature
                 E0 = 0.
+                beta_index_ref = None
 
             if shared_luminosity:
                 l = sim_inputs["L"]
