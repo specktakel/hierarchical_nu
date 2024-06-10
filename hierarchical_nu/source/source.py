@@ -341,7 +341,7 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
-        normalisation_energy: Parameter,
+        normalisation_energy: u.GeV,
         frame: ReferenceFrame = SourceFrame,
     ):
         """
@@ -386,15 +386,9 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
-        # Use Enorm if set, otherwise fix to 1e5 GeV
-        try:
-            Enorm_value = Parameter.get_parameter("Enorm").value
-        except ValueError:
-            Enorm_value = 1e5 * u.GeV
-
         spectral_shape = LogParabolaSpectrum(
             norm,
-            Enorm_value,
+            frame.transform(normalisation_energy, redshift),
             alpha,
             beta,
             frame.transform(lower.value, redshift),
@@ -417,6 +411,7 @@ class PointSource(Source):
         frame: ReferenceFrame = SourceFrame,
         include_undetected: bool = False,
         config: Union[None, HierarchicalNuConfig] = None,
+        normalisation_energy: Union[u.Quantity[u.GeV], None] = None,
     ):
         # Sensible bounds on luminosity
         lumi_range = (0, 1e60) * (u.erg / u.s)
@@ -491,6 +486,7 @@ class PointSource(Source):
                 )
 
             # Create source
+            # TODO add logparabola
             source = method(
                 "ps_%i" % i,
                 dec,
@@ -574,6 +570,44 @@ class PointSource(Source):
         )
 
         return source_list
+    
+    '''
+    @classmethod
+    def make_logparabola_sources_from_file(
+        cls,
+        file_name: str,
+        lower_energy: Parameter,
+        upper_energy: Parameter,
+        normalisation_energy: u.GeV
+        frame: ReferenceFrame = SourceFrame,
+        include_undetected: bool = False,
+        config: Union[None, HierarchicalNuConfig] = None,
+    ):
+        """
+        Factory for power law sources defined in
+        HDF5 files ( update: output from popsynth).
+
+        :param file_name: File name of source list.
+        :param lower_energy: Lower energy bound in definition of the luminosity.
+        :param upper_energy: Upper energy bound in definition of the luminosity.
+        :param frame: Reference frame in which source energy is defined
+        :param include_undetected: Include sources that are not detected in population.
+        :param config: Instance of HierarchicalNuConfig to check for parameter bounds.
+        """
+
+        source_list = cls._make_sources_from_file(
+            file_name,
+            lower_energy,
+            upper_energy,
+            cls.make_logparabola_source,
+            frame,
+            include_undetected,
+            config,
+            normalisation_energy=normalisation_energy,
+        )
+
+        return source_list
+    '''
 
     @property
     def dec(self):

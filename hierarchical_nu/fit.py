@@ -131,6 +131,9 @@ class StanFit:
         if self._sources.point_source:
             self._def_var_names.append("L")
             self._def_var_names.append("src_index")
+            
+            if isinstance(self._sources.point_source.flux_model.spectral_shape, LogParabolaSpectrum):
+                self._def_var_names.append("beta_index")
 
         if self._sources.diffuse:
             self._def_var_names.append("F_diff")
@@ -970,6 +973,9 @@ class StanFit:
         if "src_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("L")
             fit._def_var_names.append("src_index")
+            
+        if "beta_index_grid" in fit_inputs.keys():
+            fit._def_var_names.append("beta_index")
 
         if "diff_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("F_diff")
