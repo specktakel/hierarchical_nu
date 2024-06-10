@@ -2,10 +2,10 @@ import numpy as np
 from typing import List
 from collections import OrderedDict
 
-from hierarchical_nu.priors import Priors, MultiSourcePrior
-from hierarchical_nu.stan.interface import StanInterface
+from ..priors import Priors, MultiSourcePrior
+from ..stan.interface import StanInterface
 
-from hierarchical_nu.backend.stan_generator import (
+from ..backend.stan_generator import (
     FunctionsContext,
     Include,
     DataContext,
@@ -22,12 +22,12 @@ from hierarchical_nu.backend.stan_generator import (
     UserDefinedFunction,
 )
 
-from hierarchical_nu.backend.expression import (
+from ..backend.expression import (
     ReturnStatement,
     StringExpression,
 )
 
-from hierarchical_nu.backend.variable_definitions import (
+from ..backend.variable_definitions import (
     ForwardVariableDef,
     ForwardArrayDef,
     ParameterDef,
@@ -35,16 +35,16 @@ from hierarchical_nu.backend.variable_definitions import (
     InstantVariableDef,
 )
 
-from hierarchical_nu.backend.expression import StringExpression
-from hierarchical_nu.backend.parameterizations import DistributionMode
+from ..backend.expression import StringExpression
+from ..backend.parameterizations import DistributionMode
 
-from hierarchical_nu.source.source import Sources, DetectorFrame, SourceFrame
-from hierarchical_nu.detector.icecube import EventType, NT, CAS
+from ..source.source import Sources, DetectorFrame, SourceFrame
+from ..detector.icecube import EventType, NT, CAS
 
-from hierarchical_nu.detector.detector_model import (
+from ..detector.detector_model import (
     GridInterpolationEnergyResolution,
 )
-from hierarchical_nu.detector.r2021 import R2021EnergyResolution
+from ..detector.r2021 import R2021EnergyResolution
 
 
 class StanFitInterface(StanInterface):
@@ -224,18 +224,10 @@ class StanFitInterface(StanInterface):
                                 self._src_spectrum_lpdf(
                                     self._E[i],
                                     src_index_ref,
-                                    self._ps_frame.stan_to_det(
-                                        self._Emin_src, self._z, k
-                                    ),
-                                    self._ps_frame.stan_to_det(
-                                        self._Emax_src, self._z, k
-                                    ),
+                                    self._Emin_src[k],
+                                    self._Emax_src[k],
                                 ),
                             ]
-                        )
-                        # Frame transformation
-                        self._Esrc[i] << DetectorFrame.stan_to_src(
-                            self._E[i], self._z, k
                         )
 
                 # Diffuse component
@@ -262,11 +254,6 @@ class StanFitInterface(StanInterface):
                             ]
                         )
 
-                        # E = Esrc / (1+z)
-                        self._Esrc[i] << DetectorFrame.stan_to_src(
-                            self._E[i], self._z, k
-                        )
-
                         # log_prob += log(p(Esrc|diff_index))
                         StringExpression(
                             [
@@ -275,12 +262,8 @@ class StanFitInterface(StanInterface):
                                 self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
-                                    self._diff_frame.stan_to_det(
-                                        self._Emin_diff, self._z, k
-                                    ),
-                                    self._diff_frame.stan_to_det(
-                                        self._Emax_diff, self._z, k
-                                    ),
+                                    self._Emin_diff,
+                                    self._Emax_diff,
                                 ),
                             ]
                         )
@@ -321,9 +304,6 @@ class StanFitInterface(StanInterface):
                             ]
                         )
 
-                        # E = Esrc
-                        self._Esrc[i] << self._E[i]
-
                         # log_prob += log(p(Esrc, omega | atmospheric source))
                         StringExpression(
                             [
@@ -341,8 +321,6 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
-
-        pass
 
     def _functions(self):
         """
@@ -368,37 +346,12 @@ class StanFitInterface(StanInterface):
                     "flux_conv"
                 )
 
-                """
-                self._ps_to_det_transform = (
-                    self._ps_frame.make_stan_transform_func_to_detector_frame(
-                        "ps_to_det_transform"
-                    )
-                )
-                self._ps_to_src_transform = (
-                    self._ps_frame.make_stan_transform_func_to_detector_frame(
-                        "ps_to_src_transform"
-                    )
-                )
-                """
-
             # If we have diffuse sources, include the shape of their PDF
             if self.sources.diffuse:
                 self._diff_spectrum_lpdf = self._diff_spectrum.make_stan_lpdf_func(
                     "diff_spectrum_logpdf"
                 )
 
-                """
-                self._diff_to_det_transform = (
-                    self._diff_frame.make_stan_transform_func_to_detector_frame(
-                        "diff_to_det_transform"
-                    )
-                )
-                self._diff_to_src_transform = (
-                    self._diff_frame.make_stan_transform_func_to_source_frame(
-                        "diff_to_src_transform"
-                    )
-                )
-                """
             # If we have atmospheric sources, include the atmospheric flux table
             # the density of the grid in theta (ie. declination) is specified here
             if self.sources.atmospheric:
@@ -461,8 +414,6 @@ class StanFitInterface(StanInterface):
                     # Local pars are only source energies
                     self._E = ForwardVariableDef("E", "vector[N]")
                     self._E << StringExpression(["local[:N]"])
-                    # This is always defined at redshift z, irregardless of the source's frame
-                    self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
 
                     # Define indices for unpacking of real_data
                     start << 1
@@ -493,7 +444,6 @@ class StanFitInterface(StanInterface):
                         self._event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
                         self._event_tag << StringExpression(["int_data[3+N:2+2*N]"])
 
-                    # TODO fix indexing for event tags
                     # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[N]"])
                     # self._ereco_idx << StringExpression("int_data[3+N:2+2*N]")
 
@@ -561,23 +511,21 @@ class StanFitInterface(StanInterface):
                                 ["real_data[start:end]"]
                             )
                             start << start + length
-                    self._Emin_src = ForwardVariableDef("Emin_src", "real")
-                    self._Emax_src = ForwardVariableDef("Emax_src", "real")
+                    self._Emin_src = ForwardArrayDef("Emin_src", "real", ["[Ns]"])
+                    self._Emax_src = ForwardArrayDef("Emax_src", "real", ["[Ns]"])
                     self._Emin = ForwardVariableDef("Emin", "real")
                     self._Emax = ForwardVariableDef("Emax", "real")
                     if self.sources.diffuse:
                         self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
                         self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
-                    self._Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
-                    self._Emax_at_det = ForwardVariableDef("Emax_at_det", "real")
 
-                    end << end + 1
-                    self._Emin_src << StringExpression(["real_data[start]"])
-                    start << start + 1
+                    end << end + self._Ns
+                    self._Emin_src << StringExpression(["real_data[start:end]"])
+                    start << start + self._Ns
 
-                    end << end + 1
-                    self._Emax_src << StringExpression(["real_data[start]"])
-                    start << start + 1
+                    end << end + self._Ns
+                    self._Emax_src << StringExpression(["real_data[start:end]"])
+                    start << start + self._Ns
 
                     if self.sources.diffuse:
                         end << end + 1
@@ -594,14 +542,6 @@ class StanFitInterface(StanInterface):
 
                     end << end + 1
                     self._Emax << StringExpression(["real_data[start]"])
-                    start << start + 1
-
-                    end << end + 1
-                    self._Emin_at_det << StringExpression(["real_data[start]"])
-                    start << start + 1
-
-                    end << end + 1
-                    self._Emax_at_det << StringExpression(["real_data[start]"])
                     start << start + 1
 
                     # Define tracks and cascades to sort events into correct detector response
@@ -650,12 +590,14 @@ class StanFitInterface(StanInterface):
             self._N = ForwardVariableDef("N", "int")
             self._N_str = ["[", self._N, "]"]
 
-            if self.sources.atmospheric and self.sources.diffuse:
-                Ns_string = "Ns+2"
-            elif self.sources.diffuse or self.sources.atmospheric:
-                Ns_string = "Ns+1"
-            else:
-                Ns_string = "Ns"
+            # Number of point sources
+            self._Ns = ForwardVariableDef("Ns", "int")
+            self._Ns_str = ["[", self._Ns, "]"]
+            self._Ns_1p_str = ["[", self._Ns, "+1]"]
+            self._Ns_2p_str = ["[", self._Ns, "+2]"]
+
+            # Total number of sources
+            self._Ns_tot = ForwardVariableDef("Ns_tot", "int")
 
             if self.sources.diffuse:
                 Ns_string_int_grid = "Ns+1"
@@ -699,8 +641,8 @@ class StanFitInterface(StanInterface):
             )
 
             # Energy range at source
-            self._Emin_src = ForwardVariableDef("Emin_src", "real")
-            self._Emax_src = ForwardVariableDef("Emax_src", "real")
+            self._Emin_src = ForwardArrayDef("Emin_src", "real", ["[Ns]"])
+            self._Emax_src = ForwardArrayDef("Emax_src", "real", ["[Ns]"])
 
             if self.sources.diffuse:
                 # Energy range at the diffuse component at redshift z
@@ -726,15 +668,6 @@ class StanFitInterface(StanInterface):
                 self._F_atmo_min = ForwardVariableDef("F_atmo_min", "real")
                 self._F_atmo_max = ForwardVariableDef("F_atmo_max", "real")
 
-            # Number of point sources
-            self._Ns = ForwardVariableDef("Ns", "int")
-            self._Ns_str = ["[", self._Ns, "]"]
-            self._Ns_1p_str = ["[", self._Ns, "+1]"]
-            self._Ns_2p_str = ["[", self._Ns, "+2]"]
-
-            # Total number of sources
-            self._Ns_tot = ForwardVariableDef("Ns_tot", "int")
-
             # True directions and distances of point sources
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
             self._D = ForwardVariableDef("D", "vector[Ns]")
@@ -747,11 +680,9 @@ class StanFitInterface(StanInterface):
 
             # Redshift
             if self.sources.diffuse:
-                N_int_str = self._Ns_1p_str
                 self._z = ForwardVariableDef("z", "vector[Ns+1]")
 
             else:
-                N_int_str = self._Ns_str
                 self._z = ForwardVariableDef("z", "vector[Ns]")
 
             # Interpolation grid points in spectral indices for
@@ -774,15 +705,6 @@ class StanFitInterface(StanInterface):
                     "vector[Ngrid]",
                     ["[", self._Net, ",", Ns_string_int_grid, "]"],
                 )
-
-            if self.sources.diffuse and self.sources.atmospheric:
-                N_pdet_str = self._Ns_2p_str
-
-            elif self.sources.diffuse or self.sources.atmospheric:
-                N_pdet_str = self._Ns_1p_str
-
-            else:
-                N_pdet_str = self._Ns_str
 
             # Don't need a grid for atmo as spectral shape is fixed, so pass single value.
             if self.sources.atmospheric:
@@ -868,6 +790,7 @@ class StanFitInterface(StanInterface):
             self._N_et_data = ForwardArrayDef("N_et_data", "int", ["[", self._Net, "]"])
 
             # Set all entries to zero
+            # What is this actually used for?
             with ForLoopContext(1, self._Net, "i") as i:
                 self._N_et_data[i] << 0
 
@@ -921,84 +844,44 @@ class StanFitInterface(StanInterface):
                                 )
 
             # Find largest permitted range of energies at the detector
-            # TODO: not sure about this construct...
             self._Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
             self._Emax_at_det = ForwardVariableDef("Emax_at_det", "real")
             self._Emin_at_det << self._Emin
             self._Emax_at_det << self._Emax
 
-            # Find the largest energy range over all source components, transformed in the detector frame
-            if self._ps_frame == SourceFrame:
-                with ForLoopContext(1, self._Ns, "k") as k:
-                    with IfBlockContext(
-                        [
-                            self._ps_frame.stan_to_det(self._Emin_src, self._z, k),
-                            " < ",
-                            self._Emin_at_det,
-                        ]
-                    ):
-                        self._Emin_at_det << self._ps_frame.stan_to_det(
-                            self._Emin_src, self._z, k
-                        )
-                    with IfBlockContext(
-                        [
-                            self._ps_frame.stan_to_det(self._Emax_src, self._z, k),
-                            " > ",
-                            self._Emax_at_det,
-                        ]
-                    ):
-                        self._Emax_at_det << self._ps_frame.stan_to_det(
-                            self._Emax_src, self._z, k
-                    )
-            else:
-                # Necessary to circumvent issues with the stan generator
+            # Find the largest energy range over all source components
+            with ForLoopContext(1, self._Ns, "k") as k:
                 with IfBlockContext(
                     [
-                        self._Emin_src,
+                        self._Emin_src[k],
                         " < ",
                         self._Emin_at_det,
                     ]
                 ):
-                    self._Emin_at_det << self._Emin_src 
+                    self._Emin_at_det << self._Emin_src[k]
                 with IfBlockContext(
                     [
-                        self._Emax_src,
+                        self._Emax_src[k],
                         " > ",
                         self._Emax_at_det,
                     ]
                 ):
-                    self._Emax_at_det << self._Emax_src
+                    self._Emax_at_det << self._Emax_src[k]
             if self.sources.diffuse:
                 with IfBlockContext(
                     [
-                        self._diff_frame.stan_to_det(
-                            self._Emin_diff, self._z, "Ns + 1"
-                        ),
+                        self._Emin_diff,
                         " < ",
                         self._Emin_at_det,
                     ]
                 ):
-                    (
-                        self._Emin_at_det
-                        << self._diff_frame.stan_to_det(
-                            self._Emin_diff, self._z, "Ns + 1"
-                        )
-                    )
+                    self._Emin_at_det << self._Emin_diff
                 with IfBlockContext(
                     [
-                        self._diff_frame.stan_to_det(
-                            self._Emax_diff, self._z, "Ns + 1"
-                        ),
-                        " > ",
-                        self._Emax_at_det,
+                        self._Emax_diff, " > ", self._Emax_at_det,
                     ]
                 ):
-                    (
-                        self._Emax_at_det
-                        << self._diff_frame.stan_to_det(
-                            self._Emax_diff, self._z, "Ns + 1"
-                        )
-                    )
+                    self._Emax_at_det << self._Emax_diff
 
             if self._nshards not in [0, 1]:
                 grid_size = R2021EnergyResolution._log_tE_grid.size
@@ -1008,16 +891,15 @@ class StanFitInterface(StanInterface):
                 self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
                 self._N_mod_J << self._N % self._J
                 # Find size for real_data array
-                sd_events_J = 4 + grid_size  # reco energy, reco dir (unit vector)
-                sd_varpi_Ns = 3  # coords of PS in the sky (unit vector)
+                sd_events_J = 4 + grid_size  # reco energy, reco dir (unit vector), eres grid
                 sd_if_diff = 3  # redshift of diffuse component, Emin_diff/max
-                sd_z_Ns = 1  # redshift of PS
-                sd_other = 6  # Emin_src, Emax_src, Emin, Emax, Emin_at_det, Emax_at_det
+                sd_Ns = 6  # redshift, Emin_src, Emax_src, x, y, z per point source
+                sd_other = 2  # Emin, Emax
                 # Need Ns * N for spatial loglike, added extra in sd_string -> J*Ns
                 if self.sources.atmospheric:
                     # atmo_integrated_flux, why was this here before? not used as far as I can see
                     sd_other += 1  # no atmo in cascades
-                sd_string = f"{sd_events_J}*J + {sd_varpi_Ns}*Ns + {sd_z_Ns}*Ns + {sd_other} + J*Ns"
+                sd_string = f"{sd_events_J}*J + {sd_Ns}*Ns + {sd_other} + J*Ns"
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_diff}"
 
@@ -1119,13 +1001,13 @@ class StanFitInterface(StanInterface):
                             )
                             insert_start << insert_start + insert_len
 
-                    insert_end << insert_end + 1
-                    self.real_data[i, insert_start] << self._Emin_src
-                    insert_start << insert_start + 1
+                    insert_end << insert_end + self._Ns
+                    self.real_data[i, insert_start:insert_end] << self._Emin_src
+                    insert_start << insert_start + self._Ns
 
-                    insert_end << insert_end + 1
-                    self.real_data[i, insert_start] << self._Emax_src
-                    insert_start << insert_start + 1
+                    insert_end << insert_end + self._Ns
+                    self.real_data[i, insert_start:insert_end] << self._Emax_src
+                    insert_start << insert_start + self._Ns
 
                     if self.sources.diffuse:
                         insert_end << insert_end + 1
@@ -1142,14 +1024,6 @@ class StanFitInterface(StanInterface):
 
                     insert_end << insert_end + 1
                     self.real_data[i, insert_start] << self._Emax
-                    insert_start << insert_start + 1
-
-                    insert_end << insert_end + 1
-                    self.real_data[i, insert_start] << self._Emin_at_det
-                    insert_start << insert_start + 1
-
-                    insert_end << insert_end + 1
-                    self.real_data[i, insert_start] << self._Emax_at_det
                     insert_start << insert_start + 1
 
                     # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
@@ -1366,10 +1240,6 @@ class StanFitInterface(StanInterface):
                         self._local_pars[i] << self._E[start:end]
 
             else:
-                # Latent arrival energies for each event
-                # self._E = ForwardVariableDef("E", "vector[N]")
-                # This is always defined at redshift z, irregardless of the source's frame
-                self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
                 if self._use_event_tag:
                     self._irf_return = ForwardVariableDef(
                         "irf_return",
@@ -1421,8 +1291,8 @@ class StanFitInterface(StanInterface):
                             "*=",
                             self._flux_conv(
                                 src_index_ref,
-                                self._ps_frame.stan_to_det(self._Emin_src, self._z, k),
-                                self._ps_frame.stan_to_det(self._Emax_src, self._z, k),
+                                self._Emin_src[k],
+                                self._Emax_src[k],
                             ),
                         ]
                     )
@@ -1801,7 +1671,7 @@ class StanFitInterface(StanInterface):
                     self._eres_src = ForwardArrayDef("eres_src", "real", self._Ns_str)
                     self._aeff_src = ForwardArrayDef("aeff_src", "real", self._Ns_str)
 
-                self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
+                # self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
                 self._eres_diff = ForwardVariableDef("eres_diff", "real")
                 self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
