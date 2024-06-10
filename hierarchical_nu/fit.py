@@ -132,7 +132,7 @@ class StanFit:
             self._def_var_names.append("L")
             self._def_var_names.append("src_index")
             
-            if isinstance(self._sources.point_source.flux_model.spectral_shape, LogParabolaSpectrum):
+            if isinstance(self._sources.point_source[0].flux_model.spectral_shape, LogParabolaSpectrum):
                 self._def_var_names.append("beta_index")
 
         if self._sources.diffuse:
