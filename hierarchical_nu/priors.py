@@ -510,6 +510,8 @@ class Priors(object):
 
         self.atmospheric_flux = FluxPrior()
 
+        self.energy = EnergyPrior()
+
     @property
     def luminosity(self):
         return self._luminosity
@@ -549,6 +551,16 @@ class Priors(object):
         if not isinstance(prior, IndexPrior):
             raise ValueError("Wrong prior type")
         self._beta_index = prior
+
+    @property
+    def energy(self):
+        return self._energy
+    
+    @energy.setter
+    def energy(self, prior: EnergyPrior):
+        if not isinstance(prior, EnergyPrior):
+            raise ValueError("Wrong prior type")
+        self._energy = prior
 
     @property
     def diff_index(self):
