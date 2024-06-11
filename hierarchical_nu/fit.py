@@ -131,8 +131,11 @@ class StanFit:
         if self._sources.point_source:
             self._def_var_names.append("L")
             self._def_var_names.append("src_index")
-            
-            if isinstance(self._sources.point_source[0].flux_model.spectral_shape, LogParabolaSpectrum):
+
+            if isinstance(
+                self._sources.point_source[0].flux_model.spectral_shape,
+                LogParabolaSpectrum,
+            ):
                 self._def_var_names.append("beta_index")
 
         if self._sources.diffuse:
@@ -973,7 +976,7 @@ class StanFit:
         if "src_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("L")
             fit._def_var_names.append("src_index")
-            
+
         if "beta_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("beta_index")
 
@@ -1224,16 +1227,20 @@ class StanFit:
         if self._sources.point_source:
             fit_inputs["Emin_src"] = [
                 ps.frame.transform(
-                    Parameter.get_parameter("Emin_src").value,
-                    ps.redshift
-                ).to_value(u.GeV) for ps in self._sources.point_source
+                    Parameter.get_parameter("Emin_src").value, ps.redshift
+                ).to_value(u.GeV)
+                for ps in self._sources.point_source
             ]
             fit_inputs["Emax_src"] = [
                 ps.frame.transform(
-                    Parameter.get_parameter("Emax_src").value,
-                    ps.redshift
-                ).to_value(u.GeV) for ps in self._sources.point_source
+                    Parameter.get_parameter("Emax_src").value, ps.redshift
+                ).to_value(u.GeV)
+                for ps in self._sources.point_source
             ]
+            logparabola = isinstance(
+                self._sources.point_source[0].flux_model.spectral_shape,
+                LogParabolaSpectrum,
+            )
 
         fit_inputs["Emin"] = Parameter.get_parameter("Emin").value.to_value(u.GeV)
         fit_inputs["Emax"] = Parameter.get_parameter("Emax").value.to_value(u.GeV)
@@ -1241,11 +1248,11 @@ class StanFit:
         if self._sources.diffuse:
             fit_inputs["Emin_diff"] = self._sources.diffuse.frame.transform(
                 Parameter.get_parameter("Emin_diff").value,
-                self._sources.diffuse.redshift
+                self._sources.diffuse.redshift,
             ).to_value(u.GeV)
             fit_inputs["Emax_diff"] = self._sources.diffuse.frame.transform(
                 Parameter.get_parameter("Emax_diff").value,
-                self._sources.diffuse.redshift
+                self._sources.diffuse.redshift,
             ).to_value(u.GeV)
 
         integral_grid = []
@@ -1255,8 +1262,6 @@ class StanFit:
 
         for c, event_type in enumerate(self._event_types):
             obs_time.append(self._observation_time[event_type].to_value(u.s))
-
-            # event_type = self._detector_model_type.event_types[0]
 
         fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
 
@@ -1269,21 +1274,19 @@ class StanFit:
             # Check for shared source index
             if self._shared_src_index:
                 key = "src_index"
-                if isinstance(
-                    self._sources.point_source[0].flux_model.spectral_shape,
-                    LogParabolaSpectrum,
-                ):
+                if logparabola:
                     key_beta = "beta_index"
 
             # Otherwise just use first source in the list
             # src_index_grid is identical for all point sources
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
-                if isinstance(
-                    self._sources.point_source[0].flux_model.spectral_shape,
-                    LogParabolaSpectrum,
-                ):
+                if logparabola:
                     key_beta = "%s_beta_index" % self._sources.point_source[0].name
+            if logparabola:
+                fit_beta = (
+                    key_beta in self._exposure_integral[event_type].par_grids.keys()
+                )
 
             fit_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
@@ -1296,30 +1299,45 @@ class StanFit:
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
 
-            if isinstance(
-                self._sources.point_source[0].flux_model.spectral_shape,
-                LogParabolaSpectrum,
-            ):
-                fit_inputs["beta_index_grid"] = self._exposure_integral[
-                    event_type
-                ].par_grids[key_beta]
-                fit_inputs["beta_index_min"] = self._beta_index_par_range[0]
-                fit_inputs["beta_index_max"] = self._beta_index_par_range[1]
-                fit_inputs["E0"] = [
-                        ps.flux_model.spectral_shape._normalisation_energy.to_value(
+            if logparabola:
+                if fit_beta:
+                    fit_inputs["beta_index_grid"] = self._exposure_integral[
+                        event_type
+                    ].par_grids[key_beta]
+                    fit_inputs["beta_index_min"] = self._beta_index_par_range[0]
+                    fit_inputs["beta_index_max"] = self._beta_index_par_range[1]
+                    fit_inputs["beta_index_mu"] = self._priors.beta_index.mu
+                    fit_inputs["beta_index_sigma"] = self._priors.beta_index.sigma
+                    fit_inputs["E0"] = [
+                        ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
+                        for ps in self._sources.point_source
+                    ]
+                else:
+                    # beta_index_grid is not present
+                    # means that we are fitting E0
+                    fit_inputs["E0_src_grid"] = self._exposure_integral[
+                        event_type
+                    ].par_grids["E0_src"]
+                    fit_inputs["beta_index"] = [
+                        ps.flux_model.parameters["beta"].value
+                        for ps in self._sources.point_source
+                    ]
+                    fit_inputs["E0_src_min"] = self._E0_src_par_range[0].to_value(u.GeV)
+                    fit_inputs["E0_src_max"] = self._E0_src_par_range[1].to_value(u.GeV)
+                    if self._priors.energy.name == "lognormal":
+                        fit_inputs["E0_src_mu"] = self._priors.energy.mu
+                        fit_inputs["E0_src_sigma"] = self._priors.energy.sigma
+                    elif self._priors.energy.name == "normal":
+                        fit_inputs["E0_src_mu"] = self._priors.energy.mu.to_value(u.GeV)
+                        fit_inputs["E0_src_sigma"] = self._priors.energy.sigma.to_value(
                             u.GeV
-                        ) for ps in self._sources.point_source
-                ]
-                fit_inputs["beta_index_mu"] = self._priors.beta_index.mu
-                fit_inputs["beta_index_sigma"] = self._priors.beta_index.sigma
+                        )
 
         # Inputs for priors of point sources
         if self._priors.src_index.name not in ["normal", "lognormal"]:
             raise ValueError("No other prior type for source index implemented.")
         fit_inputs["src_index_mu"] = self._priors.src_index.mu
         fit_inputs["src_index_sigma"] = self._priors.src_index.sigma
-
-
 
         if self._priors.luminosity.name == "lognormal":
             fit_inputs["lumi_mu"] = self._priors.luminosity.mu
@@ -1489,7 +1507,7 @@ class StanFit:
             integral_grid.append([])
             integral_grid_2d.append([])
             for grid in self._exposure_integral[event_type].integral_grid:
-                
+
                 if len(grid.shape) == 2:
                     integral_grid_2d[-1].append(np.log(grid.to_value(u.m**2)).tolist())
 
@@ -1539,9 +1557,11 @@ class StanFit:
             if self._shared_src_index:
                 key = "src_index"
                 key_beta = "beta_index"
+                key_E0_src = "E0_src"
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
                 key_beta = "%s_beta_index" % self._sources.point_source[0].name
+                key_E0_src = "%s_E0_src" % self._sources.point_source[0].name
 
             self._src_index_par_range = Parameter.get_parameter(key).par_range
             if isinstance(
@@ -1549,6 +1569,7 @@ class StanFit:
                 LogParabolaSpectrum,
             ):
                 self._beta_index_par_range = Parameter.get_parameter(key_beta).par_range
+                self._E0_src_par_range = Parameter.get_parameter(key_E0_src).par_range
 
         if self._sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range
