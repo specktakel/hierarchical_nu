@@ -176,6 +176,7 @@ class PriorDictHandler:
             "src_index": IndexPrior,
             "beta_index": IndexPrior,
             "diff_index": IndexPrior,
+            "energy": EnergyPrior,
         }
         prior_name = prior_dict["name"]
         prior = translate[prior_dict["quantity"]]
@@ -371,6 +372,24 @@ class LuminosityPrior(UnitPrior):
         )
 
 
+class EnergyPrior(UnitPrior):
+    UNITS = u.GeV
+    UNITS_STRING = UNITS.to_string()
+
+    @u.quantity_input
+    def __init__(
+        self,
+        name=LogNormalPrior,
+        mu: Union[u.Quantity[u.GeV], None] = 1e6 * u.GeV,
+        sigma: Union[u.Quantity[u.GeV], u.Quantity[1], None] = 1.0,
+    ):
+        """
+        Converts automatically to log of values, be aware of misuse of notation.
+        """
+        # This sigma thing is weird due to the log
+        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
+
+
 class FluxPrior(UnitPrior):
     UNITS = 1 / u.m**2 / u.s
     UNITS_STRING = UNITS.unit.to_string()
@@ -524,7 +543,7 @@ class Priors(object):
     @property
     def beta_index(self):
         return self._beta_index
-    
+
     @beta_index.setter
     def beta_index(self, prior: IndexPrior):
         if not isinstance(prior, IndexPrior):
