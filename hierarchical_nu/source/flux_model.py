@@ -67,6 +67,19 @@ class SpectralShape(ABC):
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
         pass
 
+    def set_parameter(self, par_name: str, par_value: float):
+        if par_name not in self._parameters:
+            raise ValueError("Parameter name {} not found".format(par_name))
+        par = self._parameters[par_name]
+        if not (par.par_range[0] <= par_value <= par.par_range[1]):
+            raise ValueError("Parameter {} is out of bounds".format(par_name))
+
+        # Copy fixed or not, release param, set value and restore initial state
+        fixed = par.fixed
+        par.fixed = False
+        par.value = par_value
+        par.fixed = fixed
+
 
 class FluxModel(ABC):
     """
@@ -280,15 +293,6 @@ class PowerLawSpectrum(SpectralShape):
     @property
     def energy_bounds(self):
         return (self._lower_energy, self._upper_energy)
-
-    def set_parameter(self, par_name: str, par_value: float):
-        if par_name not in self._parameters:
-            raise ValueError("Parameter name {} not found".format(par_name))
-        par = self._parameters[par_name]
-        if not (par.par_range[0] <= self._par_value <= par.par_range[1]):
-            raise ValueError("Parameter {} is out of bounds".format(par_name))
-
-        par.value = par_value
 
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
@@ -539,12 +543,20 @@ class PowerLawSpectrum(SpectralShape):
         if alpha == 1.0:
             f1 = np.log(e_up) - np.log(e_low)
         else:
-            f1 = 1 / (1 - alpha) * (np.power(e_up, 1 - alpha) - np.power(e_low, 1 - alpha))
+            f1 = (
+                1
+                / (1 - alpha)
+                * (np.power(e_up, 1 - alpha) - np.power(e_low, 1 - alpha))
+            )
 
         if alpha == 2.0:
             f2 = np.log(e_up) - np.log(e_low)
         else:
-            f2 = 1 / (2 - alpha) * (np.power(e_up, 2 - alpha) - np.power(e_low, 2 - alpha))
+            f2 = (
+                1
+                / (2 - alpha)
+                * (np.power(e_up, 2 - alpha) - np.power(e_low, 2 - alpha))
+            )
 
         return f1 / f2
 
@@ -693,15 +705,6 @@ class LogParabolaSpectrum(SpectralShape):
     def energy_bounds(self):
         return (self._lower_energy, self._upper_energy)
 
-    def set_parameter(self, par_name: str, par_value: float):
-        if par_name not in self._parameters:
-            raise ValueError("Parameter name {} not found".format(par_name))
-        par = self._parameters[par_name]
-        if not (par.par_range[0] <= self._par_value <= par.par_range[1]):
-            raise ValueError("Parameter {} is out of bounds".format(par_name))
-
-        par.value = par_value
-
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
         alpha = self.parameters["index"].value
@@ -844,7 +847,7 @@ class LogParabolaSpectrum(SpectralShape):
         if pdf.size == 1:
             return pdf[0]
         return pdf
-    
+
     @classmethod
     def make_stan_sampling_lpdf_func(cls, f_name) -> UserDefinedFunction:
         return cls.make_stan_lpdf_func(f_name)
@@ -917,17 +920,21 @@ class LogParabolaSpectrum(SpectralShape):
             logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
             logE_E0 = InstantVariableDef("logEE0", "real", ["log(E/E0)"])
 
-            N << FunctionCall(
-                [
-                    "logparabola_dN_dx",
-                    logEL_E0,
-                    logEU_E0,
-                    theta,
-                    "x_r",
-                    "x_i",
-                ],
-                "integrate_1d",
-            ) * E0
+            (
+                N
+                << FunctionCall(
+                    [
+                        "logparabola_dN_dx",
+                        logEL_E0,
+                        logEU_E0,
+                        theta,
+                        "x_r",
+                        "x_i",
+                    ],
+                    "integrate_1d",
+                )
+                * E0
+            )
             p << FunctionCall([E / E0, -theta[1] - theta[2] * logE_E0], "pow")
             ReturnStatement([FunctionCall([p / N], "log")])
 
@@ -968,17 +975,21 @@ class LogParabolaSpectrum(SpectralShape):
                 "integrate_1d",
             )
             # Additional factor of E0 due to further transformation of E->log(E/E0)->x
-            f2 << FunctionCall(
-                [
-                    "logparabola_x_dN_dx",
-                    logEL_E0,
-                    logEU_E0,
-                    theta,
-                    "x_r",
-                    "x_i",
-                ],
-                "integrate_1d",
-            ) * E0
+            (
+                f2
+                << FunctionCall(
+                    [
+                        "logparabola_x_dN_dx",
+                        logEL_E0,
+                        logEU_E0,
+                        theta,
+                        "x_r",
+                        "x_i",
+                    ],
+                    "integrate_1d",
+                )
+                * E0
+            )
 
             ReturnStatement([f1 / f2])
 
