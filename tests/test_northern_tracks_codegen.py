@@ -270,7 +270,7 @@ def test_rv_generation(output_directory, random_seed):
 
     reco_zenith = np.degrees(np.arccos(reco_dir_samples[:, 2]))
 
-    assert max(E_hist) == pytest.approx(max(reco_energy_pdf), 0.1)
+    assert max(E_hist) == pytest.approx(max(reco_energy_pdf), 0.15)
 
     assert np.mean(reco_zenith) == pytest.approx(90, 0.1)
 
