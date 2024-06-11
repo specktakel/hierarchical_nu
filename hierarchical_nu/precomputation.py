@@ -101,17 +101,33 @@ class ExposureIntegral:
                     )
 
         self._par_grids = {}
+        self._par_units = {}
         for par_name in list(self._parameter_source_map.keys()):
             par = Parameter.get_parameter(par_name)
-            if not np.all(np.isfinite(par.par_range)):
-                raise ValueError("Parameter {} has non-finite bounds".format(par.name))
+            try:
+                units = par.value.unit
+                print(units)
+                self._par_units[par_name] = units
+                pmin, pmax = par.par_range
+                par_range = (pmin.to_value(units), pmax.to_value(units))
+                if not np.all(np.isfinite(par_range)):
+                    raise ValueError(
+                        "Parameter {} has non-finite bounds".format(par.name)
+                    )
+            except:
+                par_range = par.par_range
+                if not np.all(np.isfinite(par_range)):
+                    raise ValueError(
+                        "Parameter {} has non-finite bounds".format(par.name)
+                    )
+
             if par.scale == ParScale.lin:
-                grid = np.linspace(*par.par_range, num=self._n_grid_points)
+                grid = np.linspace(*par_range, num=self._n_grid_points)
             elif par.scale == ParScale.log:
-                grid = np.logspace(*np.log10(par.par_range), num=self._n_grid_points)
+                grid = np.logspace(*np.log10(par_range), num=self._n_grid_points)
             elif par.scale == ParScale.cos:
                 grid = np.arccos(
-                    np.linspace(*np.cos(par.par_range), num=self._n_grid_points)
+                    np.linspace(*np.cos(par_range), num=self._n_grid_points)
                 )
             else:
                 raise NotImplementedError(
@@ -356,7 +372,11 @@ class ExposureIntegral:
 
                         for par_name, par_value in zip(this_free_pars, grid_points):
                             par = Parameter.get_parameter(par_name)
-                            par.value = par_value
+                            try:
+                                units = self._par_units[par_name]
+                            except KeyError:
+                                units = 1.0
+                            par.value = par_value * units
 
                         # To make units compatible with Stan model parametrisation
                         integral_grids_tmp[indices] += self.calculate_rate(
