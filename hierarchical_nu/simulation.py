@@ -629,10 +629,11 @@ class Simulation:
                     self._event_types[0]
                 ].par_grids[key_beta]
                 sim_inputs["E0"] = [
-                        ps.flux_model.spectral_shape._normalisation_energy.to_value(
-                            u.GeV
-                        ) for ps in self._sources.point_source
+                    ps.flux_model.parameters["norm_energy"].value.to_value(
+                        u.GeV
+                    ) for ps in self._sources.point_source
                 ]
+    
 
             # Check for shared src_index parameter
             if self._shared_src_index:
