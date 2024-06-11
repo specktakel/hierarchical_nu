@@ -88,11 +88,17 @@ class ExposureIntegral:
         self._original_param_values = defaultdict(list)
 
         for source in sources:
+            c = 0
             for par in source.parameters.values():
                 if not par.fixed:
                     self._parameter_source_map[par.name].append(source)
                     self._source_parameter_map[source].append(par.name)
                     self._original_param_values[par.name].append(par.value)
+                    c += 1
+                if c > 2:
+                    raise NotImplementedError(
+                        "Max two free parameters per source are currently implemented."
+                    )
 
         self._par_grids = {}
         for par_name in list(self._parameter_source_map.keys()):

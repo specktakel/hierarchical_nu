@@ -668,7 +668,7 @@ class LogParabolaSpectrum(SpectralShape):
     def __init__(
         self,
         normalisation: Parameter,
-        normalisation_energy: u.GeV,
+        normalisation_energy: Parameter,
         alpha: Parameter,
         beta: Parameter,
         lower_energy: u.GeV = 1e2 * u.GeV,
@@ -682,7 +682,7 @@ class LogParabolaSpectrum(SpectralShape):
 
         normalisation: float
             Flux normalisation [GeV^-1 m^-2 s^-1]
-        normalisation_energy: float
+        normalisation_energy: float or Parameter
             Energy at which flux is normalised [GeV].
         alpha: Parameter
             Slope parameter of spectral shape
@@ -695,11 +695,14 @@ class LogParabolaSpectrum(SpectralShape):
         """
 
         super().__init__()
-        self._normalisation = normalisation
-        self._normalisation_energy = normalisation_energy
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
-        self._parameters = {"norm": normalisation, "index": alpha, "beta": beta}
+        self._parameters = {
+            "norm": normalisation,
+            "index": alpha,
+            "beta": beta,
+            "norm_energy": normalisation_energy,
+        }
 
     @property
     def energy_bounds(self):
@@ -710,7 +713,7 @@ class LogParabolaSpectrum(SpectralShape):
         alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
         E = energy.to_value(u.GeV)
-        E0 = self._normalisation_energy.to_value(u.GeV)
+        E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
         norm = self.parameters["norm"].value
         if isinstance(energy, np.ndarray):
             output = np.zeros_like(energy.value) * norm
@@ -733,7 +736,7 @@ class LogParabolaSpectrum(SpectralShape):
         # exp((1-alpha) * x - beta * x**2
         alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
-        E0 = self._normalisation_energy.to_value(u.GeV)
+        E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
         norm = self.parameters["norm"].value
 
         lower = np.atleast_1d(lower)
@@ -780,7 +783,7 @@ class LogParabolaSpectrum(SpectralShape):
         # exp((2-alpha) * x - beta * x**2
         alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
-        E0 = self._normalisation_energy.to_value(u.GeV)
+        E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
         norm = self.parameters["norm"].value
 
         xl = np.log(self._lower_energy.to_value(u.GeV) / E0)
@@ -793,7 +796,7 @@ class LogParabolaSpectrum(SpectralShape):
         # Calculate (\int dN / dE / dA /dt dE)/(\int E dN / dE / dA / dt dE)
         alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
-        E0 = self._normalisation_energy.to_value(u.GeV)
+        E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
 
         xl = np.log(self._lower_energy.to_value(u.GeV) / E0)
         xh = np.log(self._upper_energy.to_value(u.GeV) / E0)
@@ -828,7 +831,7 @@ class LogParabolaSpectrum(SpectralShape):
         Emax_input = Emax.to_value(u.GeV)
         alpha = self._parameters["index"].value
         beta = self._parameters["beta"].value
-        E0 = self._normalisation_energy.to_value(u.GeV)
+        E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
 
         norm = (
             quad(
