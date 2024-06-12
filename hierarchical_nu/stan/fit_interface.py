@@ -482,8 +482,7 @@ class StanFitInterface(StanInterface):
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
                     length = ForwardVariableDef("length", "int")
-                    beta = self._logparabola
-                    if beta:
+                    if self._logparabola:
                         self._x_r_idxs = ForwardArrayDef("x_r_idxs", "int", ["[3]"])
                     start << 1
                     # Get global parameters
@@ -493,17 +492,21 @@ class StanFitInterface(StanInterface):
                         self._src_index = ForwardVariableDef("src_index", "real")
                         self._src_index << glob[start]
                         start << start + 1
-                        if beta:
+                        if self._logparabola:
                             end << end + 1
-                            self._beta_index = ForwardVariableDef("beta_index", "real")
-                            self._beta_index << glob[start]
+                            if self._fit_beta:
+                                self._beta_index = ForwardVariableDef("beta_index", "real")
+                                self._beta_index << glob[start]
+                            else:
+                                self._E0_src = ForwardVariableDef("E0_src", "real")
+                                self._E0_src << glob[start]
                             start << start + 1
                     else:
                         end << end + self._Ns
                         self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
                         self._src_index << glob[start:end]
                         start << start + self._Ns
-                        if beta:
+                        if self._logparabola:
                             end << end + self._Ns
                             self._beta_index = ForwardVariableDef(
                                 "beta_index", "vector[Ns]"
@@ -656,14 +659,14 @@ class StanFitInterface(StanInterface):
                     # Insert Emin_src
                     end << end + self._Ns
                     self._Emin_src << StringExpression(["real_data[start:end]"])
-                    if beta:
+                    if self._logparabola:
                         self._x_r_idxs[2] << start
                     start << start + self._Ns
 
                     # Insert Emax_src
                     end << end + self._Ns
                     self._Emax_src << StringExpression(["real_data[start:end]"])
-                    if beta:
+                    if self._logparabola:
                         self._x_r_idxs[3] << start
                     start << start + self._Ns
 
@@ -692,10 +695,14 @@ class StanFitInterface(StanInterface):
                     )  # StringExpression(["real_data[start]"])
                     start << start + 1
 
-                    if beta:
+                    if self._logparabola:
                         end << end + self._Ns
-                        self._E0_src = ForwardArrayDef("E0", "real", ["[Ns]"])
-                        (self._E0_src << real_data[start:end])
+                        if self._fit_beta:
+                            self._E0_src = ForwardArrayDef("E0", "real", ["[Ns]"])
+                            self._E0_src << real_data[start:end]
+                        else:
+                            self._beta_index = ForwardArrayDef("beta_index", "real", ["[Ns]"])
+                            self._beta_index << real_data[start:end]
                         self._x_r_idxs[1] << start
 
                     # Define tracks and cascades to sort events into correct detector response
@@ -1242,6 +1249,7 @@ class StanFitInterface(StanInterface):
                     self.real_data[i, insert_start] << self._Emax
                     insert_start << insert_start + 1
 
+                    # In both cases E0_src and beta_index are arrays of length Ns
                     if self._logparabola and self._fit_beta:
                         insert_end << insert_end + self._Ns
                         self.real_data[i, insert_start:insert_end] << self._E0_src
@@ -1958,7 +1966,7 @@ class StanFitInterface(StanInterface):
                         ]
                     )
 
-                if self._logparabola:
+                if self._logparabola and self._fit_beta:
                     if isinstance(self._priors.src_index, MultiSourcePrior):
                         with ForLoopContext(1, self._Ns, "i") as i:
                             StringExpression(
@@ -1985,6 +1993,36 @@ class StanFitInterface(StanInterface):
                                         self._stan_prior_beta_index_sigma,
                                     ],
                                     self._priors.beta_index.name,
+                                ),
+                            ]
+                        )
+                elif self._logparabola and not self._fit_beta:
+                    if isinstance(self._priors.src_index, MultiSourcePrior):
+                        with ForLoopContext(1, self._Ns, "i") as i:
+                            StringExpression(
+                                [
+                                    self._E0_src[i],
+                                    " ~ ",
+                                    FunctionCall(
+                                        [
+                                            self._stan_prior_E0_src_mu[i],
+                                            self._stan_prior_E0_src_sigma[i],
+                                        ],
+                                        self._priors.energy.name,
+                                    ),
+                                ]
+                            )
+                    else:
+                        StringExpression(
+                            [
+                                self._E0_src,
+                                " ~ ",
+                                FunctionCall(
+                                    [
+                                        self._stan_prior_E0_src_mu,
+                                        self._stan_prior_E0_src_sigma,
+                                    ],
+                                    self._priors.energy.name,
                                 ),
                             ]
                         )

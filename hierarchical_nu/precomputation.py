@@ -106,7 +106,6 @@ class ExposureIntegral:
             par = Parameter.get_parameter(par_name)
             try:
                 units = par.value.unit
-                print(units)
                 self._par_units[par_name] = units
                 pmin, pmax = par.par_range
                 par_range = (pmin.to_value(units), pmax.to_value(units))
