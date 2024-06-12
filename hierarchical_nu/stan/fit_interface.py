@@ -106,6 +106,12 @@ class StanFitInterface(StanInterface):
         self._use_event_tag = use_event_tag
         self._debug = debug
 
+        self._logparabola = self._ps_spectrum == LogParabolaSpectrum
+        if self._sources.point_source:
+            self._fit_beta = (
+                not self._sources.point_source[0].flux_model.parameters["beta"].fixed
+            )
+
         self._dm = OrderedDict()
 
         for et in self._event_types:
@@ -218,31 +224,41 @@ class StanFitInterface(StanInterface):
                             src_index_ref = self._src_index[k]
 
                         # log_prob += log(p(Esrc|src_index))
-                        if self._ps_spectrum == LogParabolaSpectrum:
-                            if self._shared_src_index:
-                                beta_index_ref = self._beta_index
+                        if self._logparabola:
+                            if self._shared_src_index and self._fit_beta:
+                                second_param_ref = self._beta_index
+                                data_ref = self._E0_src
+                            elif self._shared_src_index and not self._fit_beta:
+                                second_param_ref = self._E0_src
+                                data_ref = self._beta_index
+                            elif not self._shared_src_index and self._fit_beta:
+                                second_param_ref = self._beta_index[k]
+                                data_ref = self._E0_src[k]
                             else:
-                                beta_index_ref = self._beta_index[k]
+                                second_param_ref = self._E0_src[k]
+                                data_ref = self._beta_index[k]
                             theta = StringExpression(
                                 [
                                     "{",
                                     src_index_ref,
                                     ",",
-                                    beta_index_ref,
+                                    second_param_ref,
                                     "}",
                                 ]
                             )
                             try:
                                 # If this works, we are coming from lp_reduce
                                 # use self._x_r_idxs to get k-th entry of Emin/max_src, E0
+                                # should work the same for fitting E0
+                                # because we substitute the same number of entries in real data
                                 x_r = StringExpression(
                                     [
                                         "real_data[{",
-                                        self._x_r_idxs[1]+k-1,
+                                        self._x_r_idxs[1] + k - 1,
                                         ",",
-                                        self._x_r_idxs[2]+k-1,
+                                        self._x_r_idxs[2] + k - 1,
                                         ",",
-                                        self._x_r_idxs[3]+k-1,
+                                        self._x_r_idxs[3] + k - 1,
                                         "}]",
                                     ]
                                 )
@@ -257,7 +273,7 @@ class StanFitInterface(StanInterface):
                                 x_r = StringExpression(
                                     [
                                         "{",
-                                        self._E0[k],
+                                        data_ref,
                                         ",",
                                         self._Emin_src[k],
                                         ",",
@@ -406,14 +422,14 @@ class StanFitInterface(StanInterface):
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
             if self.sources.point_source:
-                if self._ps_spectrum == LogParabolaSpectrum:
-                    self._ps_spectrum.make_stan_utility_func()
+                if self._logparabola:
+                    self._ps_spectrum.make_stan_utility_func(self._fit_beta)
                 self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
-                    "src_spectrum_logpdf"
+                    "src_spectrum_logpdf", self._fit_beta
                 )
 
                 self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
-                    "flux_conv"
+                    "flux_conv", self._fit_beta
                 )
 
             # If we have diffuse sources, include the shape of their PDF
@@ -462,7 +478,7 @@ class StanFitInterface(StanInterface):
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
                     length = ForwardVariableDef("length", "int")
-                    beta = self._ps_spectrum == LogParabolaSpectrum
+                    beta = self._logparabola
                     if beta:
                         self._x_r_idxs = ForwardArrayDef("x_r_idxs", "int", ["[3]"])
                     start << 1
@@ -506,8 +522,6 @@ class StanFitInterface(StanInterface):
                     self._E = ForwardVariableDef("E", "vector[N]")
                     self._E << loc[1 : self._N]
 
-                   
-
                     # Define variable to store loglikelihood
                     if self._use_event_tag:
                         size = 1
@@ -527,10 +541,10 @@ class StanFitInterface(StanInterface):
                     # Unpack event types (Tracks, cascades, IC40...)
                     self._event_type = ForwardArrayDef("event_type", "int", ["[N]"])
 
-                     # Define indices for unpacking of real_data
+                    # Define indices for unpacking of real_data
                     start << 3
                     end << 2 + self._N
-                    
+
                     self._event_type << int_data[start:end]
                     # StringExpression(["int_data[3:2+N]"])
 
@@ -544,7 +558,7 @@ class StanFitInterface(StanInterface):
                     # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[N]"])
                     # self._ereco_idx << StringExpression("int_data[3+N:2+2*N]")
 
-                     # Define indices for unpacking of real_data
+                    # Define indices for unpacking of real_data
                     start << 1
                     length << self._N
                     end << self._N
@@ -676,12 +690,9 @@ class StanFitInterface(StanInterface):
 
                     if beta:
                         end << end + self._Ns
-                        self._E0 = ForwardArrayDef("E0", "real", ["[Ns]"])
-                        (
-                            self._E0 << real_data[start:end]
-                        )
+                        self._E0_src = ForwardArrayDef("E0", "real", ["[Ns]"])
+                        (self._E0_src << real_data[start:end])
                         self._x_r_idxs[1] << start
-
 
                     # Define tracks and cascades to sort events into correct detector response
                     if self._use_event_tag:
@@ -798,10 +809,14 @@ class StanFitInterface(StanInterface):
                 self._src_index_max = ForwardVariableDef("src_index_max", "real")
                 self._Lmin = ForwardVariableDef("Lmin", "real")
                 self._Lmax = ForwardVariableDef("Lmax", "real")
-                if self._ps_spectrum == LogParabolaSpectrum:
+                if self._logparabola and self._fit_beta:
                     self._beta_index_min = ForwardVariableDef("beta_index_min", "real")
                     self._beta_index_max = ForwardVariableDef("beta_index_max", "real")
-                    self._E0 = ForwardArrayDef("E0", "real", ["[Ns]"])
+                    self._E0_src = ForwardArrayDef("E0", "real", ["[Ns]"])
+                elif self._logparabola and not self._fit_beta:
+                    self._beta_index = ForwardArrayDef("beta_index", "real", ["[Ns]"])
+                    self._E0_src_min = ForwardVariableDef("E0_src_min", "real")
+                    self._E0_src_max = ForwardVariableDef("E0_src_max", "real")
 
             if self.sources.diffuse:
                 self._diff_index_min = ForwardVariableDef("diff_index_min", "real")
@@ -839,11 +854,15 @@ class StanFitInterface(StanInterface):
                     self._src_index_grid = ForwardVariableDef(
                         "src_index_grid", "vector[Ngrid]"
                     )
-                    if self._ps_spectrum == LogParabolaSpectrum:
+                    if self._logparabola and self._fit_beta:
                         self._beta_index_grid = ForwardVariableDef(
                             "beta_index_grid", "vector[Ngrid]"
                         )
-
+                    elif self._logparabola and not self._fit_beta:
+                        self._E0_src_grid = ForwardVariableDef(
+                            "E0_src_grid", "vector[Ngrid]"
+                        )
+                    if self._logparabola:
                         self._integral_grid_2d = ForwardArrayDef(
                             "integral_grid_2d",
                             "real",
@@ -887,24 +906,37 @@ class StanFitInterface(StanInterface):
                     index_sigma_def = ForwardArrayDef(
                         "src_index_sigma", "real", self._Ns_str
                     )
-                    if self._ps_spectrum == LogParabolaSpectrum:
+                    if self._logparabola and self._fit_beta:
                         beta_mu_def = ForwardArrayDef(
                             "beta_index_mu", "real", self._Ns_str
                         )
                         beta_sigma_def = ForwardArrayDef(
                             "beta_index_sigma", "real", self._Ns_str
                         )
+                    elif self._logparabola and not self._fit_beta:
+                        E0_src_mu_def = ForwardArrayDef(
+                            "E0_src_mu", "real", self._Ns_str
+                        )
+                        E0_src_sigma_def = ForwardArrayDef(
+                            "E0_src_sigma", "real", self._Ns_str
+                        )
                 else:
                     index_mu_def = ForwardVariableDef("src_index_mu", "real")
                     index_sigma_def = ForwardVariableDef("src_index_sigma", "real")
-                    if self._ps_spectrum == LogParabolaSpectrum:
+                    if self._logparabola and self._fit_beta:
                         beta_mu_def = ForwardVariableDef("beta_index_mu", "real")
                         beta_sigma_def = ForwardVariableDef("beta_index_sigma", "real")
+                    elif self._logparabola and not self._fit_beta:
+                        E0_src_mu_def = ForwardVariableDef("E0_src_mu", "real")
+                        E0_src_sigma_def = ForwardVariableDef("E0_src_sigma", "real")
                 self._stan_prior_src_index_mu = index_mu_def
                 self._stan_prior_src_index_sigma = index_sigma_def
-                if self._ps_spectrum == LogParabolaSpectrum:
+                if self._logparabola and self._fit_beta:
                     self._stan_prior_beta_index_mu = beta_mu_def
                     self._stan_prior_beta_index_sigma = beta_sigma_def
+                elif self._logparabola and not self._fit_beta:
+                    self._stan_prior_E0_src_mu = E0_src_mu_def
+                    self._stan_prior_E0_src_sigma = E0_src_sigma_def
                 # check for luminosity, if they all have the same prior
                 if self._priors.luminosity.name in ["normal", "lognormal"]:
                     if isinstance(self._priors.luminosity, MultiSourcePrior):
@@ -1051,7 +1083,9 @@ class StanFitInterface(StanInterface):
                     self._Emin_at_det << self._Emin_diff
                 with IfBlockContext(
                     [
-                        self._Emax_diff, " > ", self._Emax_at_det,
+                        self._Emax_diff,
+                        " > ",
+                        self._Emax_at_det,
                     ]
                 ):
                     self._Emax_at_det << self._Emax_diff
@@ -1064,7 +1098,9 @@ class StanFitInterface(StanInterface):
                 self._N_mod_J = ForwardVariableDef("N_mod_J", "int")
                 self._N_mod_J << self._N % self._J
                 # Find size for real_data array
-                sd_events_J = 4 + grid_size  # reco energy, reco dir (unit vector), eres grid
+                sd_events_J = (
+                    4 + grid_size
+                )  # reco energy, reco dir (unit vector), eres grid
                 sd_if_diff = 3  # redshift of diffuse component, Emin_diff/max
                 sd_Ns = 6  # redshift, Emin_src, Emax_src, x, y, z per point source
                 sd_other = 2  # Emin, Emax
@@ -1075,8 +1111,8 @@ class StanFitInterface(StanInterface):
                 sd_string = f"{sd_events_J}*J + {sd_Ns}*Ns + {sd_other} + J*Ns"
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_diff}"
-                if self._ps_spectrum == LogParabolaSpectrum:
-                    # Needs E0 for spectral shape
+                if self._logparabola:
+                    # Needs E0 for spectral shape or alternatively beta
                     sd_string += "+1"
 
                 # Create data arrays
@@ -1202,9 +1238,13 @@ class StanFitInterface(StanInterface):
                     self.real_data[i, insert_start] << self._Emax
                     insert_start << insert_start + 1
 
-                    if self._ps_spectrum == LogParabolaSpectrum:
+                    if self._logparabola and self._fit_beta:
                         insert_end << insert_end + self._Ns
-                        self.real_data[i, insert_start:insert_end] << self._E0
+                        self.real_data[i, insert_start:insert_end] << self._E0_src
+                        insert_start << insert_start + self._Ns
+                    elif self._logparabola and not self._fit_beta:
+                        insert_end << insert_end + self._Ns
+                        self.real_data[i, insert_start:insert_end] << self._beta_index
                         insert_start << insert_start + self._Ns
 
                     # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
@@ -1263,12 +1303,19 @@ class StanFitInterface(StanInterface):
                         self._src_index_min,
                         self._src_index_max,
                     )
-                    if self._ps_spectrum == LogParabolaSpectrum:
+                    if self._logparabola and self._fit_beta:
                         self._beta_index = ParameterDef(
                             "beta_index",
                             "real",
                             self._beta_index_min,
                             self._beta_index_max,
+                        )
+                    elif self._logparabola and not self._fit_beta:
+                        self._E0_src = ParameterDef(
+                            "E0_src",
+                            "real",
+                            self._E0_src_min,
+                            self._E0_src_max,
                         )
 
                 else:
@@ -1279,12 +1326,21 @@ class StanFitInterface(StanInterface):
                         self._src_index_min,
                         self._src_index_max,
                     )
-                    if self._ps_spectrum == LogParabolaSpectrum:
+                    if self._logparabola and self._fit_beta:
                         self._beta_index = ParameterVectorDef(
                             "beta_index",
                             "real",
+                            self._Ns_str,
                             self._beta_min,
                             self._beta_max,
+                        )
+                    elif self._logparabola and not self._fit_beta:
+                        self._E0_src = ParameterVectorDef(
+                            "E0_src",
+                            "real",
+                            self._Ns_str,
+                            self._E0_src_min,
+                            self._E0_src_max,
                         )
 
             # Specify F_diff and diff_index to characterise the diffuse comp
@@ -1401,7 +1457,7 @@ class StanFitInterface(StanInterface):
                 # Count number of pars:
                 num_of_pars = "Ns"
 
-                beta = self._ps_spectrum == LogParabolaSpectrum
+                beta = self._logparabola
 
                 if self._shared_src_index and beta:
                     num_of_pars += " + 2"
@@ -1475,12 +1531,16 @@ class StanFitInterface(StanInterface):
 
                     if self._shared_src_index:
                         src_index_ref = self._src_index
-                        if self._ps_spectrum == LogParabolaSpectrum:
+                        if self._logparabola and self._fit_beta:
                             beta_index_ref = self._beta_index
+                        elif self._logparabola and not self._fit_beta:
+                            E0_src_ref = self._E0_src
                     else:
                         src_index_ref = self._src_index[k]
-                        if self._ps_spectrum == LogParabolaSpectrum:
+                        if self._logparabola and self._fit_beta:
                             beta_index_ref = self._beta_index[k]
+                        elif self._logparabola and not self._fit_beta:
+                            E0_src_ref = self._E0_src[k]
 
                     self._F[k] << StringExpression(
                         [
@@ -1492,13 +1552,37 @@ class StanFitInterface(StanInterface):
                             ", 2))",
                         ]
                     )
-                    if self._ps_spectrum == LogParabolaSpectrum:
-                        theta = StringExpression(
-                            ["{", src_index_ref, ",", beta_index_ref, "}"]
-                        )
-                        x_r = StringExpression(
-                            ["{", self._E0[k], ",", self._Emin_src[k], ",", self._Emax_src[k], "}"]
-                        )
+                    if self._logparabola:
+                        if self._fit_beta:
+                            theta = StringExpression(
+                                ["{", src_index_ref, ",", beta_index_ref, "}"]
+                            )
+                            x_r = StringExpression(
+                                [
+                                    "{",
+                                    self._E0_src[k],
+                                    ",",
+                                    self._Emin_src[k],
+                                    ",",
+                                    self._Emax_src[k],
+                                    "}",
+                                ]
+                            )
+                        else:
+                            theta = StringExpression(
+                                ["{", src_index_ref, ",", E0_src_ref, "}"]
+                            )
+                            x_r = StringExpression(
+                                [
+                                    "{",
+                                    self._beta_index[k],
+                                    ",",
+                                    self._Emin_src[k],
+                                    ",",
+                                    self._Emax_src[k],
+                                    "}",
+                                ]
+                            )
                         x_i = StringExpression(
                             [
                                 "{",
@@ -1547,19 +1631,27 @@ class StanFitInterface(StanInterface):
                 with ForLoopContext(1, self._Ns, "k") as k:
                     if self._shared_src_index:
                         src_index_ref = self._src_index
-                        if self._ps_spectrum == LogParabolaSpectrum:
-                            beta_index_ref = self._beta_index
+                        if self._logparabola and self._fit_beta:
+                            second_param_ref = self._beta_index
+                            second_grid_ref = self._beta_index_grid
+                        elif self._logparabola and not self._fit_beta:
+                            second_param_ref = self._E0_src
+                            second_grid_ref = self._E0_src_grid
                     else:
                         src_index_ref = self._src_index[k]
-                        if self._ps_spectrum == LogParabolaSpectrum:
-                            beta_index_ref = self._beta_index[k]
+                        if self._logparabola and self._fit_beta:
+                            second_param_ref = self._beta_index[k]
+                            second_grid_ref = self._beta_index_grid
+                        elif self._logparabola and not self._fit_beta:
+                            second_param_ref = self._E0_src[k]
+                            second_grid_ref = self._E0_src_grid
 
-                    if self._ps_spectrum == LogParabolaSpectrum:
+                    if self._logparabola:
                         args = [
                             src_index_ref,
-                            beta_index_ref,
+                            second_param_ref,
                             FunctionCall([self._src_index_grid], "to_array_1d"),
-                            FunctionCall([self._beta_index_grid], "to_array_1d"),
+                            FunctionCall([second_grid_ref], "to_array_1d"),
                             self._integral_grid_2d[i, k],
                         ]
                         method = "interp2dlog"
@@ -1699,7 +1791,7 @@ class StanFitInterface(StanInterface):
             self._logF << StringExpression(["log(", self._F, ")"])
 
             if self._nshards not in [0, 1]:
-                beta = self._ps_spectrum == LogParabolaSpectrum
+                beta = self._logparabola
                 with DummyContext():
                     start = InstantVariableDef("start", "int", [1])
                     end = ForwardVariableDef("end", "int")
@@ -1708,9 +1800,12 @@ class StanFitInterface(StanInterface):
                         end << 1
                         self._global_pars[start] << self._src_index
                         start << start + 1
-                        if beta:
+                        if self._logparabola:
                             end << end + 1
-                            self._global_pars[start] << self._beta_index
+                            if self._fit_beta:
+                                self._global_pars[start] << self._beta_index
+                            else:
+                                self._global_pars[start] << self._E0_src
                             start << start + 1
                     else:
                         end << self._Ns
@@ -1718,7 +1813,10 @@ class StanFitInterface(StanInterface):
                         start << start + 1
                         if beta:
                             end << end + self._Ns
-                            (self._global_pars[start:end] << self._beta_index)
+                            if self._fit_beta:
+                                self._global_pars[start:end] << self._beta_index
+                            else:
+                                self._global_pars[start:end] << self._E0_src
                             start << start + self._Ns
                     if self.sources.diffuse:
                         end << end + 1
@@ -1856,7 +1954,7 @@ class StanFitInterface(StanInterface):
                         ]
                     )
 
-                if self._ps_spectrum == LogParabolaSpectrum:
+                if self._logparabola:
                     if isinstance(self._priors.src_index, MultiSourcePrior):
                         with ForLoopContext(1, self._Ns, "i") as i:
                             StringExpression(
