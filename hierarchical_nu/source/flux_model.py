@@ -861,7 +861,11 @@ class LogParabolaSpectrum(SpectralShape):
         raise NotImplementedError
 
     @classmethod
-    def make_stan_utility_func(cls):
+    def make_stan_utility_func(cls, fit_beta: bool = True):
+        """
+        If fit_beta==True, signature is theta=[alpha, beta], x_r=[E0, Emin, Emax]
+        else theta=[alpha, E0], x_r=[beta, Emin, Emax]
+        """
         # Needs to be passed to integrate_1d
         # is defined in logspace for faster integration
         lp = UserDefinedFunction(
@@ -873,7 +877,10 @@ class LogParabolaSpectrum(SpectralShape):
         with lp:
             x = StringExpression(["x"])
             a = InstantVariableDef("a", "real", ["theta[1]"])
-            b = InstantVariableDef("b", "real", ["theta[2]"])
+            if fit_beta:
+                b = InstantVariableDef("b", "real", ["theta[2]"])
+            else:
+                b = InstantVariableDef("b", "real", ["x_r[1]"])
             ReturnStatement(
                 [FunctionCall([(1.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
             )
@@ -887,13 +894,20 @@ class LogParabolaSpectrum(SpectralShape):
         with lp:
             x = StringExpression(["x"])
             a = InstantVariableDef("a", "real", ["theta[1]"])
-            b = InstantVariableDef("b", "real", ["theta[2]"])
+            if fit_beta:
+                b = InstantVariableDef("b", "real", ["theta[2]"])
+            else:
+                b = InstantVariableDef("b", "real", ["x_r[1]"])
             ReturnStatement(
                 [FunctionCall([(2.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
             )
 
     @classmethod
-    def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
+    def make_stan_lpdf_func(cls, f_name, fit_beta: bool = True) -> UserDefinedFunction:
+        """
+        If fit_beta==True, signature is theta=[alpha, beta], x_r=[E0, Emin, Emax]
+        else theta=[alpha, E0], x_r=[beta, Emin, Emax]
+        """
         func = UserDefinedFunction(
             f_name,
             ["E", "theta", "x_r", "x_i"],
@@ -906,7 +920,12 @@ class LogParabolaSpectrum(SpectralShape):
             theta = StringExpression(["theta"])
 
             # Unpack variables
-            E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
+            if fit_beta:
+                E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
+            else:
+                E0 = InstantVariableDef("E0", "real", ["theta[2]"])
+                b = InstantVariableDef("b", "real", ["x_r[1]"])
+
             e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
             e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
             E = StringExpression(["E"])
@@ -938,13 +957,22 @@ class LogParabolaSpectrum(SpectralShape):
                 )
                 * E0
             )
-            p << FunctionCall([E / E0, -theta[1] - theta[2] * logE_E0], "pow")
+            if fit_beta:
+                p << FunctionCall([E / E0, -theta[1] - theta[2] * logE_E0], "pow")
+            else:
+                p << FunctionCall([E / E0, -theta[1] - b * logE_E0], "pow")
             ReturnStatement([FunctionCall([p / N], "log")])
 
         return func
 
     @classmethod
-    def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
+    def make_stan_flux_conv_func(
+        cls, f_name, fit_beta: bool = True
+    ) -> UserDefinedFunction:
+        """
+        If fit_beta==True, signature is theta=[alpha, beta], x_r=[E0, Emin, Emax]
+        else theta=[alpha, E0], x_r=[beta, Emin, Emax]
+        """
         func = UserDefinedFunction(
             f_name,
             ["theta", "x_r", "x_i"],
@@ -956,7 +984,10 @@ class LogParabolaSpectrum(SpectralShape):
             theta = StringExpression(["theta"])
 
             # Unpack variables
-            E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
+            if fit_beta:
+                E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
+            else:
+                E0 = InstantVariableDef("E0", "real", ["theta[2]"])
             e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
             e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
 
