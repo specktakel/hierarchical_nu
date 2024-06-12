@@ -227,16 +227,12 @@ class StanFitInterface(StanInterface):
                         if self._logparabola:
                             if self._shared_src_index and self._fit_beta:
                                 second_param_ref = self._beta_index
-                                data_ref = self._E0_src
                             elif self._shared_src_index and not self._fit_beta:
                                 second_param_ref = self._E0_src
-                                data_ref = self._beta_index
                             elif not self._shared_src_index and self._fit_beta:
                                 second_param_ref = self._beta_index[k]
-                                data_ref = self._E0_src[k]
                             else:
                                 second_param_ref = self._E0_src[k]
-                                data_ref = self._beta_index[k]
                             theta = StringExpression(
                                 [
                                     "{",
@@ -270,6 +266,14 @@ class StanFitInterface(StanInterface):
                                 del self._x_r_idxs
                             except AttributeError:
                                 # Otherwise single thread or generated quantities
+                                if self._shared_src_index and self._fit_beta:
+                                    data_ref = self._E0_src[k]
+                                elif self._shared_src_index and not self._fit_beta:
+                                    data_ref = self._beta_index[k]
+                                elif not self._shared_src_index and self._fit_beta:
+                                    data_ref = self._E0_src[k]
+                                else:
+                                    data_ref = self._beta_index[k]
                                 x_r = StringExpression(
                                     [
                                         "{",
