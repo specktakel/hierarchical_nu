@@ -795,6 +795,123 @@ class StanFit:
 
         return fig, ax
 
+    def plot_flux_band(
+        self,
+        E_power: float = 1.0,
+        credible_interval: Union[float, List[float]] = 0.5,
+        energy_unit = u.TeV,
+        area_unit = u.cm**2,
+        x_energy_unit = u.GeV
+    ):
+        """
+        Plot flux uncertainties.
+        Flux is multiplied by E**E_power.
+        """
+
+        if not self._sources.point_source:
+            raise ValueError("A valid source list is required")
+
+        flux_unit = 1 / energy_unit / area_unit / u.s
+
+        try:
+            src_index = self._fit_output.stan_variable("src_index")
+        except AttributeError:
+            src_index = self._fit_output["src_index"]
+
+        shape = src_index.shape
+        share_index = len(shape) == 2
+
+        logparabola = isinstance(
+            self._sources.point_source[0].flux_model.spectral_shape,
+            LogParabolaSpectrum
+        )
+
+        if logparabola:
+            try:
+                beta_index = self._fit_output.stan_variable("beta_index")
+            except AttributeError:
+                beta_index = self._fit_output["beta_index"]
+
+        try:
+            alpha = self._fit_output.stan_variable("src_index")
+            if logparabola:
+                beta = self._fit_output.stan_variable("beta_index")
+            F = self._fit_output.stan_variable("F")
+        except AttributeError:
+            alpha = self._fit_output["src_index"]
+            if logparabola:
+                beta = self._fit_output["beta_index"]
+            F = self._fit_output["F"]
+
+        if share_index:
+            N_samples = alpha.size
+        else:
+            N_samples = alpha.size / len(self._sources.point_source)
+
+        for c_ps, ps in enumerate(self._sources.point_source):
+            if share_index:
+                index_vals = alpha.flatten()
+                if logparabola:
+                    beta_vals = beta.flatten()
+            else:
+                index_vals = alpha[:, :, c_ps].flatten()
+                if logparabola:
+                    beta_vals = beta[:, :, c_ps].flatten()
+
+            flux_int = F[:, :, c_ps].flatten()
+            E = np.geomspace(*ps.flux_model.energy_bounds, 1_000)
+
+            flux_grid = np.zeros((E.size, N_samples))
+
+            for c in range(N_samples):
+                ps.flux_model.spectral_shape.set_parameter("index", index_vals[c])
+
+                if logparabola:
+                    ps.flux_model.spectral_shape.set_parameter("beta", beta_vals[c])
+
+                flux = ps.flux_model.spectral_shape(E).to_value(
+                    flux_unit
+                )
+
+                # Needs to be in units used by stan
+                int_flux = ps.flux_model.total_flux_int.to_value(1 / u.m**2 / u.s)
+
+                flux_grid[:, c] = flux / int_flux * flux_int[c] * np.power(E.to_value(energy_unit), E_power)
+
+            self._flux_grid = flux_grid
+
+        fig, ax = plt.subplots()
+
+        # Find the interval to be plotted
+        credible_interval = np.atleast_1d(credible_interval)
+        for CI in credible_interval:
+            lower = np.zeros(E.size)
+            upper = np.zeros(E.size)
+
+            UL = 0.5 - CI / 2
+            HL = 0.5 + CI / 2
+
+            for c in range(E.size):
+                lower[c] = np.quantile(flux_grid[c], UL)
+                upper[c] = np.quantile(flux_grid[c], HL)
+
+            ax.fill_between(
+                E.to_value(x_energy_unit),
+                lower,
+                upper,
+                color="C0",
+                alpha=0.3,
+                edgecolor="none",
+            )
+
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+
+        ax.set_xlabel(f"$E$ [{x_energy_unit.to_string('latex_inline')}]")
+        ax.set_ylabel(f"flux [{(energy_unit**E_power * flux_unit).unit.to_string('latex_inline')}]")
+
+        return fig, ax
+
     def save(self, path, overwrite: bool = False):
 
         # Check if filename consists of a path to some directory as well as the filename

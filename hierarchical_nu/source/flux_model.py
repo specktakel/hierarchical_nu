@@ -315,6 +315,17 @@ class PowerLawSpectrum(SpectralShape):
         else:
             return norm * np.power(energy / self._normalisation_energy, -index)
 
+    @classmethod
+    @u.quantity_input
+    def _flux(
+        cls,
+        norm: 1 / u.TeV / u.m**2 / u.s,
+        E: u.GeV,
+        alpha: float,
+        Enorm: u.GeV
+    ) -> 1 / (u.TeV / u.m**2 / u.s):
+        return norm * np.power(E / Enorm, -alpha)
+
     @u.quantity_input
     def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
         r"""
@@ -728,6 +739,18 @@ class LogParabolaSpectrum(SpectralShape):
             return 0.0 * norm
         else:
             return norm * np.power(E / E0, -alpha - beta * np.log(E / E0))
+
+    @classmethod
+    @u.quantity_input
+    def _flux(
+        cls,
+        norm: 1 / u.TeV / u.m**2 / u.s,
+        E: u.GeV,
+        alpha: float,
+        beta: float,
+        Enorm: u.GeV
+    ) -> 1 / (u.TeV / u.m**2 / u.s):
+        return norm * np.power(E / Enorm, -alpha - beta * np.log(E / Enorm))
 
     @u.quantity_input
     def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
