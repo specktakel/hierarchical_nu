@@ -792,6 +792,80 @@ class StanFit:
 
         return fig, ax
 
+    def plot_flux_band(
+        self,
+        E_power: float,
+        energy_unit = u.GeV,
+        area_unit = u.cm**2,
+    ):
+        """
+        Plot flux uncertainties.
+        Flux is multiplied by E**E_power.
+        """
+
+        if not self._sources.point_source:
+            raise ValueError("A valid source list is required")
+
+        flux_unit = 1 / energy_unit / area_unit / u.s
+        #fig, ax = plt.subplots()
+
+        try:
+            src_index = self._fit_output.stan_variable("src_index")
+        except AttributeError:
+            src_index = self._fit_output["src_index"]
+
+        shape = src_index.shape
+        share_index = len(shape) == 2
+
+        logparabola = isinstance(
+            self._sources.point_source[0].flux_model,
+            LogParabolaSpectrum
+        )
+
+        if logparabola:
+            try:
+                beta_index = self._fit_output.stan_variable("beta_index")
+            except AttributeError:
+                beta_index = self._fit_output["beta_index"]
+
+        try:
+            alpha = self._fit_output.stan_variable("src_index")
+            if logparabola:
+                beta = self._fit_output.stan_variable("beta_index")
+        except AttributeError:
+            alpha = self._fit_output["src_index"]
+            if logparabola:
+                beta = self._fit_output["beta_index"]
+
+        if share_index:
+            N_samples = alpha.size
+        else:
+            N_samples = alpha.size / len(self._sources.point_source)
+
+        for c_ps, ps in enumerate(self._sources.point_source):
+            if share_index:
+                index_vals = alpha.flatten()
+                if logparabola:
+                    beta_vals = beta.flatten()
+            else:
+                index_vals = alpha[:, :, c_ps].flatten()
+                if logparabola:
+                    beta_vals = beta[:, :, c_ps].flatten()
+            E = np.geomspace(*ps.flux_model.energy_bounds.to(energy_unit), 1_000)
+
+            flux_grid = np.zeros((E.size, N_samples)) << flux_unit
+            for c in range(N_samples):
+                ps.flux_model.spectral_shape.set_parameter("index", alpha_vals[c])
+                if logparabola:
+                    ps.flux_model.spectral_shape("beta_index", beta_vals[c])
+
+                flux = ps.flux_model.spectral_shape(E).to(
+                    flux_units
+                ) * np.power(E.to(energy_unit), E_power)
+                int_flux = ps.flux_model.total_flux_int
+
+                flux_grid[c]
+
     def save(self, path, overwrite: bool = False):
 
         # Check if filename consists of a path to some directory as well as the filename
