@@ -323,7 +323,7 @@ class PowerLawSpectrum(SpectralShape):
         E: u.GeV,
         alpha: float,
         Enorm: u.GeV
-    ):
+    ) -> 1 / (u.TeV / u.m**2 / u.s):
         return norm * np.power(E / Enorm, -alpha)
 
     @u.quantity_input
@@ -746,7 +746,7 @@ class LogParabolaSpectrum(SpectralShape):
         alpha: float,
         beta: float,
         Enorm: u.GeV
-    ):
+    ) -> 1 / (u.TeV / u.m**2 / u.s):
         return norm * np.power(E / Enorm, -alpha - beta * np.log(E / Enorm))
 
     @u.quantity_input
