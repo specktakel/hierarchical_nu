@@ -1276,6 +1276,7 @@ class StanFit:
                 key = "src_index"
                 if logparabola:
                     key_beta = "beta_index"
+                    key_Enorm = "E0_src"
 
             # Otherwise just use first source in the list
             # src_index_grid is identical for all point sources
@@ -1283,18 +1284,32 @@ class StanFit:
                 key = "%s_src_index" % self._sources.point_source[0].name
                 if logparabola:
                     key_beta = "%s_beta_index" % self._sources.point_source[0].name
+                    key_Enorm = "%s_E0_src" % self._sources.point_source[0].name
             if logparabola:
                 fit_beta = (
                     key_beta in self._exposure_integral[event_type].par_grids.keys()
                 )
+                fit_Enorm = (
+                    key_Enorm in self._exposure_integral[event_type].par_grids.keys()
+                )
+                fit_index = (
+                    key in self._exposure_integral[event_type].par_grids.keys()
+                )
 
-            fit_inputs["src_index_grid"] = self._exposure_integral[
-                event_type
-            ].par_grids[key]
+            if fit_index:
+                fit_inputs["src_index_grid"] = self._exposure_integral[
+                    event_type
+                ].par_grids[key]
+                # PS parameter limits
+                fit_inputs["src_index_min"] = self._src_index_par_range[0]
+                fit_inputs["src_index_max"] = self._src_index_par_range[1]
+            else:
+                fit_inputs["src_index"] = [
+                        ps.flux_model.parameters["index"].value
+                        for ps in self._sources.point_source
+                    ]
 
-            # PS parameter limits
-            fit_inputs["src_index_min"] = self._src_index_par_range[0]
-            fit_inputs["src_index_max"] = self._src_index_par_range[1]
+            
 
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
@@ -1308,20 +1323,19 @@ class StanFit:
                     fit_inputs["beta_index_max"] = self._beta_index_par_range[1]
                     fit_inputs["beta_index_mu"] = self._priors.beta_index.mu
                     fit_inputs["beta_index_sigma"] = self._priors.beta_index.sigma
-                    fit_inputs["E0"] = [
-                        ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
+                else:
+                    fit_inputs["beta_index"] = [
+                        ps.flux_model.parameters["beta"].value
                         for ps in self._sources.point_source
                     ]
-                else:
+
+                    
+                if fit_Enorm:
                     # beta_index_grid is not present
                     # means that we are fitting E0
                     fit_inputs["E0_src_grid"] = self._exposure_integral[
                         event_type
                     ].par_grids["E0_src"]
-                    fit_inputs["beta_index"] = [
-                        ps.flux_model.parameters["beta"].value
-                        for ps in self._sources.point_source
-                    ]
                     fit_inputs["E0_src_min"] = self._E0_src_par_range[0].to_value(u.GeV)
                     fit_inputs["E0_src_max"] = self._E0_src_par_range[1].to_value(u.GeV)
                     if self._priors.energy.name == "lognormal":
@@ -1332,6 +1346,11 @@ class StanFit:
                         fit_inputs["E0_src_sigma"] = self._priors.energy.sigma.to_value(
                             u.GeV
                         )
+                else:
+                    fit_inputs["E0"] = [
+                        ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
+                        for ps in self._sources.point_source
+                    ]
 
         # Inputs for priors of point sources
         if self._priors.src_index.name not in ["normal", "lognormal"]:
