@@ -247,7 +247,7 @@ class StanFitInterface(StanInterface):
 
                             if self._shared_src_index and self._fit_Enorm:
                                 E0_src_ref = self._E0_src
-                            elif self._fit_norm or not hasattr(self, "_x_r_idxs"):
+                            elif self._fit_Enorm or not hasattr(self, "_x_r_idxs"):
                                 E0_src_ref = self._E0_src[k]
                             
                             # create even more references
@@ -1657,7 +1657,7 @@ class StanFitInterface(StanInterface):
                     elif self._logparabola:
                         beta_index_ref = self._beta_index[k]
 
-                    if self._logparabola and self._shared_src_index:
+                    if self._logparabola and self._shared_src_index and self._fit_Enorm:
                         E0_src_ref = self._E0_src
                     elif self._logparabola:
                         E0_src_ref = self._E0_src[k]
