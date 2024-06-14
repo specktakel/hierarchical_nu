@@ -41,50 +41,75 @@ class ConfigParser:
         share_src_index = parameter_config["share_src_index"]
 
         Parameter.clear_registry()
-        indices = []
+        index = []
         beta = []
-        if not share_src_index:
-            for c, (idx, idx_beta) in enumerate(
-                zip(
-                    parameter_config["src_index"], 
-                    parameter_config["beta_index"],
-                )
-            ):
-                name = f"ps_{c}_src_index"
-                indices.append(
+        E0_src = []
+        if parameter_config["source_type"] == "power-law" or \
+        parameter_config["source_type"] == "twice-broken-power-law" or \
+        parameter_config["source_type"] == "logparabola":
+            if "src_index" in parameter_config["fit_params"] and share_src_index:
+                index.append(
                     Parameter(
-                        idx,
-                        name,
-                        fixed=False,
-                        par_range=parameter_config["src_index_range"],
+                        parameter_config["src_index"][0],
+                        "src_index",
+                        False,
+                        parameter_config["src_index_range"],
                     )
                 )
-                name = f"ps_{c}_beta_index"
+            else:
+                for c, idx in enumerate(parameter_config["src_index"]):
+                    name = f"ps_{c}_src_index"
+                    index.append(
+                        Parameter(
+                            idx,
+                            name,
+                            not "src_index" in parameter_config["fit_params"],
+                            parameter_config["src_index_range"],
+                        )
+                    )
+        if parameter_config["source_type"] == "logparabola":
+            if "beta_index" in parameter_config["fit_params"] and share_src_index:
                 beta.append(
                     Parameter(
-                        idx_beta,
-                        name,
-                        fixed=False,
-                        par_range=parameter_config["beta_index_range"],
+                        parameter_config["beta_index"][0],
+                        "beta_index",
+                        False,
+                        parameter_config["beta_index_range"],
                     )
                 )
-        else:
-            indices.append(
-                Parameter(
-                    parameter_config["src_index"][0],
-                    "src_index",
-                    fixed=False,
-                    par_range=parameter_config["src_index_range"],
+            else:
+                for c, idx in enumerate(parameter_config["beta_index"]):
+                    name = f"ps_{c}_beta_index"
+                    beta.append(
+                        Parameter(
+                            idx,
+                            name,
+                            not "beta_index" in parameter_config["fit_params"],
+                            parameter_config["beta_index_range"],
+                        )
+                    )
+
+            if "E0_src" in parameter_config["fit_params"] and share_src_index:
+                E0_src.append(
+                    Parameter(
+                        parameter_config["E0_src"][0] * u.GeV,
+                        "E0_src",
+                        False,
+                        parameter_config["E0_src_range"] * u.GeV,
+                    )
                 )
-            )
-            beta.append(
-                Parameter(
-                    parameter_config["beta_index"][0],
-                    "beta_index",
-                    fixed=False,
-                    par_range=parameter_config["beta_index_range"],
-                )
-            )
+            else:
+                for c, idx in enumerate(parameter_config["E0_src"]):
+                    name = f"ps_{c}_E0_src"
+                    E0_src.append(
+                        Parameter(
+                            idx * u.GeV,
+                            name,
+                            not "E0_src" in parameter_config["fit_params"],
+                            parameter_config["E0_src_range"] * u.GeV,
+                        )
+                    )
+
         diff_index = Parameter(
             parameter_config["diff_index"],
             "diff_index",
@@ -170,11 +195,24 @@ class ConfigParser:
                 Lumi = L[c]
 
             if share_src_index:
-                idx = indices[0]
-                idx_beta = beta[0]
+                if index and "src_index" in parameter_config["fit_params"]:
+                    idx = index[0]
+                else:
+                    idx = index[c]
+                if beta and "beta_index" in parameter_config["fit_params"]:
+                    idx_beta = beta[0]
+                elif beta:
+                    idx_beta = beta[c]
+                if E0_src and "E0_src" in parameter_config["fit_params"]:
+                    E0 = E0_src[0]
+                elif E0_src:
+                    E0 = E0_src[c]
             else:
-                idx = indices[c]
-                idx_beta = beta[c]
+                idx = index[c]
+                if beta:
+                    idx_beta = beta[c]
+                if E0_src:
+                    E0 = E0_src[c]
             args = (
                 f"ps_{c}",
                 dec[c],
@@ -202,7 +240,7 @@ class ConfigParser:
                     parameter_config["z"][c],
                     Emin_src,
                     Emax_src,
-                    Enorm,
+                    E0,
                     frame,
                 )
             point_source = method(*args)

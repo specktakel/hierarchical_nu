@@ -121,7 +121,7 @@ class StanSimInterface(StanInterface):
             # and how to convert from energy to number flux
             if self.sources.point_source:
                 if self._ps_spectrum == LogParabolaSpectrum:
-                    self._ps_spectrum.make_stan_utility_func()
+                    self._ps_spectrum.make_stan_utility_func(True, True, False)
                 self._src_spectrum_lpdf = (
                     # Use a different function here
                     # because for the twicebroken powerlaw we

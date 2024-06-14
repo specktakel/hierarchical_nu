@@ -160,10 +160,19 @@ class StanFit:
         except ValueError:
             self._shared_luminosity = False
 
-        try:
-            Parameter.get_parameter("src_index")
-            self._shared_src_index = True
-        except ValueError:
+        if self._sources.point_source:
+            index = self._sources.point_source[0].parameters["index"]
+            if not index.fixed and index.name == "src_index":
+                self._shared_src_index = True
+            elif not index.fixed:
+                self._shared_src_index = False
+            else:
+                beta = self._sources.point_source[0].parameters["beta"]
+                if not beta.fixed and beta.name == "beta_index":
+                    self._shared_src_index = True
+                elif not beta.fixed:
+                    self._shared_src_index = False
+        else:
             self._shared_src_index = False
 
     @property

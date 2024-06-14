@@ -21,13 +21,20 @@ logger.setLevel(logging.INFO)
 @dataclass
 class ParameterConfig:
     source_type: str = (
-        "twice-broken-power-law"  # Currently only support one type for all sources, other option "power-law" covering the entire energy range or logparabola
+        "twice-broken-power-law"    # Currently only supports one type for all sources,
+                                    # other option "power-law" covering the entire energy range
+                                    # or "logparabola". If logparabola, the two fit parameters used
+                                    # (two out of src_index, beta_index and E0_src) needs to be defined
+                                    # in the field "fit_params", e.g. fit_params: ["src_index", "beta_index"]
     )
+    fit_params: List[str] = field(default_factory=lambda: ["src_index"])
     src_index: List[float] = field(default_factory=lambda: [2.3])
     share_src_index: bool = True
     src_index_range: tuple = (1.0, 4.0)
     beta_index: List[float] = field(default_factory=lambda: [0.0])
     beta_index_range: tuple = (-1., 1.)
+    E0_src: List[float] = field(default_factory=lambda: [1e6]) # GeV
+    E0_src_range: tuple = (1e3, 1e8)
     diff_index: float = 2.5
     diff_index_range: tuple = (1.0, 4.0)
     F_diff_range: tuple = (1e-6, 1e-3) # 1 / m**2 / s
@@ -137,6 +144,11 @@ class PriorConfig:
     atmo_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
             name="NormalPrior", mu=0.3, sigma=0.08
+        )
+    )
+    energy: SinglePriorConfig = field(
+        default_factory=lambda: SinglePriorConfig(
+            name="LogNormalPrior", mu=1e6, sigma=3
         )
     )
 
