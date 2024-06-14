@@ -1440,6 +1440,10 @@ class StanFit:
             )
 
         if self._sources.point_source:
+            # Set the default case of (twice broken) power law
+            fit_index = True
+            fit_beta = False
+            fit_Enorm = False
             # Check for shared source index
             if self._shared_src_index:
                 key = "src_index"

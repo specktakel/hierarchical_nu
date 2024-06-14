@@ -618,7 +618,7 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
         self._parameters = {"norm": normalisation, "index": index}
 
     @classmethod
-    def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
+    def make_stan_lpdf_func(cls, f_name, *args, **kwargs) -> UserDefinedFunction:
         func = UserDefinedFunction(
             f_name,
             [
