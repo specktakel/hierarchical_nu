@@ -3,6 +3,7 @@ from typing import Dict, Tuple, Union
 
 import astropy.units as u
 import numpy as np
+from scipy.integrate import quad
 
 from .power_law import BoundedPowerLaw
 from .parameter import Parameter
@@ -13,7 +14,11 @@ from ..backend.stan_generator import (
     ElseIfBlockContext,
 )
 from ..backend.operations import FunctionCall
-from ..backend.variable_definitions import ForwardVariableDef, InstantVariableDef
+from ..backend.variable_definitions import (
+    ForwardVariableDef,
+    InstantVariableDef,
+    ForwardArrayDef,
+)
 from ..backend.expression import StringExpression, ReturnStatement
 
 """
@@ -61,6 +66,19 @@ class SpectralShape(ABC):
     @abstractmethod
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
         pass
+
+    def set_parameter(self, par_name: str, par_value: float):
+        if par_name not in self._parameters:
+            raise ValueError("Parameter name {} not found".format(par_name))
+        par = self._parameters[par_name]
+        if not (par.par_range[0] <= par_value <= par.par_range[1]):
+            raise ValueError("Parameter {} is out of bounds".format(par_name))
+
+        # Copy fixed or not, release param, set value and restore initial state
+        fixed = par.fixed
+        par.fixed = False
+        par.value = par_value
+        par.fixed = fixed
 
 
 class FluxModel(ABC):
@@ -276,15 +294,6 @@ class PowerLawSpectrum(SpectralShape):
     def energy_bounds(self):
         return (self._lower_energy, self._upper_energy)
 
-    def set_parameter(self, par_name: str, par_value: float):
-        if par_name not in self._parameters:
-            raise ValueError("Parameter name {} not found".format(par_name))
-        par = self._parameters[par_name]
-        if not (par.par_range[0] <= self._par_value <= par.par_range[1]):
-            raise ValueError("Parameter {} is out of bounds".format(par_name))
-
-        par.value = par_value
-
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
         """
@@ -305,6 +314,17 @@ class PowerLawSpectrum(SpectralShape):
             return 0.0 * norm
         else:
             return norm * np.power(energy / self._normalisation_energy, -index)
+
+    @classmethod
+    @u.quantity_input
+    def _flux(
+        cls,
+        norm: 1 / u.TeV / u.m**2 / u.s,
+        E: u.GeV,
+        alpha: float,
+        Enorm: u.GeV
+    ) -> 1 / (u.TeV / u.m**2 / u.s):
+        return norm * np.power(E / Enorm, -alpha)
 
     @u.quantity_input
     def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
@@ -529,6 +549,28 @@ class PowerLawSpectrum(SpectralShape):
 
         return func
 
+    @staticmethod
+    def flux_conv_(alpha, e_low, e_up, beta, e_0):
+        if alpha == 1.0:
+            f1 = np.log(e_up) - np.log(e_low)
+        else:
+            f1 = (
+                1
+                / (1 - alpha)
+                * (np.power(e_up, 1 - alpha) - np.power(e_low, 1 - alpha))
+            )
+
+        if alpha == 2.0:
+            f2 = np.log(e_up) - np.log(e_low)
+        else:
+            f2 = (
+                1
+                / (2 - alpha)
+                * (np.power(e_up, 2 - alpha) - np.power(e_low, 2 - alpha))
+            )
+
+        return f1 / f2
+
 
 class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
     """
@@ -632,6 +674,351 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
         return func
 
 
+class LogParabolaSpectrum(SpectralShape):
+    @u.quantity_input
+    def __init__(
+        self,
+        normalisation: Parameter,
+        normalisation_energy: u.GeV,
+        alpha: Parameter,
+        beta: Parameter,
+        lower_energy: u.GeV = 1e2 * u.GeV,
+        upper_energy: u.GeV = np.inf * u.GeV,
+        *args,
+        **kwargs
+    ):
+        """
+        Power law flux models.
+        Lives in the detector frame.
+
+        normalisation: float
+            Flux normalisation [GeV^-1 m^-2 s^-1]
+        normalisation_energy: float
+            Energy at which flux is normalised [GeV].
+        alpha: Parameter
+            Slope parameter of spectral shape
+        beta: Parameter
+            Curvature parameter of spectral shape
+        lower_energy: float
+            Lower energy bound [GeV].
+        upper_energy: float
+            Upper energy bound [GeV], unbounded by default.
+        """
+
+        super().__init__()
+        self._normalisation = normalisation
+        self._normalisation_energy = normalisation_energy
+        self._lower_energy = lower_energy
+        self._upper_energy = upper_energy
+        self._parameters = {"norm": normalisation, "index": alpha, "beta": beta}
+
+    @property
+    def energy_bounds(self):
+        return (self._lower_energy, self._upper_energy)
+
+    @u.quantity_input
+    def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
+        alpha = self.parameters["index"].value
+        beta = self.parameters["beta"].value
+        E = energy.to_value(u.GeV)
+        E0 = self._normalisation_energy.to_value(u.GeV)
+        norm = self.parameters["norm"].value
+        if isinstance(energy, np.ndarray):
+            output = np.zeros_like(energy.value) * norm
+            mask = np.nonzero(
+                ((energy <= self._upper_energy) & (energy >= self._lower_energy))
+            )
+            output[mask] = norm * np.power(
+                E[mask] / E0, -alpha - beta * np.log(E[mask] / E0)
+            )
+            return output
+        if (energy < self._lower_energy) or (energy > self._upper_energy):
+            return 0.0 * norm
+        else:
+            return norm * np.power(E / E0, -alpha - beta * np.log(E / E0))
+
+    @classmethod
+    @u.quantity_input
+    def _flux(
+        cls,
+        norm: 1 / u.TeV / u.m**2 / u.s,
+        E: u.GeV,
+        alpha: float,
+        beta: float,
+        Enorm: u.GeV
+    ) -> 1 / (u.TeV / u.m**2 / u.s):
+        return norm * np.power(E / Enorm, -alpha - beta * np.log(E / Enorm))
+
+    @u.quantity_input
+    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
+        # Calculate numerically in log space
+        # Transformed integrand reads
+        # exp((1-alpha) * x - beta * x**2
+        alpha = self.parameters["index"].value
+        beta = self.parameters["beta"].value
+        E0 = self._normalisation_energy.to_value(u.GeV)
+        norm = self.parameters["norm"].value
+
+        lower = np.atleast_1d(lower)
+        upper = np.atleast_1d(upper)
+        xl = np.log(lower.to_value(u.GeV) / E0)
+        xh = np.log(upper.to_value(u.GeV) / E0)
+
+        # Check edge cases
+        lower[((lower < self._lower_energy) & (upper > self._lower_energy))] = (
+            self._lower_energy
+        )
+        upper[((lower < self._upper_energy) & (upper > self._upper_energy))] = (
+            self._upper_energy
+        )
+
+        results = np.zeros(xl.shape) << 1 / u.m**2 / u.s
+        for c in range(xl.size):
+            results[c] = (
+                quad(self._dN_dx, xl[c], xh[c], (alpha, beta))[0] * norm * E0 * u.GeV
+            )
+
+        if results.size == 1:
+            return results[0]
+        return results
+
+    @classmethod
+    def _dN_dE(cls, E, E0, alpha, beta):
+        # Unnormalised pdf
+        return np.power(E / E0, -alpha - beta * np.log(E / E0))
+
+    @classmethod
+    def _dN_dx(cls, x, alpha, beta):
+        return np.exp((1.0 - alpha) * x - beta * np.power(x, 2))
+
+    @classmethod
+    def _x_dN_dx(cls, x, alpha, beta):
+        return np.exp((2.0 - alpha) * x - beta * np.power(x, 2))
+
+    @property
+    @u.quantity_input
+    def total_flux_density(self) -> u.erg / u.s / u.m**2:
+        # Calculate numerically in log space
+        # Transformed integrand reads
+        # exp((2-alpha) * x - beta * x**2
+        alpha = self.parameters["index"].value
+        beta = self.parameters["beta"].value
+        E0 = self._normalisation_energy.to_value(u.GeV)
+        norm = self.parameters["norm"].value
+
+        xl = np.log(self._lower_energy.to_value(u.GeV) / E0)
+        xh = np.log(self._upper_energy.to_value(u.GeV) / E0)
+
+        result = quad(self._x_dN_dx, xl, xh, (alpha, beta))[0]
+        return result * norm * np.power(E0, 2) * u.GeV**2
+
+    def flux_conv(self):
+        # Calculate (\int dN / dE / dA /dt dE)/(\int E dN / dE / dA / dt dE)
+        alpha = self.parameters["index"].value
+        beta = self.parameters["beta"].value
+        E0 = self._normalisation_energy.to_value(u.GeV)
+
+        xl = np.log(self._lower_energy.to_value(u.GeV) / E0)
+        xh = np.log(self._upper_energy.to_value(u.GeV) / E0)
+
+        f1 = quad(self._dN_dx, xl, xh, (alpha, beta))[0]
+        f2 = quad(self._x_dN_dx, xl, xh, (alpha, beta))[0]
+
+        return f1 / f2 / E0
+
+    @classmethod
+    def flux_conv_(cls, alpha, e_low, e_up, beta, e_0):
+        xl = np.log(e_low / e_0)
+        xh = np.log(e_up / e_0)
+
+        f1 = quad(cls._dN_dx, xl, xh, (alpha, beta))[0]
+        f2 = quad(cls._x_dN_dx, xl, xh, (alpha, beta))[0]
+
+        return f1 / f2 / e_0
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    @u.quantity_input
+    def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV, apply_lim: bool = True):
+        """
+        Return PDF.
+        """
+
+        E_input = np.atleast_1d(E.to_value(u.GeV))
+        Emin_input = Emin.to_value(u.GeV)
+        Emax_input = Emax.to_value(u.GeV)
+        alpha = self._parameters["index"].value
+        beta = self._parameters["beta"].value
+        E0 = self._normalisation_energy.to_value(u.GeV)
+
+        norm = (
+            quad(
+                self._dN_dx,
+                np.log(Emin_input / E0),
+                np.log(Emax_input / E0),
+                (alpha, beta),
+            )[0]
+            * E0
+        )
+
+        pdf = self._dN_dE(E_input, E0, alpha, beta) / norm
+        if apply_lim:
+            pdf[E_input < Emin_input] = 0.0
+            pdf[E_input > Emax_input] = 0.0
+        if pdf.size == 1:
+            return pdf[0]
+        return pdf
+
+    @classmethod
+    def make_stan_sampling_lpdf_func(cls, f_name) -> UserDefinedFunction:
+        return cls.make_stan_lpdf_func(f_name)
+
+    @classmethod
+    def make_stan_sampling_func(cls, f_name):
+        # no inverse transform sampling for you!
+        raise NotImplementedError
+
+    @classmethod
+    def make_stan_utility_func(cls):
+        # Needs to be passed to integrate_1d
+        # is defined in logspace for faster integration
+        lp = UserDefinedFunction(
+            "logparabola_dN_dx",
+            ["x", "xc", "theta", "x_r", "x_i"],
+            ["real", "real", "array[] real", "data array[] real", "data array[] int"],
+            "real",
+        )
+        with lp:
+            x = StringExpression(["x"])
+            a = InstantVariableDef("a", "real", ["theta[1]"])
+            b = InstantVariableDef("b", "real", ["theta[2]"])
+            ReturnStatement(
+                [FunctionCall([(1.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
+            )
+        # Same here
+        lp = UserDefinedFunction(
+            "logparabola_x_dN_dx",
+            ["x", "xc", "theta", "x_r", "x_i"],
+            ["real", "real", "array[] real", "data array[] real", "data array[] int"],
+            "real",
+        )
+        with lp:
+            x = StringExpression(["x"])
+            a = InstantVariableDef("a", "real", ["theta[1]"])
+            b = InstantVariableDef("b", "real", ["theta[2]"])
+            ReturnStatement(
+                [FunctionCall([(2.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
+            )
+
+    @classmethod
+    def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
+        func = UserDefinedFunction(
+            f_name,
+            ["E", "theta", "x_r", "x_i"],
+            ["real", "array[] real", "data array[] real", "data array[] int"],
+            "real",
+        )
+
+        with func:
+            # Use this packed definition to please integrate_1d
+            theta = StringExpression(["theta"])
+
+            # Unpack variables
+            E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
+            e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
+            e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
+            E = StringExpression(["E"])
+
+            N = ForwardVariableDef("N", "real")
+            p = ForwardVariableDef("p", "real")
+
+            with IfBlockContext([E, ">", e_up]):
+                ReturnStatement(["negative_infinity()"])
+            with ElseIfBlockContext([E, "<", e_low]):
+                ReturnStatement(["negative_infinity()"])
+
+            logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
+            logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
+            logE_E0 = InstantVariableDef("logEE0", "real", ["log(E/E0)"])
+
+            (
+                N
+                << FunctionCall(
+                    [
+                        "logparabola_dN_dx",
+                        logEL_E0,
+                        logEU_E0,
+                        theta,
+                        "x_r",
+                        "x_i",
+                    ],
+                    "integrate_1d",
+                )
+                * E0
+            )
+            p << FunctionCall([E / E0, -theta[1] - theta[2] * logE_E0], "pow")
+            ReturnStatement([FunctionCall([p / N], "log")])
+
+        return func
+
+    @classmethod
+    def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
+        func = UserDefinedFunction(
+            f_name,
+            ["theta", "x_r", "x_i"],
+            ["array[] real", "data array[] real", "data array[] int"],
+            "real",
+        )
+
+        with func:
+            theta = StringExpression(["theta"])
+
+            # Unpack variables
+            E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
+            e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
+            e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
+
+            f1 = ForwardVariableDef("f1", "real")
+            f2 = ForwardVariableDef("f2", "real")
+
+            logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
+            logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
+
+            f1 << FunctionCall(
+                [
+                    "logparabola_dN_dx",
+                    logEL_E0,
+                    logEU_E0,
+                    theta,
+                    "x_r",
+                    "x_i",
+                ],
+                "integrate_1d",
+            )
+            # Additional factor of E0 due to further transformation of E->log(E/E0)->x
+            (
+                f2
+                << FunctionCall(
+                    [
+                        "logparabola_x_dN_dx",
+                        logEL_E0,
+                        logEU_E0,
+                        theta,
+                        "x_r",
+                        "x_i",
+                    ],
+                    "integrate_1d",
+                )
+                * E0
+            )
+
+            ReturnStatement([f1 / f2])
+
+        return func
+
+
 @u.quantity_input
 def integral_power_law(
     gamma: float, n: Union[float, int], x1: u.GeV, x2: u.GeV, x0: u.GeV = 1e5 * u.GeV
@@ -654,17 +1041,3 @@ def integral_power_law(
         )
     else:
         return np.power(x0, n + 1) * np.log(x2 / x1)
-
-
-def flux_conv_(alpha, e_low, e_up):
-    if alpha == 1.0:
-        f1 = np.log(e_up) - np.log(e_low)
-    else:
-        f1 = 1 / (1 - alpha) * (np.power(e_up, 1 - alpha) - np.power(e_low, 1 - alpha))
-
-    if alpha == 2.0:
-        f2 = np.log(e_up) - np.log(e_low)
-    else:
-        f2 = 1 / (2 - alpha) * (np.power(e_up, 2 - alpha) - np.power(e_low, 2 - alpha))
-
-    return f1 / f2

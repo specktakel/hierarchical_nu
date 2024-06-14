@@ -22,7 +22,7 @@ from cmdstanpy import CmdStanModel
 
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_to_icrs
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
+from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, LogParabolaSpectrum
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.detector.r2021 import (
@@ -131,6 +131,9 @@ class StanFit:
         if self._sources.point_source:
             self._def_var_names.append("L")
             self._def_var_names.append("src_index")
+            
+            if isinstance(self._sources.point_source[0].flux_model.spectral_shape, LogParabolaSpectrum):
+                self._def_var_names.append("beta_index")
 
         if self._sources.diffuse:
             self._def_var_names.append("F_diff")
@@ -789,6 +792,123 @@ class StanFit:
 
         return fig, ax
 
+    def plot_flux_band(
+        self,
+        E_power: float = 1.0,
+        credible_interval: Union[float, List[float]] = 0.5,
+        energy_unit = u.TeV,
+        area_unit = u.cm**2,
+        x_energy_unit = u.GeV
+    ):
+        """
+        Plot flux uncertainties.
+        Flux is multiplied by E**E_power.
+        """
+
+        if not self._sources.point_source:
+            raise ValueError("A valid source list is required")
+
+        flux_unit = 1 / energy_unit / area_unit / u.s
+
+        try:
+            src_index = self._fit_output.stan_variable("src_index")
+        except AttributeError:
+            src_index = self._fit_output["src_index"]
+
+        shape = src_index.shape
+        share_index = len(shape) == 2
+
+        logparabola = isinstance(
+            self._sources.point_source[0].flux_model.spectral_shape,
+            LogParabolaSpectrum
+        )
+
+        if logparabola:
+            try:
+                beta_index = self._fit_output.stan_variable("beta_index")
+            except AttributeError:
+                beta_index = self._fit_output["beta_index"]
+
+        try:
+            alpha = self._fit_output.stan_variable("src_index")
+            if logparabola:
+                beta = self._fit_output.stan_variable("beta_index")
+            F = self._fit_output.stan_variable("F")
+        except AttributeError:
+            alpha = self._fit_output["src_index"]
+            if logparabola:
+                beta = self._fit_output["beta_index"]
+            F = self._fit_output["F"]
+
+        if share_index:
+            N_samples = alpha.size
+        else:
+            N_samples = alpha.size / len(self._sources.point_source)
+
+        for c_ps, ps in enumerate(self._sources.point_source):
+            if share_index:
+                index_vals = alpha.flatten()
+                if logparabola:
+                    beta_vals = beta.flatten()
+            else:
+                index_vals = alpha[:, :, c_ps].flatten()
+                if logparabola:
+                    beta_vals = beta[:, :, c_ps].flatten()
+
+            flux_int = F[:, :, c_ps].flatten()
+            E = np.geomspace(*ps.flux_model.energy_bounds, 1_000)
+
+            flux_grid = np.zeros((E.size, N_samples))
+
+            for c in range(N_samples):
+                ps.flux_model.spectral_shape.set_parameter("index", index_vals[c])
+
+                if logparabola:
+                    ps.flux_model.spectral_shape.set_parameter("beta", beta_vals[c])
+
+                flux = ps.flux_model.spectral_shape(E).to_value(
+                    flux_unit
+                )
+
+                # Needs to be in units used by stan
+                int_flux = ps.flux_model.total_flux_int.to_value(1 / u.m**2 / u.s)
+
+                flux_grid[:, c] = flux / int_flux * flux_int[c] * np.power(E.to_value(energy_unit), E_power)
+
+            self._flux_grid = flux_grid
+
+        fig, ax = plt.subplots()
+
+        # Find the interval to be plotted
+        credible_interval = np.atleast_1d(credible_interval)
+        for CI in credible_interval:
+            lower = np.zeros(E.size)
+            upper = np.zeros(E.size)
+
+            UL = 0.5 - CI / 2
+            HL = 0.5 + CI / 2
+
+            for c in range(E.size):
+                lower[c] = np.quantile(flux_grid[c], UL)
+                upper[c] = np.quantile(flux_grid[c], HL)
+
+            ax.fill_between(
+                E.to_value(x_energy_unit),
+                lower,
+                upper,
+                color="C0",
+                alpha=0.3,
+                edgecolor="none",
+            )
+
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+
+        ax.set_xlabel(f"$E$ [{x_energy_unit.to_string('latex_inline')}]")
+        ax.set_ylabel(f"flux [{(energy_unit**E_power * flux_unit).unit.to_string('latex_inline')}]")
+
+        return fig, ax
+
     def save(self, path, overwrite: bool = False):
 
         # Check if filename consists of a path to some directory as well as the filename
@@ -970,6 +1090,9 @@ class StanFit:
         if "src_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("L")
             fit._def_var_names.append("src_index")
+            
+        if "beta_index_grid" in fit_inputs.keys():
+            fit._def_var_names.append("beta_index")
 
         if "diff_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("F_diff")
@@ -1174,6 +1297,8 @@ class StanFit:
 
         self._get_par_ranges()
         fit_inputs = {}
+        if self._events.N == 0:
+            raise ValueError("Cannot perform fits with zero events")
         fit_inputs["N"] = self._events.N
         if self._nshards not in [0, 1]:
             # Number of shards and max. events per shards only used if multithreading is desired
@@ -1241,6 +1366,7 @@ class StanFit:
             ).to_value(u.GeV)
 
         integral_grid = []
+        integral_grid_2d = []
         atmo_integ_val = []
         obs_time = []
 
@@ -1260,11 +1386,21 @@ class StanFit:
             # Check for shared source index
             if self._shared_src_index:
                 key = "src_index"
+                if isinstance(
+                    self._sources.point_source[0].flux_model.spectral_shape,
+                    LogParabolaSpectrum,
+                ):
+                    key_beta = "beta_index"
 
             # Otherwise just use first source in the list
             # src_index_grid is identical for all point sources
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
+                if isinstance(
+                    self._sources.point_source[0].flux_model.spectral_shape,
+                    LogParabolaSpectrum,
+                ):
+                    key_beta = "%s_beta_index" % self._sources.point_source[0].name
 
             fit_inputs["src_index_grid"] = self._exposure_integral[
                 event_type
@@ -1277,11 +1413,30 @@ class StanFit:
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
 
+            if isinstance(
+                self._sources.point_source[0].flux_model.spectral_shape,
+                LogParabolaSpectrum,
+            ):
+                fit_inputs["beta_index_grid"] = self._exposure_integral[
+                    event_type
+                ].par_grids[key_beta]
+                fit_inputs["beta_index_min"] = self._beta_index_par_range[0]
+                fit_inputs["beta_index_max"] = self._beta_index_par_range[1]
+                fit_inputs["E0"] = [
+                        ps.flux_model.spectral_shape._normalisation_energy.to_value(
+                            u.GeV
+                        ) for ps in self._sources.point_source
+                ]
+                fit_inputs["beta_index_mu"] = self._priors.beta_index.mu
+                fit_inputs["beta_index_sigma"] = self._priors.beta_index.sigma
+
         # Inputs for priors of point sources
         if self._priors.src_index.name not in ["normal", "lognormal"]:
             raise ValueError("No other prior type for source index implemented.")
         fit_inputs["src_index_mu"] = self._priors.src_index.mu
         fit_inputs["src_index_sigma"] = self._priors.src_index.sigma
+
+
 
         if self._priors.luminosity.name == "lognormal":
             fit_inputs["lumi_mu"] = self._priors.luminosity.mu
@@ -1448,12 +1603,21 @@ class StanFit:
         """
 
         for c, event_type in enumerate(self._event_types):
-            integral_grid.append(
+            integral_grid.append([])
+            integral_grid_2d.append([])
+            for grid in self._exposure_integral[event_type].integral_grid:
+                
+                if len(grid.shape) == 2:
+                    integral_grid_2d[-1].append(np.log(grid.to_value(u.m**2)).tolist())
+
+                else:
+                    integral_grid[-1].append(np.log(grid.to_value(u.m**2)).tolist())
+            """integral_grid.append(
                 [
                     np.log(_.to_value(u.m**2)).tolist()
                     for _ in self._exposure_integral[event_type].integral_grid
                 ]
-            )
+            )"""
 
             if self._sources.atmospheric:
                 atmo_integ_val.append(
@@ -1463,6 +1627,7 @@ class StanFit:
                 )
 
         fit_inputs["integral_grid"] = integral_grid
+        fit_inputs["integral_grid_2d"] = integral_grid_2d
         fit_inputs["atmo_integ_val"] = atmo_integ_val
         fit_inputs["T"] = obs_time
         # To work with cmdstanpy serialization
@@ -1490,10 +1655,17 @@ class StanFit:
 
             if self._shared_src_index:
                 key = "src_index"
+                key_beta = "beta_index"
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
+                key_beta = "%s_beta_index" % self._sources.point_source[0].name
 
             self._src_index_par_range = Parameter.get_parameter(key).par_range
+            if isinstance(
+                self._sources.point_source[0].flux_model.spectral_shape,
+                LogParabolaSpectrum,
+            ):
+                self._beta_index_par_range = Parameter.get_parameter(key_beta).par_range
 
         if self._sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range

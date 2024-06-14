@@ -9,6 +9,7 @@ from typing import Union
 from .flux_model import (
     PointSourceFluxModel,
     PowerLawSpectrum,
+    LogParabolaSpectrum,
     TwiceBrokenPowerLaw,
     IsotropicDiffuseBG,
     integral_power_law,
@@ -328,6 +329,79 @@ class PointSource(Source):
         return cls(name, dec, ra, redshift, spectral_shape, frame)
 
     @classmethod
+    @u.quantity_input
+    def make_logparabola_source(
+        cls,
+        name: str,
+        dec: u.rad,
+        ra: u.rad,
+        luminosity: Parameter,
+        alpha: Parameter,
+        beta: Parameter,
+        redshift: float,
+        lower: Parameter,
+        upper: Parameter,
+        normalisation_energy: u.GeV,
+        frame: ReferenceFrame = SourceFrame,
+    ):
+        """
+        Factory class for creating sources with powerlaw spectrum and given luminosity.
+        Luminosity and all energies given as arguments/parameters live in the source frame
+        and are converted to detector frame internally.
+
+        Parameters:
+            name: str
+                Source name
+            dec: u.rad,
+                Declination of the source
+            ra: u.rad,
+                Right Ascension of the source
+            luminosity: Parameter,
+                luminosity
+            alpha: Parameter
+                Spectral index
+            beta: Parameter
+                Curvature parameter
+            redshift: float
+            lower: Parameter
+                Lower energy bound
+            upper: Parameter
+                Upper energy bound
+            frame: ReferenceFrame
+                Reference frame in which source energy is defined
+        """
+
+        total_flux = luminosity.value / (
+            4 * np.pi * luminosity_distance(redshift) ** 2
+        )  # here flux is W / m^2, lives in the detector frame
+
+        # Each source has an independent normalization, thus use the source name as identifier
+        # Normalisation to dN/(dEdtdA)
+        norm = Parameter(
+            # is defined at the detector!
+            1 / (u.GeV * u.s * u.m**2),
+            "{}_norm".format(name),
+            fixed=False,
+            par_range=(0, np.inf),
+            scale=ParScale.log,
+        )
+
+        spectral_shape = LogParabolaSpectrum(
+            norm,
+            frame.transform(normalisation_energy, redshift),
+            alpha,
+            beta,
+            frame.transform(lower.value, redshift),
+            frame.transform(upper.value, redshift),
+        )
+
+        total_power = spectral_shape.total_flux_density
+        norm.value *= total_flux / total_power
+        norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
+        norm.fixed = True
+        return cls(name, dec, ra, redshift, spectral_shape, frame)
+
+    @classmethod
     def _make_sources_from_file(
         cls,
         file_name: str,
@@ -337,6 +411,7 @@ class PointSource(Source):
         frame: ReferenceFrame = SourceFrame,
         include_undetected: bool = False,
         config: Union[None, HierarchicalNuConfig] = None,
+        normalisation_energy: Union[u.Quantity[u.GeV], None] = None,
     ):
         # Sensible bounds on luminosity
         lumi_range = (0, 1e60) * (u.erg / u.s)
@@ -494,6 +569,45 @@ class PointSource(Source):
         )
 
         return source_list
+    
+    '''
+    @classmethod
+    def make_logparabola_sources_from_file(
+        cls,
+        file_name: str,
+        lower_energy: Parameter,
+        upper_energy: Parameter,
+        normalisation_energy: u.GeV
+        frame: ReferenceFrame = SourceFrame,
+        include_undetected: bool = False,
+        config: Union[None, HierarchicalNuConfig] = None,
+    ):
+        """
+        Factory for power law sources defined in
+        HDF5 files ( update: output from popsynth).
+
+        :param file_name: File name of source list.
+        :param lower_energy: Lower energy bound in definition of the luminosity.
+        :param upper_energy: Upper energy bound in definition of the luminosity.
+        :param frame: Reference frame in which source energy is defined
+        :param include_undetected: Include sources that are not detected in population.
+        :param config: Instance of HierarchicalNuConfig to check for parameter bounds.
+        """
+
+        source_list = cls._make_sources_from_file(
+            file_name,
+            lower_energy,
+            upper_energy,
+            cls.make_logparabola_source,
+            frame,
+            include_undetected,
+            config,
+            normalisation_energy=normalisation_energy,
+        )
+
+        return source_list
+    '''
+
 
     @property
     def dec(self):
@@ -721,6 +835,11 @@ class Sources:
             raise ValueError("Not all point sources have the same spectral_shape")
 
         self._point_source_spectrum = types[0]
+
+    @property
+    def point_source_spectrum(self):
+        self._get_point_source_spectrum()
+        return self._point_source_spectrum
 
     def add_atmospheric_component(self, index: float = 0.0, cache_dir: str = ".cache"):
         """
