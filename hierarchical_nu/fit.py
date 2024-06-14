@@ -814,49 +814,108 @@ class StanFit:
         flux_unit = 1 / energy_unit / area_unit / u.s
 
         try:
-            src_index = self._fit_output.stan_variable("src_index")
+            variables = self._fit_output.stan_variables()
+            stan = True
         except AttributeError:
-            src_index = self._fit_output["src_index"]
+            variables = self._fit_output.keys()
+            stan = False
 
-        shape = src_index.shape
-        share_index = len(shape) == 2
+        print("stan:", stan)
 
-        logparabola = isinstance(
-            self._sources.point_source[0].flux_model.spectral_shape,
-            LogParabolaSpectrum
-        )
+        
+        fit_index = True if "src_index" in variables else False
+        fit_beta = True if "beta_index" in variables else False
+        fit_Enorm = True if "E0_src" in variables else False
 
-        if logparabola:
-            try:
-                beta_index = self._fit_output.stan_variable("beta_index")
-            except AttributeError:
-                beta_index = self._fit_output["beta_index"]
+        print(fit_index, fit_beta, fit_Enorm)
 
-        try:
-            alpha = self._fit_output.stan_variable("src_index")
-            if logparabola:
+        if fit_beta or fit_Enorm:
+            logparabola = True
+        else:
+            logparabola = False
+
+        print("logparabola:", logparabola)
+
+        if stan:
+            inputs = self._get_fit_inputs()
+            if fit_index:
+                alpha = self._fit_output.stan_variable("src_index")
+            else:
+                alpha = inputs["src_index"]
+            if fit_beta:
                 beta = self._fit_output.stan_variable("beta_index")
+            elif logparabola:
+                beta = inputs["beta_index"]
+            if fit_Enorm:
+                E0 = self._fit_output.stan_variable("E0_src")
+            elif logparabola:
+                E0 = inputs["E0_src"]
             F = self._fit_output.stan_variable("F")
-        except AttributeError:
-            alpha = self._fit_output["src_index"]
-            if logparabola:
+
+        else:
+            inputs = self._fit_inputs
+            if fit_index:
+                alpha = self._fit_output["src_index"]
+            else:
+                alpha = inputs["src_index"]
+            if fit_beta:
                 beta = self._fit_output["beta_index"]
+            elif logparabola:
+                beta = inputs["beta_index"]
+            if fit_Enorm:
+                E0 = self._fit_output["E0_src"]
+            elif logparabola:
+                E0 = inputs["E0_src"]
             F = self._fit_output["F"]
 
+        if fit_index:
+            shape = alpha.shape
+            N = alpha.size
+        elif fit_beta:
+            shape = beta.shape
+            N = beta.size
+        elif fit_Enorm:
+            shape = E0.shape
+            N = E0.size
+        share_index = len(shape) == 2
+
+        print("share index:", share_index)
+
         if share_index:
-            N_samples = alpha.size
+            N_samples = N
         else:
-            N_samples = alpha.size / len(self._sources.point_source)
+            N_samples = N / len(self._sources.point_source)
+
+        print("Nsamples:", N_samples)
 
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
-                index_vals = alpha.flatten()
-                if logparabola:
+                if fit_index: # This will throw an error with PEP
+                    index_vals = alpha.flatten()
+                if fit_beta:
                     beta_vals = beta.flatten()
+                if fit_Enorm:
+                    E0_vals = E0.flatten()
+
             else:
-                index_vals = alpha[:, :, c_ps].flatten()
-                if logparabola:
+                if fit_index:
+                    index_vals = alpha[:, :, c_ps].flatten()
+                if fit_beta:
                     beta_vals = beta[:, :, c_ps].flatten()
+                if fit_Enorm:
+                    E0_vals = E0[:, :, c_ps].flatten()
+
+            if not fit_index:
+                index_vals = alpha[c_ps]
+                ps.flux_model.spectral_shape.set_parameter("index", index_vals)
+
+            if not fit_beta and logparabola:
+                beta_vals = beta[c_ps]
+                ps.flux_model.spectral_shape.set_parameter("beta", beta_vals)
+
+            if not fit_Enorm and logparabola:
+                E0_vals = E0[c_ps]
+                ps.flux_model.spectral_shape.set_parameter("norm_energy", E0_vals*u.GeV)
 
             flux_int = F[:, :, c_ps].flatten()
             E = np.geomspace(*ps.flux_model.energy_bounds, 1_000)
@@ -864,10 +923,14 @@ class StanFit:
             flux_grid = np.zeros((E.size, N_samples))
 
             for c in range(N_samples):
-                ps.flux_model.spectral_shape.set_parameter("index", index_vals[c])
+                if fit_index:
+                    ps.flux_model.spectral_shape.set_parameter("index", index_vals[c])
 
-                if logparabola:
+                if fit_beta:
                     ps.flux_model.spectral_shape.set_parameter("beta", beta_vals[c])
+
+                if fit_Enorm:
+                    ps.flux_model.spectral_shape.set_parameter("norm_energy", E0_vals[c]*u.GeV)
 
                 flux = ps.flux_model.spectral_shape(E).to_value(
                     flux_unit
