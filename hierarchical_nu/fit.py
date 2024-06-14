@@ -820,21 +820,14 @@ class StanFit:
             variables = self._fit_output.keys()
             stan = False
 
-        print("stan:", stan)
-
-        
         fit_index = True if "src_index" in variables else False
         fit_beta = True if "beta_index" in variables else False
         fit_Enorm = True if "E0_src" in variables else False
-
-        print(fit_index, fit_beta, fit_Enorm)
 
         if fit_beta or fit_Enorm:
             logparabola = True
         else:
             logparabola = False
-
-        print("logparabola:", logparabola)
 
         if stan:
             inputs = self._get_fit_inputs()
@@ -879,14 +872,10 @@ class StanFit:
             N = E0.size
         share_index = len(shape) == 2
 
-        print("share index:", share_index)
-
         if share_index:
             N_samples = N
         else:
             N_samples = N / len(self._sources.point_source)
-
-        print("Nsamples:", N_samples)
 
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
