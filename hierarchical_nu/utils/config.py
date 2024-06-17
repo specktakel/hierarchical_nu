@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Tuple
 from dataclasses import dataclass, field
 from omegaconf import OmegaConf
 import numpy as np
@@ -21,29 +21,29 @@ logger.setLevel(logging.INFO)
 @dataclass
 class ParameterConfig:
     source_type: str = (
-        "twice-broken-power-law"    # Currently only supports one type for all sources,
-                                    # other option "power-law" covering the entire energy range
-                                    # or "logparabola". If logparabola, the two fit parameters used
-                                    # (two out of src_index, beta_index and E0_src) needs to be defined
-                                    # in the field "fit_params", e.g. fit_params: ["src_index", "beta_index"]
+        "twice-broken-power-law"  # Currently only supports one type for all sources,
+        # other option "power-law" covering the entire energy range
+        # or "logparabola". If logparabola, the two fit parameters used
+        # (two out of src_index, beta_index and E0_src) needs to be defined
+        # in the field "fit_params", e.g. fit_params: ["src_index", "beta_index"]
     )
     fit_params: List[str] = field(default_factory=lambda: ["src_index"])
     src_index: List[float] = field(default_factory=lambda: [2.3])
     share_src_index: bool = True
-    src_index_range: tuple = (1.0, 4.0)
+    src_index_range: Tuple = (1.0, 4.0)
     beta_index: List[float] = field(default_factory=lambda: [0.0])
-    beta_index_range: tuple = (-1., 1.)
-    E0_src: List[float] = field(default_factory=lambda: [1e6]) # GeV
-    E0_src_range: tuple = (1e3, 1e8)
+    beta_index_range: Tuple = (-1.0, 1.0)
+    E0_src: List[float] = field(default_factory=lambda: [1e6])  # GeV
+    E0_src_range: Tuple = (1e3, 1e8)
     diff_index: float = 2.5
-    diff_index_range: tuple = (1.0, 4.0)
-    F_diff_range: tuple = (1e-6, 1e-3) # 1 / m**2 / s
-    F_atmo_range: tuple = (0.1, 0.5) # 1 / m**2 / s
+    diff_index_range: Tuple = (1.0, 4.0)
+    F_diff_range: Tuple = (1e-6, 1e-3)  # 1 / m**2 / s
+    F_atmo_range: Tuple = (0.1, 0.5)  # 1 / m**2 / s
     L: List[float] = field(
         default_factory=lambda: [8e45]
     )  # u.erg / u.s, defined in the source frame
     share_L: bool = True
-    L_range: tuple = (0, 1e60)
+    L_range: Tuple = (0, 1e60)
     src_dec: List[float] = field(default_factory=lambda: [0.0])  # u.deg
     src_ra: List[float] = field(default_factory=lambda: [90.0])  # u.deg
     Enorm: float = 1e5  # u.GeV, defined in the detector frame

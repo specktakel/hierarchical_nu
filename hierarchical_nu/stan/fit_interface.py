@@ -106,7 +106,6 @@ class StanFitInterface(StanInterface):
         self._use_event_tag = use_event_tag
         self._debug = debug
 
-        
         if self._sources.point_source:
             self._logparabola = self._ps_spectrum == LogParabolaSpectrum
             self._fit_index = True
@@ -114,15 +113,24 @@ class StanFitInterface(StanInterface):
             self._fit_Enorm = False
             if self._logparabola:
                 self._fit_beta = (
-                    not self._sources.point_source[0].flux_model.parameters["beta"].fixed
+                    not self._sources.point_source[0]
+                    .flux_model.parameters["beta"]
+                    .fixed
                 )
                 self._fit_index = (
-                    not self._sources.point_source[0].flux_model.parameters["index"].fixed
+                    not self._sources.point_source[0]
+                    .flux_model.parameters["index"]
+                    .fixed
                 )
                 self._fit_Enorm = (
-                    not self._sources.point_source[0].flux_model.parameters["norm_energy"].fixed
+                    not self._sources.point_source[0]
+                    .flux_model.parameters["norm_energy"]
+                    .fixed
                 )
-                assert int(self._fit_beta) + int(self._fit_index) + int(self._fit_Enorm) <= 2
+                assert (
+                    int(self._fit_beta) + int(self._fit_index) + int(self._fit_Enorm)
+                    <= 2
+                )
 
         self._dm = OrderedDict()
 
@@ -230,7 +238,6 @@ class StanFitInterface(StanInterface):
                         StringExpression([_lp, " += ", _aeff_src])
                         StringExpression([_lp, " += ", _eres_src])
 
-
                         # Create references only if they are definitely needed
                         # Either if param is fitted, or if we need all references, even to data
                         # (case for generated quantities, i.e. _x_r_idxs does not exist)
@@ -249,7 +256,7 @@ class StanFitInterface(StanInterface):
                                 E0_src_ref = self._E0_src
                             elif self._fit_Enorm or not hasattr(self, "_x_r_idxs"):
                                 E0_src_ref = self._E0_src[k]
-                            
+
                             # create even more references
                             # go through all three params
                             fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
@@ -278,7 +285,7 @@ class StanFitInterface(StanInterface):
                                     refs.append(0)
                             else:
                                 refs = [src_index_ref, beta_index_ref, E0_src_ref]
-                                
+
                             first = True
                             for f, r in zip(fit, refs):
                                 if f and first:
@@ -470,13 +477,21 @@ class StanFitInterface(StanInterface):
             # and how to convert from energy to number flux
             if self.sources.point_source:
                 if self._logparabola:
-                    self._ps_spectrum.make_stan_utility_func(self._fit_index, self._fit_beta, self._fit_Enorm)
+                    self._ps_spectrum.make_stan_utility_func(
+                        self._fit_index, self._fit_beta, self._fit_Enorm
+                    )
                 self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
-                    "src_spectrum_logpdf", self._fit_index, self._fit_beta, self._fit_Enorm,
+                    "src_spectrum_logpdf",
+                    self._fit_index,
+                    self._fit_beta,
+                    self._fit_Enorm,
                 )
 
                 self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
-                    "flux_conv", self._fit_index, self._fit_beta, self._fit_Enorm,
+                    "flux_conv",
+                    self._fit_index,
+                    self._fit_beta,
+                    self._fit_Enorm,
                 )
 
             # If we have diffuse sources, include the shape of their PDF
@@ -553,7 +568,9 @@ class StanFitInterface(StanInterface):
                         end << self._Ns
                         first = True
                         if self._fit_index:
-                            self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
+                            self._src_index = ForwardVariableDef(
+                                "src_index", "vector[Ns]"
+                            )
                             self._src_index << glob[start:end]
                             start << start + self._Ns
                             first = False
@@ -762,7 +779,9 @@ class StanFitInterface(StanInterface):
                         start << start + self._Ns
                     if self._logparabola and not self._fit_beta:
                         end << end + self._Ns
-                        self._beta_index = ForwardArrayDef("beta_index", "real", ["[Ns]"])
+                        self._beta_index = ForwardArrayDef(
+                            "beta_index", "real", ["[Ns]"]
+                        )
                         self._beta_index << real_data[start:end]
                         self._x_r_idxs[1] << start
                         start << start + self._Ns
@@ -903,7 +922,6 @@ class StanFitInterface(StanInterface):
                 if self._logparabola and not self._fit_Enorm:
                     self._E0_src = ForwardArrayDef("E0", "real", ["[Ns]"])
 
-
             if self.sources.diffuse:
                 self._diff_index_min = ForwardVariableDef("diff_index_min", "real")
                 self._diff_index_max = ForwardVariableDef("diff_index_max", "real")
@@ -997,7 +1015,10 @@ class StanFitInterface(StanInterface):
 
             if self._sources.point_source:
                 # Define variables for the prior mu/sigma
-                if isinstance(self._priors.src_index, MultiSourcePrior) and self._fit_index:
+                if (
+                    isinstance(self._priors.src_index, MultiSourcePrior)
+                    and self._fit_index
+                ):
                     index_mu_def = ForwardArrayDef("src_index_mu", "real", self._Ns_str)
                     index_sigma_def = ForwardArrayDef(
                         "src_index_sigma", "real", self._Ns_str
@@ -1005,10 +1026,11 @@ class StanFitInterface(StanInterface):
                 elif self._fit_index:
                     index_mu_def = ForwardVariableDef("src_index_mu", "real")
                     index_sigma_def = ForwardVariableDef("src_index_sigma", "real")
-                if isinstance(self._priors.beta_index, MultiSourcePrior) and self._fit_beta:
-                    beta_mu_def = ForwardArrayDef(
-                        "beta_index_mu", "real", self._Ns_str
-                    )
+                if (
+                    isinstance(self._priors.beta_index, MultiSourcePrior)
+                    and self._fit_beta
+                ):
+                    beta_mu_def = ForwardArrayDef("beta_index_mu", "real", self._Ns_str)
                     beta_sigma_def = ForwardArrayDef(
                         "beta_index_sigma", "real", self._Ns_str
                     )
@@ -1016,9 +1038,7 @@ class StanFitInterface(StanInterface):
                     beta_mu_def = ForwardVariableDef("beta_index_mu", "real")
                     beta_sigma_def = ForwardVariableDef("beta_index_sigma", "real")
                 if isinstance(self._priors.energy, MemoryError) and self._fit_Enorm:
-                    E0_src_mu_def = ForwardArrayDef(
-                        "E0_src_mu", "real", self._Ns_str
-                    )
+                    E0_src_mu_def = ForwardArrayDef("E0_src_mu", "real", self._Ns_str)
                     E0_src_sigma_def = ForwardArrayDef(
                         "E0_src_sigma", "real", self._Ns_str
                     )
@@ -1091,11 +1111,11 @@ class StanFitInterface(StanInterface):
             for c, et in enumerate(self._event_types, 1):
                 self._et_stan[c] << et.S
 
-            #self._N_et_data = ForwardArrayDef("N_et_data", "int", ["[", self._Net, "]"])
+            # self._N_et_data = ForwardArrayDef("N_et_data", "int", ["[", self._Net, "]"])
 
             # Set all entries to zero
             # What is this actually used for?
-            #with ForLoopContext(1, self._Net, "i") as i:
+            # with ForLoopContext(1, self._Net, "i") as i:
             #    self._N_et_data[i] << 0
 
             """with ForLoopContext(1, self._N, "k") as k:
@@ -1573,7 +1593,7 @@ class StanFitInterface(StanInterface):
                 num_of_pars = "Ns"
 
                 python_counter = 0
-                
+
                 if self._fit_index:
                     python_counter += 1
                 if self._fit_beta:
@@ -1663,12 +1683,16 @@ class StanFitInterface(StanInterface):
                         E0_src_ref = self._E0_src[k]
 
                     if self._logparabola:
-                    
+
                         # create even more references
                         # go through all three params
                         fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
                         refs = [src_index_ref, beta_index_ref, E0_src_ref]
-                        grids = [self._src_index_grid, self._beta_index_grid, self._E0_src_grid]
+                        grids = [
+                            self._src_index_grid,
+                            self._beta_index_grid,
+                            self._E0_src_grid,
+                        ]
                         first = True
                         for f, r, g in zip(fit, refs, grids):
                             if f and first:
@@ -1682,7 +1706,6 @@ class StanFitInterface(StanInterface):
                                 # put the leftovers in the fridge, please
                                 leftover = r
 
-                            
                     self._F[k] << StringExpression(
                         [
                             L_ref,
@@ -2063,7 +2086,10 @@ class StanFitInterface(StanInterface):
 
                 if self._priors.src_index.name not in ["normal", "lognormal"]:
                     raise ValueError("Prior type for source index not recognised.")
-                if isinstance(self._priors.src_index, MultiSourcePrior) and self._fit_index:
+                if (
+                    isinstance(self._priors.src_index, MultiSourcePrior)
+                    and self._fit_index
+                ):
                     with ForLoopContext(1, self._Ns, "i") as i:
                         StringExpression(
                             [
