@@ -140,21 +140,6 @@ class Simulation:
         except ValueError:
             self._shared_luminosity = False
 
-        if self._sources.point_source:
-            index = self._sources.point_source[0].parameters["index"]
-            if not index.fixed and index.name == "src_index":
-                self._shared_src_index = True
-            elif not index.fixed:
-                self._shared_src_index = False
-            else:
-                beta = self._sources.point_source[0].parameters["beta"]
-                if not beta.fixed and beta.name == "beta_index":
-                    self._shared_src_index = True
-                elif not beta.fixed:
-                    self._shared_src_index = False
-        else:
-            self._shared_src_index = False
-
         self.events = None
 
     def precomputation(
@@ -578,9 +563,7 @@ class Simulation:
         forced_N = []
         obs_time = []
 
-        sim_inputs["Ngrid"] = len(
-            self._exposure_integral[self._event_types[0]].par_grids[key]
-        )
+        sim_inputs["Ngrid"] = self._n_grid_points
 
         if asimov:
             # Round expected number of events to nearest integer per source
@@ -617,73 +600,39 @@ class Simulation:
             # for internal consistency the same approach of calculating Nex inside stan is used.
             # That means we need to check over which parameters is interpolated in the 1D or 2D grid,
             # hence we check which parameters would be free in a fit.
-            fit_index = True
-            fit_beta = False
-            fit_Enorm = False
-            # Check for shared source index
-            if self._shared_src_index:
-                key = "src_index"
-                if logparabola:
-                    key_beta = "beta_index"
-                    key_Enorm = "E0_src"
-            # src_index_grid is identical for all point sources
-            else:
-                key = "%s_src_index" % self._sources.point_source[0].name
-                if logparabola:
-                    key_beta = "%s_beta_index" % self._sources.point_source[0].name
-                    key_Enorm = "%s_E0_src" % self._sources.point_source[0].name
+
+            key_index = self._sources.point_source[0].parameters["index"].name
+            source_name = self._sources.point_source[0].name
+            fit_index = not Parameter.get_parameter(key_index).fixed
             if logparabola:
-                fit_beta = (
-                    key_beta in self._exposure_integral[event_type].par_grids.keys()
-                )
-                fit_Enorm = (
-                    key_Enorm in self._exposure_integral[event_type].par_grids.keys()
-                )
-                fit_index = key in self._exposure_integral[event_type].par_grids.keys()
+                key_beta = self._sources.point_source[0].parameters["beta"].name
+                key_Enorm = self._sources.point_source[0].parameters["norm_energy"].name
+
+                fit_beta = not Parameter.get_parameter(key_beta).fixed
+                fit_Enorm = not Parameter.get_parameter(key_Enorm).fixed
+
             if fit_index:
-                sim_inputs["src_index_grid"] = self._exposure_integral[
-                    event_type
-                ].par_grids[key]
-                if self._shared_src_index:
-                    sim_inputs["src_index"] = Parameter.get_parameter("src_index").value
-                else:
-                    sim_inputs["src_index"] = [
-                        Parameter.get_parameter("%s_src_index" % s.name).value
-                        for s in self._sources.point_source
-                    ]
+                sim_inputs["src_index_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_index]
+            if fit_beta:
+                sim_inputs["beta_index_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_beta]
+            if fit_Enorm:
+                sim_inputs["E0_src_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_Enorm]
+                
+            sim_inputs["src_index"] = [
+                s.flux_model.parameters["index"].value
+                for s in self._sources.point_source
+            ]
 
             if logparabola:
-                if not fit_index:
-                    sim_inputs["src_index"] = [
-                        Parameter.get_parameter("%s_src_index" % s.name).value
-                        for s in self._sources.point_source
-                    ]
-                if fit_beta:
-                    sim_inputs["beta_index_grid"] = self._exposure_integral[
-                        event_type
-                    ].par_grids[key_beta]
-                if self._shared_src_index and fit_beta:
-                    sim_inputs["beta_index"] = Parameter.get_parameter(
-                        "beta_index"
-                    ).value
-                else:
-                    sim_inputs["beta_index"] = [
-                        ps.flux_model.parameters["beta"].value
-                        for ps in self._sources.point_source
-                    ]
-                if fit_Enorm:
-                    sim_inputs["E0_src_grid"] = self._exposure_integral[
-                        event_type
-                    ].par_grids["E0_src"]
-                if self._shared_src_index and fit_Enorm:
-                    sim_inputs["E0"] = Parameter.get_parameter("E0_src").value.to_alue(
-                        u.GeV
-                    )
-                else:
-                    sim_inputs["E0"] = [
-                        ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
-                        for ps in self._sources.point_source
-                    ]
+                sim_inputs["beta_index"] = [
+                    ps.flux_model.parameters["beta"].value
+                    for ps in self._sources.point_source
+                ]
+
+                sim_inputs["E0_src"] = [
+                    ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
+                    for ps in self._sources.point_source
+                ]
 
             sim_inputs["Emin_src"] = [
                 ps.frame.transform(
@@ -894,7 +843,6 @@ class Simulation:
                 self._sources.diffuse,
                 self._sources.atmospheric,
                 self._shared_luminosity,
-                self._shared_src_index,
             )
 
         self._Nex_et = Nex_et
@@ -1094,7 +1042,6 @@ def _get_expected_Nnu_(
     diffuse=False,
     atmospheric=False,
     shared_luminosity=True,
-    shared_src_index=True,
 ):
     """
     Helper function for calculating expected Nnu
@@ -1141,58 +1088,37 @@ def _get_expected_Nnu_(
         for i, (d, Emin_src, Emax_src) in enumerate(
             zip(sim_inputs["D"], sim_inputs["Emin_src"], sim_inputs["Emax_src"])
         ):
-            if shared_src_index:
-                if fit_index:
-                    # If a parameter is free and shared, use the single entry
-                    src_index_ref = src_index
-                elif logparabola:
-                    # or in the case of logparabola index is not free
-                    # and thus a data field for each source
-                    src_index_ref = src_index[i]
-                if fit_beta:
-                    beta_index_ref = beta_index
-                elif logparabola:
-                    beta_index_ref = beta_index[i]
-                if fit_Enorm:
-                    E0_src_ref = E0_src
-                elif logparabola:
-                    E0_src_ref = E0_src[i]
-
-            else:
-                src_index_ref = src_index[i]
-                if logparabola:
-                    beta_index_ref = beta_index[i]
-                    E0_src_ref = E0_src[i]
 
             if logparabola:
                 first = True
                 if fit_index:
                     first_grid = src_index_grid
-                    first_param = src_index_ref
+                    first_param = src_index[i]
                     first = False
                 if fit_beta:
                     if first:
-                        first_grid = beta_index
-                        first_param = beta_index_ref
+                        first_grid = beta_index_grid
+                        first_param = beta_index[i]
                         first = False
                     else:
-                        second_grid = beta_index
-                        second_param = beta_index_ref
+                        second_grid = beta_index_grid
+                        second_param = beta_index[i]
                 if fit_Enorm:
                     second_grid = E0_src_grid
-                    second_param = E0_src_ref
+                    second_param = E0_src[i]
                 interp = RegularGridInterpolator(
                     (first_grid, second_grid), integral_grid_2d[i]
                 )
                 E0 = sim_inputs["E0_src"][i]
+                beta = sim_inputs["beta_index"][i]
                 eps.append(np.exp(interp(np.array([first_param, second_param])))[0])
             else:
                 eps.append(
-                    np.exp(np.interp(src_index_ref, src_index_grid, integral_grid[i]))
+                    np.exp(np.interp(src_index[i], src_index_grid, integral_grid[i]))
                 )
                 # arbitrary values to fulfill function signature
                 E0 = 0.0
-                beta_index_ref = None
+                beta = 0.0
 
             if shared_luminosity:
                 l = sim_inputs["L"]
@@ -1201,10 +1127,10 @@ def _get_expected_Nnu_(
 
             flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
             flux = flux * flux_conv_(
-                alpha=src_index_ref,
+                alpha=src_index[i],
                 e_low=Emin_src,
                 e_up=Emax_src,
-                beta=beta_index_ref,
+                beta=beta,
                 e_0=E0,
             )
             F.append(flux)

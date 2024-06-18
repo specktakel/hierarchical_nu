@@ -21,14 +21,12 @@ from pathlib import Path
 
 import pytest
 
-
-# Re-use the same simulated data set
-@pytest.fixture(scope='session')
-def simulation(output_directory):
+@pytest.fixture
+def simulation_E0(output_directory):
     Parameter.clear_registry()
     src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1., 4.))
     beta_index = Parameter(0.5, "beta_index", fixed=False, par_range=(-.5, 1.))
-    E0 = Parameter(1e7*u.GeV, "E0_src", fixed=True, par_range=(1e3, 1e9)*u.GeV, scale=ParScale.log)
+    E0 = Parameter(1e5*u.GeV, "E0_src", fixed=True, par_range=(1e3, 1e9)*u.GeV, scale=ParScale.log)
     L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60) * (u.erg/u.s))
     Emin_det = Parameter(3e2 * u.GeV, "Emin_det", fixed=True)
 
@@ -41,8 +39,8 @@ def simulation(output_directory):
     ra = np.deg2rad(77.35) * u.rad
     dec = np.deg2rad(5.7) * u.rad
     txs = SkyCoord(ra=ra, dec=dec, frame="icrs")
-    point_source = PointSource.make_powerlaw_source(
-        "test", dec, ra, L, src_index, z, Emin_src, Emax_src, frame=DetectorFrame,
+    point_source = PointSource.make_logparabola_source(
+        "test", dec, ra, L, src_index, beta_index, z, Emin_src, Emax_src, E0, frame=DetectorFrame,
     )
 
     sources = Sources()
@@ -59,15 +57,100 @@ def simulation(output_directory):
     sim.compile_stan_code()
     sim.run()
 
-    sim.save(output_directory / Path("events.h5"))
+    sim.save(output_directory / Path("events.h5"), overwrite=True)
+
+    events = Events.from_file(output_directory / Path("events.h5"))
+
+    return events
+
+@pytest.fixture
+def simulation_beta(output_directory):
+    Parameter.clear_registry()
+    src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1., 4.))
+    beta_index = Parameter(0.5, "beta_index", fixed=True, par_range=(-.5, 1.))
+    E0 = Parameter(1e5*u.GeV, "E0_src", fixed=False, par_range=(1e3, 1e9)*u.GeV, scale=ParScale.log)
+    L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60) * (u.erg/u.s))
+    Emin_det = Parameter(3e2 * u.GeV, "Emin_det", fixed=True)
+
+    z = 0.3365
+    Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
+    Emin = Parameter(1E2 * u.GeV, "Emin", fixed=True)
+    Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
+    Emin_src = Parameter(1e2*u.GeV, "Emin_src", fixed=True)
+    Emax_src = Parameter(1e8*u.GeV, "Emax_src", fixed=True)
+    ra = np.deg2rad(77.35) * u.rad
+    dec = np.deg2rad(5.7) * u.rad
+    txs = SkyCoord(ra=ra, dec=dec, frame="icrs")
+    point_source = PointSource.make_logparabola_source(
+        "test", dec, ra, L, src_index, beta_index, z, Emin_src, Emax_src, E0, frame=DetectorFrame,
+    )
+
+    sources = Sources()
+    sources.add(point_source)
+
+    ROIList.clear_registry()
+    roi = CircularROI(txs, 5 * u.deg, apply_roi=True)
+
+    lifetime = {IC86_II: 0.5*u.yr}
+
+    sim = Simulation(sources, IC86_II, lifetime)
+    sim.precomputation()
+    sim.generate_stan_code()
+    sim.compile_stan_code()
+    sim.run()
+
+    sim.save(output_directory / Path("events.h5"), overwrite=True)
+
+    events = Events.from_file(output_directory / Path("events.h5"))
+
+    return events
+
+@pytest.fixture
+def simulation_index(output_directory):
+    Parameter.clear_registry()
+    src_index = Parameter(2.2, "src_index", fixed=True, par_range=(1., 4.))
+    beta_index = Parameter(0.5, "beta_index", fixed=False, par_range=(-.5, 1.))
+    E0 = Parameter(1e5*u.GeV, "E0_src", fixed=False, par_range=(1e3, 1e9)*u.GeV, scale=ParScale.log)
+    L = Parameter(1E47 * (u.erg / u.s), "luminosity", fixed=True, par_range=(0, 1E60) * (u.erg/u.s))
+    Emin_det = Parameter(3e2 * u.GeV, "Emin_det", fixed=True)
+
+    z = 0.3365
+    Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
+    Emin = Parameter(1E2 * u.GeV, "Emin", fixed=True)
+    Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
+    Emin_src = Parameter(1e2*u.GeV, "Emin_src", fixed=True)
+    Emax_src = Parameter(1e8*u.GeV, "Emax_src", fixed=True)
+    ra = np.deg2rad(77.35) * u.rad
+    dec = np.deg2rad(5.7) * u.rad
+    txs = SkyCoord(ra=ra, dec=dec, frame="icrs")
+    point_source = PointSource.make_logparabola_source(
+        "test", dec, ra, L, src_index, beta_index, z, Emin_src, Emax_src, E0, frame=DetectorFrame,
+    )
+
+    sources = Sources()
+    sources.add(point_source)
+
+    ROIList.clear_registry()
+    roi = CircularROI(txs, 5 * u.deg, apply_roi=True)
+
+    lifetime = {IC86_II: 0.5*u.yr}
+
+    sim = Simulation(sources, IC86_II, lifetime)
+    sim.precomputation()
+    sim.generate_stan_code()
+    sim.compile_stan_code()
+    sim.run()
+
+    sim.save(output_directory / Path("events.h5"), overwrite=True)
 
     events = Events.from_file(output_directory / Path("events.h5"))
 
     return events
 
 
+
 # Run through all combinations of one of alpha, beta, E0 being fixed, named in function
-def test_logparabola_E0(simulation):
+def test_logparabola_E0(simulation_E0):
     Parameter.clear_registry()
     src_index = Parameter(2., "src_index", fixed=False, par_range=(1., 4.))
     beta_index = Parameter(0.5, "beta_index", fixed=False, par_range=(-.5, 1.))
@@ -100,7 +183,7 @@ def test_logparabola_E0(simulation):
 
 
     # Less grid points to speed up testing
-    fit = StanFit(sources, IC86_II, simulation, lifetime, n_grid_points=20)
+    fit = StanFit(sources, IC86_II, simulation_E0, lifetime, n_grid_points=20)
     fit.precomputation()
     fit.generate_stan_code()
     fit.compile_stan_code()
@@ -109,7 +192,7 @@ def test_logparabola_E0(simulation):
         show_console=True,
     )
 
-def test_logparabola_beta(simulation):
+def test_logparabola_beta(simulation_beta):
     Parameter.clear_registry()
     src_index = Parameter(2., "src_index", fixed=False, par_range=(1., 4.))
     beta_index = Parameter(0., "beta_index", fixed=True, par_range=(-.5, 1.))
@@ -143,13 +226,13 @@ def test_logparabola_beta(simulation):
 
     # Less grid points to speed up testing
     # use mulithreading for one of the tests
-    fit = StanFit(sources, IC86_II, simulation, lifetime, n_grid_points=20, nshards=2)
+    fit = StanFit(sources, IC86_II, simulation_beta, lifetime, n_grid_points=20, nshards=2)
     fit.precomputation()
     fit.generate_stan_code()
     fit.compile_stan_code()
     fit.run(inits={"E": fit.events.N * [1e5], "L": 1e48, "src_index": 2.0, "E0": 1e7})
 
-def test_logparabola_index(simulation):
+def test_logparabola_index(simulation_index):
     Parameter.clear_registry()
     src_index = Parameter(2., "src_index", fixed=True, par_range=(1., 4.))
     beta_index = Parameter(0., "beta_index", fixed=False, par_range=(-.5, 1.))
@@ -182,7 +265,7 @@ def test_logparabola_index(simulation):
 
 
     # Less grid points to speed up testing
-    fit = StanFit(sources, IC86_II, simulation, lifetime, n_grid_points=20)
+    fit = StanFit(sources, IC86_II, simulation_index, lifetime, n_grid_points=20)
     fit.precomputation()
     fit.generate_stan_code()
     fit.compile_stan_code()

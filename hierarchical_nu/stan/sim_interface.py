@@ -233,21 +233,12 @@ class StanSimInterface(StanInterface):
             # Point sources can have shared/individual spectral indices, and
             # a grid over the spectral index is also passed, as for diffuse sources.
             if self.sources.point_source:
-                if self._shared_src_index and self._fit_index:
-                    self._src_index = ForwardVariableDef("src_index", "real")
-                else:
-                    self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
+                self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
                 if self._logparabola:
-                    if self._shared_src_index and self._fit_beta:
-                        self._beta_index = ForwardVariableDef("beta_index", "real")
-                    else:
-                        self._beta_index = ForwardVariableDef(
-                            "beta_index", "vector[Ns]"
-                        )
-                    if self._shared_src_index and self._fit_Enorm:
-                        self._E0_src = ForwardVariableDef("E0_src", "real")
-                    else:
-                        self._E0_src = ForwardVariableDef("E0_src", "vector[Ns]")
+                    self._beta_index = ForwardVariableDef(
+                        "beta_index", "vector[Ns]"
+                    )
+                    self._E0_src = ForwardVariableDef("E0_src", "vector[Ns]")
 
                 if self._fit_index:
                     self._src_index_grid = ForwardVariableDef(
@@ -465,24 +456,11 @@ class StanSimInterface(StanInterface):
                     else:
                         L_ref = self._L[k]
 
-                    if self._shared_src_index and self._fit_index:
-                        src_index_ref = self._src_index
-                    else:
-                        # all other cases src_index is an array/vector
-                        src_index_ref = self._src_index[k]
-
-                    if self._shared_src_index and self._fit_beta:
-                        beta_index_ref = self._beta_index
-                    elif self._logparabola:
-                        beta_index_ref = self._beta_index[k]
-
-                    if self._logparabola and self._shared_src_index and self._fit_Enorm:
-                        E0_src_ref = self._E0_src
-                    elif self._logparabola:
-                        E0_src_ref = self._E0_src[k]
+                    src_index_ref = self._src_index[k]
 
                     if self._logparabola:
-
+                        E0_src_ref = self._E0_src[k]
+                        beta_index_ref = self._beta_index[k]
                         # create even more references
                         # go through all three params
                         fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
@@ -526,9 +504,9 @@ class StanSimInterface(StanInterface):
                             [
                                 "{",
                                 src_index_ref,
-                                "{",
+                                ",",
                                 beta_index_ref,
-                                "{",
+                                ",",
                                 E0_src_ref,
                                 ",",
                                 self._Emin_src[k],
@@ -932,27 +910,11 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
-                                if self._shared_src_index and self._fit_index:
-                                    src_index_ref = self._src_index
-                                else:
-                                    # all other cases src_index is an array/vector
-                                    src_index_ref = self._src_index[self._lam[i]]
-
-                                if self._shared_src_index and self._fit_beta:
-                                    beta_index_ref = self._beta_index
-                                elif self._logparabola:
-                                    beta_index_ref = self._beta_index[self._lam[i]]
-
-                                if (
-                                    self._logparabola
-                                    and self._shared_src_index
-                                    and self._fit_Enorm
-                                ):
-                                    E0_src_ref = self._E0_src
-                                elif self._logparabola:
-                                    E0_src_ref = self._E0_src[self._lam[i]]
+                                src_index_ref = self._src_index[self._lam[i]]
 
                                 if self._logparabola:
+                                    beta_index_ref = self._beta_index[self._lam[i]]
+                                    E0_src_ref = self._E0_src[self._lam[i]]
 
                                     # create even more references
                                     # go through all three params
