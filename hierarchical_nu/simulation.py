@@ -610,14 +610,16 @@ class Simulation:
 
                 fit_beta = not Parameter.get_parameter(key_beta).fixed
                 fit_Enorm = not Parameter.get_parameter(key_Enorm).fixed
+                
+                if fit_beta:
+                    sim_inputs["beta_index_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_beta]
+                if fit_Enorm:
+                    sim_inputs["E0_src_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_Enorm]
+                
 
             if fit_index:
                 sim_inputs["src_index_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_index]
-            if fit_beta:
-                sim_inputs["beta_index_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_beta]
-            if fit_Enorm:
-                sim_inputs["E0_src_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_Enorm]
-                
+            
             sim_inputs["src_index"] = [
                 s.flux_model.parameters["index"].value
                 for s in self._sources.point_source
@@ -1113,6 +1115,7 @@ def _get_expected_Nnu_(
                 beta = sim_inputs["beta_index"][i]
                 eps.append(np.exp(interp(np.array([first_param, second_param])))[0])
             else:
+                src_index_grid = sim_inputs
                 eps.append(
                     np.exp(np.interp(src_index[i], src_index_grid, integral_grid[i]))
                 )

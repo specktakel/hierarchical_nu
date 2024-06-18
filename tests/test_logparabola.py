@@ -51,7 +51,7 @@ def simulation_E0(output_directory):
 
     lifetime = {IC86_II: 0.5*u.yr}
 
-    sim = Simulation(sources, IC86_II, lifetime)
+    sim = Simulation(sources, IC86_II, lifetime, n_grid_points=20)
     sim.precomputation()
     sim.generate_stan_code()
     sim.compile_stan_code()
@@ -93,7 +93,7 @@ def simulation_beta(output_directory):
 
     lifetime = {IC86_II: 0.5*u.yr}
 
-    sim = Simulation(sources, IC86_II, lifetime)
+    sim = Simulation(sources, IC86_II, lifetime, n_grid_points=20)
     sim.precomputation()
     sim.generate_stan_code()
     sim.compile_stan_code()
@@ -135,7 +135,7 @@ def simulation_index(output_directory):
 
     lifetime = {IC86_II: 0.5*u.yr}
 
-    sim = Simulation(sources, IC86_II, lifetime)
+    sim = Simulation(sources, IC86_II, lifetime, n_grid_points=20)
     sim.precomputation()
     sim.generate_stan_code()
     sim.compile_stan_code()
