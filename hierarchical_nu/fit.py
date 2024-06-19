@@ -1019,9 +1019,9 @@ class StanFit:
         
     def diagnose(self):
         try:
-            print(fit._fit_output.diagnose().decode("ascii"))
+            print(self._fit_output.diagnose().decode("ascii"))
         except:
-            for item in fit._fit_meta["diagnose"]:
+            for item in self._fit_meta["diagnose"]:
                 print(item.decode("ascii"))
 
     def save_csvfiles(self, directory):
