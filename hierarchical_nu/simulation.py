@@ -1115,7 +1115,7 @@ def _get_expected_Nnu_(
                 beta = sim_inputs["beta_index"][i]
                 eps.append(np.exp(interp(np.array([first_param, second_param])))[0])
             else:
-                src_index_grid = sim_inputs
+                src_index_grid = sim_inputs["src_index_grid"]
                 eps.append(
                     np.exp(np.interp(src_index[i], src_index_grid, integral_grid[i]))
                 )
