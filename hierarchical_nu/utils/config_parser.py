@@ -6,6 +6,7 @@ from hierarchical_nu.priors import (
     LuminosityPrior,
     IndexPrior,
     FluxPrior,
+    EnergyPrior,
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.source.source import Sources, PointSource, SourceFrame, DetectorFrame
@@ -412,11 +413,28 @@ class ConfigParser:
                 sigma = vals.sigma
             elif vals.name == "ParetoPrior":
                 prior = ParetoPrior
+                xmin = vals.xmin
+                alpha = vals.alpha
             else:
                 raise NotImplementedError("Prior type not recognised.")
 
             if p == "src_index":
                 priors.src_index = IndexPrior(prior, mu=mu, sigma=sigma)
+            elif p == "beta_index":
+                priors.beta_index = IndexPrior(prior, mu=mu, sigma=sigma)
+            elif p == "E0_src":
+                if prior == NormalPrior:
+                    priors.E0_src = EnergyPrior(
+                        prior, mu=mu * EnergyPrior.UNITS,
+                        sigma=sigma * EnergyPrior.UNITS
+                    )
+                elif prior == LogNormalPrior:
+                    priors.E0_src = EnergyPrior(
+                        prior, mu=mu * EnergyPrior.UNITS,
+                        sigma=sigma
+                    )
+                else:
+                    raise NotImplementedError("Prior not recognised for E0_src.")
             elif p == "diff_index":
                 priors.diff_index = IndexPrior(prior, mu=mu, sigma=sigma)
             elif p == "L":
@@ -431,6 +449,10 @@ class ConfigParser:
                         prior, mu=mu * LuminosityPrior.UNITS, sigma=sigma
                     )
                 elif prior == ParetoPrior:
+                    priors.luminosity = LuminosityPrior(
+                        prior, xmin=xmin * LuminosityPrior.UNITS, alpha=alpha
+                    )
+                else:
                     raise NotImplementedError("Prior not recognised.")
             elif p == "diff_flux":
                 if prior == NormalPrior:

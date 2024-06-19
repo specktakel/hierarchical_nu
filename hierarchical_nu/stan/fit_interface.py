@@ -1036,7 +1036,7 @@ class StanFitInterface(StanInterface):
                 elif self._fit_beta:
                     beta_mu_def = ForwardVariableDef("beta_index_mu", "real")
                     beta_sigma_def = ForwardVariableDef("beta_index_sigma", "real")
-                if isinstance(self._priors.energy, MemoryError) and self._fit_Enorm:
+                if isinstance(self._priors.E0_src, MultiSourcePrior) and self._fit_Enorm:
                     E0_src_mu_def = ForwardArrayDef("E0_src_mu", "real", self._Ns_str)
                     E0_src_sigma_def = ForwardArrayDef(
                         "E0_src_sigma", "real", self._Ns_str
@@ -2160,7 +2160,7 @@ class StanFitInterface(StanInterface):
                                             self._stan_prior_E0_src_mu[i],
                                             self._stan_prior_E0_src_sigma[i],
                                         ],
-                                        self._priors.energy.name,
+                                        self._priors.E0_src.name,
                                     ),
                                 ]
                             )
@@ -2174,7 +2174,7 @@ class StanFitInterface(StanInterface):
                                         self._stan_prior_E0_src_mu,
                                         self._stan_prior_E0_src_sigma,
                                     ],
-                                    self._priors.energy.name,
+                                    self._priors.E0_src.name,
                                 ),
                             ]
                         )

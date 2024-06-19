@@ -1520,12 +1520,12 @@ class StanFit:
                     ].par_grids["E0_src"]
                     fit_inputs["E0_src_min"] = self._E0_src_par_range[0].to_value(u.GeV)
                     fit_inputs["E0_src_max"] = self._E0_src_par_range[1].to_value(u.GeV)
-                    if self._priors.energy.name == "lognormal":
-                        fit_inputs["E0_src_mu"] = self._priors.energy.mu
-                        fit_inputs["E0_src_sigma"] = self._priors.energy.sigma
-                    elif self._priors.energy.name == "normal":
-                        fit_inputs["E0_src_mu"] = self._priors.energy.mu.to_value(u.GeV)
-                        fit_inputs["E0_src_sigma"] = self._priors.energy.sigma.to_value(
+                    if self._priors.E0_src.name == "lognormal":
+                        fit_inputs["E0_src_mu"] = self._priors.E0_src.mu
+                        fit_inputs["E0_src_sigma"] = self._priors.E0_src.sigma
+                    elif self._priors.E0_src.name == "normal":
+                        fit_inputs["E0_src_mu"] = self._priors.E0_src.mu.to_value(u.GeV)
+                        fit_inputs["E0_src_sigma"] = self._priors.E0_src.sigma.to_value(
                             u.GeV
                         )
                 else:
@@ -1747,6 +1747,7 @@ class StanFit:
         """
 
         if self._sources.point_source:
+            # TODO make similar to spectral parameters, L is not appended to the parameter list of the source
             if self._shared_luminosity:
                 key = "luminosity"
             else:
@@ -1755,22 +1756,13 @@ class StanFit:
             self._lumi_par_range = Parameter.get_parameter(key).par_range
             self._lumi_par_range = self._lumi_par_range.to_value(u.GeV / u.s)
 
-            if self._shared_src_index:
-                key = "src_index"
-                key_beta = "beta_index"
-                key_E0_src = "E0_src"
-            else:
-                key = "%s_src_index" % self._sources.point_source[0].name
-                key_beta = "%s_beta_index" % self._sources.point_source[0].name
-                key_E0_src = "%s_E0_src" % self._sources.point_source[0].name
-
-            self._src_index_par_range = Parameter.get_parameter(key).par_range
+            self._src_index_par_range = self._sources.point_source[0].parameters["index"].par_range
             if isinstance(
                 self._sources.point_source[0].flux_model.spectral_shape,
                 LogParabolaSpectrum,
             ):
-                self._beta_index_par_range = Parameter.get_parameter(key_beta).par_range
-                self._E0_src_par_range = Parameter.get_parameter(key_E0_src).par_range
+                self._beta_index_par_range = self._sources.point_source[0].parameters["beta"].par_range
+                self._E0_src_par_range = self._sources.point_source[0].parameters["norm_energy"].par_range
 
         if self._sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range

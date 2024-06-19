@@ -123,7 +123,13 @@ class SinglePriorConfig:
 @dataclass
 class PriorConfig:
     src_index: SinglePriorConfig = field(
-        default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=2.0, sigma=1.5)
+        default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=2.5, sigma=0.5)
+    )
+    beta_index: SinglePriorConfig = field(
+        default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=0.0, sigma=0.1)
+    )
+    E0_src: SinglePriorConfig = field(
+        default_factory=lambda: SinglePriorConfig(name="LogNormalPrior", mu=1e5, sigma=3.)
     )
     diff_index: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
@@ -138,12 +144,12 @@ class PriorConfig:
 
     diff_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=3e-8, sigma=0.5
+            name="LogNormalPrior", mu=1e-4, sigma=1.0
         )
     )
     atmo_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=0.3, sigma=0.08
+            name="NormalPrior", mu=0.314, sigma=0.08
         )
     )
     energy: SinglePriorConfig = field(

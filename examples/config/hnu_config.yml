@@ -49,6 +49,14 @@ prior_config:
     name: NormalPrior
     mu: 2.0
     sigma: 1.5
+  beta_index:
+    name: NormalPrior
+    mu: 0.0
+    sigma: 0.1
+  E0_src:
+    name: LogNormalPrior
+    mu: 1e5
+    sigma: 3
   diff_index:
     name: NormalPrior
     mu: 2.52
