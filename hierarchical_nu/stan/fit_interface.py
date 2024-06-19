@@ -260,7 +260,6 @@ class StanFitInterface(StanInterface):
                             # create even more references
                             # go through all three params
                             fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
-                            print(fit)
 
                             """
                             logic:
