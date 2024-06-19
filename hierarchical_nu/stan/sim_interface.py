@@ -104,6 +104,7 @@ class StanSimInterface(StanInterface):
 
             self._dm[et] = dm
 
+        self._logparabola = False
         if self._sources.point_source:
             self._logparabola = self._ps_spectrum == LogParabolaSpectrum
             self._fit_index = True
