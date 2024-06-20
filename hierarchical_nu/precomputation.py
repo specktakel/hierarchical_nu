@@ -49,6 +49,7 @@ class ExposureIntegral:
         sources: Sources,
         detector_model: EventType,
         n_grid_points: int = 50,
+        show_progress: bool = False,
     ):
         """
         Handles calculation of the exposure integral.
@@ -59,6 +60,7 @@ class ExposureIntegral:
         :param detector_model: An instance of EventType from the Refrigerator.
         """
 
+        self._show_progress = show_progress
         self._detector_model = detector_model
         self._sources = sources
         self._n_grid_points = n_grid_points
@@ -338,7 +340,7 @@ class ExposureIntegral:
 
         self._integral_fixed_vals = []
 
-        with tqdm(total=self._sources.N) as pbar:
+        with tqdm(total=self._sources.N, disable=not self._show_progress) as pbar:
             for k, source in enumerate(self._sources.sources):
                 pbar.set_description(f"Source {k}")
 
@@ -364,7 +366,7 @@ class ExposureIntegral:
                     [self._n_grid_points] * len(this_par_grids)
                 ) << (u.m**2)
 
-                with tqdm(total=integral_grids_tmp.size) as pbar_parameter:
+                with tqdm(total=integral_grids_tmp.size, disable=not self._show_progress) as pbar_parameter:
                     for i, grid_points in enumerate(product(*this_par_grids)):
                         pbar_parameter.set_description(f"Parameter value {i}")
                         indices = np.unravel_index(i, integral_grids_tmp.shape)
