@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 
 from hierarchical_nu.backend.stan_generator import StanFileGenerator
 from hierarchical_nu.source.parameter import Parameter
-
+from ..source.flux_model import LogParabolaSpectrum
 # To includes
 STAN_PATH = os.path.dirname(__file__)
 
@@ -73,11 +73,16 @@ class StanInterface(object, metaclass=ABCMeta):
             except ValueError:
                 self._shared_luminosity = False
 
-            try:
-                Parameter.get_parameter("src_index")
+
+            src_index = self._sources.point_source[0].parameters["index"]
+            if not src_index.fixed and src_index.name == "src_index":
                 self._shared_src_index = True
-            except ValueError:
-                self._shared_src_index = False
+            elif self._ps_spectrum == LogParabolaSpectrum:
+                beta_index = self._sources.point_source[0].parameters["beta"]
+                if not beta_index.fixed and beta_index.name == "beta_index":
+                    self._shared_src_index = True
+            else:
+                shared_src_index = False
 
         if self.sources.diffuse:
             self._diff_spectrum = self.sources.diffuse_spectrum

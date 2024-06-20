@@ -576,9 +576,9 @@ class StanFitInterface(StanInterface):
                         if self._fit_beta:
                             if not first:
                                 end << end + self._Ns
-                                self._beta_index = ForwardVariableDef(
-                                    "beta_index", "vector[Ns]"
-                                )
+                            self._beta_index = ForwardVariableDef(
+                                "beta_index", "vector[Ns]"
+                            )
                             self._beta_index << glob[start:end]
                             start << start + self._Ns
                         if self._fit_Enorm:
