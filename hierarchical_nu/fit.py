@@ -1418,6 +1418,15 @@ class StanFit:
         fit_inputs["z"] = redshift
         fit_inputs["D"] = D
         fit_inputs["varpi"] = src_pos
+        
+        fit_inputs["Emin"] = Parameter.get_parameter("Emin").value.to_value(u.GeV)
+        fit_inputs["Emax"] = Parameter.get_parameter("Emax").value.to_value(u.GeV)
+        
+        if fit_inputs["Emin"] < 1e2:
+            raise ValueError("Emin is lower than detector minimum energy")
+        # TODO check value for 10yr PS data
+        if fit_inputs["Emax"] > 1e8:
+            raise ValueError("Emax is higher than detector maximum energy")
 
         if self._sources.point_source:
             fit_inputs["Emin_src"] = [
@@ -1436,9 +1445,11 @@ class StanFit:
                 self._sources.point_source[0].flux_model.spectral_shape,
                 LogParabolaSpectrum,
             )
-
-        fit_inputs["Emin"] = Parameter.get_parameter("Emin").value.to_value(u.GeV)
-        fit_inputs["Emax"] = Parameter.get_parameter("Emax").value.to_value(u.GeV)
+            
+            if np.min(fit_inputs["Emin_src"]) < fit_inputs["Emin"]:
+                raise ValueError("Minimum source energy may not be lower than minimum energy overall")
+            if np.max(fit_inputs["Emax_src"]) > fit_inputs["Emax"]:
+                raise ValueError("Maximum source energy may not be higher than maximum energy overall")
 
         if self._sources.diffuse:
             fit_inputs["Emin_diff"] = self._sources.diffuse.frame.transform(
@@ -1449,6 +1460,11 @@ class StanFit:
                 Parameter.get_parameter("Emax_diff").value,
                 self._sources.diffuse.redshift,
             ).to_value(u.GeV)
+            
+            if fit_inputs["Emin_diff"] < fit_inputs["Emin"]:
+                raise ValueError("Minimum diffuse energy may not be lower than minimum energy overall")
+            if fit_inputs["Emax_diff"] > fit_inputs["Emax"]:
+                raise ValueError("Maximum diffuse energy may not be higher than maximum energy overall")
 
         integral_grid = []
         integral_grid_2d = []

@@ -568,6 +568,15 @@ class Simulation:
         obs_time = []
 
         sim_inputs["Ngrid"] = self._n_grid_points
+        
+        sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to_value(u.GeV)
+        sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to_value(u.GeV)
+        
+        if sim_inputs["Emin"] < 1e2:
+            raise ValueError("Emin is lower than detector minimum energy")
+        # TODO check value for 10yr PS data
+        if sim_inputs["Emax"] > 1e8:
+            raise ValueError("Emax is higher than detector maximum energy")
 
         if asimov:
             # Round expected number of events to nearest integer per source
@@ -652,6 +661,11 @@ class Simulation:
                 ).to_value(u.GeV)
                 for ps in self._sources.point_source
             ]
+            
+            if np.min(sim_inputs["Emin_src"]) < sim_inputs["Emin"]:
+                raise ValueError("Minimum source energy may not be lower than minimum energy overall")
+            if np.max(sim_inputs["Emax_src"]) > sim_inputs["Emax"]:
+                raise ValueError("Maximum source energy may not be higher than maximum energy overall")
 
         if self._sources.diffuse:
             # Same as for point sources
@@ -673,9 +687,12 @@ class Simulation:
                 Parameter.get_parameter("Emax_diff").value,
                 self._sources.diffuse.redshift,
             ).to_value(u.GeV)
-
-        sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to_value(u.GeV)
-        sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to_value(u.GeV)
+            
+            if sim_inputs["Emin_diff"] < sim_inputs["Emin"]:
+                raise ValueError("Minimum diffuse energy may not be lower than minimum energy overall")
+            if sim_inputs["Emax_diff"] > sim_inputs["Emax"]:
+                raise ValueError("Maximum diffuse energy may not be higher than maximum energy overall")
+                
 
         for c, event_type in enumerate(self._event_types):
             effective_area = self._exposure_integral[event_type].effective_area
