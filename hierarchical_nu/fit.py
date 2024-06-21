@@ -144,10 +144,16 @@ class StanFit:
                     self._shared_src_index = True
                 elif not beta.fixed:
                     self._shared_src_index = False
-                self._fit_beta = not beta.fixed
-                E0_src = self._sources.point_source[0].parameters["norm_energy"]
-                self._fit_Enorm = not E0_src.fixed
+
             self._fit_index = not index.fixed
+            try:
+                beta = self._sources.point_source[0].parameters["beta"]
+                E0_src = self._sources.point_source[0].parameters["norm_energy"]
+                self._fit_beta = not beta.fixed
+                self._fit_Enorm = not E0_src.fixed
+            except KeyError:
+                self._fit_beta = False
+                self._fit_Enorm = False
         else:
             self._shared_src_index = False
             self._fit_index = False
@@ -1546,8 +1552,6 @@ class StanFit:
 
                     
                 if fit_Enorm:
-                    # beta_index_grid is not present
-                    # means that we are fitting E0
                     fit_inputs["E0_src_grid"] = self._exposure_integral[
                         event_type
                     ].par_grids["E0_src"]
