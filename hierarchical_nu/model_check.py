@@ -133,7 +133,26 @@ class ModelCheck:
                     for _ in range(len(self._sources.point_source))
                 ]
             self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
-
+            try:
+                self.truths["beta_index"] = [Parameter.get_parameter("beta_index").value]
+            except ValueError:
+                try:
+                    self.truths["beta_index"] = [
+                        Parameter.get_parameter(f"ps_{_}_beta_index").value
+                        for _ in range(len(self._sources.point_source))
+                    ]
+                except ValueError:
+                    pass
+            try:
+                self.truths["E0_src"] = [Parameter.get_parameter("E0_src").value.to_value(u.GeV)]
+            except ValueError:
+                try:
+                    self.truths["beta_index"] = [
+                        Parameter.get_parameter(f"ps_{_}_E0_src").value.to_value(u.GeV)
+                        for _ in range(len(self._sources.point_source))
+                    ]
+                except ValueError:
+                    pass
             self.truths["Nex"] = Nex
             self.truths["Nex_src"] = np.sum(
                 Nex_per_comp[0 : len(self._sources.point_source)]
@@ -362,11 +381,19 @@ class ModelCheck:
         fig, ax = plt.subplots(N, figsize=(5, N * 3))
 
         for v, var_name in enumerate(var_names):
+            # Check if var_name exists
+            if var_name not in self.results.keys():
+                continue
+            # Check if entry is empty
+            if not self.results[var_name]:
+                continue
+            print(var_name)
             if (
                 var_name == "L"
                 or var_name == "F_diff"
                 # or var_name == "F_atmo"
                 or var_name == "Fs"
+                or var_name == "E0_src"
             ):
                 log = True
                 bins = np.geomspace(
@@ -502,8 +529,8 @@ class ModelCheck:
                         counts_50_quantile += 1
                 length = len(self.results[var_name]) - mask_results.size
                 text = [
-                    f"fraction in 50% HDI: {counts_hdi / length:.2f}\n"
-                    + f"fraction in 50% central interval: {counts_50_quantile / length:.2f}"
+                    f"fraction in 50\% HDI: {counts_hdi / length:.2f}\n"
+                    + f"fraction in 50\% central interval: {counts_50_quantile / length:.2f}"
                 ]
                 handles = [
                     mpl_patches.Rectangle(
@@ -640,6 +667,7 @@ class ModelCheck:
                 F_atmo_init = 0.3 / u.m**2 / u.s
 
             inits = {
+                #TODO fix
                 "F_diff": 1e-4,
                 "F_atmo": F_atmo_init.to_value(1 / (u.m**2 * u.s)),
                 "E": [1e5] * fit.events.N,
@@ -661,8 +689,10 @@ class ModelCheck:
             outputs["Lambda"].append(lam)
 
             for key in self._default_var_names:
-                outputs[key].append(fit._fit_output.stan_variable(key))
-
+                try:
+                    outputs[key].append(fit._fit_output.stan_variable(key))
+                except ValueError:
+                    pass
             for key in self._diagnostic_names:
                 outputs[key].append(fit._fit_output.method_variables()[key])
 
@@ -687,6 +717,10 @@ class ModelCheck:
                 "_luminosity",
                 "src_index",
                 "_src_index",
+                "beta_index",
+                "_beta_index",
+                "E0_src",
+                "_E0_src",
                 "E[",
                 "Esrc[",
                 "F_atmo",

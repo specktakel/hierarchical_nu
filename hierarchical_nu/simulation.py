@@ -145,6 +145,7 @@ class Simulation:
     def precomputation(
         self,
         exposure_integral: collections.OrderedDict = None,
+        show_progress: bool = False,
     ):
         """
         Run the necessary precomputation
@@ -153,7 +154,10 @@ class Simulation:
         if not exposure_integral:
             for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
-                    self._sources, event_type, self._n_grid_points
+                    self._sources,
+                    event_type,
+                    self._n_grid_points,
+                    show_progress=show_progress,
                 )
 
         else:

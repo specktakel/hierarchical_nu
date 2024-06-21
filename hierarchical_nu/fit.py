@@ -125,34 +125,6 @@ class StanFit:
         logger_code_gen = logging.getLogger("hierarchical_nu.backend.code_generator")
         logger_code_gen.propagate = False
 
-        # For use with plot methods
-        self._def_var_names = []
-
-        if self._sources.point_source:
-            self._def_var_names.append("L")
-            self._def_var_names.append("src_index")
-
-            if isinstance(
-                self._sources.point_source[0].flux_model.spectral_shape,
-                LogParabolaSpectrum,
-            ):
-                self._def_var_names.append("beta_index")
-
-        if self._sources.diffuse:
-            self._def_var_names.append("F_diff")
-            self._def_var_names.append("diff_index")
-
-        if self._sources.atmospheric:
-            self._def_var_names.append("F_atmo")
-
-        if self._sources._point_source and (
-            self._sources.atmospheric or self._sources.diffuse
-        ):
-            self._def_var_names.append("f_arr")
-            self._def_var_names.append("f_det")
-
-        self._exposure_integral = collections.OrderedDict()
-
         # Check for shared luminosity and src_index params
         try:
             Parameter.get_parameter("luminosity")
@@ -172,8 +144,43 @@ class StanFit:
                     self._shared_src_index = True
                 elif not beta.fixed:
                     self._shared_src_index = False
+                self._fit_beta = not beta.fixed
+                E0_src = self._sources.point_source[0].parameters["norm_energy"]
+                self._fit_Enorm = not E0_src.fixed
+            self._fit_index = not index.fixed
         else:
             self._shared_src_index = False
+            self._fit_index = False
+            self._fit_beta = False
+            self._fit_Enorm = False
+
+        # For use with plot methods
+        self._def_var_names = []
+
+        if self._sources.point_source:
+            self._def_var_names.append("L")
+            if self._fit_index:
+                self._def_var_names.append("src_index")
+
+            if self._fit_beta:
+                self._def_var_names.append("beta_index")
+            if self._fit_Enorm:
+                self._def_var_names.append("E0_src")
+
+        if self._sources.diffuse:
+            self._def_var_names.append("F_diff")
+            self._def_var_names.append("diff_index")
+
+        if self._sources.atmospheric:
+            self._def_var_names.append("F_atmo")
+
+        if self._sources._point_source and (
+            self._sources.atmospheric or self._sources.diffuse
+        ):
+            self._def_var_names.append("f_arr")
+            self._def_var_names.append("f_det")
+
+        self._exposure_integral = collections.OrderedDict()
 
     @property
     def priors(self):
@@ -208,11 +215,15 @@ class StanFit:
     def precomputation(
         self,
         exposure_integral: collections.OrderedDict = None,
+        show_progress: bool = False,
     ):
         if not exposure_integral:
             for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
-                    self._sources, event_type, self._n_grid_points
+                    self._sources,
+                    event_type,
+                    self._n_grid_points,
+                    show_progress=show_progress,
                 )
 
         else:
@@ -806,7 +817,7 @@ class StanFit:
 
     def plot_flux_band(
         self,
-        E_power: float = 1.0,
+        E_power: float = 0.0,
         credible_interval: Union[float, List[float]] = 0.5,
         energy_unit = u.TeV,
         area_unit = u.cm**2,
@@ -853,6 +864,9 @@ class StanFit:
             elif logparabola:
                 E0 = inputs["E0_src"]
             F = self._fit_output.stan_variable("F")
+            # Find chains and iterations to calculate if parameter is shared or not
+            iterations = self._fit_output._iter_sampling
+            chains = self._fit_output.chains
 
         else:
             inputs = self._fit_inputs
@@ -868,27 +882,27 @@ class StanFit:
                 E0 = self._fit_output["E0_src"]
             elif logparabola:
                 E0 = inputs["E0_src"]
+            iterations = self._fit_meta["iter_sampling"]
+            chains = self._fit_meta["chains"]
             F = self._fit_output["F"]
+            F = F.reshape((iterations * chains, F.size // (iterations * chains)))
 
         if fit_index:
             shape = alpha.shape
-            N = alpha.size
+            N = alpha.size // (iterations * chains)
         elif fit_beta:
             shape = beta.shape
-            N = beta.size
+            N = beta.size // (iterations * chains)
         elif fit_Enorm:
             shape = E0.shape
-            N = E0.size
-        share_index = len(shape) == 2
+            N = E0.size // (iterations * chains)
 
-        if share_index:
-            N_samples = N
-        else:
-            N_samples = N / len(self._sources.point_source)
+        share_index = N == 1
+        N_samples = iterations * chains
 
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
-                if fit_index: # This will throw an error with PEP
+                if fit_index:
                     index_vals = alpha.flatten()
                 if fit_beta:
                     beta_vals = beta.flatten()
@@ -897,11 +911,11 @@ class StanFit:
 
             else:
                 if fit_index:
-                    index_vals = alpha[:, :, c_ps].flatten()
+                    index_vals = alpha[:, c_ps].flatten()
                 if fit_beta:
-                    beta_vals = beta[:, :, c_ps].flatten()
+                    beta_vals = beta[:, c_ps].flatten()
                 if fit_Enorm:
-                    E0_vals = E0[:, :, c_ps].flatten()
+                    E0_vals = E0[:, c_ps].flatten()
 
             if not fit_index:
                 index_vals = alpha[c_ps]
@@ -915,11 +929,11 @@ class StanFit:
                 E0_vals = E0[c_ps]
                 ps.flux_model.spectral_shape.set_parameter("norm_energy", E0_vals*u.GeV)
 
-            flux_int = F[:, :, c_ps].flatten()
+            flux_int = F[:, c_ps].flatten()
             E = np.geomspace(*ps.flux_model.energy_bounds, 1_000)
 
             flux_grid = np.zeros((E.size, N_samples))
-
+            
             for c in range(N_samples):
                 if fit_index:
                     ps.flux_model.spectral_shape.set_parameter("index", index_vals[c])
@@ -1157,6 +1171,9 @@ class StanFit:
 
         if "beta_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("beta_index")
+
+        if "E0_src_grid" in fit_inputs.keys():
+            fit._def_var_names.append("E0_src")
 
         if "diff_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("F_diff")
