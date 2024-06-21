@@ -387,7 +387,6 @@ class ModelCheck:
             # Check if entry is empty
             if not self.results[var_name]:
                 continue
-            print(var_name)
             if (
                 var_name == "L"
                 or var_name == "F_diff"
