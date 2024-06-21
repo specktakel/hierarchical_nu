@@ -10,7 +10,7 @@ from hierarchical_nu.priors import (
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.source.source import Sources, PointSource, SourceFrame, DetectorFrame
-from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.source.parameter import Parameter, ParScale
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.roi import (
     ROIList,
@@ -97,6 +97,7 @@ class ConfigParser:
                         "E0_src",
                         False,
                         parameter_config["E0_src_range"] * u.GeV,
+                        ParScale.log,
                     )
                 )
             else:
@@ -108,6 +109,7 @@ class ConfigParser:
                             name,
                             not "E0_src" in parameter_config["fit_params"],
                             parameter_config["E0_src_range"] * u.GeV,
+                            ParScale.log
                         )
                     )
 
