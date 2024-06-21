@@ -180,6 +180,27 @@ real interp2d_reduced(int idx_x, real x, real y, array[] real xp, array[] real y
   real val = interpolate_2bins(to_vector(yp[idx_y:idx_yp1]), [y_vals_low, y_vals_high]', y);
   return val;
 }
+real interp2dlog_logy(real x, real y, array[] real xp, array[] real yp, array[,] real fp) {
+  real logy = log(y);
+  int idx_y = binary_search(logy, yp);
+  int idx_yp1 = idx_y + 1;
+  int idx_x = binary_search(x, xp);
+  int idx_xp1 = idx_x + 1;
+  vector[2] x_slice = to_vector(xp[idx_x:idx_xp1]);
+  //safeguard against y values outside the defined range
+  // interpolate will take care of the same issue in x direction
+  if (idx_y == 0) {
+    // return result from lowest slice
+    return interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, 1]), x);
+  }
+  else if (idx_y >= size(yp)) {
+    return interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, size(yp)]), x);
+  }
+  real y_vals_low = interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, idx_y]), x);
+  real y_vals_high = interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, idx_yp1]), x);
+  real val = interpolate_2bins(to_vector(yp[idx_y:idx_yp1]), [y_vals_low, y_vals_high]', logy);
+  return exp(val);
+}
 
 real interp2dlog(real x, real y, array[] real xp, array[] real yp, array[,] real fp) {
   int idx_y = binary_search(y, yp);
