@@ -73,6 +73,7 @@ prior_config:
     name: NormalPrior
     mu: 0.3
     sigma: 0.08
+  frame: source
 roi_config:
   roi_type: CircularROI
   size: 5.0
