@@ -317,7 +317,7 @@ class Simulation:
 
         self.events.to_file(path, append=True)
 
-        return path
+        return path  # noqa: F821
 
     def show_spectrum(
         self, *components: str, scale: str = "linear", population: bool = False

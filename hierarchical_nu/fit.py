@@ -1109,7 +1109,7 @@ class StanFit:
         # Add priors separately
         self.priors.addto(path, "priors")
 
-        return path
+        return path  # noqa: F821
 
     def save_csvfiles(self, directory):
         """
