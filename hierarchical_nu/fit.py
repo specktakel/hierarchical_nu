@@ -825,9 +825,9 @@ class StanFit:
         self,
         E_power: float = 0.0,
         credible_interval: Union[float, List[float]] = 0.5,
-        energy_unit = u.TeV,
-        area_unit = u.cm**2,
-        x_energy_unit = u.GeV
+        energy_unit=u.TeV,
+        area_unit=u.cm**2,
+        x_energy_unit=u.GeV,
     ):
         """
         Plot flux uncertainties.
@@ -933,13 +933,15 @@ class StanFit:
 
             if not fit_Enorm and logparabola:
                 E0_vals = E0[c_ps]
-                ps.flux_model.spectral_shape.set_parameter("norm_energy", E0_vals*u.GeV)
+                ps.flux_model.spectral_shape.set_parameter(
+                    "norm_energy", E0_vals * u.GeV
+                )
 
             flux_int = F[:, c_ps].flatten()
             E = np.geomspace(*ps.flux_model.energy_bounds, 1_000)
 
             flux_grid = np.zeros((E.size, N_samples))
-            
+
             for c in range(N_samples):
                 if fit_index:
                     ps.flux_model.spectral_shape.set_parameter("index", index_vals[c])
@@ -948,16 +950,21 @@ class StanFit:
                     ps.flux_model.spectral_shape.set_parameter("beta", beta_vals[c])
 
                 if fit_Enorm:
-                    ps.flux_model.spectral_shape.set_parameter("norm_energy", E0_vals[c]*u.GeV)
+                    ps.flux_model.spectral_shape.set_parameter(
+                        "norm_energy", E0_vals[c] * u.GeV
+                    )
 
-                flux = ps.flux_model.spectral_shape(E).to_value(
-                    flux_unit
-                )
+                flux = ps.flux_model.spectral_shape(E).to_value(flux_unit)
 
                 # Needs to be in units used by stan
                 int_flux = ps.flux_model.total_flux_int.to_value(1 / u.m**2 / u.s)
 
-                flux_grid[:, c] = flux / int_flux * flux_int[c] * np.power(E.to_value(energy_unit), E_power)
+                flux_grid[:, c] = (
+                    flux
+                    / int_flux
+                    * flux_int[c]
+                    * np.power(E.to_value(energy_unit), E_power)
+                )
 
             self._flux_grid = flux_grid
 
@@ -989,7 +996,9 @@ class StanFit:
         ax.set_yscale("log")
 
         ax.set_xlabel(f"$E$ [{x_energy_unit.to_string('latex_inline')}]")
-        ax.set_ylabel(f"flux [{(energy_unit**E_power * flux_unit).unit.to_string('latex_inline')}]")
+        ax.set_ylabel(
+            f"flux [{(energy_unit**E_power * flux_unit).unit.to_string('latex_inline')}]"
+        )
 
         return fig, ax
 
@@ -1100,10 +1109,12 @@ class StanFit:
         # Add priors separately
         self.priors.addto(path, "priors")
 
+        return path
+
     def save_csvfiles(self, directory):
         """
         Save cmdstanpy csv files
-        :param directory: Directory to save csf files to.
+        :param directory: Directory to save csv files to.
         """
 
         self._fit_output.save_csvfiles(directory)
@@ -1285,9 +1296,9 @@ class StanFit:
 
     def diagnose(self):
         try:
-            print(self._fit_output.diagnose().decode("ascii"))
+            print(self._fit_output.diagnose())
         except AttributeError:
-            print(self._fit_meta["diagnose"].decode("ascii"))
+            print(self._fit_meta["diagnose"])
 
     def check_classification(self, sim_outputs):
         """
@@ -1424,10 +1435,10 @@ class StanFit:
         fit_inputs["z"] = redshift
         fit_inputs["D"] = D
         fit_inputs["varpi"] = src_pos
-        
+
         fit_inputs["Emin"] = Parameter.get_parameter("Emin").value.to_value(u.GeV)
         fit_inputs["Emax"] = Parameter.get_parameter("Emax").value.to_value(u.GeV)
-        
+
         if fit_inputs["Emin"] < 1e2:
             raise ValueError("Emin is lower than detector minimum energy")
         # TODO check value for 10yr PS data
@@ -1451,11 +1462,15 @@ class StanFit:
                 self._sources.point_source[0].flux_model.spectral_shape,
                 LogParabolaSpectrum,
             )
-            
+
             if np.min(fit_inputs["Emin_src"]) < fit_inputs["Emin"]:
-                raise ValueError("Minimum source energy may not be lower than minimum energy overall")
+                raise ValueError(
+                    "Minimum source energy may not be lower than minimum energy overall"
+                )
             if np.max(fit_inputs["Emax_src"]) > fit_inputs["Emax"]:
-                raise ValueError("Maximum source energy may not be higher than maximum energy overall")
+                raise ValueError(
+                    "Maximum source energy may not be higher than maximum energy overall"
+                )
 
         if self._sources.diffuse:
             fit_inputs["Emin_diff"] = self._sources.diffuse.frame.transform(
@@ -1466,11 +1481,15 @@ class StanFit:
                 Parameter.get_parameter("Emax_diff").value,
                 self._sources.diffuse.redshift,
             ).to_value(u.GeV)
-            
+
             if fit_inputs["Emin_diff"] < fit_inputs["Emin"]:
-                raise ValueError("Minimum diffuse energy may not be lower than minimum energy overall")
+                raise ValueError(
+                    "Minimum diffuse energy may not be lower than minimum energy overall"
+                )
             if fit_inputs["Emax_diff"] > fit_inputs["Emax"]:
-                raise ValueError("Maximum diffuse energy may not be higher than maximum energy overall")
+                raise ValueError(
+                    "Maximum diffuse energy may not be higher than maximum energy overall"
+                )
 
         integral_grid = []
         integral_grid_2d = []
@@ -1513,9 +1532,7 @@ class StanFit:
                 fit_Enorm = (
                     key_Enorm in self._exposure_integral[event_type].par_grids.keys()
                 )
-                fit_index = (
-                    key in self._exposure_integral[event_type].par_grids.keys()
-                )
+                fit_index = key in self._exposure_integral[event_type].par_grids.keys()
 
             if fit_index:
                 fit_inputs["src_index_grid"] = self._exposure_integral[
@@ -1526,11 +1543,9 @@ class StanFit:
                 fit_inputs["src_index_max"] = self._src_index_par_range[1]
             else:
                 fit_inputs["src_index"] = [
-                        ps.flux_model.parameters["index"].value
-                        for ps in self._sources.point_source
-                    ]
-
-            
+                    ps.flux_model.parameters["index"].value
+                    for ps in self._sources.point_source
+                ]
 
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
@@ -1550,7 +1565,6 @@ class StanFit:
                         for ps in self._sources.point_source
                     ]
 
-                    
                 if fit_Enorm:
                     fit_inputs["E0_src_grid"] = self._exposure_integral[
                         event_type
@@ -1793,13 +1807,19 @@ class StanFit:
             self._lumi_par_range = Parameter.get_parameter(key).par_range
             self._lumi_par_range = self._lumi_par_range.to_value(u.GeV / u.s)
 
-            self._src_index_par_range = self._sources.point_source[0].parameters["index"].par_range
+            self._src_index_par_range = (
+                self._sources.point_source[0].parameters["index"].par_range
+            )
             if isinstance(
                 self._sources.point_source[0].flux_model.spectral_shape,
                 LogParabolaSpectrum,
             ):
-                self._beta_index_par_range = self._sources.point_source[0].parameters["beta"].par_range
-                self._E0_src_par_range = self._sources.point_source[0].parameters["norm_energy"].par_range
+                self._beta_index_par_range = (
+                    self._sources.point_source[0].parameters["beta"].par_range
+                )
+                self._E0_src_par_range = (
+                    self._sources.point_source[0].parameters["norm_energy"].par_range
+                )
 
         if self._sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range

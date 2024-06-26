@@ -317,6 +317,8 @@ class Simulation:
 
         self.events.to_file(path, append=True)
 
+        return path
+
     def show_spectrum(
         self, *components: str, scale: str = "linear", population: bool = False
     ):
@@ -568,10 +570,10 @@ class Simulation:
         obs_time = []
 
         sim_inputs["Ngrid"] = self._n_grid_points
-        
+
         sim_inputs["Emin"] = Parameter.get_parameter("Emin").value.to_value(u.GeV)
         sim_inputs["Emax"] = Parameter.get_parameter("Emax").value.to_value(u.GeV)
-        
+
         if sim_inputs["Emin"] < 1e2:
             raise ValueError("Emin is lower than detector minimum energy")
         # TODO check value for 10yr PS data
@@ -623,16 +625,21 @@ class Simulation:
 
                 fit_beta = not Parameter.get_parameter(key_beta).fixed
                 fit_Enorm = not Parameter.get_parameter(key_Enorm).fixed
-                
+
                 if fit_beta:
-                    sim_inputs["beta_index_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_beta]
+                    sim_inputs["beta_index_grid"] = self._exposure_integral[
+                        self._event_types[0]
+                    ].par_grids[key_beta]
                 if fit_Enorm:
-                    sim_inputs["E0_src_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_Enorm]
-                
+                    sim_inputs["E0_src_grid"] = self._exposure_integral[
+                        self._event_types[0]
+                    ].par_grids[key_Enorm]
 
             if fit_index:
-                sim_inputs["src_index_grid"] = self._exposure_integral[self._event_types[0]].par_grids[key_index]
-            
+                sim_inputs["src_index_grid"] = self._exposure_integral[
+                    self._event_types[0]
+                ].par_grids[key_index]
+
             sim_inputs["src_index"] = [
                 s.flux_model.parameters["index"].value
                 for s in self._sources.point_source
@@ -661,11 +668,15 @@ class Simulation:
                 ).to_value(u.GeV)
                 for ps in self._sources.point_source
             ]
-            
+
             if np.min(sim_inputs["Emin_src"]) < sim_inputs["Emin"]:
-                raise ValueError("Minimum source energy may not be lower than minimum energy overall")
+                raise ValueError(
+                    "Minimum source energy may not be lower than minimum energy overall"
+                )
             if np.max(sim_inputs["Emax_src"]) > sim_inputs["Emax"]:
-                raise ValueError("Maximum source energy may not be higher than maximum energy overall")
+                raise ValueError(
+                    "Maximum source energy may not be higher than maximum energy overall"
+                )
 
         if self._sources.diffuse:
             # Same as for point sources
@@ -687,12 +698,15 @@ class Simulation:
                 Parameter.get_parameter("Emax_diff").value,
                 self._sources.diffuse.redshift,
             ).to_value(u.GeV)
-            
+
             if sim_inputs["Emin_diff"] < sim_inputs["Emin"]:
-                raise ValueError("Minimum diffuse energy may not be lower than minimum energy overall")
+                raise ValueError(
+                    "Minimum diffuse energy may not be lower than minimum energy overall"
+                )
             if sim_inputs["Emax_diff"] > sim_inputs["Emax"]:
-                raise ValueError("Maximum diffuse energy may not be higher than maximum energy overall")
-                
+                raise ValueError(
+                    "Maximum diffuse energy may not be higher than maximum energy overall"
+                )
 
         for c, event_type in enumerate(self._event_types):
             effective_area = self._exposure_integral[event_type].effective_area
