@@ -133,6 +133,34 @@ class Simulation:
                 + "NorthernTracksDetectorModel instead."
             )
 
+        if self._sources.point_source:
+            index = self._sources.point_source[0].parameters["index"]
+            if not index.fixed and index.name == "src_index":
+                self._shared_src_index = True
+            elif not index.fixed:
+                self._shared_src_index = False
+            else:
+                beta = self._sources.point_source[0].parameters["beta"]
+                if not beta.fixed and beta.name == "beta_index":
+                    self._shared_src_index = True
+                elif not beta.fixed:
+                    self._shared_src_index = False
+
+            self._fit_index = not index.fixed
+            try:
+                beta = self._sources.point_source[0].parameters["beta"]
+                E0_src = self._sources.point_source[0].parameters["norm_energy"]
+                self._fit_beta = not beta.fixed
+                self._fit_Enorm = not E0_src.fixed
+            except KeyError:
+                self._fit_beta = False
+                self._fit_Enorm = False
+        else:
+            self._shared_src_index = False
+            self._fit_index = False
+            self._fit_beta = False
+            self._fit_Enorm = False
+
         # Check for shared luminosity and src_index params
         try:
             Parameter.get_parameter("luminosity")
@@ -617,25 +645,21 @@ class Simulation:
             # hence we check which parameters would be free in a fit.
 
             key_index = self._sources.point_source[0].parameters["index"].name
-            source_name = self._sources.point_source[0].name
-            fit_index = not Parameter.get_parameter(key_index).fixed
+
             if logparabola:
                 key_beta = self._sources.point_source[0].parameters["beta"].name
                 key_Enorm = self._sources.point_source[0].parameters["norm_energy"].name
 
-                fit_beta = not Parameter.get_parameter(key_beta).fixed
-                fit_Enorm = not Parameter.get_parameter(key_Enorm).fixed
-
-                if fit_beta:
+                if self._fit_beta:
                     sim_inputs["beta_index_grid"] = self._exposure_integral[
                         self._event_types[0]
                     ].par_grids[key_beta]
-                if fit_Enorm:
+                if self._fit_Enorm:
                     sim_inputs["E0_src_grid"] = self._exposure_integral[
                         self._event_types[0]
                     ].par_grids[key_Enorm]
 
-            if fit_index:
+            if self._fit_index:
                 sim_inputs["src_index_grid"] = self._exposure_integral[
                     self._event_types[0]
                 ].par_grids[key_index]

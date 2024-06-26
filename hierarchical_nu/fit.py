@@ -1726,6 +1726,9 @@ class StanFit:
                             for logE in ereco_indexed[
                                 (et.S == self.events.types) & (dec_idx == c_d)
                             ]
+                            # for logE in log_energies[
+                            #    (et.S == self.events.types) & (dec_idx == c_d)
+                            # ]
                         ]
                     )
                 except ValueError as e:

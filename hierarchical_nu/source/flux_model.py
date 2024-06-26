@@ -17,7 +17,6 @@ from ..backend.operations import FunctionCall
 from ..backend.variable_definitions import (
     ForwardVariableDef,
     InstantVariableDef,
-    ForwardArrayDef,
 )
 from ..backend.expression import StringExpression, ReturnStatement
 

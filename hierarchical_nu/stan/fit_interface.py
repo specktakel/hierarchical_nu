@@ -285,36 +285,38 @@ class StanFitInterface(StanInterface):
                             else:
                                 refs = [src_index_ref, beta_index_ref, E0_src_ref]
 
-                            first = True
+                            first_param = True
+                            first_data = True
+                            theta = ["{"]
+                            data = ["{"]
                             for f, r in zip(fit, refs):
-                                if f and first:
-                                    first_param = r
-                                    first = False
-                                elif f:
-                                    second_param = r
+                                if f:
+                                    if not first_param:
+                                        theta.append(",")
+                                    theta.append(r)
+                                    first_param = False
                                 else:
+                                    if not first_data:
+                                        data.append(",")
                                     # put the leftovers in the fridge, please
-                                    leftover = r
+                                    data.append(r)
+                                    first_data = False
+                            theta.append("}")
 
-                            theta = StringExpression(
-                                ["{", first_param, ",", second_param, "}"]
-                            )
+                            theta = StringExpression(theta)
                             try:
                                 # If this works, we are coming from lp_reduce
                                 # use self._x_r_idxs to get k-th entry of Emin/max_src, E0
                                 # should work the same for fitting E0
                                 # because we substitute the same number of entries in real data
-                                x_r = StringExpression(
-                                    [
-                                        "real_data[{",
-                                        self._x_r_idxs[1] + k - 1,
-                                        ",",
-                                        self._x_r_idxs[2] + k - 1,
-                                        ",",
-                                        self._x_r_idxs[3] + k - 1,
-                                        "}]",
-                                    ]
-                                )
+                                x_r = ["real_data[{"]
+                                for i in range(1, self._x_r_len + 1):
+                                    x_r.append(self._x_r_idxs[i] + k - 1)
+                                    if i < self._x_r_len:
+                                        x_r.append(",")
+                                x_r.append("}]")
+                                x_r = StringExpression(x_r)
+
                                 """
                                 x_r = StringExpression(
                                     ["real_data[", self._x_r_idxs, "]"]
@@ -323,17 +325,14 @@ class StanFitInterface(StanInterface):
                                 del self._x_r_idxs
                             except AttributeError:
                                 # Otherwise single thread or generated quantities
-                                x_r = StringExpression(
-                                    [
-                                        "{",
-                                        leftover,
-                                        ",",
-                                        self._Emin_src[k],
-                                        ",",
-                                        self._Emax_src[k],
-                                        "}",
-                                    ]
-                                )
+                                data += [
+                                    ",",
+                                    self._Emin_src[k],
+                                    ",",
+                                    self._Emax_src[k],
+                                    "}",
+                                ]
+                                x_r = StringExpression(data)
                             x_i = StringExpression(
                                 [
                                     "{",
@@ -1036,7 +1035,10 @@ class StanFitInterface(StanInterface):
                 elif self._fit_beta:
                     beta_mu_def = ForwardVariableDef("beta_index_mu", "real")
                     beta_sigma_def = ForwardVariableDef("beta_index_sigma", "real")
-                if isinstance(self._priors.E0_src, MultiSourcePrior) and self._fit_Enorm:
+                if (
+                    isinstance(self._priors.E0_src, MultiSourcePrior)
+                    and self._fit_Enorm
+                ):
                     E0_src_mu_def = ForwardArrayDef("E0_src_mu", "real", self._Ns_str)
                     E0_src_sigma_def = ForwardArrayDef(
                         "E0_src_sigma", "real", self._Ns_str

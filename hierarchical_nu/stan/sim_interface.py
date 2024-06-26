@@ -69,7 +69,7 @@ class StanSimInterface(StanInterface):
         atmospheric flux
         :param includes: List of names of stan files to include into the
         functions block of the generated file
-        :param N: dict with keys "tracks" and/or "cascades". Value needs to be a list of length `len(sources)`
+        :param N: dict with keys being python string of DetectorModel. Value needs to be a list of length `len(sources)`
         """
 
         super().__init__(
@@ -236,9 +236,7 @@ class StanSimInterface(StanInterface):
             if self.sources.point_source:
                 self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
                 if self._logparabola:
-                    self._beta_index = ForwardVariableDef(
-                        "beta_index", "vector[Ns]"
-                    )
+                    self._beta_index = ForwardVariableDef("beta_index", "vector[Ns]")
                     self._E0_src = ForwardVariableDef("E0_src", "vector[Ns]")
 
                 if self._fit_index:
@@ -398,12 +396,12 @@ class StanSimInterface(StanInterface):
                 self._et_stan[idx] << et.S
                 idx += 1
 
-            # Relative exposure weights of sources for tracks
+            # Relative exposure weights of sources
             self._w_exposure = ForwardArrayDef(
                 "w_exposure", "simplex" + N_tot, ["[", self._Net, "]"]
             )
 
-            # Exposure of sources for tracks
+            # Exposure of sources
             self._eps = ForwardArrayDef("eps", "vector" + N_tot, ["[", self._Net, "]"])
 
             # Expected number of events for tracks
