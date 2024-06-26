@@ -266,7 +266,7 @@ class PowerLawSpectrum(SpectralShape):
         lower_energy: u.GeV = 1e2 * u.GeV,
         upper_energy: u.GeV = np.inf * u.GeV,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """
         Power law flux models.
@@ -589,7 +589,7 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
         lower_energy: u.GeV = 1e2 * u.GeV,
         upper_energy: u.GeV = np.inf * u.GeV,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """
         Power law flux models.
@@ -681,7 +681,7 @@ class LogParabolaSpectrum(SpectralShape):
         lower_energy: u.GeV = 1e2 * u.GeV,
         upper_energy: u.GeV = np.inf * u.GeV,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """
         Power law flux models.
@@ -891,19 +891,22 @@ class LogParabolaSpectrum(SpectralShape):
         )
         with lp:
             x = StringExpression(["x"])
+            c_f = 1
+            c_d = 1
             if fit_index:
-                a = InstantVariableDef("a", "real", ["theta[1]"])
+                a = InstantVariableDef("a", "real", [f"theta[{c_f}]"])
+                c_f += 1
             else:
-                a = InstantVariableDef("a", "real", ["x_r[1]"])
+                a = InstantVariableDef("a", "real", [f"x_r[{c_d}]"])
+                c_d += 1
 
-            if fit_index and fit_beta:
-                b = InstantVariableDef("b", "real", ["theta[2]"])
-            elif fit_beta:
-                b = InstantVariableDef("b", "real", ["theta[1]"])
-            elif not fit_beta and fit_index:
-                b = InstantVariableDef("b", "real", ["x_r[1]"])
-            elif not fit_beta:
-                b = InstantVariableDef("b", "real", ["x_r[2]"])
+            if fit_beta:
+                b = InstantVariableDef("b", "real", [f"theta[{c_f}]"])
+                c_f += 1
+            else:
+                b = InstantVariableDef("b", "real", [f"x_r[{c_d}]"])
+                c_d += 1
+
             ReturnStatement(
                 [FunctionCall([(1.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
             )
@@ -916,19 +919,22 @@ class LogParabolaSpectrum(SpectralShape):
         )
         with lp:
             x = StringExpression(["x"])
+            c_f = 1
+            c_d = 1
             if fit_index:
-                a = InstantVariableDef("a", "real", ["theta[1]"])
+                a = InstantVariableDef("a", "real", [f"theta[{c_f}]"])
+                c_f += 1
             else:
-                a = InstantVariableDef("a", "real", ["x_r[1]"])
+                a = InstantVariableDef("a", "real", [f"x_r[{c_d}]"])
+                c_d += 1
 
-            if fit_index and fit_beta:
-                b = InstantVariableDef("b", "real", ["theta[2]"])
-            elif fit_beta:
-                b = InstantVariableDef("b", "real", ["theta[1]"])
-            elif not fit_beta and fit_index:
-                b = InstantVariableDef("b", "real", ["x_r[1]"])
-            elif not fit_beta:
-                b = InstantVariableDef("b", "real", ["x_r[2]"])
+            if fit_beta:
+                b = InstantVariableDef("b", "real", [f"theta[{c_f}]"])
+                c_f += 1
+            else:
+                b = InstantVariableDef("b", "real", [f"x_r[{c_d}]"])
+                c_d += 1
+
             ReturnStatement(
                 [FunctionCall([(2.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
             )
@@ -953,29 +959,32 @@ class LogParabolaSpectrum(SpectralShape):
             theta = StringExpression(["theta"])
 
             # Unpack variables
+            c_f = 1
+            c_d = 1
             if fit_index:
-                a = InstantVariableDef("a", "real", ["theta[1]"])
+                a = InstantVariableDef("a", "real", [f"theta[{c_f}]"])
+                c_f += 1
             else:
-                a = InstantVariableDef("a", "real", ["x_r[1]"])
+                a = InstantVariableDef("a", "real", [f"x_r[{c_d}]"])
+                c_d += 1
 
-            if fit_index and fit_beta:
-                b = InstantVariableDef("b", "real", ["theta[2]"])
-                E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
-            elif not fit_index and fit_beta:
-                b = InstantVariableDef("b", "real", ["theta[1]"])
-                E0 = InstantVariableDef("E0", "real", ["theta[2]"])
-            elif not fit_beta and fit_index:
-                b = InstantVariableDef("b", "real", ["x_r[1]"])
-                E0 = InstantVariableDef("E0", "real", ["theta[2]"])
-            elif not fit_beta:
-                b = InstantVariableDef("b", "real", ["x_r[2]"])
-                E0 = InstantVariableDef("E0", "real", ["x_r[3]"])
-                e_low = InstantVariableDef("e_low", "real", ["x_r[4]"])
-                e_up = InstantVariableDef("e_up", "real", ["x_r[5]"])
+            if fit_beta:
+                b = InstantVariableDef("b", "real", [f"theta[{c_f}]"])
+                c_f += 1
+            else:
+                b = InstantVariableDef("b", "real", [f"x_r[{c_d}]"])
+                c_d += 1
 
-            if any([fit_index, fit_beta, fit_Enorm]):
-                e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
-                e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
+            if fit_Enorm:
+                E0 = InstantVariableDef("E0", "real", [f"theta[{c_f}]"])
+                c_f += 1
+            else:
+                E0 = InstantVariableDef("E0", "real", [f"x_r[{c_d}]"])
+                c_d += 1
+
+            e_low = InstantVariableDef("e_low", "real", [f"x_r[{c_d}]"])
+            c_d += 1
+            e_up = InstantVariableDef("e_up", "real", [f"x_r[{c_d}]"])
 
             E = StringExpression(["E"])
 
@@ -1020,10 +1029,7 @@ class LogParabolaSpectrum(SpectralShape):
         fit_beta: bool,
         fit_Enorm: bool,
     ) -> UserDefinedFunction:
-        """
-        If fit_beta==True, signature is theta=[alpha, beta], x_r=[E0, Emin, Emax]
-        else theta=[alpha, E0], x_r=[beta, Emin, Emax]
-        """
+
         func = UserDefinedFunction(
             f_name,
             ["theta", "x_r", "x_i"],
@@ -1035,23 +1041,32 @@ class LogParabolaSpectrum(SpectralShape):
             theta = StringExpression(["theta"])
 
             # Unpack variables
-            if fit_index and fit_beta:
-                E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
-            elif not fit_index and fit_beta:
-                E0 = InstantVariableDef("E0", "real", ["theta[2]"])
-            elif not fit_beta and fit_index:
-                E0 = InstantVariableDef("E0", "real", ["theta[2]"])
-
-            if not any([fit_index, fit_beta, fit_Enorm]):
-                # Everything is data and we are doing a simulation
-                a = InstantVariableDef("a", "real", ["x_r[1]"])
-                b = InstantVariableDef("b", "real", ["x_r[2]"])
-                E0 = InstantVariableDef("E0", "real", ["x_r[3]"])
-                e_low = InstantVariableDef("e_low", "real", ["x_r[4]"])
-                e_up = InstantVariableDef("e_up", "real", ["x_r[5]"])
+            c_f = 1
+            c_d = 1
+            if fit_index:
+                a = InstantVariableDef("a", "real", [f"theta[{c_f}]"])
+                c_f += 1
             else:
-                e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
-                e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
+                a = InstantVariableDef("a", "real", [f"x_r[{c_d}]"])
+                c_d += 1
+
+            if fit_beta:
+                b = InstantVariableDef("b", "real", [f"theta[{c_f}]"])
+                c_f += 1
+            else:
+                b = InstantVariableDef("b", "real", [f"x_r[{c_d}]"])
+                c_d += 1
+
+            if fit_Enorm:
+                E0 = InstantVariableDef("E0", "real", [f"theta[{c_f}]"])
+                c_f += 1
+            else:
+                E0 = InstantVariableDef("E0", "real", [f"x_r[{c_d}]"])
+                c_d += 1
+
+            e_low = InstantVariableDef("e_low", "real", [f"x_r[{c_d}]"])
+            c_d += 1
+            e_up = InstantVariableDef("e_up", "real", [f"x_r[{c_d}]"])
 
             f1 = ForwardVariableDef("f1", "real")
             f2 = ForwardVariableDef("f2", "real")
