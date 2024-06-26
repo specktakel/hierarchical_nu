@@ -6,7 +6,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.1
+      jupytext_version: 1.15.2
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -28,7 +28,8 @@ from astropy.coordinates import SkyCoord
 
 ```python
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.source import Sources, PointSource
+from hierarchical_nu.source.source import Sources, PointSource, DetectorFrame
+from hierarchical_nu.detector.input import mceq
 ```
 
 First set up the high-level parameters. The parameters defined here are singletons that can be accessed throught the program. The `src_index` and `diff_index` refer to the power law spectral index of the point sources and diffuse background. Currently, all sources share the same index, and the background can also be the same or defined separately. `L` and `F_diff` are used to set the normalisation of the point source and diffuse background spectra, defined at `Enorm`. `Emin` and `Emax` bound the source power law spectra for all sources, and define the energy band over which `L` is calculated. 
@@ -46,8 +47,8 @@ z = 0.3365
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(1E2 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
-Emin_src = Parameter(Emin.value * (1 + z), "Emin_src", fixed=True)
-Emax_src = Parameter(Emax.value * (1 + z), "Emax_src", fixed=True)
+Emin_src = Parameter(Emin.value, "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value, "Emax_src", fixed=True)
 Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
 Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 ```
@@ -64,14 +65,18 @@ Emin_det = Parameter(3e2 * u.GeV, "Emin_det", fixed=True)
 
 Next, we use these high-level parameters to define sources. This can be done for either individual sources, or a list loaded from a file. For now we just work with a single point source. There are functions to add the different background components.
 
+Source minimum and maximum energy can be defined in either detector or source frame. We can tell the method which frame we assumed by passing the appropriate frame to `make_twicebroken_powerlaw_source`.
+
+The atmospheric spectrum can be generated on the fly by not passing any argument to `add_atmospheric_component`. This will call mceq to generate the needed spectra and takes time and uses multithreading through `joblib`. Else we can use the pre-computed files added to the package.
+
 ```python
 # Single PS for testing and usual components
 ra = np.pi * u.rad
 dec = np.deg2rad(5) * u.rad
 width = np.deg2rad(8) * u.rad
 source = SkyCoord(ra=ra, dec=dec, frame="icrs")
-point_source = PointSource.make_powerlaw_source(
-    "test", dec, ra, L, src_index, z, Emin_src, Emax_src
+point_source = PointSource.make_twicebroken_powerlaw_source(
+    "test", dec, ra, L, src_index, z, Emin_src, Emax_src, DetectorFrame,
 )
 
 my_sources = Sources()
@@ -79,7 +84,7 @@ my_sources.add(point_source)
 
 # auto diffuse component 
 my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff) 
-my_sources.add_atmospheric_component() # auto atmo component
+my_sources.add_atmospheric_component(cache_dir=mceq) # auto atmo component
 ```
 
 ```python
@@ -94,25 +99,23 @@ my_sources.f_arr_astro() # As above, excluding atmo
 
 ```python
 from hierarchical_nu.simulation import Simulation
-from hierarchical_nu.detector.icecube import NT, CAS, IC86_II
+from hierarchical_nu.detector.icecube import IC86_II
 ```
 
-In order to go from sources to a simulation, we need to specify an observation time and a detector model. The detector model defines the effective area, energy resolution and angular resolution to be simulated. The currently implemented options are `NorthernTracksDetectorModel`, `CascadesDetectorModel`, `IC40`, `IC59`, `IC79`, `IC86_I` and `IC86_II`. The models should be used in conjunction with the correct `Edet_min`, as described above. If a parameter named `Edet_min` is on the stack it takes precedence over any detector model specific parameter, that is to say, those are disregarded. If detector model specific thresholds are used, they need to be defined for each used detector model.
+In order to go from sources to a simulation, we need to specify an observation time and a detector model. The detector model defines the effective area, energy resolution and angular resolution to be simulated. The currently implemented options are `IC40`, `IC59`, `IC79`, `IC86_I` and `IC86_II` and any combination thereof. The models should be used in conjunction with the correct `Edet_min`, as described above. If a parameter named `Edet_min` is on the stack it takes precedence over any detector model specific parameter, that is to say, those are disregarded. If detector model specific thresholds are used, they need to be defined for each used detector model.
 
 ```python
 obs_time = 1 * u.day
-#sim = Simulation(my_sources, CAS, {CAS: obs_time})
-sim = Simulation(my_sources, NT, {NT: obs_time})
-#sim = Simulation(my_sources, IC86_II, {obs_time})
+sim = Simulation(my_sources, [IC86_II], {IC86_II: obs_time})
 ```
 
 Below are shown all the necessary steps to set up and run a simulation for clarity. There is also the handy sim.setup_and_run() option which calls everything.
 
 
-Before starting, however, a region of interest needs to be defined in which fits and simulations are carried out. There are three options, `FullSkyROI`, `RectangularROI` and `CircularROI`, accepting different kinds of arguments. In addition to spatial restriction the ROI accepts keyworded arguments `MJD_min` and `MJD_max`, which restrict further data selection when loading experimental data. On simulations and fits to simulated data they have no effect.
+Before starting, however, a region of interest needs to be defined in which fits and simulations are carried out. There are three options, `FullSkyROI`, `RectangularROI` and `CircularROI`, accepting different kinds of arguments. In addition to spatial restriction the ROI accepts keyworded arguments `MJD_min` and `MJD_max`, which restrict further data selection when loading experimental data. On simulations and fits to simulated data they have the effect of possibly preventing events from being loaded. A warning will appear if no events are loaded.
 
 ```python
-from hierarchical_nu.utils.roi import FullSkyROI, CircularROI, RectangularROI
+from hierarchical_nu.utils.roi import FullSkyROI, CircularROI, RectangularROI, ROIList
 ```
 
 ```python
@@ -120,6 +123,10 @@ roi = FullSkyROI()
 #roi = CircularROI(source, radius=5*u.deg)
 #roi = RectangularROI(RA_min=ra-width, RA_max=ra+width, DEC_min=dec-width, DEC_max=dec+width)
 ```
+
+Precomputation is required to reduce the load put on stan, especially during fits. We can pass a kwarg `show_progress=True` to display progress on computation. Further, a result of precomputation may be passed as `exposure_integral` e.g. to the consecutive fit to a simulation.
+
+Runtime is mostly determined by the size of the ROI if diffuse spectra are included. May take a couple of minutes.
 
 ```python
 sim.precomputation()
@@ -139,7 +146,7 @@ sim.run(verbose=True, seed=42)
 sim.save("output/test_sim_file.h5", overwrite=True)
 ```
 
-For already compiled models that should be re-loaded there is a special method `sim.setup_stan_sim(".stan_files/sim_code")` which takes the filename of the compiled model as sole argument. Source selection should macht up with the compiled model, otherwise cmdstanpy will complain. The `save` method (also the one of the fit) has a keyword `overwrite` which may be set to `True`. Otherwise, if a file of the specified name already exsists, a time stamp is appended to the file name prior to saving.
+For already compiled models that should be re-loaded there is a special method `sim.setup_stan_sim()`. Source selection should match the compiled model, otherwise cmdstanpy will complain. The `save` method (also the one of the fit) has a keyword `overwrite` which may be set to `True`. Otherwise, if a file of the specified name already exsists, a time stamp is appended to the file name prior to saving.
 
 
 We can visualise the simulation results to check that nothing weird is happening. For the default settings in this notebook, you should see around ~55 simulated events with a clear source in the centre of the sky. The source events are shown in red, diffuse background in blue at atmospheric events in green. The size of the event circles reflects their angular uncertainty (for track events this is exaggerated to make them visible).
@@ -161,7 +168,7 @@ from hierarchical_nu.fit import StanFit
 from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, LuminosityPrior, IndexPrior, FluxPrior
 ```
 
-We can start setting up the fit by loading the events from the output of our simulation. This file only contains the information we would have in a realistic data scenario (energies, directions, uncertainties, event types). We also need to specify the observation time and detector model for the fit, as for the simulation. Please make sure you are using the same ones in both for sensible results!
+We can start setting up the fit by loading the events from the output of our simulation. This file only contains the information we would have in a realistic data scenario (energies, directions, uncertainties, event types). We also need to specify the observation time and detector model for the fit, as for the simulation.
 
 ```python
 events = Events.from_file("output/test_sim_file.h5")
@@ -182,9 +189,7 @@ priors.diffuse_flux = FluxPrior(LogNormalPrior, mu=diffuse_flux, sigma=0.1)
 ```
 
 ```python
-#fit = StanFit(my_sources, CAS, events, obs_time, priors=priors)
-fit = StanFit(my_sources, NT, events, {NT: obs_time}, priors=priors, nshards=25)
-#fit = StanFit(my_sources, IC86_II, events, obs_time, priors=priors, nshards=144)
+fit = StanFit(my_sources, [IC86_II], events, {IC86_II: obs_time}, priors=priors, nshards=40)
 ```
 
 The kwarg `nshards` accepts integer numbers. Any number greater than 1 will cause the model to be compiled with multithreading. This leads to a different model code, where the data is split up in shards. For each shard one thread is used to calculate the loglikelihood, which in the end is summed up and added to stan's `target`. Using `nshards=1` or not specifying it at all will compile a 'normal' model code without multithreading.
@@ -195,24 +200,41 @@ The same `StanFit` object can be re-used for running multiple fits with differen
  - the background model components
  - the entire detector model
  - multithreading
+ - parameters are changed from real to vector and vice versa
  
 is changed. When changing `Emin_det` a call of `fit.precomputation()` will be neccessary.
 
 
-Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting). This takes forever on one core and still much too long on 20 cores.
+Similar to the simulation, here are the steps to set up and run a fit. There is also a `fit.setup_and_run()` method available for tidier code. Here, lets run the fit for 2000 samples on a single chain (default setting).
+Realistic estimates on runtime: On the order of 20 to 40 events are still feasible to run on a single thread. The TXS archival flare (0.5 years duration) in a 5 degree circular ROI includes ~230 events and can be fit using 40 threads within 3 to 10 minutes. The entire detector campaign can include up to 3000 events in the same ROI, using 144 threads this may take up to 2 hours.
 
 Sometimes the MCMC needs a little help getting started, for this we can set `inits={"L": 1e50, "src_index": 2.3}` and other model parameters in `fit.run()` with a value to start from.
 
 ```python
-fit.precomputation()
+fit.precomputation(sim._exposure_integral)
 fit.generate_stan_code()
 fit.compile_stan_code()
-fit.run(show_progress=True, seed=42, inits={"L": 1e50, "src_index": 2.2, "diff_index": 2.2, "F_atmo": 1e-1, "F_diff": 1e-4})
+fit.run(
+    show_progress=True,
+    seed=42,
+    inits={
+        "L": 1e50,
+        "src_index": 2.2,
+        "diff_index": 2.2,
+        "F_atmo": 1e-1,
+        "F_diff": 1e-4,
+        "E": [1e5] * fit.events.N
+    }
+)
 # fit.setup_stan_fit(".stan_files/model_code")   # will re-load compiled model
 ```
 
 ```python
 print(fit._fit_output.diagnose())
+```
+
+```python
+fit._fit_output.diagnose()
 ```
 
 Some methods are included for basic plots, but the `fit._fit_output` is a `CmdStanMCMC` object that can be passed to `arviz` for fancier options.
@@ -221,10 +243,16 @@ Some methods are included for basic plots, but the `fit._fit_output` is a `CmdSt
 axs = fit.plot_trace()
 ```
 
-We can also overplot the used priors (if there are priors available for the variables) by calling a different method. Both return a list of axes.
+We can also overplot the used priors (if there are priors available for the variables) by calling a different method. Both return a tuple `(fig, axs)`.
 
 ```python
-axs = fit.plot_trace_and_priors()
+fig, axs = fit.plot_trace_and_priors()
+```
+
+Plotting energy posteriors together with a projection of the ROI is implemented. In this particular case it is rather useless, because within the vicinity of the source there are only point source events, which subsequently are all attributed to the point source component. The colorbar represents the association probability of events to a selected source component.
+
+```python
+fit.plot_energy_and_roi()
 ```
 
 ```python
