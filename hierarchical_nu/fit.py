@@ -133,25 +133,30 @@ class StanFit:
             self._shared_luminosity = False
 
         if self._sources.point_source:
+            self._logparabola = False
             index = self._sources.point_source[0].parameters["index"]
             if not index.fixed and index.name == "src_index":
                 self._shared_src_index = True
             elif not index.fixed:
                 self._shared_src_index = False
-            else:
+            elif self._sources.point_source_spectrum == LogParabolaSpectrum:
+                self._logparabola = True
                 beta = self._sources.point_source[0].parameters["beta"]
+                E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 if not beta.fixed and beta.name == "beta_index":
                     self._shared_src_index = True
-                elif not beta.fixed:
+                elif not E0_src.fixed and E0_src.name == "E0_src":
+                    self._shared_src_index = True
+                else:
                     self._shared_src_index = False
 
             self._fit_index = not index.fixed
-            try:
+            if self._logparabola:
                 beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 self._fit_beta = not beta.fixed
                 self._fit_Enorm = not E0_src.fixed
-            except KeyError:
+            else:
                 self._fit_beta = False
                 self._fit_Enorm = False
         else:
@@ -1507,10 +1512,6 @@ class StanFit:
             )
 
         if self._sources.point_source:
-            # Set the default case of (twice broken) power law
-            fit_index = True
-            fit_beta = False
-            fit_Enorm = False
             # Check for shared source index
             if self._shared_src_index:
                 key = "src_index"
@@ -1522,19 +1523,11 @@ class StanFit:
             # src_index_grid is identical for all point sources
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
-                if logparabola:
+                if self._logparabola:
                     key_beta = "%s_beta_index" % self._sources.point_source[0].name
                     key_Enorm = "%s_E0_src" % self._sources.point_source[0].name
-            if logparabola:
-                fit_beta = (
-                    key_beta in self._exposure_integral[event_type].par_grids.keys()
-                )
-                fit_Enorm = (
-                    key_Enorm in self._exposure_integral[event_type].par_grids.keys()
-                )
-                fit_index = key in self._exposure_integral[event_type].par_grids.keys()
 
-            if fit_index:
+            if self._fit_index:
                 fit_inputs["src_index_grid"] = self._exposure_integral[
                     event_type
                 ].par_grids[key]
@@ -1550,8 +1543,8 @@ class StanFit:
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
 
-            if logparabola:
-                if fit_beta:
+            if self._logparabola:
+                if self._fit_beta:
                     fit_inputs["beta_index_grid"] = self._exposure_integral[
                         event_type
                     ].par_grids[key_beta]
@@ -1565,10 +1558,10 @@ class StanFit:
                         for ps in self._sources.point_source
                     ]
 
-                if fit_Enorm:
+                if self._fit_Enorm:
                     fit_inputs["E0_src_grid"] = self._exposure_integral[
                         event_type
-                    ].par_grids["E0_src"]
+                    ].par_grids[key_Enorm]
                     fit_inputs["E0_src_min"] = self._E0_src_par_range[0].to_value(u.GeV)
                     fit_inputs["E0_src_max"] = self._E0_src_par_range[1].to_value(u.GeV)
                     if self._priors.E0_src.name == "lognormal":
@@ -1687,7 +1680,7 @@ class StanFit:
                 )
                 - 1
             )
-        # log_energies = np.log10(self.events.energies.to_value(u.GeV))
+        log_energies = np.log10(self.events.energies.to_value(u.GeV))
 
         idxs = (
             np.digitize(
@@ -1723,12 +1716,12 @@ class StanFit:
                                 ].energy_resolution._log_tE_grid,
                                 grid=False,
                             )
-                            for logE in ereco_indexed[
-                                (et.S == self.events.types) & (dec_idx == c_d)
-                            ]
-                            # for logE in log_energies[
+                            # for logE in ereco_indexed[
                             #    (et.S == self.events.types) & (dec_idx == c_d)
                             # ]
+                            for logE in log_energies[
+                                (et.S == self.events.types) & (dec_idx == c_d)
+                            ]
                         ]
                     )
                 except ValueError as e:
