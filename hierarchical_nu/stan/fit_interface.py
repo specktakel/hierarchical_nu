@@ -239,13 +239,11 @@ class StanFitInterface(StanInterface):
 
                             # create even more references
                             # go through all three params
-                            fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
-
-                            refs = [self._src_index, self._beta_index, self._E0_src]
+                            self._refs = [self._src_index, self._beta_index, self._E0_src]
 
                             first_param = True
                             theta = ["{"]
-                            for f, r in zip(fit, refs):
+                            for f, r in zip(self._fit, self._refs):
                                 if f:
                                     if not first_param:
                                         theta.append(",")
@@ -283,7 +281,7 @@ class StanFitInterface(StanInterface):
                                 print(e)
                                 data = ["{"]
                                 first_data = True
-                                for f, r in zip(fit, refs):
+                                for f, r in zip(self._fit, self._refs):
                                     if not f:
                                         if not first_data:
                                             data.append(",")

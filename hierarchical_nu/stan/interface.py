@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 
 from hierarchical_nu.backend.stan_generator import StanFileGenerator
 from hierarchical_nu.source.parameter import Parameter
-from ..source.flux_model import LogParabolaSpectrum
+from ..source.flux_model import LogParabolaSpectrum, PowerLawSpectrum
 
 # To includes
 STAN_PATH = os.path.dirname(__file__)
@@ -66,6 +66,11 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._logparabola = False
 
+        self._powerlaw = True
+
+        # from __future__ import...
+        self._pgamma = False
+
         self._fit_index = False
         self._fit_beta = False
         self._fit_Enorm = False
@@ -74,6 +79,7 @@ class StanInterface(object, metaclass=ABCMeta):
             self._ps_spectrum = self.sources.point_source_spectrum
             self._ps_frame = self.sources.point_source_frame
             self._logparabola = self._ps_spectrum == LogParabolaSpectrum
+            self._powerlaw = self._ps_spectrum == PowerLawSpectrum
 
             try:
                 Parameter.get_parameter("luminosity")
@@ -121,6 +127,8 @@ class StanInterface(object, metaclass=ABCMeta):
                     int(self._fit_beta) + int(self._fit_index) + int(self._fit_Enorm)
                     <= 2
                 )
+
+        self._fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
 
         if self.sources.diffuse:
             self._diff_spectrum = self.sources.diffuse_spectrum
