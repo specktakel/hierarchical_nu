@@ -139,7 +139,7 @@ class StanFit:
                 self._shared_src_index = True
             elif not index.fixed:
                 self._shared_src_index = False
-            elif self._sources.point_source_spectrum == LogParabolaSpectrum:
+            if self._sources.point_source_spectrum == LogParabolaSpectrum:
                 self._logparabola = True
                 beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
