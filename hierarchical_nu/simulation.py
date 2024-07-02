@@ -225,13 +225,14 @@ class Simulation:
 
         self._sim_inputs = self._get_sim_inputs(seed)
         self._expected_Nnu = self._get_expected_Nnu(self._sim_inputs)
-        # Create data field in sim inputs to handle number of expected events for each source component
-        # self._Nex_et has all necessary information, dimension (detector models, source components)
-        self._sim_inputs["Nex_et"] = self._Nex_et.tolist()
 
         if self._asimov:
             # Override sim inputs with asimov-forced_N
             self._sim_inputs = self._get_sim_inputs(seed, asimov=True)
+
+        # Create data field in sim inputs to handle number of expected events for each source component
+        # self._Nex_et has all necessary information, dimension (detector models, source components)
+        self._sim_inputs["Nex_et"] = self._Nex_et.tolist()
 
         if verbose:
             print(
@@ -1142,15 +1143,7 @@ def _get_expected_Nnu_(
         diff_index = sim_inputs["diff_index"]
         diff_index_grid = sim_inputs["diff_index_grid"]
 
-    print("ps: ", point_source)
-    print("diff:", diffuse)
-    print("atmo", atmospheric)
-
-    print(fit_index, fit_beta, fit_Enorm)
-
     Ns = sim_inputs["Ns"]
-
-    print(Ns)
 
     F = []
     eps = []
@@ -1164,7 +1157,6 @@ def _get_expected_Nnu_(
             n_params += 1 if fit_beta else 0
             n_params += 1 if fit_Enorm else 0
 
-            print(n_params)
             if n_params == 2:
                 first = True
                 if fit_index:
@@ -1228,14 +1220,10 @@ def _get_expected_Nnu_(
 
     eps = np.array(eps) * sim_inputs["T"][c]
 
-    print(eps.shape)
-
     if diffuse:
         F.append(sim_inputs["F_diff"])
 
     if atmospheric:
         F.append(sim_inputs["F_atmo"])
-
-    print(np.array(F).shape)
 
     return eps * np.array(F)

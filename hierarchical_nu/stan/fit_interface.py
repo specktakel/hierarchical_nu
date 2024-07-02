@@ -524,7 +524,8 @@ class StanFitInterface(StanInterface):
                         start << start + self._Ns
                     if self._fit_Enorm:
                         end << end + self._Ns
-                        self._E0_src = ForwardVariableDef("beta_index", "vector[Ns]")
+                        self._E0_src = ForwardVariableDef("E0_src", "vector[Ns]")
+                        self._E0_src << glob[start:end]
                         start << start + self._Ns
                     # Get diffuse index
                     if self.sources.diffuse:
@@ -715,7 +716,7 @@ class StanFitInterface(StanInterface):
                         start << start + self._Ns
                     if self._logparabola and not self._fit_Enorm:
                         end << end + self._Ns
-                        self._E0_src = ForwardArrayDef("E0", "real", ["[Ns]"])
+                        self._E0_src = ForwardArrayDef("E0_src", "real", ["[Ns]"])
                         self._E0_src << real_data[start:end]
                         self._x_r_idxs[data_idx] << start
                         data_idx += 1
@@ -1652,7 +1653,7 @@ class StanFitInterface(StanInterface):
                                 else:
                                     p1 = r[k]
                                     g1 = g
-                                theta.append(r)
+                                theta.append(r[k])
                                 first_param = False
                             else:
                                 # put the leftovers in the fridge, please

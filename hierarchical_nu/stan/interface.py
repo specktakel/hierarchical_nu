@@ -107,26 +107,36 @@ class StanInterface(object, metaclass=ABCMeta):
             self._fit_index = True
             self._fit_beta = False
             self._fit_Enorm = False
-            if self._logparabola:
+            try:
                 self._fit_beta = (
                     not self._sources.point_source[0]
                     .flux_model.parameters["beta"]
                     .fixed
                 )
+            except KeyError:
+                self._fit_beta = False
+            try:
                 self._fit_index = (
                     not self._sources.point_source[0]
                     .flux_model.parameters["index"]
                     .fixed
                 )
+            except KeyError:
+                self._fit_index = False
+            try:
                 self._fit_Enorm = (
                     not self._sources.point_source[0]
                     .flux_model.parameters["norm_energy"]
                     .fixed
                 )
-                assert (
-                    int(self._fit_beta) + int(self._fit_index) + int(self._fit_Enorm)
-                    <= 2
-                )
+            except KeyError:
+                self._fit_Enorm = False
+
+            num_params = 0
+            num_params += 1 if self._fit_index else 0
+            num_params += 1 if self._fit_beta else 0
+            num_params += 1 if self._fit_Enorm else 0
+            assert num_params <= 2
 
         self._fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
 

@@ -173,12 +173,6 @@ class StanSimInterface(StanInterface):
             else:
                 Ns_string = "Ns"
 
-            # Get number of expected events per detector model and source component from python
-            # rids us of all the interpolation needed here (done twice, first in python...)
-            self._Nex_et = ForwardArrayDef(
-                "Nex_et", "real", ["[", self._Net, ",", Ns_string, "]"]
-            )
-
             if self.sources.point_source:
                 self._L = ForwardVariableDef("L", "vector[Ns]")
                 self._Emin_src = ForwardVariableDef("Emin_src", "vector[Ns]")
@@ -235,6 +229,11 @@ class StanSimInterface(StanInterface):
                 self._forced_N = ForwardArrayDef(
                     "forced_N", "int", ["[", self._Net, ",", Ns_string, "]"]
                 )
+            # Get number of expected events per detector model and source component from python
+            # rids us of all the interpolation needed here (done twice, first in python...)
+            self._Nex_et = ForwardArrayDef(
+                "Nex_et", "real", ["[", self._Net, ",", Ns_string, "]"]
+            )
 
             if self.sources.atmospheric:
                 self._F_atmo = ForwardVariableDef("F_atmo", "real")
@@ -300,19 +299,16 @@ class StanSimInterface(StanInterface):
             for et in self._event_types:
                 self._et_stan[idx] << et.S
                 idx += 1
+            if not self._force_N:
+                # Relative exposure weights of sources
+                self._w_exposure = ForwardArrayDef(
+                    "w_exposure", "simplex" + N_tot, ["[", self._Net, "]"]
+                )
 
-            # Relative exposure weights of sources
-            self._w_exposure = ForwardArrayDef(
-                "w_exposure", "simplex" + N_tot, ["[", self._Net, "]"]
-            )
-
-            # Exposure of sources
-            self._eps = ForwardArrayDef("eps", "vector" + N_tot, ["[", self._Net, "]"])
-
-            # Expected number of events for tracks
+            # Expected number of events
             self._Nex = ForwardArrayDef("Nex", "real", ["[", self._Net, "]"])
 
-            # Sampled number of events for tracks
+            # Sampled number of events
             self._N_comp = ForwardArrayDef("N_comp", "int", ["[", self._Net, "]"])
 
             # Total flux
@@ -427,25 +423,26 @@ class StanSimInterface(StanInterface):
             # For cascades, we assume no atmo component
 
             with ForLoopContext(1, self._Net_stan, "i") as i:
-                if self.sources.point_source:
-                    self._Nex_src_comp[i] << FunctionCall(
-                        [self._Nex_et[i, 1 : self._Ns]], "sum"
+                if not self._force_N:
+                    if self.sources.point_source:
+                        self._Nex_src_comp[i] << FunctionCall(
+                            [self._Nex_et[i, 1 : self._Ns]], "sum"
+                        )
+                    if self.sources.diffuse:
+                        self._Nex_diff_comp[i] << self._Nex_et[i, "Ns+1"]
+                    if self.sources.atmospheric and not self.sources.diffuse:
+                        self._Nex_atmo_comp[i] << self._Nex_et[i, "Ns+1"]
+                    elif self.sources.atmospheric:
+                        self._Nex_atmo_comp[i] << self._Nex_et[i, "Ns+2"]
+
+                    # Get the relative exposure weights of all sources
+                    # This will be used to sample the labels
+                    # Also sample the number of events
+
+                    self._Nex[i] << FunctionCall([self._Nex_et[i]], "sum")
+                    self._w_exposure[i] << FunctionCall(
+                        [self._Nex_et[i]], "get_exposure_weights_from_Nex_et"
                     )
-                if self.sources.diffuse:
-                    self._Nex_diff_comp[i] << self._Nex_et[i, "Ns+1"]
-                if self.sources.atmospheric and not self.sources.diffuse:
-                    self._Nex_atmo_comp[i] << self._Nex_et[i, "Ns+1"]
-                elif self.sources.atmospheric:
-                    self._Nex_atmo_comp[i] << self._Nex_et[i, "Ns+2"]
-
-                # Get the relative exposure weights of all sources
-                # This will be used to sample the labels
-                # Also sample the number of events
-
-                self._Nex[i] << FunctionCall([self._Nex_et[i]], "sum")
-                self._w_exposure[i] << FunctionCall(
-                    [self._Nex_et[i]], "get_exposure_weights_from_Nex_et"
-                )
 
                 # If we passed the `force_N` keyword we ignore the exposure weighting
                 # and sample a fixed amount of events
