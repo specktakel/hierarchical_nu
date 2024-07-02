@@ -1104,9 +1104,9 @@ class LogParabolaSpectrum(SpectralShape):
 
 class PGammaSpectrum(SpectralShape):
 
-    _src_index = -2.0
+    _src_index = 0.0
     _alpha = 0.0
-    _beta = 0.8
+    _beta = 0.7
 
     @u.quantity_input
     def __init__(
@@ -1150,7 +1150,8 @@ class PGammaSpectrum(SpectralShape):
     @property
     def Ebreak(self):
         E0 = self.parameters["norm_energy"].value
-        return np.exp((-self._src_index - 1 + self._alpha) / -self._beta) * E0
+        return E0
+        # return np.exp((-self._src_index - 1 + self._alpha) / -self._beta) * E0
 
     @property
     def pl_norm(self):
@@ -1474,7 +1475,7 @@ class PGammaSpectrum(SpectralShape):
             # Must be something between the double logarithmic dN/dE vs E plot
             # and the way we do not actually compute slopes of dN/dE
             # but rather of the double logarithmic displays
-            Ebreak << FunctionCall([(-index - 1 + a) / -b], "exp") * E0
+            Ebreak << E0  # FunctionCall([(-index - 1 + a) / -b], "exp") * E0
             Eb_E0 << Ebreak / E0
             logEb_E0 << FunctionCall([Eb_E0], "log")
             # logparabola value at break energy to normalise power law
@@ -1552,7 +1553,7 @@ class PGammaSpectrum(SpectralShape):
             norm_Eb = ForwardVariableDef("norm_Eb", "real")
             logEb_E0 = ForwardVariableDef("logEbE0", "real")
 
-            Ebreak << FunctionCall([(-index - 1 + a) / -b], "exp") * E0
+            Ebreak << E0  # FunctionCall([(-index - 1 + a) / -b], "exp") * E0
             Eb_E0 << Ebreak / E0
             logEb_E0 << FunctionCall([Eb_E0], "log")
             # logparabola value at break energy to normalise power law

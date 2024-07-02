@@ -12,6 +12,7 @@ from .flux_model import (
     LogParabolaSpectrum,
     TwiceBrokenPowerLaw,
     IsotropicDiffuseBG,
+    PGammaSpectrum,
     integral_power_law,
 )
 from .atmospheric_flux import AtmosphericNuMuFlux
@@ -394,7 +395,10 @@ class PointSource(Source):
         val = normalisation_energy.value
         normalisation_energy.value = frame.transform(val, redshift)
         par_min, par_max = normalisation_energy.par_range
-        par_range = (frame.transform(par_min, redshift), frame.transform(par_max, redshift))
+        par_range = (
+            frame.transform(par_min, redshift),
+            frame.transform(par_max, redshift),
+        )
         normalisation_energy.par_range = par_range
         normalisation_energy.fixed = fixed
         spectral_shape = LogParabolaSpectrum(
@@ -402,6 +406,74 @@ class PointSource(Source):
             normalisation_energy,
             alpha,
             beta,
+            frame.transform(lower.value, redshift),
+            frame.transform(upper.value, redshift),
+        )
+
+        total_power = spectral_shape.total_flux_density
+        norm.value *= total_flux / total_power
+        norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
+        norm.fixed = True
+        return cls(name, dec, ra, redshift, spectral_shape, frame)
+
+    @classmethod
+    @u.quantity_input
+    def make_pgamma_source(
+        cls,
+        name: str,
+        dec: u.rad,
+        ra: u.rad,
+        luminosity: Parameter,
+        redshift: float,
+        E0_src: Parameter,
+        lower: Parameter,
+        upper: Parameter,
+        frame: ReferenceFrame = SourceFrame,
+    ):
+        """
+        Factory class for creating sources with powerlaw spectrum and given luminosity.
+        Luminosity and all energies given as arguments/parameters live in the source frame
+        and are converted to detector frame internally.
+
+        Parameters:
+            name: str
+                Source name
+            dec: u.rad,
+                Declination of the source
+            ra: u.rad,
+                Right Ascension of the source
+            luminosity: Parameter,
+                luminosity
+            redshift: float
+            E0_src: Parameter
+                Energy at which flat spectrum evolves into logparabola
+            lower: Parameter
+                Lower energy bound
+            upper: Parameter
+                Upper energy bound
+            frame: ReferenceFrame
+                Reference frame in which source energy is defined
+        """
+
+        total_flux = luminosity.value / (
+            4 * np.pi * luminosity_distance(redshift) ** 2
+        )  # here flux is W / m^2, lives in the detector frame
+
+        # Each source has an independent normalization, thus use the source name as identifier
+        # Normalisation to dN/(dEdtdA)
+        norm = Parameter(
+            # is defined at the detector!
+            1 / (u.GeV * u.s * u.m**2),
+            "{}_norm".format(name),
+            fixed=False,
+            par_range=(0, np.inf),
+            scale=ParScale.log,
+        )
+
+        # Transform energies to detector frame
+        spectral_shape = PGammaSpectrum(
+            norm,
+            E0_src,
             frame.transform(lower.value, redshift),
             frame.transform(upper.value, redshift),
         )
