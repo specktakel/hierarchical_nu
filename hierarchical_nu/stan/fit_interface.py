@@ -239,7 +239,11 @@ class StanFitInterface(StanInterface):
 
                             # create even more references
                             # go through all three params
-                            self._refs = [self._src_index, self._beta_index, self._E0_src]
+                            self._refs = [
+                                self._src_index,
+                                self._beta_index,
+                                self._E0_src,
+                            ]
 
                             first_param = True
                             theta = ["{"]
@@ -838,18 +842,17 @@ class StanFitInterface(StanInterface):
                 if self._fit_index:
                     self._src_index_min = ForwardVariableDef("src_index_min", "real")
                     self._src_index_max = ForwardVariableDef("src_index_max", "real")
-                else:
+                elif self._logparabola:
                     self._src_index = ForwardArrayDef("src_index", "real", ["[Ns]"])
                 if self._fit_beta:
                     self._beta_index_min = ForwardVariableDef("beta_index_min", "real")
                     self._beta_index_max = ForwardVariableDef("beta_index_max", "real")
+                elif self._logparabola:
+                    self._beta_index = ForwardArrayDef("beta_index", "real", ["[Ns]"])
                 if self._fit_Enorm:
                     self._E0_src_min = ForwardVariableDef("E0_src_min", "real")
                     self._E0_src_max = ForwardVariableDef("E0_src_max", "real")
-
-                if self._logparabola and not self._fit_beta:
-                    self._beta_index = ForwardArrayDef("beta_index", "real", ["[Ns]"])
-                if self._logparabola and not self._fit_Enorm:
+                elif self._logparabola:
                     self._E0_src = ForwardArrayDef("E0", "real", ["[Ns]"])
 
             if self.sources.diffuse:

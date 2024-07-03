@@ -1121,7 +1121,12 @@ class PGammaSpectrum(SpectralShape):
         super().__init__()
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
+        # Create hidden parameters requiring less changes to the code generator
+        index = Parameter(self._src_index, "index", fixed=True, par_range=(-1., 1.))
+        beta = Parameter(self._beta, "beta_index", fixed=True, par_range=(0., 1.))
         self._parameters = {
+            "index": index,
+            "beta": beta,
             "norm": normalisation,
             "norm_energy": normalisation_energy,
         }

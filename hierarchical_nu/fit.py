@@ -22,7 +22,12 @@ from cmdstanpy import CmdStanModel
 
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_to_icrs
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, LogParabolaSpectrum
+from hierarchical_nu.source.flux_model import (
+    IsotropicDiffuseBG,
+    LogParabolaSpectrum,
+    PGammaSpectrum,
+    PowerLawSpectrum,
+)
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.detector.r2021 import (
@@ -133,14 +138,20 @@ class StanFit:
             self._shared_luminosity = False
 
         if self._sources.point_source:
+            self._power_law = False
             self._logparabola = False
+            self._pgamma = False
             index = self._sources.point_source[0].parameters["index"]
             if not index.fixed and index.name == "src_index":
                 self._shared_src_index = True
             elif not index.fixed:
                 self._shared_src_index = False
-            if self._sources.point_source_spectrum == LogParabolaSpectrum:
-                self._logparabola = True
+            self._power_law = self._sources.point_source_spectrum == PowerLawSpectrum
+            self._logparabola = (
+                self._sources.point_source_spectrum == LogParabolaSpectrum
+            )
+            self._pgamma = self._sources.point_source_spectrum == PGammaSpectrum
+            if self._logparabola or self._pgamma:
                 beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 if not beta.fixed and beta.name == "beta_index":
@@ -151,7 +162,7 @@ class StanFit:
                     self._shared_src_index = False
 
             self._fit_index = not index.fixed
-            if self._logparabola:
+            if self._logparabola or self._pgamma:
                 beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 self._fit_beta = not beta.fixed
@@ -855,6 +866,7 @@ class StanFit:
         fit_beta = True if "beta_index" in variables else False
         fit_Enorm = True if "E0_src" in variables else False
 
+        # should work for pgamma as well. Enorm would always be a fit parameter
         if fit_beta or fit_Enorm:
             logparabola = True
         else:
@@ -880,32 +892,39 @@ class StanFit:
             chains = self._fit_output.chains
 
         else:
+            # Need try-except blocks for case of pgamma
             inputs = self._fit_inputs
             if fit_index:
                 alpha = self._fit_output["src_index"]
             else:
-                alpha = inputs["src_index"]
+                try:
+                    alpha = inputs["src_index"]
+                except KeyError:
+                    self._pgamma = False
             if fit_beta:
                 beta = self._fit_output["beta_index"]
             elif logparabola:
-                beta = inputs["beta_index"]
+                try:
+                    beta = inputs["beta_index"]
+                except KeyError:
+                    self._pgamma = False
             if fit_Enorm:
                 E0 = self._fit_output["E0_src"]
             elif logparabola:
-                E0 = inputs["E0_src"]
+                try:
+                    E0 = inputs["E0_src"]
+                except KeyError:
+                    self._pgamma = False
             iterations = self._fit_meta["iter_sampling"]
             chains = self._fit_meta["chains"]
             F = self._fit_output["F"]
             F = F.reshape((iterations * chains, F.size // (iterations * chains)))
 
         if fit_index:
-            shape = alpha.shape
             N = alpha.size // (iterations * chains)
         elif fit_beta:
-            shape = beta.shape
             N = beta.size // (iterations * chains)
         elif fit_Enorm:
-            shape = E0.shape
             N = E0.size // (iterations * chains)
 
         share_index = N == 1
@@ -928,15 +947,15 @@ class StanFit:
                 if fit_Enorm:
                     E0_vals = E0[:, c_ps].flatten()
 
-            if not fit_index:
+            if not fit_index and not self._pgamma:
                 index_vals = alpha[c_ps]
                 ps.flux_model.spectral_shape.set_parameter("index", index_vals)
 
-            if not fit_beta and logparabola:
+            if not fit_beta and not self._pgamma:
                 beta_vals = beta[c_ps]
                 ps.flux_model.spectral_shape.set_parameter("beta", beta_vals)
 
-            if not fit_Enorm and logparabola:
+            if not fit_Enorm and not self._pgamma:
                 E0_vals = E0[c_ps]
                 ps.flux_model.spectral_shape.set_parameter(
                     "norm_energy", E0_vals * u.GeV
@@ -1463,10 +1482,6 @@ class StanFit:
                 ).to_value(u.GeV)
                 for ps in self._sources.point_source
             ]
-            logparabola = isinstance(
-                self._sources.point_source[0].flux_model.spectral_shape,
-                LogParabolaSpectrum,
-            )
 
             if np.min(fit_inputs["Emin_src"]) < fit_inputs["Emin"]:
                 raise ValueError(
@@ -1515,17 +1530,15 @@ class StanFit:
             # Check for shared source index
             if self._shared_src_index:
                 key = "src_index"
-                if logparabola:
-                    key_beta = "beta_index"
-                    key_Enorm = "E0_src"
+                key_beta = "beta_index"
+                key_Enorm = "E0_src"
 
             # Otherwise just use first source in the list
             # src_index_grid is identical for all point sources
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
-                if self._logparabola:
-                    key_beta = "%s_beta_index" % self._sources.point_source[0].name
-                    key_Enorm = "%s_E0_src" % self._sources.point_source[0].name
+                key_beta = "%s_beta_index" % self._sources.point_source[0].name
+                key_Enorm = "%s_E0_src" % self._sources.point_source[0].name
 
             if self._fit_index:
                 fit_inputs["src_index_grid"] = self._exposure_integral[
@@ -1534,7 +1547,7 @@ class StanFit:
                 # PS parameter limits
                 fit_inputs["src_index_min"] = self._src_index_par_range[0]
                 fit_inputs["src_index_max"] = self._src_index_par_range[1]
-            else:
+            elif self._logparabola:
                 fit_inputs["src_index"] = [
                     ps.flux_model.parameters["index"].value
                     for ps in self._sources.point_source
@@ -1543,40 +1556,39 @@ class StanFit:
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
 
-            if self._logparabola:
-                if self._fit_beta:
-                    fit_inputs["beta_index_grid"] = self._exposure_integral[
-                        event_type
-                    ].par_grids[key_beta]
-                    fit_inputs["beta_index_min"] = self._beta_index_par_range[0]
-                    fit_inputs["beta_index_max"] = self._beta_index_par_range[1]
-                    fit_inputs["beta_index_mu"] = self._priors.beta_index.mu
-                    fit_inputs["beta_index_sigma"] = self._priors.beta_index.sigma
-                else:
-                    fit_inputs["beta_index"] = [
-                        ps.flux_model.parameters["beta"].value
-                        for ps in self._sources.point_source
-                    ]
+            if self._fit_beta:
+                fit_inputs["beta_index_grid"] = self._exposure_integral[
+                    event_type
+                ].par_grids[key_beta]
+                fit_inputs["beta_index_min"] = self._beta_index_par_range[0]
+                fit_inputs["beta_index_max"] = self._beta_index_par_range[1]
+                fit_inputs["beta_index_mu"] = self._priors.beta_index.mu
+                fit_inputs["beta_index_sigma"] = self._priors.beta_index.sigma
+            elif self._logparabola:
+                fit_inputs["beta_index"] = [
+                    ps.flux_model.parameters["beta"].value
+                    for ps in self._sources.point_source
+                ]
 
-                if self._fit_Enorm:
-                    fit_inputs["E0_src_grid"] = self._exposure_integral[
-                        event_type
-                    ].par_grids[key_Enorm]
-                    fit_inputs["E0_src_min"] = self._E0_src_par_range[0].to_value(u.GeV)
-                    fit_inputs["E0_src_max"] = self._E0_src_par_range[1].to_value(u.GeV)
-                    if self._priors.E0_src.name == "lognormal":
-                        fit_inputs["E0_src_mu"] = self._priors.E0_src.mu
-                        fit_inputs["E0_src_sigma"] = self._priors.E0_src.sigma
-                    elif self._priors.E0_src.name == "normal":
-                        fit_inputs["E0_src_mu"] = self._priors.E0_src.mu.to_value(u.GeV)
-                        fit_inputs["E0_src_sigma"] = self._priors.E0_src.sigma.to_value(
-                            u.GeV
-                        )
-                else:
-                    fit_inputs["E0"] = [
-                        ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
-                        for ps in self._sources.point_source
-                    ]
+            if self._fit_Enorm:
+                fit_inputs["E0_src_grid"] = self._exposure_integral[
+                    event_type
+                ].par_grids[key_Enorm]
+                fit_inputs["E0_src_min"] = self._E0_src_par_range[0].to_value(u.GeV)
+                fit_inputs["E0_src_max"] = self._E0_src_par_range[1].to_value(u.GeV)
+                if self._priors.E0_src.name == "lognormal":
+                    fit_inputs["E0_src_mu"] = self._priors.E0_src.mu
+                    fit_inputs["E0_src_sigma"] = self._priors.E0_src.sigma
+                elif self._priors.E0_src.name == "normal":
+                    fit_inputs["E0_src_mu"] = self._priors.E0_src.mu.to_value(u.GeV)
+                    fit_inputs["E0_src_sigma"] = self._priors.E0_src.sigma.to_value(
+                        u.GeV
+                    )
+            elif self._logparabola:
+                fit_inputs["E0"] = [
+                    ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
+                    for ps in self._sources.point_source
+                ]
 
         # Inputs for priors of point sources
         if self._priors.src_index.name not in ["normal", "lognormal"]:
