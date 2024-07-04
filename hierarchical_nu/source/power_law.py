@@ -104,11 +104,3 @@ class BoundedPowerLaw(object):
         """
         u = np.random.uniform(0, 1, nsamples)
         return self.inv_cdf(u)
-
-
-class LogParabola:
-    """
-    Defines logparabola pdf in E/E0 space
-    """
-
-    pass

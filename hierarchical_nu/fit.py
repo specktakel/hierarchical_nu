@@ -609,7 +609,7 @@ class StanFit:
                         ls="--",
                     )
 
-        ax.text(1e7, yhigh, "$\hat E$")
+        ax.text(1e7, yhigh, "$\hat E$", fontsize=8.,)
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
@@ -776,8 +776,9 @@ class StanFit:
         color_scale: str = "lin",
         highlight: Union[Iterable, None] = None,
         assoc_threshold: float = 0.2,
+        figsize=(8, 3),
     ):
-        fig = plt.figure(dpi=150, figsize=(8, 3))
+        fig = plt.figure(dpi=150, figsize=figsize)
         gs = fig.add_gridspec(
             1,
             2,
@@ -812,7 +813,7 @@ class StanFit:
         ax.yaxis.set_ticks([])
         ax.set_ylabel("posterior pdf")
         axs.append(ax)
-        fig.colorbar(mapper, label=f"association probability to {assoc_idx:n}", ax=ax)
+        fig.colorbar(mapper, label="association probability", ax=ax)
 
         ax = fig.add_subplot(
             gs[0, 0],
@@ -1113,6 +1114,13 @@ class StanFit:
 
         # Add priors separately
         self.priors.addto(path, "priors")
+        
+    def diagnose(self):
+        try:
+            print(self._fit_output.diagnose().decode("ascii"))
+        except:
+            for item in self._fit_meta["diagnose"]:
+                print(item.decode("ascii"))
 
         return path  # noqa: F821
 
