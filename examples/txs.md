@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.1
+      jupytext_version: 1.15.2
   kernelspec:
     display_name: hi_nu
     language: python
@@ -26,13 +26,14 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.priors import Priors
-from hierarchical_nu.source.source import Sources, PointSource
+from hierarchical_nu.source.source import Sources, PointSource, DetectorFrame
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, LuminosityPrior, IndexPrior, FluxPrior
 from hierarchical_nu.utils.roi import CircularROI
 from hierarchical_nu.detector.icecube import IC86_II, IC86_I
+from hierarchical_nu.detector.input import mceq
 from icecube_tools.utils.data import Uptime
 import numpy as np
 import ligo.skymap.plot
@@ -45,7 +46,7 @@ First, we define the source and fit parameters, as already seen in `simulate_and
 Parameter.clear_registry()
 src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1, 4))
 diff_index = Parameter(2.13, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(2E49 * (u.erg / u.s), "luminosity", fixed=True, 
+L = Parameter(1e47 * (u.erg / u.s), "luminosity", fixed=True, 
               par_range=(0, 1E60) * (u.erg/u.s))
 diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
@@ -53,8 +54,8 @@ z = 0.3365
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(1E2 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
-Emin_src = Parameter(Emin.value * (1 + z), "Emin_src", fixed=True)
-Emax_src = Parameter(Emax.value * (1 + z), "Emax_src", fixed=True)
+Emin_src = Parameter(Emin.value, "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value, "Emax_src", fixed=True)
 Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
 Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 ```
@@ -70,13 +71,13 @@ dec = np.deg2rad(5.7) * u.rad
 width = np.deg2rad(6) * u.rad
 txs = SkyCoord(ra=ra, dec=dec, frame="icrs")
 point_source = PointSource.make_powerlaw_source(
-    "test", dec, ra, L, src_index, z, Emin_src, Emax_src
+    "test", dec, ra, L, src_index, z, Emin_src, Emax_src, DetectorFrame,
 )
 
 my_sources = Sources()
 my_sources.add(point_source)
 my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff) 
-my_sources.add_atmospheric_component()
+my_sources.add_atmospheric_component(cache_dir=mceq)
 ```
 
 We now need to decide on the time period of observation (start and end times in MJD). The detector lifetime is automatically calculated from the "good time intervals" provided in the data release. Event selection respects the start and end times with which an ROI is instanciated.
@@ -126,6 +127,8 @@ sim.precomputation()
 print(sim._get_expected_Nnu(sim._get_sim_inputs()))
 print(sim._expected_Nnu_per_comp)
 ```
+
+For each physical parameter there is a seperate prior class implemented, e.g. for the luminosity a `LuminosityPrior`. We can pass different types of distributions, namely `NormalPrior`, `LogNormalPrior` and for the luminosity only `ParetoPrior` with appropriate $\mu, \sigma$ (or $x_{min}, \alpha$). The priors convert the passed units to the internally used ones. `IndexPriors` do not use units. Fluxes are integrated number fluxes, i.e. dimension is 1 / area / time.
 
 ```python
 priors = Priors()

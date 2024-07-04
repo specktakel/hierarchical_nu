@@ -119,10 +119,11 @@ def test_logparabola():
     norm = Parameter(1e-10 / u.GeV / u.s / u.m**2, "norm")
     Emin = 1e2 * u.GeV
     Emax = 1e8 * u.GeV
+    E0 = Parameter(1e5 * u.GeV, "E0_src", fixed=True)
     Enorm = 1e5 * u.GeV
 
     pl = PowerLawSpectrum(norm, Enorm, index, Emin, Emax)
-    log = LogParabolaSpectrum(norm, Enorm, alpha, beta, Emin, Emax)
+    log = LogParabolaSpectrum(norm, E0, alpha, beta, Emin, Emax)
 
     factor_pl = PowerLawSpectrum.flux_conv_(index.value, Emin.to_value(u.GeV), Emax.to_value(u.GeV), 0., 0.)
     factor_log = log.flux_conv()

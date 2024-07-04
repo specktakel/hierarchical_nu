@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.1
+      jupytext_version: 1.15.2
   kernelspec:
     display_name: hi_nu
     language: python
@@ -80,19 +80,23 @@ roi = RectangularROI(RA_min=ra-width, RA_max=ra+width, DEC_min=dec-width, DEC_ma
 
 ```python
 from hierarchical_nu.events import Events
-from hierarchical_nu.detector.icecube import NT
+from hierarchical_nu.detector.icecube import IC86_II
 ```
 
 ```python
-ra = np.array([187]) * u.deg
-dec = np.array([9]) * u.deg
+ra = np.array([185]) * u.deg
+dec = np.array([7]) * u.deg
 coord = SkyCoord(ra, dec, frame="icrs")
 
 event = Events(energies=np.array([5.1e4]) * u.GeV, 
                coords=coord, 
-               types=np.array([NT.S]), 
+               types=np.array([IC86_II.S]), 
                ang_errs=np.array([5]) * u.deg,
                mjd=[99])
+```
+
+```python
+fit.get_src_position(0).separation(coord).deg
 ```
 
 ## Plot inputs
@@ -123,12 +127,20 @@ from hierarchical_nu.fit import StanFit
 
 ```python
 obs_time = 1 * u.year
-fit = StanFit(my_sources, NT, event, {NT: obs_time})
+fit = StanFit(my_sources, IC86_II, event, {IC86_II: obs_time})
 fit.setup_and_run()
 ```
 
 ```python
-fit.plot_energy_and_roi(radius=8 * u.deg)
+fit.plot_trace("E", transform=lambda x: np.log10(x))
+```
+
+```python
+fit._get_event_classifications()
+```
+
+```python
+fit.plot_energy_and_roi(radius=8*u.deg)
 ```
 
 ## P(label=src | data)
@@ -150,6 +162,8 @@ bins = np.linspace(0, 1)
 ax.hist(normalized_probs[0][0], label="point source", alpha=0.5, bins=bins, density=True)
 ax.hist(normalized_probs[0][1], label="diffuse bg", alpha=0.5, bins=bins, density=True)
 ax.legend()
+ax.set_xlabel("association probability")
+ax.set_ylabel("pdf")
 ```
 
 ```python

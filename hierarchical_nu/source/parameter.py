@@ -111,7 +111,7 @@ class Parameter:
         self._par_range = par_range
 
     def __repr__(self):
-        return "Parameter {} = {}".format(self.name, self.value)
+        return "Parameter {} = {}, fixed = {}".format(self.name, self.value, self.fixed)
 
     def reset(self):
         """Reset value to initial val"""

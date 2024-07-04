@@ -1,6 +1,15 @@
 parameter_config:
+  source_type: logparabola
+  fit_params:
+  - src_index
+  - beta_index
   src_index:
   - 2.3
+  beta_index:
+  - 0.05
+  beta_index_range:
+  - -1.0
+  - 1.0
   share_src_index: true
   src_index_range:
   - 1.0
@@ -31,8 +40,8 @@ parameter_config:
   - 0.3365
   Emin_det_eq: true
   Emin_det: 2e2
-  mjd_min: 56917
-  mjd_max: 57113
+  MJD_min: 56917
+  MJD_max: 57113
   threads_per_chain: 40
   asimov: false
 prior_config:
@@ -40,6 +49,14 @@ prior_config:
     name: NormalPrior
     mu: 2.0
     sigma: 1.5
+  beta_index:
+    name: NormalPrior
+    mu: 0.0
+    sigma: 0.1
+  E0_src:
+    name: LogNormalPrior
+    mu: 1e5
+    sigma: 3
   diff_index:
     name: NormalPrior
     mu: 2.52
@@ -56,6 +73,7 @@ prior_config:
     name: NormalPrior
     mu: 0.3
     sigma: 0.08
+  frame: source
 roi_config:
   roi_type: CircularROI
   size: 5.0

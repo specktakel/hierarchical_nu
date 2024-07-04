@@ -5,11 +5,11 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.1
+      jupytext_version: 1.15.2
   kernelspec:
-    display_name: hierarchical_nu
+    display_name: hnu
     language: python
-    name: hierarchical_nu
+    name: python3
 ---
 
 ```python
@@ -99,7 +99,8 @@ pop_synth.display()
 ```python
 # Use the population synth to simulate a population
 popsynth.update_logging_level("INFO")
-population = pop_synth.draw_survey(flux_sigma=0.1)
+pop_synth._seed = 42
+population = pop_synth.draw_survey(flux_sigma=0.1, )
 population.display_fluxes();
 ```
 
@@ -137,7 +138,8 @@ new_population.display_fluxes();
 import h5py
 from astropy import units as u
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.source import PointSource, Sources
+from hierarchical_nu.source.source import PointSource, Sources, DetectorFrame
+from hierarchical_nu.detector.input import mceq
 ```
 
 ```python
@@ -145,18 +147,26 @@ from hierarchical_nu.source.source import PointSource, Sources
 Parameter.clear_registry()
 
 # Define the bounds used to define the luminosity
-Emin = Parameter(5E4 * u.GeV, "Emin", fixed=True)
+Emin = Parameter(1e4 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
 
+Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
+Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
+
+Emin_src = Parameter(Emin.value, "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value, "Emax_src", fixed=True)
+
 # Detection thresholds
-Emin_det_tracks = Parameter(1e5 * u.GeV, "Emin_det_tracks", fixed=True)
-Emin_det_cascades = Parameter(6e4 * u.GeV, "Emin_det_cascades", fixed=True)
+Emin_det = Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
+
 
 # For diffuse comp
 diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
                          par_range=(0, np.inf))
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
+
+
 
 # NB: if you set L and src_index here, it will overwrite whatever is in the file
 #src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
@@ -165,22 +175,44 @@ diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
 
 ```python
 # Make a list of point sources from the population file
-point_src = PointSource.make_powerlaw_sources_from_file("output/test_population.h5",
-                                                        lower_energy=Emin,
-                                                        upper_energy=Emax)
+point_src = PointSource.make_broken_powerlaw_sources_from_file("output/test_population.h5",
+                                                        lower_energy=Emin_src,
+                                                    upper_energy=Emax_src, frame=DetectorFrame)
 # NB: This will only load detected objects, unless we pass the use_undetected=True kwarg.
+```
+
+```python
+mask = np.ones(len(point_src), dtype=bool)
+for c, ps in enumerate(point_src):
+    mask[c] = ps.dec.to(u.deg) > -5 * u.deg
+```
+
+```python
+mask
 ```
 
 ```python
 # Add on to Sources object 
 my_sources = Sources()
 my_sources.add(point_src)
-my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index) 
-my_sources.add_atmospheric_component() # auto atmo component
+my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff) 
+my_sources.add_atmospheric_component(cache_dir=mceq) # auto atmo component
+```
+
+```python
+my_sources.select(mask, True)
+```
+
+```python
+my_sources.sources
 ```
 
 ```python
 my_sources.f_arr()
+```
+
+```python
+my_sources.point_source[2].dec.to(u.deg)
 ```
 
 ```python
@@ -194,18 +226,28 @@ Now that the population is simulated and loaded, the simluation and fitting proc
 
 ```python
 from hierarchical_nu.simulation import Simulation
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
+from hierarchical_nu.detector.icecube import IC86_II
+from hierarchical_nu.utils.roi import NorthernSkyROI, ROIList, CircularROI
+from astropy.coordinates import SkyCoord
+```
+
+```python
+ROIList.clear_registry()
+for ps in point_src:
+    coords = SkyCoord(ra=ps.ra, dec=ps.dec, frame="icrs")
+    roi = CircularROI(coords, radius=5*u.deg)
 ```
 
 ```python
 obs_time = 10 * u.year
-sim = Simulation(my_sources, IceCubeDetectorModel, obs_time)
+sim = Simulation(my_sources, IC86_II, obs_time)
 ```
 
 ```python
 sim.precomputation()
 sim.generate_stan_code()
 sim.compile_stan_code()
+sim.setup_stan_sim()
 ```
 
 ```python
@@ -215,7 +257,7 @@ sim._expected_Nnu_per_comp
 
 ```python
 sim.run(verbose=True, seed=42) 
-sim.save("output/test_pop_sim_file.h5")
+sim.save("output/test_pop_sim_file.h5", overwrite=True)
 ```
 
 ```python
@@ -227,26 +269,33 @@ sim.show_spectrum()
 ```
 
 
+```python
+Parameter._Parameter__par_registry["F_atmo"].value.to(1 / u.m**2 / u.s)
+```
+
 ## Fit
 
 ```python
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.detector.icecube import IceCubeDetectorModel
 from hierarchical_nu.simulation import SimInfo
-from hierarchical_nu.priors import Priors, NormalPrior
+from hierarchical_nu.priors import Priors, FluxPrior
 ```
 
 ```python
 priors = Priors()
-atmo_flux = my_sources.atmospheric.flux_model.total_flux_int.value
-priors.atmospheric_flux = NormalPrior(mu=atmo_flux, sigma=0.1*atmo_flux)
+atmo_flux = my_sources.atmospheric.flux_model.total_flux_int
+priors.atmospheric_flux = FluxPrior(mu=atmo_flux, sigma=0.1*atmo_flux)
 ```
 
 ```python
 events = Events.from_file("output/test_pop_sim_file.h5")
 obs_time = 10 * u.year
-fit = StanFit(my_sources, IceCubeDetectorModel, events, obs_time, priors=priors)
+fit = StanFit(my_sources, IC86_II, events, obs_time, priors=priors, nshards=1)
+```
+
+```python
+fit.events.N
 ```
 
 ```python
@@ -256,11 +305,32 @@ fit.compile_stan_code()
 ```
 
 ```python
-fit.run(show_progress=True, seed=42)
+inputs = fit._get_fit_inputs()
 ```
 
 ```python
-fit.save("output/test_pop_fit_file.h5")
+inputs
+```
+
+```python
+# Fails to initialise the sampler at initial values
+fit.run(
+    show_progress=True, 
+    show_console=True, 
+    seed=42,
+    inits={
+        "L": len(my_sources.point_source) * [1e48],
+        "F_diff": 1e-4,
+        "F_atmo": 1e-8,
+        "E": events.N * [1e6],
+        "src_index": 2.3,
+        "diff_index": 2.4
+    }
+ )
+```
+
+```python
+fit.save("output/test_pop_fit_file.h5", overwrite=True)
 ```
 
 ```python

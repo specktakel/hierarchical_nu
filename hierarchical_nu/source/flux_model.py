@@ -318,11 +318,7 @@ class PowerLawSpectrum(SpectralShape):
     @classmethod
     @u.quantity_input
     def _flux(
-        cls,
-        norm: 1 / u.TeV / u.m**2 / u.s,
-        E: u.GeV,
-        alpha: float,
-        Enorm: u.GeV
+        cls, norm: 1 / u.TeV / u.m**2 / u.s, E: u.GeV, alpha: float, Enorm: u.GeV
     ) -> 1 / (u.TeV / u.m**2 / u.s):
         return norm * np.power(E / Enorm, -alpha)
 
@@ -455,7 +451,7 @@ class PowerLawSpectrum(SpectralShape):
         return self.power_law.pdf(E_input, apply_lim=apply_lim)
 
     @classmethod
-    def make_stan_sampling_func(cls, f_name) -> UserDefinedFunction:
+    def make_stan_sampling_func(cls, f_name, *args, **kwargs) -> UserDefinedFunction:
         func = UserDefinedFunction(
             f_name, ["alpha", "e_low", "e_up"], ["real", "real", "real"], "real"
         )
@@ -480,7 +476,7 @@ class PowerLawSpectrum(SpectralShape):
         return func
 
     @classmethod
-    def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
+    def make_stan_lpdf_func(cls, f_name, *args, **kwargs) -> UserDefinedFunction:
         func = UserDefinedFunction(
             f_name,
             ["E", "alpha", "e_low", "e_up"],
@@ -518,7 +514,7 @@ class PowerLawSpectrum(SpectralShape):
         return cls.make_stan_lpdf_func(f_name)
 
     @classmethod
-    def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
+    def make_stan_flux_conv_func(cls, f_name, *args, **kwargs) -> UserDefinedFunction:
         """
         Factor to convert from total_flux_density to total_flux_int.
         """
@@ -618,7 +614,7 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
         self._parameters = {"norm": normalisation, "index": index}
 
     @classmethod
-    def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
+    def make_stan_lpdf_func(cls, f_name, *args, **kwargs) -> UserDefinedFunction:
         func = UserDefinedFunction(
             f_name,
             [
@@ -679,7 +675,7 @@ class LogParabolaSpectrum(SpectralShape):
     def __init__(
         self,
         normalisation: Parameter,
-        normalisation_energy: u.GeV,
+        normalisation_energy: Parameter,
         alpha: Parameter,
         beta: Parameter,
         lower_energy: u.GeV = 1e2 * u.GeV,
@@ -693,7 +689,7 @@ class LogParabolaSpectrum(SpectralShape):
 
         normalisation: float
             Flux normalisation [GeV^-1 m^-2 s^-1]
-        normalisation_energy: float
+        normalisation_energy: float or Parameter
             Energy at which flux is normalised [GeV].
         alpha: Parameter
             Slope parameter of spectral shape
@@ -706,11 +702,14 @@ class LogParabolaSpectrum(SpectralShape):
         """
 
         super().__init__()
-        self._normalisation = normalisation
-        self._normalisation_energy = normalisation_energy
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
-        self._parameters = {"norm": normalisation, "index": alpha, "beta": beta}
+        self._parameters = {
+            "norm": normalisation,
+            "index": alpha,
+            "beta": beta,
+            "norm_energy": normalisation_energy,
+        }
 
     @property
     def energy_bounds(self):
@@ -721,7 +720,7 @@ class LogParabolaSpectrum(SpectralShape):
         alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
         E = energy.to_value(u.GeV)
-        E0 = self._normalisation_energy.to_value(u.GeV)
+        E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
         norm = self.parameters["norm"].value
         if isinstance(energy, np.ndarray):
             output = np.zeros_like(energy.value) * norm
@@ -745,7 +744,7 @@ class LogParabolaSpectrum(SpectralShape):
         E: u.GeV,
         alpha: float,
         beta: float,
-        Enorm: u.GeV
+        Enorm: u.GeV,
     ) -> 1 / (u.TeV / u.m**2 / u.s):
         return norm * np.power(E / Enorm, -alpha - beta * np.log(E / Enorm))
 
@@ -756,7 +755,7 @@ class LogParabolaSpectrum(SpectralShape):
         # exp((1-alpha) * x - beta * x**2
         alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
-        E0 = self._normalisation_energy.to_value(u.GeV)
+        E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
         norm = self.parameters["norm"].value
 
         lower = np.atleast_1d(lower)
@@ -803,7 +802,7 @@ class LogParabolaSpectrum(SpectralShape):
         # exp((2-alpha) * x - beta * x**2
         alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
-        E0 = self._normalisation_energy.to_value(u.GeV)
+        E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
         norm = self.parameters["norm"].value
 
         xl = np.log(self._lower_energy.to_value(u.GeV) / E0)
@@ -816,7 +815,7 @@ class LogParabolaSpectrum(SpectralShape):
         # Calculate (\int dN / dE / dA /dt dE)/(\int E dN / dE / dA / dt dE)
         alpha = self.parameters["index"].value
         beta = self.parameters["beta"].value
-        E0 = self._normalisation_energy.to_value(u.GeV)
+        E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
 
         xl = np.log(self._lower_energy.to_value(u.GeV) / E0)
         xh = np.log(self._upper_energy.to_value(u.GeV) / E0)
@@ -851,7 +850,7 @@ class LogParabolaSpectrum(SpectralShape):
         Emax_input = Emax.to_value(u.GeV)
         alpha = self._parameters["index"].value
         beta = self._parameters["beta"].value
-        E0 = self._normalisation_energy.to_value(u.GeV)
+        E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
 
         norm = (
             quad(
@@ -873,15 +872,15 @@ class LogParabolaSpectrum(SpectralShape):
 
     @classmethod
     def make_stan_sampling_lpdf_func(cls, f_name) -> UserDefinedFunction:
-        return cls.make_stan_lpdf_func(f_name)
+        return cls.make_stan_lpdf_func(f_name, False, False, False)
 
     @classmethod
-    def make_stan_sampling_func(cls, f_name):
+    def make_stan_sampling_func(cls, f_name, *args, **kwargs):
         # no inverse transform sampling for you!
         raise NotImplementedError
 
     @classmethod
-    def make_stan_utility_func(cls):
+    def make_stan_utility_func(cls, fit_index: bool, fit_beta: bool, fit_Enorm: bool):
         # Needs to be passed to integrate_1d
         # is defined in logspace for faster integration
         lp = UserDefinedFunction(
@@ -892,8 +891,19 @@ class LogParabolaSpectrum(SpectralShape):
         )
         with lp:
             x = StringExpression(["x"])
-            a = InstantVariableDef("a", "real", ["theta[1]"])
-            b = InstantVariableDef("b", "real", ["theta[2]"])
+            if fit_index:
+                a = InstantVariableDef("a", "real", ["theta[1]"])
+            else:
+                a = InstantVariableDef("a", "real", ["x_r[1]"])
+
+            if fit_index and fit_beta:
+                b = InstantVariableDef("b", "real", ["theta[2]"])
+            elif fit_beta:
+                b = InstantVariableDef("b", "real", ["theta[1]"])
+            elif not fit_beta and fit_index:
+                b = InstantVariableDef("b", "real", ["x_r[1]"])
+            elif not fit_beta:
+                b = InstantVariableDef("b", "real", ["x_r[2]"])
             ReturnStatement(
                 [FunctionCall([(1.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
             )
@@ -906,14 +916,31 @@ class LogParabolaSpectrum(SpectralShape):
         )
         with lp:
             x = StringExpression(["x"])
-            a = InstantVariableDef("a", "real", ["theta[1]"])
-            b = InstantVariableDef("b", "real", ["theta[2]"])
+            if fit_index:
+                a = InstantVariableDef("a", "real", ["theta[1]"])
+            else:
+                a = InstantVariableDef("a", "real", ["x_r[1]"])
+
+            if fit_index and fit_beta:
+                b = InstantVariableDef("b", "real", ["theta[2]"])
+            elif fit_beta:
+                b = InstantVariableDef("b", "real", ["theta[1]"])
+            elif not fit_beta and fit_index:
+                b = InstantVariableDef("b", "real", ["x_r[1]"])
+            elif not fit_beta:
+                b = InstantVariableDef("b", "real", ["x_r[2]"])
             ReturnStatement(
                 [FunctionCall([(2.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
             )
 
     @classmethod
-    def make_stan_lpdf_func(cls, f_name) -> UserDefinedFunction:
+    def make_stan_lpdf_func(
+        cls, f_name, fit_index: bool, fit_beta: bool, fit_Enorm: bool
+    ) -> UserDefinedFunction:
+        """
+        If fit_beta==True, signature is theta=[alpha, beta], x_r=[E0, Emin, Emax]
+        else theta=[alpha, E0], x_r=[beta, Emin, Emax]
+        """
         func = UserDefinedFunction(
             f_name,
             ["E", "theta", "x_r", "x_i"],
@@ -926,9 +953,30 @@ class LogParabolaSpectrum(SpectralShape):
             theta = StringExpression(["theta"])
 
             # Unpack variables
-            E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
-            e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
-            e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
+            if fit_index:
+                a = InstantVariableDef("a", "real", ["theta[1]"])
+            else:
+                a = InstantVariableDef("a", "real", ["x_r[1]"])
+
+            if fit_index and fit_beta:
+                b = InstantVariableDef("b", "real", ["theta[2]"])
+                E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
+            elif not fit_index and fit_beta:
+                b = InstantVariableDef("b", "real", ["theta[1]"])
+                E0 = InstantVariableDef("E0", "real", ["theta[2]"])
+            elif not fit_beta and fit_index:
+                b = InstantVariableDef("b", "real", ["x_r[1]"])
+                E0 = InstantVariableDef("E0", "real", ["theta[2]"])
+            elif not fit_beta:
+                b = InstantVariableDef("b", "real", ["x_r[2]"])
+                E0 = InstantVariableDef("E0", "real", ["x_r[3]"])
+                e_low = InstantVariableDef("e_low", "real", ["x_r[4]"])
+                e_up = InstantVariableDef("e_up", "real", ["x_r[5]"])
+
+            if any([fit_index, fit_beta, fit_Enorm]):
+                e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
+                e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
+
             E = StringExpression(["E"])
 
             N = ForwardVariableDef("N", "real")
@@ -941,7 +989,8 @@ class LogParabolaSpectrum(SpectralShape):
 
             logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
             logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
-            logE_E0 = InstantVariableDef("logEE0", "real", ["log(E/E0)"])
+            E_E0 = InstantVariableDef("EE0", "real", ["E/E0"])
+            logE_E0 = InstantVariableDef("logEE0", "real", ["log(EE0)"])
 
             (
                 N
@@ -958,13 +1007,23 @@ class LogParabolaSpectrum(SpectralShape):
                 )
                 * E0
             )
-            p << FunctionCall([E / E0, -theta[1] - theta[2] * logE_E0], "pow")
+            p << FunctionCall([E_E0, -a - b * logE_E0], "pow")
             ReturnStatement([FunctionCall([p / N], "log")])
 
         return func
 
     @classmethod
-    def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
+    def make_stan_flux_conv_func(
+        cls,
+        f_name,
+        fit_index: bool,
+        fit_beta: bool,
+        fit_Enorm: bool,
+    ) -> UserDefinedFunction:
+        """
+        If fit_beta==True, signature is theta=[alpha, beta], x_r=[E0, Emin, Emax]
+        else theta=[alpha, E0], x_r=[beta, Emin, Emax]
+        """
         func = UserDefinedFunction(
             f_name,
             ["theta", "x_r", "x_i"],
@@ -976,9 +1035,23 @@ class LogParabolaSpectrum(SpectralShape):
             theta = StringExpression(["theta"])
 
             # Unpack variables
-            E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
-            e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
-            e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
+            if fit_index and fit_beta:
+                E0 = InstantVariableDef("E0", "real", ["x_r[1]"])
+            elif not fit_index and fit_beta:
+                E0 = InstantVariableDef("E0", "real", ["theta[2]"])
+            elif not fit_beta and fit_index:
+                E0 = InstantVariableDef("E0", "real", ["theta[2]"])
+
+            if not any([fit_index, fit_beta, fit_Enorm]):
+                # Everything is data and we are doing a simulation
+                a = InstantVariableDef("a", "real", ["x_r[1]"])
+                b = InstantVariableDef("b", "real", ["x_r[2]"])
+                E0 = InstantVariableDef("E0", "real", ["x_r[3]"])
+                e_low = InstantVariableDef("e_low", "real", ["x_r[4]"])
+                e_up = InstantVariableDef("e_up", "real", ["x_r[5]"])
+            else:
+                e_low = InstantVariableDef("e_low", "real", ["x_r[2]"])
+                e_up = InstantVariableDef("e_up", "real", ["x_r[3]"])
 
             f1 = ForwardVariableDef("f1", "real")
             f2 = ForwardVariableDef("f2", "real")

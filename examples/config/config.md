@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.16.1
+      jupytext_version: 1.15.2
   kernelspec:
     display_name: hi_nu
     language: python
@@ -17,9 +17,13 @@ jupyter:
 ```python
 from hierarchical_nu.utils.config_parser import ConfigParser
 from hierarchical_nu.utils.config import HierarchicalNuConfig
+from hierarchical_nu.source.source import uv_to_icrs
 from hierarchical_nu.events import Events
 from pathlib import Path
+from hierarchical_nu.detector.icecube import IC86_II
 from hierarchical_nu.utils.roi import ROIList
+import numpy as np
+import astropy.units as u
 
 ```
 
@@ -28,7 +32,7 @@ config_path = Path("./hnu_config.yml")
 ```
 
 ```python
-config = HierarchicalNuConfig.from_path(config_path)
+config = HierarchicalNuConfig.load_default()
 ```
 
 ```python
@@ -72,6 +76,11 @@ sim = parser.create_simulation(sources, dm, obs_time)
 sim.precomputation()
 sim.generate_stan_code()
 sim.compile_stan_code()
+# sim.setup_stan_sim(".stan_files/sim_code")
+```
+
+```python
+sim._stan_interface._ps_frame
 ```
 
 ```python
@@ -92,7 +101,15 @@ sim.show_spectrum()
 ```
 
 ```python
-events = parser.events
+sim.save("sim.h5", overwrite=True)
+```
+
+```python
+events = Events.from_file("sim.h5")
+```
+
+```python
+events.N
 ```
 
 ```python
@@ -103,6 +120,7 @@ fit = parser.create_fit(sources, events, dm, obs_time)
 fit.precomputation()
 fit.generate_stan_code()
 fit.compile_stan_code()
+# fit.setup_stan_fit(".stan_files/model_code")
 ```
 
 ```python

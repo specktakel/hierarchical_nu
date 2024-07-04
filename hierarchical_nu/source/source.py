@@ -341,7 +341,7 @@ class PointSource(Source):
         redshift: float,
         lower: Parameter,
         upper: Parameter,
-        normalisation_energy: u.GeV,
+        normalisation_energy: Parameter,
         frame: ReferenceFrame = SourceFrame,
     ):
         """
@@ -367,6 +367,8 @@ class PointSource(Source):
                 Lower energy bound
             upper: Parameter
                 Upper energy bound
+            normalisation_energy: Parameter
+                Normalisation energy of spectrum
             frame: ReferenceFrame
                 Reference frame in which source energy is defined
         """
@@ -386,9 +388,18 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
+        fixed = normalisation_energy.fixed
+        # TODO this is really ugly, find a better solution to this
+        normalisation_energy.fixed = False
+        val = normalisation_energy.value
+        normalisation_energy.value = frame.transform(val, redshift)
+        par_min, par_max = normalisation_energy.par_range
+        par_range = (frame.transform(par_min, redshift), frame.transform(par_max, redshift))
+        normalisation_energy.par_range = par_range
+        normalisation_energy.fixed = fixed
         spectral_shape = LogParabolaSpectrum(
             norm,
-            frame.transform(normalisation_energy, redshift),
+            normalisation_energy,
             alpha,
             beta,
             frame.transform(lower.value, redshift),
@@ -569,7 +580,7 @@ class PointSource(Source):
         )
 
         return source_list
-    
+
     '''
     @classmethod
     def make_logparabola_sources_from_file(
@@ -607,7 +618,6 @@ class PointSource(Source):
 
         return source_list
     '''
-
 
     @property
     def dec(self):

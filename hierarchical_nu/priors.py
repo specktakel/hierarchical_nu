@@ -176,6 +176,7 @@ class PriorDictHandler:
             "src_index": IndexPrior,
             "beta_index": IndexPrior,
             "diff_index": IndexPrior,
+            "E0_src": EnergyPrior,
         }
         prior_name = prior_dict["name"]
         prior = translate[prior_dict["quantity"]]
@@ -371,6 +372,24 @@ class LuminosityPrior(UnitPrior):
         )
 
 
+class EnergyPrior(UnitPrior):
+    UNITS = u.GeV
+    UNITS_STRING = UNITS.to_string()
+
+    @u.quantity_input
+    def __init__(
+        self,
+        name=LogNormalPrior,
+        mu: Union[u.Quantity[u.GeV], None] = 1e6 * u.GeV,
+        sigma: Union[u.Quantity[u.GeV], u.Quantity[1], None] = 3.0,
+    ):
+        """
+        Converts automatically to log of values, be aware of misuse of notation.
+        """
+        # This sigma thing is weird due to the log
+        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
+
+
 class FluxPrior(UnitPrior):
     UNITS = 1 / u.m**2 / u.s
     UNITS_STRING = UNITS.unit.to_string()
@@ -468,6 +487,21 @@ class MultiSourceIndexPrior(MultiSourcePrior, IndexPrior):
         return np.array([_.sigma for _ in self._priors])
 
 
+class MultiSourceEnergyPrior(MultiSourcePrior, EnergyPrior):
+    def __init__(self, priors: Iterable[EnergyPrior]):
+        assert all(isinstance(_, EnergyPrior) for _ in priors)
+        super().__init__(priors)
+
+    @property
+    def mu(self):
+        return np.array([_.mu for _ in self._priors])
+
+    @property
+    def sigma(self):
+        return np.array([_.sigma for _ in self._priors])
+
+
+
 class Priors(object):
     """
     Container for model priors.
@@ -490,6 +524,8 @@ class Priors(object):
         self.diff_index = IndexPrior()
 
         self.atmospheric_flux = FluxPrior()
+
+        self.E0_src = EnergyPrior()
 
     @property
     def luminosity(self):
@@ -524,12 +560,22 @@ class Priors(object):
     @property
     def beta_index(self):
         return self._beta_index
-    
+
     @beta_index.setter
     def beta_index(self, prior: IndexPrior):
         if not isinstance(prior, IndexPrior):
             raise ValueError("Wrong prior type")
         self._beta_index = prior
+
+    @property
+    def E0_src(self):
+        return self._E0_src
+    
+    @E0_src.setter
+    def E0_src(self, prior: EnergyPrior):
+        if not isinstance(prior, EnergyPrior):
+            raise ValueError("Wrong prior type")
+        self._E0_src = prior
 
     @property
     def diff_index(self):
@@ -565,6 +611,10 @@ class Priors(object):
         priors_dict["beta_index"] = self._beta_index
 
         priors_dict["diff_index"] = self._diff_index
+
+        priors_dict["beta_index"] = self._beta_index
+
+        priors_dict["E0_src"] = self._E0_src
 
         return priors_dict
 
@@ -642,6 +692,9 @@ class Priors(object):
                     priors_dict[key] = MultiSourceIndexPrior(container)
                 elif key == "beta_index":
                     priors_dict[key] = MultiSourceIndexPrior(container)
+                elif key == "E0_src":
+                    raise NotImplementedError
+                    #priors_dict[key] = MultiSourceEnergyPrior(container)
                 elif key == "L":
                     priors_dict[key] = MultiSourceLuminosityPrior(container)
 
@@ -662,6 +715,7 @@ class Priors(object):
         try:
             # Backwards compatiblity
             priors.beta_index = priors_dict["beta_index"]
+            priors.E0_src = priors_dict["E0_src"]
         except:
             pass
 
