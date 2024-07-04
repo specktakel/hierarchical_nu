@@ -26,6 +26,7 @@ from hierarchical_nu.source.flux_model import (
     IsotropicDiffuseBG,
     LogParabolaSpectrum,
     PGammaSpectrum,
+    TwiceBrokenPowerLaw,
     PowerLawSpectrum,
 )
 from hierarchical_nu.source.cosmology import luminosity_distance
@@ -146,7 +147,10 @@ class StanFit:
                 self._shared_src_index = True
             elif not index.fixed:
                 self._shared_src_index = False
-            self._power_law = self._sources.point_source_spectrum == PowerLawSpectrum
+            self._power_law = self._sources.point_source_spectrum in [
+                PowerLawSpectrum,
+                TwiceBrokenPowerLaw,
+            ]
             self._logparabola = (
                 self._sources.point_source_spectrum == LogParabolaSpectrum
             )
@@ -222,6 +226,10 @@ class StanFit:
             self._stan_interface._priors = p
         else:
             raise ValueError("Priors must be instance of Priors.")
+
+    @property
+    def sources(self):
+        return self._sources
 
     @property
     def events(self):
@@ -862,29 +870,19 @@ class StanFit:
             variables = self._fit_output.keys()
             stan = False
 
-        fit_index = True if "src_index" in variables else False
-        fit_beta = True if "beta_index" in variables else False
-        fit_Enorm = True if "E0_src" in variables else False
-
-        # should work for pgamma as well. Enorm would always be a fit parameter
-        if fit_beta or fit_Enorm:
-            logparabola = True
-        else:
-            logparabola = False
-
         if stan:
             inputs = self._get_fit_inputs()
-            if fit_index:
+            if self._fit_index:
                 alpha = self._fit_output.stan_variable("src_index")
-            else:
+            elif self._power_law or self._logparabola:
                 alpha = inputs["src_index"]
-            if fit_beta:
+            if self._fit_beta:
                 beta = self._fit_output.stan_variable("beta_index")
-            elif logparabola:
+            elif self._logparabola:
                 beta = inputs["beta_index"]
-            if fit_Enorm:
+            if self._fit_Enorm:
                 E0 = self._fit_output.stan_variable("E0_src")
-            elif logparabola:
+            elif self._logparabola:
                 E0 = inputs["E0_src"]
             F = self._fit_output.stan_variable("F")
             # Find chains and iterations to calculate if parameter is shared or not
@@ -894,37 +892,28 @@ class StanFit:
         else:
             # Need try-except blocks for case of pgamma
             inputs = self._fit_inputs
-            if fit_index:
+            if self._fit_index:
                 alpha = self._fit_output["src_index"]
-            else:
-                try:
-                    alpha = inputs["src_index"]
-                except KeyError:
-                    self._pgamma = False
-            if fit_beta:
+            elif self._power_law or self._logparabola:
+                alpha = inputs["src_index"]
+            if self._fit_beta:
                 beta = self._fit_output["beta_index"]
-            elif logparabola:
-                try:
-                    beta = inputs["beta_index"]
-                except KeyError:
-                    self._pgamma = False
-            if fit_Enorm:
+            elif self._logparabola:
+                beta = inputs["beta_index"]
+            if self._fit_Enorm:
                 E0 = self._fit_output["E0_src"]
-            elif logparabola:
-                try:
-                    E0 = inputs["E0_src"]
-                except KeyError:
-                    self._pgamma = False
+            elif self._logparabola or self._pgamma:
+                E0 = inputs["E0_src"]
             iterations = self._fit_meta["iter_sampling"]
             chains = self._fit_meta["chains"]
             F = self._fit_output["F"]
             F = F.reshape((iterations * chains, F.size // (iterations * chains)))
 
-        if fit_index:
+        if self._fit_index:
             N = alpha.size // (iterations * chains)
-        elif fit_beta:
+        elif self._fit_beta:
             N = beta.size // (iterations * chains)
-        elif fit_Enorm:
+        elif self._fit_Enorm:
             N = E0.size // (iterations * chains)
 
         share_index = N == 1
@@ -932,30 +921,30 @@ class StanFit:
 
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
-                if fit_index:
+                if self._fit_index:
                     index_vals = alpha.flatten()
-                if fit_beta:
+                if self._fit_beta:
                     beta_vals = beta.flatten()
-                if fit_Enorm:
+                if self._fit_Enorm:
                     E0_vals = E0.flatten()
 
             else:
-                if fit_index:
+                if self._fit_index:
                     index_vals = alpha[:, c_ps].flatten()
-                if fit_beta:
+                if self._fit_beta:
                     beta_vals = beta[:, c_ps].flatten()
-                if fit_Enorm:
+                if self._fit_Enorm:
                     E0_vals = E0[:, c_ps].flatten()
 
-            if not fit_index and not self._pgamma:
+            if not self._fit_index and not self._pgamma:
                 index_vals = alpha[c_ps]
                 ps.flux_model.spectral_shape.set_parameter("index", index_vals)
 
-            if not fit_beta and not self._pgamma:
+            if not self._fit_beta and self._logparabola:
                 beta_vals = beta[c_ps]
                 ps.flux_model.spectral_shape.set_parameter("beta", beta_vals)
 
-            if not fit_Enorm and not self._pgamma:
+            if not self._fit_Enorm and self._logparabola:
                 E0_vals = E0[c_ps]
                 ps.flux_model.spectral_shape.set_parameter(
                     "norm_energy", E0_vals * u.GeV
@@ -967,13 +956,13 @@ class StanFit:
             flux_grid = np.zeros((E.size, N_samples))
 
             for c in range(N_samples):
-                if fit_index:
+                if self._fit_index:
                     ps.flux_model.spectral_shape.set_parameter("index", index_vals[c])
 
-                if fit_beta:
+                if self._fit_beta:
                     ps.flux_model.spectral_shape.set_parameter("beta", beta_vals[c])
 
-                if fit_Enorm:
+                if self._fit_Enorm:
                     ps.flux_model.spectral_shape.set_parameter(
                         "norm_energy", E0_vals[c] * u.GeV
                     )
@@ -1129,6 +1118,8 @@ class StanFit:
             meta_folder.create_dataset("parameters", data=np.array(keys, dtype="S"))
 
         self.events.to_file(path, append=True)
+
+        self.sources.save(path, append=True)
 
         # Add priors separately
         self.priors.addto(path, "priors")
@@ -1815,16 +1806,15 @@ class StanFit:
             self._lumi_par_range = Parameter.get_parameter(key).par_range
             self._lumi_par_range = self._lumi_par_range.to_value(u.GeV / u.s)
 
-            self._src_index_par_range = (
-                self._sources.point_source[0].parameters["index"].par_range
-            )
-            if isinstance(
-                self._sources.point_source[0].flux_model.spectral_shape,
-                LogParabolaSpectrum,
-            ):
+            if self._logparabola or self._power_law:
+                self._src_index_par_range = (
+                    self._sources.point_source[0].parameters["index"].par_range
+                )
+            if self._logparabola:
                 self._beta_index_par_range = (
                     self._sources.point_source[0].parameters["beta"].par_range
                 )
+            if self._logparabola or self._pgamma:
                 self._E0_src_par_range = (
                     self._sources.point_source[0].parameters["norm_energy"].par_range
                 )

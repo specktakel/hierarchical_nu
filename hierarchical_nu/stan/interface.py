@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 
 from hierarchical_nu.backend.stan_generator import StanFileGenerator
 from hierarchical_nu.source.parameter import Parameter
-from ..source.flux_model import LogParabolaSpectrum, PowerLawSpectrum
+from ..source.flux_model import LogParabolaSpectrum, PowerLawSpectrum, PGammaSpectrum
 
 # To includes
 STAN_PATH = os.path.dirname(__file__)
@@ -66,9 +66,8 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._logparabola = False
 
-        self._powerlaw = True
+        self._power_law = True
 
-        # from __future__ import...
         self._pgamma = False
 
         self._fit_index = False
@@ -79,7 +78,8 @@ class StanInterface(object, metaclass=ABCMeta):
             self._ps_spectrum = self.sources.point_source_spectrum
             self._ps_frame = self.sources.point_source_frame
             self._logparabola = self._ps_spectrum == LogParabolaSpectrum
-            self._powerlaw = self._ps_spectrum == PowerLawSpectrum
+            self._power_law = self._ps_spectrum == PowerLawSpectrum
+            self._pgamma = self._ps_spectrum == PGammaSpectrum
 
             try:
                 Parameter.get_parameter("luminosity")
@@ -91,30 +91,18 @@ class StanInterface(object, metaclass=ABCMeta):
             src_index = self._sources.point_source[0].parameters["index"]
             if not src_index.fixed and src_index.name == "src_index":
                 self._shared_src_index = True
-            elif self._logparabola:
-                beta_index = self._sources.point_source[0].parameters["beta"]
+            elif not src_index.fixed:
+                self._shared_src_index = False
+            if self._logparabola or self._pgamma:
+                beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
-                if not beta_index.fixed and beta_index.name == "beta_index":
+                if not beta.fixed and beta.name == "beta_index":
                     self._shared_src_index = True
-                elif E0_src.fixed and not E0_src.name == "E0_src":
+                elif not E0_src.fixed and E0_src.name == "E0_src":
                     self._shared_src_index = True
                 else:
                     self._shared_src_index = False
 
-            else:
-                self._shared_src_index = False
-
-            self._fit_index = True
-            self._fit_beta = False
-            self._fit_Enorm = False
-            try:
-                self._fit_beta = (
-                    not self._sources.point_source[0]
-                    .flux_model.parameters["beta"]
-                    .fixed
-                )
-            except KeyError:
-                self._fit_beta = False
             try:
                 self._fit_index = (
                     not self._sources.point_source[0]
@@ -123,6 +111,14 @@ class StanInterface(object, metaclass=ABCMeta):
                 )
             except KeyError:
                 self._fit_index = False
+            try:
+                self._fit_beta = (
+                    not self._sources.point_source[0]
+                    .flux_model.parameters["beta"]
+                    .fixed
+                )
+            except KeyError:
+                self._fit_beta = False
             try:
                 self._fit_Enorm = (
                     not self._sources.point_source[0]

@@ -1162,12 +1162,13 @@ class Sources:
     def __getitem__(self, key):
         return self._sources[key]
 
-    def save(self, file_name):
+    def save(self, file_name, append: bool = True):
         """
         Write the Sources to an HDF5 file.
         """
 
-        raise NotImplementedError()
+        with h5py.File(file_name, "r+") as f:
+            pass
 
     @classmethod
     def from_file(cls, file_name):

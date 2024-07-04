@@ -137,6 +137,13 @@ class StanFitInterface(StanInterface):
                 rewrite=False,
             )
 
+        # In case of pgamma create dummy references to hardcoded parameters
+        # which are otherwise needed in for-loops
+        # TODO: find better solution, possibly to actually use these but set fixed=True
+        if self._pgamma:
+            self._src_index = None
+            self._beta_index = None
+
     def _model_likelihood(self):
         """
         Write the likelihood part of the model.
@@ -235,7 +242,7 @@ class StanFitInterface(StanInterface):
                         # Either if param is fitted, or if we need all references, even to data
                         # (case for generated quantities, i.e. _x_r_idxs does not exist)
 
-                        if self._logparabola:
+                        if self._logparabola or self._pgamma:
 
                             # create even more references
                             # go through all three params
@@ -286,14 +293,15 @@ class StanFitInterface(StanInterface):
                                 data = ["{"]
                                 first_data = True
                                 for f, r in zip(self._fit, self._refs):
-                                    if not f:
+                                    if not f and self._logparabola:
                                         if not first_data:
                                             data.append(",")
                                         data.append(r[k])
                                         first_data = False
                                 # Otherwise single thread or generated quantities
+                                if self._logparabola:
+                                    data.append(",")
                                 data += [
-                                    ",",
                                     self._Emin_src[k],
                                     ",",
                                     self._Emax_src[k],
@@ -441,7 +449,7 @@ class StanFitInterface(StanInterface):
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
             if self.sources.point_source:
-                if self._logparabola:
+                if self._logparabola or self._pgamma:
                     self._ps_spectrum.make_stan_utility_func(
                         self._fit_index, self._fit_beta, self._fit_Enorm
                     )
@@ -673,14 +681,14 @@ class StanFitInterface(StanInterface):
                     # Insert Emin_src
                     end << end + self._Ns
                     self._Emin_src << StringExpression(["real_data[start:end]"])
-                    if self._logparabola:
+                    if self._logparabola or self._pgamma:
                         self._x_r_idxs[self._x_r_len - 1] << start
                     start << start + self._Ns
 
                     # Insert Emax_src
                     end << end + self._Ns
                     self._Emax_src << StringExpression(["real_data[start:end]"])
-                    if self._logparabola:
+                    if self._logparabola or self._pgamma:
                         self._x_r_idxs[self._x_r_len] << start
                     start << start + self._Ns
 
@@ -702,7 +710,7 @@ class StanFitInterface(StanInterface):
                     start << start + 1
 
                     data_idx = 1
-                    if not self._fit_index:
+                    if not self._pgamma and not self._fit_index:
                         end << end + self._Ns
                         self._src_index = ForwardArrayDef("src_index", "real", ["[Ns]"])
                         self._src_index << real_data[start:end]
@@ -781,11 +789,11 @@ class StanFitInterface(StanInterface):
             # Total number of sources
             self._Ns_tot = ForwardVariableDef("Ns_tot", "int")
 
-            if self.sources.diffuse and self._ps_spectrum != LogParabolaSpectrum:
+            if self.sources.diffuse and self._n_params == 1:
                 self._Ns_string_int_grid = "Ns+1"
             elif self.sources.diffuse:
                 self._Ns_string_int_grid = "1"
-            elif self._ps_spectrum != LogParabolaSpectrum:
+            elif self._n_params == 1:
                 self._Ns_string_int_grid = "Ns"
 
             if self._nshards not in [0, 1]:
@@ -1398,7 +1406,7 @@ class StanFitInterface(StanInterface):
                     if self._fit_beta:
                         self._beta_index = ParameterVectorDef(
                             "beta_index",
-                            "real",
+                            "vector",
                             self._Ns_str,
                             self._beta_min,
                             self._beta_max,
@@ -1406,7 +1414,7 @@ class StanFitInterface(StanInterface):
                     if self._fit_Enorm:
                         self._E0_src = ParameterVectorDef(
                             "E0_src",
-                            "real",
+                            "vector",
                             self._Ns_str,
                             self._E0_src_min,
                             self._E0_src_max,
@@ -1633,7 +1641,7 @@ class StanFitInterface(StanInterface):
                         ]
                     )
 
-                    if self._logparabola:
+                    if self._logparabola or self._pgamma:
                         # create even more references
                         # go through all three params
                         fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
@@ -1650,15 +1658,17 @@ class StanFitInterface(StanInterface):
                         for f, r, g in zip(fit, refs, grids):
                             if f:
                                 if not first_param:
-                                    p2 = r[k]
-                                    g2 = g
+                                    if self._n_params == 2:
+                                        p2 = r[k]
+                                        g2 = g
                                     theta.append(",")
                                 else:
-                                    p1 = r[k]
-                                    g1 = g
+                                    if self._n_params == 2:
+                                        p1 = r[k]
+                                        g1 = g
                                 theta.append(r[k])
                                 first_param = False
-                            else:
+                            elif self._logparabola:
                                 # put the leftovers in the fridge, please
                                 if not first_data:
                                     data.append(",")
@@ -1668,8 +1678,9 @@ class StanFitInterface(StanInterface):
                         theta.append("}")
                         theta = StringExpression(theta)
 
+                        if self._logparabola:
+                            data.append(",")
                         data += [
-                            ",",
                             self._Emin_src[k],
                             ",",
                             self._Emax_src[k],
