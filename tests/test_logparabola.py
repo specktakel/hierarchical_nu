@@ -99,14 +99,14 @@ def simulation_E0(output_directory):
 
 
 @pytest.fixture
-def simulation_beta(output_directory):
+def simulation_beta_E0(output_directory):
     Parameter.clear_registry()
     src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1.0, 4.0))
     beta_index = Parameter(0.5, "beta_index", fixed=True, par_range=(-0.5, 1.0))
     E0 = Parameter(
         1e5 * u.GeV,
         "E0_src",
-        fixed=False,
+        fixed=True,
         par_range=(1e3, 1e9) * u.GeV,
         scale=ParScale.log,
     )
@@ -283,10 +283,6 @@ def test_logparabola_E0(simulation_E0):
     fit.precomputation()
     fit.generate_stan_code()
     fit.compile_stan_code()
-    print(fit._logparabola)
-    print(fit._fit_index)
-    print(fit._fit_beta)
-    print(fit._fit_Enorm)
     fit.run(
         inits={
             "E": fit.events.N * [1e5],
@@ -298,14 +294,14 @@ def test_logparabola_E0(simulation_E0):
     )
 
 
-def test_logparabola_beta(simulation_beta):
+def test_logparabola_beta_E0(simulation_beta_E0):
     Parameter.clear_registry()
     src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1.0, 4.0))
     beta_index = Parameter(0.0, "beta_index", fixed=True, par_range=(-0.5, 1.0))
     E0 = Parameter(
-        1e7 * u.GeV,
+        1e5 * u.GeV,
         "E0_src",
-        fixed=False,
+        fixed=True,
         par_range=(1e3, 1e9) * u.GeV,
         scale=ParScale.log,
     )
@@ -352,14 +348,13 @@ def test_logparabola_beta(simulation_beta):
     # Less grid points to speed up testing
     # use mulithreading for one of the tests
     fit = StanFit(
-        sources, IC86_II, simulation_beta, lifetime, n_grid_points=20, nshards=2
+        sources, IC86_II, simulation_beta_E0, lifetime, n_grid_points=20, nshards=2
     )
     print(fit._logparabola)
     print(fit._fit_index)
     print(fit._fit_beta)
     print(fit._fit_Enorm)
     fit.precomputation()
-    # fit.set_stan_filename(".stan_files/model_code.stan")
     fit.generate_stan_code()
     fit.compile_stan_code()
     fit.run(
