@@ -83,6 +83,10 @@ class SpectralShape(ABC):
     def energy_bounds(self):
         return (self._lower_energy, self._upper_energy)
 
+    @property
+    def name(self):
+        return self._name
+
 
 class FluxModel(ABC):
     """
@@ -259,6 +263,8 @@ class PowerLawSpectrum(SpectralShape):
     """
     Power law shape
     """
+
+    _name = "power-law"
 
     @u.quantity_input
     def __init__(
@@ -578,6 +584,7 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
 
     _index0 = -15.0
     _index2 = 15.0
+    _name = "twice-broken-power-law"
 
     @u.quantity_input
     def __init__(
@@ -670,6 +677,9 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
 
 
 class LogParabolaSpectrum(SpectralShape):
+
+    _name = "logparabola"
+
     @u.quantity_input
     def __init__(
         self,
@@ -1107,6 +1117,7 @@ class PGammaSpectrum(SpectralShape):
     _src_index = 0.0
     _alpha = 0.0
     _beta = 0.7
+    _name = "pgamma"
 
     @u.quantity_input
     def __init__(
@@ -1122,8 +1133,10 @@ class PGammaSpectrum(SpectralShape):
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
         # Create hidden parameters requiring less changes to the code generator
-        index = Parameter(self._src_index, "src_index", fixed=True, par_range=(-1., 1.))
-        beta = Parameter(self._beta, "beta_index", fixed=True, par_range=(0., 1.))
+        index = Parameter(
+            self._src_index, "src_index", fixed=True, par_range=(-1.0, 1.0)
+        )
+        beta = Parameter(self._beta, "beta_index", fixed=True, par_range=(0.0, 1.0))
         self._parameters = {
             "index": index,
             "beta": beta,
