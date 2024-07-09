@@ -69,7 +69,7 @@ class StanSimInterface(StanInterface):
         atmospheric flux
         :param includes: List of names of stan files to include into the
         functions block of the generated file
-        :param N: dict with keys "tracks" and/or "cascades". Value needs to be a list of length `len(sources)`
+        :param force_N: True if either asimov option or fixed number of events is used.
         """
 
         super().__init__(
@@ -103,33 +103,6 @@ class StanSimInterface(StanInterface):
             )
 
             self._dm[et] = dm
-
-        self._logparabola = False
-        if self._sources.point_source:
-            self._logparabola = self._ps_spectrum == LogParabolaSpectrum
-            self._fit_index = True
-            self._fit_beta = False
-            self._fit_Enorm = False
-            if self._logparabola:
-                self._fit_beta = (
-                    not self._sources.point_source[0]
-                    .flux_model.parameters["beta"]
-                    .fixed
-                )
-                self._fit_index = (
-                    not self._sources.point_source[0]
-                    .flux_model.parameters["index"]
-                    .fixed
-                )
-                self._fit_Enorm = (
-                    not self._sources.point_source[0]
-                    .flux_model.parameters["norm_energy"]
-                    .fixed
-                )
-                assert (
-                    int(self._fit_beta) + int(self._fit_index) + int(self._fit_Enorm)
-                    <= 2
-                )
 
     def _functions(self):
         """
@@ -200,12 +173,14 @@ class StanSimInterface(StanInterface):
             else:
                 Ns_string = "Ns"
 
-            if self.sources.diffuse and self._ps_spectrum != LogParabolaSpectrum:
-                self._Ns_string_int_grid = "Ns+1"
-            elif self.sources.diffuse:
-                self._Ns_string_int_grid = "1"
-            elif self._ps_spectrum != LogParabolaSpectrum:
-                self._Ns_string_int_grid = "Ns"
+            if self.sources.point_source:
+                self._L = ForwardVariableDef("L", "vector[Ns]")
+                self._Emin_src = ForwardVariableDef("Emin_src", "vector[Ns]")
+                self._Emax_src = ForwardVariableDef("Emax_src", "vector[Ns]")
+                self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
+                if self._ps_spectrum == LogParabolaSpectrum:
+                    self._beta_index = ForwardVariableDef("beta_index", "vector[Ns]")
+                    self._E0_src = ForwardVariableDef("E0_src", "vector[Ns]")
 
             # True directions of point sources as a unit vector
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
@@ -214,66 +189,22 @@ class StanSimInterface(StanInterface):
             if self.sources.point_source:
                 self._D = ForwardVariableDef("D", "vector[Ns]")
 
-            # For diffuse and point sources, we have an interpolation grid
-            # for the integral of expected number of events to pass
-            if self.sources.diffuse or self.sources.point_source:
-                self._Ngrid = ForwardVariableDef("Ngrid", "int")
-
             # Diffuse sources have a redshift (default z=0) a spectral index,
             # and a grid over this index for the interpolation mentioned above
             if self.sources.diffuse:
-                self._z = ForwardVariableDef("z", "vector[Ns+1]")
                 self._diff_index = ForwardVariableDef("diff_index", "real")
-                self._diff_index_grid = ForwardVariableDef(
-                    "diff_index_grid", "vector[Ngrid]"
-                )
-
+                # Energy range considered for diffuse astrophysical sources, defined at redshift z of shell
+                self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
+                self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
+                self._F_diff = ForwardVariableDef("F_diff", "real")
+                self._z = ForwardVariableDef("z", "vector[Ns+1]")
             else:
                 self._z = ForwardVariableDef("z", "vector[Ns]")
-
-            # Point sources can have shared/individual spectral indices, and
-            # a grid over the spectral index is also passed, as for diffuse sources.
-            if self.sources.point_source:
-                self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
-                if self._logparabola:
-                    self._beta_index = ForwardVariableDef(
-                        "beta_index", "vector[Ns]"
-                    )
-                    self._E0_src = ForwardVariableDef("E0_src", "vector[Ns]")
-
-                if self._fit_index:
-                    self._src_index_grid = ForwardVariableDef(
-                        "src_index_grid", "vector[Ngrid]"
-                    )
-                else:
-                    self._src_index_grid = 0
-                if self._fit_beta:
-                    self._beta_index_grid = ForwardVariableDef(
-                        "beta_index_grid", "vector[Ngrid]"
-                    )
-                else:
-                    self._beta_index_grid = 0
-                if self._fit_Enorm:
-                    self._E0_src_grid = ForwardVariableDef(
-                        "E0_src_grid", "vector[Ngrid]"
-                    )
-                else:
-                    self._E0_src_grid = 0
-
-                # Is this sensible for logparabola spectra? or just use the entire energy range?
-                # I don't want to add PL flanks outside Emin/max_src
-                self._Emin_src = ForwardVariableDef("Emin_src", "vector[Ns]")
-                self._Emax_src = ForwardVariableDef("Emax_src", "vector[Ns]")
 
             # Energy range that the detector should consider
             # Is influenced by parameterisation of energy resolution
             self._Emin = ForwardVariableDef("Emin", "real")
             self._Emax = ForwardVariableDef("Emax", "real")
-
-            # Energy range considered for diffuse astrophysical sources, defined at redshift z of shell
-            if self.sources.diffuse:
-                self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
-                self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
 
             # For tracks, we specify Emin_det, and several parameters for the
             # rejection sampling, denoted by rs_...
@@ -294,44 +225,15 @@ class StanSimInterface(StanInterface):
                 "rs_cvals", "real", ["[", self._Net, ",", Ns_string, "]"]
             )
 
-            if self._logparabola:
-                self._integral_grid_2d = ForwardArrayDef(
-                    "integral_grid_2d",
-                    "real",
-                    [
-                        "[",
-                        self._Net,
-                        ",",
-                        self._Ns,
-                        ",",
-                        self._Ngrid,
-                        ",",
-                        self._Ngrid,
-                        "]",
-                    ],
-                )
-            if self.sources.diffuse or self._ps_spectrum != LogParabolaSpectrum:
-                self._integral_grid = ForwardArrayDef(
-                    "integral_grid",
-                    "vector[Ngrid]",
-                    ["[", self._Net, ",", self._Ns_string_int_grid, "]"],
-                )
-
             if self._force_N:
                 self._forced_N = ForwardArrayDef(
                     "forced_N", "int", ["[", self._Net, ",", Ns_string, "]"]
                 )
-
-            # We define the necessary source input parameters depending on
-            # what kind of sources we have
-            if self.sources.point_source:
-                if self._shared_luminosity:
-                    self._L = ForwardVariableDef("L", "real")
-                else:
-                    self._L = ForwardVariableDef("L", "vector[Ns]")
-
-            if self.sources.diffuse:
-                self._F_diff = ForwardVariableDef("F_diff", "real")
+            # Get number of expected events per detector model and source component from python
+            # rids us of all the interpolation needed here (done twice, first in python...)
+            self._Nex_et = ForwardArrayDef(
+                "Nex_et", "real", ["[", self._Net, ",", Ns_string, "]"]
+            )
 
             if self.sources.atmospheric:
                 self._F_atmo = ForwardVariableDef("F_atmo", "real")
@@ -397,19 +299,16 @@ class StanSimInterface(StanInterface):
             for et in self._event_types:
                 self._et_stan[idx] << et.S
                 idx += 1
+            if not self._force_N:
+                # Relative exposure weights of sources
+                self._w_exposure = ForwardArrayDef(
+                    "w_exposure", "simplex" + N_tot, ["[", self._Net, "]"]
+                )
 
-            # Relative exposure weights of sources for tracks
-            self._w_exposure = ForwardArrayDef(
-                "w_exposure", "simplex" + N_tot, ["[", self._Net, "]"]
-            )
-
-            # Exposure of sources for tracks
-            self._eps = ForwardArrayDef("eps", "vector" + N_tot, ["[", self._Net, "]"])
-
-            # Expected number of events for tracks
+            # Expected number of events
             self._Nex = ForwardArrayDef("Nex", "real", ["[", self._Net, "]"])
 
-            # Sampled number of events for tracks
+            # Sampled number of events
             self._N_comp = ForwardArrayDef("N_comp", "int", ["[", self._Net, "]"])
 
             # Total flux
@@ -446,48 +345,12 @@ class StanSimInterface(StanInterface):
             self._N = ForwardVariableDef("N", "int")
 
             self._F_src << 0.0
-            if self.sources.point_source:
-                with ForLoopContext(1, self._Net_stan, "i") as i:
-                    self._Nex_src_comp[i] << 0.0
 
             if self.sources.point_source:
                 with ForLoopContext(1, self._Ns, "k") as k:
-                    if self._shared_luminosity:
-                        L_ref = self._L
-                    else:
-                        L_ref = self._L[k]
-
-                    src_index_ref = self._src_index[k]
-
-                    if self._logparabola:
-                        E0_src_ref = self._E0_src[k]
-                        beta_index_ref = self._beta_index[k]
-                        # create even more references
-                        # go through all three params
-                        fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
-                        refs = [src_index_ref, beta_index_ref, E0_src_ref]
-                        grids = [
-                            self._src_index_grid,
-                            self._beta_index_grid,
-                            self._E0_src_grid,
-                        ]
-                        first = True
-                        for f, r, g in zip(fit, refs, grids):
-                            if f and first:
-                                first_param = r
-                                first_grid = g
-                                first = False
-                            elif f:
-                                second_param = r
-                                second_grid = g
-                            else:
-                                # put the leftovers in the fridge, please
-                                leftover = r
-
-                    # Calculate energy flux from L and D
                     self._F[k] << StringExpression(
                         [
-                            L_ref,
+                            self._L[k],
                             "/ (4 * pi() * pow(",
                             self._D[k],
                             " * ",
@@ -496,19 +359,16 @@ class StanSimInterface(StanInterface):
                         ]
                     )
 
-                    # Convert energy flux to number flux based on spectral
-                    # shape and energy bounds
                     if self._logparabola:
-                        # 1. is defnitely a parameter...
                         theta = StringExpression(["{1.}"])
                         x_r = StringExpression(
                             [
                                 "{",
-                                src_index_ref,
+                                self._src_index[k],
                                 ",",
-                                beta_index_ref,
+                                self._beta_index[k],
                                 ",",
-                                E0_src_ref,
+                                self._E0_src[k],
                                 ",",
                                 self._Emin_src[k],
                                 ",",
@@ -540,7 +400,7 @@ class StanSimInterface(StanInterface):
                                 self._F[k],
                                 "*=",
                                 self._flux_conv(
-                                    src_index_ref,
+                                    self._src_index[k],
                                     self._Emin_src[k],
                                     self._Emax_src[k],
                                 ),
@@ -549,38 +409,6 @@ class StanSimInterface(StanInterface):
 
                     # Sum point source flux
                     StringExpression([self._F_src, " += ", self._F[k]])
-
-                    if self._logparabola:
-                        args = [
-                            first_param,
-                            second_param,
-                            FunctionCall([first_grid], "to_array_1d"),
-                            FunctionCall([second_grid], "to_array_1d"),
-                            self._integral_grid_2d[i, k],
-                        ]
-                        method = "interp2dlog"
-
-                    else:
-                        args = [
-                            self._src_index_grid,
-                            self._integral_grid[i, k],
-                            src_index_ref,
-                        ]
-                        method = "interpolate_log_y"
-
-                    with ForLoopContext(1, self._Net_stan, "i") as i:
-                        (
-                            self._eps[i, k]
-                            << FunctionCall(
-                                args,
-                                method,
-                            )
-                            * self._T[i]
-                        )
-
-                        StringExpression(
-                            [self._Nex_src_comp[i], "+=", self._F[k] * self._eps[i, k]]
-                        )
 
             if self.sources.diffuse:
                 StringExpression("F[Ns+1]") << self._F_diff
@@ -593,73 +421,28 @@ class StanSimInterface(StanInterface):
 
             # Calculate the exposure for diffuse/atmospheric sources
             # For cascades, we assume no atmo component
-            if self.sources.diffuse and self.sources.atmospheric:
-                with ForLoopContext(1, self._Net_stan, "i") as i:
-                    (
-                        self._eps[i, "Ns+1"]
-                        << FunctionCall(
-                            [
-                                self._diff_index_grid,
-                                self._integral_grid[i, self._Ns_string_int_grid],
-                                self._diff_index,
-                            ],
-                            "interpolate_log_y",
-                        )
-                        * self._T[i]
-                    )
-
-                    (
-                        self._Nex_diff_comp[i]
-                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
-                    )
-
-                    # no interpolation needed for atmo as spectral shape is fixed
-                    self._eps[i, "Ns + 2"] << self._atmo_integ_val[i] * self._T[i]
-
-                    (
-                        self._Nex_atmo_comp[i]
-                        << self._F["Ns + 2"] * self._eps[i, "Ns + 2"]
-                    )
-
-            elif self.sources.diffuse:
-                with ForLoopContext(1, self._Net_stan, "i") as i:
-                    (
-                        self._eps[i, "Ns + 1"]
-                        << FunctionCall(
-                            [
-                                self._diff_index_grid,
-                                self._integral_grid[i, self._Ns_string_int_grid],
-                                self._diff_index,
-                            ],
-                            "interpolate_log_y",
-                        )
-                        * self._T[i]
-                    )
-
-                    (
-                        self._Nex_diff_comp[i]
-                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
-                    )
-
-            elif self.sources.atmospheric:
-                with ForLoopContext(1, self._Net_stan, "i") as i:
-                    self._eps[i, "Ns + 1"] << self._atmo_integ_val[i] * self._T[i]
-
-                    (
-                        self._Nex_atmo_comp[i]
-                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
-                    )
-
-            # Get the relative exposure weights of all sources
-            # This will be used to sample the labels
-            # Also sample the number of events
-            # if "tracks" in self._event_types:
 
             with ForLoopContext(1, self._Net_stan, "i") as i:
-                self._Nex[i] << FunctionCall([self._F, self._eps[i]], "get_Nex")
-                self._w_exposure[i] << FunctionCall(
-                    [self._F, self._eps[i]], "get_exposure_weights"
-                )
+                if not self._force_N:
+                    if self.sources.point_source:
+                        self._Nex_src_comp[i] << FunctionCall(
+                            [self._Nex_et[i, 1 : self._Ns]], "sum"
+                        )
+                    if self.sources.diffuse:
+                        self._Nex_diff_comp[i] << self._Nex_et[i, "Ns+1"]
+                    if self.sources.atmospheric and not self.sources.diffuse:
+                        self._Nex_atmo_comp[i] << self._Nex_et[i, "Ns+1"]
+                    elif self.sources.atmospheric:
+                        self._Nex_atmo_comp[i] << self._Nex_et[i, "Ns+2"]
+
+                    # Get the relative exposure weights of all sources
+                    # This will be used to sample the labels
+                    # Also sample the number of events
+
+                    self._Nex[i] << FunctionCall([self._Nex_et[i]], "sum")
+                    self._w_exposure[i] << FunctionCall(
+                        [self._Nex_et[i]], "get_exposure_weights_from_Nex_et"
+                    )
 
                 # If we passed the `force_N` keyword we ignore the exposure weighting
                 # and sample a fixed amount of events
@@ -911,43 +694,13 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
-                                src_index_ref = self._src_index[self._lam[i]]
-
-                                if self._logparabola:
-                                    beta_index_ref = self._beta_index[self._lam[i]]
-                                    E0_src_ref = self._E0_src[self._lam[i]]
-
-                                    # create even more references
-                                    # go through all three params
-                                    fit = [
-                                        self._fit_index,
-                                        self._fit_beta,
-                                        self._fit_Enorm,
-                                    ]
-                                    refs = [src_index_ref, beta_index_ref, E0_src_ref]
-                                    grids = [
-                                        self._src_index_grid,
-                                        self._beta_index_grid,
-                                        self._E0_src_grid,
-                                    ]
-                                    first = True
-                                    for f, r, g in zip(fit, refs, grids):
-                                        if f and first:
-                                            first_param = r
-                                            first_grid = g
-                                            first = False
-                                        elif f:
-                                            second_param = r
-                                            second_grid = g
-                                        else:
-                                            # put the leftovers in the fridge, please
-                                            leftover = r
 
                                 # The shape of the envelope to use depends on the
                                 # source spectrum. This is to make things more efficient.
                                 (
                                     self._gamma2
-                                    << self._rs_bbpl_gamma2_scale[j] - src_index_ref
+                                    << self._rs_bbpl_gamma2_scale[j]
+                                    - self._src_index[self._lam[i]]
                                 )
 
                                 # Handle energy thresholds
@@ -1106,11 +859,11 @@ class StanSimInterface(StanInterface):
                                     x_r = StringExpression(
                                         [
                                             "{",
-                                            src_index_ref,
+                                            self._src_index[self._lam[i]],
                                             ",",
-                                            beta_index_ref,
+                                            self._beta_index[self._lam[i]],
                                             ",",
-                                            E0_src_ref,
+                                            self._E0_src[self._lam[i]],
                                             ",",
                                             self._Emin_src[self._lam[i]],
                                             ",",
@@ -1134,7 +887,7 @@ class StanSimInterface(StanInterface):
                                 else:
                                     self._src_factor << self._src_spectrum_lpdf(
                                         self._E[i],
-                                        src_index_ref,
+                                        self._src_index[self._lam[i]],
                                         self._Emin_src[self._lam[i]],
                                         self._Emax_src[self._lam[i]],
                                     )

@@ -71,6 +71,17 @@ class StanFit:
     ):
         """
         To set up and run fits in Stan.
+        :param sources: instance of Sources
+        :param event_types: EventType or List thereof, to be included in the fit
+        :param events: instance of Events
+        :param observation_time: astropy.units time for single event type or dictionary thereof with event type as key
+        :param priors: instance of Priors of parameters
+        :param atmo_flux_energy_points: number of points for atmo spectrum energy interpolation
+        :param atmo_flux_theta_points: number of points for atmo spectrum cos(theta) interpolation
+        :param n_grid_points: number of grid points used per parameter in precomputation of exposure
+        :param nshards: number of shards into which data is split. zero or one for single thread, larger will compile code for multithreading
+        :param use_event_tag: for multiple ROI set to True to only consider closest point source for each event
+        :param debug: set to True for unit testing purposes
         """
 
         self._sources = sources
@@ -133,25 +144,30 @@ class StanFit:
             self._shared_luminosity = False
 
         if self._sources.point_source:
+            self._logparabola = False
             index = self._sources.point_source[0].parameters["index"]
             if not index.fixed and index.name == "src_index":
                 self._shared_src_index = True
             elif not index.fixed:
                 self._shared_src_index = False
-            else:
+            if self._sources.point_source_spectrum == LogParabolaSpectrum:
+                self._logparabola = True
                 beta = self._sources.point_source[0].parameters["beta"]
+                E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 if not beta.fixed and beta.name == "beta_index":
                     self._shared_src_index = True
-                elif not beta.fixed:
+                elif not E0_src.fixed and E0_src.name == "E0_src":
+                    self._shared_src_index = True
+                else:
                     self._shared_src_index = False
 
             self._fit_index = not index.fixed
-            try:
+            if self._logparabola:
                 beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 self._fit_beta = not beta.fixed
                 self._fit_Enorm = not E0_src.fixed
-            except KeyError:
+            else:
                 self._fit_beta = False
                 self._fit_Enorm = False
         else:
@@ -223,6 +239,12 @@ class StanFit:
         exposure_integral: collections.OrderedDict = None,
         show_progress: bool = False,
     ):
+        """
+        Run the necessary precomputation
+        :param exposure_integral: instance of ExposureIntegral if already available.
+        :param show_progress: set to True if progress bars should be displayed.
+        """
+
         if not exposure_integral:
             for event_type in self._event_types:
                 self._exposure_integral[event_type] = ExposureIntegral(
@@ -604,7 +626,12 @@ class StanFit:
                         ls="--",
                     )
 
-        ax.text(1e7, yhigh, "$\hat E$", fontsize=8.,)
+        ax.text(
+            1e7,
+            yhigh,
+            "$\hat E$",
+            fontsize=8.0,
+        )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
@@ -627,6 +654,9 @@ class StanFit:
         :param assoc_idx: integer identifying the source component to calculate assoc prob
         :param radius: if center is not None, select only events within radius around center
         :param color_scale: color scale of assoc prob, either "lin" or "log"
+        :param highlight: List of event indices to highlight in plot, defaults to
+            all events with association probability larger than `assoc_threshold` to selected source component.
+        :param assoc_threshold: If highlight==None, highlight above this association probability.
         """
 
         fig, ax = plt.subplots(dpi=150)
@@ -740,6 +770,7 @@ class StanFit:
         :param radius: Radius of sky plot
         :param assoc_idx: source idx to calculate the association probability
         :param color_scale: display association probability on "lin" or "log" scale
+        :param highlight: Iterable of event indices to highlight in plot.
         """
 
         if isinstance(center, int):
@@ -773,6 +804,21 @@ class StanFit:
         assoc_threshold: float = 0.2,
         figsize=(8, 3),
     ):
+        """
+        Create plot of the ROI.
+        Events are colour-coded dots, color corresponding
+        to the association probability to the point source proposed.
+        Assumes there is a point source in self._sources[0].
+        Size of events are meaningless.
+        :param center: either SkyCoord or PS index to center the plot on
+        :param radius: Radius of sky plot
+        :param assoc_idx: source idx to calculate the association probability
+        :param color_scale: display association probability on "lin" or "log" scale
+        :param highlight: Iterable of event indices to highlight in plot.
+        :param assoc_threshold: If highlight==None, highlight above this association probability.
+        :param figsize: Tuple passed to pyplot.
+        """
+
         fig = plt.figure(dpi=150, figsize=figsize)
         gs = fig.add_gridspec(
             1,
@@ -832,7 +878,11 @@ class StanFit:
     ):
         """
         Plot flux uncertainties.
-        Flux is multiplied by E**E_power.
+        :param E_power: float, plots flux * E**E_power.
+        :param credible_interval: set credible intervals to be plotted.
+        :param energy_unit: Choose your favourite flux energy unit.
+        :param area_unit: Choose your favourite flux area unit.
+        :param x_energy_unit: Choose your favourite abscissa energy unit
         """
 
         if not self._sources.point_source:
@@ -1003,7 +1053,13 @@ class StanFit:
 
         return fig, ax
 
-    def save(self, path, overwrite: bool = False):
+    def save(self, path: Path, overwrite: bool = False):
+        """
+        Save fit to h5 file.
+        :param path: Path to which fit is saved.
+        :param overwrite: Set to `True` to overwrite existing file,
+            else timestamp is appended to `path` to avoid overwriting.
+        """
 
         # Check if filename consists of a path to some directory as well as the filename
         dirname = os.path.dirname(path)
@@ -1109,7 +1165,7 @@ class StanFit:
 
         # Add priors separately
         self.priors.addto(path, "priors")
-        
+
     def diagnose(self):
         try:
             print(self._fit_output.diagnose().decode("ascii"))
@@ -1132,6 +1188,7 @@ class StanFit:
         """
         Load fit output from file. Allows to
         make plots and run classification check.
+        :param filename: single or multiple filenames to be loaded.
         """
 
         if len(filename) == 1:
@@ -1303,6 +1360,10 @@ class StanFit:
         )
 
     def diagnose(self):
+        """
+        Print fit diagnose message.
+        """
+
         try:
             print(self._fit_output.diagnose())
         except AttributeError:
@@ -1313,6 +1374,7 @@ class StanFit:
         For the case of simulated data, check if
         events are correctly classified into the
         different source categories.
+        :param sim_outputs: True associations of events, using `Lambda` of simulation.
         """
 
         Ns = len([s for s in self._sources.sources if isinstance(s, PointSource)])
@@ -1515,10 +1577,6 @@ class StanFit:
             )
 
         if self._sources.point_source:
-            # Set the default case of (twice broken) power law
-            fit_index = True
-            fit_beta = False
-            fit_Enorm = False
             # Check for shared source index
             if self._shared_src_index:
                 key = "src_index"
@@ -1530,19 +1588,11 @@ class StanFit:
             # src_index_grid is identical for all point sources
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
-                if logparabola:
+                if self._logparabola:
                     key_beta = "%s_beta_index" % self._sources.point_source[0].name
                     key_Enorm = "%s_E0_src" % self._sources.point_source[0].name
-            if logparabola:
-                fit_beta = (
-                    key_beta in self._exposure_integral[event_type].par_grids.keys()
-                )
-                fit_Enorm = (
-                    key_Enorm in self._exposure_integral[event_type].par_grids.keys()
-                )
-                fit_index = key in self._exposure_integral[event_type].par_grids.keys()
 
-            if fit_index:
+            if self._fit_index:
                 fit_inputs["src_index_grid"] = self._exposure_integral[
                     event_type
                 ].par_grids[key]
@@ -1558,8 +1608,8 @@ class StanFit:
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
 
-            if logparabola:
-                if fit_beta:
+            if self._logparabola:
+                if self._fit_beta:
                     fit_inputs["beta_index_grid"] = self._exposure_integral[
                         event_type
                     ].par_grids[key_beta]
@@ -1573,10 +1623,10 @@ class StanFit:
                         for ps in self._sources.point_source
                     ]
 
-                if fit_Enorm:
+                if self._fit_Enorm:
                     fit_inputs["E0_src_grid"] = self._exposure_integral[
                         event_type
-                    ].par_grids["E0_src"]
+                    ].par_grids[key_Enorm]
                     fit_inputs["E0_src_min"] = self._E0_src_par_range[0].to_value(u.GeV)
                     fit_inputs["E0_src_max"] = self._E0_src_par_range[1].to_value(u.GeV)
                     if self._priors.E0_src.name == "lognormal":
@@ -1695,7 +1745,7 @@ class StanFit:
                 )
                 - 1
             )
-        # log_energies = np.log10(self.events.energies.to_value(u.GeV))
+        log_energies = np.log10(self.events.energies.to_value(u.GeV))
 
         idxs = (
             np.digitize(
@@ -1731,7 +1781,10 @@ class StanFit:
                                 ].energy_resolution._log_tE_grid,
                                 grid=False,
                             )
-                            for logE in ereco_indexed[
+                            # for logE in ereco_indexed[
+                            #    (et.S == self.events.types) & (dec_idx == c_d)
+                            # ]
+                            for logE in log_energies[
                                 (et.S == self.events.types) & (dec_idx == c_d)
                             ]
                         ]
