@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from omegaconf import OmegaConf
 import numpy as np
 import logging
+import astropy.units as u
 
 
 _local_config_path = Path(".")
@@ -22,9 +23,9 @@ logger.setLevel(logging.INFO)
 class ParameterConfig:
     source_type: str = (
         "twice-broken-power-law"  # Currently only supports one type for all sources,
-        # other option "power-law" covering the entire energy range
-        # or "logparabola". If logparabola, the two fit parameters used
-        # (two out of src_index, beta_index and E0_src) needs to be defined
+        # other options: "power-law" covering the entire energy range,
+        # or "logparabola", or "pgamma". If logparabola, up to two fit parameters used
+        # (out of src_index, beta_index and E0_src) need to be defined
         # in the field "fit_params", e.g. fit_params: ["src_index", "beta_index"]
     )
     fit_params: List[str] = field(default_factory=lambda: ["src_index"])
@@ -129,7 +130,9 @@ class PriorConfig:
         default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=0.0, sigma=0.1)
     )
     E0_src: SinglePriorConfig = field(
-        default_factory=lambda: SinglePriorConfig(name="LogNormalPrior", mu=1e5, sigma=3.)
+        default_factory=lambda: SinglePriorConfig(
+            name="LogNormalPrior", mu=1e5, sigma=3.0
+        )
     )
     diff_index: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
@@ -150,11 +153,6 @@ class PriorConfig:
     atmo_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
             name="NormalPrior", mu=0.314, sigma=0.08
-        )
-    )
-    energy: SinglePriorConfig = field(
-        default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=1e6, sigma=3
         )
     )
 
@@ -209,3 +207,61 @@ class HierarchicalNuConfig:
 
         hnu_config = OmegaConf.structured(cls)
         return hnu_config
+
+    @classmethod
+    def save(cls, path: Path, config):
+        path.parents[0].mkdir(parents=True, exist_ok=True)
+        with path.open("w") as f:
+            OmegaConf.save(config=config, f=f.name)
+
+    @classmethod
+    def make_config(cls, sources):
+        # this is useful for recreating a source list when loading a previously saved fit.
+        # is not intended to exactly recreate everything, maybe in future edits
+        config = HierarchicalNuConfig.load_default()
+
+        if sources.point_source:
+            ra = []
+            dec = []
+            z = []
+            fit_params = []
+            ps = sources.point_source[0]
+            spectrum = ps.flux_model.spectral_shape.name
+            try:
+                index = ps.flux_model.parameters["index"]
+                config.parameter_config.src_index_range = list(index.par_range)
+                if not index.fixed:
+                    fit_params.append("src_index")
+            except KeyError:
+                pass
+            try:
+                beta = ps.flux_model.parameters["beta"]
+                config.parameter_config.beta_index_range = list(beta.par_range)
+                if not beta.fixed:
+                    fit_params.append("beta_index")
+            except KeyError:
+                pass
+            try:
+                E0 = ps.flux_model.parameters["norm_energy"]
+                config.parameter_config.E0_src_range = [
+                    float(E0.par_range[0].to_value(u.GeV)),
+                    float(E0.par_range[1].to_value(u.GeV)),
+                ]
+                if not E0.fixed:
+                    fit_params.append("E0_src")
+            except KeyError:
+                pass
+            config.parameter_config.fit_params = fit_params
+            for ps in sources.point_source:
+                ra.append(float(ps.ra.to_value(u.deg)))
+                dec.append(float(ps.dec.to_value(u.deg)))
+                z.append(ps.redshift)
+            config.parameter_config.source_type = spectrum
+            config.parameter_config.src_ra = ra
+            config.parameter_config.share_src_index
+            config.parameter_config.share_L
+
+        config.parameter_config.diffuse = True if sources.diffuse else False
+        config.parameter_config.atmospheric = True if sources.atmospheric else False
+
+        return config
