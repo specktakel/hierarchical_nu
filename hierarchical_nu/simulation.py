@@ -57,14 +57,14 @@ class Simulation:
     ):
         """
         To set up and run simulations.
-        :param sources: Instance of `Sources` containing all to-be-simulated sources
-        :param event_types: `EventType` or list thereof, NB that not all event types should be combined
-        :param observation_time: single lifetime or dict of EventType: lifetime
-        :param atmo_flux_energy_points: number of atmo model grid points in energy space
-        :param atmo_flux_theta_points: number of atmo model grid points in theta/dec space
-        :param n_grid_poins: number of grid points for interpolations in exposure integral
-        :param N: if provided, simulate fixed number of events, e.g. {IC86_II: [1, 2, 3]}
-        :param asimov: if True, simulate np.rint(sim._Nex_et) events, overrides N
+        :param event_types: EventType or List thereof, to be included in the fit
+        :param observation_time: astropy.units time for single event type or dictionary thereof with event type as key
+        :param atmo_flux_energy_points: number of points for atmo spectrum energy interpolation
+        :param atmo_flux_theta_points: number of points for atmo spectrum cos(theta) interpolation
+        :param n_grid_points: number of grid points used per parameter in precomputation of exposure
+        :param N: dict with EventType as key and list as entry, to force simulation of specific event numbers,
+            e.g. {IC86_II: [1, 2, 3]} for a single season and 3 source components.
+        :param asimov: set to True to simulate closest integer of expected number of events.
         """
 
         self._sources = sources
@@ -177,6 +177,8 @@ class Simulation:
     ):
         """
         Run the necessary precomputation
+        :param exposure_integral: instance of ExposureIntegral if already available.
+        :param show_progress: set to True if progress bars should be displayed.
         """
 
         if not exposure_integral:

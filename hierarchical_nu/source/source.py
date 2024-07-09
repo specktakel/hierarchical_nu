@@ -32,6 +32,10 @@ class ReferenceFrame(ABC):
 
     @staticmethod
     def func(list, *args):
+        """
+        Method to avoid stan generator issues.
+        """
+
         prev = args[-1]
         try:
             for arg in reversed(args[:-1]):

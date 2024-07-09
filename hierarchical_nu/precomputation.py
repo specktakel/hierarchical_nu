@@ -58,6 +58,8 @@ class ExposureIntegral:
 
         :param sources: An instance of Sources.
         :param detector_model: An instance of EventType from the Refrigerator.
+        :param n_grid_points: number of grid points for each parameter at which exposure is calculated.
+        :param show_progress: set to True if progress bars should be displayed.
         """
 
         self._show_progress = show_progress
@@ -366,7 +368,9 @@ class ExposureIntegral:
                     [self._n_grid_points] * len(this_par_grids)
                 ) << (u.m**2)
 
-                with tqdm(total=integral_grids_tmp.size, disable=not self._show_progress) as pbar_parameter:
+                with tqdm(
+                    total=integral_grids_tmp.size, disable=not self._show_progress
+                ) as pbar_parameter:
                     for i, grid_points in enumerate(product(*this_par_grids)):
                         pbar_parameter.set_description(f"Parameter value {i}")
                         indices = np.unravel_index(i, integral_grids_tmp.shape)
