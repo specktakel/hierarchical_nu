@@ -13,15 +13,12 @@ from .flux_model import (
     TwiceBrokenPowerLaw,
     IsotropicDiffuseBG,
     PGammaSpectrum,
-    integral_power_law,
 )
 from .atmospheric_flux import AtmosphericNuMuFlux
 from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
 from ..backend.stan_generator import UserDefinedFunction
-from ..backend.variable_definitions import InstantVariableDef
-from ..backend.expression import ReturnStatement, TListTExpression
 
 
 class ReferenceFrame(ABC):
@@ -728,12 +725,14 @@ class PointSource(Source):
     def luminosity(self) -> u.Quantity[u.erg / u.s]:
         return self._luminosity
 
+    """
     @luminosity.setter
     @u.quantity_input
     # TODO add calculation for fluxes etc.
-    # needs to be defined according ton the ReferenceFrame
+    # needs to be defined according to the ReferenceFrame
     def luminosity(self, value: u.Quantity[u.erg / u.s]):
         self._luminosity = value
+    """
 
 
 class DiffuseSource(Source):
@@ -857,7 +856,7 @@ class Sources:
         )
         flux_model = IsotropicDiffuseBG(spectral_shape)
 
-        # Create a parameter for F_atmo to carry information on the par_range
+        # Create a parameter for F_diff to carry information on the par_range
         # The value itself is irrelevant for fits
         F_diff = Parameter(
             flux_model.total_flux_int,
@@ -1161,23 +1160,6 @@ class Sources:
 
     def __getitem__(self, key):
         return self._sources[key]
-
-    def save(self, file_name, append: bool = True):
-        """
-        Write the Sources to an HDF5 file.
-        """
-
-        with h5py.File(file_name, "r+") as f:
-            pass
-
-    @classmethod
-    def from_file(cls, file_name):
-        """
-        Load Sources from the HDF5 file output
-        by the save() method.
-        """
-
-        raise NotImplementedError()
 
 
 def uv_to_icrs(unit_vector):
