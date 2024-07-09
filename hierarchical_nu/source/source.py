@@ -34,6 +34,10 @@ class ReferenceFrame(ABC):
 
     @staticmethod
     def func(list, *args):
+        """
+        Method to avoid stan generator issues.
+        """
+
         prev = args[-1]
         try:
             for arg in reversed(args[:-1]):
@@ -394,7 +398,10 @@ class PointSource(Source):
         val = normalisation_energy.value
         normalisation_energy.value = frame.transform(val, redshift)
         par_min, par_max = normalisation_energy.par_range
-        par_range = (frame.transform(par_min, redshift), frame.transform(par_max, redshift))
+        par_range = (
+            frame.transform(par_min, redshift),
+            frame.transform(par_max, redshift),
+        )
         normalisation_energy.par_range = par_range
         normalisation_energy.fixed = fixed
         spectral_shape = LogParabolaSpectrum(

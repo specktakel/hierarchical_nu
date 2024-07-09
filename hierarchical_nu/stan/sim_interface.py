@@ -69,7 +69,7 @@ class StanSimInterface(StanInterface):
         atmospheric flux
         :param includes: List of names of stan files to include into the
         functions block of the generated file
-        :param N: dict with keys being python string of DetectorModel. Value needs to be a list of length `len(sources)`
+        :param force_N: True if either asimov option or fixed number of events is used.
         """
 
         super().__init__(

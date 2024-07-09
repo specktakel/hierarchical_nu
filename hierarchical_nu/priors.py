@@ -166,6 +166,10 @@ class ParetoPrior(PriorDistribution):
 
 
 class PriorDictHandler:
+    """
+    Class to translate priors from and to dictionaries.
+    """
+
     @classmethod
     def from_dict(cls, prior_dict):
         # Translate "key" into Lumi, Flux or Index
@@ -196,6 +200,10 @@ class PriorDictHandler:
 
 
 class UnitPrior:
+    """
+    Class to handle priors on parameters carrying a unit.
+    """
+
     def __init__(self, name, **kwargs):
         if name == ParetoPrior:
             xmin = kwargs.get("xmin")
@@ -284,6 +292,10 @@ class UnitPrior:
 
 
 class UnitlessPrior:
+    """
+    Class to handle priors on unitless parameters.
+    """
+
     def __init__(self, name, **kwargs):
         if name == ParetoPrior:
             alpha = kwargs.get("alpha")
@@ -419,6 +431,12 @@ class IndexPrior(UnitlessPrior):
 
 
 class MultiSourcePrior:
+    """
+    Container base class to handle priors with different parameters
+    in fits of multiple point sources. If all sources should
+    have the same prior, use the normal classes above.
+    """
+
     def __init__(self, priors):
         assert all(isinstance(_._prior, type(priors[0]._prior)) for _ in priors)
         self._priors = priors
@@ -501,7 +519,6 @@ class MultiSourceEnergyPrior(MultiSourcePrior, EnergyPrior):
         return np.array([_.sigma for _ in self._priors])
 
 
-
 class Priors(object):
     """
     Container for model priors.
@@ -570,7 +587,7 @@ class Priors(object):
     @property
     def E0_src(self):
         return self._E0_src
-    
+
     @E0_src.setter
     def E0_src(self, prior: EnergyPrior):
         if not isinstance(prior, EnergyPrior):
@@ -694,7 +711,7 @@ class Priors(object):
                     priors_dict[key] = MultiSourceIndexPrior(container)
                 elif key == "E0_src":
                     raise NotImplementedError
-                    #priors_dict[key] = MultiSourceEnergyPrior(container)
+                    # priors_dict[key] = MultiSourceEnergyPrior(container)
                 elif key == "L":
                     priors_dict[key] = MultiSourceLuminosityPrior(container)
 
