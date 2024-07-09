@@ -4,7 +4,6 @@ import h5py
 import logging
 import collections
 from astropy import units as u
-from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from typing import List, Union, Dict, Callable, Iterable
 import corner
@@ -33,22 +32,23 @@ from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.detector.r2021 import (
     R2021EnergyResolution,
-    R2021LogNormEnergyResolution,
 )
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import (
     Priors,
-    NormalPrior,
-    LogNormalPrior,
     UnitPrior,
     MultiSourcePrior,
 )
-from hierarchical_nu.source.source import spherical_to_icrs, uv_to_icrs
+from hierarchical_nu.source.source import uv_to_icrs
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.git import git_hash
+from hierarchical_nu.utils.config import HierarchicalNuConfig
+from hierarchical_nu.utils.config_parser import ConfigParser
+
+from omegaconf import OmegaConf
 
 
 logger = logging.getLogger(__name__)
@@ -139,6 +139,7 @@ class StanFit:
             self._shared_luminosity = False
 
         if self._sources.point_source:
+            self._shared_src_index = False
             self._power_law = False
             self._logparabola = False
             self._pgamma = False
@@ -162,8 +163,6 @@ class StanFit:
                     self._shared_src_index = True
                 elif not E0_src.fixed and E0_src.name == "E0_src":
                     self._shared_src_index = True
-                else:
-                    self._shared_src_index = False
 
             self._fit_index = not index.fixed
             if self._logparabola or self._pgamma:
@@ -1040,10 +1039,17 @@ class StanFit:
         path = Path(dirname) / Path(filename)
 
         with h5py.File(path, "w") as f:
+
             fit_folder = f.create_group("fit")
             inputs_folder = fit_folder.create_group("inputs")
             outputs_folder = fit_folder.create_group("outputs")
             meta_folder = fit_folder.create_group("meta")
+            source_folder = f.create_group("sources")
+
+            # Create config from sources
+            config = HierarchicalNuConfig.make_config(self.sources)
+            config_string = OmegaConf.to_yaml(config)
+            source_folder.create_dataset("config", data=config_string)
 
             for key, value in self._fit_inputs.items():
                 inputs_folder.create_dataset(key, data=value)
@@ -1119,7 +1125,7 @@ class StanFit:
 
         self.events.to_file(path, append=True)
 
-        self.sources.save(path, append=True)
+        # self.sources.to_file(path, append=True)
 
         # Add priors separately
         self.priors.addto(path, "priors")
@@ -1151,15 +1157,19 @@ class StanFit:
                 fit_inputs,
                 outputs,
                 meta,
+                config,
             ) = cls._from_file(filename[0])
 
-            fit = cls(Sources(), event_types, events, obs_time_dict, priors)
+            config_parser = ConfigParser(OmegaConf.create(config))
+            sources = config_parser.sources
+            fit = cls(sources, event_types, events, obs_time_dict, priors)
 
         else:
             outputs = {}
             meta = {}
             fit_outputs = []
             fit_meta = []
+            configs = []
             for file in filename:
                 (
                     event_types,
@@ -1169,9 +1179,14 @@ class StanFit:
                     fit_inputs,
                     outputs,
                     meta,
+                    config,
                 ) = cls._from_file(file)
                 fit_outputs.append(outputs)
                 fit_meta.append(meta)
+                if configs:
+                    # Check that all source configurations are the same
+                    assert configs[-1] == config
+                configs.append(config)
 
             keys = fit_outputs[0].keys()
             for key in keys:
@@ -1191,7 +1206,9 @@ class StanFit:
                 else:
                     meta[key] = np.vstack([_[key] for _ in fit_meta])
 
-            fit = cls(Sources(), event_types, events, obs_time_dict, priors)
+            config_parser = ConfigParser(OmegaConf.create(configs[-1]))
+            sources = config_parser.sources
+            fit = cls(sources, event_types, events, obs_time_dict, priors)
 
         fit._fit_output = outputs
         fit._fit_inputs = fit_inputs
@@ -1265,6 +1282,8 @@ class StanFit:
                             *temp.shape[1:],
                         )
                     )
+            # requires config parser, which in turn imports fit, which in turn imports config parser...
+            config = f["sources/config"][()].decode("ascii")
 
         event_types = [
             Refrigerator.stan2dm(_) for _ in fit_inputs["event_types"].tolist()
@@ -1307,6 +1326,7 @@ class StanFit:
             fit_inputs,
             fit_outputs,
             fit_meta,
+            config,
         )
 
     def diagnose(self):
