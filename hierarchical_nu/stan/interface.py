@@ -74,6 +74,8 @@ class StanInterface(object, metaclass=ABCMeta):
         self._fit_beta = False
         self._fit_Enorm = False
 
+        self._shared_luminosity = False
+        self._shared_src_index = False
         if self.sources.point_source:
             self._ps_spectrum = self.sources.point_source_spectrum
             self._ps_frame = self.sources.point_source_frame
@@ -100,8 +102,6 @@ class StanInterface(object, metaclass=ABCMeta):
                     self._shared_src_index = True
                 elif not E0_src.fixed and E0_src.name == "E0_src":
                     self._shared_src_index = True
-                else:
-                    self._shared_src_index = False
 
             try:
                 self._fit_index = (

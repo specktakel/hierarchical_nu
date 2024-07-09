@@ -289,7 +289,6 @@ class StanFitInterface(StanInterface):
                                 """
                                 del self._x_r_idxs
                             except AttributeError as e:
-                                print(e)
                                 data = ["{"]
                                 first_data = True
                                 for f, r in zip(self._fit, self._refs):

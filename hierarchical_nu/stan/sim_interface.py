@@ -376,7 +376,7 @@ class StanSimInterface(StanInterface):
                                 "}",
                             ]
                         )
-                    if self._pgamma:
+                    elif self._pgamma:
                         x_r = StringExpression(
                             [
                                 "{",
@@ -865,11 +865,6 @@ class StanSimInterface(StanInterface):
 
                                 # Store the value of the source PDF at this energy
                                 if self._logparabola:
-                                    theta = StringExpression(
-                                        [
-                                            "{1.}",
-                                        ]
-                                    )
                                     x_r = StringExpression(
                                         [
                                             "{",
@@ -885,7 +880,7 @@ class StanSimInterface(StanInterface):
                                             "}",
                                         ]
                                     )
-                                if self._pgamma:
+                                elif self._pgamma:
                                     x_r = StringExpression(
                                         [
                                             "{",
