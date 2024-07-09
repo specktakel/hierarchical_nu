@@ -9,7 +9,13 @@ from hierarchical_nu.priors import (
     EnergyPrior,
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
-from hierarchical_nu.source.source import Sources, PointSource, SourceFrame, DetectorFrame
+from hierarchical_nu.source.source import (
+    Sources,
+    PointSource,
+    SourceFrame,
+    DetectorFrame,
+)
+from hierarchical_nu.source.flux_model import PGammaSpectrum
 from hierarchical_nu.source.parameter import Parameter, ParScale
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.roi import (
@@ -19,8 +25,6 @@ from hierarchical_nu.utils.roi import (
     FullSkyROI,
     RectangularROI,
 )
-from hierarchical_nu.simulation import Simulation
-from hierarchical_nu.fit import StanFit
 from hierarchical_nu.detector.input import mceq
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
@@ -45,9 +49,11 @@ class ConfigParser:
         index = []
         beta = []
         E0_src = []
-        if parameter_config["source_type"] == "power-law" or \
-        parameter_config["source_type"] == "twice-broken-power-law" or \
-        parameter_config["source_type"] == "logparabola":
+        if (
+            parameter_config["source_type"] == "power-law"
+            or parameter_config["source_type"] == "twice-broken-power-law"
+            or parameter_config["source_type"] == "logparabola"
+        ):
             if "src_index" in parameter_config["fit_params"] and share_src_index:
                 index.append(
                     Parameter(
@@ -68,6 +74,12 @@ class ConfigParser:
                             parameter_config["src_index_range"],
                         )
                     )
+        elif parameter_config["source_type"] == "pgamma":
+            if share_src_index:
+                index.append(PGammaSpectrum._src_index)
+            else:
+                for _ in parameter_config["E0_src"]:
+                    index.append(PGammaSpectrum._src_index)
         if parameter_config["source_type"] == "logparabola":
             if "beta_index" in parameter_config["fit_params"] and share_src_index:
                 beta.append(
@@ -109,9 +121,31 @@ class ConfigParser:
                             name,
                             not "E0_src" in parameter_config["fit_params"],
                             parameter_config["E0_src_range"] * u.GeV,
-                            ParScale.log
+                            ParScale.log,
                         )
                     )
+        if parameter_config["source_type"] == "pgamma" and share_src_index:
+            E0_src.append(
+                Parameter(
+                    parameter_config["E0_src"][0] * u.GeV,
+                    "E0_src",
+                    False,
+                    parameter_config["E0_src_range"] * u.GeV,
+                    ParScale.log,
+                )
+            )
+        elif parameter_config["source_type"] == "pgamma":
+            for c, idx in enumerate(parameter_config["E0_src"]):
+                name = f"ps_{c}_E0_src"
+                E0_src.append(
+                    Parameter(
+                        idx * u.GeV,
+                        name,
+                        False,
+                        parameter_config["E0_src_range"] * u.GeV,
+                        ParScale.log,
+                    )
+                )
 
         diff_index = Parameter(
             parameter_config["diff_index"],
@@ -246,6 +280,19 @@ class ConfigParser:
                     E0,
                     frame,
                 )
+            elif parameter_config.source_type == "pgamma":
+                method = PointSource.make_pgamma_source
+                args = (
+                    f"ps_{c}",
+                    dec[c],
+                    ra[c],
+                    Lumi,
+                    parameter_config["z"][c],
+                    E0,
+                    Emin_src,
+                    Emax_src,
+                    frame,
+                )
             point_source = method(*args)
 
             sources.add(point_source)
@@ -261,7 +308,6 @@ class ConfigParser:
             sources.add_atmospheric_component(cache_dir=mceq)
             F_atmo = Parameter.get_parameter("F_atmo")
             F_atmo.par_range = parameter_config.F_atmo_range * (1 / u.m**2 / u.s)
-
 
         self._sources = sources
 
@@ -377,11 +423,17 @@ class ConfigParser:
         return _events
 
     def create_simulation(self, sources, detector_models, obs_time):
+
+        from hierarchical_nu.simulation import Simulation
+
         asimov = self._hnu_config.parameter_config.asimov
         sim = Simulation(sources, detector_models, obs_time, asimov=asimov)
         return sim
 
     def create_fit(self, sources, events, detector_models, obs_time):
+
+        from hierarchical_nu.fit import StanFit
+
         priors = self.priors
 
         nshards = self._hnu_config.parameter_config.threads_per_chain
@@ -427,13 +479,13 @@ class ConfigParser:
             elif p == "E0_src":
                 if prior == NormalPrior:
                     priors.E0_src = EnergyPrior(
-                        prior, mu=mu * EnergyPrior.UNITS,
-                        sigma=sigma * EnergyPrior.UNITS
+                        prior,
+                        mu=mu * EnergyPrior.UNITS,
+                        sigma=sigma * EnergyPrior.UNITS,
                     )
                 elif prior == LogNormalPrior:
                     priors.E0_src = EnergyPrior(
-                        prior, mu=mu * EnergyPrior.UNITS,
-                        sigma=sigma
+                        prior, mu=mu * EnergyPrior.UNITS, sigma=sigma
                     )
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
