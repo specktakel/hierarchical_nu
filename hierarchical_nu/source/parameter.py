@@ -116,3 +116,17 @@ class Parameter:
     def reset(self):
         """Reset value to initial val"""
         self.value = self._initial_val
+
+    def __eq__(self, other):
+        if not isinstance(other, Parameter):
+            raise ValueError
+
+        if (
+            self.value == other.value
+            and np.all(self.par_range == other.par_range)
+            and self.fixed == other.fixed
+            and self.scale == other.scale
+        ):
+            return True
+        else:
+            return False
