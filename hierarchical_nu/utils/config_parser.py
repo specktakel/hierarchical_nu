@@ -9,7 +9,12 @@ from hierarchical_nu.priors import (
     EnergyPrior,
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
-from hierarchical_nu.source.source import Sources, PointSource, SourceFrame, DetectorFrame
+from hierarchical_nu.source.source import (
+    Sources,
+    PointSource,
+    SourceFrame,
+    DetectorFrame,
+)
 from hierarchical_nu.source.parameter import Parameter, ParScale
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.roi import (
@@ -45,9 +50,11 @@ class ConfigParser:
         index = []
         beta = []
         E0_src = []
-        if parameter_config["source_type"] == "power-law" or \
-        parameter_config["source_type"] == "twice-broken-power-law" or \
-        parameter_config["source_type"] == "logparabola":
+        if (
+            parameter_config["source_type"] == "power-law"
+            or parameter_config["source_type"] == "twice-broken-power-law"
+            or parameter_config["source_type"] == "logparabola"
+        ):
             if "src_index" in parameter_config["fit_params"] and share_src_index:
                 index.append(
                     Parameter(
@@ -109,7 +116,7 @@ class ConfigParser:
                             name,
                             not "E0_src" in parameter_config["fit_params"],
                             parameter_config["E0_src_range"] * u.GeV,
-                            ParScale.log
+                            ParScale.log,
                         )
                     )
 
@@ -262,7 +269,6 @@ class ConfigParser:
             F_atmo = Parameter.get_parameter("F_atmo")
             F_atmo.par_range = parameter_config.F_atmo_range * (1 / u.m**2 / u.s)
 
-
         self._sources = sources
 
         return sources
@@ -303,15 +309,31 @@ class ConfigParser:
                 )
         elif roi_config.roi_type == "RectangularROI":
             size = size.to(u.rad)
-            RectangularROI(
-                RA_min=ra[0] - size,
-                RA_max=ra[0] + size,
-                DEC_min=dec[0] - size,
-                DEC_max=dec[0] + size,
-                MJD_min=MJD_min,
-                MJD_max=MJD_max,
-                apply_roi=apply_roi,
-            )
+            if not (
+                np.isclose(roi_config.RA_min, -1.0)
+                and np.isclose(roi_config.RA_max, 361.0)
+                and np.isclose(roi_config.DEC_min, -91.0)
+                and np.isclose(roi_config.DEC_max, 91.0)
+            ):
+                RectangularROI(
+                    RA_min=roi_config.RA_min * u.deg,
+                    RA_max=roi_config.RA_max * u.deg,
+                    DEC_min=roi_config.DEC_min * u.deg,
+                    DEC_max=roi_config.DEC_max * u.deg,
+                    MJD_min=MJD_min,
+                    MJD_max=MJD_max,
+                    apply_roi=apply_roi,
+                )
+            else:
+                RectangularROI(
+                    RA_min=ra[0] - size,
+                    RA_max=ra[0] + size,
+                    DEC_min=dec[0] - size,
+                    DEC_max=dec[0] + size,
+                    MJD_min=MJD_min,
+                    MJD_max=MJD_max,
+                    apply_roi=apply_roi,
+                )
         elif roi_config.roi_type == "FullSkyROI":
             FullSkyROI(
                 MJD_min=MJD_min,
@@ -427,13 +449,13 @@ class ConfigParser:
             elif p == "E0_src":
                 if prior == NormalPrior:
                     priors.E0_src = EnergyPrior(
-                        prior, mu=mu * EnergyPrior.UNITS,
-                        sigma=sigma * EnergyPrior.UNITS
+                        prior,
+                        mu=mu * EnergyPrior.UNITS,
+                        sigma=sigma * EnergyPrior.UNITS,
                     )
                 elif prior == LogNormalPrior:
                     priors.E0_src = EnergyPrior(
-                        prior, mu=mu * EnergyPrior.UNITS,
-                        sigma=sigma
+                        prior, mu=mu * EnergyPrior.UNITS, sigma=sigma
                     )
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
