@@ -96,12 +96,6 @@ class ParameterConfig:
     # useful because of overlap near season changes
     restrict_to_list: bool = False
 
-    # Within-chain parallelisation
-    threads_per_chain: int = 1
-    chains: int = 1
-    iterations: int = 1000
-    iter_warmup: int = 1000
-
     # Background components
     atmospheric: bool = True
     diffuse: bool = True
@@ -111,6 +105,17 @@ class ParameterConfig:
 
     # exp event selection
     scramble_ra: bool = False
+
+
+@dataclass
+class StanConfig:
+    # Within-chain parallelisation
+    threads_per_chain: int = 1
+    chains: int = 1
+    iterations: int = 1000
+    iter_warmup: int = 1000
+    adapt_delta: float = 0.8
+    seed: int = 42
 
 
 @dataclass
@@ -184,6 +189,7 @@ class HierarchicalNuConfig:
     parameter_config: ParameterConfig = field(default_factory=lambda: ParameterConfig())
     prior_config: PriorConfig = field(default_factory=lambda: PriorConfig())
     roi_config: ROIConfig = field(default_factory=lambda: ROIConfig())
+    stan_config: StanConfig = field(default_factory=lambda: StanConfig())
 
     @classmethod
     def from_path(cls, path):
