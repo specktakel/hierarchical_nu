@@ -1483,7 +1483,7 @@ class StanFitInterface(StanInterface):
                             # Choose first source in list as reference, then transform to all other frames 'relatively'
                             self._E0_src[k] << self._E0_src_glob * (
                                 1.0 + self._z[k]
-                            ) / (1.0 + self._z[0])
+                            ) / (1.0 + self._z[1])
 
                 self._Nex_src = ForwardVariableDef("Nex_src", "real")
                 self._Nex_src_comp = ForwardArrayDef(
