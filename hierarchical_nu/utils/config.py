@@ -129,7 +129,9 @@ class PriorConfig:
         default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=0.0, sigma=0.1)
     )
     E0_src: SinglePriorConfig = field(
-        default_factory=lambda: SinglePriorConfig(name="LogNormalPrior", mu=1e5, sigma=3.)
+        default_factory=lambda: SinglePriorConfig(
+            name="LogNormalPrior", mu=1e5, sigma=3.0
+        )
     )
     diff_index: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
@@ -168,6 +170,13 @@ class ROIConfig:
         5.0  # size in degrees; for circular: radius, fullsky: disregarded, rectangular: center +/- size in RA and DEC
     )
     apply_roi: bool = False
+
+    # If config has default values size data field takes precedence
+    RA_min: float = -1.0
+    RA_max: float = 361.0
+
+    DEC_min: float = -91.0
+    DEC_max: float = 91.0
 
 
 @dataclass
