@@ -1563,8 +1563,8 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 f"{self._season}AngularResolution",
-                ["true_dir", "reco_dir", "sigma", "kappa"],
-                ["vector", "vector", "real", "real"],
+                ["true_dir", "reco_dir", "sigma"],
+                ["vector", "vector", "real"],
                 "real",
             )
 

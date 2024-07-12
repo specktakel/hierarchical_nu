@@ -2,6 +2,7 @@ import numpy as np
 from typing import List
 from collections import OrderedDict
 
+from ..source.parameter import Parameter
 from ..priors import Priors, MultiSourcePrior
 from ..stan.interface import StanInterface
 
@@ -137,6 +138,12 @@ class StanFitInterface(StanInterface):
                 rewrite=False,
             )
 
+        try:
+            Parameter.get_parameter("ang_sys_add")
+            self._ang_sys = True
+        except ValueError:
+            self._ang_sys = False
+
     def _model_likelihood(self):
         """
         Write the likelihood part of the model.
@@ -193,6 +200,8 @@ class StanFitInterface(StanInterface):
                             ps_pos,
                             self._Edet[i],
                         )
+
+                        # add angular sys here to ang_err and store in self._spatial_loglike
 
             self._eres_src << StringExpression(["irf_return.1"])
             self._aeff_src << StringExpression(["irf_return.2"])
@@ -535,6 +544,11 @@ class StanFitInterface(StanInterface):
                         self._diff_index = ForwardVariableDef("diff_index", "real")
                         self._diff_index << glob[start]
                         start << start + 1
+                    if self._ang_sys:
+                        self._ang_sys_add = ForwardVariableDef("ang_sys_add", "real")
+                        end << end + 1
+                        self._ang_sys_add << glob[start]
+                        start << start + 1
                     end << end + self._Ns_tot
                     self._logF = ForwardVariableDef(
                         "logF", "vector[" + self._Ns_tot + "]"
@@ -609,9 +623,7 @@ class StanFitInterface(StanInterface):
                         end << end + 3
                         self._omega_det[i] << FunctionCall(
                             [real_data[start:end]], "to_vector"
-                        )  # StringExpression(
-                        #    ["to_vector(real_data[start:end])"]
-                        # )
+                        )
                         start << start + 3
 
                     self._varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
@@ -620,24 +632,18 @@ class StanFitInterface(StanInterface):
                         end << end + 3
                         self._varpi[i] << FunctionCall(
                             [real_data[start:end]], "to_vector"
-                        )  # StringExpression(
-                        #    ["to_vector(real_data[start:end])"]
-                        # )
+                        )
                         start << start + 3
                     # If diffuse source, z is longer by 1 element
                     if self.sources.diffuse:
                         end << end + self._Ns + 1
                         self._z = ForwardVariableDef("z", "vector[Ns+1]")
-                        self._z << FunctionCall(
-                            [real_data[start:end]], "to_vector"
-                        )  # StringExpression(["to_vector(real_data[start:end])"])
+                        self._z << FunctionCall([real_data[start:end]], "to_vector")
                         start << start + self._Ns + 1
                     else:
                         end << end + self._Ns
                         self._z = ForwardVariableDef("z", "vector[Ns]")
-                        self._z << FunctionCall(
-                            [real_data[start:end]], "to_vector"
-                        )  # StringExpression(["to_vector(real_data[start:end])"])
+                        self._z << FunctionCall([real_data[start:end]], "to_vector")
                         start << start + self._Ns
 
                     if self.sources.atmospheric:
@@ -645,14 +651,10 @@ class StanFitInterface(StanInterface):
                             "atmo_integrated_flux", "real"
                         )
                         end << end + 1
-                        (
-                            self._atmo_integrated_flux << real_data[start]
-                        )  # StringExpression(
-                        #    ["real_data[start]"]
-                        # )
+                        (self._atmo_integrated_flux << real_data[start])
                         start << start + 1
 
-                    if self.sources.point_source:
+                    if self.sources.point_source and not self._ang_sys:
                         self._spatial_loglike = ForwardArrayDef(
                             "spatial_loglike", "real", ["[Ns, N]"]
                         )
@@ -1030,6 +1032,12 @@ class StanFitInterface(StanInterface):
                     "f_atmo_sigma", "real"
                 )
 
+            if self._ang_sys:
+                self._ang_sys_add_min = ForwardVariableDef("ang_sys_min", "real")
+                self._ang_sys_add_max = ForwardVariableDef("ang_sys_max", "real")
+                self._ang_sys_mu = ForwardVariableDef("ang_sys_mu", "real")
+                self._ag_sys_sigma = ForwardVariableDef("ang_sys_sigma", "real")
+
     def _transformed_data(self):
         """
         To write the transformed data section of the Stan file.
@@ -1066,40 +1074,41 @@ class StanFitInterface(StanInterface):
             if self.sources.point_source:
                 # Vector to hold pre-calculated spatial loglikes
                 # This needs to be compatible with multiple point sources!
-                self._spatial_loglike = ForwardArrayDef(
-                    "spatial_loglike", "real", ["[Ns, N]"]
-                )
-                with ForLoopContext(1, self._N, "i") as i:
-                    with ForLoopContext(1, self._Ns, "k") as k:
-                        # Insert loop over event types
-                        for c, event_type in enumerate(self._event_types):
-                            if c == 0:
-                                context = IfBlockContext
-                            else:
-                                context = ElseIfBlockContext
-                            with context(
-                                [
-                                    StringExpression(
-                                        [
-                                            self._event_type[i],
-                                            " == ",
-                                            event_type.S,
-                                        ]
-                                    )
-                                ]
-                            ):
-                                # Hand over both ang_errs and kappa,
-                                # the angular resolution will pick out the one that
-                                # should be used.
-                                self._spatial_loglike[k, i] << FunctionCall(
+                if not self._ang_sys:
+                    self._spatial_loglike = ForwardArrayDef(
+                        "spatial_loglike", "real", ["[Ns, N]"]
+                    )
+                    with ForLoopContext(1, self._N, "i") as i:
+                        with ForLoopContext(1, self._Ns, "k") as k:
+                            # Insert loop over event types
+                            for c, event_type in enumerate(self._event_types):
+                                if c == 0:
+                                    context = IfBlockContext
+                                else:
+                                    context = ElseIfBlockContext
+                                with context(
                                     [
-                                        self._varpi[k],
-                                        self._omega_det[i],
-                                        self._ang_errs[i],
-                                        self._kappa[i],
-                                    ],
-                                    event_type.F + "AngularResolution",
-                                )
+                                        StringExpression(
+                                            [
+                                                self._event_type[i],
+                                                " == ",
+                                                event_type.S,
+                                            ]
+                                        )
+                                    ]
+                                ):
+                                    # Hand over both ang_errs and kappa,
+                                    # the angular resolution will pick out the one that
+                                    # should be used.
+                                    self._spatial_loglike[k, i] << FunctionCall(
+                                        [
+                                            self._varpi[k],
+                                            self._omega_det[i],
+                                            self._ang_errs[i],
+                                            self._kappa[i],
+                                        ],
+                                        event_type.F + "AngularResolution",
+                                    )
 
             # Find largest permitted range of energies at the detector
             self._Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
@@ -1158,10 +1167,16 @@ class StanFitInterface(StanInterface):
                 sd_Ns = 6  # redshift, Emin_src, Emax_src, x, y, z per point source
                 sd_other = 2  # Emin, Emax
                 # Need Ns * N for spatial loglike, added extra in sd_string -> J*Ns
+                if self._ang_sys:
+                    # If we use ang_sys we need to pass ang_err
+                    sd_events_J += 1
                 if self.sources.atmospheric:
                     # atmo_integrated_flux, why was this here before? not used as far as I can see
                     sd_other += 1  # no atmo in cascades
-                sd_string = f"{sd_events_J}*J + {sd_Ns}*Ns + {sd_other} + J*Ns"
+                sd_string = f"{sd_events_J}*J + {sd_Ns}*Ns + {sd_other}"
+                if not self._ang_sys:
+                    # If we do not use ang_sys we need to pass the fixed spatial loglike for J events x Ns sources
+                    sd_string += " + J*Ns"
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_diff}"
 
@@ -1262,16 +1277,24 @@ class StanFitInterface(StanInterface):
                         insert_start << insert_start + 1
 
                     if self.sources.point_source:
-                        with ForLoopContext(1, self._Ns, "k") as k:
-                            # Loop over sources
+                        if not self._ang_sys:
+                            with ForLoopContext(1, self._Ns, "k") as k:
+                                # Loop over sources
+                                insert_end << insert_end + insert_len
+                                # The double-index is needed because of a bug with the code generator
+                                # if I use [k, start:end], a single line of "k;" is printed after entering
+                                # the for loop
+                                # TODO: fix this in code generator
+                                (
+                                    self.real_data[i, insert_start:insert_end]
+                                    << self._spatial_loglike[k][start:end]
+                                )
+                                insert_start << insert_start + insert_len
+                        else:
                             insert_end << insert_end + insert_len
-                            # The double-index is needed because of a bug with the code generator
-                            # if I use [k, start:end], a single line of "k;" is printed after entering
-                            # the for loop
-                            # TODO: fix this in code generator
                             (
                                 self.real_data[i, insert_start:insert_end]
-                                << self._spatial_loglike[k][start:end]
+                                << self._ang_errs[start:end]
                             )
                             insert_start << insert_start + insert_len
 
@@ -1431,6 +1454,11 @@ class StanFitInterface(StanInterface):
                 "E", "vector", self._N_str, self._Emin_at_det, self._Emax_at_det
             )
 
+            if self._ang_sys:
+                self._ang_sys_add = ParameterDef(
+                    "ang_sys_add", "real", self._ang_sys_add_min, self._ang_sys_add_min
+                )
+
     def _transformed_parameters(self):
         """
         To write the transformed parameters section of the Stan file.
@@ -1567,6 +1595,9 @@ class StanFitInterface(StanInterface):
                 if self.sources.diffuse:
                     num_of_pars += " + 2"
                 if self.sources.atmospheric:
+                    num_of_pars += " + 1"
+
+                if self._ang_sys:
                     num_of_pars += " + 1"
 
                 self._global_pars = ForwardVariableDef(
@@ -1902,6 +1933,10 @@ class StanFitInterface(StanInterface):
                         end << end + self._Ns
                         self._global_pars[start] << self._diff_index
                         start << start + self._Ns
+                    if self._ang_sys:
+                        end << end + 1
+                        self._global_pars[start] << self._ang_sys_add
+                        start << start + 1
                     end << end + StringExpression(["size(logF)"])
                     self._global_pars[start:end] << self._logF
                     # Likelihood is evaluated in `lp_reduce`
@@ -2216,6 +2251,20 @@ class StanFitInterface(StanInterface):
                                 self._stan_prior_f_atmo_sigma,
                             ],
                             self._priors.atmospheric_flux.name,
+                        ),
+                    ]
+                )
+            if self._ang_sys:
+                StringExpression(
+                    [
+                        self._ang_sys_add,
+                        " ~ ",
+                        FunctionCall(
+                            [
+                                self._ang_sys_mu,
+                                self._ang_sys_sigma,
+                            ],
+                            self._priors.ang_sys.name,
                         ),
                     ]
                 )

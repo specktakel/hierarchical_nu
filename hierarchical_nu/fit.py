@@ -4,7 +4,6 @@ import h5py
 import logging
 import collections
 from astropy import units as u
-from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from typing import List, Union, Dict, Callable, Iterable
 import corner
@@ -15,7 +14,7 @@ import ligo.skymap.plot
 import arviz as av
 from pathlib import Path
 
-from math import ceil, floor
+from math import ceil
 from time import time as thyme
 
 from cmdstanpy import CmdStanModel
@@ -27,18 +26,15 @@ from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.detector.r2021 import (
     R2021EnergyResolution,
-    R2021LogNormEnergyResolution,
 )
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import (
     Priors,
-    NormalPrior,
-    LogNormalPrior,
     UnitPrior,
     MultiSourcePrior,
 )
-from hierarchical_nu.source.source import spherical_to_icrs, uv_to_icrs
+from hierarchical_nu.source.source import uv_to_icrs
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
@@ -1840,6 +1836,12 @@ class StanFit:
                     .to_value(u.m**2)
                 )
 
+        try:
+            ang_sys = Parameter.get_parameter("ang_sys_add")
+
+        except ValueError:
+            pass
+
         fit_inputs["integral_grid"] = integral_grid
         fit_inputs["integral_grid_2d"] = integral_grid_2d
         fit_inputs["atmo_integ_val"] = atmo_integ_val
@@ -1892,3 +1894,11 @@ class StanFit:
             self._F_atmo_par_range = Parameter.get_parameter(
                 "F_atmo"
             ).par_range.to_value(1 / u.m**2 / u.s)
+
+        try:
+            # Try to find an additive systematic error on the angular reconstruction
+            # TODO multiplicative as alternative?
+            ang_sys = Parameter.get_parameter("ang_sys_add")
+            self._ang_sys_par_range = ang_sys.par_range.to_value(u.rad)
+        except ValueError:
+            pass
