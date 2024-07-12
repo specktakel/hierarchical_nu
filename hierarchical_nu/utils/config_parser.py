@@ -9,7 +9,12 @@ from hierarchical_nu.priors import (
     EnergyPrior,
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
-from hierarchical_nu.source.source import Sources, PointSource, SourceFrame, DetectorFrame
+from hierarchical_nu.source.source import (
+    Sources,
+    PointSource,
+    SourceFrame,
+    DetectorFrame,
+)
 from hierarchical_nu.source.parameter import Parameter, ParScale
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.roi import (
@@ -29,6 +34,8 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
 
+from copy import deepcopy
+
 
 class ConfigParser:
     def __init__(self, hnu_config: HierarchicalNuConfig):
@@ -45,9 +52,11 @@ class ConfigParser:
         index = []
         beta = []
         E0_src = []
-        if parameter_config["source_type"] == "power-law" or \
-        parameter_config["source_type"] == "twice-broken-power-law" or \
-        parameter_config["source_type"] == "logparabola":
+        if (
+            parameter_config["source_type"] == "power-law"
+            or parameter_config["source_type"] == "twice-broken-power-law"
+            or parameter_config["source_type"] == "logparabola"
+        ):
             if "src_index" in parameter_config["fit_params"] and share_src_index:
                 index.append(
                     Parameter(
@@ -109,7 +118,7 @@ class ConfigParser:
                             name,
                             not "E0_src" in parameter_config["fit_params"],
                             parameter_config["E0_src_range"] * u.GeV,
-                            ParScale.log
+                            ParScale.log,
                         )
                     )
 
@@ -262,7 +271,6 @@ class ConfigParser:
             F_atmo = Parameter.get_parameter("F_atmo")
             F_atmo.par_range = parameter_config.F_atmo_range * (1 / u.m**2 / u.s)
 
-
         self._sources = sources
 
         return sources
@@ -376,6 +384,10 @@ class ConfigParser:
         )
         return _events
 
+    @property
+    def stan_kwargs(self):
+        return self._hnu_config.stan_config
+
     def create_simulation(self, sources, detector_models, obs_time):
         asimov = self._hnu_config.parameter_config.asimov
         sim = Simulation(sources, detector_models, obs_time, asimov=asimov)
@@ -384,7 +396,7 @@ class ConfigParser:
     def create_fit(self, sources, events, detector_models, obs_time):
         priors = self.priors
 
-        nshards = self._hnu_config.parameter_config.threads_per_chain
+        nshards = self._hnu_config.stan_config.threads_per_chain
         fit = StanFit(
             sources,
             detector_models,
@@ -427,13 +439,13 @@ class ConfigParser:
             elif p == "E0_src":
                 if prior == NormalPrior:
                     priors.E0_src = EnergyPrior(
-                        prior, mu=mu * EnergyPrior.UNITS,
-                        sigma=sigma * EnergyPrior.UNITS
+                        prior,
+                        mu=mu * EnergyPrior.UNITS,
+                        sigma=sigma * EnergyPrior.UNITS,
                     )
                 elif prior == LogNormalPrior:
                     priors.E0_src = EnergyPrior(
-                        prior, mu=mu * EnergyPrior.UNITS,
-                        sigma=sigma
+                        prior, mu=mu * EnergyPrior.UNITS, sigma=sigma
                     )
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
