@@ -349,15 +349,31 @@ class ConfigParser:
                 )
         elif roi_config.roi_type == "RectangularROI":
             size = size.to(u.rad)
-            RectangularROI(
-                RA_min=ra[0] - size,
-                RA_max=ra[0] + size,
-                DEC_min=dec[0] - size,
-                DEC_max=dec[0] + size,
-                MJD_min=MJD_min,
-                MJD_max=MJD_max,
-                apply_roi=apply_roi,
-            )
+            if not (
+                np.isclose(roi_config.RA_min, -1.0)
+                and np.isclose(roi_config.RA_max, 361.0)
+                and np.isclose(roi_config.DEC_min, -91.0)
+                and np.isclose(roi_config.DEC_max, 91.0)
+            ):
+                RectangularROI(
+                    RA_min=roi_config.RA_min * u.deg,
+                    RA_max=roi_config.RA_max * u.deg,
+                    DEC_min=roi_config.DEC_min * u.deg,
+                    DEC_max=roi_config.DEC_max * u.deg,
+                    MJD_min=MJD_min,
+                    MJD_max=MJD_max,
+                    apply_roi=apply_roi,
+                )
+            else:
+                RectangularROI(
+                    RA_min=ra[0] - size,
+                    RA_max=ra[0] + size,
+                    DEC_min=dec[0] - size,
+                    DEC_max=dec[0] + size,
+                    MJD_min=MJD_min,
+                    MJD_max=MJD_max,
+                    apply_roi=apply_roi,
+                )
         elif roi_config.roi_type == "FullSkyROI":
             FullSkyROI(
                 MJD_min=MJD_min,

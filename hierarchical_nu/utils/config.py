@@ -167,6 +167,13 @@ class ROIConfig:
     )
     apply_roi: bool = False
 
+    # If config has default values size data field takes precedence
+    RA_min: float = -1.0
+    RA_max: float = 361.0
+
+    DEC_min: float = -91.0
+    DEC_max: float = 91.0
+
 
 @dataclass
 class HierarchicalNuConfig:
