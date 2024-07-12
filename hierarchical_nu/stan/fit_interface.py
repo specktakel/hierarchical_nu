@@ -1479,7 +1479,11 @@ class StanFitInterface(StanInterface):
                         if self._shared_src_index and self._fit_beta:
                             self._beta_index[k] << self._beta_index_glob
                         if self._shared_src_index and self._fit_Enorm:
-                            self._E0_src[k] << self._E0_src_glob
+                            # Account for the fact that E0 is only sensibly defined in the source frame
+                            # Choose first source in list as reference, then transform to all other frames 'relatively'
+                            self._E0_src[k] << self._E0_src_glob * (
+                                1.0 + self._z[k]
+                            ) / (1.0 + self._z[0])
 
                 self._Nex_src = ForwardVariableDef("Nex_src", "real")
                 self._Nex_src_comp = ForwardArrayDef(
