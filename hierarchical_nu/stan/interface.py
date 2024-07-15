@@ -132,7 +132,8 @@ class StanInterface(object, metaclass=ABCMeta):
             num_params += 1 if self._fit_index else 0
             num_params += 1 if self._fit_beta else 0
             num_params += 1 if self._fit_Enorm else 0
-            assert num_params <= 2
+            if not num_params <= 2:
+                raise NotImplementedError("Can only use 2D interpolation")
 
         self._fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
 

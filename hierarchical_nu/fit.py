@@ -96,7 +96,10 @@ class StanFit:
             event_types = [event_types]
         if isinstance(observation_time, u.quantity.Quantity):
             observation_time = {event_types[0]: observation_time}
-        assert len(event_types) == len(observation_time)
+        if not len(event_types) == len(observation_time):
+            raise ValueError(
+                "number of observation times must match number of event types"
+            )
         self._event_types = event_types
         self._events = events
         self._observation_time = observation_time
@@ -579,7 +582,10 @@ class StanFit:
         # Try to get the true associations from the events
         if highlight is not None:
             highlight = np.atleast_1d(highlight)
-            assert highlight.size == mask.size
+            if not highlight.size == mask.size:
+                raise ValueError(
+                    "highlight must have same length as events inside the selection of the plot"
+                )
 
         if color_scale == "lin":
             norm = colors.Normalize(0.0, 1.0, clip=True)
@@ -707,7 +713,8 @@ class StanFit:
 
         if highlight is not None:
             highlight = np.atleast_1d(highlight)
-            assert highlight.size == assoc_prob.size
+            if not highlight.size == assoc_prob.size:
+                raise ValueError("highlight must have same length as events")
 
         min = 0.0
         max = 1.0
@@ -1245,7 +1252,8 @@ class StanFit:
                 fit_meta.append(meta)
                 if configs:
                     # Check that all source configurations are the same
-                    assert configs[-1] == config
+                    if not configs[-1] == config:
+                        raise ValueError("Cannot stack fits of different configs")
                 configs.append(config)
 
             keys = fit_outputs[0].keys()
@@ -1258,10 +1266,16 @@ class StanFit:
                 if key == "parameters":
                     meta[key] = fit_meta[0][key]
                 elif key == "iter_sampling":
-                    assert np.unique(np.array([_[key] for _ in fit_meta])).size == 1
+                    if not np.unique(np.array([_[key] for _ in fit_meta])).size == 1:
+                        raise ValueError(
+                            "Cannot stack fits of different sampling length"
+                        )
                     meta[key] = fit_meta[0][key]
                 elif key == "chains":
-                    assert np.unique(np.array([_[key] for _ in fit_meta])).size == 1
+                    if not np.unique(np.array([_[key] for _ in fit_meta])).size == 1:
+                        raise ValueError(
+                            "Cannot stack fits of different sampling length"
+                        )
                     meta[key] = np.sum([_[key] for _ in fit_meta])
                 else:
                     meta[key] = np.vstack([_[key] for _ in fit_meta])

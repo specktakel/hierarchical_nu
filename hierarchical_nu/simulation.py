@@ -72,7 +72,10 @@ class Simulation:
             event_types = [event_types]
         if isinstance(observation_time, u.quantity.Quantity):
             observation_time = {event_types[0]: observation_time}
-        assert len(event_types) == len(observation_time)
+        if not len(event_types) == len(observation_time):
+            raise ValueError(
+                "number of observation times must match number of event types"
+            )
         self._event_types = event_types
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
@@ -90,7 +93,10 @@ class Simulation:
 
         if N:
             for event_type in self._event_types:
-                assert len(N[event_type]) == len(sources)
+                if not len(N[event_type]) == len(sources):
+                    raise ValueError(
+                        "Provided event numbers must match number of sources"
+                    )
 
                 if CAS in self._event_types and self._sources.atmospheric:
                     if N[CAS][-1] != 0:
@@ -368,7 +374,10 @@ class Simulation:
         Esrc = self._sim_output.stan_variable("Esrc")[0]
         E = self._sim_output.stan_variable("E")[0]
         lam = self._sim_output.stan_variable("Lambda")[0] - 1
-        assert np.all(Esrc >= E)
+        if not np.all(Esrc >= E):
+            sim_logger.critical(
+                "Some event has lower energy in its source than in the detector frame"
+            )
         Edet = self.events.energies.value
         Emin_det = self._get_min_det_energy().to(u.GeV).value
 
@@ -819,7 +828,8 @@ class Simulation:
             if v_lim_low_detector > v_lim_low:
                 v_lim_low = v_lim_low_detector
 
-            assert v_lim_high > v_lim_low
+            if not v_lim_high > v_lim_low:
+                raise ValueError("")
 
         sim_inputs["v_low"] = v_lim_low
         sim_inputs["v_high"] = v_lim_high

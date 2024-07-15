@@ -112,8 +112,12 @@ class StanFitInterface(StanInterface):
 
         self._atmo_flux_theta_points = atmo_flux_theta_points
 
-        assert isinstance(nshards, int)
-        assert nshards >= 0
+        if not isinstance(nshards, int):
+            raise ValueError("nshards must be an integer")
+        
+        if not nshards >= 0:
+            raise ValueError("nshards must not be negative")
+        
         self._nshards = nshards
         self._use_event_tag = use_event_tag
         self._debug = debug
