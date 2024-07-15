@@ -33,6 +33,8 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
 
+from copy import deepcopy
+
 
 class ConfigParser:
     def __init__(self, hnu_config: HierarchicalNuConfig):
@@ -438,6 +440,10 @@ class ConfigParser:
         )
         return _events
 
+    @property
+    def stan_kwargs(self):
+        return self._hnu_config.stan_config
+
     def create_simulation(self, sources, detector_models, obs_time):
 
         from hierarchical_nu.simulation import Simulation
@@ -452,7 +458,7 @@ class ConfigParser:
 
         priors = self.priors
 
-        nshards = self._hnu_config.parameter_config.threads_per_chain
+        nshards = self._hnu_config.stan_config.threads_per_chain
         fit = StanFit(
             sources,
             detector_models,

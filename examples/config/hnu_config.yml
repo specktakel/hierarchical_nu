@@ -46,9 +46,14 @@ parameter_config:
   Emin_det: 2e2
   MJD_min: 56917
   MJD_max: 57113
-  threads_per_chain: 40
   frame: source
   asimov: false
+stan_config:
+  threads_per_chain: 40
+  iterations: 1000
+  iter_warmup: 1000
+  seed: 1337
+  chains: 1
 prior_config:
   src_index:
     name: NormalPrior

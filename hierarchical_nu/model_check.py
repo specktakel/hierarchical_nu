@@ -83,7 +83,7 @@ class ModelCheck:
             self._detector_model_type = self.parser.detector_model
             self._obs_time = self.parser.obs_time
             # self._nshards = parameter_config["nshards"]
-            self._threads_per_chain = parameter_config["threads_per_chain"]
+            self._threads_per_chain = self.config.stan_config["threads_per_chain"]
 
             sim = self.parser.create_simulation(
                 self._sources, self._detector_model_type, self._obs_time
