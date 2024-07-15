@@ -38,7 +38,7 @@ class ParameterConfig:
     E0_src_range: Tuple = (1e3, 1e8)
     diff_index: float = 2.5
     diff_index_range: Tuple = (1.0, 4.0)
-    F_diff_range: Tuple = (1e-6, 1e-3)  # 1 / m**2 / s
+    F_diff_range: Tuple = (1e-6, 1e-2)  # 1 / m**2 / s
     F_atmo_range: Tuple = (0.1, 0.5)  # 1 / m**2 / s
     L: List[float] = field(
         default_factory=lambda: [8e45]
