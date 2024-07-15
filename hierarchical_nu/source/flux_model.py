@@ -1144,25 +1144,27 @@ class PGammaSpectrum(SpectralShape):
             "norm_energy": normalisation_energy,
         }
 
+    @classmethod
     @u.quantity_input
     def _pl(
-        self,
+        cls,
         E: u.GeV,
         E_0: u.GeV,
         N_0: u.Quantity[1 / u.GeV / u.m**2 / u.s],
         alpha: float,
-    ):
+    ) -> u.Quantity[1 / u.GeV / u.m**2 / u.s]:
         return N_0 * np.power(E / E_0, -alpha)
 
+    @classmethod
     @u.quantity_input
     def _logp(
-        self,
+        cls,
         E: u.GeV,
         E_0: u.GeV,
         N_0: u.Quantity[1 / u.GeV / u.m**2 / u.s],
         alpha: float,
         beta: float,
-    ):
+    ) -> u.Quantity[1 / u.GeV / u.m**2 / u.s]:
         return N_0 * np.power(E / E_0, -alpha - beta * np.log(E / E_0))
 
     @property
@@ -1178,7 +1180,7 @@ class PGammaSpectrum(SpectralShape):
         return self._logp(self.Ebreak, E0, norm, self._alpha, self._beta)
 
     @u.quantity_input
-    def __call__(self, E: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
+    def __call__(self, E: u.GeV) -> u.Quantity[1 / u.GeV / u.m**2 / u.s]:
         E0 = self.parameters["norm_energy"].value
         norm = self.parameters["norm"].value
 
@@ -1268,7 +1270,10 @@ class PGammaSpectrum(SpectralShape):
                         pl_norm
                         * Ebreak
                         / (1.0 - self._src_index)
-                        * (1.0 - np.power(lower[c] / Ebreak, (1 - self._src_index)))
+                        * (
+                            np.power(Ebreak / E0, 1 - self._src_index)
+                            - np.power(lower[c] / E0, 1 - self._src_index)
+                        )
                     )
                     logp = (
                         quad(self._dN_dx, xb, xh[c], (self._alpha, self._beta))[0]
@@ -1296,7 +1301,7 @@ class PGammaSpectrum(SpectralShape):
 
     @property
     @u.quantity_input
-    def total_flux_density(self) -> u.erg / u.s / u.m**2:
+    def total_flux_density(self) -> u.Quantity[u.erg / u.s / u.m**2]:
         # Calculate numerically in log space
         # Transformed integrand reads
         # exp((2-alpha) * x - beta * x**2
@@ -1311,6 +1316,7 @@ class PGammaSpectrum(SpectralShape):
 
         # Special case to avoid NaNs
         if self._src_index == 2:
+            # Enorm of the powerlaw part is Ebreak
             int_norm = self.pl_norm.to_value(1 / u.GeV / u.m**2 / u.s) * np.power(
                 self.Ebreak.to_value(u.GeV), self._src_index
             )
@@ -1348,17 +1354,23 @@ class PGammaSpectrum(SpectralShape):
             / self.total_flux_density
         ).to(1 / u.GeV)
 
-    """
     @classmethod
     def flux_conv_(cls, alpha, e_low, e_up, beta, e_0):
+        # Stitch together from power law and logparabola
+        # NB: f1 and f2 have to be each stitched together, not per domain!
+        # Misnormer, e_0 is break energy and norm energy
         xl = np.log(e_low / e_0)
         xh = np.log(e_up / e_0)
 
-        f1 = quad(cls._dN_dx, xl, xh, (alpha, beta))[0]
-        f2 = quad(cls._x_dN_dx, xl, xh, (alpha, beta))[0]
+        f1_pl = quad(cls._dN_dx, xl, 1.0, (0.0, 0.0))[0]
+        f1_logp = quad(cls._dN_dx, 1.0, xh, (alpha, beta))[0]
 
-        return f1 / f2 / e_0
-    """
+        f2_pl = quad(cls._x_dN_dx, xl, 1.0, (0.0, 0.0))[0]
+        f2_logp = quad(cls._x_dN_dx, xl, xh, (alpha, beta))[0]
+
+        pl_norm = cls._dN_dE(e_0, e_0, alpha, beta)
+
+        return (pl_norm * f1_pl + f1_logp) / (pl_norm * f2_pl + f2_logp) / e_0
 
     @property
     def parameters(self):
@@ -1374,7 +1386,7 @@ class PGammaSpectrum(SpectralShape):
 
         norm = self.integral(*self.energy_bounds)
 
-        pdf = (self.__call__(E_input) / norm).to(1 / u.GeV)
+        pdf = (self.__call__(E_input) / norm).to_value(1 / u.GeV)
         if apply_lim:
             pdf[E_input < Emin] = 0.0
             pdf[E_input > Emax] = 0.0
@@ -1493,6 +1505,7 @@ class PGammaSpectrum(SpectralShape):
             # Must be something between the double logarithmic dN/dE vs E plot
             # and the way we do not actually compute slopes of dN/dE
             # but rather of the double logarithmic displays
+            # Hardcode E0 = Ebreak for now, TODO: fix
             Ebreak << E0  # FunctionCall([(-index - 1 + a) / -b], "exp") * E0
             Eb_E0 << Ebreak / E0
             logEb_E0 << FunctionCall([Eb_E0], "log")
@@ -1503,7 +1516,7 @@ class PGammaSpectrum(SpectralShape):
                 << FunctionCall(
                     [
                         "logparabola_dN_dx_log",
-                        logEL_E0,
+                        logEb_E0,
                         logEU_E0,
                         theta,
                         "x_r",
@@ -1557,14 +1570,20 @@ class PGammaSpectrum(SpectralShape):
 
         with func:
 
+            c_d = 1
             theta = StringExpression(["theta"])
-            E0 = InstantVariableDef("E0", "real", ["theta[1]"])
+            if fit_Enorm:
+                E0 = InstantVariableDef("E0", "real", ["theta[1]"])
+            else:
+                E0 = InstantVariableDef("E0", "real", [f"x_r[{c_d}]"])
+                c_d += 1
             a = InstantVariableDef("a", "real", [cls._alpha])
             b = InstantVariableDef("b", "real", [cls._beta])
             index = InstantVariableDef("index", "real", [cls._src_index])
             Eb_E0 = ForwardVariableDef("EbE0", "real")
-            e_low = InstantVariableDef("e_low", "real", ["x_r[1]"])
-            e_up = InstantVariableDef("e_up", "real", ["x_r[2]"])
+            e_low = InstantVariableDef("e_low", "real", [f"x_r[{c_d}]"])
+            c_d += 1
+            e_up = InstantVariableDef("e_up", "real", [f"x_r[{c_d}]"])
             logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
             logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
             Ebreak = ForwardVariableDef("Ebreak", "real")
@@ -1587,7 +1606,7 @@ class PGammaSpectrum(SpectralShape):
                 << FunctionCall(
                     [
                         "logparabola_dN_dx_log",
-                        logEL_E0,
+                        logEb_E0,
                         logEU_E0,
                         theta,
                         "x_r",
@@ -1618,7 +1637,7 @@ class PGammaSpectrum(SpectralShape):
                 << FunctionCall(
                     [
                         "logparabola_x_dN_dx_log",
-                        logEL_E0,
+                        logEb_E0,
                         logEU_E0,
                         theta,
                         "x_r",
