@@ -192,6 +192,9 @@ class StanFit:
             self._fit_index = False
             self._fit_beta = False
             self._fit_Enorm = False
+            self._power_law = False
+            self._logparabola = False
+            self._pgamma = False
 
         # For use with plot methods
         self._def_var_names = []

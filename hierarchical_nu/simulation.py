@@ -192,6 +192,9 @@ class Simulation:
             self._fit_index = False
             self._fit_beta = False
             self._fit_Enorm = False
+            self._logparabola = False
+            self._power_law = False
+            self._pgamma = False
 
         # Check for shared luminosity and src_index params
         try:
@@ -727,6 +730,7 @@ class Simulation:
                 sim_inputs["beta_index_grid"] = self._exposure_integral[
                     event_type
                 ].par_grids[key_beta]
+            if self._logparabola:
                 sim_inputs["beta_index"] = [
                     ps.flux_model.parameters["beta"].value
                     for ps in self._sources.point_source
@@ -942,6 +946,8 @@ class Simulation:
             spectrum = "pgamma"
         elif self._power_law:
             spectrum = "power_law"
+        else:
+            spectrum = "none"
 
         fit_params = []
         if self._fit_index:
@@ -1180,12 +1186,8 @@ def _get_expected_Nnu_(
     TODO: include in sim class, it is not used anywhere else for that matter
     """
 
-    print(spectrum)
-    print(fit_params)
-    print(point_source)
     n_params = 0
     if point_source:
-        print("ps")
         if spectrum == "logparabola":
             beta_index = sim_inputs["beta_index"]
             E0_src = sim_inputs["E0_src"]
@@ -1214,7 +1216,6 @@ def _get_expected_Nnu_(
             fit_Enorm = True
         else:
             fit_Enorm = False
-    print(n_params)
     if diffuse:
         diff_index = sim_inputs["diff_index"]
         diff_index_grid = sim_inputs["diff_index_grid"]
