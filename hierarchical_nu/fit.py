@@ -903,6 +903,7 @@ class StanFit:
         energy_unit=u.TeV,
         area_unit=u.cm**2,
         x_energy_unit=u.GeV,
+        upper_limit: bool = False,
     ):
         """
         Plot flux uncertainties.
@@ -1044,12 +1045,16 @@ class StanFit:
             lower = np.zeros(E.size)
             upper = np.zeros(E.size)
 
-            UL = 0.5 - CI / 2
-            HL = 0.5 + CI / 2
+            if upper_limit:
+                UL = CI
+            else:
+                UL = 0.5 - CI / 2
+                LL = 0.5 + CI / 2
 
             for c in range(E.size):
-                lower[c] = np.quantile(flux_grid[c], UL)
-                upper[c] = np.quantile(flux_grid[c], HL)
+                if not upper_limit:
+                    lower[c] = np.quantile(flux_grid[c], LL)
+                upper[c] = np.quantile(flux_grid[c], UL)
 
             ax.fill_between(
                 E.to_value(x_energy_unit),
@@ -1067,6 +1072,8 @@ class StanFit:
         ax.set_ylabel(
             f"flux [{(energy_unit**E_power * flux_unit).unit.to_string('latex_inline')}]"
         )
+        if upper_limit:
+            ax.set_ylim(bottom=np.min(upper) * 0.8)
 
         return fig, ax
 
