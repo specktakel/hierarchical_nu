@@ -1192,14 +1192,14 @@ class StanFit:
         # Add priors separately
         self.priors.addto(path, "priors")
 
+        return path  # noqa: F821
+
     def diagnose(self):
         try:
             print(self._fit_output.diagnose().decode("ascii"))
         except:
             for item in self._fit_meta["diagnose"]:
                 print(item.decode("ascii"))
-
-        return path  # noqa: F821
 
     def save_csvfiles(self, directory):
         """
