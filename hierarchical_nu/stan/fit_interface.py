@@ -114,10 +114,10 @@ class StanFitInterface(StanInterface):
 
         if not isinstance(nshards, int):
             raise ValueError("nshards must be an integer")
-        
+
         if not nshards >= 0:
             raise ValueError("nshards must not be negative")
-        
+
         self._nshards = nshards
         self._use_event_tag = use_event_tag
         self._debug = debug
@@ -2245,6 +2245,36 @@ class StanFitInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
+            if self._pgamma:
+                self._E_peak = ForwardArrayDef("E_peak", "real", ["[Ns]"])
+                self._peak_flux = ForwardArrayDef("peak_energy_flux", "real", ["[Ns]"])
+                with ForLoopContext(1, self._Ns, "k") as k:
+                    # Define peak energy of E^2 dN/dE
+                    # find via derivative of above expression, set to zero, ask wolfram alpha
+                    self._E_peak[k] << self._E0_src[k] * FunctionCall(
+                        ["exp(1)", f"1 / {self._sources.point_source_spectrum._beta}"],
+                        "pow",
+                    )
+                    # Calculate peak E^2 dN/dE flux
+                    self._peak_flux[k] << self._F[k] * FunctionCall(
+                        [
+                            self._src_spectrum_lpdf(
+                                self._E_peak[k],
+                                StringExpression(["{", self._E0_src[k], "}"]),
+                                StringExpression(
+                                    [
+                                        "{",
+                                        self._Emin_src[k],
+                                        ",",
+                                        self._Emax_src[k],
+                                        "}",
+                                    ]
+                                ),
+                                StringExpression(["{", 0, "}"]),
+                            )
+                        ],
+                        "exp",
+                    ) * FunctionCall([self._E_peak[k], 2], "pow")
             # Calculation of individual source-event logprobs
             # Only when parallel mode on
             if self._nshards not in [0, 1]:
