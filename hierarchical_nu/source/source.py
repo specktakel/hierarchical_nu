@@ -447,7 +447,7 @@ class PointSource(Source):
                 luminosity
             redshift: float
             E0_src: Parameter
-                Energy at which flat spectrum evolves into logparabola
+                Energy at which flat spectrum evolves into logparabola, is defined at detector irregardless of `frame`
             lower: Parameter
                 Lower energy bound
             upper: Parameter
@@ -471,7 +471,6 @@ class PointSource(Source):
             scale=ParScale.log,
         )
 
-        # Transform energies to detector frame
         spectral_shape = PGammaSpectrum(
             norm,
             E0_src,

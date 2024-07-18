@@ -238,6 +238,8 @@ class HierarchicalNuConfig:
             dec = []
             z = []
             fit_params = []
+            Emin_src = []
+            Emax_src = []
             ps = sources.point_source[0]
             spectrum = ps.flux_model.spectral_shape.name
             try:
@@ -269,11 +271,14 @@ class HierarchicalNuConfig:
                 ra.append(float(ps.ra.to_value(u.deg)))
                 dec.append(float(ps.dec.to_value(u.deg)))
                 z.append(ps.redshift)
+                Emin_src.append(ps.flux_model.energy_bounds[0].to_value(u.GeV))
+                Emax_src.append(ps.flux_model.energy_bounds[1].to_value(u.GeV))
             config.parameter_config.source_type = spectrum
             config.parameter_config.src_ra = ra
             config.parameter_config.src_dec = dec
             config.parameter_config.share_src_index
             config.parameter_config.share_L
+            config.parameter_config.frame = "detector"
 
         config.parameter_config.diffuse = True if sources.diffuse else False
         config.parameter_config.atmospheric = True if sources.atmospheric else False
