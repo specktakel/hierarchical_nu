@@ -649,8 +649,7 @@ class Simulation:
 
         if sim_inputs["Emin"] < 1e2:
             raise ValueError("Emin is lower than detector minimum energy")
-        # TODO check value for 10yr PS data
-        if sim_inputs["Emax"] > 1e8:
+        if sim_inputs["Emax"] > 1e9:
             raise ValueError("Emax is higher than detector maximum energy")
 
         if asimov:
