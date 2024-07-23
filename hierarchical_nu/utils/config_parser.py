@@ -450,7 +450,9 @@ class ConfigParser:
         sim = Simulation(sources, detector_models, obs_time, asimov=asimov)
         return sim
 
-    def create_fit(self, sources, events, detector_models, obs_time):
+    def create_fit(
+        self, sources, events, detector_models, obs_time, use_event_tag: bool = False
+    ):
 
         from hierarchical_nu.fit import StanFit
 
@@ -464,6 +466,7 @@ class ConfigParser:
             obs_time,
             priors=priors,
             nshards=nshards,
+            use_event_tag=use_event_tag,
         )
         return fit
 

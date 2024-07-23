@@ -588,8 +588,7 @@ class StanFitInterface(StanInterface):
                         self._event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
                         start << start + self._N
                         end << end + self._N
-                        self._event_tag << int_data[3 + self._N : 2 + 2 * self._N]
-                        # StringExpression(["int_data[3+N:2+2*N]"])
+                        self._event_tag << StringExpression(["int_data[3+N:2+2*N]"])
 
                     # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[N]"])
                     # self._ereco_idx << StringExpression("int_data[3+N:2+2*N]")
