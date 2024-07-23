@@ -1574,10 +1574,8 @@ class StanFitInterface(StanInterface):
                     python_counter += 1
                 if self._fit_Enorm:
                     python_counter += 1
-                if self._shared_src_index:
-                    num_of_pars += f" + {python_counter:d}"
-                else:
-                    num_of_pars += f" + Ns * {python_counter:d}"
+                # always use individual, transformed parameters, even if shared_src_index
+                num_of_pars += f" + Ns * {python_counter:d}"
 
                 if self.sources.diffuse:
                     num_of_pars += " + 2"
@@ -1917,9 +1915,9 @@ class StanFitInterface(StanInterface):
                         self._global_pars[start:end] << self._E0_src
                         start << start + self._Ns
                     if self.sources.diffuse:
-                        end << end + self._Ns
+                        end << end + 1
                         self._global_pars[start] << self._diff_index
-                        start << start + self._Ns
+                        start << start + 1
                     end << end + StringExpression(["size(logF)"])
                     self._global_pars[start:end] << self._logF
                     # Likelihood is evaluated in `lp_reduce`

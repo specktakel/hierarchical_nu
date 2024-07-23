@@ -76,12 +76,7 @@ class ConfigParser:
                             parameter_config["src_index_range"],
                         )
                     )
-        elif parameter_config["source_type"] == "pgamma":
-            if share_src_index:
-                index.append(PGammaSpectrum._src_index)
-            else:
-                for _ in parameter_config["E0_src"]:
-                    index.append(PGammaSpectrum._src_index)
+
         if parameter_config["source_type"] == "logparabola":
             if "beta_index" in parameter_config["fit_params"] and share_src_index:
                 beta.append(
@@ -236,6 +231,8 @@ class ConfigParser:
             if share_src_index:
                 if index and "src_index" in parameter_config["fit_params"]:
                     idx = index[0]
+                elif parameter_config.source_type == "pgamma":
+                    pass
                 else:
                     idx = index[c]
                 if beta and "beta_index" in parameter_config["fit_params"]:
@@ -252,17 +249,18 @@ class ConfigParser:
                     idx_beta = beta[c]
                 if E0_src:
                     E0 = E0_src[c]
-            args = (
-                f"ps_{c}",
-                dec[c],
-                ra[c],
-                Lumi,
-                idx,
-                parameter_config["z"][c],
-                Emin_src,
-                Emax_src,
-                frame,
-            )
+            if not parameter_config.source_type == "pgamma":
+                args = (
+                    f"ps_{c}",
+                    dec[c],
+                    ra[c],
+                    Lumi,
+                    idx,
+                    parameter_config["z"][c],
+                    Emin_src,
+                    Emax_src,
+                    frame,
+                )
             if parameter_config.source_type == "twice-broken-power-law":
                 method = PointSource.make_twicebroken_powerlaw_source
             elif parameter_config.source_type == "power-law":
