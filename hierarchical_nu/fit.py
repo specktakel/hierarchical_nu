@@ -1073,14 +1073,25 @@ class StanFit:
                     lower[c] = np.quantile(flux_grid[c], LL)
                 upper[c] = np.quantile(flux_grid[c], UL)
 
-            ax.fill_between(
-                E.to_value(x_energy_unit),
-                lower,
-                upper,
-                color="C0",
-                alpha=0.3,
-                edgecolor="none",
-            )
+            if not upper_limit:
+                ax.fill_between(
+                    E.to_value(x_energy_unit),
+                    lower,
+                    upper,
+                    color="C0",
+                    alpha=0.3,
+                    edgecolor="none",
+                )
+            else:
+                ax.plot(
+                    E.to_value(x_energy_unit),
+                    upper,
+                    color="C0",
+                    marker=r"$\downarrow$",
+                    markevery=0.06,
+                    markersize=10,
+                    # TODO fix alignment of arrow base to the line
+                )
 
         ax.set_xscale("log")
         ax.set_yscale("log")
