@@ -896,23 +896,9 @@ class StanFit:
 
         return fig, ax
 
-    def plot_flux_band(
-        self,
-        E_power: float = 0.0,
-        credible_interval: Union[float, List[float]] = 0.5,
-        energy_unit=u.TeV,
-        area_unit=u.cm**2,
-        x_energy_unit=u.GeV,
-        upper_limit: bool = False,
-    ):
-        """
-        Plot flux uncertainties.
-        :param E_power: float, plots flux * E**E_power.
-        :param credible_interval: set credible intervals to be plotted.
-        :param energy_unit: Choose your favourite flux energy unit.
-        :param area_unit: Choose your favourite flux area unit.
-        :param x_energy_unit: Choose your favourite abscissa energy unit
-        """
+    def _calculate_flux_grid(self, energy_unit, area_unit, E_power):
+
+        E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
         if not self._sources.point_source:
             raise ValueError("A valid source list is required")
@@ -975,6 +961,8 @@ class StanFit:
         share_index = N == 1
         N_samples = iterations * chains
 
+        self._flux_grid = np.zeros((len(self._sources.point_source), E.size, N_samples))
+
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
                 if self._fit_index:
@@ -1007,7 +995,6 @@ class StanFit:
                 )
 
             flux_int = F[:, c_ps].flatten()
-            E = np.geomspace(*ps.flux_model.energy_bounds, 1_000)
 
             flux_grid = np.zeros((E.size, N_samples))
 
@@ -1035,7 +1022,37 @@ class StanFit:
                     * np.power(E.to_value(energy_unit), E_power)
                 )
 
-            self._flux_grid = flux_grid
+            self._flux_grid[c_ps] = flux_grid
+
+    def plot_flux_band(
+        self,
+        E_power: float = 0.0,
+        credible_interval: Union[float, List[float]] = 0.5,
+        source_idx: int = 0,
+        energy_unit=u.TeV,
+        area_unit=u.cm**2,
+        x_energy_unit=u.GeV,
+        upper_limit: bool = False,
+    ):
+        """
+        Plot flux uncertainties.
+        :param E_power: float, plots flux * E**E_power.
+        :param credible_interval: set credible intervals to be plotted.
+        :param source_idx: Choose which point source's flux to plot. -1 for sum over all PS.
+        :param energy_unit: Choose your favourite flux energy unit.
+        :param area_unit: Choose your favourite flux area unit.
+        :param x_energy_unit: Choose your favourite abscissa energy unit
+        """
+
+        self._calculate_flux_grid(energy_unit, area_unit, E_power)
+
+        flux_unit = 1 / energy_unit / area_unit / u.s
+        E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
+
+        if source_idx == -1:
+            flux_grid = self._flux_grid.sum(axis=0)
+        else:
+            flux_grid = self._flux_grid[source_idx]
 
         fig, ax = plt.subplots()
 
