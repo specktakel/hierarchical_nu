@@ -26,10 +26,6 @@ class ReferenceFrame(ABC):
     Abstract base class for source frames.
     """
 
-    def __init__(self, name: str):
-
-        self._name = name
-
     @staticmethod
     def func(list, *args):
         """
@@ -44,10 +40,6 @@ class ReferenceFrame(ABC):
         except UnboundLocalError:
             out = list[prev]
         return out
-
-    @property
-    def name(self):
-        return self._name
 
     @classmethod
     @abstractmethod
@@ -64,17 +56,10 @@ class ReferenceFrame(ABC):
     def transform(cls, z):
         pass
 
-    @classmethod
-    @abstractmethod
-    def make_stan_transform_func(cls, fname) -> UserDefinedFunction:
-        pass
-
 
 class DetectorFrame(ReferenceFrame):
 
-    def __init__(self):
-
-        self._name = "detector"
+    name = "detector"
 
     @classmethod
     @u.quantity_input
@@ -92,8 +77,7 @@ class DetectorFrame(ReferenceFrame):
 
 class SourceFrame(ReferenceFrame):
 
-    def __init__(self):
-        self._name = "source"
+    name = "source"
 
     @classmethod
     @u.quantity_input
@@ -903,6 +887,11 @@ class Sources:
             )
 
         self._point_source_frame = frames[0]
+
+    @property
+    def point_source_frame(self):
+        self._get_point_source_frame()
+        return self._point_source_frame
 
     def _get_point_source_spectrum(self):
         """
