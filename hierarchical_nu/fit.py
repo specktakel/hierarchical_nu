@@ -367,7 +367,7 @@ class StanFit:
 
         return source_coords
 
-    def plot_trace(self, var_names=None, **kwargs):
+    def plot_trace(self, var_names=None, transform: bool = False, **kwargs):
         """
         Trace plot using list of stan parameter keys.
         """
@@ -375,17 +375,27 @@ class StanFit:
         if not var_names:
             var_names = self._def_var_names
 
-        axs = av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+        if transform:
+            transform = lambda x: np.log10(x)
+            axs = av.plot_trace(
+                self._fit_output, var_names=var_names, transform=transform, **kwargs
+            )
+        else:
+            axs = av.plot_trace(
+                self._fit_output, var_names=var_names, **kwargs
+            )
         fig = axs.flatten()[0].get_figure()
 
         return fig, axs
 
-    def plot_trace_and_priors(self, var_names=None, **kwargs):
+    def plot_trace_and_priors(self, var_names=None, transform: bool = False, **kwargs):
         """
         Trace plot and overplot the used priors.
         """
 
-        fig, axs = self.plot_trace(var_names=var_names, show=False, **kwargs)
+        fig, axs = self.plot_trace(
+            var_names=var_names, show=False, transform=transform, **kwargs
+        )
 
         if not var_names:
             var_names = self._def_var_names
@@ -416,7 +426,7 @@ class StanFit:
                 supp = ax.get_xlim()
                 x = np.linspace(*supp, 1000)
 
-                if "transform" in kwargs.keys():
+                if transform:
                     # Assumes that the only sensible transformation is log10
                     if isinstance(prior, MultiSourcePrior):
                         for p in prior:
@@ -436,7 +446,7 @@ class StanFit:
                         unit = prior.UNITS.unit
                     except AttributeError:
                         unit = prior.UNITS
-                    if "transform" in kwargs.keys():
+                    if transform:
                         # yikes
                         title = f"[$\\log_{{10}}\\left (\\frac{{{name}}}{{{unit.to_string('latex_inline').strip('$')}}}\\right )$]"
                     else:
