@@ -274,6 +274,7 @@ class HierarchicalNuConfig:
             config.parameter_config.source_type = spectrum
             config.parameter_config.src_ra = ra
             config.parameter_config.src_dec = dec
+            config.parameter_config.z = z
             config.parameter_config.share_src_index
             config.parameter_config.share_L
             config.parameter_config.frame = sources.point_source_frame.name

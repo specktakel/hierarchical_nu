@@ -1044,7 +1044,14 @@ class StanFit:
         :param x_energy_unit: Choose your favourite abscissa energy unit
         """
 
-        self._calculate_flux_grid(energy_unit, area_unit, E_power)
+        # Save some time calculating if the previous calculation has already used the same E_power
+        try:
+            if not np.isclose(self._E_power, E_power):
+                raise AttributeError
+        except AttributeError:
+            self._calculate_flux_grid(energy_unit, area_unit, E_power)
+        finally:
+            self._E_power = E_power
 
         flux_unit = 1 / energy_unit / area_unit / u.s
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
