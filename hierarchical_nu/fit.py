@@ -381,9 +381,7 @@ class StanFit:
                 self._fit_output, var_names=var_names, transform=transform, **kwargs
             )
         else:
-            axs = av.plot_trace(
-                self._fit_output, var_names=var_names, **kwargs
-            )
+            axs = av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
         fig = axs.flatten()[0].get_figure()
 
         return fig, axs
@@ -1121,6 +1119,56 @@ class StanFit:
             ax.set_ylim(bottom=np.min(upper) * 0.8)
 
         return fig, ax
+
+    def plot_peak_energy_flux(
+        self,
+        ax,
+        levels=[0.5, 0.683, 0.95],
+        energy_unit=u.TeV,
+        area_unit=u.cm**2,
+        x_energy_unit=u.GeV,
+    ):
+
+        from matplotlib.lines import Line2D
+        import seaborn as sns
+
+        handles, labels = ax.get_legend_handles_labels()
+
+        levels = np.sort(1 - np.atleast_1d(levels))
+        try:
+            E_peak = self._fit_output["E_peak"].squeeze() << u.GeV
+            peak_flux = self._fit_output["peak_energy_flux"].squeeze() << u.GeV / u.m**2
+        except:  # TODO find proper exception
+            E_peak = self._fit_output.stan_variable("E_peak").squeeze() << u.GeV
+            peak_flux = (
+                self._fit_output.stan_varable("peak_energy_flux") << u.GeV / u.m**2
+            )
+        data = {
+            "E": E_peak.to_value(x_energy_unit),
+            "flux": peak_flux.to_value(energy_unit / area_unit),
+        }
+
+        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap="viridis")
+
+        colours = ax.collections[-1]._mapped_colors
+
+        tex = plt.rcParams["text.usetex"]
+        for c, l in zip(colours, levels):
+            handles.append(Line2D([0], [0], color=c))
+            if tex:
+                label = rf"{int(l*100):d}\% CR"
+            else:
+                label = rf"{int(l*100):d}% CR"
+            labels.append(label)
+        ax.legend(handles, labels)
+
+        # this is an effing mess
+        legend = ax.get_legend()
+        renderer = plt.gcf().canvas.get_renderer()
+        extends = [t.get_window_extent(renderer).width for t in legend.get_texts()]
+        max_extend = max(extends)
+        for t, e in zip(legend.get_texts(), extends):
+            t.set_position((max_extend - e, 0))
 
     def save(self, path: Path, overwrite: bool = False):
         """
