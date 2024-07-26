@@ -79,6 +79,14 @@ class SpectralShape(ABC):
         par.value = par_value
         par.fixed = fixed
 
+    @property
+    def energy_bounds(self):
+        return (self._lower_energy, self._upper_energy)
+
+    @property
+    def name(self):
+        return self._name
+
 
 class FluxModel(ABC):
     """
@@ -256,6 +264,8 @@ class PowerLawSpectrum(SpectralShape):
     Power law shape
     """
 
+    _name = "power-law"
+
     @u.quantity_input
     def __init__(
         self,
@@ -288,10 +298,6 @@ class PowerLawSpectrum(SpectralShape):
         self._lower_energy = lower_energy
         self._upper_energy = upper_energy
         self._parameters = {"norm": normalisation, "index": index}
-
-    @property
-    def energy_bounds(self):
-        return (self._lower_energy, self._upper_energy)
 
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
@@ -578,6 +584,7 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
 
     _index0 = -15.0
     _index2 = 15.0
+    _name = "twice-broken-power-law"
 
     @u.quantity_input
     def __init__(
@@ -670,6 +677,9 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
 
 
 class LogParabolaSpectrum(SpectralShape):
+
+    _name = "logparabola"
+
     @u.quantity_input
     def __init__(
         self,
@@ -710,10 +720,6 @@ class LogParabolaSpectrum(SpectralShape):
             "norm_energy": normalisation_energy,
         }
 
-    @property
-    def energy_bounds(self):
-        return (self._lower_energy, self._upper_energy)
-
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
         alpha = self.parameters["index"].value
@@ -721,7 +727,7 @@ class LogParabolaSpectrum(SpectralShape):
         E = energy.to_value(u.GeV)
         E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
         norm = self.parameters["norm"].value
-        if isinstance(energy, np.ndarray):
+        if energy.shape != ():
             output = np.zeros_like(energy.value) * norm
             mask = np.nonzero(
                 ((energy <= self._upper_energy) & (energy >= self._lower_energy))
@@ -1101,6 +1107,562 @@ class LogParabolaSpectrum(SpectralShape):
                 * E0
             )
 
+            ReturnStatement([f1 / f2])
+
+        return func
+
+
+class PGammaSpectrum(SpectralShape):
+
+    _src_index = 0.0
+    _alpha = 0.0
+    _beta = 0.7
+    _name = "pgamma"
+
+    @u.quantity_input
+    def __init__(
+        self,
+        normalisation: Parameter,
+        normalisation_energy: Parameter,
+        lower_energy: u.GeV = 1e2 * u.GeV,
+        upper_energy: u.GeV = np.inf * u.GeV,
+        *args,
+        **kwargs,
+    ):
+        super().__init__()
+        self._lower_energy = lower_energy
+        self._upper_energy = upper_energy
+        # Create hidden parameters requiring less changes to the code generator
+        index = Parameter(
+            self._src_index, "src_index", fixed=True, par_range=(-1.0, 1.0)
+        )
+        beta = Parameter(self._beta, "beta_index", fixed=True, par_range=(0.0, 1.0))
+        self._parameters = {
+            "index": index,
+            "beta": beta,
+            "norm": normalisation,
+            "norm_energy": normalisation_energy,
+        }
+
+    @classmethod
+    @u.quantity_input
+    def _pl(
+        cls,
+        E: u.GeV,
+        E_0: u.GeV,
+        N_0: u.Quantity[1 / u.GeV / u.m**2 / u.s],
+        alpha: float,
+    ) -> u.Quantity[1 / u.GeV / u.m**2 / u.s]:
+        return N_0 * np.power(E / E_0, -alpha)
+
+    @classmethod
+    @u.quantity_input
+    def _logp(
+        cls,
+        E: u.GeV,
+        E_0: u.GeV,
+        N_0: u.Quantity[1 / u.GeV / u.m**2 / u.s],
+        alpha: float,
+        beta: float,
+    ) -> u.Quantity[1 / u.GeV / u.m**2 / u.s]:
+        return N_0 * np.power(E / E_0, -alpha - beta * np.log(E / E_0))
+
+    @property
+    def Ebreak(self):
+        E0 = self.parameters["norm_energy"].value
+        return E0
+        # return np.exp((-self._src_index - 1 + self._alpha) / -self._beta) * E0
+
+    @property
+    def pl_norm(self):
+        E0 = self.parameters["norm_energy"].value
+        norm = self.parameters["norm"].value
+        return self._logp(self.Ebreak, E0, norm, self._alpha, self._beta)
+
+    @u.quantity_input
+    def __call__(self, E: u.GeV) -> u.Quantity[1 / u.GeV / u.m**2 / u.s]:
+        E0 = self.parameters["norm_energy"].value
+        norm = self.parameters["norm"].value
+
+        Ebreak = self.Ebreak
+        # powerlaw norm at Ebreak is logparabola evaluated at Ebreak
+        pl_norm = self.pl_norm
+        # norm * np.power(
+        #    Ebreak / E0, -self._alpha - self._beta * np.log(Ebreak / E0)
+        # )
+
+        if E.shape != ():
+            output = np.zeros_like(E.value) * norm
+            output[E >= Ebreak] = self._logp(
+                E[E >= Ebreak], E0, norm, self._alpha, self._beta
+            )
+
+            output[E < Ebreak] = self._pl(
+                E[E < Ebreak], Ebreak, pl_norm, self._src_index
+            )
+
+            mask = np.nonzero(((E > self._upper_energy) ^ (E < self._lower_energy)))
+            output[mask] = 0.0 * norm
+            return output
+        if (E < self._lower_energy) or (E > self._upper_energy):
+            return 0.0 * norm
+
+        if E >= Ebreak:
+            return self._logp(E, E0, norm, self._alpha, self._beta)
+        return self._pl(E, Ebreak, pl_norm, self._src_index)
+
+    @u.quantity_input
+    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
+        # Calculate numerically in log space
+        # Transformed integrand reads
+        # exp((1-alpha) * x - beta * x**2
+        E0 = self.parameters["norm_energy"].value
+        norm = self.parameters["norm"].value
+
+        # find break energy:
+        Ebreak = self.Ebreak
+        # powerlaw norm at Ebreak is logparabola evaluated at Ebreak
+        pl_norm = self.pl_norm
+        lower = np.atleast_1d(lower)
+        upper = np.atleast_1d(upper)
+        xl = np.log((lower / E0).to_value(1))
+        xh = np.log((upper / E0).to_value(1))
+
+        # Check edge cases
+        lower[((lower < self._lower_energy) & (upper > self._lower_energy))] = (
+            self._lower_energy
+        )
+        upper[((lower < self._upper_energy) & (upper > self._upper_energy))] = (
+            self._upper_energy
+        )
+
+        results = np.zeros(xl.shape) << 1 / u.m**2 / u.s
+        for c in range(xl.size):
+            # Check if domain of integration is completely within on or the other definition
+            if xh[c] <= np.log((Ebreak / E0).to_value(1)):
+                if self._src_index == 1:
+                    # xh, xl are already logarithmic energies, "off" E0 is cancelled due to logs
+                    results[c] = pl_norm * Ebreak * (xh[c] - xl[c])
+                else:
+                    # Use proper E0, i.e. Ebreak
+                    results[c] = (
+                        pl_norm
+                        * Ebreak
+                        / (1.0 - self._src_index)
+                        * (
+                            np.power(upper[c] / Ebreak, (1 - self._src_index))
+                            - np.power(lower[c] / Ebreak, (1 - self._src_index))
+                        )
+                    )
+            elif xl[c] >= np.log((Ebreak / E0).to_value(1)):
+                results[c] = (
+                    quad(self._dN_dx, xl[c], xh[c], (self._alpha, self._beta))[0]
+                    * norm
+                    * E0
+                )
+            else:
+                xb = np.log((Ebreak / E0).to_value(1))
+                # from Elow to Ebreak: PL, from Ebreak to Ehigh: logparabola
+                if self._src_index == 1.0:
+                    pl = pl_norm * Ebreak * (xb - xl[c])
+                else:
+                    pl = (
+                        pl_norm
+                        * Ebreak
+                        / (1.0 - self._src_index)
+                        * (
+                            np.power(Ebreak / E0, 1 - self._src_index)
+                            - np.power(lower[c] / E0, 1 - self._src_index)
+                        )
+                    )
+                    logp = (
+                        quad(self._dN_dx, xb, xh[c], (self._alpha, self._beta))[0]
+                        * norm
+                        * E0
+                    )
+                results[c] = pl + logp
+
+        if results.size == 1:
+            return results[0]
+        return results
+
+    @classmethod
+    def _dN_dE(cls, E, E0, alpha, beta):
+        # Unnormalised pdf
+        return np.power(E / E0, -alpha - beta * np.log(E / E0))
+
+    @classmethod
+    def _dN_dx(cls, x, alpha, beta):
+        return np.exp((1.0 - alpha) * x - beta * np.power(x, 2))
+
+    @classmethod
+    def _x_dN_dx(cls, x, alpha, beta):
+        return np.exp((2.0 - alpha) * x - beta * np.power(x, 2))
+
+    @property
+    @u.quantity_input
+    def total_flux_density(self) -> u.Quantity[u.erg / u.s / u.m**2]:
+        # Calculate numerically in log space
+        # Transformed integrand reads
+        # exp((2-alpha) * x - beta * x**2
+        E0 = self.parameters["norm_energy"].value
+        norm = self.parameters["norm"].value
+
+        # power law part
+        lower, upper = self._lower_energy.to_value(u.GeV), self._upper_energy.to_value(
+            u.GeV
+        )
+        return_units = u.GeV / (u.m**2 * u.s)
+
+        # Special case to avoid NaNs
+        if self._src_index == 2:
+            # Enorm of the powerlaw part is Ebreak
+            int_norm = self.pl_norm.to_value(1 / u.GeV / u.m**2 / u.s) * np.power(
+                self.Ebreak.to_value(u.GeV), self._src_index
+            )
+            pl = int_norm * np.log(self.Ebreak.to_value(u.GeV) / lower) * return_units
+        else:
+            int_norm = (
+                self.pl_norm.to_value(1 / u.GeV / u.m**2 / u.s)
+                * np.power(self.Ebreak.to_value(u.GeV), self._src_index)
+                / (2 - self._src_index)
+            )
+            pl = (
+                int_norm
+                * (
+                    np.power(self.Ebreak.to_value(u.GeV), 2 - self._src_index)
+                    - np.power(lower, 2 - self._src_index)
+                )
+                * return_units
+            )
+
+        xh = np.log((self._upper_energy / E0).to_value(1))
+        xb = np.log((self.Ebreak / E0).to_value(1))
+
+        result = (
+            quad(self._x_dN_dx, xb, xh, (self._alpha, self._beta))[0]
+            * norm
+            * np.power(E0, 2)
+        )
+        return result + pl
+
+    def flux_conv(self):
+        # Calculate (\int dN / dE / dA /dt dE)/(\int E dN / dE / dA / dt dE)
+
+        return (
+            self.integral(self._lower_energy, self._upper_energy)
+            / self.total_flux_density
+        ).to(1 / u.GeV)
+
+    @classmethod
+    def flux_conv_(cls, alpha, e_low, e_up, beta, e_0):
+        # Stitch together from power law and logparabola
+        # NB: f1 and f2 have to be each stitched together, not per domain!
+        # Misnormer, e_0 is break energy and norm energy
+        xl = np.log(e_low / e_0)
+        xh = np.log(e_up / e_0)
+
+        f1_pl = quad(cls._dN_dx, xl, 1.0, (0.0, 0.0))[0]
+        f1_logp = quad(cls._dN_dx, 1.0, xh, (alpha, beta))[0]
+
+        f2_pl = quad(cls._x_dN_dx, xl, 1.0, (0.0, 0.0))[0]
+        f2_logp = quad(cls._x_dN_dx, xl, xh, (alpha, beta))[0]
+
+        pl_norm = cls._dN_dE(e_0, e_0, alpha, beta)
+
+        return (pl_norm * f1_pl + f1_logp) / (pl_norm * f2_pl + f2_logp) / e_0
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    @u.quantity_input
+    def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV, apply_lim: bool = True):
+        """
+        Return PDF.
+        """
+
+        E_input = np.atleast_1d(E)
+
+        norm = self.integral(*self.energy_bounds)
+
+        pdf = (self.__call__(E_input) / norm).to_value(1 / u.GeV)
+        if apply_lim:
+            pdf[E_input < Emin] = 0.0
+            pdf[E_input > Emax] = 0.0
+        if pdf.size == 1:
+            return pdf[0]
+        return pdf
+
+    @classmethod
+    def make_stan_sampling_lpdf_func(cls, f_name) -> UserDefinedFunction:
+        return cls.make_stan_lpdf_func(f_name, False, False, False)
+
+    @classmethod
+    def make_stan_sampling_func(cls, f_name, *args, **kwargs):
+        # no inverse transform sampling for you!
+        raise NotImplementedError
+
+    @classmethod
+    def make_stan_utility_func(cls, fit_index: bool, fit_beta: bool, fit_Enorm: bool):
+        # TODO signauture? only Enorm can be fitted
+        # Needs to be passed to integrate_1d
+        # is defined in logspace for faster integration
+        lp = UserDefinedFunction(
+            "logparabola_dN_dx_log",
+            ["x", "xc", "theta", "x_r", "x_i"],
+            ["real", "real", "array[] real", "data array[] real", "data array[] int"],
+            "real",
+        )
+        with lp:
+            x = StringExpression(["x"])
+
+            a = InstantVariableDef("a", "real", [cls._alpha])
+            b = InstantVariableDef("b", "real", [cls._beta])
+
+            ReturnStatement(
+                [FunctionCall([(1.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
+            )
+        lp = UserDefinedFunction(
+            "logparabola_dN_dx",
+            ["x", "xc", "theta", "x_r", "x_i"],
+            ["real", "real", "array[] real", "data array[] real", "data array[] int"],
+            "real",
+        )
+        with lp:
+
+            a = InstantVariableDef("a", "real", [cls._alpha])
+            b = InstantVariableDef("b", "real", [cls._beta])
+            E0 = InstantVariableDef("E0", "real", ["theta[1]"])
+            EE0 = InstantVariableDef("EE0", "real", ["x / E0"])
+
+            ReturnStatement(
+                [FunctionCall([EE0, -a - b * FunctionCall([EE0], "log")], "pow")]
+            )
+        # Same here
+        lp = UserDefinedFunction(
+            "logparabola_x_dN_dx_log",
+            ["x", "xc", "theta", "x_r", "x_i"],
+            ["real", "real", "array[] real", "data array[] real", "data array[] int"],
+            "real",
+        )
+        with lp:
+            x = StringExpression(["x"])
+
+            a = InstantVariableDef("a", "real", [cls._alpha])
+            b = InstantVariableDef("b", "real", [cls._beta])
+            E0 = InstantVariableDef("E0", "real", ["theta[1]"])
+
+            ReturnStatement(
+                [FunctionCall([(2.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
+            )
+
+    @classmethod
+    def make_stan_lpdf_func(
+        cls, f_name, fit_index: bool, fit_beta: bool, fit_Enorm: bool
+    ) -> UserDefinedFunction:
+        """
+        If fit_beta==True, signature is theta=[alpha, beta], x_r=[E0, Emin, Emax]
+        else theta=[alpha, E0], x_r=[beta, Emin, Emax]
+        """
+        # power_law = PowerLawSpectrum.make_stan_lpdf_func("power_law_lpdf")
+        func = UserDefinedFunction(
+            f_name,
+            ["E", "theta", "x_r", "x_i"],
+            ["real", "array[] real", "data array[] real", "data array[] int"],
+            "real",
+        )
+
+        with func:
+            E = StringExpression(["E"])
+            theta = StringExpression(["theta"])
+            E0 = InstantVariableDef("E0", "real", ["theta[1]"])
+            a = InstantVariableDef("a", "real", [cls._alpha])
+            b = InstantVariableDef("b", "real", [cls._beta])
+            index = InstantVariableDef("index", "real", [cls._src_index])
+            Eb_E0 = ForwardVariableDef("EbE0", "real")
+            e_low = InstantVariableDef("e_low", "real", ["x_r[1]"])
+            e_up = InstantVariableDef("e_up", "real", ["x_r[2]"])
+            logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
+            logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
+            E_E0 = InstantVariableDef("EE0", "real", ["E/E0"])
+            logE_E0 = InstantVariableDef("logEE0", "real", ["log(EE0)"])
+            Ebreak = ForwardVariableDef("Ebreak", "real")
+            norm_Eb = ForwardVariableDef("norm_Eb", "real")
+            logEb_E0 = ForwardVariableDef("logEbE0", "real")
+
+            N = ForwardVariableDef("N", "real")
+            N_logp = ForwardVariableDef("N_logp", "real")
+            N_pl = ForwardVariableDef("N_pl", "real")
+            p = ForwardVariableDef("p", "real")
+
+            with IfBlockContext([E, ">", e_up]):
+                ReturnStatement(["negative_infinity()"])
+            with ElseIfBlockContext([E, "<", e_low]):
+                ReturnStatement(["negative_infinity()"])
+
+            # Find break energy, I have no idea exactly why the -1 is necessary
+            # Must be something between the double logarithmic dN/dE vs E plot
+            # and the way we do not actually compute slopes of dN/dE
+            # but rather of the double logarithmic displays
+            # Hardcode E0 = Ebreak for now, TODO: fix
+            Ebreak << E0  # FunctionCall([(-index - 1 + a) / -b], "exp") * E0
+            Eb_E0 << Ebreak / E0
+            logEb_E0 << FunctionCall([Eb_E0], "log")
+            # logparabola value at break energy to normalise power law
+            norm_Eb << FunctionCall([Eb_E0, -a - b * logEb_E0], "pow")
+            (
+                N_logp
+                << FunctionCall(
+                    [
+                        "logparabola_dN_dx_log",
+                        logEb_E0,
+                        logEU_E0,
+                        theta,
+                        "x_r",
+                        "x_i",
+                    ],
+                    "integrate_1d",
+                )
+                * E0
+            )
+            # Add powerlaw part to overall normalisation N
+            with IfBlockContext([StringExpression([index, " == ", 1.0])]):
+                (
+                    N_pl
+                    << (FunctionCall([Ebreak], "log") - FunctionCall([e_low], "log"))
+                    * norm_Eb
+                )
+            with ElseBlockContext():
+                (
+                    N_pl
+                    << (Ebreak ** (index) / (1 - index))
+                    * (Ebreak ** (1 - index) - e_low ** (1 - index))
+                    * norm_Eb
+                )
+
+            N << N_logp + N_pl
+            # Decide in which part of the spectrum the energy E falls
+            # return accordingly lpdf taken from that definition
+            with IfBlockContext([E, " >= ", Ebreak]):
+                p << FunctionCall([E_E0, -a - b * logE_E0], "pow")
+            with ElseBlockContext():
+                p << FunctionCall([E / Ebreak, -index], "pow") * norm_Eb
+            ReturnStatement([FunctionCall([p / N], "log")])
+
+        return func
+
+    @classmethod
+    def make_stan_flux_conv_func(
+        cls,
+        f_name,
+        fit_index: bool,
+        fit_beta: bool,
+        fit_Enorm: bool,
+    ) -> UserDefinedFunction:
+
+        func = UserDefinedFunction(
+            f_name,
+            ["theta", "x_r", "x_i"],
+            ["array[] real", "data array[] real", "data array[] int"],
+            "real",
+        )
+
+        with func:
+
+            c_d = 1
+            theta = StringExpression(["theta"])
+            if fit_Enorm:
+                E0 = InstantVariableDef("E0", "real", ["theta[1]"])
+            else:
+                E0 = InstantVariableDef("E0", "real", [f"x_r[{c_d}]"])
+                c_d += 1
+            a = InstantVariableDef("a", "real", [cls._alpha])
+            b = InstantVariableDef("b", "real", [cls._beta])
+            index = InstantVariableDef("index", "real", [cls._src_index])
+            Eb_E0 = ForwardVariableDef("EbE0", "real")
+            e_low = InstantVariableDef("e_low", "real", [f"x_r[{c_d}]"])
+            c_d += 1
+            e_up = InstantVariableDef("e_up", "real", [f"x_r[{c_d}]"])
+            logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
+            logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
+            Ebreak = ForwardVariableDef("Ebreak", "real")
+            norm_Eb = ForwardVariableDef("norm_Eb", "real")
+            logEb_E0 = ForwardVariableDef("logEbE0", "real")
+
+            Ebreak << E0  # FunctionCall([(-index - 1 + a) / -b], "exp") * E0
+            Eb_E0 << Ebreak / E0
+            logEb_E0 << FunctionCall([Eb_E0], "log")
+            # logparabola value at break energy to normalise power law
+            norm_Eb << FunctionCall([Eb_E0, -a - b * logEb_E0], "pow")
+
+            N_pl = ForwardVariableDef("N_pl", "real")
+
+            f1 = ForwardVariableDef("f1", "real")
+            f2 = ForwardVariableDef("f2", "real")
+
+            (
+                f1
+                << FunctionCall(
+                    [
+                        "logparabola_dN_dx_log",
+                        logEb_E0,
+                        logEU_E0,
+                        theta,
+                        "x_r",
+                        "x_i",
+                    ],
+                    "integrate_1d",
+                )
+                * E0
+            )
+            # Add powerlaw part to overall normalisation N
+            with IfBlockContext([StringExpression([index, " == ", 1.0])]):
+                (
+                    N_pl
+                    << FunctionCall([Ebreak], "log")
+                    - FunctionCall([e_low], "log") * norm_Eb
+                )
+            with ElseBlockContext():
+                (
+                    N_pl
+                    << (Ebreak ** (index) / (1 - index))
+                    * (Ebreak ** (1 - index) - e_low ** (1 - index))
+                    * norm_Eb
+                )
+            f1 << f1 + N_pl
+            # Additional factor of E0 due to further transformation of E->log(E/E0)->x
+            (
+                f2
+                << FunctionCall(
+                    [
+                        "logparabola_x_dN_dx_log",
+                        logEb_E0,
+                        logEU_E0,
+                        theta,
+                        "x_r",
+                        "x_i",
+                    ],
+                    "integrate_1d",
+                )
+                * E0**2
+            )
+
+            with IfBlockContext([StringExpression([index, " == ", 2.0])]):
+                (
+                    N_pl
+                    << FunctionCall([Ebreak], "log")
+                    - FunctionCall([e_low], "log") * norm_Eb
+                )
+            with ElseBlockContext():
+                (
+                    N_pl
+                    << (Ebreak ** (index) / (2 - index))
+                    * (Ebreak ** (2 - index) - e_low ** (2 - index))
+                    * norm_Eb
+                )
+
+            f2 << f2 + N_pl
             ReturnStatement([f1 / f2])
 
         return func

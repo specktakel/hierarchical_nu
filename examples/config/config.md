@@ -130,6 +130,8 @@ fit.run(
     inits={
         "L": 1e49,
         "src_index": 2.2,
+        "beta_index": 0.05,
+        "E0_src": 1e5,
         "diff_index": 2.2,
         "E": [1e5] * fit.events.N,
         "F_diff": 1e-4,

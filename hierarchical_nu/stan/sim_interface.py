@@ -120,7 +120,7 @@ class StanSimInterface(StanInterface):
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
             if self.sources.point_source:
-                if self._logparabola:
+                if self._logparabola or self._pgamma:
                     self._ps_spectrum.make_stan_utility_func(False, False, False)
                 self._src_spectrum_lpdf = (
                     # Use a different function here
@@ -178,8 +178,9 @@ class StanSimInterface(StanInterface):
                 self._Emin_src = ForwardVariableDef("Emin_src", "vector[Ns]")
                 self._Emax_src = ForwardVariableDef("Emax_src", "vector[Ns]")
                 self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
-                if self._ps_spectrum == LogParabolaSpectrum:
+                if self._logparabola:
                     self._beta_index = ForwardVariableDef("beta_index", "vector[Ns]")
+                if self._logparabola or self._pgamma:
                     self._E0_src = ForwardVariableDef("E0_src", "vector[Ns]")
 
             # True directions of point sources as a unit vector
@@ -360,7 +361,6 @@ class StanSimInterface(StanInterface):
                     )
 
                     if self._logparabola:
-                        theta = StringExpression(["{1.}"])
                         x_r = StringExpression(
                             [
                                 "{",
@@ -376,6 +376,20 @@ class StanSimInterface(StanInterface):
                                 "}",
                             ]
                         )
+                    elif self._pgamma:
+                        x_r = StringExpression(
+                            [
+                                "{",
+                                self._E0_src[k],
+                                ",",
+                                self._Emin_src[k],
+                                ",",
+                                self._Emax_src[k],
+                                "}",
+                            ]
+                        )
+                    if self._logparabola or self._pgamma:
+                        theta = StringExpression(["{1.}"])
                         x_i = StringExpression(
                             [
                                 "{",
@@ -851,11 +865,6 @@ class StanSimInterface(StanInterface):
 
                                 # Store the value of the source PDF at this energy
                                 if self._logparabola:
-                                    theta = StringExpression(
-                                        [
-                                            "{1.}",
-                                        ]
-                                    )
                                     x_r = StringExpression(
                                         [
                                             "{",
@@ -869,6 +878,24 @@ class StanSimInterface(StanInterface):
                                             ",",
                                             self._Emax_src[self._lam[i]],
                                             "}",
+                                        ]
+                                    )
+                                elif self._pgamma:
+                                    x_r = StringExpression(
+                                        [
+                                            "{",
+                                            self._E0_src[self._lam[i]],
+                                            ",",
+                                            self._Emin_src[self._lam[i]],
+                                            ",",
+                                            self._Emax_src[self._lam[i]],
+                                            "}",
+                                        ]
+                                    )
+                                if self._logparabola or self._pgamma:
+                                    theta = StringExpression(
+                                        [
+                                            "{1.}",
                                         ]
                                     )
                                     x_i = StringExpression(

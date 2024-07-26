@@ -1,8 +1,7 @@
 parameter_config:
-  source_type: logparabola
+  source_type: pgamma
   fit_params:
-  - src_index
-  - beta_index
+  - E0_src
   src_index:
   - 2.3
   beta_index:
@@ -10,6 +9,11 @@ parameter_config:
   beta_index_range:
   - -1.0
   - 1.0
+  E0_src:
+  - 1e5
+  E0_src_range:
+  - 1e3
+  - 1e8
   share_src_index: true
   src_index_range:
   - 1.0
@@ -42,8 +46,8 @@ parameter_config:
   Emin_det: 2e2
   MJD_min: 56917
   MJD_max: 57113
-  asimov: false
   frame: source
+  asimov: false
 stan_config:
   threads_per_chain: 40
   iterations: 1000

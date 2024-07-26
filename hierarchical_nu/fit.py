@@ -4,7 +4,6 @@ import h5py
 import logging
 import collections
 from astropy import units as u
-from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from typing import List, Union, Dict, Callable, Iterable
 import corner
@@ -22,27 +21,34 @@ from cmdstanpy import CmdStanModel
 
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_to_icrs
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, LogParabolaSpectrum
+from hierarchical_nu.source.flux_model import (
+    IsotropicDiffuseBG,
+    LogParabolaSpectrum,
+    PGammaSpectrum,
+    TwiceBrokenPowerLaw,
+    PowerLawSpectrum,
+)
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.detector.r2021 import (
     R2021EnergyResolution,
-    R2021LogNormEnergyResolution,
 )
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
 from hierarchical_nu.priors import (
     Priors,
-    NormalPrior,
-    LogNormalPrior,
     UnitPrior,
     MultiSourcePrior,
 )
-from hierarchical_nu.source.source import spherical_to_icrs, uv_to_icrs
+from hierarchical_nu.source.source import uv_to_icrs
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.git import git_hash
+from hierarchical_nu.utils.config import HierarchicalNuConfig
+from hierarchical_nu.utils.config_parser import ConfigParser
+
+from omegaconf import OmegaConf
 
 
 logger = logging.getLogger(__name__)
@@ -90,7 +96,10 @@ class StanFit:
             event_types = [event_types]
         if isinstance(observation_time, u.quantity.Quantity):
             observation_time = {event_types[0]: observation_time}
-        assert len(event_types) == len(observation_time)
+        if not len(event_types) == len(observation_time):
+            raise ValueError(
+                "number of observation times must match number of event types"
+            )
         self._event_types = event_types
         self._events = events
         self._observation_time = observation_time
@@ -144,25 +153,33 @@ class StanFit:
             self._shared_luminosity = False
 
         if self._sources.point_source:
+            self._shared_src_index = False
+            self._power_law = False
             self._logparabola = False
+            self._pgamma = False
             index = self._sources.point_source[0].parameters["index"]
             if not index.fixed and index.name == "src_index":
                 self._shared_src_index = True
             elif not index.fixed:
                 self._shared_src_index = False
-            if self._sources.point_source_spectrum == LogParabolaSpectrum:
-                self._logparabola = True
+            self._power_law = self._sources.point_source_spectrum in [
+                PowerLawSpectrum,
+                TwiceBrokenPowerLaw,
+            ]
+            self._logparabola = (
+                self._sources.point_source_spectrum == LogParabolaSpectrum
+            )
+            self._pgamma = self._sources.point_source_spectrum == PGammaSpectrum
+            if self._logparabola or self._pgamma:
                 beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 if not beta.fixed and beta.name == "beta_index":
                     self._shared_src_index = True
                 elif not E0_src.fixed and E0_src.name == "E0_src":
                     self._shared_src_index = True
-                else:
-                    self._shared_src_index = False
 
             self._fit_index = not index.fixed
-            if self._logparabola:
+            if self._logparabola or self._pgamma:
                 beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 self._fit_beta = not beta.fixed
@@ -175,6 +192,9 @@ class StanFit:
             self._fit_index = False
             self._fit_beta = False
             self._fit_Enorm = False
+            self._power_law = False
+            self._logparabola = False
+            self._pgamma = False
 
         # For use with plot methods
         self._def_var_names = []
@@ -222,6 +242,10 @@ class StanFit:
             self._stan_interface._priors = p
         else:
             raise ValueError("Priors must be instance of Priors.")
+
+    @property
+    def sources(self):
+        return self._sources
 
     @property
     def events(self):
@@ -343,7 +367,7 @@ class StanFit:
 
         return source_coords
 
-    def plot_trace(self, var_names=None, **kwargs):
+    def plot_trace(self, var_names=None, transform: bool = False, **kwargs):
         """
         Trace plot using list of stan parameter keys.
         """
@@ -351,17 +375,25 @@ class StanFit:
         if not var_names:
             var_names = self._def_var_names
 
-        axs = av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+        if transform:
+            transform = lambda x: np.log10(x)
+            axs = av.plot_trace(
+                self._fit_output, var_names=var_names, transform=transform, **kwargs
+            )
+        else:
+            axs = av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
         fig = axs.flatten()[0].get_figure()
 
         return fig, axs
 
-    def plot_trace_and_priors(self, var_names=None, **kwargs):
+    def plot_trace_and_priors(self, var_names=None, transform: bool = False, **kwargs):
         """
         Trace plot and overplot the used priors.
         """
 
-        fig, axs = self.plot_trace(var_names=var_names, show=False, **kwargs)
+        fig, axs = self.plot_trace(
+            var_names=var_names, show=False, transform=transform, **kwargs
+        )
 
         if not var_names:
             var_names = self._def_var_names
@@ -392,7 +424,7 @@ class StanFit:
                 supp = ax.get_xlim()
                 x = np.linspace(*supp, 1000)
 
-                if "transform" in kwargs.keys():
+                if transform:
                     # Assumes that the only sensible transformation is log10
                     if isinstance(prior, MultiSourcePrior):
                         for p in prior:
@@ -412,7 +444,7 @@ class StanFit:
                         unit = prior.UNITS.unit
                     except AttributeError:
                         unit = prior.UNITS
-                    if "transform" in kwargs.keys():
+                    if transform:
                         # yikes
                         title = f"[$\\log_{{10}}\\left (\\frac{{{name}}}{{{unit.to_string('latex_inline').strip('$')}}}\\right )$]"
                     else:
@@ -561,7 +593,10 @@ class StanFit:
         # Try to get the true associations from the events
         if highlight is not None:
             highlight = np.atleast_1d(highlight)
-            assert highlight.size == mask.size
+            if not highlight.size == mask.size:
+                raise ValueError(
+                    "highlight must have same length as events inside the selection of the plot"
+                )
 
         if color_scale == "lin":
             norm = colors.Normalize(0.0, 1.0, clip=True)
@@ -635,7 +670,7 @@ class StanFit:
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
-        ax.set_xlim(8e1, 1.4e8)
+        ax.set_xlim(8e1, 1.4e9)
         return ax, mapper
 
     def plot_energy_posterior(
@@ -689,7 +724,8 @@ class StanFit:
 
         if highlight is not None:
             highlight = np.atleast_1d(highlight)
-            assert highlight.size == assoc_prob.size
+            if not highlight.size == assoc_prob.size:
+                raise ValueError("highlight must have same length as events")
 
         min = 0.0
         max = 1.0
@@ -868,22 +904,9 @@ class StanFit:
 
         return fig, ax
 
-    def plot_flux_band(
-        self,
-        E_power: float = 0.0,
-        credible_interval: Union[float, List[float]] = 0.5,
-        energy_unit=u.TeV,
-        area_unit=u.cm**2,
-        x_energy_unit=u.GeV,
-    ):
-        """
-        Plot flux uncertainties.
-        :param E_power: float, plots flux * E**E_power.
-        :param credible_interval: set credible intervals to be plotted.
-        :param energy_unit: Choose your favourite flux energy unit.
-        :param area_unit: Choose your favourite flux area unit.
-        :param x_energy_unit: Choose your favourite abscissa energy unit
-        """
+    def _calculate_flux_grid(self, energy_unit, area_unit, E_power):
+
+        E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
         if not self._sources.point_source:
             raise ValueError("A valid source list is required")
@@ -897,28 +920,19 @@ class StanFit:
             variables = self._fit_output.keys()
             stan = False
 
-        fit_index = True if "src_index" in variables else False
-        fit_beta = True if "beta_index" in variables else False
-        fit_Enorm = True if "E0_src" in variables else False
-
-        if fit_beta or fit_Enorm:
-            logparabola = True
-        else:
-            logparabola = False
-
         if stan:
             inputs = self._get_fit_inputs()
-            if fit_index:
+            if self._fit_index:
                 alpha = self._fit_output.stan_variable("src_index")
-            else:
+            elif self._power_law or self._logparabola:
                 alpha = inputs["src_index"]
-            if fit_beta:
+            if self._fit_beta:
                 beta = self._fit_output.stan_variable("beta_index")
-            elif logparabola:
+            elif self._logparabola:
                 beta = inputs["beta_index"]
-            if fit_Enorm:
+            if self._fit_Enorm:
                 E0 = self._fit_output.stan_variable("E0_src")
-            elif logparabola:
+            elif self._logparabola:
                 E0 = inputs["E0_src"]
             F = self._fit_output.stan_variable("F")
             # Find chains and iterations to calculate if parameter is shared or not
@@ -926,81 +940,80 @@ class StanFit:
             chains = self._fit_output.chains
 
         else:
+            # Need try-except blocks for case of pgamma
             inputs = self._fit_inputs
-            if fit_index:
+            if self._fit_index:
                 alpha = self._fit_output["src_index"]
-            else:
+            elif self._power_law or self._logparabola:
                 alpha = inputs["src_index"]
-            if fit_beta:
+            if self._fit_beta:
                 beta = self._fit_output["beta_index"]
-            elif logparabola:
+            elif self._logparabola:
                 beta = inputs["beta_index"]
-            if fit_Enorm:
+            if self._fit_Enorm:
                 E0 = self._fit_output["E0_src"]
-            elif logparabola:
+            elif self._logparabola or self._pgamma:
                 E0 = inputs["E0_src"]
             iterations = self._fit_meta["iter_sampling"]
             chains = self._fit_meta["chains"]
             F = self._fit_output["F"]
             F = F.reshape((iterations * chains, F.size // (iterations * chains)))
 
-        if fit_index:
-            shape = alpha.shape
+        if self._fit_index:
             N = alpha.size // (iterations * chains)
-        elif fit_beta:
-            shape = beta.shape
+        elif self._fit_beta:
             N = beta.size // (iterations * chains)
-        elif fit_Enorm:
-            shape = E0.shape
+        elif self._fit_Enorm:
             N = E0.size // (iterations * chains)
 
         share_index = N == 1
         N_samples = iterations * chains
 
+        self._flux_grid = np.zeros((len(self._sources.point_source), E.size, N_samples))
+
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
-                if fit_index:
+                if self._fit_index:
                     index_vals = alpha.flatten()
-                if fit_beta:
+                if self._fit_beta:
                     beta_vals = beta.flatten()
-                if fit_Enorm:
+                if self._fit_Enorm:
                     E0_vals = E0.flatten()
 
             else:
-                if fit_index:
+                if self._fit_index:
                     index_vals = alpha[:, c_ps].flatten()
-                if fit_beta:
+                if self._fit_beta:
                     beta_vals = beta[:, c_ps].flatten()
-                if fit_Enorm:
+                if self._fit_Enorm:
                     E0_vals = E0[:, c_ps].flatten()
 
-            if not fit_index:
+            if not self._fit_index and not self._pgamma:
                 index_vals = alpha[c_ps]
                 ps.flux_model.spectral_shape.set_parameter("index", index_vals)
 
-            if not fit_beta and logparabola:
+            if not self._fit_beta and self._logparabola:
                 beta_vals = beta[c_ps]
                 ps.flux_model.spectral_shape.set_parameter("beta", beta_vals)
 
-            if not fit_Enorm and logparabola:
+            if not self._fit_Enorm and self._logparabola:
                 E0_vals = E0[c_ps]
                 ps.flux_model.spectral_shape.set_parameter(
                     "norm_energy", E0_vals * u.GeV
                 )
 
             flux_int = F[:, c_ps].flatten()
-            E = np.geomspace(*ps.flux_model.energy_bounds, 1_000)
 
             flux_grid = np.zeros((E.size, N_samples))
 
             for c in range(N_samples):
-                if fit_index:
+                if self._fit_index:
                     ps.flux_model.spectral_shape.set_parameter("index", index_vals[c])
 
-                if fit_beta:
+                if self._fit_beta:
                     ps.flux_model.spectral_shape.set_parameter("beta", beta_vals[c])
 
-                if fit_Enorm:
+                if self._fit_Enorm:
                     ps.flux_model.spectral_shape.set_parameter(
                         "norm_energy", E0_vals[c] * u.GeV
                     )
@@ -1017,7 +1030,44 @@ class StanFit:
                     * np.power(E.to_value(energy_unit), E_power)
                 )
 
-            self._flux_grid = flux_grid
+            self._flux_grid[c_ps] = flux_grid
+
+    def plot_flux_band(
+        self,
+        E_power: float = 0.0,
+        credible_interval: Union[float, List[float]] = 0.5,
+        source_idx: int = 0,
+        energy_unit=u.TeV,
+        area_unit=u.cm**2,
+        x_energy_unit=u.GeV,
+        upper_limit: bool = False,
+    ):
+        """
+        Plot flux uncertainties.
+        :param E_power: float, plots flux * E**E_power.
+        :param credible_interval: set credible intervals to be plotted.
+        :param source_idx: Choose which point source's flux to plot. -1 for sum over all PS.
+        :param energy_unit: Choose your favourite flux energy unit.
+        :param area_unit: Choose your favourite flux area unit.
+        :param x_energy_unit: Choose your favourite abscissa energy unit
+        """
+
+        # Save some time calculating if the previous calculation has already used the same E_power
+        try:
+            if not np.isclose(self._E_power, E_power):
+                raise AttributeError
+        except AttributeError:
+            self._calculate_flux_grid(energy_unit, area_unit, E_power)
+        finally:
+            self._E_power = E_power
+
+        flux_unit = 1 / energy_unit / area_unit / u.s
+        E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
+
+        if source_idx == -1:
+            flux_grid = self._flux_grid.sum(axis=0)
+        else:
+            flux_grid = self._flux_grid[source_idx]
 
         fig, ax = plt.subplots()
 
@@ -1027,21 +1077,36 @@ class StanFit:
             lower = np.zeros(E.size)
             upper = np.zeros(E.size)
 
-            UL = 0.5 - CI / 2
-            HL = 0.5 + CI / 2
+            if upper_limit:
+                UL = CI
+            else:
+                UL = 0.5 - CI / 2
+                LL = 0.5 + CI / 2
 
             for c in range(E.size):
-                lower[c] = np.quantile(flux_grid[c], UL)
-                upper[c] = np.quantile(flux_grid[c], HL)
+                if not upper_limit:
+                    lower[c] = np.quantile(flux_grid[c], LL)
+                upper[c] = np.quantile(flux_grid[c], UL)
 
-            ax.fill_between(
-                E.to_value(x_energy_unit),
-                lower,
-                upper,
-                color="C0",
-                alpha=0.3,
-                edgecolor="none",
-            )
+            if not upper_limit:
+                ax.fill_between(
+                    E.to_value(x_energy_unit),
+                    lower,
+                    upper,
+                    color="C0",
+                    alpha=0.3,
+                    edgecolor="none",
+                )
+            else:
+                ax.plot(
+                    E.to_value(x_energy_unit),
+                    upper,
+                    color="C0",
+                    marker=r"$\downarrow$",
+                    markevery=0.06,
+                    markersize=10,
+                    # TODO fix alignment of arrow base to the line
+                )
 
         ax.set_xscale("log")
         ax.set_yscale("log")
@@ -1050,8 +1115,60 @@ class StanFit:
         ax.set_ylabel(
             f"flux [{(energy_unit**E_power * flux_unit).unit.to_string('latex_inline')}]"
         )
+        if upper_limit:
+            ax.set_ylim(bottom=np.min(upper) * 0.8)
 
         return fig, ax
+
+    def plot_peak_energy_flux(
+        self,
+        ax,
+        levels=[0.5, 0.683, 0.95],
+        energy_unit=u.TeV,
+        area_unit=u.cm**2,
+        x_energy_unit=u.GeV,
+    ):
+
+        from matplotlib.lines import Line2D
+        import seaborn as sns
+
+        handles, labels = ax.get_legend_handles_labels()
+
+        levels = np.sort(1 - np.atleast_1d(levels))
+        try:
+            E_peak = self._fit_output["E_peak"].squeeze() << u.GeV
+            peak_flux = self._fit_output["peak_energy_flux"].squeeze() << u.GeV / u.m**2
+        except:  # TODO find proper exception
+            E_peak = self._fit_output.stan_variable("E_peak").squeeze() << u.GeV
+            peak_flux = (
+                self._fit_output.stan_varable("peak_energy_flux") << u.GeV / u.m**2
+            )
+        data = {
+            "E": E_peak.to_value(x_energy_unit),
+            "flux": peak_flux.to_value(energy_unit / area_unit),
+        }
+
+        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap="viridis")
+
+        colours = ax.collections[-1]._mapped_colors
+
+        tex = plt.rcParams["text.usetex"]
+        for c, l in zip(colours, levels):
+            handles.append(Line2D([0], [0], color=c))
+            if tex:
+                label = rf"{int((1-l)*100):d}\% CR"
+            else:
+                label = rf"{int((1-l)*100):d}% CR"
+            labels.append(label)
+        ax.legend(handles, labels)
+
+        # this is an effing mess
+        legend = ax.get_legend()
+        renderer = plt.gcf().canvas.get_renderer()
+        extends = [t.get_window_extent(renderer).width for t in legend.get_texts()]
+        max_extend = max(extends)
+        for t, e in zip(legend.get_texts(), extends):
+            t.set_position((max_extend - e, 0))
 
     def save(self, path: Path, overwrite: bool = False):
         """
@@ -1084,10 +1201,17 @@ class StanFit:
         path = Path(dirname) / Path(filename)
 
         with h5py.File(path, "w") as f:
+
             fit_folder = f.create_group("fit")
             inputs_folder = fit_folder.create_group("inputs")
             outputs_folder = fit_folder.create_group("outputs")
             meta_folder = fit_folder.create_group("meta")
+            source_folder = f.create_group("sources")
+
+            # Create config from sources
+            config = HierarchicalNuConfig.make_config(self.sources)
+            config_string = OmegaConf.to_yaml(config)
+            source_folder.create_dataset("config", data=config_string)
 
             for key, value in self._fit_inputs.items():
                 inputs_folder.create_dataset(key, data=value)
@@ -1163,8 +1287,12 @@ class StanFit:
 
         self.events.to_file(path, append=True)
 
+        # self.sources.to_file(path, append=True)
+
         # Add priors separately
         self.priors.addto(path, "priors")
+
+        return path  # noqa: F821
 
     def diagnose(self):
         try:
@@ -1172,8 +1300,6 @@ class StanFit:
         except:
             for item in self._fit_meta["diagnose"]:
                 print(item.decode("ascii"))
-
-        return path  # noqa: F821
 
     def save_csvfiles(self, directory):
         """
@@ -1201,15 +1327,19 @@ class StanFit:
                 fit_inputs,
                 outputs,
                 meta,
+                config,
             ) = cls._from_file(filename[0])
 
-            fit = cls(Sources(), event_types, events, obs_time_dict, priors)
+            config_parser = ConfigParser(OmegaConf.create(config))
+            sources = config_parser.sources
+            fit = cls(sources, event_types, events, obs_time_dict, priors)
 
         else:
             outputs = {}
             meta = {}
             fit_outputs = []
             fit_meta = []
+            configs = []
             for file in filename:
                 (
                     event_types,
@@ -1219,9 +1349,15 @@ class StanFit:
                     fit_inputs,
                     outputs,
                     meta,
+                    config,
                 ) = cls._from_file(file)
                 fit_outputs.append(outputs)
                 fit_meta.append(meta)
+                if configs:
+                    # Check that all source configurations are the same
+                    if not configs[-1] == config:
+                        raise ValueError("Cannot stack fits of different configs")
+                configs.append(config)
 
             keys = fit_outputs[0].keys()
             for key in keys:
@@ -1233,15 +1369,23 @@ class StanFit:
                 if key == "parameters":
                     meta[key] = fit_meta[0][key]
                 elif key == "iter_sampling":
-                    assert np.unique(np.array([_[key] for _ in fit_meta])).size == 1
+                    if not np.unique(np.array([_[key] for _ in fit_meta])).size == 1:
+                        raise ValueError(
+                            "Cannot stack fits of different sampling length"
+                        )
                     meta[key] = fit_meta[0][key]
                 elif key == "chains":
-                    assert np.unique(np.array([_[key] for _ in fit_meta])).size == 1
+                    if not np.unique(np.array([_[key] for _ in fit_meta])).size == 1:
+                        raise ValueError(
+                            "Cannot stack fits of different sampling length"
+                        )
                     meta[key] = np.sum([_[key] for _ in fit_meta])
                 else:
                     meta[key] = np.vstack([_[key] for _ in fit_meta])
 
-            fit = cls(Sources(), event_types, events, obs_time_dict, priors)
+            config_parser = ConfigParser(OmegaConf.create(configs[-1]))
+            sources = config_parser.sources
+            fit = cls(sources, event_types, events, obs_time_dict, priors)
 
         fit._fit_output = outputs
         fit._fit_inputs = fit_inputs
@@ -1315,6 +1459,8 @@ class StanFit:
                             *temp.shape[1:],
                         )
                     )
+            # requires config parser, which in turn imports fit, which in turn imports config parser...
+            config = f["sources/config"][()].decode("ascii")
 
         event_types = [
             Refrigerator.stan2dm(_) for _ in fit_inputs["event_types"].tolist()
@@ -1357,6 +1503,7 @@ class StanFit:
             fit_inputs,
             fit_outputs,
             fit_meta,
+            config,
         )
 
     def diagnose(self):
@@ -1511,8 +1658,7 @@ class StanFit:
 
         if fit_inputs["Emin"] < 1e2:
             raise ValueError("Emin is lower than detector minimum energy")
-        # TODO check value for 10yr PS data
-        if fit_inputs["Emax"] > 1e8:
+        if fit_inputs["Emax"] > 1e9:
             raise ValueError("Emax is higher than detector maximum energy")
 
         if self._sources.point_source:
@@ -1528,10 +1674,6 @@ class StanFit:
                 ).to_value(u.GeV)
                 for ps in self._sources.point_source
             ]
-            logparabola = isinstance(
-                self._sources.point_source[0].flux_model.spectral_shape,
-                LogParabolaSpectrum,
-            )
 
             if np.min(fit_inputs["Emin_src"]) < fit_inputs["Emin"]:
                 raise ValueError(
@@ -1580,17 +1722,15 @@ class StanFit:
             # Check for shared source index
             if self._shared_src_index:
                 key = "src_index"
-                if logparabola:
-                    key_beta = "beta_index"
-                    key_Enorm = "E0_src"
+                key_beta = "beta_index"
+                key_Enorm = "E0_src"
 
             # Otherwise just use first source in the list
             # src_index_grid is identical for all point sources
             else:
                 key = "%s_src_index" % self._sources.point_source[0].name
-                if self._logparabola:
-                    key_beta = "%s_beta_index" % self._sources.point_source[0].name
-                    key_Enorm = "%s_E0_src" % self._sources.point_source[0].name
+                key_beta = "%s_beta_index" % self._sources.point_source[0].name
+                key_Enorm = "%s_E0_src" % self._sources.point_source[0].name
 
             if self._fit_index:
                 fit_inputs["src_index_grid"] = self._exposure_integral[
@@ -1599,7 +1739,7 @@ class StanFit:
                 # PS parameter limits
                 fit_inputs["src_index_min"] = self._src_index_par_range[0]
                 fit_inputs["src_index_max"] = self._src_index_par_range[1]
-            else:
+            elif self._logparabola:
                 fit_inputs["src_index"] = [
                     ps.flux_model.parameters["index"].value
                     for ps in self._sources.point_source
@@ -1608,40 +1748,39 @@ class StanFit:
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
 
-            if self._logparabola:
-                if self._fit_beta:
-                    fit_inputs["beta_index_grid"] = self._exposure_integral[
-                        event_type
-                    ].par_grids[key_beta]
-                    fit_inputs["beta_index_min"] = self._beta_index_par_range[0]
-                    fit_inputs["beta_index_max"] = self._beta_index_par_range[1]
-                    fit_inputs["beta_index_mu"] = self._priors.beta_index.mu
-                    fit_inputs["beta_index_sigma"] = self._priors.beta_index.sigma
-                else:
-                    fit_inputs["beta_index"] = [
-                        ps.flux_model.parameters["beta"].value
-                        for ps in self._sources.point_source
-                    ]
+            if self._fit_beta:
+                fit_inputs["beta_index_grid"] = self._exposure_integral[
+                    event_type
+                ].par_grids[key_beta]
+                fit_inputs["beta_index_min"] = self._beta_index_par_range[0]
+                fit_inputs["beta_index_max"] = self._beta_index_par_range[1]
+                fit_inputs["beta_index_mu"] = self._priors.beta_index.mu
+                fit_inputs["beta_index_sigma"] = self._priors.beta_index.sigma
+            elif self._logparabola:
+                fit_inputs["beta_index"] = [
+                    ps.flux_model.parameters["beta"].value
+                    for ps in self._sources.point_source
+                ]
 
-                if self._fit_Enorm:
-                    fit_inputs["E0_src_grid"] = self._exposure_integral[
-                        event_type
-                    ].par_grids[key_Enorm]
-                    fit_inputs["E0_src_min"] = self._E0_src_par_range[0].to_value(u.GeV)
-                    fit_inputs["E0_src_max"] = self._E0_src_par_range[1].to_value(u.GeV)
-                    if self._priors.E0_src.name == "lognormal":
-                        fit_inputs["E0_src_mu"] = self._priors.E0_src.mu
-                        fit_inputs["E0_src_sigma"] = self._priors.E0_src.sigma
-                    elif self._priors.E0_src.name == "normal":
-                        fit_inputs["E0_src_mu"] = self._priors.E0_src.mu.to_value(u.GeV)
-                        fit_inputs["E0_src_sigma"] = self._priors.E0_src.sigma.to_value(
-                            u.GeV
-                        )
-                else:
-                    fit_inputs["E0"] = [
-                        ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
-                        for ps in self._sources.point_source
-                    ]
+            if self._fit_Enorm:
+                fit_inputs["E0_src_grid"] = self._exposure_integral[
+                    event_type
+                ].par_grids[key_Enorm]
+                fit_inputs["E0_src_min"] = self._E0_src_par_range[0].to_value(u.GeV)
+                fit_inputs["E0_src_max"] = self._E0_src_par_range[1].to_value(u.GeV)
+                if self._priors.E0_src.name == "lognormal":
+                    fit_inputs["E0_src_mu"] = self._priors.E0_src.mu
+                    fit_inputs["E0_src_sigma"] = self._priors.E0_src.sigma
+                elif self._priors.E0_src.name == "normal":
+                    fit_inputs["E0_src_mu"] = self._priors.E0_src.mu.to_value(u.GeV)
+                    fit_inputs["E0_src_sigma"] = self._priors.E0_src.sigma.to_value(
+                        u.GeV
+                    )
+            elif self._logparabola:
+                fit_inputs["E0"] = [
+                    ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
+                    for ps in self._sources.point_source
+                ]
 
         # Inputs for priors of point sources
         if self._priors.src_index.name not in ["normal", "lognormal"]:
@@ -1868,16 +2007,15 @@ class StanFit:
             self._lumi_par_range = Parameter.get_parameter(key).par_range
             self._lumi_par_range = self._lumi_par_range.to_value(u.GeV / u.s)
 
-            self._src_index_par_range = (
-                self._sources.point_source[0].parameters["index"].par_range
-            )
-            if isinstance(
-                self._sources.point_source[0].flux_model.spectral_shape,
-                LogParabolaSpectrum,
-            ):
+            if self._logparabola or self._power_law:
+                self._src_index_par_range = (
+                    self._sources.point_source[0].parameters["index"].par_range
+                )
+            if self._logparabola:
                 self._beta_index_par_range = (
                     self._sources.point_source[0].parameters["beta"].par_range
                 )
+            if self._logparabola or self._pgamma:
                 self._E0_src_par_range = (
                     self._sources.point_source[0].parameters["norm_energy"].par_range
                 )

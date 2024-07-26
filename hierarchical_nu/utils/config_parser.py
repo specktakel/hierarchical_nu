@@ -15,6 +15,7 @@ from hierarchical_nu.source.source import (
     SourceFrame,
     DetectorFrame,
 )
+from hierarchical_nu.source.flux_model import PGammaSpectrum
 from hierarchical_nu.source.parameter import Parameter, ParScale
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.roi import (
@@ -24,8 +25,6 @@ from hierarchical_nu.utils.roi import (
     FullSkyROI,
     RectangularROI,
 )
-from hierarchical_nu.simulation import Simulation
-from hierarchical_nu.fit import StanFit
 from hierarchical_nu.detector.input import mceq
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
@@ -77,6 +76,7 @@ class ConfigParser:
                             parameter_config["src_index_range"],
                         )
                     )
+
         if parameter_config["source_type"] == "logparabola":
             if "beta_index" in parameter_config["fit_params"] and share_src_index:
                 beta.append(
@@ -121,6 +121,28 @@ class ConfigParser:
                             ParScale.log,
                         )
                     )
+        if parameter_config["source_type"] == "pgamma" and share_src_index:
+            E0_src.append(
+                Parameter(
+                    parameter_config["E0_src"][0] * u.GeV,
+                    "E0_src",
+                    False,
+                    parameter_config["E0_src_range"] * u.GeV,
+                    ParScale.log,
+                )
+            )
+        elif parameter_config["source_type"] == "pgamma":
+            for c, idx in enumerate(parameter_config["E0_src"]):
+                name = f"ps_{c}_E0_src"
+                E0_src.append(
+                    Parameter(
+                        idx * u.GeV,
+                        name,
+                        False,
+                        parameter_config["E0_src_range"] * u.GeV,
+                        ParScale.log,
+                    )
+                )
 
         diff_index = Parameter(
             parameter_config["diff_index"],
@@ -209,6 +231,8 @@ class ConfigParser:
             if share_src_index:
                 if index and "src_index" in parameter_config["fit_params"]:
                     idx = index[0]
+                elif parameter_config.source_type == "pgamma":
+                    pass
                 else:
                     idx = index[c]
                 if beta and "beta_index" in parameter_config["fit_params"]:
@@ -225,17 +249,18 @@ class ConfigParser:
                     idx_beta = beta[c]
                 if E0_src:
                     E0 = E0_src[c]
-            args = (
-                f"ps_{c}",
-                dec[c],
-                ra[c],
-                Lumi,
-                idx,
-                parameter_config["z"][c],
-                Emin_src,
-                Emax_src,
-                frame,
-            )
+            if not parameter_config.source_type == "pgamma":
+                args = (
+                    f"ps_{c}",
+                    dec[c],
+                    ra[c],
+                    Lumi,
+                    idx,
+                    parameter_config["z"][c],
+                    Emin_src,
+                    Emax_src,
+                    frame,
+                )
             if parameter_config.source_type == "twice-broken-power-law":
                 method = PointSource.make_twicebroken_powerlaw_source
             elif parameter_config.source_type == "power-law":
@@ -253,6 +278,19 @@ class ConfigParser:
                     Emin_src,
                     Emax_src,
                     E0,
+                    frame,
+                )
+            elif parameter_config.source_type == "pgamma":
+                method = PointSource.make_pgamma_source
+                args = (
+                    f"ps_{c}",
+                    dec[c],
+                    ra[c],
+                    Lumi,
+                    parameter_config["z"][c],
+                    E0,
+                    Emin_src,
+                    Emax_src,
                     frame,
                 )
             point_source = method(*args)
@@ -405,11 +443,20 @@ class ConfigParser:
         return self._hnu_config.stan_config
 
     def create_simulation(self, sources, detector_models, obs_time):
+
+        from hierarchical_nu.simulation import Simulation
+
         asimov = self._hnu_config.parameter_config.asimov
         sim = Simulation(sources, detector_models, obs_time, asimov=asimov)
         return sim
 
-    def create_fit(self, sources, events, detector_models, obs_time):
+    def create_fit(
+        self, sources, events, detector_models, obs_time
+    ):
+
+        use_event_tag = self._hnu_config.parameter_config.use_event_tag
+        from hierarchical_nu.fit import StanFit
+
         priors = self.priors
 
         nshards = self._hnu_config.stan_config.threads_per_chain
@@ -420,6 +467,7 @@ class ConfigParser:
             obs_time,
             priors=priors,
             nshards=nshards,
+            use_event_tag=use_event_tag,
         )
         return fit
 
