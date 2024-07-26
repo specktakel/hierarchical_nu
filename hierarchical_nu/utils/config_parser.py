@@ -451,9 +451,10 @@ class ConfigParser:
         return sim
 
     def create_fit(
-        self, sources, events, detector_models, obs_time, use_event_tag: bool = False
+        self, sources, events, detector_models, obs_time
     ):
 
+        use_event_tag = self._hnu_config.parameter_config.use_event_tag
         from hierarchical_nu.fit import StanFit
 
         priors = self.priors

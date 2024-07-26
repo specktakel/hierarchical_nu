@@ -106,6 +106,9 @@ class ParameterConfig:
 
     # exp event selection
     scramble_ra: bool = False
+    
+    # use event tags, only relevant for multi ps fits
+    use_event_tag: bool = False
 
 
 @dataclass
