@@ -670,7 +670,7 @@ class StanFit:
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
-        ax.set_xlim(8e1, 1.4e8)
+        ax.set_xlim(8e1, 1.4e9)
         return ax, mapper
 
     def plot_energy_posterior(
