@@ -902,7 +902,7 @@ class StanFit:
         ax, _ = self._plot_roi(center, ax, radius, assoc_idx, color_scale, highlight)
         axs.insert(0, ax)
 
-        return fig, ax
+        return fig, axs
 
     def _calculate_flux_grid(self, energy_unit, area_unit, E_power):
 
@@ -1041,6 +1041,7 @@ class StanFit:
         area_unit=u.cm**2,
         x_energy_unit=u.GeV,
         upper_limit: bool = False,
+        figsize=(8, 3),
     ):
         """
         Plot flux uncertainties.
@@ -1069,7 +1070,7 @@ class StanFit:
         else:
             flux_grid = self._flux_grid[source_idx]
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=figsize)
 
         # Find the interval to be plotted
         credible_interval = np.atleast_1d(credible_interval)
@@ -1143,12 +1144,13 @@ class StanFit:
             peak_flux = (
                 self._fit_output.stan_varable("peak_energy_flux") << u.GeV / u.m**2
             )
+        mask = peak_flux.value > 0.
         data = {
-            "E": E_peak.to_value(x_energy_unit),
-            "flux": peak_flux.to_value(energy_unit / area_unit),
+            "E": E_peak.to_value(x_energy_unit)[mask],
+            "flux": peak_flux.to_value(energy_unit / area_unit)[mask],
         }
 
-        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap="viridis")
+        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap="viridis_r")
 
         colours = ax.collections[-1]._mapped_colors
 
@@ -1156,7 +1158,7 @@ class StanFit:
         for c, l in zip(colours, levels):
             handles.append(Line2D([0], [0], color=c))
             if tex:
-                label = rf"{int((1-l)*100):d}\% CR"
+                    label = rf"{int((1-l)*100):d}\% CR"
             else:
                 label = rf"{int((1-l)*100):d}% CR"
             labels.append(label)
