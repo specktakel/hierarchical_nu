@@ -4,6 +4,7 @@ from typing import Dict, Tuple, Union
 import astropy.units as u
 import numpy as np
 from scipy.integrate import quad
+from scipy.special import erf
 
 from .power_law import BoundedPowerLaw
 from .parameter import Parameter
@@ -1212,10 +1213,10 @@ class PGammaSpectrum(SpectralShape):
         return self._pl(E, Ebreak, pl_norm, self._src_index)
 
     @u.quantity_input
-    def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
-        # Calculate numerically in log space
-        # Transformed integrand reads
-        # exp((1-alpha) * x - beta * x**2
+    def integral(self, lower: u.GeV, upper: u.GeV) -> u.Quantity[1 / (u.m**2 * u.s)]:
+        # Integral of logparabola part for fixed alpha=0 and beta=0.7 (or otherwise fixed)
+        # can be solved in a closed form as
+        # sqrt(pi) * e^(1/(4beta)) * E0 / (2 * sqrt(beta)) * erf((2beta*log(E/E0) - 1) / (2 * sqrt(beta)))
         E0 = self.parameters["norm_energy"].value
         norm = self.parameters["norm"].value
 
@@ -1255,11 +1256,25 @@ class PGammaSpectrum(SpectralShape):
                         )
                     )
             elif xl[c] >= np.log((Ebreak / E0).to_value(1)):
-                results[c] = (
+                """results[c] = (
                     quad(self._dN_dx, xl[c], xh[c], (self._alpha, self._beta))[0]
                     * norm
                     * E0
-                )
+                )"""
+                results[c] = (
+                    (np.sqrt(np.pi) * np.exp(1 / (4.0 * self._beta)) * E0)
+                    / (2.0 * np.sqrt(self._beta))
+                    * (
+                        erf(
+                            (2.0 * self._beta * xh[c] - 1.0)
+                            / (2.0 * np.sqrt(self._beta))
+                        )
+                        - erf(
+                            (2.0 * self._beta * xl[c] - 1.0)
+                            / (2.0 * np.sqrt(self._beta))
+                        )
+                    )
+                ) * norm
             else:
                 xb = np.log((Ebreak / E0).to_value(1))
                 # from Elow to Ebreak: PL, from Ebreak to Ehigh: logparabola
@@ -1276,10 +1291,16 @@ class PGammaSpectrum(SpectralShape):
                         )
                     )
                     logp = (
-                        quad(self._dN_dx, xb, xh[c], (self._alpha, self._beta))[0]
-                        * norm
-                        * E0
-                    )
+                        (np.sqrt(np.pi) * np.exp(1 / (4.0 * self._beta)) * E0)
+                        / (2.0 * np.sqrt(self._beta))
+                        * (
+                            erf(
+                                (2.0 * self._beta * xh[c] - 1.0)
+                                / (2.0 * np.sqrt(self._beta))
+                            )
+                            - erf(-1.0 / (2.0 * np.sqrt(self._beta)))
+                        )
+                    ) * norm
                 results[c] = pl + logp
 
         if results.size == 1:
@@ -1340,9 +1361,16 @@ class PGammaSpectrum(SpectralShape):
         xb = np.log((self.Ebreak / E0).to_value(1))
 
         result = (
-            quad(self._x_dN_dx, xb, xh, (self._alpha, self._beta))[0]
+            (
+                (np.sqrt(np.pi) * np.exp(1 / self._beta) * E0)
+                / (2.0 * np.sqrt(self._beta))
+                * (
+                    erf((self._beta * xh - 1.0) / np.sqrt(self._beta))
+                    - erf(-1.0 / np.sqrt(self._beta))
+                )
+            )
             * norm
-            * np.power(E0, 2)
+            * E0
         )
         return result + pl
 
@@ -1475,10 +1503,14 @@ class PGammaSpectrum(SpectralShape):
 
         with func:
             E = StringExpression(["E"])
-            theta = StringExpression(["theta"])
+            # theta = StringExpression(["theta"])
             E0 = InstantVariableDef("E0", "real", ["theta[1]"])
             a = InstantVariableDef("a", "real", [cls._alpha])
             b = InstantVariableDef("b", "real", [cls._beta])
+            sqrt_b = InstantVariableDef("sqrt_b", "real", [np.sqrt(cls._beta)])
+            sqrt_b_inv_half = InstantVariableDef(
+                "sqrt_b_inv_half", "real", [0.5 / np.sqrt(cls._beta)]
+            )
             index = InstantVariableDef("index", "real", [cls._src_index])
             Eb_E0 = ForwardVariableDef("EbE0", "real")
             e_low = InstantVariableDef("e_low", "real", ["x_r[1]"])
@@ -1490,6 +1522,15 @@ class PGammaSpectrum(SpectralShape):
             Ebreak = ForwardVariableDef("Ebreak", "real")
             norm_Eb = ForwardVariableDef("norm_Eb", "real")
             logEb_E0 = ForwardVariableDef("logEbE0", "real")
+            prefactor = InstantVariableDef(
+                "prefactor",
+                "real",
+                [
+                    np.sqrt(np.pi)
+                    * np.exp(1.0 / (4 * cls._beta))
+                    / (2.0 * np.sqrt(cls._beta))
+                ],
+            )
 
             N = ForwardVariableDef("N", "real")
             N_logp = ForwardVariableDef("N_logp", "real")
@@ -1511,6 +1552,7 @@ class PGammaSpectrum(SpectralShape):
             logEb_E0 << FunctionCall([Eb_E0], "log")
             # logparabola value at break energy to normalise power law
             norm_Eb << FunctionCall([Eb_E0, -a - b * logEb_E0], "pow")
+            """
             (
                 N_logp
                 << FunctionCall(
@@ -1525,6 +1567,10 @@ class PGammaSpectrum(SpectralShape):
                     "integrate_1d",
                 )
                 * E0
+            )
+            """
+            N_logp << StringExpression(
+                ["prefactor * E0 * (erf(sqrt_b*logEUE0-0.5) - erf(-sqrt_b_inv_half))"]
             )
             # Add powerlaw part to overall normalisation N
             with IfBlockContext([StringExpression([index, " == ", 1.0])]):
@@ -1571,7 +1617,7 @@ class PGammaSpectrum(SpectralShape):
         with func:
 
             c_d = 1
-            theta = StringExpression(["theta"])
+            # theta = StringExpression(["theta"])
             if fit_Enorm:
                 E0 = InstantVariableDef("E0", "real", ["theta[1]"])
             else:
@@ -1579,6 +1625,10 @@ class PGammaSpectrum(SpectralShape):
                 c_d += 1
             a = InstantVariableDef("a", "real", [cls._alpha])
             b = InstantVariableDef("b", "real", [cls._beta])
+            sqrt_b = InstantVariableDef("sqrt_b", "real", [np.sqrt(cls._beta)])
+            sqrt_b_inv_half = InstantVariableDef(
+                "sqrt_b_inv_half", "real", [0.5 / np.sqrt(cls._beta)]
+            )
             index = InstantVariableDef("index", "real", [cls._src_index])
             Eb_E0 = ForwardVariableDef("EbE0", "real")
             e_low = InstantVariableDef("e_low", "real", [f"x_r[{c_d}]"])
@@ -1589,7 +1639,20 @@ class PGammaSpectrum(SpectralShape):
             Ebreak = ForwardVariableDef("Ebreak", "real")
             norm_Eb = ForwardVariableDef("norm_Eb", "real")
             logEb_E0 = ForwardVariableDef("logEbE0", "real")
-
+            f1_prefactor = InstantVariableDef(
+                "f1_prefactor",
+                "real",
+                [
+                    np.sqrt(np.pi)
+                    * np.exp(1.0 / (4 * cls._beta))
+                    / (2.0 * np.sqrt(cls._beta))
+                ],
+            )
+            f2_prefactor = InstantVariableDef(
+                "f2_prefactor",
+                "real",
+                [np.sqrt(np.pi) * np.exp(1.0 / cls._beta) / (2.0 * np.sqrt(cls._beta))],
+            )
             Ebreak << E0  # FunctionCall([(-index - 1 + a) / -b], "exp") * E0
             Eb_E0 << Ebreak / E0
             logEb_E0 << FunctionCall([Eb_E0], "log")
@@ -1601,21 +1664,12 @@ class PGammaSpectrum(SpectralShape):
             f1 = ForwardVariableDef("f1", "real")
             f2 = ForwardVariableDef("f2", "real")
 
-            (
-                f1
-                << FunctionCall(
-                    [
-                        "logparabola_dN_dx_log",
-                        logEb_E0,
-                        logEU_E0,
-                        theta,
-                        "x_r",
-                        "x_i",
-                    ],
-                    "integrate_1d",
-                )
-                * E0
+            f1 << StringExpression(
+                [
+                    "f1_prefactor * E0 * (erf(sqrt_b*logEUE0-0.5) - erf(-sqrt_b_inv_half))"
+                ]
             )
+
             # Add powerlaw part to overall normalisation N
             with IfBlockContext([StringExpression([index, " == ", 1.0])]):
                 (
@@ -1632,20 +1686,9 @@ class PGammaSpectrum(SpectralShape):
                 )
             f1 << f1 + N_pl
             # Additional factor of E0 due to further transformation of E->log(E/E0)->x
-            (
-                f2
-                << FunctionCall(
-                    [
-                        "logparabola_x_dN_dx_log",
-                        logEb_E0,
-                        logEU_E0,
-                        theta,
-                        "x_r",
-                        "x_i",
-                    ],
-                    "integrate_1d",
-                )
-                * E0**2
+
+            f2 << StringExpression(
+                ["f2_prefactor * E0^2 * (erf((b*logEUE0-1.)/sqrt_b) - erf(-1./sqrt_b))"]
             )
 
             with IfBlockContext([StringExpression([index, " == ", 2.0])]):
