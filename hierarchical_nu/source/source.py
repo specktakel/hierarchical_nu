@@ -432,6 +432,7 @@ class PointSource(Source):
             redshift: float
             E0_src: Parameter
                 Energy at which flat spectrum evolves into logparabola, is defined at detector irregardless of `frame`
+                NB: Choose wide enough s.t. redshifting does not affect the result
             lower: Parameter
                 Lower energy bound
             upper: Parameter
