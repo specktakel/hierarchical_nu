@@ -38,14 +38,16 @@ def test_pythonic():
     Emax = Parameter(1e9 * u.GeV, "Emax_src")
 
     pgamma = PGammaSpectrum(norm, E0, Emin.value, Emax.value)
-    Ebreak = Parameter(pgamma.Ebreak, "Ebreak")
-    logp = LogParabolaSpectrum(norm, E0, alpha, beta, Ebreak.value, Emax.value)
-    pl_norm = Parameter(logp(Ebreak.value), "pl_norm")
-    pl = PowerLawSpectrum(pl_norm, Ebreak.value, index, Emin.value, Ebreak.value)
+    logp = LogParabolaSpectrum(norm, E0, alpha, beta, E0.value, Emax.value)
+    pl_norm = Parameter(logp(E0.value), "pl_norm")
+    pl = PowerLawSpectrum(pl_norm, E0.value, index, Emin.value, E0.value)
 
     # test flux values
     E = np.geomspace(1e4, 1e8, 1_000) << u.GeV
     flux_units = 1 / u.GeV / u.s / u.m**2
+
+    assert pl_norm.value.to_value(flux_units) == norm.value.to_value(flux_units)
+
     flux_pgamma = pgamma(E).to_value(flux_units)
 
     flux_pl = pl(E).to_value(flux_units)
@@ -56,29 +58,30 @@ def test_pythonic():
 
     flux_units = 1 / u.m**2 / u.s
     assert pytest.approx(
-        pgamma.integral(Emin.value, Ebreak.value).to_value(flux_units)
-    ) == pl.integral(Emin.value, Ebreak.value).to_value(flux_units)
+        pgamma.integral(Emin.value, E0.value).to_value(flux_units)
+    ) == pl.integral(Emin.value, E0.value).to_value(flux_units)
 
     assert pytest.approx(
-        pgamma.integral(Ebreak.value, Emax.value).to_value(flux_units)
-    ) == logp.integral(Ebreak.value, Emax.value).to_value(flux_units)
+        pgamma.integral(E0.value, Emax.value).to_value(flux_units)
+    ) == logp.integral(E0.value, Emax.value).to_value(flux_units)
 
     assert pytest.approx(
         pgamma.integral(Emin.value, Emax.value).to_value(flux_units)
-    ) == logp.integral(Ebreak.value, Emax.value).to_value(flux_units) + pl.integral(
-        Emin.value, Ebreak.value
+    ) == logp.integral(E0.value, Emax.value).to_value(flux_units) + pl.integral(
+        Emin.value, E0.value
     ).to_value(
         flux_units
     )
 
     flux_units = u.erg / u.cm**2 / u.s
+    print(logp.total_flux_density, pl.total_flux_density)
     assert pytest.approx(pgamma.total_flux_density.to_value(flux_units)) == (
         logp.total_flux_density + pl.total_flux_density
     ).to_value(flux_units)
 
 
 """
-def test_stan():
+def test_satanic():
     Parameter.clear_registry()
     index = Parameter(-2.0, "src_index")
     alpha = Parameter(0.0, "alpha")
