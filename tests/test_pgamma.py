@@ -74,19 +74,17 @@ def test_pythonic():
     )
 
     flux_units = u.erg / u.cm**2 / u.s
-    print(logp.total_flux_density, pl.total_flux_density)
     assert pytest.approx(pgamma.total_flux_density.to_value(flux_units)) == (
         logp.total_flux_density + pl.total_flux_density
     ).to_value(flux_units)
 
 
-"""
 def test_satanic():
     Parameter.clear_registry()
     index = Parameter(-2.0, "src_index")
     alpha = Parameter(0.0, "alpha")
     beta = Parameter(0.8, "beta")
-    E0 = Parameter(1e7 * u.GeV, "E0_src")
+    E0 = Parameter(1e6 * u.GeV, "E0_src")
 
     norm = Parameter(2e-10 / u.GeV / u.s / u.m**2, "norm")
 
@@ -94,56 +92,70 @@ def test_satanic():
     Emax = Parameter(1e9 * u.GeV, "Emax_src")
 
     pgamma = PGammaSpectrum(norm, E0, Emin.value, Emax.value)
-    Ebreak = Parameter(pgamma.Ebreak, "Ebreak")
-    logp = LogParabolaSpectrum(norm, E0, alpha, beta, Ebreak.value, Emax.value)
-    pl_norm = Parameter(logp(Ebreak.value), "pl_norm")
-    pl = PowerLawSpectrum(pl_norm, Ebreak.value, index, Emin.value, Ebreak.value)
+    logp = LogParabolaSpectrum(norm, E0, alpha, beta, E0.value, Emax.value)
+    pl_norm = Parameter(logp(E0.value), "pl_norm")
+    pl = PowerLawSpectrum(pl_norm, E0.value, index, Emin.value, E0.value)
 
-    with StanFileGenerator("pgamma_test") as gc:
+    base_path = ".stan_files/pgamma_test"
+
+    with StanFileGenerator(base_path) as gc:
         PGammaSpectrum.make_stan_utility_func(False, False, False)
         PGammaSpectrum.make_stan_flux_conv_func("flux_conv", False, False, False)
         PGammaSpectrum.make_stan_lpdf_func("src_spectrum_pdf", False, False, False)
         with DataContext():
-            Emin = ForwardVariableDef("E_min", "real")
-            Emax = ForwardVariableDef("E_max", "real")
             N = ForwardVariableDef("N", "int")
             energy = ForwardArrayDef("energy", "real", ["[", N, "]"])
-            E0 = ForwardVariableDef("E0", "real")
+            E0_src = ForwardVariableDef("E0", "real")
         with GeneratedQuantitiesContext():
-            lpdf = ForwardArrayDef("lpdf", "real"["[", N, "]"])
-            conv = ForwardArrayDef("conv", "real"["[", N, "]"])
+            lpdf = ForwardArrayDef("lpdf", "real", ["[", N, "]"])
+            conv = ForwardArrayDef("conv", "real", ["[", N, "]"])
             with ForLoopContext(1, N, "i") as i:
                 lpdf[i] << StringExpression(
                     [
                         "src_spectrum_pdf(energy[",
                         i,
-                        "| {",
-                        E0,
+                        "], {",
+                        E0_src,
                         "}, {",
-                        Emin,
+                        1e2,
                         ",",
-                        Emax,
-                        "}, {0}]",
+                        1e9,
+                        "}, {0})",
                     ]
                 )
                 conv[i] << StringExpression(
-                    ["flux_conv({", energy[i], "}, {", Emin, ",", Emax, "}, {0})"]
+                    ["flux_conv({0.}, {", energy[i], ",", 1e2, ",", 1e9, "}, {0})"]
                 )
 
-        file = gc.generate_single_file()
+        gc.generate_single_file()
+        stan_file = gc.filename
 
-    model = CmdStanModel(stan_file=file)
+    model = CmdStanModel(stan_file=stan_file)
     N = 100
     Emin = 1e3
     Emax = 1e8
-    E0 = 1e6
     energy = np.geomspace(Emin, Emax, N)
     data = {
-        "E0": E0,
+        "E0": E0.value.to_value(u.GeV),
         "energy": energy,
         "Emin": Emin,
         "Emax": Emax,
         "N": N,
     }
     samples = model.sample(fixed_param=True, data=data, iter_warmup=1, iter_sampling=1)
-"""
+
+    stan_conv = samples.stan_variable("conv").squeeze()
+    stan_lpdf = samples.stan_variable("lpdf").squeeze()
+
+    lpdf = np.zeros_like(energy)
+    conv = np.zeros_like(energy)
+
+    for c, E in enumerate(energy):
+        lpdf[c] = np.log(pgamma.pdf(E * u.GeV, *pgamma.energy_bounds))
+
+    for c, E in enumerate(energy):
+        E0.value = E * u.GeV
+        conv[c] = pgamma.flux_conv().to_value(1 / u.GeV)
+
+    assert pytest.approx(conv, rel=8e-2) == stan_conv
+    assert pytest.approx(lpdf, rel=8e-2) == stan_lpdf
