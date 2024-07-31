@@ -1433,57 +1433,7 @@ class PGammaSpectrum(SpectralShape):
 
     @classmethod
     def make_stan_utility_func(cls, fit_index: bool, fit_beta: bool, fit_Enorm: bool):
-        # TODO signauture? only Enorm can be fitted
-        # Needs to be passed to integrate_1d
-        # is defined in logspace for faster integration
-        lp = UserDefinedFunction(
-            "logparabola_dN_dx_log",
-            ["x", "xc", "theta", "x_r", "x_i"],
-            ["real", "real", "array[] real", "data array[] real", "data array[] int"],
-            "real",
-        )
-        with lp:
-            x = StringExpression(["x"])
-
-            a = InstantVariableDef("a", "real", [cls._alpha])
-            b = InstantVariableDef("b", "real", [cls._beta])
-
-            ReturnStatement(
-                [FunctionCall([(1.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
-            )
-        lp = UserDefinedFunction(
-            "logparabola_dN_dx",
-            ["x", "xc", "theta", "x_r", "x_i"],
-            ["real", "real", "array[] real", "data array[] real", "data array[] int"],
-            "real",
-        )
-        with lp:
-
-            a = InstantVariableDef("a", "real", [cls._alpha])
-            b = InstantVariableDef("b", "real", [cls._beta])
-            E0 = InstantVariableDef("E0", "real", ["theta[1]"])
-            EE0 = InstantVariableDef("EE0", "real", ["x / E0"])
-
-            ReturnStatement(
-                [FunctionCall([EE0, -a - b * FunctionCall([EE0], "log")], "pow")]
-            )
-        # Same here
-        lp = UserDefinedFunction(
-            "logparabola_x_dN_dx_log",
-            ["x", "xc", "theta", "x_r", "x_i"],
-            ["real", "real", "array[] real", "data array[] real", "data array[] int"],
-            "real",
-        )
-        with lp:
-            x = StringExpression(["x"])
-
-            a = InstantVariableDef("a", "real", [cls._alpha])
-            b = InstantVariableDef("b", "real", [cls._beta])
-            E0 = InstantVariableDef("E0", "real", ["theta[1]"])
-
-            ReturnStatement(
-                [FunctionCall([(2.0 - a) * x - b * FunctionCall([x, 2], "pow")], "exp")]
-            )
+        pass
 
     @classmethod
     def make_stan_lpdf_func(
