@@ -32,7 +32,8 @@ class RateCalculator:
     def __init__(
         self,
         season: EventType,
-        flux: AtmosphericNuMuFlux,
+        atmo_flux: AtmosphericNuMuFlux,
+        diffuse_flux: IsotropicDiffuseBG,
         dec_idx: int,
     ):
         """
@@ -46,9 +47,12 @@ class RateCalculator:
         aeff = R2021EffectiveArea(season=season.P)
         eres = R2021EnergyResolution(season=season.P)
 
-        if not isinstance(flux, AtmosphericNuMuFlux):
-            raise ValueError("'atmo' needs to be instance of `AtmosphericNuMuFlux`")
-        self._atmo = flux
+        if not isinstance(atmo_flux, AtmosphericNuMuFlux):
+            raise ValueError("'atmo_flux' needs to be instance of `AtmosphericNuMuFlux`")
+        self._atmo = atmo_flux
+        if not isinstance(diffuse_flux, IsotropicDiffuseBG):
+            raise ValueError("'diffuse_flux' needs to be an instance of `IsotropicDiffuseBG`")
+        self._diff = diffuse_flux
         if not isinstance(aeff, EffectiveArea) or not hasattr(aeff, "_eff_area_spline"):
             raise ValueError("'aeff' is not a proper effective area")
         self._aeff = aeff
@@ -134,7 +138,9 @@ class RateCalculator:
         roi = RectangularROI(DEC_min=dec_min * u.rad, DEC_max=dec_max * u.rad)
         Parameter.clear_registry()
         Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
-        self.Ebins = np.geomspace(1e2, 1e5, 31)
+        # Reco energy bins in which rates are calculated
+        self.Ebins = np.geomspace(1e2, 1e7, 51)
+        # True energy bins of effective area
         self.all_Ebins = np.geomspace(1e2, 1e9, 71)
         logEbins = np.log10(self.Ebins)
         self.logE_binc = logEbins[:-1] + np.diff(logEbins) / 2
@@ -199,6 +205,7 @@ class RateCalculator:
         b1: float = 0.0,
         b2: float = 0.0,
         detailed: int = 0,
+        spectrum = "atmo",
     ):
 
         sindec_min = np.sin(self.dec_bin_edges[self.dec_idx].to_value(u.rad))
@@ -220,7 +227,7 @@ class RateCalculator:
                 ]
                 cdfs.append(cdf)
 
-            def integrand(logE):
+            def atmo_integrand(logE):
                 etrue_idx = np.digitize(logE, self.tE_bin_edges) - 1
                 """
                 pdf = ereco_pdfs[etrue_idx]
@@ -246,6 +253,43 @@ class RateCalculator:
                     * np.power(10, logE)
                     * np.log(10)
                 )
+            
+            def diff_integrand(logE):
+                etrue_idx = np.digitize(logE, self.tE_bin_edges) - 1
+                """
+                pdf = ereco_pdfs[etrue_idx]
+
+                def _cdf(x):
+                    return pdf(x) / pdf.norm
+
+                cdf = quad(_cdf, np.log10(El), np.log10(Eh))[0]
+                """
+
+                def sin_dec_int(sindec, logE):
+                    return self._aeff._eff_area_spline((logE, -sindec)) \
+                * self._diff(
+                        np.power(10, logE) * u.GeV,
+                        np.arcsin(sindec)*u.rad,
+                        0*u.rad
+                    ).to_value(1 / u.GeV / u.cm**2 / u.s / u.sr)
+                    
+
+                sin_dec_integrated = quad(
+                    sin_dec_int, sindec_min, sindec_max, args=(logE), limit=200
+                )[0]
+
+                return (
+                    cdfs[etrue_idx]
+                    * sin_dec_integrated
+                    * np.power(10, logE)
+                    * np.log(10)
+                )
+            
+            if spectrum == "atmo":
+                integrand = atmo_integrand
+            elif spectrum == "diffuse":
+                integrand = diff_integrand
+
 
             if detailed == 2:
                 # use effective area binning, 10 bins per decade
@@ -283,7 +327,7 @@ class RateCalculator:
         # 1e4 to convert atmo flux from /cm**2 to /m**2
         return np.array(rate) * 1e4
 
-    def calc_rates_from_2d_splines(self, detailed: int = 0):
+    def calc_rates_from_2d_splines(self, detailed: int = 0, spectrum = "atmo"):
         sindec_min = np.sin(self.dec_bin_edges[self.dec_idx].to_value(u.rad))
         sindec_max = np.sin(self.dec_bin_edges[self._dec_idx + 1].to_value(u.rad))
 
@@ -292,7 +336,7 @@ class RateCalculator:
             # Precompute the pdf integrals, i.e. cdf, between the Ereco edges
             # for all tE bins. When asked for the integrand, only look up value
 
-            def integrand(logE):
+            def atmo_integrand(logE):
 
                 # This part can be split of from the energy integral and be calculated outside
                 # energies (true, in this case) is only a parameter but not an actual variable
@@ -317,6 +361,40 @@ class RateCalculator:
                     * np.power(10, logE)
                     * np.log(10)
                 )
+            
+            def diff_integrand(logE):
+                etrue_idx = np.digitize(logE, self.tE_bin_edges) - 1
+
+                def sin_dec_int(sindec, logE):
+                    return self._aeff._eff_area_spline((logE, -sindec)) \
+                * self._diff(
+                        np.power(10, logE) * u.GeV,
+                        np.arcsin(sindec)*u.rad,
+                        0*u.rad
+                ).to_value(1 / u.GeV / u.cm**2 / u.s / u.sr)
+                    
+
+                sin_dec_integrated = quad(
+                    sin_dec_int, sindec_min, sindec_max, args=(logE), limit=200
+                )[0]
+
+                return (
+                    self._eres.prob_Edet_above_threshold(
+                        np.power(10, logE) * u.GeV,
+                        El * u.GeV,
+                        self._dec_middle,
+                        Eh * u.GeV,
+                        use_interpolation=True,
+                    )
+                    * sin_dec_integrated
+                    * np.power(10, logE)
+                    * np.log(10)
+                )
+                   
+            if spectrum == "atmo":
+                integrand = atmo_integrand
+            elif spectrum == "diffuse":
+                integrand = diff_integrand
 
             if detailed == 2:
                 # use effective area binning, 10 bins per decade
