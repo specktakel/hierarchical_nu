@@ -307,7 +307,9 @@ class PowerLawSpectrum(SpectralShape):
         """
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value
-        if isinstance(energy, np.ndarray):
+
+        return_units = 1 / u.GeV / u.m**2 / u.s
+        if energy.shape != ():
             output = np.zeros_like(energy.value) * norm
             mask = np.nonzero(
                 ((energy <= self._upper_energy) & (energy >= self._lower_energy))
@@ -319,7 +321,9 @@ class PowerLawSpectrum(SpectralShape):
         if (energy < self._lower_energy) or (energy > self._upper_energy):
             return 0.0 * norm
         else:
-            return norm * np.power(energy / self._normalisation_energy, -index)
+            return (norm * np.power(energy / self._normalisation_energy, -index)).to(
+                return_units
+            )
 
     @classmethod
     @u.quantity_input
@@ -728,6 +732,9 @@ class LogParabolaSpectrum(SpectralShape):
         E = energy.to_value(u.GeV)
         E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
         norm = self.parameters["norm"].value
+
+        return_units = 1 / (u.GeV * u.m**2 * u.s)
+
         if energy.shape != ():
             output = np.zeros_like(energy.value) * norm
             mask = np.nonzero(
@@ -740,7 +747,9 @@ class LogParabolaSpectrum(SpectralShape):
         if (energy < self._lower_energy) or (energy > self._upper_energy):
             return 0.0 * norm
         else:
-            return norm * np.power(E / E0, -alpha - beta * np.log(E / E0))
+            return (norm * np.power(E / E0, -alpha - beta * np.log(E / E0))).to(
+                return_units
+            )
 
     @classmethod
     @u.quantity_input
@@ -1280,18 +1289,37 @@ class PGammaSpectrum(SpectralShape):
         # Stitch together from power law and logparabola
         # NB: f1 and f2 have to be each stitched together, not per domain!
         # Misnormer, e_0 is break energy and norm energy
+
+        if not e_0 > e_low:
+            e_0 = e_low
+
+        if not e_0 < e_up:
+            e_0 = e_up
+
         xl = np.log(e_low / e_0)
         xh = np.log(e_up / e_0)
 
-        f1_pl = quad(cls._dN_dx, xl, 1.0, (0.0, 0.0))[0]
-        f1_logp = quad(cls._dN_dx, 1.0, xh, (alpha, beta))[0]
+        f1_pl = e_0 - e_low
+        f1_logp = (
+            (np.sqrt(np.pi) * np.exp(1 / (4.0 * cls._beta)) * e_0)
+            / (2.0 * np.sqrt(cls._beta))
+            * (
+                erf((2.0 * cls._beta * xh - 1.0) / (2.0 * np.sqrt(cls._beta)))
+                - erf(-1.0 / (2.0 * np.sqrt(cls._beta)))
+            )
+        )
 
-        f2_pl = quad(cls._x_dN_dx, xl, 1.0, (0.0, 0.0))[0]
-        f2_logp = quad(cls._x_dN_dx, xl, xh, (alpha, beta))[0]
+        f2_pl = 1 / 2 * (e_0**2 - e_low**2)
+        f2_logp = (
+            (np.sqrt(np.pi) * np.exp(1 / cls._beta) * e_0**2)
+            / (2.0 * np.sqrt(cls._beta))
+            * (
+                erf((cls._beta * xh - 1.0) / np.sqrt(cls._beta))
+                - erf(-1.0 / np.sqrt(cls._beta))
+            )
+        )
 
-        pl_norm = cls._dN_dE(e_0, e_0, alpha, beta)
-
-        return (pl_norm * f1_pl + f1_logp) / (pl_norm * f2_pl + f2_logp) / e_0
+        return (f1_pl + f1_logp) / (f2_pl + f2_logp)
 
     @property
     def parameters(self):
