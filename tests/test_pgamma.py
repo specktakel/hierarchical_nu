@@ -78,6 +78,14 @@ def test_pythonic():
         logp.total_flux_density + pl.total_flux_density
     ).to_value(flux_units)
 
+    assert pytest.approx(pgamma.flux_conv().to_value(1 / u.GeV)) == pgamma.flux_conv_(
+        0.0,
+        Emin.value.to_value(u.GeV),
+        Emax.value.to_value(u.GeV),
+        0.0,
+        E0.value.to_value(u.GeV),
+    )
+
 
 def test_satanic():
     Parameter.clear_registry()
