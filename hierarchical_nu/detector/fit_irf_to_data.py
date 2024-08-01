@@ -12,6 +12,7 @@ from hierarchical_nu.detector.icecube import (
 )
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
+from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.events import Events
 from hierarchical_nu.utils.lifetime import LifeTime
