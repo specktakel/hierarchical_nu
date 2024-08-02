@@ -638,6 +638,7 @@ class Simulation:
         rs_cvals = []
         rs_bbpl_Eth = []
         rs_bbpl_gamma1 = []
+        rs_bbpl_gamma2 = []
         rs_bbpl_gamma2_scale = []
         forced_N = []
         obs_time = []
@@ -819,8 +820,25 @@ class Simulation:
                 )
 
             # Rejection sampling
-            rs_bbpl_Eth.append(effective_area.rs_bbpl_params["threshold_energy"])
-            rs_bbpl_gamma1.append(effective_area.rs_bbpl_params["gamma1"])
+            if self._sources.point_source_spectrum == PGammaSpectrum:
+                rs_bbpl_Eth.append(
+                    [
+                        effective_area.E_th(
+                            ps.parameters["norm_energy"].value
+                        ).to_value(u.GeV)
+                        for ps in self._sources.point_source
+                    ]
+                )
+                rs_bbpl_gamma1.append(
+                    [
+                        effective_area.gamma1(ps.parameters["norm_energy"].value)
+                        for ps in self._sources.point_source
+                    ]
+                )
+                rs_bbpl_gamma2.append(effective_area.gamma2)
+            else:
+                rs_bbpl_Eth.append(effective_area.rs_bbpl_params["threshold_energy"])
+                rs_bbpl_gamma1.append(effective_area.rs_bbpl_params["gamma1"])
             rs_bbpl_gamma2_scale.append(effective_area.rs_bbpl_params["gamma2_scale"])
             rs_cvals.append(self._exposure_integral[event_type].c_values)
 
@@ -916,6 +934,8 @@ class Simulation:
         sim_inputs["rs_cvals"] = rs_cvals
         sim_inputs["rs_bbpl_Eth"] = rs_bbpl_Eth
         sim_inputs["rs_bbpl_gamma1"] = rs_bbpl_gamma1
+        if self._sources.point_source_spectrum == PGammaSpectrum:
+            sim_inputs["rs_bbpl_gamma2"] = rs_bbpl_gamma2
         sim_inputs["rs_bbpl_gamma2_scale"] = rs_bbpl_gamma2_scale
         sim_inputs["T"] = obs_time
         if self._force_N:
