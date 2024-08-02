@@ -964,6 +964,8 @@ class StanSimInterface(StanInterface):
                                 # Assume fixed index of ~3.6 for atmo to get reasonable
                                 # envelope function
                                 self._gamma2 << self._rs_bbpl_gamma2_scale[j] - 3.6
+                                self._gamma1 << self._rs_bbpl_gamma1[j]
+                                self._Eth << self._rs_bbpl_Eth[j]
 
                                 # Handle energy thresholds
                                 # 3 cases:
@@ -1125,6 +1127,8 @@ class StanSimInterface(StanInterface):
                                     self._gamma2
                                     << self._rs_bbpl_gamma2_scale[j] - self._diff_index
                                 )
+                                self._gamma1 << self._rs_bbpl_gamma1[j]
+                                self._Eth << self._rs_bbpl_Eth[j]
 
                                 # Handle energy thresholds
                                 # 3 cases:
@@ -1296,7 +1300,8 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
                                 self._gamma2 << self._rs_bbpl_gamma2_scale[j] - 3.6
-
+                                self._gamma1 << self._rs_bbpl_gamma1[j]
+                                self._Eth << self._rs_bbpl_Eth[j]
                                 # Handle energy thresholds
                                 # 3 cases:
                                 # Emin < Eth and Emax > Eth - use broken pl
