@@ -982,7 +982,7 @@ class Simulation:
             integral_grid_2d = sim_inputs_["integral_grid_2d"][c]
             try:
                 flux_conv_ = self._sources.point_source_spectrum.flux_conv_
-            except ValueError:
+            except (ValueError, AttributeError):
                 # In this case flux_conv_ is not used
                 flux_conv_ = lambda x: x
             Nex_et[c] = _get_expected_Nnu_(
