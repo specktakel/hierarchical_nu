@@ -129,3 +129,51 @@ real bbpl_gamma1_pgamma(real E) {
     real b = 1.2;
     return a * (logE - logE0) + b;
 }
+
+/**
+* PDF of a bounded broken power law.
+*/
+real multiple_bbpl_pdf(real x, array[] real breaks, array[] real slopes, array[] real low_vals) {
+
+    int N = size(breaks);
+    int idx;
+    real output;
+
+    // check for x being outside of the breaks (including lower and upper limit of domain)
+    if ((x < breaks[1]) || (x > breaks[N])) {
+        return 0.0;
+    }
+
+    // find bin of x and return power law using the provided indices and normalisations
+    idx = binary_search(x, breaks);
+    output = low_vals[idx] * pow(x / breaks[idx], slopes[idx]);
+    return output;
+}
+
+real multiple_bbpl_rng(array[] real breaks, array[] real slopes, vector integrals) {
+    int idx;
+    real x1;
+    real x0;
+    real gamma;
+    real u;
+    real sample;
+    real gammap1;
+
+    idx = categorical_rng(integrals);
+    gamma = slopes[idx];
+    gammap1 = gamma + 1.0;
+    x0 = breaks[idx];
+    x1 = breaks[idx+1];
+
+    u = uniform_rng(0.0, 1.0);
+
+    if (gamma == -1.) {
+        sample = x0 * pow(x1 / x0, u);
+    }
+    else {
+    sample = pow(u * (pow(x1, gammap1) - pow(x0, gammap1))
+            + pow(x0, gammap1),
+            1.0 / gammap1);
+    }
+    return sample;
+}
