@@ -138,7 +138,6 @@ class SegmentedApprox(metaclass=ABCMeta):
         self.xmax = np.max(support)
 
         self.bins = bins
-        self.slopes = []
 
         self._segmented_functions = [lambda x: -1 for _ in range(len(bins) - 1)]
 
@@ -221,8 +220,24 @@ class SegmentedApprox(metaclass=ABCMeta):
         # Exit codition is met
         print(f"converged after {i} steps")
         function = self.segment_factory(slope, logxmin, logxmax, val, low=low)
-        low_val = function(xmin)
-        return function, slope, low_val
+        return function
+
+    @property
+    def slopes(self):
+        return np.array([_.slope for _ in self._segmented_functions])
+
+    @property
+    def low_values(self):
+        return np.array([_.val_low for _ in self._segmented_functions])
+
+    @property
+    def weights(self):
+        integrals = np.array([_.integral for _ in self._segmented_functions])
+        return integrals / integrals.sum()
+
+    @property
+    def N(self):
+        return self.weights.size
 
     def __call__(self, x):
         # left or right boundary inclusive should depend on the creation scheme (going left or right),
@@ -278,7 +293,6 @@ class TopDownSegmentation(SegmentedApprox):
         self.bin_containing_peak = np.digitize(target_max_point, breaks) - 1
 
     def generate_segments(self):
-        slopes = []
         low_values = []
         for c, (l, h) in enumerate(
             zip(
@@ -289,12 +303,11 @@ class TopDownSegmentation(SegmentedApprox):
             idx = self.bin_containing_peak + c
             if c == 0:
                 val = self.target_max
-            func, slope, low_val = self._fit_segment(l, h, low=True, val=val)
+            func = self._fit_segment(l, h, low=True, val=val)
 
             val = func(h)
+            low_values.append(func(l))
 
-            slopes.append(slope)
-            low_values.append(low_val)
             self._segmented_functions[idx] = func
 
         for c, (l, h) in enumerate(
@@ -307,13 +320,8 @@ class TopDownSegmentation(SegmentedApprox):
             idx = self.bin_containing_peak - c
             if c == 1:
                 val = low_values[0]
-            func, slope, low_val = self._fit_segment(l, h, low=False, val=val)
+            func = self._fit_segment(l, h, low=False, val=val)
 
             val = func(l)
 
-            slopes.insert(0, slope)
-            low_values.insert(0, low_val)
             self._segmented_functions[idx] = func
-
-        self.low_values = low_values
-        self.slopes = slopes
