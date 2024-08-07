@@ -1370,14 +1370,20 @@ class PGammaSpectrum(SpectralShape):
 
         with func:
             E = StringExpression(["E"])
-            E0 = InstantVariableDef("E0", "real", ["theta[1]"])
+            c = 1
+            if fit_Enorm:
+                E0 = InstantVariableDef("E0", "real", ["theta[1]"])
+            else:
+                E0 = InstantVariableDef("E0", "real", [f"x_r[{c}]"])
+                c += 1
             b = InstantVariableDef("b", "real", [cls._beta])
             sqrt_b = InstantVariableDef("sqrt_b", "real", [np.sqrt(cls._beta)])
             sqrt_b_inv_half = InstantVariableDef(
                 "sqrt_b_inv_half", "real", [0.5 / np.sqrt(cls._beta)]
             )
-            e_low = InstantVariableDef("e_low", "real", ["x_r[1]"])
-            e_up = InstantVariableDef("e_up", "real", ["x_r[2]"])
+            e_low = InstantVariableDef("e_low", "real", [f"x_r[{c}]"])
+            c += 1
+            e_up = InstantVariableDef("e_up", "real", [f"x_r[{c}]"])
             logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
             logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
             E_E0 = InstantVariableDef("EE0", "real", ["E/E0"])
