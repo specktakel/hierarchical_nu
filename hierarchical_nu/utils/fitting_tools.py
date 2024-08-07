@@ -88,19 +88,34 @@ class PowerLawSegment:
         self._val_low = self.__call__(self._xmin)
 
     def __call__(self, x):
-
-        return self._val * np.power(x / self._x0, self._slope)
+        return self._val * np.power(x / self._x0, self.slope)
 
     @property
     def integral(self):
         if self._slope == -1.0:
-            return self._val_low * self._xmin * np.log(self._max / self._xmin)
+            return self.val_low * self.xmin * np.log(self.xmax / self.xmin)
         return (
-            self._val_low
-            * self._xmin
-            / (1.0 + self._slope)
-            * (np.power(self._xmax / self._xmin, self._slope + 1) - 1.0)
+            self.val_low
+            * self.xmin
+            / (1.0 + self.slope)
+            * (np.power(self.xmax / self.xmin, self.slope + 1) - 1.0)
         )
+
+    @property
+    def slope(self):
+        return self._slope
+
+    @property
+    def xmin(self):
+        return self._xmin
+
+    @property
+    def xmax(self):
+        return self._xmax
+
+    @property
+    def val_low(self):
+        return self._val_low
 
 
 class SegmentedApprox(metaclass=ABCMeta):
