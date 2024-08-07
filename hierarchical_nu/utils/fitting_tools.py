@@ -232,8 +232,11 @@ class SegmentedApprox(metaclass=ABCMeta):
 
     @property
     def weights(self):
-        integrals = np.array([_.integral for _ in self._segmented_functions])
-        return integrals / integrals.sum()
+        return self.integrals / self.integrals.sum()
+
+    @property
+    def integrals(self):
+        return np.array([_.integral for _ in self._segmented_functions])
 
     @property
     def N(self):
