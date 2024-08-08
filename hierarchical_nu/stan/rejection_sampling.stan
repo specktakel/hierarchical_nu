@@ -150,7 +150,7 @@ real multiple_bbpl_pdf(real x, array[] real breaks, array[] real slopes, array[]
     return output;
 }
 
-real multiple_bbpl_rng(array[] real breaks, array[] real slopes, vector integrals) {
+real multiple_bbpl_rng(array[] real breaks, array[] real slopes, vector weights) {
     int idx;
     real x1;
     real x0;
@@ -159,7 +159,7 @@ real multiple_bbpl_rng(array[] real breaks, array[] real slopes, vector integral
     real sample;
     real gammap1;
 
-    idx = categorical_rng(integrals);
+    idx = categorical_rng(weights);
     gamma = slopes[idx];
     gammap1 = gamma + 1.0;
     x0 = breaks[idx];
