@@ -804,7 +804,6 @@ class Simulation:
                 )
 
         for c, event_type in enumerate(self._event_types):
-            effective_area = self._exposure_integral[event_type].effective_area
             obs_time.append(self._observation_time[event_type].to(u.s).value)
 
             try:
@@ -822,22 +821,22 @@ class Simulation:
             # Rejection sampling
             # Loop over detector models
             # loop over source components
-            for et in self._event_types:
-                container = self._exposure_integral[et]._envelope_container
-                rs_norms.append([])
-                rs_breaks.append([])
-                rs_slopes.append([])
-                rs_weights.append([])
-                rs_N.append([])
-                for c, ps in enumerate(self._sources.point_source):
-                    # norms need to be normalised for use in the pdf
-                    norms = container[c].low_values / np.sum(container[c].weights)
-                    rs_norms[-1].append(norms)
-                    rs_breaks[-1].append(container[c].bins.tolist())
-                    rs_slopes[-1].append(container[c].slopes.tolist())
-                    rs_weights[-1].append(container[c].weights.tolist())
-                    rs_N[-1].append(container[c].N)
-            rs_N_max = np.max(rs_N)
+            container = self._exposure_integral[event_type]._envelope_container
+            rs_norms.append([])
+            rs_breaks.append([])
+            rs_slopes.append([])
+            rs_weights.append([])
+            rs_N.append([])
+            for c_s in range(self._sources.N):
+                # Do not normalise, the target is not normalised either and
+                # that is what we want to approximate
+                norms = container[c_s].low_values
+                rs_norms[-1].append(norms.tolist())
+                rs_breaks[-1].append(container[c_s].bins.tolist())
+                rs_slopes[-1].append(container[c_s].slopes.tolist())
+                rs_weights[-1].append(container[c_s].weights.tolist())
+                rs_N[-1].append(container[c_s].N)
+
             if self._force_N:
                 forced_N.append(self._N[event_type])
 
@@ -859,6 +858,23 @@ class Simulation:
                     .to(u.m**2)
                     .value
                 )
+
+        # Fill the various rs arrays with zero entries in the end
+        # because stan doesn't support ragged structures
+        # that might pop up if we use different bin sizes,
+        # energy ranges etc for different spectra
+        rs_N_max = np.max(rs_N)
+        for c, et in enumerate(self._event_types):
+            for c_s in range(self._sources.N):
+                # breaks has length rs_N_max + 1
+                while len(rs_breaks[c][c_s]) < rs_N_max + 1:
+                    rs_breaks[c][c_s].append(0)
+                while len(rs_norms[c][c_s]) < rs_N_max:
+                    rs_norms[c][c_s].append(0)
+                while len(rs_slopes[c][c_s]) < rs_N_max:
+                    rs_slopes[c][c_s].append(0)
+                while len(rs_weights[c][c_s]) < rs_N_max:
+                    rs_weights[c][c_s].append(0)
 
         try:
             ROIList.STACK[0]
