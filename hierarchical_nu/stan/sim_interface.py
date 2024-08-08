@@ -721,10 +721,12 @@ class StanSimInterface(StanInterface):
                         # get the correct length for the rs envelope parameters
                         sl_max = ForwardVariableDef("sl_max", "int")
                         sl_max << self._rs_N[j, source]
+                        sl_max_break = ForwardVariableDef("sl_max_break", "int")
+                        sl_max_break << sl_max + 1
 
                         self._E[i] << FunctionCall(
                             [
-                                self._rs_breaks[j, source, 1:sl_max],
+                                self._rs_breaks[j, source, 1:sl_max_break],
                                 self._rs_slopes[j, source, 1:sl_max],
                                 self._rs_weights[j, source, 1:sl_max],
                             ],
