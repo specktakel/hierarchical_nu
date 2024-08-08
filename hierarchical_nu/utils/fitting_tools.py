@@ -289,7 +289,8 @@ class TopDownSegmentation(SegmentedApprox):
                 breaks.insert(0, proposal)
                 if proposal == logSuppMin:
                     break
-            breaks = np.power(10, breaks)
+
+        breaks = np.power(10, breaks)
 
         super().__init__(target, support, breaks)
 
@@ -305,7 +306,9 @@ class TopDownSegmentation(SegmentedApprox):
         ):
             idx = self.bin_containing_peak + c
             if c == 0:
-                val = self.target_max
+                # Avoid accidental negative differences at the pivot if low==True
+                # may happen if the max coincides with the pivot point
+                val = self.target_max * 1.01
             func = self._fit_segment(l, h, low=True, val=val)
 
             val = func(h)
@@ -313,6 +316,8 @@ class TopDownSegmentation(SegmentedApprox):
 
             self._segmented_functions[idx] = func
 
+        if self.bin_containing_peak == 0:
+            return
         for c, (l, h) in enumerate(
             zip(
                 self.bins[0 : self.bin_containing_peak][::-1],
