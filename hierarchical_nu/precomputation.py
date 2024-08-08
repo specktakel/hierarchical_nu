@@ -456,7 +456,6 @@ class ExposureIntegral:
                 # Point source has one declination/cosz,
                 # no loop over cosz necessary
                 cosz = source.cosz
-                idx_cosz = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
                 aeff_values = self.effective_area.eff_area_spline(
                     np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T,
                 ) << (u.m**2)
@@ -472,39 +471,26 @@ class ExposureIntegral:
                 envelope_container.append(segments)
 
             else:
-                # For diffuse sources, we need to find the largest c value
-                # that is then used at all declinations.
-                # In the case of the atmospheric background
-                # we need to find a c value that encompasses the declination
-                # and energy dependence (opposed to the isotropic background,
-                # which is only energy-dependant). If we were to pick a c value
-                # for each declination band we would end up again with isotropy,
-                # thus pick a global c value to retain the directional information.
+                # For diffuse sources, we need to find an envelope envelopping
+                # the maximum values along energy, marginalising over the declination.
+                # Calculate f-values on an energy x cosz grid, then take maximum
+                # and create the envelope function.
                 f_values_all = []
 
                 for cosz in cosz_bin_cens:
-                    idx_cosz = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
-                    aeff_values = []
-                    for E in E_range:
-                        idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
-                        if (
-                            np.isclose(E, Emax)
-                            and idx_E == self.effective_area.tE_bin_edges.size - 1
-                        ):
-                            idx_E -= 1
-                        aeff_values.append(
-                            self.effective_area.eff_area[idx_E][idx_cosz]
-                        )
+                    aeff_values = self.effective_area.eff_area_spline(
+                        np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T,
+                    )
 
                     dec = np.arcsin(-cosz)  # Only for IceCube
 
                     if isinstance(source.flux_model, AtmosphericNuMuFlux):
-                        atmo_flux_integ_val = source.flux_model.total_flux_int.to(
+                        atmo_flux_integ_val = source.flux_model.total_flux_int.to_value(
                             1 / (u.m**2 * u.s)
-                        ).value
+                        )
                         f_values = (
                             source.flux_model(
-                                E_range * u.GeV, dec * u.rad, 0 * u.rad
+                                E_range.copy() * u.GeV, dec * u.rad, 0 * u.rad
                             ).to_value(1 / (u.GeV * u.s * u.sr * u.m**2))
                             / atmo_flux_integ_val
                         ) * aeff_values
@@ -520,6 +506,12 @@ class ExposureIntegral:
                         )
 
                     f_values_all.append(f_values)
+                # Make array
+                # Take max along energy axis, and use result for creating the envelope
+                f_values = np.array(f_values_all).max(axis=0)
+                segment = TopDownSegmentation(f_values, E_range, 0.7)
+                segment.generate_segments()
+                envelope_container.append(segment)
 
         self._envelope_container = envelope_container
 
@@ -535,6 +527,7 @@ class ExposureIntegral:
         self._compute_c_values()
 
 
+'''
 def bbpl_pdf(x, x0, x1, x2, gamma1, gamma2):
     """
     Bounded broken power law PDF.
@@ -563,3 +556,4 @@ def bbpl_pdf(x, x0, x1, x2, gamma1, gamma2):
     output[mask2] = N * x1 ** (gamma1 - gamma2) * x[mask2] ** gamma2
 
     return output
+'''
