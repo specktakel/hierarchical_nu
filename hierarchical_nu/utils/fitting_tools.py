@@ -4,6 +4,11 @@ from scipy.integrate import quad
 
 from abc import ABCMeta, abstractmethod
 
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 
 class Residuals:
     """
@@ -215,10 +220,11 @@ class SegmentedApprox(metaclass=ABCMeta):
             elif step < 0.0 and not low:
                 break
         else:
-            print("did not converge")
+            logger.warning(
+                f"Envelope search did not converge between {xmin} and {xmax} after 200 steps."
+            )
 
-        # Exit codition is met
-        print(f"converged after {i} steps")
+        # Either way, produce the segment
         function = self.segment_factory(slope, logxmin, logxmax, val, low=low)
         return function
 
@@ -245,12 +251,17 @@ class SegmentedApprox(metaclass=ABCMeta):
     def __call__(self, x):
         # left or right boundary inclusive should depend on the creation scheme (going left or right),
         # should set private attribute accordingly that is used in digitize
+        if np.isclose(x, self.support.max()):
+            func = self._segmented_functions[-1]
+            val = func(x)
+            return val
         idx = np.digitize(x, self.bins) - 1
         func = self._segmented_functions[idx]
         val = func(x)
         if val == -1:
             func = self._segmented_functions[idx - 1]
             val = func(x)
+
         return val
 
     @abstractmethod
