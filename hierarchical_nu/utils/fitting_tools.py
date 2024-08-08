@@ -1,5 +1,6 @@
 from scipy.interpolate import PchipInterpolator
 import numpy as np
+from numpy import ma
 from scipy.integrate import quad
 
 from abc import ABCMeta, abstractmethod
@@ -130,7 +131,14 @@ class SegmentedApprox(metaclass=ABCMeta):
         support,
         bins,
     ):
+        """# Mask entries where we have target == 0
+        self.target = np.ma.asarray(target)
+        self.target[self.target == 0.0] = np.ma.masked
+        self.support = np.ma.asarray(support)
+        self.support[self.target.mask] = np.ma.masked"""
+
         self.target = target
+        self.target[target == 0.0] = target[target > 0.0].min()
         self.support = support
 
         self.target_max = np.max(self.target)
