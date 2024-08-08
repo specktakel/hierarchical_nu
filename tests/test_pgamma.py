@@ -122,9 +122,9 @@ def test_satanic():
                     [
                         "src_spectrum_pdf(energy[",
                         i,
-                        "], {",
+                        "], {1.}, {",
                         E0_src,
-                        "}, {",
+                        ", ",
                         1e2,
                         ",",
                         1e9,
@@ -161,6 +161,7 @@ def test_satanic():
     for c, E in enumerate(energy):
         lpdf[c] = np.log(pgamma.pdf(E * u.GeV, *pgamma.energy_bounds))
 
+    # Abuse energy here as cutoff energy, don't even try to test at the boundaries...
     for c, E in enumerate(energy):
         E0.value = E * u.GeV
         conv[c] = pgamma.flux_conv().to_value(1 / u.GeV)
