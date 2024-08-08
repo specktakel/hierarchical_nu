@@ -214,7 +214,7 @@ class StanSimInterface(StanInterface):
             self._Emin_det = ForwardArrayDef("Emin_det", "real", ["[", self._Net, "]"])
 
             self._rs_N = ForwardArrayDef(
-                "rs_N", "real", ["[", self._Net, ", ", Ns_string, "]"]
+                "rs_N", "int", ["[", self._Net, ", ", Ns_string, "]"]
             )
             self._rs_N_max = ForwardVariableDef("rs_N_max", "int")
             self._rs_slopes = ForwardArrayDef(
@@ -707,35 +707,37 @@ class StanSimInterface(StanInterface):
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
                         )
 
+                        # Rejection sampling procedure:
+                        # 1) get the appropriate envelope for the considered source
+                        # 2) sample proposal energy from multiple_bbpl_rng
+                        # 3) sample uniform value and reject or accept based on f/g
+                        # 4) if accept: query detector response
+
+                        # Step 1
+                        # workaround for 2d indexing with nested indexing...
+                        # get the source index
+                        source = ForwardVariableDef("source_idx", "int")
+                        source << self._lam[i]
+                        # get the correct length for the rs envelope parameters
+                        sl_max = ForwardVariableDef("sl_max", "int")
+                        sl_max << self._rs_N[j, source]
+
+                        self._E[i] << FunctionCall(
+                            [
+                                self._rs_breaks[j, source, 1:sl_max],
+                                self._rs_slopes[j, source, 1:sl_max],
+                                self._rs_weights[j, source, 1:sl_max],
+                            ],
+                            "multiple_bbpl_rng",
+                        )
+
+                        # Step 2) depends on the source considered. Query the src_factor
                         # Calculate the envelope for rejection sampling and the shape of
                         # the source spectrum for the various source components
                         if self.sources.point_source:
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
-                                # workaround for 2d indexing with nested indexing...
-                                source = ForwardVariableDef("source_idx", "int")
-                                source << self._lam[i]
-
-                                self._E[i] << FunctionCall(
-                                    [
-                                        self._rs_breaks[j, source],
-                                        self._rs_slopes[j, source],
-                                        self._rs_weights[j, source],
-                                    ],
-                                    "multiple_bbpl_rng",
-                                )
-
-                                # Also store the value of the envelope function at this true energy
-                                self._g_value << FunctionCall(
-                                    [
-                                        self._E[i],
-                                        self._rs_breaks[j, source],
-                                        self._rs_slopes[j, source],
-                                        self._rs_norms[j, source],
-                                    ],
-                                    "multiple_bbpl_pdf",
-                                )
 
                                 # Store the value of the source PDF at this energy
                                 if self._logparabola:
@@ -792,173 +794,15 @@ class StanSimInterface(StanInterface):
                                         self._Emin_src[self._lam[i]],
                                         self._Emax_src[self._lam[i]],
                                     )
-
-                                # It is log, to take the exp()
-                                self._src_factor << FunctionCall(
-                                    [self._src_factor], "exp"
-                                )
-
                                 # Account for energy redshift losses
                                 self._Esrc[i] << DetectorFrame.stan_to_src(
                                     self._E[i], self._z, self._lam, i
                                 )
 
-                        # Treat the atmospheric and diffuse components similarly
                         if self.sources.atmospheric and not self.sources.diffuse:
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-                                # Assume fixed index of ~3.6 for atmo to get reasonable
-                                # envelope function
-                                self._gamma2 << self._rs_bbpl_gamma2_scale[j] - 3.6
-                                self._gamma1 << self._rs_bbpl_gamma1[j]
-                                self._Eth << self._rs_bbpl_Eth[j]
-
-                                # Handle energy thresholds
-                                # 3 cases:
-                                # Emin < Eth and Emax > Eth - use broken pl
-                                # Emin < Eth and Emax <= Eth - use pl
-                                # Emin >= Eth and Emax > Eth - use pl
-                                self._Emin_src_arr << self._Emin
-                                self._Emax_src_arr << self._Emax
-                                with IfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._Eth,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._Eth,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._Eth,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._Eth,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._Eth,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                "<=",
-                                                self._Eth,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma1,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma1,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                ">=",
-                                                self._Eth,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._Eth,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
                                 (
                                     self._src_factor
                                     << self._atmo_flux(self._E[i], self._omega)
@@ -970,160 +814,6 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-                                (
-                                    self._gamma2
-                                    << self._rs_bbpl_gamma2_scale[j] - self._diff_index
-                                )
-                                self._gamma1 << self._rs_bbpl_gamma1[j]
-                                self._Eth << self._rs_bbpl_Eth[j]
-
-                                # Handle energy thresholds
-                                # 3 cases:
-                                # Emin < Eth and Emax > Eth - use broken pl
-                                # Emin < Eth and Emax <= Eth - use pl
-                                # Emin >= Eth and Emax > Eth - use pl
-
-                                self._Emin_src_arr << self._Emin_diff
-                                self._Emax_src_arr << self._Emax_diff
-
-                                with IfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._Eth,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._Eth,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._Eth,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._Eth,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._Eth,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                "<=",
-                                                self._Eth,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma1,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma1,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                ">=",
-                                                self._Eth,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._Eth,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
                                 self._src_factor << self._diff_spectrum_lpdf(
                                     self._E[i],
                                     self._diff_index,
@@ -1134,9 +824,6 @@ class StanSimInterface(StanInterface):
                                         self._Emax_diff, self._z, self._lam, i
                                     ),
                                 )
-                                self._src_factor << FunctionCall(
-                                    [self._src_factor], "exp"
-                                )
 
                                 self._Esrc[i] << DetectorFrame.stan_to_src(
                                     self._E[i], self._z, self._lam[i]
@@ -1146,161 +833,25 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
-                                self._gamma2 << self._rs_bbpl_gamma2_scale[j] - 3.6
-                                self._gamma1 << self._rs_bbpl_gamma1[j]
-                                self._Eth << self._rs_bbpl_Eth[j]
-                                # Handle energy thresholds
-                                # 3 cases:
-                                # Emin < Eth and Emax > Eth - use broken pl
-                                # Emin < Eth and Emax <= Eth - use pl
-                                # Emin >= Eth and Emax > Eth - use pl
-                                self._Emin_src_arr << self._Emin
-                                self._Emax_src_arr << self._Emax
-
-                                with IfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._Eth,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._Eth,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._Eth,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._Eth,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._Eth,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                "<=",
-                                                self._Eth,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma1,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma1,
-                                            self._gamma1,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                ">=",
-                                                self._Eth,
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._Eth,
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
                                 (
                                     self._src_factor
                                     << self._atmo_flux(self._E[i], self._omega)
                                     / self._F_atmo
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
+
+                        self._src_factor << FunctionCall([self._src_factor], "exp")
+
+                        # Also store the value of the envelope function at this true energy
+                        self._g_value << FunctionCall(
+                            [
+                                self._E[i],
+                                self._rs_breaks[j, source, 1:sl_max],
+                                self._rs_slopes[j, source, 1:sl_max],
+                                self._rs_norms[j, source, 1:sl_max],
+                            ],
+                            "multiple_bbpl_pdf",
+                        )
 
                         for c, event_type in enumerate(self._event_types):
                             with IfBlockContext(
@@ -1321,6 +872,7 @@ class StanSimInterface(StanInterface):
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
 
+                        # Step 3)
                         with IfBlockContext(
                             [StringExpression([self._ntrials, "< 1000000"])]
                         ):
@@ -1344,6 +896,7 @@ class StanSimInterface(StanInterface):
                                             event_type.S,
                                         ]
                                     ):
+                                        # Step 4) before rejecting or accepting because Edet is part of the detection procedure
                                         self._pre_event << self._dm[event_type](
                                             self._E[i],
                                             self._omega,
