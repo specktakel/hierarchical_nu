@@ -48,19 +48,6 @@ class VariableDef(NamedExpression):
         return exp
     """
 
-    def __getitem__(self, key):
-        from .stan_generator import IndexingContext
-
-        with IndexingContext(self._name, key) as idx:
-            pass
-            # _ = PlainStatement(idx)
-            # exp = Expression(
-            #    [self, key],
-            ##    [self] + idx,
-            # )
-        output: TListTExpression = [self._name, *idx]
-        return Expression([self, key], output)
-
 
 class ForwardVariableDef(VariableDef):
     """Define variable without assigning value"""

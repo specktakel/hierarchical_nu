@@ -112,6 +112,13 @@ class Expression(_BaseExpression):
     def stan_code(self) -> TListTExpression:
         return self._stan_code
 
+    def __getitem__(self, key):
+        from .stan_generator import IndexingContext
+
+        with IndexingContext(key) as idx:
+            output: TListTExpression = [self, *idx]
+        return Expression([self, key], output)
+
     """
 
     def __getitem__(self: _BaseExpression, key: TExpression):

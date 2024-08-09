@@ -157,7 +157,7 @@ class DummyContext(Contextable, ContextStack):
 
 
 class _IndexingHeaderContext(Contextable, ContextStack):
-    def __init__(self, name) -> None:
+    def __init__(self) -> None:
         ContextStack.__init__(self)
         Contextable.__init__(self)
 
@@ -171,12 +171,12 @@ class _IndexingHeaderContext(Contextable, ContextStack):
 
 class IndexingContext(Contextable, ContextStack):
 
-    def __init__(self, name, key) -> None:
+    def __init__(self, key) -> None:
 
         self._name = ""
         self._delimiters = ("", "")
 
-        with _IndexingHeaderContext(name):
+        with _IndexingHeaderContext():
             if isinstance(key, tuple):
                 stan_code: TListTExpression = ["["]
                 for c, k in enumerate(key, start=-len(key) + 1):
@@ -193,8 +193,6 @@ class IndexingContext(Contextable, ContextStack):
             elif isinstance(key, slice):
                 start = key.start
                 stop = key.stop
-                print(start)
-                print(stop)
                 stan_code: TListTExpression = ["[", start, ":", stop, "]"]
             else:
                 stan_code: TListTExpression = ["[", key, "]"]
