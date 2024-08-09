@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Iterable, Union
 import numpy as np  # type:ignore
-from .expression import NamedExpression, TListTExpression, Expression
+from .expression import NamedExpression, TListTExpression, Expression, PlainStatement
 from .stan_generator import DefinitionContext
 import logging
 
@@ -38,6 +38,28 @@ class VariableDef(NamedExpression):
     @abstractmethod
     def _gen_def_code(self) -> TListTExpression:
         pass
+
+    """
+    def __getitem__(self, key):
+        from .stan_generator import IndexingContext
+
+        with IndexingContext("arr", key) as idx:
+            exp = Expression(idx, tuple(idx), end_delim="")
+        return exp
+    """
+
+    def __getitem__(self, key):
+        from .stan_generator import IndexingContext
+
+        with IndexingContext(self._name, key) as idx:
+            pass
+            # _ = PlainStatement(idx)
+            # exp = Expression(
+            #    [self, key],
+            ##    [self] + idx,
+            # )
+        output: TListTExpression = [self._name, *idx]
+        return Expression([self, key], output)
 
 
 class ForwardVariableDef(VariableDef):

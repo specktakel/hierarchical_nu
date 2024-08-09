@@ -11,6 +11,7 @@ from .code_generator import (
 from .stan_code import StanCodeBit
 from .expression import (
     TExpression,
+    TListTExpression,
     TNamedExpression,
     Expression,
     NamedExpression,
@@ -153,6 +154,58 @@ class DummyContext(Contextable, ContextStack):
     def __enter__(self):
         ContextStack.__enter__(self)
         return None
+
+
+class _IndexingHeaderContext(Contextable, ContextStack):
+    def __init__(self, name) -> None:
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        self._name = ""
+        self._delimiters = ("", "")
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return None
+
+
+class IndexingContext(Contextable, ContextStack):
+
+    def __init__(self, name, key) -> None:
+
+        self._name = ""
+        self._delimiters = ("", "")
+
+        with _IndexingHeaderContext(name):
+            if isinstance(key, tuple):
+                stan_code: TListTExpression = ["["]
+                for c, k in enumerate(key, start=-len(key) + 1):
+                    if isinstance(k, slice):
+                        stan_code += [k.start, ":", k.stop]
+                    else:
+                        stan_code += [k]
+                    # If it's not the last key-entry, add a comma
+                    if c != 0:
+                        stan_code += [","]
+                    # Last entry: close bracket
+                    else:
+                        stan_code += ["]"]
+            elif isinstance(key, slice):
+                start = key.start
+                stop = key.stop
+                print(start)
+                print(stop)
+                stan_code: TListTExpression = ["[", start, ":", stop, "]"]
+            else:
+                stan_code: TListTExpression = ["[", key, "]"]
+            self._idx = stan_code
+
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return self._idx
 
 
 class _IfHeaderContext(Contextable, ContextStack):
@@ -433,7 +486,11 @@ class StanGenerator(CodeGenerator):
                 else:
                     ldelim, rdelim = "\n{\n", "}\n"
 
-                code += node_obj.name + ldelim
+                try:
+                    code += node_obj.name + ldelim
+                except TypeError as e:
+                    print(node_obj.name, ldelim)
+                    raise TypeError(e)
                 code += StanGenerator.walk_code_list(sub_code_list)
                 code += rdelim
             else:
