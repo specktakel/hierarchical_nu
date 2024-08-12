@@ -178,10 +178,6 @@ class IndexingContext(Contextable, ContextStack):
 
         key_list = []
 
-        context = ContextStack.get_context()
-        print("context before indexing", context)
-        print(any([id(_) == id(self) for _ in context.objects]))
-
         with _IndexingHeaderContext():
             if isinstance(key, tuple):
                 stan_code: TListTExpression = ["["]
@@ -219,7 +215,7 @@ class IndexingContext(Contextable, ContextStack):
         context = ContextStack.get_context()
         print("context after indexing", context)
         # find position of self in next-outer context
-        for c, obj in enumerate(context.objects):
+        """for c, obj in enumerate(context.objects):
             if id(obj) == id(self):
                 break
 
@@ -230,7 +226,7 @@ class IndexingContext(Contextable, ContextStack):
                 to_be_deleted.append(ids.index(id(key)))
 
         for idx in sorted(to_be_deleted, reverse=True):
-            context.objects.pop(idx)
+            context.objects.pop(idx)"""
 
         self._idx = stan_code
 
