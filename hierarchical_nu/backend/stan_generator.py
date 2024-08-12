@@ -485,11 +485,7 @@ class StanGenerator(CodeGenerator):
                 else:
                     ldelim, rdelim = "\n{\n", "}\n"
 
-                try:
-                    code += node_obj.name + ldelim
-                except TypeError as e:
-                    print(node_obj.name, ldelim)
-                    raise TypeError(e)
+                code += node_obj.name + ldelim
                 code += StanGenerator.walk_code_list(sub_code_list)
                 code += rdelim
             else:
