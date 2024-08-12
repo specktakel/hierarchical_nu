@@ -176,14 +176,25 @@ class IndexingContext(Contextable, ContextStack):
         self._name = ""
         self._delimiters = ("", "")
 
+        key_list = []
+
+        context = ContextStack.get_context()
+        print("context before indexing", context)
+        print(any([id(_) == id(self) for _ in context.objects]))
+
         with _IndexingHeaderContext():
             if isinstance(key, tuple):
                 stan_code: TListTExpression = ["["]
                 for c, k in enumerate(key, start=-len(key) + 1):
                     if isinstance(k, slice):
+                        print("start, stop:", k.start, k.stop)
                         stan_code += [k.start, ":", k.stop]
+                        key_list.append(k.start)
+                        key_list.append(k.stop)
                     else:
+                        print("key:", k)
                         stan_code += [k]
+                        key_list.append(k)
                     # If it's not the last key-entry, add a comma
                     if c != 0:
                         stan_code += [","]
@@ -193,13 +204,35 @@ class IndexingContext(Contextable, ContextStack):
             elif isinstance(key, slice):
                 start = key.start
                 stop = key.stop
+                print("start, stop:", start, stop)
                 stan_code: TListTExpression = ["[", start, ":", stop, "]"]
+                key_list.append(key.start)
+                key_list.append(key.stop)
             else:
+                print("key:", key)
                 stan_code: TListTExpression = ["[", key, "]"]
-            self._idx = stan_code
+                key_list.append(key)
 
         ContextStack.__init__(self)
         Contextable.__init__(self)
+
+        context = ContextStack.get_context()
+        print("context after indexing", context)
+        # find position of self in next-outer context
+        for c, obj in enumerate(context.objects):
+            if id(obj) == id(self):
+                break
+
+        to_be_deleted = []
+        for key in key_list:
+            ids = [id(_) for _ in context.objects]
+            if id(key) in ids:
+                to_be_deleted.append(ids.index(id(key)))
+
+        for idx in sorted(to_be_deleted, reverse=True):
+            context.objects.pop(idx)
+
+        self._idx = stan_code
 
     def __enter__(self):
         ContextStack.__enter__(self)
