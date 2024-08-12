@@ -117,7 +117,6 @@ class Expression(_BaseExpression):
 
         with IndexingContext(key) as idx:
             output: TListTExpression = [self, *idx]
-        # return Expression([self, key], output, end_delim="")
         return StringExpression(output)
 
     """
