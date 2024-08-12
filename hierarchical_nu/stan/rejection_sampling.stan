@@ -108,29 +108,6 @@ real bbpl_pdf(real x, real x0, real x1, real x2, real gamma1, real gamma2) {
 }
 
 /**
-* Define linear functions calculating the break energy and lower slope
-* for the pgamma spectrum (flat until some cutoff energy) which is otherwise
-* terribly inefficient at sampling.
-* Parameters are trial and error.
-**/
-
-real bbpl_eth_pgamma(real E) {
-    real logE = log10(E);
-    real logE0 = 5;
-    real a = -1.;
-    real b = 6.;
-    return a * (logE - logE0) + b * E;
-}
-
-real bbpl_gamma1_pgamma(real E) {
-    real logE = log10(E);
-    real logE0 = 5;
-    real a = -0.3;
-    real b = 1.2;
-    return a * (logE - logE0) + b;
-}
-
-/**
 * PDF of a bounded broken power law.
 */
 real multiple_bbpl_pdf(real x, array[] real breaks, array[] real slopes, array[] real low_vals) {

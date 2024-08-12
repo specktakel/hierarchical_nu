@@ -1158,7 +1158,7 @@ class StanFit:
         for c, l in zip(colours, levels):
             handles.append(Line2D([0], [0], color=c))
             if tex:
-                    label = rf"{int((1-l)*100):d}\% CR"
+                label = rf"{int((1-l)*100):d}\% CR"
             else:
                 label = rf"{int((1-l)*100):d}% CR"
             labels.append(label)
