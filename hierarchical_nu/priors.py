@@ -738,7 +738,7 @@ class Priors(object):
 
         priors.luminosity = priors_dict["L"]
 
-        priors.diffuse_flux = priors_dict["F_diff"]
+        priors.diffuse_flux = priors_dict["diffuse_norm"]
 
         priors.atmospheric_flux = priors_dict["F_atmo"]
 

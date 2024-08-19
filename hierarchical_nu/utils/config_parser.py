@@ -6,6 +6,7 @@ from hierarchical_nu.priors import (
     LuminosityPrior,
     IndexPrior,
     FluxPrior,
+    DifferentialFluxPrior,
     EnergyPrior,
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
@@ -175,7 +176,7 @@ class ConfigParser:
             parameter_config["diff_norm"] * 1 / (u.GeV * u.m**2 * u.s),
             "diffuse_norm",
             fixed=True,
-            par_range=(0, np.inf),
+            par_range=parameter_config.diff_norm_range * (1 / u.GeV / u.m**2 / u.s),
         )
         Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
         Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
@@ -301,8 +302,8 @@ class ConfigParser:
             sources.add_diffuse_component(
                 diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
             )
-            F_diff = Parameter.get_parameter("F_diff")
-            F_diff.par_range = parameter_config.F_diff_range * (1 / u.m**2 / u.s)
+            # F_diff = Parameter.get_parameter("F_diff")
+            # F_diff.par_range = parameter_config.F_diff_range * (1 / u.m**2 / u.s)
 
         if parameter_config.atmospheric:
             sources.add_atmospheric_component(cache_dir=mceq)
@@ -450,9 +451,7 @@ class ConfigParser:
         sim = Simulation(sources, detector_models, obs_time, asimov=asimov)
         return sim
 
-    def create_fit(
-        self, sources, events, detector_models, obs_time
-    ):
+    def create_fit(self, sources, events, detector_models, obs_time):
 
         use_event_tag = self._hnu_config.parameter_config.use_event_tag
         from hierarchical_nu.fit import StanFit
@@ -534,12 +533,14 @@ class ConfigParser:
                     raise NotImplementedError("Prior not recognised.")
             elif p == "diff_flux":
                 if prior == NormalPrior:
-                    priors.diffuse_flux = FluxPrior(
-                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma * FluxPrior.UNITS
+                    priors.diffuse_flux = DifferentialFluxPrior(
+                        prior,
+                        mu=mu * DifferentialFluxPrior.UNITS,
+                        sigma=sigma * DifferentialFluxPrior.UNITS,
                     )
                 elif prior == LogNormalPrior:
-                    priors.diffuse_flux = FluxPrior(
-                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma
+                    priors.diffuse_flux = DifferentialFluxPrior(
+                        prior, mu=mu * DifferentialFluxPrior.UNITS, sigma=sigma
                     )
                 else:
                     raise NotImplementedError("Prior not recognised.")
