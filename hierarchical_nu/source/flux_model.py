@@ -550,6 +550,39 @@ class PowerLawSpectrum(SpectralShape):
 
         return func
 
+    @classmethod
+    def make_stan_diff_flux_conv_func(
+        cls, f_name, *args, **kwargs
+    ) -> UserDefinedFunction:
+        """
+        Factor to convert from differential norm to integrated norm,
+        i.e. integrate dN/dE dE over energy range
+        """
+
+        func = UserDefinedFunction(
+            f_name,
+            ["norm_energy", "alpha", "e_low", "e_up"],
+            ["real", "real", "real", "real"],
+            "real",
+        )
+
+        with func:
+            integral = ForwardVariableDef("integral", "real")
+            alpha = StringExpression(["alpha"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
+            norm_energy = StringExpression(["norm_energy"])
+
+            with IfBlockContext([StringExpression([alpha, " == ", 1.0])]):
+                integral << FunctionCall([e_up], "log") - FunctionCall([e_low], "log")
+            with ElseBlockContext():
+                integral << (1 / (1 - alpha)) * (
+                    e_up ** (1 - alpha) - e_low ** (1 - alpha)
+                )
+
+            ReturnStatement([integral * norm_energy**alpha])
+        return func
+
     @staticmethod
     def flux_conv_(alpha, e_low, e_up, beta, e_0):
         if alpha == 1.0:

@@ -210,7 +210,7 @@ class StanFit:
                 self._def_var_names.append("E0_src")
 
         if self._sources.diffuse:
-            self._def_var_names.append("F_diff")
+            self._def_var_names.append("diffuse_norm")
             self._def_var_names.append("diff_index")
 
         if self._sources.atmospheric:
@@ -1261,6 +1261,7 @@ class StanFit:
                 "E[",
                 "Esrc[",
                 "F_atmo",
+                "diffuse_norm",
                 "F_diff",
                 "diff_index",
                 "Nex",
@@ -1693,6 +1694,11 @@ class StanFit:
                 Parameter.get_parameter("Emax_diff").value,
                 self._sources.diffuse.redshift,
             ).to_value(u.GeV)
+            fit_inputs["Enorm_diff"] = (
+                self._sources.diffuse.flux_model.spectral_shape._normalisation_energy.to_value(
+                    u.GeV
+                )
+            )
 
             if fit_inputs["Emin_diff"] < fit_inputs["Emin"]:
                 raise ValueError(
@@ -1814,8 +1820,8 @@ class StanFit:
 
             fit_inputs["diff_index_min"] = self._diff_index_par_range[0]
             fit_inputs["diff_index_max"] = self._diff_index_par_range[1]
-            fit_inputs["F_diff_min"] = self._F_diff_par_range[0]
-            fit_inputs["F_diff_max"] = self._F_diff_par_range[1]
+            fit_inputs["diffuse_norm_min"] = self._F_diff_par_range[0]
+            fit_inputs["diffuse_norm_max"] = self._F_diff_par_range[1]
 
             # Priors for diffuse model
             if self._priors.diffuse_flux.name == "normal":
@@ -2023,8 +2029,8 @@ class StanFit:
         if self._sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range
             self._F_diff_par_range = Parameter.get_parameter(
-                "F_diff"
-            ).par_range.to_value(1 / u.m**2 / u.s)
+                "diffuse_norm"
+            ).par_range.to_value(1 / u.GeV / u.m**2 / u.s)
 
         if self._sources.atmospheric:
             self._F_atmo_par_range = Parameter.get_parameter(

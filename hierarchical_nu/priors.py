@@ -175,7 +175,7 @@ class PriorDictHandler:
         # Translate "key" into Lumi, Flux or Index
         translate = {
             "L": LuminosityPrior,
-            "F_diff": FluxPrior,
+            "diffuse_norm": DifferentialFluxPrior,
             "F_atmo": FluxPrior,
             "src_index": IndexPrior,
             "beta_index": IndexPrior,
@@ -416,6 +416,23 @@ class FluxPrior(UnitPrior):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
 
+class DifferentialFluxPrior(UnitPrior):
+    UNITS = 1 / u.GeV / u.m**2 / u.s
+    UNITS_STRING = UNITS.unit.to_string()
+
+    @u.quantity_input
+    def __init__(
+        self,
+        name=NormalPrior,
+        mu: u.Quantity[1 / u.GeV / u.m**2 / u.s] = 2.26e-13 / u.GeV / u.m**2 / u.s,
+        sigma: Union[u.Quantity[1 / u.GeV / u.m**2 / u.s], u.Quantity[1]] = 0.19e-13
+        / u.GeV
+        / u.m**2
+        / u.s,
+    ):
+        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
+
+
 class IndexPrior(UnitlessPrior):
     UNITS = 1
     UNITS_STRING = "1"
@@ -530,9 +547,7 @@ class Priors(object):
     def __init__(self):
         self._luminosity = LuminosityPrior()
 
-        self.diffuse_flux = FluxPrior(
-            LogNormalPrior, mu=1e-4 * FluxPrior.UNITS, sigma=1.0
-        )
+        self.diffuse_flux = DifferentialFluxPrior()
 
         self.src_index = IndexPrior()
 
@@ -559,8 +574,8 @@ class Priors(object):
         return self._diffuse_flux
 
     @diffuse_flux.setter
-    def diffuse_flux(self, prior: FluxPrior):
-        if not isinstance(prior, FluxPrior):
+    def diffuse_flux(self, prior: DifferentialFluxPrior):
+        if not isinstance(prior, DifferentialFluxPrior):
             raise ValueError("Wrong prior type")
         self._diffuse_flux = prior
 
@@ -619,7 +634,7 @@ class Priors(object):
 
         priors_dict["L"] = self._luminosity
 
-        priors_dict["F_diff"] = self._diffuse_flux
+        priors_dict["diffuse_norm"] = self._diffuse_flux
 
         priors_dict["F_atmo"] = self._atmospheric_flux
 
