@@ -131,11 +131,14 @@ class SegmentedApprox(metaclass=ABCMeta):
         support,
         bins,
     ):
-        """# Mask entries where we have target == 0
-        self.target = np.ma.asarray(target)
-        self.target[self.target == 0.0] = np.ma.masked
-        self.support = np.ma.asarray(support)
-        self.support[self.target.mask] = np.ma.masked"""
+        """
+        Metaclass of envelope creation used in rejection sampling.
+        Child classes have to implement the order in which the segments
+        are created.
+        :param target: target function, evaluated and `support`
+        :param support: support of `target`
+        :param bins: bin edges of power law segments
+        """
 
         self.target = target
         self.target[target == 0.0] = target[target > 0.0].min()
@@ -157,21 +160,40 @@ class SegmentedApprox(metaclass=ABCMeta):
         self.diff = 0.02
 
     def target_log_approx(self, x):
+        """
+        Use double-logarithmic interpolation
+        :param x: support, linear scale.
+        """
+
         return np.power(10.0, np.interp(np.log10(x), self.log_support, self.log_target))
 
     def segment_factory(self, slope, logxmin, logxmax, val, low=True):
+        """
+        Creates a `PowerLawSegment`
+        :param slope: index of power law
+        :param logxmin: lower boundary of support, log scale
+        :param logxmax: upper boundary of support, log scale
+        :param val: normalisation value, either at logxmin or logxmax
+        :param low: bool, if True assume val is given at loxmin
+        """
+
         xmin = np.power(10, logxmin)
         xmax = np.power(10, logxmax)
 
         return PowerLawSegment(xmin, xmax, slope, val, low=low)
 
     def init_slope(self, logxmin, logxmax):
+        """Guess initial slope"""
         return np.log10(
             self.target_log_approx(np.power(10, logxmax))
             / self.target_log_approx(np.power(10, logxmin))
         ) / (logxmax - logxmin)
 
     def _fit_segment(self, xmin, xmax, low=True, val=None):
+        """
+        Fit a powerlaw segment by changing the slope
+        until the power law just approaches the target
+        """
         self._trial_functions = []
         if low and val is None:
             val = self.__call__(xmin)
@@ -198,7 +220,8 @@ class SegmentedApprox(metaclass=ABCMeta):
         elif not low:
             step = self.diff
 
-        # Only allow 100 steps to guarantee an exit condition, although should raise an error if convergence is not reached
+        # Only allow 200 steps to guarantee an exit condition,
+        # although should raise warning message if convergence is not happening
         for i in range(200):
             new_slope = slope + step
             new_function = self.segment_factory(
@@ -278,6 +301,12 @@ class SegmentedApprox(metaclass=ABCMeta):
 
 
 class TopDownSegmentation(SegmentedApprox):
+    """
+    Create power law envelope by starting at the bin
+    containing the peak of the target, then continue
+    at the flanks.
+    """
+
     def __init__(self, target, support, dec_width):
         width = dec_width  # decadic width
         target_max_point = support[np.argmax(target).squeeze()]
