@@ -1042,6 +1042,7 @@ class StanFit:
         x_energy_unit=u.GeV,
         upper_limit: bool = False,
         figsize=(8, 3),
+        ax=None
     ):
         """
         Plot flux uncertainties.
@@ -1070,7 +1071,10 @@ class StanFit:
         else:
             flux_grid = self._flux_grid[source_idx]
 
-        fig, ax = plt.subplots(figsize=figsize)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.get_figure()
 
         # Find the interval to be plotted
         credible_interval = np.atleast_1d(credible_interval)
@@ -1158,7 +1162,7 @@ class StanFit:
         for c, l in zip(colours, levels):
             handles.append(Line2D([0], [0], color=c))
             if tex:
-                    label = rf"{int((1-l)*100):d}\% CR"
+                label = rf"{int((1-l)*100):d}\% CR"
             else:
                 label = rf"{int((1-l)*100):d}% CR"
             labels.append(label)
