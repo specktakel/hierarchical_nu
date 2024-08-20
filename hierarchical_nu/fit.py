@@ -446,7 +446,7 @@ class StanFit:
                         unit = prior.UNITS
                     if transform:
                         # yikes
-                        title = f"[$\\log_{{10}}\\left (\\frac{{{name}}}{{{unit.to_string('latex_inline').strip('$')}}}\\right )$]"
+                        title = f"[$\\log_{{10}}\\left (\\frac{{\mathrm{{{name}}}}}{{{unit.to_string('latex_inline').strip('$')}}}\\right )$]"
                     else:
                         title = f"{name} [{unit.to_string('latex_inline')}]"
                     ax.set_title(title)
