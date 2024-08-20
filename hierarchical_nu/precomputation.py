@@ -466,7 +466,7 @@ class ExposureIntegral:
                     * aeff_values
                 )
 
-                segments = TopDownSegmentation(f_values.to_value(u.m**2), E_range, 1.0)
+                segments = TopDownSegmentation(f_values.to_value(u.m**2), E_range)
                 segments.generate_segments()
                 envelope_container.append(segments)
 
@@ -509,7 +509,7 @@ class ExposureIntegral:
                 # Make array
                 # Take max along energy axis, and use result for creating the envelope
                 f_values = np.array(f_values_all).max(axis=0)
-                segment = TopDownSegmentation(f_values, E_range, 1.0)
+                segment = TopDownSegmentation(f_values, E_range)
                 segment.generate_segments()
                 envelope_container.append(segment)
 
