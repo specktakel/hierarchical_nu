@@ -253,7 +253,7 @@ class SegmentedApprox(metaclass=ABCMeta):
                 slope = new_slope
             elif step < 0.0 and not low and negative:
                 slope = new_slope
-            elif step < 0.0 and not low and not negative:q
+            elif step < 0.0 and not low and not negative:
                 # We have just found the right slope, update
                 slope = new_slope
                 break
