@@ -130,6 +130,8 @@ class SegmentedApprox(metaclass=ABCMeta):
         target,
         support,
         bins,
+        diff,
+        max_tries,
     ):
         """
         Metaclass of envelope creation used in rejection sampling.
@@ -157,7 +159,8 @@ class SegmentedApprox(metaclass=ABCMeta):
 
         self._segmented_functions = [lambda x: -1 for _ in range(len(bins) - 1)]
 
-        self.diff = 0.02
+        self.diff = diff
+        self.max_tries = max_tries
 
     def target_log_approx(self, x):
         """
@@ -220,9 +223,9 @@ class SegmentedApprox(metaclass=ABCMeta):
         elif not low:
             step = self.diff
 
-        # Only allow 200 steps to guarantee an exit condition,
+        # Only allow max_tries steps to guarantee an exit condition,
         # although should raise warning message if convergence is not happening
-        for i in range(200):
+        for i in range(self.max_tries):
             new_slope = slope + step
             new_function = self.segment_factory(
                 new_slope, logxmin, logxmax, val, low=low
@@ -234,26 +237,31 @@ class SegmentedApprox(metaclass=ABCMeta):
             # Just spell all 8 cases out...
             if step > 0.0 and low and negative:
                 slope = new_slope
-                continue
-            elif step > 0.0 and low:
+            elif step > 0.0 and low and not negative:
+                # We have just found the right slope, update
                 slope = new_slope
                 break
             elif step < 0.0 and low and negative:
+                # Previous slope was the best guess, do not update
                 break
-            elif step < 0.0 and low:
+            elif step < 0.0 and low and not negative:
                 slope = new_slope
             elif step > 0.0 and negative and not low:
+                # Previous slope was the best guess, do not update
                 break
-            elif step > 0.0 and not low:
+            elif step > 0.0 and not low and not negative:
                 slope = new_slope
             elif step < 0.0 and not low and negative:
                 slope = new_slope
-            elif step < 0.0 and not low:
+            elif step < 0.0 and not low and not negative:q
+                # We have just found the right slope, update
+                slope = new_slope
                 break
         else:
             logger.warning(
-                f"Envelope search did not converge between {xmin} and {xmax} after 200 steps."
+                f"Envelope search did not converge between {xmin} and {xmax} after {self.max_tries} steps."
             )
+            print("this should have produced a warning message")
 
         # Either way, produce the segment
         function = self.segment_factory(slope, logxmin, logxmax, val, low=low)
@@ -307,7 +315,7 @@ class TopDownSegmentation(SegmentedApprox):
     at the flanks.
     """
 
-    def __init__(self, target, support, dec_width):
+    def __init__(self, target, support, dec_width: float=0.5, diff: float=0.04, max_tries: int=400):
         width = dec_width  # decadic width
         target_max_point = support[np.argmax(target).squeeze()]
         middle = np.log10(target_max_point)
@@ -340,7 +348,7 @@ class TopDownSegmentation(SegmentedApprox):
 
         breaks = np.power(10, breaks)
 
-        super().__init__(target, support, breaks)
+        super().__init__(target, support, breaks, diff, max_tries)
 
         self.bin_containing_peak = np.digitize(target_max_point, breaks) - 1
 
