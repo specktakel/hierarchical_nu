@@ -140,6 +140,8 @@ class ExposureIntegral:
 
             self._par_grids[par_name] = grid
 
+        self._flux_vals = []
+        self._rate_aeff = []
         self.__call__()
 
     @property
@@ -295,7 +297,10 @@ class ExposureIntegral:
                 * u.m**2
             )
 
+            self._rate_aeff.append(aeff_vals)
+
             flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
+            self._flux_vals.append(flux_vals)
 
             if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
                 p_Edet = self.energy_resolution.prob_Edet_above_threshold(
@@ -440,6 +445,8 @@ class ExposureIntegral:
 
         envelope_container = []
 
+        self._f_values_all = []
+
         for source in self._sources.sources:
             # Energy bounds in flux model are already redshift-corrected
             # and live in the detector frame
@@ -469,6 +476,7 @@ class ExposureIntegral:
                 segments = TopDownSegmentation(f_values.to_value(u.m**2), E_range)
                 segments.generate_segments()
                 envelope_container.append(segments)
+                self._f_values_all.append(f_values.to_value(u.m**2))
 
             else:
                 # For diffuse sources, we need to find an envelope envelopping
@@ -512,6 +520,7 @@ class ExposureIntegral:
                 segment = TopDownSegmentation(f_values, E_range)
                 segment.generate_segments()
                 envelope_container.append(segment)
+                self._f_values_all.append(f_values_all)
 
         self._envelope_container = envelope_container
 
