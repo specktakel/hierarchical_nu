@@ -783,18 +783,28 @@ class StanSimInterface(StanInterface):
                                             "}",
                                         ]
                                     )
-                                    self._src_factor << self._src_spectrum_lpdf(
-                                        self._E[i],
-                                        theta,
-                                        x_r,
-                                        x_i,
+                                    self._src_factor << FunctionCall(
+                                        [
+                                            self._src_spectrum_lpdf(
+                                                self._E[i],
+                                                theta,
+                                                x_r,
+                                                x_i,
+                                            )
+                                        ],
+                                        "exp",
                                     )
                                 else:
-                                    self._src_factor << self._src_spectrum_lpdf(
-                                        self._E[i],
-                                        self._src_index[self._lam[i]],
-                                        self._Emin_src[self._lam[i]],
-                                        self._Emax_src[self._lam[i]],
+                                    self._src_factor << FunctionCall(
+                                        [
+                                            self._src_spectrum_lpdf(
+                                                self._E[i],
+                                                self._src_index[self._lam[i]],
+                                                self._Emin_src[self._lam[i]],
+                                                self._Emax_src[self._lam[i]],
+                                            )
+                                        ],
+                                        "exp",
                                     )
                                 # Account for energy redshift losses
                                 self._Esrc[i] << DetectorFrame.stan_to_src(
@@ -816,15 +826,20 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-                                self._src_factor << self._diff_spectrum_lpdf(
-                                    self._E[i],
-                                    self._diff_index,
-                                    self._diff_frame.stan_to_det(
-                                        self._Emin_diff, self._z, self._lam, i
-                                    ),
-                                    self._diff_frame.stan_to_det(
-                                        self._Emax_diff, self._z, self._lam, i
-                                    ),
+                                self._src_factor << FunctionCall(
+                                    [
+                                        self._diff_spectrum_lpdf(
+                                            self._E[i],
+                                            self._diff_index,
+                                            self._diff_frame.stan_to_det(
+                                                self._Emin_diff, self._z, self._lam, i
+                                            ),
+                                            self._diff_frame.stan_to_det(
+                                                self._Emax_diff, self._z, self._lam, i
+                                            ),
+                                        )
+                                    ],
+                                    "exp",
                                 )
 
                                 self._Esrc[i] << DetectorFrame.stan_to_src(
@@ -841,8 +856,6 @@ class StanSimInterface(StanInterface):
                                     / self._F_atmo
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
-
-                        self._src_factor << FunctionCall([self._src_factor], "exp")
 
                         # Also store the value of the envelope function at this true energy
                         self._g_value << FunctionCall(
