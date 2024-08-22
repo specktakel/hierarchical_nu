@@ -2,10 +2,11 @@ from abc import ABCMeta, abstractmethod
 from typing import Union, Sequence, List, Tuple
 import logging
 from .stan_code import StanCodeBit, TListStrStanCodeBit
-from .code_generator import Contextable
+from .code_generator import Contextable, ContextStack
 from .baseclasses import NamedObject
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 __all__ = [
     "Expression",
@@ -102,37 +103,30 @@ class Expression(_BaseExpression):
         inputs: Sequence["TExpression"],
         stan_code: TListTExpression,
         block_output=False,
+        end_delim=";\n",
     ):
-        _BaseExpression.__init__(self, inputs, block_output, end_delim=";\n")
+        _BaseExpression.__init__(self, inputs, block_output, end_delim=end_delim)
         self._stan_code = stan_code
 
     @property
     def stan_code(self) -> TListTExpression:
         return self._stan_code
 
+    def __getitem__(self, key):
+        from .stan_generator import IndexingContext
+
+        with IndexingContext(key) as idx:
+            output: TListTExpression = [self, *idx]
+        return StringExpression(output)
+
+    """
+
     def __getitem__(self: _BaseExpression, key: TExpression):
 
-        if isinstance(key, tuple):
-            stan_code: TListTExpression = [self, "["]
-            for c, k in enumerate(key, start=-len(key) + 1):
-                if isinstance(k, slice):
-                    stan_code += [k.start, ":", k.stop]
-                else:
-                    stan_code += [k]
-                # If it's not the last key-entry, add a comma
-                if c != 0:
-                    stan_code += [","]
-                # Last entry: close bracket
-                else:
-                    stan_code += ["]"]
-        elif isinstance(key, slice):
-            start = key.start
-            stop = key.stop
-            stan_code: TListTExpression = [self, "[", start, ":", stop, "]"]
-        else:
-            stan_code: TListTExpression = [self, "[", key, "]"]
+        stan_code: TListTExpression = [self, "[", key, "]"]
 
         return Expression([self, key], stan_code)
+    """
 
     def __lshift__(self: _BaseExpression, other: Union[TExpression, TListTExpression]):
         logger.debug("Assigning {} to {}".format(other, self))  # noqa: E501
