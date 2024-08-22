@@ -483,11 +483,6 @@ class R2021EffectiveArea(EffectiveArea):
                 np.atleast_1d(self._tE_bin_edges[-1]),
             )
         )
-        # Define Stan interface.
-        # if self.mode == DistributionMode.PDF:
-        #    type_ = TwoDimHistInterpolation
-        # else:
-        #    type_ = SimpleHistogram
 
         eff_area[eff_area == 0.0] = eff_area[eff_area > 0.0].min()
         with self:
@@ -511,16 +506,6 @@ class R2021EffectiveArea(EffectiveArea):
                     )
                 ]
             )
-        # with self:
-        #    hist = type_(
-        #        eff_area,
-        #        [self._tE_bin_edges, cosz_bin_edges],
-        #        f"{self._season}EffAreaHist",
-        #    )
-        # Uses cos(z), so calculate z = pi - theta
-        #    cos_dir = "cos(pi() - acos(true_dir[3]))"
-        #
-        #    _ = ReturnStatement([hist("true_energy", cos_dir)])
 
     def setup(self) -> None:
         if self.CACHE_FNAME in Cache:
