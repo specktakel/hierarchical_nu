@@ -848,7 +848,7 @@ class StanSimInterface(StanInterface):
                         self._g_value << FunctionCall(
                             [
                                 self._E[i],
-                                self._rs_breaks[j, source, 1:sl_max],
+                                self._rs_breaks[j, source, 1:sl_max_break],
                                 self._rs_slopes[j, source, 1:sl_max],
                                 self._rs_norms[j, source, 1:sl_max],
                             ],
