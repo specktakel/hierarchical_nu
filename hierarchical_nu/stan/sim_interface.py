@@ -34,7 +34,7 @@ from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.detector.icecube import EventType
 
 from hierarchical_nu.source.source import Sources, DetectorFrame
-from hierarchical_nu.source.flux_model import LogParabolaSpectrum
+from hierarchical_nu.source.flux_model import PGammaSpectrum
 
 from hierarchical_nu.utils.roi import CircularROI, ROIList
 
@@ -212,12 +212,24 @@ class StanSimInterface(StanInterface):
             # Separate interpolation grids are also provided for all event types
 
             self._Emin_det = ForwardArrayDef("Emin_det", "real", ["[", self._Net, "]"])
-            self._rs_bbpl_Eth = ForwardArrayDef(
-                "rs_bbpl_Eth", "real", ["[", self._Net, "]"]
-            )
-            self._rs_bbpl_gamma1 = ForwardArrayDef(
-                "rs_bbpl_gamma1", "real", ["[", self._Net, "]"]
-            )
+
+            if self._sources.point_source_spectrum == PGammaSpectrum:
+                self._rs_bbpl_gamma1 = ForwardArrayDef(
+                    "rs_bbpl_gamma1", "real", ["[", self._Net, ",", self._Ns, "]"]
+                )
+                self._rs_bbpl_gamma2 = ForwardArrayDef(
+                    "rs_bbpl_gamma2", "real", ["[", self._Net, "]"]
+                )
+                self._rs_bbpl_Eth = ForwardArrayDef(
+                    "rs_bbpl_Eth", "real", ["[", self._Net, ",", self._Ns, "]"]
+                )
+            else:
+                self._rs_bbpl_gamma1 = ForwardArrayDef(
+                    "rs_bbpl_gamma1", "real", ["[", self._Net, "]"]
+                )
+                self._rs_bbpl_Eth = ForwardArrayDef(
+                    "rs_bbpl_Eth", "real", ["[", self._Net, "]"]
+                )
             self._rs_bbpl_gamma2_scale = ForwardArrayDef(
                 "rs_bbpl_gamma2_scale", "real", ["[", self._Net, "]"]
             )
@@ -571,7 +583,9 @@ class StanSimInterface(StanInterface):
             self._g_value = ForwardVariableDef("g_value", "real")
             self._c_value = ForwardVariableDef("c_value", "real")
             self._idx_cosz = ForwardVariableDef("idx_cosz", "int")
+            self._gamma1 = ForwardVariableDef("gamma1", "real")
             self._gamma2 = ForwardVariableDef("gamma2", "real")
+            self._Eth = ForwardVariableDef("Eth", "real")
 
             # Label for the currently sampled source component, starts obviously with 1
             # Is reset to 1 when using multiple detector models and sampling moves on to the next
@@ -711,11 +725,24 @@ class StanSimInterface(StanInterface):
 
                                 # The shape of the envelope to use depends on the
                                 # source spectrum. This is to make things more efficient.
-                                (
-                                    self._gamma2
-                                    << self._rs_bbpl_gamma2_scale[j]
-                                    - self._src_index[self._lam[i]]
-                                )
+                                if (
+                                    self._sources.point_source_spectrum
+                                    == PGammaSpectrum
+                                ):
+                                    (
+                                        self._gamma1
+                                        << self._rs_bbpl_gamma1[j][self._lam[i]]
+                                    )
+                                    self._gamma2 << self._rs_bbpl_gamma2[j]
+                                    self._Eth << self._rs_bbpl_Eth[j][self._lam[i]]
+                                else:
+                                    self._gamma1 << self._rs_bbpl_gamma1[j]
+                                    (
+                                        self._gamma2
+                                        << self._rs_bbpl_gamma2_scale[j]
+                                        - self._src_index[self._lam[i]]
+                                    )
+                                    self._Eth << self._rs_bbpl_Eth[j]
 
                                 # Handle energy thresholds
                                 # 3 cases:
@@ -732,11 +759,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -746,9 +773,9 @@ class StanSimInterface(StanInterface):
                                     self._E[i] << FunctionCall(
                                         [
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
+                                            self._Eth,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
                                             self._gamma2,
                                         ],
                                         "bbpl_rng",
@@ -759,9 +786,9 @@ class StanSimInterface(StanInterface):
                                         [
                                             self._E[i],
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
+                                            self._Eth,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
                                             self._gamma2,
                                         ],
                                         "bbpl_pdf",
@@ -774,11 +801,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 "<=",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -796,8 +823,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
+                                            self._gamma1,
                                         ],
                                         "bbpl_rng",
                                     )
@@ -809,8 +836,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
+                                            self._gamma1,
                                         ],
                                         "bbpl_pdf",
                                     )
@@ -822,11 +849,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 ">=",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -937,6 +964,8 @@ class StanSimInterface(StanInterface):
                                 # Assume fixed index of ~3.6 for atmo to get reasonable
                                 # envelope function
                                 self._gamma2 << self._rs_bbpl_gamma2_scale[j] - 3.6
+                                self._gamma1 << self._rs_bbpl_gamma1[j]
+                                self._Eth << self._rs_bbpl_Eth[j]
 
                                 # Handle energy thresholds
                                 # 3 cases:
@@ -952,11 +981,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -966,9 +995,9 @@ class StanSimInterface(StanInterface):
                                     self._E[i] << FunctionCall(
                                         [
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
+                                            self._Eth,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
                                             self._gamma2,
                                         ],
                                         "bbpl_rng",
@@ -979,9 +1008,9 @@ class StanSimInterface(StanInterface):
                                         [
                                             self._E[i],
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
+                                            self._Eth,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
                                             self._gamma2,
                                         ],
                                         "bbpl_pdf",
@@ -994,11 +1023,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 "<=",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -1016,8 +1045,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
+                                            self._gamma1,
                                         ],
                                         "bbpl_rng",
                                     )
@@ -1029,8 +1058,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
+                                            self._gamma1,
                                         ],
                                         "bbpl_pdf",
                                     )
@@ -1042,11 +1071,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 ">=",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -1098,6 +1127,8 @@ class StanSimInterface(StanInterface):
                                     self._gamma2
                                     << self._rs_bbpl_gamma2_scale[j] - self._diff_index
                                 )
+                                self._gamma1 << self._rs_bbpl_gamma1[j]
+                                self._Eth << self._rs_bbpl_Eth[j]
 
                                 # Handle energy thresholds
                                 # 3 cases:
@@ -1115,11 +1146,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -1129,9 +1160,9 @@ class StanSimInterface(StanInterface):
                                     self._E[i] << FunctionCall(
                                         [
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
+                                            self._Eth,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
                                             self._gamma2,
                                         ],
                                         "bbpl_rng",
@@ -1142,9 +1173,9 @@ class StanSimInterface(StanInterface):
                                         [
                                             self._E[i],
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
+                                            self._Eth,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
                                             self._gamma2,
                                         ],
                                         "bbpl_pdf",
@@ -1157,11 +1188,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 "<=",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -1179,8 +1210,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
+                                            self._gamma1,
                                         ],
                                         "bbpl_rng",
                                     )
@@ -1192,8 +1223,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
+                                            self._gamma1,
                                         ],
                                         "bbpl_pdf",
                                     )
@@ -1205,11 +1236,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 ">=",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -1269,7 +1300,8 @@ class StanSimInterface(StanInterface):
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
                                 self._gamma2 << self._rs_bbpl_gamma2_scale[j] - 3.6
-
+                                self._gamma1 << self._rs_bbpl_gamma1[j]
+                                self._Eth << self._rs_bbpl_Eth[j]
                                 # Handle energy thresholds
                                 # 3 cases:
                                 # Emin < Eth and Emax > Eth - use broken pl
@@ -1285,11 +1317,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -1299,9 +1331,9 @@ class StanSimInterface(StanInterface):
                                     self._E[i] << FunctionCall(
                                         [
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
+                                            self._Eth,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
                                             self._gamma2,
                                         ],
                                         "bbpl_rng",
@@ -1312,9 +1344,9 @@ class StanSimInterface(StanInterface):
                                         [
                                             self._E[i],
                                             self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
+                                            self._Eth,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
                                             self._gamma2,
                                         ],
                                         "bbpl_pdf",
@@ -1327,11 +1359,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 "<",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 "<=",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )
@@ -1349,8 +1381,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
+                                            self._gamma1,
                                         ],
                                         "bbpl_rng",
                                     )
@@ -1362,8 +1394,8 @@ class StanSimInterface(StanInterface):
                                             self._Emin_src_arr,
                                             self._rs_bbpl_Eth_tmp,
                                             self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
+                                            self._gamma1,
+                                            self._gamma1,
                                         ],
                                         "bbpl_pdf",
                                     )
@@ -1375,11 +1407,11 @@ class StanSimInterface(StanInterface):
                                                 "(",
                                                 self._Emin_src_arr,
                                                 ">=",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ") && (",
                                                 self._Emax_src_arr,
                                                 ">",
-                                                self._rs_bbpl_Eth[j],
+                                                self._Eth,
                                                 ")",
                                             ]
                                         )

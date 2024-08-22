@@ -421,6 +421,27 @@ class R2021EffectiveArea(EffectiveArea):
     More or less copied from NorthernTracks implementation.
     """
 
+    gamma1_parameters = {"a": -0.3, "b": 1.2, "logE0": 5.0}
+    e_th_parameters = {"a": -1.0, "b": 6.0, "logE0": 5.0}
+    gamma2 = -2.75
+
+    @classmethod
+    def gamma1(cls, E: u.GeV):
+        logE = np.log10(E.to_value(u.GeV))
+        logE0 = 5
+        b = 1.2
+        a = -0.3
+        return a * (logE - logE0) + b
+
+    @classmethod
+    def E_th(cls, E: u.GeV):
+        logE = np.log10(E.to_value(u.GeV))
+        logE0 = 5
+        a = -1
+        b = 6
+        out = a * (logE - logE0) + b
+        return E * out
+
     def __init__(
         self, mode: DistributionMode = DistributionMode.PDF, season: str = "IC86_II"
     ) -> None:
