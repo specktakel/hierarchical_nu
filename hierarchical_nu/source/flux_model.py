@@ -315,8 +315,8 @@ class PowerLawSpectrum(SpectralShape):
             mask = np.nonzero(
                 ((energy <= self._upper_energy) & (energy >= self._lower_energy))
             )
-            output[mask] = norm * np.power(
-                energy[mask] / self._normalisation_energy, -index
+            output[mask] = (
+                norm * np.power(energy[mask] / self._normalisation_energy, -index)
             ).to(return_units)
             return output
         if (energy < self._lower_energy) or (energy > self._upper_energy):
