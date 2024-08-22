@@ -74,6 +74,7 @@ class StanFit:
         nshards: int = 0,
         use_event_tag: bool = False,
         debug: bool = False,
+        reload: bool = False,
     ):
         """
         To set up and run fits in Stan.
@@ -88,6 +89,7 @@ class StanFit:
         :param nshards: number of shards into which data is split. zero or one for single thread, larger will compile code for multithreading
         :param use_event_tag: for multiple ROI set to True to only consider closest point source for each event
         :param debug: set to True for unit testing purposes
+        :param reload: set to True if no stan interface should be created, i.e. reloading results
         """
 
         self._sources = sources
@@ -112,7 +114,8 @@ class StanFit:
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
 
-        if sources.N != 0:
+        self._reload = reload
+        if not self._reload:
             self._stan_interface = StanFitInterface(
                 stan_file_name,
                 self._sources,
@@ -329,6 +332,12 @@ class StanFit:
             **kwargs,
         )
 
+    def __getitem__(self, key):
+        if self._reload:
+            return self._fit_output[key]
+        else:
+            return self._fit_output.stan_variable(key)
+
     def setup_and_run(
         self,
         iterations: int = 1000,
@@ -464,10 +473,7 @@ class StanFit:
         index: Union[int, slice, None] = None,
         transform: Callable = lambda x: x,
     ):
-        try:
-            chain = self._fit_output.stan_variable(var_name)
-        except AttributeError:
-            chain = self._fit_output[var_name]
+        chain = self[var_name]
         if index is not None:
             data = chain.T[index]
         else:
@@ -480,29 +486,20 @@ class StanFit:
         true values if working with simulated data.
         """
 
-        logger.warning(
-            "If you are in a reloaded state with multiple point sources, add the used source list through <StanFit._sources = sources>"
-        )
         if not var_names:
             var_names = self._def_var_names
-
-        try:
-            chain = self._fit_output.stan_variables()
-            stan = True
-        except AttributeError:
-            chain = self._fit_output
-            stan = False
 
         # Organise samples
         samples_list = []
         label_list = []
 
         for key in var_names:
-            if stan:
-                if len(np.shape(chain[key])) > 1:
+            samples = self[key]
+            if not self._reload:
+                if len(np.shape(samples)) > 1:
                     # This is for array-like variables, e.g. multiple PS
                     # having their own entry in src_index
-                    for samp, src in zip(chain[key].T, self._sources.point_source):
+                    for samp, src in zip(samples.T, self._sources.point_source):
                         samples_list.append(samp)
                         if key == "L" or key == "src_index":
                             label = "%s_" % src.name + key
@@ -512,25 +509,24 @@ class StanFit:
                         label_list.append(label)
 
                 else:
-                    samples_list.append(chain[key])
+                    samples_list.append(samples)
                     label_list.append(key)
 
             else:
                 # check for len(np.shape(chain[key]) > 2 because extra dim for chains
                 # would be, e.g. for 3 sources, (chains, iter_sampling, 3)
-                if len(np.shape(chain[key])) > 2:
+                if len(np.shape(samples)) > 2:
                     for i, src in zip(
-                        range(np.shape(chain[key])[-1]), self._sources.point_source
+                        range(np.shape(samples)[-1]), self._sources.point_source
                     ):
                         if key == "L" or key == "src_index":
                             label = "%s_" % src.name + key
                         else:
                             label = key
                         samples_list.append(
-                            chain[key][:, :, i].reshape(
+                            samples[:, :, i].reshape(
                                 (
-                                    self._fit_meta["iter_sampling"]
-                                    * self._fit_meta["chains"],
+                                    self.iter_sampling * self.chains,
                                     1,
                                 )
                             )
@@ -539,10 +535,9 @@ class StanFit:
 
                 else:
                     samples_list.append(
-                        chain[key].reshape(
+                        samples.reshape(
                             (
-                                self._fit_meta["iter_sampling"]
-                                * self._fit_meta["chains"],
+                                self.iterations * self.chains,
                                 1,
                             )
                         )
@@ -912,53 +907,32 @@ class StanFit:
             raise ValueError("A valid source list is required")
 
         flux_unit = 1 / energy_unit / area_unit / u.s
-
-        try:
-            variables = self._fit_output.stan_variables()
-            stan = True
-        except AttributeError:
-            variables = self._fit_output.keys()
-            stan = False
-
-        if stan:
+        if not self._reload:
             inputs = self._get_fit_inputs()
-            if self._fit_index:
-                alpha = self._fit_output.stan_variable("src_index")
-            elif self._power_law or self._logparabola:
-                alpha = inputs["src_index"]
-            if self._fit_beta:
-                beta = self._fit_output.stan_variable("beta_index")
-            elif self._logparabola:
-                beta = inputs["beta_index"]
-            if self._fit_Enorm:
-                E0 = self._fit_output.stan_variable("E0_src")
-            elif self._logparabola:
-                E0 = inputs["E0_src"]
-            F = self._fit_output.stan_variable("F")
-            # Find chains and iterations to calculate if parameter is shared or not
             iterations = self._fit_output._iter_sampling
             chains = self._fit_output.chains
 
         else:
             # Need try-except blocks for case of pgamma
             inputs = self._fit_inputs
-            if self._fit_index:
-                alpha = self._fit_output["src_index"]
-            elif self._power_law or self._logparabola:
-                alpha = inputs["src_index"]
-            if self._fit_beta:
-                beta = self._fit_output["beta_index"]
-            elif self._logparabola:
-                beta = inputs["beta_index"]
-            if self._fit_Enorm:
-                E0 = self._fit_output["E0_src"]
-            elif self._logparabola or self._pgamma:
-                E0 = inputs["E0_src"]
-            iterations = self._fit_meta["iter_sampling"]
             chains = self._fit_meta["chains"]
-            F = self._fit_output["F"]
-            F = F.reshape((iterations * chains, F.size // (iterations * chains)))
+            iterations = self._fit_meta["iter_sampling"]
 
+        if self._fit_index:
+            alpha = self["src_index"]
+        elif self._power_law or self._logparabola:
+            alpha = inputs["src_index"]
+        if self._fit_beta:
+            beta = ["beta_index"]
+        elif self._logparabola:
+            beta = inputs["beta_index"]
+        if self._fit_Enorm:
+            E0 = self["E0_src"]
+        elif self._logparabola:
+            E0 = inputs["E0_src"]
+        F = self["F"]
+
+        F = F.reshape((iterations * chains, F.size // (iterations * chains)))
         if self._fit_index:
             N = alpha.size // (iterations * chains)
         elif self._fit_beta:
@@ -1360,7 +1334,7 @@ class StanFit:
 
             config_parser = ConfigParser(OmegaConf.create(config))
             sources = config_parser.sources
-            fit = cls(sources, event_types, events, obs_time_dict, priors)
+            fit = cls(sources, event_types, events, obs_time_dict, priors, reload=True)
 
         else:
             outputs = {}
@@ -1413,7 +1387,7 @@ class StanFit:
 
             config_parser = ConfigParser(OmegaConf.create(configs[-1]))
             sources = config_parser.sources
-            fit = cls(sources, event_types, events, obs_time_dict, priors)
+            fit = cls(sources, event_types, events, obs_time_dict, priors, reload=True)
 
         fit._fit_output = outputs
         fit._fit_inputs = fit_inputs
@@ -1611,11 +1585,25 @@ class StanFit:
 
         return wrong, assumed, correct
 
+    @property
+    def chains(self):
+        if self._reload:
+            return self._fit_meta["chains"]
+        else:
+            return self._fit_output.chains
+
+    @property
+    def iterations(self):
+        if self._reload:
+            return self._fit_meta["iter_sampling"]
+        else:
+            return self._fit_output.num_draws_sampling
+
     def _get_event_classifications(self):
         # logprob is a misnomer, this is actually the rate parameter of each source component
-        try:
+        if not self._reload:
             logprob = self._fit_output.stan_variable("lp").transpose(1, 2, 0)
-        except AttributeError:
+        else:
             # We are in a reloaded state and _fit_output is a dictionary
             # also the shape is "wrong" for transpose()
             logprob = (
