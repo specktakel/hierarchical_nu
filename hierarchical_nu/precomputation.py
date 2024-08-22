@@ -12,22 +12,22 @@ from astropy.coordinates import SkyCoord
 import healpy as hp
 import numpy as np
 
-from hierarchical_nu.source.source import (
+from .source.source import (
     Sources,
     PointSource,
     icrs_to_uv,
 )
-from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
-from hierarchical_nu.source.parameter import ParScale, Parameter
-from hierarchical_nu.backend.stan_generator import StanGenerator
-from hierarchical_nu.detector.detector_model import (
+from .source.atmospheric_flux import AtmosphericNuMuFlux
+from .source.flux_model import PGammaSpectrum
+from .source.parameter import ParScale, Parameter
+from .backend.stan_generator import StanGenerator
+from .detector.detector_model import (
     LogNormEnergyResolution,
     GridInterpolationEnergyResolution,
 )
-from hierarchical_nu.utils.roi import CircularROI, ROIList
-from hierarchical_nu.detector.icecube import (
+from .utils.roi import CircularROI, ROIList
+from .detector.icecube import (
     EventType,
-    Refrigerator,
     CAS,
 )
 
@@ -457,6 +457,19 @@ class ExposureIntegral:
             E_range = 10 ** np.linspace(np.log10(Emin), np.log10(Emax))
 
             if isinstance(source, PointSource):
+                if isinstance(source.flux_model.spectral_shape, PGammaSpectrum):
+                    Eth = self.effective_area.E_th(
+                        source.parameters["norm_energy"].value,
+                    ).to_value(u.GeV)
+                    gamma1 = self.effective_area.gamma1(
+                        source.parameters["norm_energy"].value,
+                    )
+                    gamma2 = self.effective_area.gamma2
+                else:
+                    gamma2 = (
+                        gamma2_scale
+                        - source.flux_model.spectral_shape.parameters["index"].value
+                    )
                 # Point source has one declination/cosz,
                 # no loop over cosz necessary
                 cosz = source.cosz
@@ -476,20 +489,16 @@ class ExposureIntegral:
                     )
                     * aeff_values
                 )
-                gamma2 = (
-                    gamma2_scale
-                    - source.flux_model.spectral_shape.parameters["index"].value
-                )
 
             else:
                 # For diffuse sources, we need to find the largest c value
                 # that is then used at all declinations.
-                # In the case of the atmospheric background,
-                # the distribution is bivariate. We are not allowed to
-                # pick c-values for each declination separetely
-                # because then we assume independent distributions
-                # at each declination, all "relative information"
-                # is then lost.
+                # In the case of the atmospheric background
+                # we need to find a c value that encompasses the declination
+                # and energy dependence (opposed to the isotropic background,
+                # which is only energy-dependant). If we were to pick a c value
+                # for each declination band we would end up again with isotropy,
+                # thus pick a global c value to retain the directional information.
                 f_values_all = []
 
                 for cosz in cosz_bin_cens:

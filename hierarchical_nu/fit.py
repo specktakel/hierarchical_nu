@@ -897,7 +897,7 @@ class StanFit:
         ax, _ = self._plot_roi(center, ax, radius, assoc_idx, color_scale, highlight)
         axs.insert(0, ax)
 
-        return fig, ax
+        return fig, axs
 
     def _calculate_flux_grid(self, energy_unit, area_unit, E_power):
 
@@ -992,7 +992,10 @@ class StanFit:
                         "norm_energy", E0_vals[c] * u.GeV
                     )
 
-                flux = ps.flux_model.spectral_shape(E).to_value(flux_unit)
+                flux = ps.flux_model.spectral_shape(E).to_value(
+                    flux_unit,
+                    equivalencies=u.spectral(),
+                )
 
                 # Needs to be in units used by stan
                 int_flux = ps.flux_model.total_flux_int.to_value(1 / u.m**2 / u.s)
@@ -1001,10 +1004,32 @@ class StanFit:
                     flux
                     / int_flux
                     * flux_int[c]
-                    * np.power(E.to_value(energy_unit), E_power)
+                    * np.power(E.to_value(
+                        energy_unit,
+                        equivalencies=u.spectral()
+                    ), E_power)
                 )
 
             self._flux_grid[c_ps] = flux_grid
+            
+    def _calculate_quantiles(self, source_idx, LL, UL):
+
+        E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
+        
+        lower = np.zeros(E.size)
+        upper = np.zeros(E.size)
+
+        if source_idx == -1:
+            flux_grid = self._flux_grid.sum(axis=0)
+        else:
+            flux_grid = self._flux_grid[source_idx]
+
+        for c in range(E.size):
+            lower[c] = np.quantile(flux_grid[c], LL)
+            upper[c] = np.quantile(flux_grid[c], UL)
+
+        return lower, upper
+
 
     def plot_flux_band(
         self,
@@ -1015,11 +1040,13 @@ class StanFit:
         area_unit=u.cm**2,
         x_energy_unit=u.GeV,
         upper_limit: bool = False,
+        figsize=(8, 3),
+        ax=None
     ):
         """
         Plot flux uncertainties.
         :param E_power: float, plots flux * E**E_power.
-        :param credible_interval: set credible intervals to be plotted.
+        :param credible_interval: set (equal-tailed) credible intervals to be plotted.
         :param source_idx: Choose which point source's flux to plot. -1 for sum over all PS.
         :param energy_unit: Choose your favourite flux energy unit.
         :param area_unit: Choose your favourite flux area unit.
@@ -1038,33 +1065,29 @@ class StanFit:
         flux_unit = 1 / energy_unit / area_unit / u.s
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
-        if source_idx == -1:
-            flux_grid = self._flux_grid.sum(axis=0)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
         else:
-            flux_grid = self._flux_grid[source_idx]
-
-        fig, ax = plt.subplots()
+            fig = ax.get_figure()
 
         # Find the interval to be plotted
         credible_interval = np.atleast_1d(credible_interval)
         for CI in credible_interval:
-            lower = np.zeros(E.size)
-            upper = np.zeros(E.size)
-
             if upper_limit:
                 UL = CI
+                LL = 0.    # dummy
             else:
                 UL = 0.5 - CI / 2
                 LL = 0.5 + CI / 2
 
-            for c in range(E.size):
-                if not upper_limit:
-                    lower[c] = np.quantile(flux_grid[c], LL)
-                upper[c] = np.quantile(flux_grid[c], UL)
+            lower, upper = self._calculate_quantiles(source_idx, LL, UL)
 
             if not upper_limit:
                 ax.fill_between(
-                    E.to_value(x_energy_unit, equivalencies=u.spectral()),
+                    E.to_value(
+                        x_energy_unit,
+                        equivalencies=u.spectral(),
+                    ),
                     lower,
                     upper,
                     color="C0",
@@ -1073,7 +1096,10 @@ class StanFit:
                 )
             else:
                 ax.plot(
-                    E.to_value(x_energy_unit, equivalencies=u.spectral()),
+                    E.to_value(
+                        x_energy_unit,
+                        equivalencies=u.spectral()
+                    ),
                     upper,
                     color="C0",
                     marker=r"$\downarrow$",
@@ -1092,6 +1118,7 @@ class StanFit:
         if upper_limit:
             ax.set_ylim(bottom=np.min(upper) * 0.8)
 
+        
         return fig, ax
 
     def plot_peak_energy_flux(
@@ -1109,18 +1136,21 @@ class StanFit:
         handles, labels = ax.get_legend_handles_labels()
 
         levels = np.sort(1 - np.atleast_1d(levels))
-
-        E_peak = self["E_peak"].squeeze() << u.GeV
-        peak_flux = self["peak_energy_flux"].squeeze() << u.GeV / u.m**2
-
+        try:
+            E_peak = self._fit_output["E_peak"].squeeze() << u.GeV
+            peak_flux = self._fit_output["peak_energy_flux"].squeeze() << u.GeV / u.m**2
+        except:  # TODO find proper exception
+            E_peak = self._fit_output.stan_variable("E_peak").squeeze() << u.GeV
+            peak_flux = (
+                self._fit_output.stan_varable("peak_energy_flux") << u.GeV / u.m**2
+            )
+        mask = peak_flux.value > 0.
         data = {
-            "E": E_peak.to_value(x_energy_unit, equivalencies=u.spectral()),
-            "flux": peak_flux.to_value(
-                energy_unit / area_unit, equivalencies=u.spectral()
-            ),
+            "E": E_peak.to_value(x_energy_unit, equivalencies=u.spectral())[mask],
+            "flux": peak_flux.to_value(energy_unit / area_unit)[mask],
         }
 
-        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap="viridis")
+        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap="viridis_r")
 
         colours = ax.collections[-1]._mapped_colors
 
@@ -1128,7 +1158,7 @@ class StanFit:
         for c, l in zip(colours, levels):
             handles.append(Line2D([0], [0], color=c))
             if tex:
-                label = rf"{int((1-l)*100):d}\% CR"
+                    label = rf"{int((1-l)*100):d}\% CR"
             else:
                 label = rf"{int((1-l)*100):d}% CR"
             labels.append(label)
