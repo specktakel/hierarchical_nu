@@ -436,9 +436,14 @@ class R2021EffectiveArea(EffectiveArea):
         self._make_spline()
 
     def generate_code(self):
+
+        if self.mode == DistributionMode.PDF:
+            signature = ["log10tE", "true_dir"]
+        else:
+            signature = ["tE", "true_dir"]
         super().__init__(
             self._func_name,
-            ["log10tE", "true_dir"],
+            signature,
             ["real", "vector"],
             "real",
         )
@@ -494,10 +499,14 @@ class R2021EffectiveArea(EffectiveArea):
             log10_E_c = StanArray("log10_E_c", "real", np.log10(tE_binc))
             cos_z_c = StanArray("cosz_c", "real", cosz_binc)
             cosz = "cos(pi() - acos(true_dir[3]))"
+            if self.mode == DistributionMode.RNG:
+                log10tE = InstantVariableDef("log10tE", "real", ["log10(tE)"])
+            else:
+                log10tE = StringExpression(["log10tE"])
             ReturnStatement(
                 [
                     FunctionCall(
-                        ["log10tE", cosz, log10_E_c, cos_z_c, log_area],
+                        [log10tE, cosz, log10_E_c, cos_z_c, log_area],
                         "interp2dlog",
                     )
                 ]
