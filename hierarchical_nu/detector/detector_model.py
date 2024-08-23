@@ -48,6 +48,8 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
             ),
         )
 
+        tE_bin_c = np.power(10, log_tE_bin_c)
+
         cosz_lower = self._cosz_bin_edges[:-1]
         cosz_upper = self._cosz_bin_edges[1:]
         cosz_c = np.concatenate(
@@ -76,16 +78,19 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
             ),
             axis=1,
         )
-        non_zero_min = to_be_splined_aeff[to_be_splined_aeff > 0.0].min()
-        to_be_splined_aeff[to_be_splined_aeff == 0.0] = non_zero_min
+        # non_zero_min = to_be_splined_aeff[to_be_splined_aeff > 0.0].min()
+        # to_be_splined_aeff[to_be_splined_aeff == 0.0] = non_zero_min
 
         self._eff_area_spline = RegularGridInterpolator(
             (log_tE_bin_c, cosz_c),
-            np.log10(to_be_splined_aeff),
+            to_be_splined_aeff,
             bounds_error=False,
-            fill_value=np.log10(non_zero_min),
+            # fill_value=non_zero_min,
             method="linear",
         )
+
+    def spline(self, logE, cosz):
+        return self.eff_area_spline((logE, cosz))
 
     @abstractmethod
     def setup(self) -> None:
