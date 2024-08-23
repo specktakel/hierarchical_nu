@@ -85,7 +85,7 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
             (log_tE_bin_c, cosz_c),
             to_be_splined_aeff,
             bounds_error=False,
-            # fill_value=non_zero_min,
+            fill_value=0.0,
             method="linear",
         )
 
