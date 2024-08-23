@@ -462,7 +462,7 @@ class ExposureIntegral:
                 cosz = source.cosz
                 aeff_values = self.effective_area.eff_area_spline(
                     np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T,
-                ) << (u.m**2)
+                )
                 f_values = (
                     source.flux_model.spectral_shape.pdf(
                         E_range * u.GeV, Emin * u.GeV, Emax * u.GeV, apply_lim=False
