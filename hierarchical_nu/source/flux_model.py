@@ -309,17 +309,18 @@ class PowerLawSpectrum(SpectralShape):
         index = self._parameters["index"].value
 
         return_units = 1 / u.GeV / u.m**2 / u.s
+
         if energy.shape != ():
             output = np.zeros_like(energy.value) * norm
             mask = np.nonzero(
                 ((energy <= self._upper_energy) & (energy >= self._lower_energy))
             )
-            output[mask] = norm * np.power(
-                energy[mask] / self._normalisation_energy, -index
-            )
+            output[mask] = (
+                norm * np.power(energy[mask] / self._normalisation_energy, -index)
+            ).to(return_units)
             return output
         if (energy < self._lower_energy) or (energy > self._upper_energy):
-            return 0.0 * norm
+            return 0.0 * norm.to(return_units)
         else:
             return (norm * np.power(energy / self._normalisation_energy, -index)).to(
                 return_units
@@ -553,6 +554,39 @@ class PowerLawSpectrum(SpectralShape):
 
             ReturnStatement([f1 / f2])
 
+        return func
+
+    @classmethod
+    def make_stan_diff_flux_conv_func(
+        cls, f_name, *args, **kwargs
+    ) -> UserDefinedFunction:
+        """
+        Factor to convert from differential norm to integrated norm,
+        i.e. integrate dN/dE dE over energy range
+        """
+
+        func = UserDefinedFunction(
+            f_name,
+            ["norm_energy", "alpha", "e_low", "e_up"],
+            ["real", "real", "real", "real"],
+            "real",
+        )
+
+        with func:
+            integral = ForwardVariableDef("integral", "real")
+            alpha = StringExpression(["alpha"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
+            norm_energy = StringExpression(["norm_energy"])
+
+            with IfBlockContext([StringExpression([alpha, " == ", 1.0])]):
+                integral << FunctionCall([e_up], "log") - FunctionCall([e_low], "log")
+            with ElseBlockContext():
+                integral << (1 / (1 - alpha)) * (
+                    e_up ** (1 - alpha) - e_low ** (1 - alpha)
+                )
+
+            ReturnStatement([integral * norm_energy**alpha])
         return func
 
     @staticmethod
