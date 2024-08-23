@@ -703,7 +703,7 @@ class PointSource(Source):
     def cosz(self):
         # only valid for IceCube
         # TODO: move to detector model
-        return np.cos(self._dec.value + np.pi / 2)
+        return np.cos(self._dec.to_value(u.rad) + np.pi / 2)
 
     @property
     def redshift(self):

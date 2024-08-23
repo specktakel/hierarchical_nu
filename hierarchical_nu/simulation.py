@@ -634,12 +634,12 @@ class Simulation:
         integral_grid = []
         integral_grid_2d = []
         atmo_integ_val = []
+        rs_breaks = []
+        rs_slopes = []
+        rs_weights = []
+        rs_N = []
+        rs_norms = []
         Emin_det = []
-        rs_cvals = []
-        rs_bbpl_Eth = []
-        rs_bbpl_gamma1 = []
-        rs_bbpl_gamma2 = []
-        rs_bbpl_gamma2_scale = []
         forced_N = []
         obs_time = []
 
@@ -804,7 +804,6 @@ class Simulation:
                 )
 
         for c, event_type in enumerate(self._event_types):
-            effective_area = self._exposure_integral[event_type].effective_area
             obs_time.append(self._observation_time[event_type].to(u.s).value)
 
             try:
@@ -820,27 +819,23 @@ class Simulation:
                 )
 
             # Rejection sampling
-            if self._sources.point_source_spectrum == PGammaSpectrum:
-                rs_bbpl_Eth.append(
-                    [
-                        effective_area.E_th(
-                            ps.parameters["norm_energy"].value
-                        ).to_value(u.GeV)
-                        for ps in self._sources.point_source
-                    ]
-                )
-                rs_bbpl_gamma1.append(
-                    [
-                        effective_area.gamma1(ps.parameters["norm_energy"].value)
-                        for ps in self._sources.point_source
-                    ]
-                )
-                rs_bbpl_gamma2.append(effective_area.gamma2)
-            else:
-                rs_bbpl_Eth.append(effective_area.rs_bbpl_params["threshold_energy"])
-                rs_bbpl_gamma1.append(effective_area.rs_bbpl_params["gamma1"])
-            rs_bbpl_gamma2_scale.append(effective_area.rs_bbpl_params["gamma2_scale"])
-            rs_cvals.append(self._exposure_integral[event_type].c_values)
+            # Loop over detector models
+            # loop over source components
+            container = self._exposure_integral[event_type]._envelope_container
+            rs_norms.append([])
+            rs_breaks.append([])
+            rs_slopes.append([])
+            rs_weights.append([])
+            rs_N.append([])
+            for c_s in range(self._sources.N):
+                # Do not normalise, the target is not normalised either and
+                # that is what we want to approximate
+                norms = container[c_s].low_values
+                rs_norms[-1].append(norms.tolist())
+                rs_breaks[-1].append(container[c_s].bins.tolist())
+                rs_slopes[-1].append(container[c_s].slopes.tolist())
+                rs_weights[-1].append(container[c_s].weights.tolist())
+                rs_N[-1].append(container[c_s].N)
 
             if self._force_N:
                 forced_N.append(self._N[event_type])
@@ -863,6 +858,23 @@ class Simulation:
                     .to(u.m**2)
                     .value
                 )
+
+        # Fill the various rs arrays with zero entries in the end
+        # because stan doesn't support ragged structures
+        # that might pop up if we use different bin sizes,
+        # energy ranges etc for different spectra
+        rs_N_max = np.max(rs_N)
+        for c, et in enumerate(self._event_types):
+            for c_s in range(self._sources.N):
+                # breaks has length rs_N_max + 1
+                while len(rs_breaks[c][c_s]) < rs_N_max + 1:
+                    rs_breaks[c][c_s].append(0)
+                while len(rs_norms[c][c_s]) < rs_N_max:
+                    rs_norms[c][c_s].append(0)
+                while len(rs_slopes[c][c_s]) < rs_N_max:
+                    rs_slopes[c][c_s].append(0)
+                while len(rs_weights[c][c_s]) < rs_N_max:
+                    rs_weights[c][c_s].append(0)
 
         try:
             ROIList.STACK[0]
@@ -931,12 +943,12 @@ class Simulation:
         if self._sources.atmospheric:
             sim_inputs["atmo_integ_val"] = atmo_integ_val
         sim_inputs["Emin_det"] = Emin_det
-        sim_inputs["rs_cvals"] = rs_cvals
-        sim_inputs["rs_bbpl_Eth"] = rs_bbpl_Eth
-        sim_inputs["rs_bbpl_gamma1"] = rs_bbpl_gamma1
-        if self._sources.point_source_spectrum == PGammaSpectrum:
-            sim_inputs["rs_bbpl_gamma2"] = rs_bbpl_gamma2
-        sim_inputs["rs_bbpl_gamma2_scale"] = rs_bbpl_gamma2_scale
+        sim_inputs["rs_N"] = rs_N
+        sim_inputs["rs_breaks"] = rs_breaks
+        sim_inputs["rs_weights"] = rs_weights
+        sim_inputs["rs_slopes"] = rs_slopes
+        sim_inputs["rs_norms"] = rs_norms
+        sim_inputs["rs_N_max"] = rs_N_max
         sim_inputs["T"] = obs_time
         if self._force_N:
             sim_inputs["forced_N"] = forced_N
