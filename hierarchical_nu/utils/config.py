@@ -38,7 +38,10 @@ class ParameterConfig:
     E0_src_range: Tuple = (1e3, 1e8)
     diff_index: float = 2.5
     diff_index_range: Tuple = (1.0, 4.0)
-    F_diff_range: Tuple = (1e-6, 1e-2)  # 1 / m**2 / s
+    diff_norm: float = (
+        2e-13  # 1 / (u.GeV * u.m**2 * u.s), defined in the detector frame
+    )
+    diff_norm_range: Tuple = (1e-14, 1e-11)  # 1 / GeV / m**2 / s
     F_atmo_range: Tuple = (0.1, 0.5)  # 1 / m**2 / s
     L: List[float] = field(
         default_factory=lambda: [8e45]
@@ -54,9 +57,6 @@ class ParameterConfig:
     Emax_src: float = 1.4e7  # u.GeV
     Emin_diff: float = 1e2  # u.GeV, defined in the detector frame
     Emax_diff: float = 1e8  # u.GeV
-    diff_norm: float = (
-        2e-13  # 1 / (u.GeV * u.m**2 * u.s), defined in the detector frame
-    )
     z: List[float] = field(
         default_factory=lambda: [0.4]
     )  # cosmological redshift, dimensionless, only for point source
@@ -106,7 +106,7 @@ class ParameterConfig:
 
     # exp event selection
     scramble_ra: bool = False
-    
+
     # use event tags, only relevant for multi ps fits
     use_event_tag: bool = False
 
@@ -155,7 +155,7 @@ class PriorConfig:
 
     diff_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=1e-4, sigma=1.0
+            name="NormalPrior", mu=2.26e-13, sigma=0.19e-13
         )
     )
     atmo_flux: SinglePriorConfig = field(

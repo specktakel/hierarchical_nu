@@ -63,8 +63,12 @@ from icecube_tools.detector.r2021 import R2021IRF
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.CRITICAL)
 Cache.set_cache_dir(".cache")
+
+# Silence output
+ict_logger = logging.getLogger("icecube_tools.detector.r2021")
+ict_logger.setLevel(logging.CRITICAL)
 
 
 """

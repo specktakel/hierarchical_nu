@@ -12,24 +12,25 @@ from astropy.coordinates import SkyCoord
 import healpy as hp
 import numpy as np
 
-from hierarchical_nu.source.source import (
+from .source.source import (
     Sources,
     PointSource,
     icrs_to_uv,
 )
-from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
-from hierarchical_nu.source.parameter import ParScale, Parameter
-from hierarchical_nu.backend.stan_generator import StanGenerator
-from hierarchical_nu.detector.detector_model import (
+from .source.atmospheric_flux import AtmosphericNuMuFlux
+from .source.flux_model import PGammaSpectrum
+from .source.parameter import ParScale, Parameter
+from .backend.stan_generator import StanGenerator
+from .detector.detector_model import (
     LogNormEnergyResolution,
     GridInterpolationEnergyResolution,
 )
-from hierarchical_nu.utils.roi import CircularROI, ROIList
-from hierarchical_nu.detector.icecube import (
+from .utils.roi import CircularROI, ROIList
+from .detector.icecube import (
     EventType,
-    Refrigerator,
     CAS,
 )
+from .utils.fitting_tools import TopDownSegmentation
 
 from tqdm.autonotebook import tqdm
 
@@ -437,11 +438,7 @@ class ExposureIntegral:
             + np.diff(self.effective_area.cosz_bin_edges) / 2
         )
 
-        Eth = self.effective_area.rs_bbpl_params["threshold_energy"]
-        gamma1 = self.effective_area.rs_bbpl_params["gamma1"]
-        gamma2_scale = self.effective_area.rs_bbpl_params["gamma2_scale"]
-
-        c_values = []
+        envelope_container = []
 
         for source in self._sources.sources:
             # Energy bounds in flux model are already redshift-corrected
@@ -454,14 +451,13 @@ class ExposureIntegral:
                 Emin = source.flux_model._lower_energy.to_value(u.GeV)
                 Emax = source.flux_model._upper_energy.to_value(u.GeV)
 
-            E_range = 10 ** np.linspace(np.log10(Emin), np.log10(Emax))
-
+            E_range = np.geomspace(Emin, Emax, 1_000)
             if isinstance(source, PointSource):
                 # Point source has one declination/cosz,
                 # no loop over cosz necessary
                 cosz = source.cosz
                 aeff_values = self.effective_area.eff_area_spline(
-                    np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T,
+                    np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T
                 )
                 f_values = (
                     source.flux_model.spectral_shape.pdf(
@@ -469,20 +465,16 @@ class ExposureIntegral:
                     )
                     * aeff_values
                 )
-                gamma2 = (
-                    gamma2_scale
-                    - source.flux_model.spectral_shape.parameters["index"].value
-                )
+
+                segments = TopDownSegmentation(f_values.to_value(u.m**2), E_range)
+                segments.generate_segments()
+                envelope_container.append(segments)
 
             else:
-                # For diffuse sources, we need to find the largest c value
-                # that is then used at all declinations.
-                # In the case of the atmospheric background,
-                # the distribution is bivariate. We are not allowed to
-                # pick c-values for each declination separetely
-                # because then we assume independent distributions
-                # at each declination, all "relative information"
-                # is then lost.
+                # For diffuse sources, we need to find an envelope envelopping
+                # the maximum values along energy, marginalising over the declination.
+                # Calculate f-values on an energy x cosz grid, then take maximum
+                # and create the envelope function.
                 f_values_all = []
 
                 for cosz in cosz_bin_cens:
@@ -493,16 +485,15 @@ class ExposureIntegral:
                     dec = np.arcsin(-cosz)  # Only for IceCube
 
                     if isinstance(source.flux_model, AtmosphericNuMuFlux):
-                        atmo_flux_integ_val = source.flux_model.total_flux_int.to(
+                        atmo_flux_integ_val = source.flux_model.total_flux_int.to_value(
                             1 / (u.m**2 * u.s)
-                        ).value
+                        )
                         f_values = (
                             source.flux_model(
-                                E_range * u.GeV, dec * u.rad, 0 * u.rad
+                                E_range.copy() * u.GeV, dec * u.rad, 0 * u.rad
                             ).to_value(1 / (u.GeV * u.s * u.sr * u.m**2))
                             / atmo_flux_integ_val
                         ) * aeff_values
-                        gamma2 = gamma2_scale - 3.6
                     else:
                         f_values = (
                             source.flux_model.spectral_shape.pdf(
@@ -513,57 +504,16 @@ class ExposureIntegral:
                             )
                             * aeff_values
                         )
-                        gamma2 = (
-                            gamma2_scale
-                            - source.flux_model.spectral_shape.parameters["index"].value
-                        )
 
                     f_values_all.append(f_values)
+                # Make array
+                # Take max along energy axis, and use result for creating the envelope
+                f_values = np.array(f_values_all).max(axis=0)
+                segment = TopDownSegmentation(f_values, E_range)
+                segment.generate_segments()
+                envelope_container.append(segment)
 
-            if Emin < Eth and Emax > Eth:
-                g_values = bbpl_pdf(
-                    E_range,
-                    Emin,
-                    Eth,
-                    Emax,
-                    gamma1,
-                    gamma2,
-                )
-
-            elif Emin < Eth and Emax <= Eth:
-                Eth_tmp = Emin + (Emax - Emin) / 2
-
-                g_values = bbpl_pdf(
-                    E_range,
-                    Emin,
-                    Eth_tmp,
-                    Emax,
-                    gamma1,
-                    gamma1,
-                )
-
-            elif Emin >= Eth and Emax > Eth:
-                Eth_tmp = Emin + (Emax - Emin) / 2
-                g_values = bbpl_pdf(
-                    E_range,
-                    Emin,
-                    Eth_tmp,
-                    Emax,
-                    gamma2,
-                    gamma2,
-                )
-            if isinstance(source, PointSource):
-                # Pick the largest
-                c_values_src = max(f_values / g_values)
-            else:
-                # Pick the larget of the largest, encompassing now all declinations.
-                c_values_src = max(
-                    [max(f_values / g_values) for f_values in f_values_all]
-                )
-
-            c_values.append(c_values_src)
-
-        self.c_values = c_values
+        self._envelope_container = envelope_container
 
     def __call__(self):
         """
@@ -577,6 +527,7 @@ class ExposureIntegral:
         self._compute_c_values()
 
 
+'''
 def bbpl_pdf(x, x0, x1, x2, gamma1, gamma2):
     """
     Bounded broken power law PDF.
@@ -605,3 +556,4 @@ def bbpl_pdf(x, x0, x1, x2, gamma1, gamma2):
     output[mask2] = N * x1 ** (gamma1 - gamma2) * x[mask2] ** gamma2
 
     return output
+'''

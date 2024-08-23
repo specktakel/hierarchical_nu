@@ -1,6 +1,4 @@
-from typing import Callable, Union
-import sys
-from argparse import ArgumentParser
+from typing import Callable
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,11 +8,6 @@ from astropy import units as u
 
 from hierarchical_nu.events import Events
 from hierarchical_nu.detector.icecube import (
-    IC40,
-    IC59,
-    IC79,
-    IC86_I,
-    IC86_II,
     EventType,
 )
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
@@ -24,7 +17,6 @@ from hierarchical_nu.events import Events
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.detector.detector_model import EffectiveArea
 from hierarchical_nu.detector.r2021 import R2021EffectiveArea, R2021EnergyResolution
-from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.lifetime import LifeTime
 from icecube_tools.detector.r2021 import R2021IRF
 
@@ -415,54 +407,104 @@ class RateCalculator:
         self.exp = exp.reshape((*aa1.shape, 3))
         return ll
 
-    def plot_detailed_rates(self, detailed_rates):
+    def plot_detailed_rates(
+        self, detailed_rates, figsize=(6.4, 4.8), grid: bool = False
+    ):
+
+        if len(detailed_rates.shape) == 1:
+            detailed = 0
+        elif detailed_rates.size == self.Ebins_c.size * self.tE_binc.size:
+            detailed = 1
+        elif detailed_rates.size == self.Ebins_c.size * (self.all_Ebins.size - 1):
+            detailed = 2
+        else:
+            raise ValueError("Something is fishy")
 
         colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
         linestyles = ["solid", "dashed", "dotted", "dashdot", (0, (3, 5, 1, 5, 1, 5))]
-        default_cycler = cycler(color=colors) * cycler(linestyle=linestyles)
 
         fig, axs = plt.subplots(
-            2, 1, sharex=True, gridspec_kw={"height_ratios": [5, 1], "hspace": 0}
+            2,
+            1,
+            sharex=True,
+            gridspec_kw={"height_ratios": [5, 1], "hspace": 0},
+            figsize=figsize,
         )
         ax = axs[0]
         ax.scatter(self.Ebins_c, self.exp_rate, marker="+", color="red", label="data")
-        ax.plot(self.Ebins_c, detailed_rates.sum(axis=1), color="black", label="sum")
         _bin = 0
-        IRF_ebins = np.arange(2, 8.1, 0.5)
-        ax.set_prop_cycle(default_cycler)
-        for c, rate in enumerate(detailed_rates.T):
-            if c == 5 * 7:
-                break
-            if c % 5 == 0:
+        IRF_ebins = np.arange(2, 9.1, 0.5)
+
+        if detailed == 0:
+            ax.plot(self.Ebins_c, detailed_rates, label="simulation", color="black")
+            summed_rates = detailed_rates
+        elif detailed == 1:
+            default_cycler = cycler(color=colors)
+            ax.set_prop_cycle(default_cycler)
+
+            ax.plot(
+                self.Ebins_c,
+                detailed_rates.sum(axis=1),
+                color="black",
+                label="simulation",
+            )
+
+            for c, rate in enumerate(detailed_rates.T):
+                if c == 7:
+                    break
                 ax.plot(
                     self.Ebins_c,
                     rate,
-                    label=f"IRF E={(IRF_ebins[_bin]+IRF_ebins[_bin+1])/2:.2f}",
+                    label=rf"$E=10^{{{(IRF_ebins[_bin]+IRF_ebins[_bin+1])/2:.2f}}}$ GeV",
                 )
                 _bin += 1
-            else:
-                ax.plot(self.Ebins_c, rate)
+            summed_rates = detailed_rates.sum(axis=1)
+
+        else:
+            default_cycler = cycler(color=colors) * cycler(linestyle=linestyles)
+            ax.set_prop_cycle(default_cycler)
+            ax.plot(
+                self.Ebins_c,
+                detailed_rates.sum(axis=1),
+                color="black",
+                label="simulation",
+            )
+            for c, rate in enumerate(detailed_rates.T):
+                if c == 5 * 7:
+                    break
+                if c % 5 == 0:
+                    ax.plot(
+                        self.Ebins_c,
+                        rate,
+                        label=rf"$E=10^{{{(IRF_ebins[_bin]+IRF_ebins[_bin+1])/2:.2f}}}$ GeV",
+                    )
+                    _bin += 1
+                else:
+                    ax.plot(self.Ebins_c, rate)
+            summed_rates = detailed_rates.sum(axis=1)
 
         ax.set_xscale("log")
         ax.set_yscale("log")
 
-        ax.set_ylabel(r"event rate~[1/s]")
+        ax.set_ylabel(r"event rate per bin [1/s]")
 
         ax.set_xlim(1e2, 1e5)
-        _max = np.max(np.vstack((detailed_rates.sum(axis=1), self.exp_rate))) * 2
+        _max = np.max(np.vstack((summed_rates, self.exp_rate))) * 2
         _min = np.min(self.exp_rate) / 2
         ax.set_ylim(_min, _max)
         ax.legend()
-        ax.grid()
+        if grid:
+            ax.grid()
         ax = axs[1]
         ax.scatter(
             self.Ebins_c,
-            (self.exp_rate - detailed_rates.sum(axis=1)) / detailed_rates.sum(axis=1),
+            (self.exp_rate - summed_rates) / summed_rates,
             color="black",
             marker="+",
         )
         ax.set_ylim(-0.6, 0.6)
-        ax.grid()
+        if grid:
+            ax.grid()
         ax.set_xlabel(r"$\hat{E}~[\si{\giga\electronvolt}]$")
         ax.set_ylabel(r"$\frac{\text{data} - \text{sim}}{\text{sim}}$")
 

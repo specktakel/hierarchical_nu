@@ -475,6 +475,9 @@ class StanFitInterface(StanInterface):
                 self._diff_spectrum_lpdf = self._diff_spectrum.make_stan_lpdf_func(
                     "diff_spectrum_logpdf"
                 )
+                self._diff_spectrum_flux_conv = (
+                    self._diff_spectrum.make_stan_diff_flux_conv_func("diff_flux_conv")
+                )
 
             # If we have atmospheric sources, include the atmospheric flux table
             # the density of the grid in theta (ie. declination) is specified here
@@ -839,9 +842,9 @@ class StanFitInterface(StanInterface):
             self._Emax_src = ForwardArrayDef("Emax_src", "real", ["[Ns]"])
 
             if self.sources.diffuse:
-                # Energy range at the diffuse component at redshift z
                 self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
                 self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
+                self._Enorm_diff = ForwardVariableDef("Enorm_diff", "real")
 
             # Energy range at the detector
             self._Emin = ForwardVariableDef("Emin", "real")
@@ -868,8 +871,8 @@ class StanFitInterface(StanInterface):
             if self.sources.diffuse:
                 self._diff_index_min = ForwardVariableDef("diff_index_min", "real")
                 self._diff_index_max = ForwardVariableDef("diff_index_max", "real")
-                self._F_diff_min = ForwardVariableDef("F_diff_min", "real")
-                self._F_diff_max = ForwardVariableDef("F_diff_max", "real")
+                self._diffuse_norm_min = ForwardVariableDef("diffuse_norm_min", "real")
+                self._diffuse_norm_max = ForwardVariableDef("diffuse_norm_max", "real")
 
             if self.sources.atmospheric:
                 self._F_atmo_min = ForwardVariableDef("F_atmo_min", "real")
@@ -1414,7 +1417,7 @@ class StanFitInterface(StanInterface):
                             self._beta_max,
                         )
                     if self._fit_Enorm:
-                        self._E0_src = ParameterVectorDef(
+                        self._E0_src_glob = ParameterVectorDef(
                             "E0_src",
                             "vector",
                             self._Ns_str,
@@ -1424,8 +1427,11 @@ class StanFitInterface(StanInterface):
 
             # Specify F_diff and diff_index to characterise the diffuse comp
             if self.sources.diffuse:
-                self._F_diff = ParameterDef(
-                    "F_diff", "real", self._F_diff_min, self._F_diff_max
+                self._diffuse_norm = ParameterDef(
+                    "diffuse_norm",
+                    "real",
+                    self._diffuse_norm_min,
+                    self._diffuse_norm_max,
                 )
                 self._diff_index = ParameterDef(
                     "diff_index", "real", self._diff_index_min, self._diff_index_max
@@ -1486,6 +1492,11 @@ class StanFitInterface(StanInterface):
                             # meaning that E0_src_glob is defined in the source frame
                             # and E0_src[k] is redshifted using z[k]
                             self._E0_src[k] << self._E0_src_glob / (1 + self._z[k])
+                
+                if not self._shared_src_index and self._fit_Enorm:
+                    with ForLoopContext(1, self._Ns, "k") as k:
+                        # Define E0_src in the detector frame and E0_src_glob in source frame
+                        self._E0_src[k] << self._E0_src_glob[k] / (1 + self._z[k])
 
                 self._Nex_src = ForwardVariableDef("Nex_src", "real")
                 self._Nex_src_comp = ForwardArrayDef(
@@ -1497,6 +1508,13 @@ class StanFitInterface(StanInterface):
                 with ForLoopContext(1, self._Ns, "i") as i:
                     self._Nex_per_ps[i] << 0
             if self.sources.diffuse:
+                self._F_diff = ForwardVariableDef("F_diff", "real")
+                self._F_diff << self._diffuse_norm * self._diff_spectrum_flux_conv(
+                    self._Enorm_diff,
+                    self._diff_index,
+                    self._Emin_diff,
+                    self._Emax_diff,
+                )
                 self._Nex_diff = ForwardVariableDef("Nex_diff", "real")
                 self._Nex_diff_comp = ForwardArrayDef(
                     "Nex_diff_comp", "real", ["[", self._Net, "]"]
@@ -2139,7 +2157,7 @@ class StanFitInterface(StanInterface):
                     with ForLoopContext(1, self._Ns, "i") as i:
                         StringExpression(
                             [
-                                self._E0_src[i],
+                                self._E0_src_glob[i],
                                 " ~ ",
                                 FunctionCall(
                                     [
@@ -2168,7 +2186,7 @@ class StanFitInterface(StanInterface):
                     with ForLoopContext(1, self._Ns, "i") as i:
                         StringExpression(
                             [
-                                self._E0_src[i],
+                                self._E0_src_glob[i],
                                 " ~ ",
                                 FunctionCall(
                                     [
@@ -2187,7 +2205,7 @@ class StanFitInterface(StanInterface):
                     )
                 StringExpression(
                     [
-                        self._F_diff,
+                        self._diffuse_norm,
                         " ~ ",
                         FunctionCall(
                             [
