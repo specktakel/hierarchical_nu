@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Iterable, Union
 import numpy as np  # type:ignore
-from .expression import NamedExpression, TListTExpression, Expression
+from .expression import NamedExpression, TListTExpression, Expression, PlainStatement
 from .stan_generator import DefinitionContext
 import logging
 
