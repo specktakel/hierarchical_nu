@@ -231,7 +231,7 @@ class RateCalculator:
                 """
 
                 def sin_dec_int(sindec, logE):
-                    return self._aeff._eff_area_spline((logE, -sindec)) * np.power(
+                    return self._aeff.spline(logE, -sindec) * np.power(
                         10, self._atmo._flux_spline(-sindec, logE).squeeze()
                     )
 
@@ -296,7 +296,7 @@ class RateCalculator:
                 # This part can be split of from the energy integral and be calculated outside
                 # energies (true, in this case) is only a parameter but not an actual variable
                 def sin_dec_int(sindec, logE):
-                    return self._aeff._eff_area_spline((logE, -sindec)) * np.power(
+                    return self._aeff.spline(logE, -sindec) * np.power(
                         10, self._atmo._flux_spline(-sindec, logE).squeeze()
                     )
 

@@ -200,7 +200,7 @@ class ExposureIntegral:
                 aeff_vals = self.effective_area.eff_area_spline(
                     np.vstack(
                         (np.log10(E_c.to_value(u.GeV)), np.full(E_c.shape, cosz))
-                    ).T,
+                    ).T
                 ) << (u.m**2)
 
             if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
@@ -457,8 +457,8 @@ class ExposureIntegral:
                 # no loop over cosz necessary
                 cosz = source.cosz
                 aeff_values = self.effective_area.eff_area_spline(
-                    np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T,
-                ) << (u.m**2)
+                    np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T
+                )
                 f_values = (
                     source.flux_model.spectral_shape.pdf(
                         E_range * u.GeV, Emin * u.GeV, Emax * u.GeV, apply_lim=False
@@ -466,7 +466,7 @@ class ExposureIntegral:
                     * aeff_values
                 )
 
-                segments = TopDownSegmentation(f_values.to_value(u.m**2), E_range)
+                segments = TopDownSegmentation(f_values, E_range)
                 segments.generate_segments()
                 envelope_container.append(segments)
 
