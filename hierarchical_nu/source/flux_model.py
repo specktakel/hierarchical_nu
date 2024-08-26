@@ -309,17 +309,30 @@ class PowerLawSpectrum(SpectralShape):
         index = self._parameters["index"].value
 
         return_units = 1 / u.GeV / u.m**2 / u.s
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
         if energy.shape != ():
             output = np.zeros_like(energy.value) * norm
             mask = np.nonzero(
                 ((energy <= self._upper_energy) & (energy >= self._lower_energy))
             )
+<<<<<<< HEAD
             output[mask] = norm * np.power(
                 energy[mask] / self._normalisation_energy, -index
             )
             return output.to(return_units)
         if (energy < self._lower_energy) or (energy > self._upper_energy):
             return (0.0 * norm).to(return_units)
+=======
+            output[mask] = (
+                norm * np.power(energy[mask] / self._normalisation_energy, -index)
+            ).to(return_units)
+            return output
+        if (energy < self._lower_energy) or (energy > self._upper_energy):
+            return 0.0 * norm.to(return_units)
+>>>>>>> master
         else:
             return (norm * np.power(energy / self._normalisation_energy, -index)).to(
                 return_units
@@ -555,6 +568,39 @@ class PowerLawSpectrum(SpectralShape):
 
         return func
 
+    @classmethod
+    def make_stan_diff_flux_conv_func(
+        cls, f_name, *args, **kwargs
+    ) -> UserDefinedFunction:
+        """
+        Factor to convert from differential norm to integrated norm,
+        i.e. integrate dN/dE dE over energy range
+        """
+
+        func = UserDefinedFunction(
+            f_name,
+            ["norm_energy", "alpha", "e_low", "e_up"],
+            ["real", "real", "real", "real"],
+            "real",
+        )
+
+        with func:
+            integral = ForwardVariableDef("integral", "real")
+            alpha = StringExpression(["alpha"])
+            e_low = StringExpression(["e_low"])
+            e_up = StringExpression(["e_up"])
+            norm_energy = StringExpression(["norm_energy"])
+
+            with IfBlockContext([StringExpression([alpha, " == ", 1.0])]):
+                integral << FunctionCall([e_up], "log") - FunctionCall([e_low], "log")
+            with ElseBlockContext():
+                integral << (1 / (1 - alpha)) * (
+                    e_up ** (1 - alpha) - e_low ** (1 - alpha)
+                )
+
+            ReturnStatement([integral * norm_energy**alpha])
+        return func
+
     @staticmethod
     def flux_conv_(alpha, e_low, e_up, beta, e_0):
         if alpha == 1.0:
@@ -732,6 +778,10 @@ class LogParabolaSpectrum(SpectralShape):
         E = energy.to_value(u.GeV)
         E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
         norm = self.parameters["norm"].value
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
         return_units = 1 / (u.GeV * u.m**2 * u.s)
 
         if energy.shape != ():
@@ -1369,14 +1419,20 @@ class PGammaSpectrum(SpectralShape):
 
         with func:
             E = StringExpression(["E"])
-            E0 = InstantVariableDef("E0", "real", ["theta[1]"])
+            c = 1
+            if fit_Enorm:
+                E0 = InstantVariableDef("E0", "real", ["theta[1]"])
+            else:
+                E0 = InstantVariableDef("E0", "real", [f"x_r[{c}]"])
+                c += 1
             b = InstantVariableDef("b", "real", [cls._beta])
             sqrt_b = InstantVariableDef("sqrt_b", "real", [np.sqrt(cls._beta)])
             sqrt_b_inv_half = InstantVariableDef(
                 "sqrt_b_inv_half", "real", [0.5 / np.sqrt(cls._beta)]
             )
-            e_low = InstantVariableDef("e_low", "real", ["x_r[1]"])
-            e_up = InstantVariableDef("e_up", "real", ["x_r[2]"])
+            e_low = InstantVariableDef("e_low", "real", [f"x_r[{c}]"])
+            c += 1
+            e_up = InstantVariableDef("e_up", "real", [f"x_r[{c}]"])
             logEL_E0 = InstantVariableDef("logELE0", "real", ["log(e_low/E0)"])
             logEU_E0 = InstantVariableDef("logEUE0", "real", ["log(e_up/E0)"])
             E_E0 = InstantVariableDef("EE0", "real", ["E/E0"])

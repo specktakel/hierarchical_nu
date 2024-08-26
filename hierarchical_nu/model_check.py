@@ -104,22 +104,32 @@ class ModelCheck:
 
             diffuse_bg = self._sources.diffuse
             if diffuse_bg:
-                self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
-                    flux_unit
-                ).value
+                # self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to_value(
+                #    flux_unit
+                # )
+                self.truths["diffuse_norm"] = (
+                    diffuse_bg.flux_model(
+                        diffuse_bg.flux_model.spectral_shape._normalisation_energy,
+                        0 * u.rad,
+                        0 * u.rad,
+                    )
+                    * 4.0
+                    * np.pi
+                    * u.sr
+                ).to_value(1 / u.GeV / u.m**2 / u.s)
             atmo_bg = self._sources.atmospheric
             if atmo_bg:
-                self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
+                self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to_value(
                     flux_unit
-                ).value
+                )
             try:
                 self.truths["L"] = [
-                    Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
+                    Parameter.get_parameter("luminosity").value.to_value(u.GeV / u.s)
                 ]
             except ValueError:
                 self.truths["L"] = [
                     Parameter.get_parameter(f"ps_{_}_luminosity")
-                    .value.to(u.GeV / u.s)
+                    .to_value(u.GeV / u.s)
                     .value
                     for _ in range(len(self._sources.point_source))
                 ]
@@ -134,7 +144,9 @@ class ModelCheck:
                 ]
             self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
             try:
-                self.truths["beta_index"] = [Parameter.get_parameter("beta_index").value]
+                self.truths["beta_index"] = [
+                    Parameter.get_parameter("beta_index").value
+                ]
             except ValueError:
                 try:
                     self.truths["beta_index"] = [
@@ -144,7 +156,9 @@ class ModelCheck:
                 except ValueError:
                     pass
             try:
-                self.truths["E0_src"] = [Parameter.get_parameter("E0_src").value.to_value(u.GeV)]
+                self.truths["E0_src"] = [
+                    Parameter.get_parameter("E0_src").value.to_value(u.GeV)
+                ]
             except ValueError:
                 try:
                     self.truths["beta_index"] = [
@@ -389,7 +403,7 @@ class ModelCheck:
                 continue
             if (
                 var_name == "L"
-                or var_name == "F_diff"
+                # or var_name == "F_diff"
                 # or var_name == "F_atmo"
                 or var_name == "Fs"
                 or var_name == "E0_src"
@@ -475,7 +489,7 @@ class ModelCheck:
                 # this case distinction is overly complicated
                 if (
                     var_name == "L"
-                    or var_name == "F_diff"
+                    # or var_name == "F_diff"
                     or var_name == "F_atmo"
                     or var_name == "Fs"
                 ):
@@ -666,7 +680,7 @@ class ModelCheck:
                 F_atmo_init = 0.3 / u.m**2 / u.s
 
             inits = {
-                #TODO fix
+                # TODO fix
                 "F_diff": 1e-4,
                 "F_atmo": F_atmo_init.to_value(1 / (u.m**2 * u.s)),
                 "E": [1e5] * fit.events.N,

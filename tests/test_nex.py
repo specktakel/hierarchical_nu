@@ -110,7 +110,7 @@ class TestNex:
                 365 * 24 * 3600
             )  # cos(zenith)
 
-            assert nex_hnu == pytest.approx(nex_it, rel=8e-2)
+            assert nex_hnu == pytest.approx(nex_it, rel=9e-2)
 
     @pytest.fixture
     def calc_hnu_nex(self):

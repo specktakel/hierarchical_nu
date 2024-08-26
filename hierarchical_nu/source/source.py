@@ -20,6 +20,11 @@ from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
 from ..backend.stan_generator import UserDefinedFunction
 
+import logging
+
+
+logger = logging.getLogger(__name__)
+
 
 class ReferenceFrame(ABC):
     """
@@ -698,7 +703,7 @@ class PointSource(Source):
     def cosz(self):
         # only valid for IceCube
         # TODO: move to detector model
-        return np.cos(self._dec.value + np.pi / 2)
+        return np.cos(self._dec.to_value(u.rad) + np.pi / 2)
 
     @property
     def redshift(self):
@@ -1108,7 +1113,8 @@ class Sources:
         if self._point_source:
             return self._point_source_spectrum
         else:
-            raise ValueError("No point sources in  source list")
+            logger.warning("No point sources in source list")
+            return None
 
     @property
     def point_source_frame(self):
@@ -1117,7 +1123,8 @@ class Sources:
         if self._point_source:
             return self._point_source_frame
         else:
-            raise ValueError("No point sources in source list")
+            logger.warning("No point sources in source list")
+            return None
 
     @property
     def diffuse(self):
