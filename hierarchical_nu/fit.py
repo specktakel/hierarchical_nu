@@ -1004,18 +1004,17 @@ class StanFit:
                     flux
                     / int_flux
                     * flux_int[c]
-                    * np.power(E.to_value(
-                        energy_unit,
-                        equivalencies=u.spectral()
-                    ), E_power)
+                    * np.power(
+                        E.to_value(energy_unit, equivalencies=u.spectral()), E_power
+                    )
                 )
 
             self._flux_grid[c_ps] = flux_grid
-            
+
     def _calculate_quantiles(self, source_idx, LL, UL):
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
-        
+
         lower = np.zeros(E.size)
         upper = np.zeros(E.size)
 
@@ -1030,7 +1029,6 @@ class StanFit:
 
         return lower, upper
 
-
     def plot_flux_band(
         self,
         E_power: float = 0.0,
@@ -1041,7 +1039,7 @@ class StanFit:
         x_energy_unit=u.GeV,
         upper_limit: bool = False,
         figsize=(8, 3),
-        ax=None
+        ax=None,
     ):
         """
         Plot flux uncertainties.
@@ -1075,7 +1073,7 @@ class StanFit:
         for CI in credible_interval:
             if upper_limit:
                 UL = CI
-                LL = 0.    # dummy
+                LL = 0.0  # dummy
             else:
                 UL = 0.5 - CI / 2
                 LL = 0.5 + CI / 2
@@ -1096,10 +1094,7 @@ class StanFit:
                 )
             else:
                 ax.plot(
-                    E.to_value(
-                        x_energy_unit,
-                        equivalencies=u.spectral()
-                    ),
+                    E.to_value(x_energy_unit, equivalencies=u.spectral()),
                     upper,
                     color="C0",
                     marker=r"$\downarrow$",
@@ -1118,7 +1113,6 @@ class StanFit:
         if upper_limit:
             ax.set_ylim(bottom=np.min(upper) * 0.8)
 
-        
         return fig, ax
 
     def plot_peak_energy_flux(
@@ -1144,7 +1138,7 @@ class StanFit:
             peak_flux = (
                 self._fit_output.stan_varable("peak_energy_flux") << u.GeV / u.m**2
             )
-        mask = peak_flux.value > 0.
+        mask = peak_flux.value > 0.0
         data = {
             "E": E_peak.to_value(x_energy_unit, equivalencies=u.spectral())[mask],
             "flux": peak_flux.to_value(energy_unit / area_unit)[mask],
@@ -1405,7 +1399,7 @@ class StanFit:
             fit._def_var_names.append("E0_src")
 
         if "diff_index_grid" in fit_inputs.keys():
-            fit._def_var_names.append("F_diff")
+            fit._def_var_names.append("diffuse_norm")
             fit._def_var_names.append("diff_index")
 
         if "atmo_integ_val" in fit_inputs.keys():
@@ -1836,8 +1830,8 @@ class StanFit:
 
             fit_inputs["diff_index_min"] = self._diff_index_par_range[0]
             fit_inputs["diff_index_max"] = self._diff_index_par_range[1]
-            fit_inputs["diffuse_norm_min"] = self._F_diff_par_range[0]
-            fit_inputs["diffuse_norm_max"] = self._F_diff_par_range[1]
+            fit_inputs["diffuse_norm_min"] = self._diffuse_norm_par_range[0]
+            fit_inputs["diffuse_norm_max"] = self._diffuse_norm_par_range[1]
 
             # Priors for diffuse model
             if self._priors.diffuse_flux.name == "normal":
@@ -2044,7 +2038,7 @@ class StanFit:
 
         if self._sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range
-            self._F_diff_par_range = Parameter.get_parameter(
+            self._diffuse_norm_par_range = Parameter.get_parameter(
                 "diffuse_norm"
             ).par_range.to_value(1 / u.GeV / u.m**2 / u.s)
 

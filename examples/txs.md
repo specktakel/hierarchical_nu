@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.15.2
+      jupytext_version: 1.16.1
   kernelspec:
     display_name: hi_nu
     language: python
@@ -30,7 +30,7 @@ from hierarchical_nu.source.source import Sources, PointSource, DetectorFrame
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, LuminosityPrior, IndexPrior, FluxPrior
+from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, LuminosityPrior, IndexPrior, FluxPrior, DifferentialFluxPrior
 from hierarchical_nu.utils.roi import CircularROI
 from hierarchical_nu.detector.icecube import IC86_II, IC86_I
 from hierarchical_nu.detector.input import mceq
@@ -45,11 +45,11 @@ First, we define the source and fit parameters, as already seen in `simulate_and
 # define high-level parameters
 Parameter.clear_registry()
 src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1, 4))
-diff_index = Parameter(2.13, "diff_index", fixed=False, par_range=(1, 4))
+diff_index = Parameter(2.52, "diff_index", fixed=False, par_range=(1, 4))
 L = Parameter(1e47 * (u.erg / u.s), "luminosity", fixed=True, 
               par_range=(0, 1E60) * (u.erg/u.s))
-diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
-                         par_range=(0, np.inf))
+diffuse_norm = Parameter(2.26e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+                         par_range=(1e-14, 1e-11)*(1/u.GeV/u.s/u.m**2))
 z = 0.3365
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(1E2 * u.GeV, "Emin", fixed=True)
@@ -132,12 +132,10 @@ For each physical parameter there is a seperate prior class implemented, e.g. fo
 
 ```python
 priors = Priors()
-priors.diffuse_flux = FluxPrior(LogNormalPrior, mu=my_sources.diffuse.flux_model.total_flux_int, sigma=0.5)
 priors.luminosity = LuminosityPrior(
     mu=L.value / sim._expected_Nnu_per_comp[0] * 10,   # we expect ~10 events
     sigma=2
 )
-priors.diff_index = IndexPrior(mu=2.52, sigma=0.08)
 priors.src_index = IndexPrior(mu=2.5, sigma=1)
 ```
 
@@ -159,7 +157,7 @@ priors.atmospheric_flux = FluxPrior(mu=mu, sigma=sigma)
 ```
 
 ```python
-fit = StanFit(my_sources, event_types, events, lifetime, priors, nshards=40)
+fit = StanFit(my_sources, event_types, events, lifetime, nshards=40)
 ```
 
 ```python
@@ -175,7 +173,7 @@ Run the fit with some appropriate initial values. With 40 threads, this will tak
 
 ```python
 fit.run(
-    show_progress=True, inits={"L": 1e48, "src_index": 2.2, "diff_index": 2.2, "F_atmo": 1e-1, "F_diff": 1e-5}
+    show_progress=True, inits={"L": 1e48, "src_index": 2.2, "diff_index": 2.2, "F_atmo": 0.3, "diffuse_norm": 2.2e-13}
 )
 ```
 
