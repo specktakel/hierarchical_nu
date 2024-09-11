@@ -1477,8 +1477,8 @@ class StanFitInterface(StanInterface):
                         self._beta_index = ForwardVariableDef(
                             "beta_index_ind", "vector[Ns]"
                         )
-                    if self._fit_Enorm:
-                        self._E0_src = ForwardVariableDef("E0_src_ind", "vector[Ns]")
+                if self._fit_Enorm:
+                    self._E0_src = ForwardVariableDef("E0_src_ind", "vector[Ns]")
                 if self._shared_luminosity or self._shared_src_index:
                     with ForLoopContext(1, self._Ns, "k") as k:
                         if self._shared_luminosity:
