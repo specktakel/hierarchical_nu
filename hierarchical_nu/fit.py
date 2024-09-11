@@ -655,12 +655,13 @@ class StanFit:
                         color="black",
                         ls="--",
                     )
-
+        _, yhigh = ax.get_ylim()
         ax.text(
             1e7,
-            yhigh,
+            yhigh*0.98,
             "$\hat E$",
             fontsize=8.0,
+            verticalalignment="top",
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
