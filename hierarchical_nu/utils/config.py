@@ -125,8 +125,8 @@ class StanConfig:
 @dataclass
 class SinglePriorConfig:
     name: str = "LogNormalPrior"
-    mu: float = 1.0
-    sigma: float = 1.0
+    mu: List[float] = field(default_factory=lambda: [1.0])
+    sigma: List[float] = field(default_factory=lambda: [1.0])
 
 
 @dataclass
