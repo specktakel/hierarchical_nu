@@ -245,7 +245,8 @@ class ConfigParser:
                 elif E0_src:
                     E0 = E0_src[c]
             else:
-                idx = index[c]
+                if index:
+                    idx = index[c]
                 if beta:
                     idx_beta = beta[c]
                 if E0_src:
