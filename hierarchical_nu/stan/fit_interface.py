@@ -437,7 +437,7 @@ class StanFitInterface(StanInterface):
                         )
             if hasattr(self, "_log_lik"):
                 # If self._log_lik exists, fill it with data
-                self._log_lik << FunctionCall(
+                self._log_lik[i] << FunctionCall(
                     [self._lp[i]], "log_sum_exp"
                 ) - FunctionCall([self._Nex], "log")
 
