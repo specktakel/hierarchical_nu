@@ -1294,7 +1294,7 @@ class StanFit:
 
         if save_json:
             df = av.from_cmdstanpy(self._fit_output)
-            json_path = Path(dirname) / Path(os.path.splitext(filename)[0]+".json")
+            json_path = Path(dirname) / Path(os.path.splitext(filename)[0] + ".json")
             df.to_json(json_path)
 
         return path  # noqa: F821
@@ -1481,7 +1481,8 @@ class StanFit:
             # lazy fix for backwards compatibility
             priors = Priors()
 
-        events = Events.from_file(filename)
+        events = Events.from_file(filename, apply_cuts=False)
+        print(events.N)
 
         try:
             Emin_det = fit_inputs["Emin_det"]

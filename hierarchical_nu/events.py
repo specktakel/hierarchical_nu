@@ -151,7 +151,17 @@ class Events:
         group_name=None,
         scramble_ra: bool = False,
         seed: int = 42,
+        apply_cuts: bool = True,
     ):
+        """
+        Load events from simulated .h5 file.
+        :param filename: Filename of event file
+        :param group_name: Optional group name of event group in event file
+        :param scramble_ra: Set to True if right ascension should be scrambled upon loading
+        :param seed: int, random seed for scrambling RA
+        :param apply_cuts: Set to True if ROI and Emin_det cuts should be applied
+        """
+
         with h5py.File(filename, "r") as f:
             if group_name is None:
                 events_folder = f["events"]
@@ -189,6 +199,14 @@ class Events:
 
         coords.representation_type = "cartesian"
         mask = []
+
+        if not apply_cuts:
+            events = cls(energies, coords, types, ang_errs, time)
+            events._idxs = np.full(events.N, True)
+            if events.N == 0:
+                logger.warning("No events selected, check your simulation.")
+
+            return events
 
         if ROIList.STACK:
             logger.info("Applying ROIs to event selection")
@@ -236,7 +254,8 @@ class Events:
         try:
             _Emin_det = Parameter.get_parameter("Emin_det")
             mask = events.energies >= _Emin_det.value
-            logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
+            # logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
+            print(f"Applying Emin_det={_Emin_det.value} to event selection.")
 
         except ValueError:
             _types = np.unique(events.types)
@@ -249,9 +268,10 @@ class Events:
                     mask[events.types == _t] = (
                         events.energies[events.types == _t] >= _Emin_det.value
                     )
-                    logger.info(
-                        f"Applying Emin_det={_Emin_det.value} to event selection."
-                    )
+                    # logger.info(
+                    #     f"Applying Emin_det={_Emin_det.value} to event selection."
+                    # )
+                    print(f"Applying Emin_det={_Emin_det.value} to event selection.")
                 except ValueError:
                     pass
 
@@ -322,7 +342,9 @@ class Events:
         return tags
 
     @classmethod
-    def from_ev_file(cls, *seasons: EventType, scramble_ra: bool = False, seed: int = 42):
+    def from_ev_file(
+        cls, *seasons: EventType, scramble_ra: bool = False, seed: int = 42
+    ):
         """
         Load events from the 2021 data release
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
