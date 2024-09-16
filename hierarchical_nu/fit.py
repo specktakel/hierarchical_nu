@@ -1287,8 +1287,6 @@ class StanFit:
 
         self.events.to_file(path, append=True)
 
-        # self.sources.to_file(path, append=True)
-
         # Add priors separately
         self.priors.addto(path, "priors")
 
@@ -1482,7 +1480,6 @@ class StanFit:
             priors = Priors()
 
         events = Events.from_file(filename, apply_cuts=False)
-        print(events.N)
 
         try:
             Emin_det = fit_inputs["Emin_det"]
@@ -1520,6 +1517,7 @@ class StanFit:
         try:
             print(self._fit_output.diagnose())
         except AttributeError:
+            # TODO make compatible with loading multiple fits
             print(self._fit_meta["diagnose"])
 
     def check_classification(self, sim_outputs):
