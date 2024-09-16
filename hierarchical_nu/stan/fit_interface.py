@@ -2264,7 +2264,7 @@ class StanFitInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
-            self._log_lik = ForwardArrayDef("log_lik", "real", ["[Ns]"])
+            self._log_lik = ForwardArrayDef("log_lik", "real", ["[N]"])
             if self._pgamma:
                 self._E_peak = ForwardArrayDef("E_peak", "real", ["[Ns]"])
                 self._peak_flux = ForwardArrayDef("peak_energy_flux", "real", ["[Ns]"])
