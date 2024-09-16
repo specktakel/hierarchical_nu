@@ -53,7 +53,13 @@ class PPC:
     def _plot_energy_ppc(self, bins):
         pass
 
-    def plot(self, bins_Ereco, bins_ang_sep_sq, quantiles=[30, 60, 90], figsize=(6, 3)):
+    def plot(
+        self,
+        bins_Ereco=np.geomspace(1e2, 1e7, 8 * 50),
+        bins_ang_sep_sq=np.arange(0, 25.1, 1 / 3),
+        quantiles=[30, 60, 90],
+        figsize=(6, 3),
+    ):
         """
         Plot diagnostic PPCs
         :param bins_Ereco: bins in GeV for reconstructed muon energy plot
