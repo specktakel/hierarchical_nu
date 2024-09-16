@@ -172,6 +172,7 @@ class PPC:
         ax.set_xscale("log")
         ax.set_yscale("log")
         ax.set_xlabel(xlabels[1])
+        ax.set_ylabel("counts per bin")
         ax.legend()
 
         return fig, axs
