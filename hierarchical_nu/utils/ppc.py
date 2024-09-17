@@ -135,7 +135,22 @@ class PPC:
             lw=1,
         )
 
+        def transform(x):
+            output = np.zeros_like(x)
+            output[x <= 0.0] = 0.0
+            output[x > 0.0] = np.sqrt(x[x > 0.0])
+            return output
+
+        def inverse(x):
+            return np.power(x, 2)
+
+        secax = ax.secondary_xaxis("top", functions=(transform, inverse))
+        secax.set_xlabel("linear distance~[deg]")
+        secax.set_xticks(np.arange(5.1))
+
         ax.legend()
+        ax.set_xticks(np.arange(0, 25.1, 5))
+        ax.set_xlim(0, 25)
         ax.set_xlabel(xlabels[0])
         ax.set_ylabel("counts per bin")
 
