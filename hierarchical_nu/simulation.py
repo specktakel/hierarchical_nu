@@ -206,7 +206,7 @@ class Simulation:
             self._sim_inputs = self._get_sim_inputs(seed, asimov=True)
 
         if verbose:
-            print(
+            sim_logger.info(
                 "Running a simulation with expected Nnu = %.2f events"
                 % self._expected_Nnu
             )

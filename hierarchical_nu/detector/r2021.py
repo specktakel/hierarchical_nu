@@ -1585,9 +1585,9 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 ReturnStatement([angular_parameterisation])
 
             elif self.mode == DistributionMode.RNG:
-                angular_parameterisation = RayleighParameterization(
-                    ["true_dir"], "ang_err", self.mode
-                )
+                # angular_parameterisation = RayleighParameterization(
+                #    ["true_dir"], "ang_err", self.mode
+                # )
 
                 # Create all psf histogram
                 self._make_histogram(
@@ -1679,6 +1679,27 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                     ],
                     "hist_cat_rng",
                 )
+                psf_ang = ForwardVariableDef("psf_ang", "real")
+                psf_ang << FunctionCall(
+                    [
+                        10,
+                        FunctionCall(
+                            [
+                                FunctionCall(
+                                    [psf_hist_idx],
+                                    f"{self._season}_psf_get_ragged_edges",
+                                )[psf_idx],
+                                FunctionCall(
+                                    [psf_hist_idx],
+                                    f"{self._season}_psf_get_ragged_edges",
+                                )[psf_idx + 1],
+                            ],
+                            "uniform_rng",
+                        ),
+                    ],
+                    "pow",
+                )
+                psf_ang << StringExpression(["pi() * psf_ang / 180.0"])
 
                 # Repeat with angular error
                 ang_hist_idx = ForwardVariableDef("ang_hist_idx", "int")
@@ -1718,8 +1739,10 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 # Make a vector of length 4, last component is kappa
                 return_vec = ForwardVectorDef("return_this", [4])
                 # Deflect true direction
-                StringExpression(["return_this[1:3] = ", angular_parameterisation])
-                StringExpression(["return_this[4] = kappa"])
+                #StringExpression(["return_this[1:3] = ", angular_parameterisation])
+                return_vec[1:3] << FunctionCall(["true_dir", "psf_ang"], "deflected_rng")
+                return_vec[4] << kappa
+                #StringExpression(["return_this[4] = kappa"])
                 ReturnStatement([return_vec])
 
     def setup(self) -> None:
