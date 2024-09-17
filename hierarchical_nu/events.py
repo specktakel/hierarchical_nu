@@ -27,8 +27,10 @@ from hierarchical_nu.utils.plotting import SphericalCircle
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.detector.icecube import EventType
 
+from time import time as thyme
 import logging
 from pathlib import Path
+import os
 
 from typing import List, Union
 import numpy.typing as npt
@@ -281,7 +283,9 @@ class Events:
 
         return events
 
-    def to_file(self, filename, append=False, group_name=None):
+    def to_file(
+        self, path: Path, append: bool = False, group_name=None, overwrite: bool = False
+    ):
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]
         self._file_values = [
             self.energies.to(u.GeV).value,
@@ -292,7 +296,7 @@ class Events:
         ]
 
         if append:
-            with h5py.File(filename, "r+") as f:
+            with h5py.File(path, "r+") as f:
                 if group_name is None:
                     event_folder = f.create_group("events")
                 else:
@@ -302,11 +306,35 @@ class Events:
                     event_folder.create_dataset(key, data=value)
 
         else:
-            with h5py.File(filename, "w") as f:
-                event_folder = f.create_group("events")
+            dirname = os.path.dirname(path)
+            filename = os.path.basename(path)
+            if dirname:
+                if not os.path.exists(dirname):
+                    logger.warning(
+                        f"{dirname} does not exist, saving instead to {os.getcwd()}"
+                    )
+                    dirname = os.getcwd()
+            else:
+                dirname = os.getcwd()
+            path = Path(dirname) / Path(filename)
+            if os.path.exists(filename) and not overwrite:
+                logger.warning(f"File {filename} already exists.")
+                file = os.path.splitext(filename)[0]
+                ext = os.path.splitext(filename)[1]
+                file += f"_{int(thyme())}"
+                filename = file + ext
+
+            path = Path(dirname) / Path(filename)
+
+            with h5py.File(path, "w") as f:
+                if group_name is None:
+                    event_folder = f.create_group("events")
+                else:
+                    event_folder = f.create_group(group_name)
 
                 for key, value in zip(self._file_keys, self._file_values):
                     event_folder.create_dataset(key, data=value)
+        return path
 
     def export_to_csv(self, basepath):
         header = "log10(E/GeV)\tAngErr[deg]\tRA[deg]\tDec[deg]"
