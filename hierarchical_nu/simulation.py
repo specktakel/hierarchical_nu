@@ -1068,9 +1068,14 @@ class SimInfo:
             source_folder = f["sim/source"]
             outputs_folder = f["sim/outputs"]
 
+            input_keys = list(f["sim/inputs"].keys())
+
             atmo = False
             diff = False
             ps = False
+            pgamma = False
+            powerlaw = False
+            logparabola = False
             for key in inputs_folder:
                 inputs[key] = inputs_folder[key][()]
 
@@ -1083,6 +1088,13 @@ class SimInfo:
                 if key == "L":
                     ps = True
 
+            if "E0_src" and "beta_index" in input_keys:
+                logparabola = True
+            elif "E0_src" in input_keys:
+                pgamma = True
+            else:
+                powerlaw = True
+
             for key in source_folder:
                 inputs[key] = source_folder[key][()]
 
@@ -1093,7 +1105,12 @@ class SimInfo:
 
         if ps:
             truths["L"] = inputs["L"]
-            truths["src_index"] = inputs["src_index"]
+            if powerlaw or logparabola:
+                truths["src_index"] = inputs["src_index"]
+            if logparabola:
+                truths["beta_index"] = inputs["beta_index"]
+            if pgamma or logparabola:
+                truths["E0_src"] = inputs["E0_src"]
 
         if diff:
             truths["F_diff"] = inputs["F_diff"]
