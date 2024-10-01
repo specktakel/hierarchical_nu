@@ -1158,12 +1158,15 @@ class SimInfo:
         events = Events(energies, coords, types, ang_errs, mjd)
 
         # Truths keys
-        ps_keys = ["L", "src_index"]
+        ps_keys = ["L", "src_index", "beta_index", "E0_src"]
         bg_keys = ["F_atmo", "F_diff", "diff_index"]
 
         truths = {}
         for key in ps_keys:
-            truths[key] = ps.truths[key]
+            try:
+                truths[key] = ps.truths[key]
+            except KeyError:
+                continue
         for key in bg_keys:
             truths[key] = bg.truths[key]
 
