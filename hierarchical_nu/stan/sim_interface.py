@@ -932,7 +932,8 @@ class StanSimInterface(StanInterface):
                                 else:
                                     self._event[i] << self._omega
                                 self._kappa[i] << self._pre_event[5]
-                                self._detected << 0
+                                self._detected << 1
+                                """
                                 if isinstance(ROIList.STACK[0], CircularROI):
                                     with ForLoopContext(1, self._n_roi, "n") as n:
                                         with IfBlockContext(
@@ -946,6 +947,7 @@ class StanSimInterface(StanInterface):
                                             StringExpression(["break"])
                                 else:
                                     self._detected << 1
+                                """
 
                                 # Insert condition for the sample to be inside the ROI,
                                 # should also apply to the rectangular ROI as events
