@@ -129,16 +129,6 @@ vector sphere_rng(real radius) {
 }
 
 /**
- * Deflect a vectur mu ona cone of half opening angle
- * theta with random position angle
- */
-vector deflected_rng(vector mu, real sigma) {
-  vector[3] orthonormal = sample_orthonormal_to_rng(mu);
-  vector[3] deflected = rotate_vector(mu, orthonormal, sigma);
-  return deflected;
-}
-
-/**
  * Deflect a vector mu on a cone of half opening angle
  * theta ~ Rayleigh(sigma) with random position angle
  */
