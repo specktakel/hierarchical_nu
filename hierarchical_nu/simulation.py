@@ -1200,7 +1200,10 @@ class SimInfo:
             source_folder = sim_folder.create_group("source")
             inputs_folder = sim_folder.create_group("inputs")
             for key in ps_keys:
-                inputs_folder.create_dataset(key, data=ps.inputs[key])
+                try:
+                    inputs_folder.create_dataset(key, data=ps.inputs[key])
+                except KeyError:
+                    continue
             for key in bg_keys:
                 inputs_folder.create_dataset(key, data=bg.inputs[key])
             if ps_forced_N and bg_forced_N:
