@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 from matplotlib.cm import viridis
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-import os
+import h5py
 from pathlib import Path
 from tqdm.autonotebook import tqdm
 import logging
@@ -31,7 +31,7 @@ class PPC:
 
     def __init__(self, fit: StanFit, parser: ConfigParser):
         self._parser = parser
-        self._config = parser._hnu_config
+        self._config = parser._hnu_config.ppc_config
         self._fit = fit
         self._ran_setup = False
         self._events = []
@@ -47,15 +47,15 @@ class PPC:
             except:
                 break
 
-    def _plot_racial_ppc(self, bins):
-        pass
+    def _plot_radial_ppc(self, bins):
+        raise NotImplementedError()
 
     def _plot_energy_ppc(self, bins):
-        pass
+        raise NotImplementedError()
 
     def plot(
         self,
-        bins_Ereco=np.geomspace(1e2, 1e7, 8 * 50),
+        bins_Ereco=np.geomspace(1e2, 1e7, 8 * 5),
         bins_ang_sep_sq=np.arange(0, 25.1, 1 / 3),
         quantiles=[30, 60, 90],
         figsize=(6, 3),
@@ -198,21 +198,34 @@ class PPC:
 
         return fig, axs
 
-    def setup(self):
+    def setup(self, use_data_as_bg: bool = False):
         """
         Setup all objects to run simulations
         """
 
         try:
+            if use_data_as_bg:
+                # Disable both background components and instead use RA-scrambled data
+                self._parser._hnu_config.parameter_config.diffuse = False
+                self._parser._hnu_config.parameter_config.atmospheric = False
+                self._use_data_as_bg = True
+            else:
+                self._use_data_as_bg = False
             sources = self._parser.sources
             dm = self._parser.detector_model
             obs_time = self._parser.obs_time
             self._parser.ROI
             self._sources = sources
+            self._obs_time = obs_time
+            self._dm = dm
+            self._sources = sources
             self._sim = self._parser.create_simulation(sources, dm, obs_time)
             self._sim.precomputation()
             self._sim.generate_stan_code()
             self._sim.compile_stan_code()
+            self._Nex_et = []
+            self._N = []
+            self._N_comp = []
             self._ran_setup = True
         except Exception as e:
             # Except any error
@@ -229,10 +242,10 @@ class PPC:
         if not self._ran_setup:
             raise ValueError("Need to run setup before running")
 
-        rng = np.random.default_rng(seed=self._config.ppc_config.seed)
+        rng = np.random.default_rng(seed=self._config.seed)
         sources = self._sources
         sim = self._sim
-        config = self._config
+        config = self._parser._hnu_config
         point_sources = sources.point_source
         fit = self._fit
 
@@ -240,8 +253,8 @@ class PPC:
         cmdstanpy_logger = logging.getLogger("cmdstanpy")
         cmdstanpy_logger.disabled = True
 
-        with tqdm(total=config.ppc_config.n_samples, disable=not show_progress) as pbar:
-            for i in range(config.ppc_config.n_samples):
+        with tqdm(total=self._config.n_samples, disable=not show_progress) as pbar:
+            for i in range(self._config.n_samples):
                 pbar.set_description("Running simulations")
 
                 rint = rng.integers(low=0, high=fit["Nex"].size)
@@ -302,16 +315,44 @@ class PPC:
                                     )
 
                 sim.run(
-                    seed=config.ppc_config.seed, show_progress=False, show_console=False
+                    seed=self._config.seed + i, show_progress=False, show_console=False
                 )
+
+                # Output some more data for debugging
+                sim._get_expected_Nnu(sim._get_sim_inputs()).copy()
+                self._Nex_et.append(sim._Nex_et.copy())
+                out = sim._sim_output.stan_variable
+                self._N.append(out("N_"))
+                self._N_comp.append(out("N_comp_"))
+
+                if self._use_data_as_bg:
+                    # Read in RA scrambled events here and merge with simulation
+                    # How to proceed when only durations but no MJD is provided?
+                    # Ignore for now, TODO for later...
+                    bg_events = Events.from_ev_file(
+                        *self._parser.detector_model,
+                        scramble_ra=True,
+                        seed=self._config.seed + i,
+                    )
+                    events = sim.events.merge(bg_events)
+                else:
+                    events = sim.events
                 if i == 0:
-                    output_file = sim.events.to_file(
+                    output_file = events.to_file(
                         output_file, append=False, group_name=f"events_{i}"
                     )
                 else:
-                    sim.events.to_file(
-                        output_file, append=True, group_name=f"events_{i}"
-                    )
-                self._events.append(sim.events)
+                    events.to_file(output_file, append=True, group_name=f"events_{i}")
+                self._events.append(events)
                 pbar.update(1)
+
+        N = np.concatenate(self._N)
+        N_comp = np.concatenate(self._N_comp)
+        Nex = np.concatenate(self._Nex_et)
+        with h5py.File(output_file, "r+") as f:
+            g = f.create_group("meta_data")
+            g.create_dataset("N", data=N)
+            g.create_dataset("N_comp", data=N_comp)
+            g.create_dataset("Nex", data=Nex)
+
         return output_file
