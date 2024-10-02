@@ -381,6 +381,9 @@ class Events:
 
         from icecube_tools.utils.data import RealEvents
 
+        if not len(seasons) == len(set(seasons)):
+            raise ValueError("Detector season is provided twice.")
+
         # Borrow from icecube_tools
         # Already exclude low energy events here, would be quite difficult later on
         try:
@@ -460,6 +463,11 @@ class Events:
         return events
 
     def merge(self, events):
+        """
+        Merge events with a different instance of `Events`.
+        Returns newly created instance.
+        """
+
         self.coords.representation_type = "spherical"
         events.coords.representation_type = "spherical"
         ra = np.hstack((self.coords.ra.deg * u.deg, events.coords.ra.deg * u.deg))
@@ -562,8 +570,13 @@ class Events:
         sep = center_coords.separation(self.coords).deg
 
         fig, ax = plt.subplots()
-        ax.hist(sep**2, r2_bins, histtype="step")
+        n, bins, _ = ax.hist(sep**2, r2_bins, histtype="step")
         ax.set_xlabel("$\Psi^2$ [deg$^2$]")
         ax.set_ylabel("counts")
 
-        return fig, ax
+        return (
+            fig,
+            ax,
+            n,
+            bins,
+        )
