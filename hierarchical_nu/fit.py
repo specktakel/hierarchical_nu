@@ -658,7 +658,7 @@ class StanFit:
         _, yhigh = ax.get_ylim()
         ax.text(
             1e7,
-            yhigh*0.98,
+            yhigh * 0.98,
             "$\hat E$",
             fontsize=8.0,
             verticalalignment="top",
@@ -1041,6 +1041,7 @@ class StanFit:
         upper_limit: bool = False,
         figsize=(8, 3),
         ax=None,
+        **kwargs,
     ):
         """
         Plot flux uncertainties.
@@ -1050,7 +1051,28 @@ class StanFit:
         :param energy_unit: Choose your favourite flux energy unit.
         :param area_unit: Choose your favourite flux area unit.
         :param x_energy_unit: Choose your favourite abscissa energy unit
+        :param upper_limit: Set to True if only upper limit should be displayed
+        :param figsize: Figsize for new figure (requiring `ax=None`)
+        :param ax: Reuse existing axis, defaults to creating a new figure with single axis
+        :param kwargs: Remaining kwargs will be passed to `pyplot.axis.fill_between` or `pyplot.axis.plot`
         """
+
+        # Have some defaults for plotting
+        fill_kwargs = dict(
+            alpha=0.3,
+            color="C0",
+            edgecolor="none",
+        )
+        limit_kwargs = dict(
+            alpha=0.3,
+            color="C0",
+            marker=r"$\downarrow$",
+            markevery=0.06,
+            markersize=10,
+        )
+
+        fill_kwargs |= kwargs
+        limit_kwargs |= kwargs
 
         # Save some time calculating if the previous calculation has already used the same E_power
         try:
@@ -1089,18 +1111,13 @@ class StanFit:
                     ),
                     lower,
                     upper,
-                    color="C0",
-                    alpha=0.3,
-                    edgecolor="none",
+                    **fill_kwargs
                 )
             else:
                 ax.plot(
                     E.to_value(x_energy_unit, equivalencies=u.spectral()),
                     upper,
-                    color="C0",
-                    marker=r"$\downarrow$",
-                    markevery=0.06,
-                    markersize=10,
+                    **limit_kwargs
                     # TODO fix alignment of arrow base to the line
                 )
 
