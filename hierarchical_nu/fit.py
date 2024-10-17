@@ -212,18 +212,14 @@ class StanFit:
             if self._fit_Enorm:
                 self._def_var_names.append("E0_src")
 
+            self._def_var_names.append("Nex_src")
+
         if self._sources.diffuse:
             self._def_var_names.append("diffuse_norm")
             self._def_var_names.append("diff_index")
 
         if self._sources.atmospheric:
             self._def_var_names.append("F_atmo")
-
-        if self._sources._point_source and (
-            self._sources.atmospheric or self._sources.diffuse
-        ):
-            self._def_var_names.append("f_arr")
-            self._def_var_names.append("f_det")
 
         self._exposure_integral = collections.OrderedDict()
 
@@ -1404,19 +1400,15 @@ class StanFit:
         if "E0_src_grid" in fit_inputs.keys():
             fit._def_var_names.append("E0_src")
 
+        if sources.point_source:
+            fit._def_var_names.append("Nex_src")
+
         if "diff_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("diffuse_norm")
             fit._def_var_names.append("diff_index")
 
         if "atmo_integ_val" in fit_inputs.keys():
             fit._def_var_names.append("F_atmo")
-
-        if "src_index_grid" in fit_inputs.keys() and (
-            "atmo_integ_val" in fit_inputs.keys()
-            or "diff_index_grid" in fit_inputs.keys()
-        ):
-            fit._def_var_names.append("f_arr")
-            fit._def_var_names.append("f_det")
 
         return fit
 

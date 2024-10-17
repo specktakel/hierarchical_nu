@@ -1068,9 +1068,14 @@ class SimInfo:
             source_folder = f["sim/source"]
             outputs_folder = f["sim/outputs"]
 
+            input_keys = list(f["sim/inputs"].keys())
+
             atmo = False
             diff = False
             ps = False
+            pgamma = False
+            powerlaw = False
+            logparabola = False
             for key in inputs_folder:
                 inputs[key] = inputs_folder[key][()]
 
@@ -1083,6 +1088,13 @@ class SimInfo:
                 if key == "L":
                     ps = True
 
+            if "E0_src" and "beta_index" in input_keys:
+                logparabola = True
+            elif "E0_src" in input_keys:
+                pgamma = True
+            else:
+                powerlaw = True
+
             for key in source_folder:
                 inputs[key] = source_folder[key][()]
 
@@ -1093,7 +1105,12 @@ class SimInfo:
 
         if ps:
             truths["L"] = inputs["L"]
-            truths["src_index"] = inputs["src_index"]
+            if powerlaw or logparabola:
+                truths["src_index"] = inputs["src_index"]
+            if logparabola:
+                truths["beta_index"] = inputs["beta_index"]
+            if pgamma or logparabola:
+                truths["E0_src"] = inputs["E0_src"]
 
         if diff:
             truths["F_diff"] = inputs["F_diff"]
@@ -1141,12 +1158,15 @@ class SimInfo:
         events = Events(energies, coords, types, ang_errs, mjd)
 
         # Truths keys
-        ps_keys = ["L", "src_index"]
+        ps_keys = ["L", "src_index", "beta_index", "E0_src"]
         bg_keys = ["F_atmo", "F_diff", "diff_index"]
 
         truths = {}
         for key in ps_keys:
-            truths[key] = ps.truths[key]
+            try:
+                truths[key] = ps.truths[key]
+            except KeyError:
+                continue
         for key in bg_keys:
             truths[key] = bg.truths[key]
 
@@ -1180,7 +1200,10 @@ class SimInfo:
             source_folder = sim_folder.create_group("source")
             inputs_folder = sim_folder.create_group("inputs")
             for key in ps_keys:
-                inputs_folder.create_dataset(key, data=ps.inputs[key])
+                try:
+                    inputs_folder.create_dataset(key, data=ps.inputs[key])
+                except KeyError:
+                    continue
             for key in bg_keys:
                 inputs_folder.create_dataset(key, data=bg.inputs[key])
             if ps_forced_N and bg_forced_N:
