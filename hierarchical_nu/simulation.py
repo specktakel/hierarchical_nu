@@ -272,7 +272,7 @@ class Simulation:
         self._sim_inputs["Nex_et"] = self._Nex_et.tolist()
 
         if verbose:
-            print(
+            sim_logger.info(
                 "Running a simulation with expected Nnu = %.2f events"
                 % self._expected_Nnu
             )
