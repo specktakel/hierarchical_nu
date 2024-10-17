@@ -572,6 +572,7 @@ class StanFit:
         color_scale,
         highlight: Union[Iterable, None] = None,
         assoc_threshold: Union[float, None] = 0.2,
+        source_name: str = "",
     ):
         ev_class = np.array(self._get_event_classifications())
         if radius is not None and center is not None:
@@ -605,7 +606,7 @@ class StanFit:
         indices = np.arange(self._events.N, dtype=int)[mask]
 
         for c, i in enumerate(indices):
-            # get the support (is then log10(E/GeV) and the pdf values
+            # get the support (is then log10(E/GeV)) and the pdf values
             supp, pdf = self._get_kde("E", i, lambda x: np.log10(x))
             # exponentiate the support, because we rescale the axis in the end
             ax.plot(
@@ -655,14 +656,16 @@ class StanFit:
                         color="black",
                         ls="--",
                     )
-        _, yhigh = ax.get_ylim()
         ax.text(
-            1e7,
-            yhigh * 0.98,
+            1.5e2,
+            yhigh * 1.025,
             "$\hat E$",
             fontsize=8.0,
-            verticalalignment="top",
+            verticalalignment="center",
         )
+
+        if source_name:
+            ax.text(0.95, 0.95, source_name, transform=ax.transAxes, ha="right")
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
@@ -677,6 +680,7 @@ class StanFit:
         color_scale: str = "lin",
         highlight: Union[Iterable, None] = None,
         assoc_threshold: Union[float, None] = 0.2,
+        source_name: str = "",
     ):
         """
         Plot energy posteriors in log10-space.
@@ -701,6 +705,7 @@ class StanFit:
             color_scale,
             highlight,
             assoc_threshold,
+            source_name,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -714,6 +719,7 @@ class StanFit:
         assoc_idx,
         color_scale,
         highlight: Union[Iterable, None] = None,
+        source_name: str = "",
     ):
         ev_class = np.array(self._get_event_classifications())
         assoc_prob = ev_class[:, assoc_idx]
@@ -777,6 +783,11 @@ class StanFit:
                 s=30,
             )
 
+        if source_name:
+            ax.text(
+                0.05, 0.95, source_name, transform=ax.transAxes, ha="left", va="top"
+            )
+
         ax.set_xlabel("RA")
         ax.set_ylabel("DEC")
         ax.grid()
@@ -791,6 +802,7 @@ class StanFit:
         assoc_idx: int = 0,
         color_scale: str = "lin",
         highlight: Union[Iterable, None] = None,
+        source_name: str = "",
     ):
         """
         Create plot of the ROI.
@@ -819,7 +831,13 @@ class StanFit:
         )
 
         ax, mapper = self._plot_roi(
-            center, ax, radius, assoc_idx, color_scale, highlight
+            center,
+            ax,
+            radius,
+            assoc_idx,
+            color_scale,
+            highlight,
+            source_name,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -835,6 +853,7 @@ class StanFit:
         highlight: Union[Iterable, None] = None,
         assoc_threshold: float = 0.2,
         figsize=(8, 3),
+        source_name: str = "",
     ):
         """
         Create plot of the ROI.
@@ -895,7 +914,9 @@ class StanFit:
             radius=f"{radius.to_value(u.deg)} deg",
         )
 
-        ax, _ = self._plot_roi(center, ax, radius, assoc_idx, color_scale, highlight)
+        ax, _ = self._plot_roi(
+            center, ax, radius, assoc_idx, color_scale, highlight, source_name
+        )
         axs.insert(0, ax)
 
         return fig, axs
@@ -1111,13 +1132,13 @@ class StanFit:
                     ),
                     lower,
                     upper,
-                    **fill_kwargs
+                    **fill_kwargs,
                 )
             else:
                 ax.plot(
                     E.to_value(x_energy_unit, equivalencies=u.spectral()),
                     upper,
-                    **limit_kwargs
+                    **limit_kwargs,
                     # TODO fix alignment of arrow base to the line
                 )
 
