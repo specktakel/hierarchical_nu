@@ -658,7 +658,7 @@ class StanFit:
         _, yhigh = ax.get_ylim()
         ax.text(
             1e7,
-            yhigh*0.98,
+            yhigh * 0.98,
             "$\hat E$",
             fontsize=8.0,
             verticalalignment="top",
@@ -1167,12 +1167,14 @@ class StanFit:
         for t, e in zip(legend.get_texts(), extends):
             t.set_position((max_extend - e, 0))
 
-    def save(self, path: Path, overwrite: bool = False):
+    def save(self, path: Path, overwrite: bool = False, save_json: bool = False):
         """
         Save fit to h5 file.
         :param path: Path to which fit is saved.
         :param overwrite: Set to `True` to overwrite existing file,
             else timestamp is appended to `path` to avoid overwriting.
+        param save_json: Set to `True` if arviz json output should be saved.
+            uses provided path with .json extension.
         """
 
         # Check if filename consists of a path to some directory as well as the filename
@@ -1285,10 +1287,13 @@ class StanFit:
 
         self.events.to_file(path, append=True)
 
-        # self.sources.to_file(path, append=True)
-
         # Add priors separately
         self.priors.addto(path, "priors")
+
+        if save_json:
+            df = av.from_cmdstanpy(self._fit_output)
+            json_path = Path(dirname) / Path(os.path.splitext(filename)[0] + ".json")
+            df.to_json(json_path)
 
         return path  # noqa: F821
 
@@ -1474,7 +1479,7 @@ class StanFit:
             # lazy fix for backwards compatibility
             priors = Priors()
 
-        events = Events.from_file(filename)
+        events = Events.from_file(filename, apply_cuts=False)
 
         try:
             Emin_det = fit_inputs["Emin_det"]
@@ -1512,6 +1517,7 @@ class StanFit:
         try:
             print(self._fit_output.diagnose())
         except AttributeError:
+            # TODO make compatible with loading multiple fits
             print(self._fit_meta["diagnose"])
 
     def check_classification(self, sim_outputs):

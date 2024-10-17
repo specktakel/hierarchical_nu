@@ -1,7 +1,7 @@
 parameter_config:
-  source_type: pgamma
+  source_type: twice-broken-power-law
   fit_params:
-  - E0_src
+  - src_index
   src_index:
   - 2.3
   beta_index:
@@ -23,7 +23,7 @@ parameter_config:
   - 1.0
   - 4.0
   L:
-  - 4.0e+46
+  - 1.2e+47
   share_L: true
   L_range:
   - 0
@@ -70,15 +70,11 @@ prior_config:
   diff_index:
     name: NormalPrior
     mu: 2.52
-    sigma: 0.09
+    sigma: 0.04
   L:
     name: LogNormalPrior
     mu: 18.1e49
     sigma: 4.0
-  diff_flux:
-    name: LogNormalPrior
-    mu: 5.4e-4
-    sigma: 0.5
   atmo_flux:
     name: NormalPrior
     mu: 0.3
@@ -87,3 +83,7 @@ roi_config:
   roi_type: CircularROI
   size: 5.0
   apply_roi: true
+ppc_config:
+  n_samples: 100
+  seed: 42
+  directory: ppc
