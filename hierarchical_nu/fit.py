@@ -665,7 +665,9 @@ class StanFit:
         )
 
         if source_name:
-            ax.text(0.95, 0.95, source_name, transform=ax.transAxes, ha="right")
+            ax.text(
+                0.95, 0.95, source_name, transform=ax.transAxes, ha="right", fontsize=8
+            )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
@@ -785,7 +787,13 @@ class StanFit:
 
         if source_name:
             ax.text(
-                0.05, 0.95, source_name, transform=ax.transAxes, ha="left", va="top"
+                0.05,
+                0.95,
+                source_name,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=8,
             )
 
         ax.set_xlabel("RA")
