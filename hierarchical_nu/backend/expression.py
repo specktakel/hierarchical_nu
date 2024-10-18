@@ -6,7 +6,6 @@ from .code_generator import Contextable, ContextStack
 from .baseclasses import NamedObject
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 __all__ = [
     "Expression",
