@@ -200,7 +200,6 @@ class Events:
             coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         coords.representation_type = "cartesian"
-        mask = []
 
         if not apply_cuts:
             events = cls(energies, coords, types, ang_errs, time)
@@ -212,32 +211,8 @@ class Events:
 
         if ROIList.STACK:
             logger.info("Applying ROIs to event selection")
-            for roi in ROIList.STACK:
-                if isinstance(roi, CircularROI):
-                    mask.append(
-                        (roi.radius >= roi.center.separation(coords))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-                else:
-                    if roi.RA_min > roi.RA_max:
-                        mask.append(
-                            (dec <= roi.DEC_max)
-                            & (dec >= roi.DEC_min)
-                            & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                            & (mjd <= roi.MJD_max)
-                            & (mjd >= roi.MJD_min)
-                        )
 
-                    else:
-                        mask.append(
-                            (dec <= roi.DEC_max)
-                            & (dec >= roi.DEC_min)
-                            & (ra >= roi.RA_min)
-                            & (ra <= roi.RA_max)
-                            & (mjd <= roi.MJD_max)
-                            & (mjd >= roi.MJD_min)
-                        )
+            mask = cls.apply_ROIS(coords, mjd)
 
             idxs = np.logical_or.reduce(mask)
 
@@ -418,37 +393,9 @@ class Events:
         ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        mask = []
-        for roi in ROIList.STACK:
-            if isinstance(roi, CircularROI):
-                mask.append(
-                    (
-                        (roi.radius >= roi.center.separation(coords))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-                )
-            else:
-                if roi.RA_min > roi.RA_max:
-                    mask.append(
-                        (dec <= roi.DEC_max)
-                        & (dec >= roi.DEC_min)
-                        & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-
-                else:
-                    mask.append(
-                        (dec <= roi.DEC_max)
-                        & (dec >= roi.DEC_min)
-                        & (ra >= roi.RA_min)
-                        & (ra <= roi.RA_max)
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-
         mjd = Time(mjd, format="mjd")
+
+        mask = cls.apply_ROIS(coords, mjd)
 
         idxs = np.logical_or.reduce(mask)
 
@@ -580,3 +527,44 @@ class Events:
             n,
             bins,
         )
+
+    @classmethod
+    def apply_ROIS(cls, coords, mjd):
+        """
+        Returns list of mask, one mask for each ROI on stack
+        """
+
+        ra = coords.icrs.ra
+        dec = coords.icrs.dec
+
+        mask = []
+        for roi in ROIList.STACK:
+            if isinstance(roi, CircularROI):
+                mask.append(
+                    (
+                        (roi.radius >= roi.center.separation(coords))
+                        & (mjd <= roi.MJD_max)
+                        & (mjd >= roi.MJD_min)
+                    )
+                )
+            else:
+                if roi.RA_min > roi.RA_max:
+                    mask.append(
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                        & (mjd <= roi.MJD_max)
+                        & (mjd >= roi.MJD_min)
+                    )
+
+                else:
+                    mask.append(
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & (ra >= roi.RA_min)
+                        & (ra <= roi.RA_max)
+                        & (mjd <= roi.MJD_max)
+                        & (mjd >= roi.MJD_min)
+                    )
+
+        return mask
