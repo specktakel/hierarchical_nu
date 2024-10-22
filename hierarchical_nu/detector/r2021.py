@@ -1769,10 +1769,12 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 # Make a vector of length 4, last component is kappa
                 return_vec = ForwardVectorDef("return_this", [4])
                 # Deflect true direction
-                #StringExpression(["return_this[1:3] = ", angular_parameterisation])
-                return_vec[1:3] << FunctionCall(["true_dir", "psf_ang"], "deflected_rng")
+                # StringExpression(["return_this[1:3] = ", angular_parameterisation])
+                return_vec[1:3] << FunctionCall(
+                    ["true_dir", "psf_ang"], "deflected_rng"
+                )
                 return_vec[4] << kappa
-                #StringExpression(["return_this[4] = kappa"])
+                # StringExpression(["return_this[4] = kappa"])
                 ReturnStatement([return_vec])
 
     def setup(self) -> None:
@@ -1942,7 +1944,9 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         binc = bin_edges[:-1] + np.diff(bin_edges) / 2
         pdf_vals = self.irf.reco_energy[tE_idx, dec_idx].pdf(binc)
 
-        if self._season == "IC86_II" and dec_idx == 1:
+        # Skip for now
+        if False:
+            # if self._season == "IC86_II" and dec_idx == 1:
             a1 = 0.688
             a2 = 0.82
             b1 = 0.91

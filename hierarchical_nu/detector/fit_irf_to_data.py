@@ -48,10 +48,14 @@ class RateCalculator:
         eres = R2021EnergyResolution(season=season.P)
 
         if not isinstance(atmo_flux, AtmosphericNuMuFlux):
-            raise ValueError("'atmo_flux' needs to be instance of `AtmosphericNuMuFlux`")
+            raise ValueError(
+                "'atmo_flux' needs to be instance of `AtmosphericNuMuFlux`"
+            )
         self._atmo = atmo_flux
         if not isinstance(diffuse_flux, IsotropicDiffuseBG):
-            raise ValueError("'diffuse_flux' needs to be an instance of `IsotropicDiffuseBG`")
+            raise ValueError(
+                "'diffuse_flux' needs to be an instance of `IsotropicDiffuseBG`"
+            )
         self._diff = diffuse_flux
         if not isinstance(aeff, EffectiveArea) or not hasattr(aeff, "_eff_area_spline"):
             raise ValueError("'aeff' is not a proper effective area")
@@ -65,7 +69,7 @@ class RateCalculator:
         self.tE_bin_edges = irf.true_energy_bins
         self.tE_binc = self.tE_bin_edges[:-1] + np.diff(self.tE_bin_edges) / 2
         self.aeff_tE_bin_edges = aeff.tE_bin_edges
-        self.dec_size = irf.declination_bins.size - 1
+        # self.dec_size = irf.declination_bins.size - 1
         self.dec_bin_edges = irf.declination_bins << u.rad
 
         for c_d in range(irf.declination_bins.size - 1):
@@ -130,12 +134,19 @@ class RateCalculator:
 
         # Create ROI in appropriate dec range covered by the IRF dec bin selected
         self._dec_idx = dec_idx
-        dec_min = self.irf.declination_bins[dec_idx]
-        dec_max = self.irf.declination_bins[dec_idx + 1]
-        dec_min = np.deg2rad(-5) if dec_min < np.deg2rad(-5) else dec_min
+        dec_min = self.irf.declination_bins[dec_idx] * u.rad
+        dec_max = self.irf.declination_bins[dec_idx + 1] * u.rad
+        dec_min = (
+            np.deg2rad(-5) * u.rad
+            if dec_min.to_value(u.rad) < np.deg2rad(-5)
+            else dec_min
+        )
+        self._dec_min = dec_min
+        self._dec_max = dec_max
+        # needed w/o unit
         self._dec_middle = (dec_max + dec_min) / 2 * u.rad
         ROIList.clear_registry()
-        roi = RectangularROI(DEC_min=dec_min * u.rad, DEC_max=dec_max * u.rad)
+        roi = RectangularROI(DEC_min=dec_min, DEC_max=dec_max)
         Parameter.clear_registry()
         Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
         # Reco energy bins in which rates are calculated
@@ -152,6 +163,22 @@ class RateCalculator:
         # Clean up
         ROIList.clear_registry()
         Parameter.clear_registry()
+
+    @property
+    def dec_min(self):
+        return self._dec_min
+
+    @property
+    def dec_max(self):
+        return self._dec_max
+
+    @property
+    def sindec_min(self):
+        return np.sin(self.dec_min.to_value(u.rad))
+
+    @property
+    def sindec_max(self):
+        return np.sin(self.dec_max.to_value(u.rad))
 
     @property
     def season(self):
@@ -205,11 +232,11 @@ class RateCalculator:
         b1: float = 0.0,
         b2: float = 0.0,
         detailed: int = 0,
-        spectrum = "atmo",
+        spectrum: str = "atmo",
     ):
 
-        sindec_min = np.sin(self.dec_bin_edges[self.dec_idx].to_value(u.rad))
-        sindec_max = np.sin(self.dec_bin_edges[self._dec_idx + 1].to_value(u.rad))
+        sindec_min = self.sindec_min
+        sindec_max = self.sindec_max
         ereco_pdfs = self.make_shifted_ereco_pdfs(a1, a2, b1, b2)
 
         def run(El, Eh):
@@ -253,7 +280,7 @@ class RateCalculator:
                     * np.power(10, logE)
                     * np.log(10)
                 )
-            
+
             def diff_integrand(logE):
                 etrue_idx = np.digitize(logE, self.tE_bin_edges) - 1
                 """
@@ -266,13 +293,9 @@ class RateCalculator:
                 """
 
                 def sin_dec_int(sindec, logE):
-                    return self._aeff._eff_area_spline((logE, -sindec)) \
-                * self._diff(
-                        np.power(10, logE) * u.GeV,
-                        np.arcsin(sindec)*u.rad,
-                        0*u.rad
+                    return self._aeff._eff_area_spline((logE, -sindec)) * self._diff(
+                        np.power(10, logE) * u.GeV, np.arcsin(sindec) * u.rad, 0 * u.rad
                     ).to_value(1 / u.GeV / u.cm**2 / u.s / u.sr)
-                    
 
                 sin_dec_integrated = quad(
                     sin_dec_int, sindec_min, sindec_max, args=(logE), limit=200
@@ -284,12 +307,13 @@ class RateCalculator:
                     * np.power(10, logE)
                     * np.log(10)
                 )
-            
+
             if spectrum == "atmo":
                 integrand = atmo_integrand
             elif spectrum == "diffuse":
                 integrand = diff_integrand
-
+            else:
+                raise ValueError("`spectrum` must be `atmo` or `diffuse`")
 
             if detailed == 2:
                 # use effective area binning, 10 bins per decade
@@ -327,9 +351,10 @@ class RateCalculator:
         # 1e4 to convert atmo flux from /cm**2 to /m**2
         return np.array(rate) * 1e4
 
-    def calc_rates_from_2d_splines(self, detailed: int = 0, spectrum = "atmo"):
-        sindec_min = np.sin(self.dec_bin_edges[self.dec_idx].to_value(u.rad))
-        sindec_max = np.sin(self.dec_bin_edges[self._dec_idx + 1].to_value(u.rad))
+    def calc_rates_from_2d_splines(self, detailed: int = 0, spectrum="atmo"):
+
+        sindec_min = self.sindec_min
+        sindec_max = self.sindec_max
 
         # Boundaries are reconstructed energies
         def run(El, Eh):
@@ -361,18 +386,14 @@ class RateCalculator:
                     * np.power(10, logE)
                     * np.log(10)
                 )
-            
+
             def diff_integrand(logE):
                 etrue_idx = np.digitize(logE, self.tE_bin_edges) - 1
 
                 def sin_dec_int(sindec, logE):
-                    return self._aeff._eff_area_spline((logE, -sindec)) \
-                * self._diff(
-                        np.power(10, logE) * u.GeV,
-                        np.arcsin(sindec)*u.rad,
-                        0*u.rad
-                ).to_value(1 / u.GeV / u.cm**2 / u.s / u.sr)
-                    
+                    return self._aeff._eff_area_spline((logE, -sindec)) * self._diff(
+                        np.power(10, logE) * u.GeV, np.arcsin(sindec) * u.rad, 0 * u.rad
+                    ).to_value(1 / u.GeV / u.cm**2 / u.s / u.sr)
 
                 sin_dec_integrated = quad(
                     sin_dec_int, sindec_min, sindec_max, args=(logE), limit=200
@@ -390,7 +411,7 @@ class RateCalculator:
                     * np.power(10, logE)
                     * np.log(10)
                 )
-                   
+
             if spectrum == "atmo":
                 integrand = atmo_integrand
             elif spectrum == "diffuse":
