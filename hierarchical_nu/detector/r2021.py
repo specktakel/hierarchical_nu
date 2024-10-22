@@ -1942,6 +1942,24 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         binc = bin_edges[:-1] + np.diff(bin_edges) / 2
         pdf_vals = self.irf.reco_energy[tE_idx, dec_idx].pdf(binc)
 
+        if self._season == "IC86_II" and dec_idx == 1:
+            a1 = 0.688
+            a2 = 0.82
+            b1 = 0.91
+            b2 = 0.64
+            if tE_idx not in [0, 1]:
+                pass
+            else:
+                logger.warning("Adding shfits to Ereco histograms")
+                if tE_idx == 0:
+                    bin_edges = a1 * bin_edges + b1
+                    binc = a1 * binc + b1
+                elif tE_idx == 1:
+                    bin_edges = a2 * bin_edges + b2
+                    binc = a2 * bin_edges + b2
+                norm = np.sum(pdf_vals * np.diff(bin_edges))
+                pdf_vals /= norm
+
         # Check for empty bins that are surrounded by non-empty bins
         # Not treating these leads to issues with the splining of log-values
         # Insert a linear interpolation from the neighbouring non-empty bins
