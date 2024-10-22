@@ -184,11 +184,19 @@ class ROIConfig:
 
 
 @dataclass
+class PPCConfig:
+    n_samples: int = 100
+    seed: int = 42
+    directory: str = "ppc"
+
+
+@dataclass
 class HierarchicalNuConfig:
     parameter_config: ParameterConfig = field(default_factory=lambda: ParameterConfig())
     prior_config: PriorConfig = field(default_factory=lambda: PriorConfig())
     roi_config: ROIConfig = field(default_factory=lambda: ROIConfig())
     stan_config: StanConfig = field(default_factory=lambda: StanConfig())
+    ppc_config: PPCConfig = field(default_factory=lambda: PPCConfig())
 
     @classmethod
     def from_path(cls, path):

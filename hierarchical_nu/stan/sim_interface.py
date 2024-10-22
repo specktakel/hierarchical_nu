@@ -530,6 +530,25 @@ class StanSimInterface(StanInterface):
         Write the generated quantities section of the Stan file.
         """
 
+        if self.sources.atmospheric and self.sources.diffuse:
+            Ns_string = "Ns+2"
+        elif self.sources.diffuse or self.sources.atmospheric:
+            Ns_string = "Ns+1"
+        else:
+            Ns_string = "Ns"
+
+        if self.sources.diffuse and self.sources.atmospheric:
+
+            N_tot = "[Ns+2]"
+
+        elif self.sources.diffuse or self.sources.atmospheric:
+
+            N_tot = "[Ns+1]"
+
+        else:
+
+            N_tot = "[Ns]"
+
         with GeneratedQuantitiesContext():
             self._loop_start = ForwardVariableDef("loop_start", "int")
             self._loop_end = ForwardVariableDef("loop_end", "int")
@@ -543,6 +562,32 @@ class StanSimInterface(StanInterface):
             self._f_arr_astro << self._f_arr_astro_
             self._f_det << self._f_det_
             self._f_det_astro << self._f_det_astro_
+            self._N_comp_ = ForwardArrayDef("N_comp_", "int", ["[", self._Net, "]"])
+            self._N_comp_ << self._N_comp
+            self._N_ = ForwardVariableDef("N_", "int")
+            self._N_ << self._N
+
+            if self.sources.point_source:
+                self._Nex_src_comp_ = ForwardArrayDef(
+                    "Nex_src_comp_", "real", ["[", self._Net, "]"]
+                )
+                self._Nex_src_comp_ << self._Nex_src_comp
+            self._Nex_src_ = InstantVariableDef("Nex_src_", "real", [0])
+            self._Nex_src_ << self._Nex_src
+            if self.sources.diffuse:
+                self._Nex_diff_comp_ = ForwardArrayDef(
+                    "Nex_diff_comp_", "real", ["[", self._Net, "]"]
+                )
+                self._Nex_diff_comp_ << self._Nex_diff_comp
+                self._Nex_diff_ = ForwardVariableDef("Nex_diff_", "real")
+                self._Nex_diff_ << self._Nex_diff
+            if self.sources.atmospheric:
+                self._Nex_atmo_comp_ = ForwardArrayDef(
+                    "Nex_atmo_comp_", "real", ["[", self._Net, "]"]
+                )
+                self._Nex_atmo_comp_ << self._Nex_atmo_comp
+                self._Nex_atmo_ = ForwardVariableDef("Nex_atmo_", "real")
+                self._Nex_atmo_ << self._Nex_atmo
 
             self._N_str = ["[", self._N, "]"]
 
@@ -932,7 +977,8 @@ class StanSimInterface(StanInterface):
                                 else:
                                     self._event[i] << self._omega
                                 self._kappa[i] << self._pre_event[5]
-                                self._detected << 0
+                                self._detected << 1
+                                """
                                 if isinstance(ROIList.STACK[0], CircularROI):
                                     with ForLoopContext(1, self._n_roi, "n") as n:
                                         with IfBlockContext(
@@ -946,6 +992,7 @@ class StanSimInterface(StanInterface):
                                             StringExpression(["break"])
                                 else:
                                     self._detected << 1
+                                """
 
                                 # Insert condition for the sample to be inside the ROI,
                                 # should also apply to the rectangular ROI as events
