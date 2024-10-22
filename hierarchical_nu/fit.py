@@ -10,6 +10,12 @@ import corner
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.cm as cm
+
+
+from roque_cmap import roque_chill
+
+CMAP = roque_chill().reversed()
+
 import ligo.skymap.plot
 import arviz as av
 from pathlib import Path
@@ -569,6 +575,8 @@ class StanFit:
         highlight: Union[Iterable, None] = None,
         assoc_threshold: Union[float, None] = 0.2,
         source_name: str = "",
+        lw: float = 1.0,
+        plot_text: bool = True,
     ):
         ev_class = np.array(self._get_event_classifications())
         if radius is not None and center is not None:
@@ -596,7 +604,7 @@ class StanFit:
             norm = colors.LogNorm(1e-8, 1.0, clip=True)
         else:
             raise ValueError("No other scale supported")
-        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        mapper = cm.ScalarMappable(norm=norm, cmap=CMAP)
         color = mapper.to_rgba(assoc_prob)
 
         indices = np.arange(self._events.N, dtype=int)[mask]
@@ -610,6 +618,7 @@ class StanFit:
                 pdf,
                 color=color[c],
                 zorder=assoc_prob[c] + 1,
+                lw=lw,
             )
         _, yhigh = ax.get_ylim()
         ax.set_xscale("log")
@@ -620,7 +629,7 @@ class StanFit:
                 yhigh,
                 1.05 * yhigh,
                 color=color[c],
-                lw=1,
+                lw=lw * 0.8,
                 zorder=assoc_prob[c] + 1,
             )
             if highlight is not None and highlight[i]:
@@ -652,17 +661,24 @@ class StanFit:
                         color="black",
                         ls="--",
                     )
-        ax.text(
-            1.3e2,
-            yhigh * 1.025,
-            "$\hat E$",
-            fontsize=8.0,
-            verticalalignment="center",
-        )
+        if plot_text:
+            ax.text(
+                1.3e2,
+                yhigh * 1.025,
+                "$\hat E$",
+                fontsize=8.0,
+                verticalalignment="center",
+            )
 
         if source_name:
             ax.text(
-                0.95, 0.95, source_name, transform=ax.transAxes, ha="right", fontsize=8
+                0.95,
+                0.95,
+                source_name,
+                transform=ax.transAxes,
+                ha="right",
+                va="top",
+                fontsize=8,
             )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -679,6 +695,8 @@ class StanFit:
         highlight: Union[Iterable, None] = None,
         assoc_threshold: Union[float, None] = 0.2,
         source_name: str = "",
+        lw: float = 1.0,
+        plot_text: bool = True,
     ):
         """
         Plot energy posteriors in log10-space.
@@ -704,6 +722,8 @@ class StanFit:
             highlight,
             assoc_threshold,
             source_name,
+            lw,
+            plot_text,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -718,6 +738,7 @@ class StanFit:
         color_scale,
         highlight: Union[Iterable, None] = None,
         source_name: str = "",
+        s: float = 30.0,
     ):
         ev_class = np.array(self._get_event_classifications())
         assoc_prob = ev_class[:, assoc_idx]
@@ -735,7 +756,7 @@ class StanFit:
             norm = colors.LogNorm(1e-8, max, clip=True)
         else:
             raise ValueError("No other scale supported")
-        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        mapper = cm.ScalarMappable(norm=norm, cmap=CMAP)
         color = mapper.to_rgba(assoc_prob)
 
         events = self.events
@@ -769,7 +790,7 @@ class StanFit:
                         transform=ax.get_transform("icrs"),
                         edgecolor=edgecolor,
                         facecolor="none",
-                        s=30,
+                        s=s,
                     )
 
             ax.scatter(
@@ -778,7 +799,7 @@ class StanFit:
                 color=color[i],
                 zorder=assoc_prob[i] + 1,
                 transform=ax.get_transform("icrs"),
-                s=30,
+                s=s,
             )
 
         if source_name:
@@ -807,6 +828,7 @@ class StanFit:
         color_scale: str = "lin",
         highlight: Union[Iterable, None] = None,
         source_name: str = "",
+        s: float = 30.0,
     ):
         """
         Create plot of the ROI.
@@ -842,6 +864,7 @@ class StanFit:
             color_scale,
             highlight,
             source_name,
+            s,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -858,6 +881,9 @@ class StanFit:
         assoc_threshold: float = 0.2,
         figsize=(8, 3),
         source_name: str = "",
+        lw: float = 1,
+        s: float = 20.0,
+        plot_text: bool = True,
     ):
         """
         Create plot of the ROI.
@@ -902,6 +928,8 @@ class StanFit:
             color_scale,
             highlight,
             assoc_threshold,
+            lw,
+            plot_text,
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -919,7 +947,14 @@ class StanFit:
         )
 
         ax, _ = self._plot_roi(
-            center, ax, radius, assoc_idx, color_scale, highlight, source_name
+            center,
+            ax,
+            radius,
+            assoc_idx,
+            color_scale,
+            highlight,
+            source_name,
+            s,
         )
         axs.insert(0, ax)
 
@@ -1187,7 +1222,7 @@ class StanFit:
             "flux": peak_flux.to_value(energy_unit / area_unit)[mask],
         }
 
-        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap="viridis_r")
+        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap=CMAP)
 
         colours = ax.collections[-1]._mapped_colors
 
