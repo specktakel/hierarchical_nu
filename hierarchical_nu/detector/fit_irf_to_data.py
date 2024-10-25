@@ -536,15 +536,15 @@ class RateCalculator:
         IRF_ebins = np.arange(2, 9.1, 0.5)
 
         if detailed == 0:
-            ax.plot(self.Ebins_c, detailed_rates, label="simulation", color="black")
+            ax.stairs(detailed_rates, self.Ebins, label="simulation", color="black")
             summed_rates = detailed_rates
         elif detailed == 1:
             default_cycler = cycler(color=colors)
             ax.set_prop_cycle(default_cycler)
 
-            ax.plot(
-                self.Ebins_c,
+            ax.stairs(
                 detailed_rates.sum(axis=1),
+                self.Ebins,
                 color="black",
                 label="simulation",
             )
@@ -552,9 +552,9 @@ class RateCalculator:
             for c, rate in enumerate(detailed_rates.T):
                 if c == 7:
                     break
-                ax.plot(
-                    self.Ebins_c,
+                ax.stairs(
                     rate,
+                    self.Ebins,
                     label=rf"$E=10^{{{(IRF_ebins[_bin]+IRF_ebins[_bin+1])/2:.2f}}}$ GeV",
                 )
                 _bin += 1
@@ -563,9 +563,9 @@ class RateCalculator:
         else:
             default_cycler = cycler(color=colors) * cycler(linestyle=linestyles)
             ax.set_prop_cycle(default_cycler)
-            ax.plot(
-                self.Ebins_c,
+            ax.stairs(
                 detailed_rates.sum(axis=1),
+                self.Ebins,
                 color="black",
                 label="simulation",
             )
@@ -573,14 +573,17 @@ class RateCalculator:
                 if c == 5 * 7:
                     break
                 if c % 5 == 0:
-                    ax.plot(
-                        self.Ebins_c,
+                    ax.stairs(
                         rate,
+                        self.Ebins,
                         label=rf"$E=10^{{{(IRF_ebins[_bin]+IRF_ebins[_bin+1])/2:.2f}}}$ GeV",
                     )
                     _bin += 1
                 else:
-                    ax.plot(self.Ebins_c, rate)
+                    ax.stairs(
+                        rate,
+                        self.Ebins,
+                    )
             summed_rates = detailed_rates.sum(axis=1)
 
         ax.set_xscale("log")
@@ -598,15 +601,15 @@ class RateCalculator:
         ax = axs[1]
         ax.scatter(
             self.Ebins_c,
-            (self.exp_rate - summed_rates) / summed_rates,
+            self.exp_rate / summed_rates,
             color="black",
             marker="+",
         )
-        ax.set_ylim(-0.6, 0.6)
+        ax.set_ylim(0.6, 1.6)
         if grid:
             ax.grid()
         ax.set_xlabel(r"$\hat{E}~[\si{\giga\electronvolt}]$")
-        ax.set_ylabel(r"$\frac{\text{data} - \text{sim}}{\text{sim}}$")
+        ax.set_ylabel(r"$\frac{\text{data}}{\text{sim}}$")
 
         return fig, axs
 
