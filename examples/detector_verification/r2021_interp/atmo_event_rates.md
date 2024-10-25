@@ -27,11 +27,18 @@ from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
 ```
 
 ```python
-nuflux = AtmosphericNuMuFlux(1e1*u.GeV, 1e9*u.GeV, cache_dir=mceq)
+Parameter.clear_registry()
+atmo = AtmosphericNuMuFlux(1e1*u.GeV, 1e9*u.GeV, cache_dir=mceq)
+index = Parameter(2.52, "diff_index")
+norm = Parameter(1.80e-18 / u.GeV / u.cm**2 / u.s * 4 * np.pi, "norm")
+Enorm = Parameter(100 * u.TeV, "Enorm")
+
+pl = PowerLawSpectrum(norm, Enorm.value, index, 1e2 * u.GeV, 1e9 * u.GeV)
+diffuse = IsotropicDiffuseBG(pl)
 ```
 
 ```python
-calc = RateCalculator(IC86_II, nuflux, 1)
+calc = RateCalculator(IC86_II, atmo, diffuse, 1)
 ```
 
 ```python
