@@ -529,7 +529,7 @@ class Events:
         )
 
     @classmethod
-    def apply_ROIS(cls, coords, mjd):
+    def apply_ROIS(cls, coords: SkyCoord, mjd: Time):
         """
         Returns list of mask, one mask for each ROI on stack
         """
@@ -543,8 +543,8 @@ class Events:
                 mask.append(
                     (
                         (roi.radius >= roi.center.separation(coords))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
+                        & (mjd.mjd <= roi.MJD_max)
+                        & (mjd.mjd >= roi.MJD_min)
                     )
                 )
             else:
@@ -553,8 +553,8 @@ class Events:
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
+                        & (mjd.mjd <= roi.MJD_max)
+                        & (mjd.mjd >= roi.MJD_min)
                     )
 
                 else:
@@ -563,8 +563,8 @@ class Events:
                         & (dec >= roi.DEC_min)
                         & (ra >= roi.RA_min)
                         & (ra <= roi.RA_max)
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
+                        & (mjd.mjd <= roi.MJD_max)
+                        & (mjd.mjd >= roi.MJD_min)
                     )
 
         return mask
