@@ -13,9 +13,10 @@ import matplotlib.cm as cm
 
 try:
     from roque_cmap import roque_chill
+
     CMAP = roque_chill().reversed()
 except ModuleNotFoundError:
-    CMAP = "viridis"
+    CMAP = "viridis_r"
 
 import ligo.skymap.plot
 import arviz as av
