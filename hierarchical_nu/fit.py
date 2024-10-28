@@ -11,10 +11,11 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.cm as cm
 
-
-from roque_cmap import roque_chill
-
-CMAP = roque_chill().reversed()
+try:
+    from roque_cmap import roque_chill
+    CMAP = roque_chill().reversed()
+except ModuleNotFoundError:
+    CMAP = "viridis"
 
 import ligo.skymap.plot
 import arviz as av
