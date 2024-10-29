@@ -579,6 +579,7 @@ class StanFit:
         source_name: str = "",
         lw: float = 1.0,
         plot_text: bool = True,
+        textsize: float = 8,
     ):
         ev_class = np.array(self._get_event_classifications())
         if radius is not None and center is not None:
@@ -668,7 +669,7 @@ class StanFit:
                 1.3e2,
                 yhigh * 1.025,
                 "$\hat E$",
-                fontsize=8.0,
+                fontsize=textsize,
                 verticalalignment="center",
             )
 
@@ -680,7 +681,7 @@ class StanFit:
                 transform=ax.transAxes,
                 ha="right",
                 va="top",
-                fontsize=8,
+                fontsize=textsize,
             )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -699,6 +700,7 @@ class StanFit:
         source_name: str = "",
         lw: float = 1.0,
         plot_text: bool = True,
+        textsize: float = 8,
     ):
         """
         Plot energy posteriors in log10-space.
@@ -721,11 +723,13 @@ class StanFit:
             assoc_idx,
             radius,
             color_scale,
-            highlight,
-            assoc_threshold,
-            source_name,
-            lw,
-            plot_text,
+            highlight=highlight,
+            assoc_threshold=assoc_threshold,
+            source_name=source_name,
+            lw=lw,
+            plot_text=plot_text,
+            textsize=textsize,
+            
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -741,6 +745,7 @@ class StanFit:
         highlight: Union[Iterable, None] = None,
         source_name: str = "",
         s: float = 30.0,
+        textsize: float = 8,
     ):
         ev_class = np.array(self._get_event_classifications())
         assoc_prob = ev_class[:, assoc_idx]
@@ -812,7 +817,7 @@ class StanFit:
                 transform=ax.transAxes,
                 ha="left",
                 va="top",
-                fontsize=8,
+                fontsize=textsize,
             )
 
         ax.set_xlabel("RA")
@@ -831,6 +836,7 @@ class StanFit:
         highlight: Union[Iterable, None] = None,
         source_name: str = "",
         s: float = 30.0,
+        textsize: float = 8,
     ):
         """
         Create plot of the ROI.
@@ -864,9 +870,10 @@ class StanFit:
             radius,
             assoc_idx,
             color_scale,
-            highlight,
-            source_name,
-            s,
+            highlight=highlight,
+            source_name=source_name,
+            s=s,
+            textsize=textsize,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -886,6 +893,7 @@ class StanFit:
         lw: float = 1,
         s: float = 20.0,
         plot_text: bool = True,
+        textsize: float = 8,
     ):
         """
         Create plot of the ROI.
@@ -928,10 +936,11 @@ class StanFit:
             assoc_idx,
             radius,
             color_scale,
-            highlight,
-            assoc_threshold,
-            lw,
-            plot_text,
+            highlight=highlight,
+            assoc_threshold=assoc_threshold,
+            lw=lw,
+            plot_text=plot_text,
+            textsize=textsize
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -954,9 +963,10 @@ class StanFit:
             radius,
             assoc_idx,
             color_scale,
-            highlight,
-            source_name,
-            s,
+            highlight=highlight,
+            source_name=source_name,
+            s=s,
+            textsize=textsize,
         )
         axs.insert(0, ax)
 
