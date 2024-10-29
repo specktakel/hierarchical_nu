@@ -70,6 +70,8 @@ class Events:
             [coords.x.value, coords.y.value, coords.z.value]
         ).T
 
+        self._coords.representation_type = "spherical"
+
         if all([t in self._recognised_types for t in types]):
             self._types = np.atleast_1d(types)
         else:
@@ -198,8 +200,6 @@ class Events:
             rng = np.random.default_rng(seed=seed)
             ra = rng.random(ra.size) * 2 * np.pi * u.rad
             coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
-
-        coords.representation_type = "cartesian"
 
         if not apply_cuts:
             events = cls(energies, coords, types, ang_errs, time)
