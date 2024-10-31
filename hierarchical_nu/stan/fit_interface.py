@@ -435,6 +435,11 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
+            if hasattr(self, "_log_lik"):
+                # If self._log_lik exists, fill it with data
+                self._log_lik[i] << FunctionCall(
+                    [self._lp[i]], "log_sum_exp"
+                ) - FunctionCall([self._Nex], "log")
 
     def _functions(self):
         """
@@ -1477,8 +1482,8 @@ class StanFitInterface(StanInterface):
                         self._beta_index = ForwardVariableDef(
                             "beta_index_ind", "vector[Ns]"
                         )
-                    if self._fit_Enorm:
-                        self._E0_src = ForwardVariableDef("E0_src_ind", "vector[Ns]")
+                if self._fit_Enorm:
+                    self._E0_src = ForwardVariableDef("E0_src_ind", "vector[Ns]")
                 if self._shared_luminosity or self._shared_src_index:
                     with ForLoopContext(1, self._Ns, "k") as k:
                         if self._shared_luminosity:
@@ -1492,7 +1497,7 @@ class StanFitInterface(StanInterface):
                             # meaning that E0_src_glob is defined in the source frame
                             # and E0_src[k] is redshifted using z[k]
                             self._E0_src[k] << self._E0_src_glob / (1 + self._z[k])
-                
+
                 if not self._shared_src_index and self._fit_Enorm:
                     with ForLoopContext(1, self._Ns, "k") as k:
                         # Define E0_src in the detector frame and E0_src_glob in source frame
@@ -2259,6 +2264,7 @@ class StanFitInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
+            self._log_lik = ForwardArrayDef("log_lik", "real", ["[N]"])
             if self._pgamma:
                 self._E_peak = ForwardArrayDef("E_peak", "real", ["[Ns]"])
                 self._peak_flux = ForwardArrayDef("peak_energy_flux", "real", ["[Ns]"])

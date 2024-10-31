@@ -212,18 +212,14 @@ class StanFit:
             if self._fit_Enorm:
                 self._def_var_names.append("E0_src")
 
+            self._def_var_names.append("Nex_src")
+
         if self._sources.diffuse:
             self._def_var_names.append("diffuse_norm")
             self._def_var_names.append("diff_index")
 
         if self._sources.atmospheric:
             self._def_var_names.append("F_atmo")
-
-        if self._sources._point_source and (
-            self._sources.atmospheric or self._sources.diffuse
-        ):
-            self._def_var_names.append("f_arr")
-            self._def_var_names.append("f_det")
 
         self._exposure_integral = collections.OrderedDict()
 
@@ -655,12 +651,13 @@ class StanFit:
                         color="black",
                         ls="--",
                     )
-
+        _, yhigh = ax.get_ylim()
         ax.text(
             1e7,
-            yhigh,
+            yhigh * 0.98,
             "$\hat E$",
             fontsize=8.0,
+            verticalalignment="top",
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -1004,18 +1001,17 @@ class StanFit:
                     flux
                     / int_flux
                     * flux_int[c]
-                    * np.power(E.to_value(
-                        energy_unit,
-                        equivalencies=u.spectral()
-                    ), E_power)
+                    * np.power(
+                        E.to_value(energy_unit, equivalencies=u.spectral()), E_power
+                    )
                 )
 
             self._flux_grid[c_ps] = flux_grid
-            
+
     def _calculate_quantiles(self, source_idx, LL, UL):
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
-        
+
         lower = np.zeros(E.size)
         upper = np.zeros(E.size)
 
@@ -1030,7 +1026,6 @@ class StanFit:
 
         return lower, upper
 
-
     def plot_flux_band(
         self,
         E_power: float = 0.0,
@@ -1041,7 +1036,7 @@ class StanFit:
         x_energy_unit=u.GeV,
         upper_limit: bool = False,
         figsize=(8, 3),
-        ax=None
+        ax=None,
     ):
         """
         Plot flux uncertainties.
@@ -1075,7 +1070,7 @@ class StanFit:
         for CI in credible_interval:
             if upper_limit:
                 UL = CI
-                LL = 0.    # dummy
+                LL = 0.0  # dummy
             else:
                 UL = 0.5 - CI / 2
                 LL = 0.5 + CI / 2
@@ -1096,10 +1091,7 @@ class StanFit:
                 )
             else:
                 ax.plot(
-                    E.to_value(
-                        x_energy_unit,
-                        equivalencies=u.spectral()
-                    ),
+                    E.to_value(x_energy_unit, equivalencies=u.spectral()),
                     upper,
                     color="C0",
                     marker=r"$\downarrow$",
@@ -1118,7 +1110,6 @@ class StanFit:
         if upper_limit:
             ax.set_ylim(bottom=np.min(upper) * 0.8)
 
-        
         return fig, ax
 
     def plot_peak_energy_flux(
@@ -1144,7 +1135,7 @@ class StanFit:
             peak_flux = (
                 self._fit_output.stan_varable("peak_energy_flux") << u.GeV / u.m**2
             )
-        mask = peak_flux.value > 0.
+        mask = peak_flux.value > 0.0
         data = {
             "E": E_peak.to_value(x_energy_unit, equivalencies=u.spectral())[mask],
             "flux": peak_flux.to_value(energy_unit / area_unit)[mask],
@@ -1172,12 +1163,14 @@ class StanFit:
         for t, e in zip(legend.get_texts(), extends):
             t.set_position((max_extend - e, 0))
 
-    def save(self, path: Path, overwrite: bool = False):
+    def save(self, path: Path, overwrite: bool = False, save_json: bool = False):
         """
         Save fit to h5 file.
         :param path: Path to which fit is saved.
         :param overwrite: Set to `True` to overwrite existing file,
             else timestamp is appended to `path` to avoid overwriting.
+        param save_json: Set to `True` if arviz json output should be saved.
+            uses provided path with .json extension.
         """
 
         # Check if filename consists of a path to some directory as well as the filename
@@ -1290,10 +1283,13 @@ class StanFit:
 
         self.events.to_file(path, append=True)
 
-        # self.sources.to_file(path, append=True)
-
         # Add priors separately
         self.priors.addto(path, "priors")
+
+        if save_json:
+            df = av.from_cmdstanpy(self._fit_output)
+            json_path = Path(dirname) / Path(os.path.splitext(filename)[0] + ".json")
+            df.to_json(json_path)
 
         return path  # noqa: F821
 
@@ -1404,19 +1400,15 @@ class StanFit:
         if "E0_src_grid" in fit_inputs.keys():
             fit._def_var_names.append("E0_src")
 
+        if sources.point_source:
+            fit._def_var_names.append("Nex_src")
+
         if "diff_index_grid" in fit_inputs.keys():
-            fit._def_var_names.append("F_diff")
+            fit._def_var_names.append("diffuse_norm")
             fit._def_var_names.append("diff_index")
 
         if "atmo_integ_val" in fit_inputs.keys():
             fit._def_var_names.append("F_atmo")
-
-        if "src_index_grid" in fit_inputs.keys() and (
-            "atmo_integ_val" in fit_inputs.keys()
-            or "diff_index_grid" in fit_inputs.keys()
-        ):
-            fit._def_var_names.append("f_arr")
-            fit._def_var_names.append("f_det")
 
         return fit
 
@@ -1479,7 +1471,7 @@ class StanFit:
             # lazy fix for backwards compatibility
             priors = Priors()
 
-        events = Events.from_file(filename)
+        events = Events.from_file(filename, apply_cuts=False)
 
         try:
             Emin_det = fit_inputs["Emin_det"]
@@ -1517,6 +1509,7 @@ class StanFit:
         try:
             print(self._fit_output.diagnose())
         except AttributeError:
+            # TODO make compatible with loading multiple fits
             print(self._fit_meta["diagnose"])
 
     def check_classification(self, sim_outputs):
@@ -1836,8 +1829,8 @@ class StanFit:
 
             fit_inputs["diff_index_min"] = self._diff_index_par_range[0]
             fit_inputs["diff_index_max"] = self._diff_index_par_range[1]
-            fit_inputs["diffuse_norm_min"] = self._F_diff_par_range[0]
-            fit_inputs["diffuse_norm_max"] = self._F_diff_par_range[1]
+            fit_inputs["diffuse_norm_min"] = self._diffuse_norm_par_range[0]
+            fit_inputs["diffuse_norm_max"] = self._diffuse_norm_par_range[1]
 
             # Priors for diffuse model
             if self._priors.diffuse_flux.name == "normal":
@@ -2044,7 +2037,7 @@ class StanFit:
 
         if self._sources.diffuse:
             self._diff_index_par_range = Parameter.get_parameter("diff_index").par_range
-            self._F_diff_par_range = Parameter.get_parameter(
+            self._diffuse_norm_par_range = Parameter.get_parameter(
                 "diffuse_norm"
             ).par_range.to_value(1 / u.GeV / u.m**2 / u.s)
 

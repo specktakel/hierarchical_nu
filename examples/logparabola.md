@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.15.2
+      jupytext_version: 1.16.1
   kernelspec:
     display_name: hi_nu
     language: python
@@ -28,10 +28,11 @@ from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.priors import Priors
 from hierarchical_nu.source.source import Sources, PointSource, DetectorFrame
+from hierarchical_nu.source.flux_model import PGammaSpectrum
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, LuminosityPrior, IndexPrior, FluxPrior, EnergyPrior
+from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, LuminosityPrior, IndexPrior, FluxPrior, EnergyPrior, DifferentialFluxPrior
 from hierarchical_nu.utils.roi import CircularROI
 from hierarchical_nu.detector.icecube import IC86_II, IC86_I
 from hierarchical_nu.detector.input import mceq
@@ -95,7 +96,7 @@ The remaining shape parameter is considered data and is using the kwarg `fixed=T
 Parameter.clear_registry()
 src_index = Parameter(2.2, "src_index", fixed=True, par_range=(1, 4))
 beta_index = Parameter(0.1, "beta_index", fixed=False)
-E0_src = Parameter(1e5, "E0_src", fixed=False, par_range=(1e3, 1e8)*u.GeV, scale=ParScale.log)
+E0_src = Parameter(1e5 * u.GeV, "E0_src", fixed=False, par_range=(1e3, 1e8)*u.GeV, scale=ParScale.log)
 L = Parameter(1e47 * (u.erg / u.s), "luminosity", fixed=True, 
               par_range=(0, 1E60) * (u.erg/u.s))
 z = 0.3365
@@ -115,6 +116,31 @@ point_source = PointSource.make_logparabola_source(
 E0_src is the normalisation energy. Considered as a free parameter it may cover multiple orders of magnitude, hence we pass the kwarg `scale=ParScale.log`. This instructs the precomputation to calculate using a logarithmic grid and also interpolate over log(E0_src) inside stan.
 
 Further, a 2D interpolation is needed for the logparabola, increasing the runtime of both precomputation and fits.
+
+
+Latest spectral model is `PGammaSpectrum`, stitching together a flat spectrum (powerlaw with index of zero) and a logparabola branch above a break energy `E0_src`, also acting as normalisation energy. Logparabola has index of zero and a fixed beta of 0.7. `E0_src` is a fit parameter and its pythonic values are assumed to live in the detector frame. Any transformation due to the choice of `frame=DetectorFrame` is ignored because it would require a change to the parameter's value. The prior (and `E0_src` inside stan), on the other hand, assumes values in the source frame, stan internally converts `E0_src_ind` to the detector frame. This is due to the possibility of E0 being a source class property, thus for a shared parameter all sources at different redshifts should have the same prior. I am terribly sorry for this mess.
+
+If the source frame posterior is required, ask the stan output for the parameter named `E0_src_ind`.
+
+```python
+# define high-level parameters
+Parameter.clear_registry()
+E0_src = Parameter(1e5 * u.GeV, "E0_src", fixed=False, par_range=(1e3, 1e9)*u.GeV, scale=ParScale.log)
+L = Parameter(1e47 * (u.erg / u.s), "luminosity", fixed=True, 
+              par_range=(0, 1E60) * (u.erg/u.s))
+z = 0.3365
+Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
+Emin = Parameter(1E2 * u.GeV, "Emin", fixed=True)
+Emax = Parameter(1e9 * u.GeV, "Emax", fixed=True)
+Emin_src = Parameter(Emin.value, "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value, "Emax_src", fixed=True)
+Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
+Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
+print(Emax_src.value)
+point_source = PointSource.make_pgamma_source(
+    "test", dec, ra, L, z, E0_src, Emin_src, Emax_src, DetectorFrame,
+)
+```
 
 ```python
 
