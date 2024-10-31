@@ -8,6 +8,9 @@ from hierarchical_nu.priors import (
     FluxPrior,
     DifferentialFluxPrior,
     EnergyPrior,
+    MultiSourceEnergyPrior,
+    MultiSourceIndexPrior,
+    MultiSourceLuminosityPrior,
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.source.source import (
@@ -29,6 +32,8 @@ from hierarchical_nu.utils.roi import (
 from hierarchical_nu.detector.input import mceq
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
+
+import omegaconf
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -497,41 +502,154 @@ class ConfigParser:
                 raise NotImplementedError("Prior type not recognised.")
 
             if p == "src_index":
-                priors.src_index = IndexPrior(prior, mu=mu, sigma=sigma)
+                if isinstance(mu, omegaconf.listconfig.ListConfig) and isinstance(
+                    sigma, omegaconf.listconfig.ListConfig
+                ):
+                    priors.src_index = MultiSourceIndexPrior(
+                        [IndexPrior(prior, mu=m, sigma=s) for m, s in zip(mu, sigma)]
+                    )
+                elif isinstance(mu, omegaconf.listconfig.ListConfig):
+                    priors.src_index = MultiSourceIndexPrior(
+                        [IndexPrior(prior, mu=m, sigma=sigma) for m in mu]
+                    )
+                elif isinstance(sigma, omegaconf.listconfig.ListConfig):
+                    priors.src_index = MultiSourceIndexPrior(
+                        [IndexPrior(prior, mu=mu, sigma=s) for s in sigma]
+                    )
+                else:
+                    priors.src_index = IndexPrior(prior, mu=mu, sigma=sigma)
             elif p == "beta_index":
-                priors.beta_index = IndexPrior(prior, mu=mu, sigma=sigma)
+                if isinstance(mu, omegaconf.listconfig.ListConfig) and isinstance(
+                    sigma, omegaconf.listconfig.ListConfig
+                ):
+                    priors.beta_index = MultiSourceIndexPrior(
+                        [IndexPrior(prior, mu=m, sigma=s) for m, s in zip(mu, sigma)]
+                    )
+                elif isinstance(mu, omegaconf.listconfig.ListConfig):
+                    priors.beta_index = MultiSourceIndexPrior(
+                        [IndexPrior(prior, mu=m, sigma=sigma) for m in mu]
+                    )
+                elif isinstance(sigma, omegaconf.listconfig.ListConfig):
+                    priors.beta_index = MultiSourceIndexPrior(
+                        [IndexPrior(prior, mu=mu, sigma=s) for s in sigma]
+                    )
+                else:
+                    priors.beta_index = IndexPrior(prior, mu=mu, sigma=sigma)
             elif p == "E0_src":
                 if prior == NormalPrior:
+                    sigma_units = EnergyPrior.UNITS
+                elif prior == LogNormalPrior:
+                    sigma_units = 1
+                else:
+                    raise NotImplementedError("Prior not recognised for E0_src.")
+
+                if isinstance(mu, omegaconf.listconfig.ListConfig) and isinstance(
+                    sigma, omegaconf.listconfig.ListConfig
+                ):
+                    priors.E0_src = MultiSourceEnergyPrior(
+                        [
+                            EnergyPrior(
+                                prior,
+                                mu=m * EnergyPrior.UNITS,
+                                sigma=s * sigma_units,
+                            )
+                            for m, s in zip(mu, sigma)
+                        ]
+                    )
+                elif isinstance(mu, omegaconf.listconfig.ListConfig):
+                    priors.E0_src = MultiSourceEnergyPrior(
+                        [
+                            EnergyPrior(
+                                prior,
+                                mu=m * EnergyPrior.UNITS,
+                                sigma=sigma * sigma_units,
+                            )
+                            for m in mu
+                        ]
+                    )
+                elif isinstance(sigma, omegaconf.listconfig.ListConfig):
+                    priors.E0_src = MultiSourceEnergyPrior(
+                        [
+                            EnergyPrior(
+                                prior,
+                                mu=mu * EnergyPrior.UNITS,
+                                sigma=s * sigma_units,
+                            )
+                            for s in sigma
+                        ]
+                    )
+                else:
                     priors.E0_src = EnergyPrior(
                         prior,
                         mu=mu * EnergyPrior.UNITS,
-                        sigma=sigma * EnergyPrior.UNITS,
+                        sigma=sigma * sigma_units,
                     )
-                elif prior == LogNormalPrior:
-                    priors.E0_src = EnergyPrior(
-                        prior, mu=mu * EnergyPrior.UNITS, sigma=sigma
-                    )
-                else:
-                    raise NotImplementedError("Prior not recognised for E0_src.")
+
             elif p == "diff_index":
                 priors.diff_index = IndexPrior(prior, mu=mu, sigma=sigma)
             elif p == "L":
-                if prior == NormalPrior:
+                if prior == ParetoPrior:
+                    if isinstance(xmin, omegaconf.listconfig.ListConfig) or isinstance(
+                        alpha, omegaconf.listconfig.ListConfig
+                    ):
+                        raise NotImplementedError(
+                            "This is intended for populations, not individual sources"
+                        )
                     priors.luminosity = LuminosityPrior(
                         prior,
                         mu=mu * LuminosityPrior.UNITS,
                         sigma=sigma * LuminosityPrior.UNITS,
                     )
-                elif prior == LogNormalPrior:
-                    priors.luminosity = LuminosityPrior(
-                        prior, mu=mu * LuminosityPrior.UNITS, sigma=sigma
-                    )
-                elif prior == ParetoPrior:
-                    priors.luminosity = LuminosityPrior(
-                        prior, xmin=xmin * LuminosityPrior.UNITS, alpha=alpha
-                    )
                 else:
-                    raise NotImplementedError("Prior not recognised.")
+                    if prior == NormalPrior:
+                        sigma_units = LuminosityPrior.UNITS
+                    elif prior == LogNormalPrior:
+                        sigma_units = 1
+                    else:
+                        raise NotImplementedError("Prior not recognised.")
+
+                    if isinstance(mu, omegaconf.listconfig.ListConfig) and isinstance(
+                        sigma, omegaconf.listconfig.ListConfig
+                    ):
+                        priors.luminosity = MultiSourceLuminosityPrior(
+                            [
+                                LuminosityPrior(
+                                    prior,
+                                    mu=m * LuminosityPrior.UNITS,
+                                    sigma=s * sigma_units,
+                                )
+                                for m, s in zip(mu, sigma)
+                            ]
+                        )
+                    elif isinstance(mu, omegaconf.listconfig.ListConfig):
+                        priors.luminosity = MultiSourceLuminosityPrior(
+                            [
+                                LuminosityPrior(
+                                    prior,
+                                    mu=m * LuminosityPrior.UNITS,
+                                    sigma=sigma * sigma_units,
+                                )
+                                for m in mu
+                            ]
+                        )
+                    elif isinstance(sigma, omegaconf.listconfig.ListConfig):
+                        priors.luminosity = MultiSourceLuminosityPrior(
+                            [
+                                LuminosityPrior(
+                                    prior,
+                                    mu=mu * LuminosityPrior.UNITS,
+                                    sigma=s * sigma_units,
+                                )
+                                for s in sigma
+                            ]
+                        )
+                    else:
+                        priors.luminosity = LuminosityPrior(
+                            prior,
+                            mu=mu * LuminosityPrior.UNITS,
+                            sigma=sigma * sigma_units,
+                        )
+
             elif p == "diff_flux":
                 if prior == NormalPrior:
                     priors.diffuse_flux = DifferentialFluxPrior(
