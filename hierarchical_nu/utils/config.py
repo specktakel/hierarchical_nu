@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Any
 from dataclasses import dataclass, field
 from omegaconf import OmegaConf
 import numpy as np
@@ -125,8 +125,8 @@ class StanConfig:
 @dataclass
 class SinglePriorConfig:
     name: str = "LogNormalPrior"
-    mu: List[float] = field(default_factory=lambda: [1.0])
-    sigma: List[float] = field(default_factory=lambda: [1.0])
+    mu: Any = field(default_factory=lambda: 1.0)
+    sigma: Any = field(default_factory=lambda: 1.0)
 
 
 @dataclass
@@ -134,6 +134,7 @@ class PriorConfig:
     src_index: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=2.5, sigma=0.5)
     )
+
     beta_index: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=0.0, sigma=0.1)
     )
