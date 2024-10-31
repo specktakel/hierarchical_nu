@@ -125,43 +125,47 @@ class StanConfig:
 @dataclass
 class SinglePriorConfig:
     name: str = "LogNormalPrior"
-    mu: Any = field(default_factory=lambda: 1.0)
-    sigma: Any = field(default_factory=lambda: 1.0)
+    mu: List[float] = field(default_factory=lambda: [1.0])
+    sigma: List[float] = field(default_factory=lambda: [1.0])
 
 
 @dataclass
 class PriorConfig:
     src_index: SinglePriorConfig = field(
-        default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=2.5, sigma=0.5)
+        default_factory=lambda: SinglePriorConfig(
+            name="NormalPrior", mu=[2.5], sigma=[0.5]
+        )
     )
 
     beta_index: SinglePriorConfig = field(
-        default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=0.0, sigma=0.1)
+        default_factory=lambda: SinglePriorConfig(
+            name="NormalPrior", mu=[0.0], sigma=[0.1]
+        )
     )
     E0_src: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=1e5, sigma=3.0
+            name="LogNormalPrior", mu=[1e5], sigma=[3.0]
         )
     )
     diff_index: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=2.52, sigma=0.04
+            name="NormalPrior", mu=[2.52], sigma=[0.04]
         )
     )
     L: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=1e49, sigma=3
+            name="LogNormalPrior", mu=[1e49], sigma=[3]
         )
     )
 
     diff_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=2.26e-13, sigma=0.19e-13
+            name="NormalPrior", mu=[2.26e-13], sigma=[0.19e-13]
         )
     )
     atmo_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=0.314, sigma=0.08
+            name="NormalPrior", mu=[0.314], sigma=[0.08]
         )
     )
 
