@@ -638,25 +638,42 @@ class ModelCheck:
 
             events = sim.events
 
-            lambd = sim._sim_output.stan_variable("Lambda").squeeze()
+            # create a mask for the sampled events
+            # for point sources, events may be scattered outside of the ROI
+            # we need to catch these and delete from the event lists used for the fit
+            mask = events.apply_ROIS(events.coords, events.mjd)
+            idx = np.logical_or.reduce(mask)
+
+            lambd = sim._sim_output.stan_variable("Lambda").squeeze()[idx]
 
             ps = np.sum(lambd == 1.0)
             diff = np.sum(lambd == 2.0)
             atmo = np.sum(lambd == 3.0)
             lam = np.array([ps, diff, atmo])
 
+            new_events = Events(
+                events.energies[idx],
+                events.coords[idx],
+                events.types[idx],
+                events.ang_errs[idx],
+                events.mjd[idx],
+            )
+
             # Fit
             # Same as above, save time
             # Also handle in case first sim has no events
             if not fit:
                 fit = self.parser.create_fit(
-                    sources, events, self.parser.detector_model, self.parser.obs_time
+                    sources,
+                    new_events,
+                    self.parser.detector_model,
+                    self.parser.obs_time,
                 )
                 fit.precomputation(self._exposure_integral)
                 fit.setup_stan_fit(".stan_files/model_code")
 
             else:
-                fit.events = events
+                fit.events = new_events
 
             start_time = time.time()
 
@@ -710,7 +727,7 @@ class ModelCheck:
                 outputs[key].append(fit._fit_output.method_variables()[key])
 
             if save_events:
-                outputs["events"].append(events)
+                outputs["events"].append(new_events)
                 outputs["association_prob"].append(
                     np.array(fit._get_event_classifications())
                 )
