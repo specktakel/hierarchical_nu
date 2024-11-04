@@ -12,6 +12,7 @@ from hierarchical_nu.detector.icecube import (
 )
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
 from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
+from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.events import Events
 from hierarchical_nu.utils.lifetime import LifeTime
@@ -31,7 +32,8 @@ class RateCalculator:
     def __init__(
         self,
         season: EventType,
-        flux: AtmosphericNuMuFlux,
+        atmo_flux: AtmosphericNuMuFlux,
+        diffuse_flux: IsotropicDiffuseBG,
         dec_idx: int,
     ):
         """
@@ -45,9 +47,16 @@ class RateCalculator:
         aeff = R2021EffectiveArea(season=season.P)
         eres = R2021EnergyResolution(season=season.P)
 
-        if not isinstance(flux, AtmosphericNuMuFlux):
-            raise ValueError("'atmo' needs to be instance of `AtmosphericNuMuFlux`")
-        self._atmo = flux
+        if not isinstance(atmo_flux, AtmosphericNuMuFlux):
+            raise ValueError(
+                "'atmo_flux' needs to be instance of `AtmosphericNuMuFlux`"
+            )
+        self._atmo = atmo_flux
+        if not isinstance(diffuse_flux, IsotropicDiffuseBG):
+            raise ValueError(
+                "'diffuse_flux' needs to be an instance of `IsotropicDiffuseBG`"
+            )
+        self._diff = diffuse_flux
         if not isinstance(aeff, EffectiveArea) or not hasattr(aeff, "_eff_area_spline"):
             raise ValueError("'aeff' is not a proper effective area")
         self._aeff = aeff
@@ -60,7 +69,7 @@ class RateCalculator:
         self.tE_bin_edges = irf.true_energy_bins
         self.tE_binc = self.tE_bin_edges[:-1] + np.diff(self.tE_bin_edges) / 2
         self.aeff_tE_bin_edges = aeff.tE_bin_edges
-        self.dec_size = irf.declination_bins.size - 1
+        # self.dec_size = irf.declination_bins.size - 1
         self.dec_bin_edges = irf.declination_bins << u.rad
 
         for c_d in range(irf.declination_bins.size - 1):
@@ -125,15 +134,24 @@ class RateCalculator:
 
         # Create ROI in appropriate dec range covered by the IRF dec bin selected
         self._dec_idx = dec_idx
-        dec_min = self.irf.declination_bins[dec_idx]
-        dec_max = self.irf.declination_bins[dec_idx + 1]
-        dec_min = np.deg2rad(-5) if dec_min < np.deg2rad(-5) else dec_min
+        dec_min = self.irf.declination_bins[dec_idx] * u.rad
+        dec_max = self.irf.declination_bins[dec_idx + 1] * u.rad
+        dec_min = (
+            np.deg2rad(-5) * u.rad
+            if dec_min.to_value(u.rad) < np.deg2rad(-5)
+            else dec_min
+        )
+        self._dec_min = dec_min
+        self._dec_max = dec_max
+        # needed w/o unit
         self._dec_middle = (dec_max + dec_min) / 2 * u.rad
         ROIList.clear_registry()
-        roi = RectangularROI(DEC_min=dec_min * u.rad, DEC_max=dec_max * u.rad)
+        roi = RectangularROI(DEC_min=dec_min, DEC_max=dec_max)
         Parameter.clear_registry()
         Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
-        self.Ebins = np.geomspace(1e2, 1e5, 31)
+        # Reco energy bins in which rates are calculated
+        self.Ebins = np.geomspace(1e2, 1e7, 51)
+        # True energy bins of effective area
         self.all_Ebins = np.geomspace(1e2, 1e9, 71)
         logEbins = np.log10(self.Ebins)
         self.logE_binc = logEbins[:-1] + np.diff(logEbins) / 2
@@ -145,6 +163,22 @@ class RateCalculator:
         # Clean up
         ROIList.clear_registry()
         Parameter.clear_registry()
+
+    @property
+    def dec_min(self):
+        return self._dec_min
+
+    @property
+    def dec_max(self):
+        return self._dec_max
+
+    @property
+    def sindec_min(self):
+        return np.sin(self.dec_min.to_value(u.rad))
+
+    @property
+    def sindec_max(self):
+        return np.sin(self.dec_max.to_value(u.rad))
 
     @property
     def season(self):
@@ -198,10 +232,11 @@ class RateCalculator:
         b1: float = 0.0,
         b2: float = 0.0,
         detailed: int = 0,
+        spectrum: str = "atmo",
     ):
 
-        sindec_min = np.sin(self.dec_bin_edges[self.dec_idx].to_value(u.rad))
-        sindec_max = np.sin(self.dec_bin_edges[self._dec_idx + 1].to_value(u.rad))
+        sindec_min = self.sindec_min
+        sindec_max = self.sindec_max
         ereco_pdfs = self.make_shifted_ereco_pdfs(a1, a2, b1, b2)
 
         def run(El, Eh):
@@ -219,7 +254,7 @@ class RateCalculator:
                 ]
                 cdfs.append(cdf)
 
-            def integrand(logE):
+            def atmo_integrand(logE):
                 etrue_idx = np.digitize(logE, self.tE_bin_edges) - 1
                 """
                 pdf = ereco_pdfs[etrue_idx]
@@ -245,6 +280,40 @@ class RateCalculator:
                     * np.power(10, logE)
                     * np.log(10)
                 )
+
+            def diff_integrand(logE):
+                etrue_idx = np.digitize(logE, self.tE_bin_edges) - 1
+                """
+                pdf = ereco_pdfs[etrue_idx]
+
+                def _cdf(x):
+                    return pdf(x) / pdf.norm
+
+                cdf = quad(_cdf, np.log10(El), np.log10(Eh))[0]
+                """
+
+                def sin_dec_int(sindec, logE):
+                    return self._aeff._eff_area_spline((logE, -sindec)) * self._diff(
+                        np.power(10, logE) * u.GeV, np.arcsin(sindec) * u.rad, 0 * u.rad
+                    ).to_value(1 / u.GeV / u.cm**2 / u.s / u.sr)
+
+                sin_dec_integrated = quad(
+                    sin_dec_int, sindec_min, sindec_max, args=(logE), limit=200
+                )[0]
+
+                return (
+                    cdfs[etrue_idx]
+                    * sin_dec_integrated
+                    * np.power(10, logE)
+                    * np.log(10)
+                )
+
+            if spectrum == "atmo":
+                integrand = atmo_integrand
+            elif spectrum == "diffuse":
+                integrand = diff_integrand
+            else:
+                raise ValueError("`spectrum` must be `atmo` or `diffuse`")
 
             if detailed == 2:
                 # use effective area binning, 10 bins per decade
@@ -282,16 +351,17 @@ class RateCalculator:
         # 1e4 to convert atmo flux from /cm**2 to /m**2
         return np.array(rate) * 1e4
 
-    def calc_rates_from_2d_splines(self, detailed: int = 0):
-        sindec_min = np.sin(self.dec_bin_edges[self.dec_idx].to_value(u.rad))
-        sindec_max = np.sin(self.dec_bin_edges[self._dec_idx + 1].to_value(u.rad))
+    def calc_rates_from_2d_splines(self, detailed: int = 0, spectrum="atmo"):
+
+        sindec_min = self.sindec_min
+        sindec_max = self.sindec_max
 
         # Boundaries are reconstructed energies
         def run(El, Eh):
             # Precompute the pdf integrals, i.e. cdf, between the Ereco edges
             # for all tE bins. When asked for the integrand, only look up value
 
-            def integrand(logE):
+            def atmo_integrand(logE):
 
                 # This part can be split of from the energy integral and be calculated outside
                 # energies (true, in this case) is only a parameter but not an actual variable
@@ -316,6 +386,36 @@ class RateCalculator:
                     * np.power(10, logE)
                     * np.log(10)
                 )
+
+            def diff_integrand(logE):
+                etrue_idx = np.digitize(logE, self.tE_bin_edges) - 1
+
+                def sin_dec_int(sindec, logE):
+                    return self._aeff._eff_area_spline((logE, -sindec)) * self._diff(
+                        np.power(10, logE) * u.GeV, np.arcsin(sindec) * u.rad, 0 * u.rad
+                    ).to_value(1 / u.GeV / u.cm**2 / u.s / u.sr)
+
+                sin_dec_integrated = quad(
+                    sin_dec_int, sindec_min, sindec_max, args=(logE), limit=200
+                )[0]
+
+                return (
+                    self._eres.prob_Edet_above_threshold(
+                        np.power(10, logE) * u.GeV,
+                        El * u.GeV,
+                        self._dec_middle,
+                        Eh * u.GeV,
+                        use_interpolation=True,
+                    )
+                    * sin_dec_integrated
+                    * np.power(10, logE)
+                    * np.log(10)
+                )
+
+            if spectrum == "atmo":
+                integrand = atmo_integrand
+            elif spectrum == "diffuse":
+                integrand = diff_integrand
 
             if detailed == 2:
                 # use effective area binning, 10 bins per decade
@@ -436,15 +536,15 @@ class RateCalculator:
         IRF_ebins = np.arange(2, 9.1, 0.5)
 
         if detailed == 0:
-            ax.plot(self.Ebins_c, detailed_rates, label="simulation", color="black")
+            ax.stairs(detailed_rates, self.Ebins, label="simulation", color="black")
             summed_rates = detailed_rates
         elif detailed == 1:
             default_cycler = cycler(color=colors)
             ax.set_prop_cycle(default_cycler)
 
-            ax.plot(
-                self.Ebins_c,
+            ax.stairs(
                 detailed_rates.sum(axis=1),
+                self.Ebins,
                 color="black",
                 label="simulation",
             )
@@ -452,9 +552,9 @@ class RateCalculator:
             for c, rate in enumerate(detailed_rates.T):
                 if c == 7:
                     break
-                ax.plot(
-                    self.Ebins_c,
+                ax.stairs(
                     rate,
+                    self.Ebins,
                     label=rf"$E=10^{{{(IRF_ebins[_bin]+IRF_ebins[_bin+1])/2:.2f}}}$ GeV",
                 )
                 _bin += 1
@@ -463,9 +563,9 @@ class RateCalculator:
         else:
             default_cycler = cycler(color=colors) * cycler(linestyle=linestyles)
             ax.set_prop_cycle(default_cycler)
-            ax.plot(
-                self.Ebins_c,
+            ax.stairs(
                 detailed_rates.sum(axis=1),
+                self.Ebins,
                 color="black",
                 label="simulation",
             )
@@ -473,14 +573,17 @@ class RateCalculator:
                 if c == 5 * 7:
                     break
                 if c % 5 == 0:
-                    ax.plot(
-                        self.Ebins_c,
+                    ax.stairs(
                         rate,
+                        self.Ebins,
                         label=rf"$E=10^{{{(IRF_ebins[_bin]+IRF_ebins[_bin+1])/2:.2f}}}$ GeV",
                     )
                     _bin += 1
                 else:
-                    ax.plot(self.Ebins_c, rate)
+                    ax.stairs(
+                        rate,
+                        self.Ebins,
+                    )
             summed_rates = detailed_rates.sum(axis=1)
 
         ax.set_xscale("log")
@@ -498,15 +601,15 @@ class RateCalculator:
         ax = axs[1]
         ax.scatter(
             self.Ebins_c,
-            (self.exp_rate - summed_rates) / summed_rates,
+            self.exp_rate / summed_rates,
             color="black",
             marker="+",
         )
-        ax.set_ylim(-0.6, 0.6)
+        ax.set_ylim(0.6, 1.6)
         if grid:
             ax.grid()
         ax.set_xlabel(r"$\hat{E}~[\si{\giga\electronvolt}]$")
-        ax.set_ylabel(r"$\frac{\text{data} - \text{sim}}{\text{sim}}$")
+        ax.set_ylabel(r"$\frac{\text{data}}{\text{sim}}$")
 
         return fig, axs
 

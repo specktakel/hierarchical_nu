@@ -309,7 +309,6 @@ class PowerLawSpectrum(SpectralShape):
         index = self._parameters["index"].value
 
         return_units = 1 / u.GeV / u.m**2 / u.s
-
         if energy.shape != ():
             output = np.zeros_like(energy.value) * norm
             mask = np.nonzero(
@@ -766,7 +765,6 @@ class LogParabolaSpectrum(SpectralShape):
         E = energy.to_value(u.GeV)
         E0 = self.parameters["norm_energy"].value.to_value(u.GeV)
         norm = self.parameters["norm"].value
-
         return_units = 1 / (u.GeV * u.m**2 * u.s)
 
         if energy.shape != ():
@@ -777,9 +775,9 @@ class LogParabolaSpectrum(SpectralShape):
             output[mask] = norm * np.power(
                 E[mask] / E0, -alpha - beta * np.log(E[mask] / E0)
             )
-            return output
+            return output.to(return_units)
         if (energy < self._lower_energy) or (energy > self._upper_energy):
-            return 0.0 * norm
+            return (0.0 * norm).to(return_units)
         else:
             return (norm * np.power(E / E0, -alpha - beta * np.log(E / E0))).to(
                 return_units
