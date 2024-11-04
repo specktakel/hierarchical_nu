@@ -40,7 +40,7 @@ def test_event_class(output_directory):
     )
 
     events_file = output_directory / events_file_name
-    events_in.to_file(events_file)
+    events_file = events_in.to_file(events_file)
     events_out = Events.from_file(events_file)
 
     assert np.all(events_out.energies == energies_in)
