@@ -75,6 +75,8 @@ class Events:
             [coords.x.value, coords.y.value, coords.z.value]
         ).T
 
+        self._coords.representation_type = "spherical"
+
         if all([t in self._recognised_types for t in types]):
             self._types = np.atleast_1d(types)
         else:
@@ -196,7 +198,7 @@ class Events:
             uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
         )
 
-        time = Time(mjd, format="mjd")
+        mjd = Time(mjd, format="mjd")
 
         coords.representation_type = "spherical"
 
@@ -210,11 +212,8 @@ class Events:
             ra = rng.random(ra.size) * 2 * np.pi * u.rad
             coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        coords.representation_type = "cartesian"
-        mask = []
-
         if not apply_cuts:
-            events = cls(energies, coords, types, ang_errs, time)
+            events = cls(energies, coords, types, ang_errs, mjd)
             events._idxs = np.full(events.N, True)
             if events.N == 0:
                 logger.warning("No events selected, check your simulation.")
@@ -223,44 +222,20 @@ class Events:
 
         if ROIList.STACK:
             logger.info("Applying ROIs to event selection")
-            for roi in ROIList.STACK:
-                if isinstance(roi, CircularROI):
-                    mask.append(
-                        (roi.radius >= roi.center.separation(coords))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-                else:
-                    if roi.RA_min > roi.RA_max:
-                        mask.append(
-                            (dec <= roi.DEC_max)
-                            & (dec >= roi.DEC_min)
-                            & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                            & (mjd <= roi.MJD_max)
-                            & (mjd >= roi.MJD_min)
-                        )
 
-                    else:
-                        mask.append(
-                            (dec <= roi.DEC_max)
-                            & (dec >= roi.DEC_min)
-                            & (ra >= roi.RA_min)
-                            & (ra <= roi.RA_max)
-                            & (mjd <= roi.MJD_max)
-                            & (mjd >= roi.MJD_min)
-                        )
+            mask = cls.apply_ROIS(coords, mjd)
 
             idxs = np.logical_or.reduce(mask)
 
             events = cls(
-                energies[idxs], coords[idxs], types[idxs], ang_errs[idxs], time[idxs]
+                energies[idxs], coords[idxs], types[idxs], ang_errs[idxs], mjd[idxs]
             )
             # Add the selection mask for easier comparison between simulations and fits
             # when using a subselection of the data
             events._idxs = idxs
         else:
             logger.info("Applying no ROIs to event selection")
-            events = cls(energies, coords, types, ang_errs, time)
+            events = cls(energies, coords, types, ang_errs, mjd)
             events._idxs = np.full(events.N, True)
 
         # Apply energy cuts
@@ -444,37 +419,9 @@ class Events:
         ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        mask = []
-        for roi in ROIList.STACK:
-            if isinstance(roi, CircularROI):
-                mask.append(
-                    (
-                        (roi.radius >= roi.center.separation(coords))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-                )
-            else:
-                if roi.RA_min > roi.RA_max:
-                    mask.append(
-                        (dec <= roi.DEC_max)
-                        & (dec >= roi.DEC_min)
-                        & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-
-                else:
-                    mask.append(
-                        (dec <= roi.DEC_max)
-                        & (dec >= roi.DEC_min)
-                        & (ra >= roi.RA_min)
-                        & (ra <= roi.RA_max)
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-
         mjd = Time(mjd, format="mjd")
+
+        mask = cls.apply_ROIS(coords, mjd)
 
         idxs = np.logical_or.reduce(mask)
 
@@ -616,3 +563,44 @@ class Events:
             n,
             bins,
         )
+
+    @classmethod
+    def apply_ROIS(cls, coords: SkyCoord, mjd: Time):
+        """
+        Returns list of mask, one mask for each ROI on stack
+        """
+
+        ra = coords.icrs.ra
+        dec = coords.icrs.dec
+
+        mask = []
+        for roi in ROIList.STACK:
+            if isinstance(roi, CircularROI):
+                mask.append(
+                    (
+                        (roi.radius >= roi.center.separation(coords))
+                        & (mjd.mjd <= roi.MJD_max)
+                        & (mjd.mjd >= roi.MJD_min)
+                    )
+                )
+            else:
+                if roi.RA_min > roi.RA_max:
+                    mask.append(
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                        & (mjd.mjd <= roi.MJD_max)
+                        & (mjd.mjd >= roi.MJD_min)
+                    )
+
+                else:
+                    mask.append(
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & (ra >= roi.RA_min)
+                        & (ra <= roi.RA_max)
+                        & (mjd.mjd <= roi.MJD_max)
+                        & (mjd.mjd >= roi.MJD_min)
+                    )
+
+        return mask

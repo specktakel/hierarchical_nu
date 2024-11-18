@@ -1769,10 +1769,12 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 # Make a vector of length 4, last component is kappa
                 return_vec = ForwardVectorDef("return_this", [4])
                 # Deflect true direction
-                #StringExpression(["return_this[1:3] = ", angular_parameterisation])
-                return_vec[1:3] << FunctionCall(["true_dir", "psf_ang"], "deflected_rng")
+                # StringExpression(["return_this[1:3] = ", angular_parameterisation])
+                return_vec[1:3] << FunctionCall(
+                    ["true_dir", "psf_ang"], "deflected_rng"
+                )
                 return_vec[4] << kappa
-                #StringExpression(["return_this[4] = kappa"])
+                # StringExpression(["return_this[4] = kappa"])
                 ReturnStatement([return_vec])
 
     def setup(self) -> None:
@@ -1941,6 +1943,26 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         bin_edges = self.irf.reco_energy_bins[tE_idx, dec_idx]
         binc = bin_edges[:-1] + np.diff(bin_edges) / 2
         pdf_vals = self.irf.reco_energy[tE_idx, dec_idx].pdf(binc)
+
+        # Skip for now
+        if False:
+            # if self._season == "IC86_II" and dec_idx == 1:
+            a1 = 0.688
+            a2 = 0.82
+            b1 = 0.91
+            b2 = 0.64
+            if tE_idx not in [0, 1]:
+                pass
+            else:
+                logger.warning("Adding shfits to Ereco histograms")
+                if tE_idx == 0:
+                    bin_edges = a1 * bin_edges + b1
+                    binc = a1 * binc + b1
+                elif tE_idx == 1:
+                    bin_edges = a2 * bin_edges + b2
+                    binc = a2 * bin_edges + b2
+                norm = np.sum(pdf_vals * np.diff(bin_edges))
+                pdf_vals /= norm
 
         # Check for empty bins that are surrounded by non-empty bins
         # Not treating these leads to issues with the splining of log-values

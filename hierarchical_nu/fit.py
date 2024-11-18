@@ -10,6 +10,14 @@ import corner
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.cm as cm
+
+try:
+    from roque_cmap import roque_chill
+
+    CMAP = roque_chill().reversed()
+except ModuleNotFoundError:
+    CMAP = "viridis_r"
+
 import ligo.skymap.plot
 import arviz as av
 from pathlib import Path
@@ -626,6 +634,10 @@ class StanFit:
         color_scale,
         highlight: Union[Iterable, None] = None,
         assoc_threshold: Union[float, None] = 0.2,
+        source_name: str = "",
+        lw: float = 1.0,
+        plot_text: bool = True,
+        textsize: float = 8,
     ):
         ev_class = np.array(self._get_event_classifications())
         if radius is not None and center is not None:
@@ -653,13 +665,13 @@ class StanFit:
             norm = colors.LogNorm(1e-8, 1.0, clip=True)
         else:
             raise ValueError("No other scale supported")
-        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        mapper = cm.ScalarMappable(norm=norm, cmap=CMAP)
         color = mapper.to_rgba(assoc_prob)
 
         indices = np.arange(self._events.N, dtype=int)[mask]
 
         for c, i in enumerate(indices):
-            # get the support (is then log10(E/GeV) and the pdf values
+            # get the support (is then log10(E/GeV)) and the pdf values
             supp, pdf = self._get_kde("E", i, lambda x: np.log10(x))
             # exponentiate the support, because we rescale the axis in the end
             ax.plot(
@@ -667,6 +679,7 @@ class StanFit:
                 pdf,
                 color=color[c],
                 zorder=assoc_prob[c] + 1,
+                lw=lw,
             )
         _, yhigh = ax.get_ylim()
         ax.set_xscale("log")
@@ -677,7 +690,7 @@ class StanFit:
                 yhigh,
                 1.05 * yhigh,
                 color=color[c],
-                lw=1,
+                lw=lw * 0.8,
                 zorder=assoc_prob[c] + 1,
             )
             if highlight is not None and highlight[i]:
@@ -709,14 +722,25 @@ class StanFit:
                         color="black",
                         ls="--",
                     )
-        _, yhigh = ax.get_ylim()
-        ax.text(
-            1e7,
-            yhigh * 0.98,
-            "$\hat E$",
-            fontsize=8.0,
-            verticalalignment="top",
-        )
+        if plot_text:
+            ax.text(
+                1.3e2,
+                yhigh * 1.025,
+                "$\hat E$",
+                fontsize=textsize,
+                verticalalignment="center",
+            )
+
+        if source_name:
+            ax.text(
+                0.95,
+                0.95,
+                source_name,
+                transform=ax.transAxes,
+                ha="right",
+                va="top",
+                fontsize=textsize,
+            )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
@@ -731,6 +755,10 @@ class StanFit:
         color_scale: str = "lin",
         highlight: Union[Iterable, None] = None,
         assoc_threshold: Union[float, None] = 0.2,
+        source_name: str = "",
+        lw: float = 1.0,
+        plot_text: bool = True,
+        textsize: float = 8,
     ):
         """
         Plot energy posteriors in log10-space.
@@ -753,8 +781,13 @@ class StanFit:
             assoc_idx,
             radius,
             color_scale,
-            highlight,
-            assoc_threshold,
+            highlight=highlight,
+            assoc_threshold=assoc_threshold,
+            source_name=source_name,
+            lw=lw,
+            plot_text=plot_text,
+            textsize=textsize,
+            
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -768,6 +801,9 @@ class StanFit:
         assoc_idx,
         color_scale,
         highlight: Union[Iterable, None] = None,
+        source_name: str = "",
+        s: float = 30.0,
+        textsize: float = 8,
     ):
         ev_class = np.array(self._get_event_classifications())
         assoc_prob = ev_class[:, assoc_idx]
@@ -785,7 +821,7 @@ class StanFit:
             norm = colors.LogNorm(1e-8, max, clip=True)
         else:
             raise ValueError("No other scale supported")
-        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        mapper = cm.ScalarMappable(norm=norm, cmap=CMAP)
         color = mapper.to_rgba(assoc_prob)
 
         events = self.events
@@ -819,7 +855,7 @@ class StanFit:
                         transform=ax.get_transform("icrs"),
                         edgecolor=edgecolor,
                         facecolor="none",
-                        s=30,
+                        s=s,
                     )
 
             ax.scatter(
@@ -828,7 +864,18 @@ class StanFit:
                 color=color[i],
                 zorder=assoc_prob[i] + 1,
                 transform=ax.get_transform("icrs"),
-                s=30,
+                s=s,
+            )
+
+        if source_name:
+            ax.text(
+                0.05,
+                0.95,
+                source_name,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=textsize,
             )
 
         ax.set_xlabel("RA")
@@ -845,6 +892,9 @@ class StanFit:
         assoc_idx: int = 0,
         color_scale: str = "lin",
         highlight: Union[Iterable, None] = None,
+        source_name: str = "",
+        s: float = 30.0,
+        textsize: float = 8,
     ):
         """
         Create plot of the ROI.
@@ -873,7 +923,15 @@ class StanFit:
         )
 
         ax, mapper = self._plot_roi(
-            center, ax, radius, assoc_idx, color_scale, highlight
+            center,
+            ax,
+            radius,
+            assoc_idx,
+            color_scale,
+            highlight=highlight,
+            source_name=source_name,
+            s=s,
+            textsize=textsize,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -889,6 +947,11 @@ class StanFit:
         highlight: Union[Iterable, None] = None,
         assoc_threshold: float = 0.2,
         figsize=(8, 3),
+        source_name: str = "",
+        lw: float = 1,
+        s: float = 20.0,
+        plot_text: bool = True,
+        textsize: float = 8,
     ):
         """
         Create plot of the ROI.
@@ -931,8 +994,11 @@ class StanFit:
             assoc_idx,
             radius,
             color_scale,
-            highlight,
-            assoc_threshold,
+            highlight=highlight,
+            assoc_threshold=assoc_threshold,
+            lw=lw,
+            plot_text=plot_text,
+            textsize=textsize
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -949,7 +1015,17 @@ class StanFit:
             radius=f"{radius.to_value(u.deg)} deg",
         )
 
-        ax, _ = self._plot_roi(center, ax, radius, assoc_idx, color_scale, highlight)
+        ax, _ = self._plot_roi(
+            center,
+            ax,
+            radius,
+            assoc_idx,
+            color_scale,
+            highlight=highlight,
+            source_name=source_name,
+            s=s,
+            textsize=textsize,
+        )
         axs.insert(0, ax)
 
         return fig, axs
@@ -1095,6 +1171,7 @@ class StanFit:
         upper_limit: bool = False,
         figsize=(8, 3),
         ax=None,
+        **kwargs,
     ):
         """
         Plot flux uncertainties.
@@ -1104,10 +1181,28 @@ class StanFit:
         :param energy_unit: Choose your favourite flux energy unit.
         :param area_unit: Choose your favourite flux area unit.
         :param x_energy_unit: Choose your favourite abscissa energy unit
-        :param upper_limit: Only plot upper limit if True
-        :param figsize: Tuple, figure size
-        :param ax: If provided, plot on existing axis and do not create a new figure
+        :param upper_limit: Set to True if only upper limit should be displayed
+        :param figsize: Figsize for new figure (requiring `ax=None`)
+        :param ax: Reuse existing axis, defaults to creating a new figure with single axis
+        :param kwargs: Remaining kwargs will be passed to `pyplot.axis.fill_between` or `pyplot.axis.plot`
         """
+
+        # Have some defaults for plotting
+        fill_kwargs = dict(
+            alpha=0.3,
+            color="C0",
+            edgecolor="none",
+        )
+        limit_kwargs = dict(
+            alpha=0.3,
+            color="C0",
+            marker=r"$\downarrow$",
+            markevery=0.06,
+            markersize=10,
+        )
+
+        fill_kwargs |= kwargs
+        limit_kwargs |= kwargs
 
         # Save some time calculating if the previous calculation has already used the same E_power
         try:
@@ -1146,18 +1241,13 @@ class StanFit:
                     ),
                     lower,
                     upper,
-                    color="C0",
-                    alpha=0.3,
-                    edgecolor="none",
+                    **fill_kwargs,
                 )
             else:
                 ax.plot(
                     E.to_value(x_energy_unit, equivalencies=u.spectral()),
                     upper,
-                    color="C0",
-                    marker=r"$\downarrow$",
-                    markevery=0.06,
-                    markersize=10,
+                    **limit_kwargs,
                     # TODO fix alignment of arrow base to the line
                 )
 
@@ -1210,7 +1300,7 @@ class StanFit:
             "flux": peak_flux.to_value(energy_unit / area_unit)[mask],
         }
 
-        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap="viridis_r")
+        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap=CMAP)
 
         colours = ax.collections[-1]._mapped_colors
 
