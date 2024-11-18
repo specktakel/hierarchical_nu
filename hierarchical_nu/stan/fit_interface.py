@@ -562,7 +562,7 @@ class StanFitInterface(StanInterface):
                     )
                     self._logF << glob[start:end]
 
-                    # Local pars are only source energies
+                    # Local pars are only neutrino energies
                     self._E = ForwardVariableDef("E", "vector[N]")
                     self._E << loc[1 : self._N]
 
@@ -590,7 +590,6 @@ class StanFitInterface(StanInterface):
                     end << 2 + self._N
 
                     self._event_type << int_data[start:end]
-                    # StringExpression(["int_data[3:2+N]"])
 
                     if self._use_event_tag:
                         self._event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
@@ -609,7 +608,7 @@ class StanFitInterface(StanInterface):
                     self._Edet = ForwardVariableDef("Edet", "vector[N]")
                     self._Edet << FunctionCall(
                         [real_data[start:end]], "to_vector"
-                    )  # FunctionCall(["real_data[start:end]"], "to_vector")
+                    )
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
                     grid_size = R2021EnergyResolution._log_tE_grid.size
@@ -619,9 +618,7 @@ class StanFitInterface(StanInterface):
 
                     with ForLoopContext(1, "N", "f") as f:
                         end << end + grid_size
-                        self._ereco_grid[f] << real_data[start:end]  # StringExpression(
-                        #     ["real_data[start:end]"]
-                        # )
+                        self._ereco_grid[f] << real_data[start:end]
                         start << start + grid_size
                     self._omega_det = ForwardArrayDef("omega_det", "vector[3]", ["[N]"])
                     # Loop over events to unpack reconstructed direction
@@ -629,9 +626,7 @@ class StanFitInterface(StanInterface):
                         end << end + 3
                         self._omega_det[i] << FunctionCall(
                             [real_data[start:end]], "to_vector"
-                        )  # StringExpression(
-                        #    ["to_vector(real_data[start:end])"]
-                        # )
+                        )
                         start << start + 3
 
                     self._varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
@@ -640,9 +635,7 @@ class StanFitInterface(StanInterface):
                         end << end + 3
                         self._varpi[i] << FunctionCall(
                             [real_data[start:end]], "to_vector"
-                        )  # StringExpression(
-                        #    ["to_vector(real_data[start:end])"]
-                        # )
+                        )
                         start << start + 3
                     # If diffuse source, z is longer by 1 element
                     if self.sources.diffuse:
@@ -650,14 +643,14 @@ class StanFitInterface(StanInterface):
                         self._z = ForwardVariableDef("z", "vector[Ns+1]")
                         self._z << FunctionCall(
                             [real_data[start:end]], "to_vector"
-                        )  # StringExpression(["to_vector(real_data[start:end])"])
+                        )
                         start << start + self._Ns + 1
                     else:
                         end << end + self._Ns
                         self._z = ForwardVariableDef("z", "vector[Ns]")
                         self._z << FunctionCall(
                             [real_data[start:end]], "to_vector"
-                        )  # StringExpression(["to_vector(real_data[start:end])"])
+                        )
                         start << start + self._Ns
 
                     if self.sources.atmospheric:
@@ -667,9 +660,7 @@ class StanFitInterface(StanInterface):
                         end << end + 1
                         (
                             self._atmo_integrated_flux << real_data[start]
-                        )  # StringExpression(
-                        #    ["real_data[start]"]
-                        # )
+                        )
                         start << start + 1
 
                     if self.sources.point_source:
@@ -822,7 +813,7 @@ class StanFitInterface(StanInterface):
             # Dected energies
             self._Edet = ForwardVariableDef("Edet", "vector[N]")
 
-            # Angular uncertainty, 0.683 coverage
+            # Angular uncertainty, 0.683 coverage in one coordinate
             self._ang_errs = ForwardVariableDef("ang_err", "vector[N]")
 
             # Event types as track/cascades
@@ -1064,24 +1055,6 @@ class StanFitInterface(StanInterface):
             for c, et in enumerate(self._event_types, 1):
                 self._et_stan[c] << et.S
 
-            # self._N_et_data = ForwardArrayDef("N_et_data", "int", ["[", self._Net, "]"])
-
-            # Set all entries to zero
-            # What is this actually used for?
-            # with ForLoopContext(1, self._Net, "i") as i:
-            #    self._N_et_data[i] << 0
-
-            """with ForLoopContext(1, self._N, "k") as k:
-                for c, event_type in enumerate(self._event_types, 1):
-                    with IfBlockContext(
-                        [
-                            self._event_type[k],
-                            " == ",
-                            event_type.S,
-                        ]
-                    ):
-                        StringExpression([self._N_et_data[c], " += 1"])"""
-
             if self.sources.point_source:
                 # Vector to hold pre-calculated spatial loglikes
                 # This needs to be compatible with multiple point sources!
@@ -1284,13 +1257,9 @@ class StanFitInterface(StanInterface):
                         with ForLoopContext(1, self._Ns, "k") as k:
                             # Loop over sources
                             insert_end << insert_end + insert_len
-                            # The double-index is needed because of a bug with the code generator
-                            # if I use [k, start:end], a single line of "k;" is printed after entering
-                            # the for loop
-                            # TODO: fix this in code generator
                             (
                                 self.real_data[i, insert_start:insert_end]
-                                << self._spatial_loglike[k][start:end]
+                                << self._spatial_loglike[k, start:end]
                             )
                             insert_start << insert_start + insert_len
 
@@ -1448,7 +1417,7 @@ class StanFitInterface(StanInterface):
                     "F_atmo", "real", self._F_atmo_min, self._F_atmo_max
                 )
 
-            # Vector of latent true source energies for each event
+            # Vector of latent true neutrino energy for each event
             self._E = ParameterVectorDef(
                 "E", "vector", self._N_str, self._Emin_at_det, self._Emax_at_det
             )
@@ -2317,7 +2286,6 @@ class StanFitInterface(StanInterface):
                     self._eres_src = ForwardArrayDef("eres_src", "real", self._Ns_str)
                     self._aeff_src = ForwardArrayDef("aeff_src", "real", self._Ns_str)
 
-                # self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
                 self._eres_diff = ForwardVariableDef("eres_diff", "real")
                 self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")

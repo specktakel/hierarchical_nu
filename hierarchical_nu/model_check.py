@@ -46,6 +46,11 @@ class ModelCheck:
         truths=None,
         priors=None,
     ):
+        """
+        :param config: HhierarchicalNuConfig instance or None (uses default config)
+        :param truths: true parameter values
+        :param priors: priors to overwrite the config's priors
+        """
 
         if config is None:
             logger.info("Loading default config")
@@ -248,6 +253,14 @@ class ModelCheck:
             os.makedirs(output_dir)
 
     def parallel_run(self, n_jobs=1, n_subjobs=1, seed=None, **kwargs):
+        """
+        Run model checks in parallel
+        :param n_jobs: Number of parallel jobs
+        :param n_subjobs: Number of sequential simulations/fits per parallel job
+        :param seed: random seed for simulation and fit
+        :param kwargs: kwargs to be passed to hierarchical_nu.fit.StanFit
+        """
+
         job_seeds = [(seed + job) * 10 for job in range(n_jobs)]
 
         self._results = Parallel(n_jobs=n_jobs, backend="loky")(
@@ -255,6 +268,12 @@ class ModelCheck:
         )
 
     def save(self, filename, save_events: bool = False):
+        """
+        Save model check
+        :param filename: output filename
+        :param save_events: If True save simulated events as well
+        """
+
         with h5py.File(filename, "w") as f:
             truths_folder = f.create_group("truths")
             for key, value in self.truths.items():
@@ -304,6 +323,11 @@ class ModelCheck:
 
     @classmethod
     def load(cls, filename_list):
+        """
+        Load previously saved model checks
+        :param filename_list: list of model check filenames
+        """
+
         if not isinstance(filename_list, list):
             filename_list = [filename_list]
         with h5py.File(filename_list[0], "r") as f:
@@ -379,6 +403,16 @@ class ModelCheck:
         alpha=0.1,
         show_N: bool = False,
     ):
+        """
+        Compare posteriors of parameters with simulation inputs
+        :param var_names: Parameter names to compare
+        :param var_labels: x-labels to be plotted
+        :param show_prior: True if prior distributions should be overplotted
+        :param nbins: Number of bins for posterior histograms
+        :param mask_results: numpy array mask to mask out single samples
+        :param alpha: alpha of histograms
+        :param show_N: overplot true number of events per source component
+        """
         if not var_names:
             var_names = self._default_var_names
 

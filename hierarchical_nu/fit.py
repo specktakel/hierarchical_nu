@@ -281,12 +281,26 @@ class StanFit:
             self._exposure_integral = exposure_integral
 
     def generate_stan_code(self):
+        """
+        Generate stan code from scratch
+        """
+
         self._fit_filename = self._stan_interface.generate()
 
     def set_stan_filename(self, fit_filename):
+        """
+        Set filename of existing stan code
+        :param fit_filename: filename of stan code
+        """
+
         self._fit_filename = fit_filename
 
     def compile_stan_code(self, include_paths=None):
+        """
+        Compile stan code
+        :param include_paths: list of paths to include stan files from
+        """
+
         if not include_paths:
             include_paths = [STAN_PATH, STAN_GEN_PATH]
 
@@ -299,6 +313,7 @@ class StanFit:
     def setup_stan_fit(self, filename: Union[str, Path] = ".stan_files/model_code"):
         """
         Create stan model from already compiled file
+        :param filename: Path to compiled model file
         """
 
         self._fit = CmdStanModel(exe_file=filename)
@@ -312,6 +327,15 @@ class StanFit:
         threads_per_chain: Union[int, None] = None,
         **kwargs,
     ):
+        """
+        Run fit
+        :param iterations: int, number of MCMC iterations
+        :param chains: Number of chains to run in parallel
+        :param seed: random seed
+        :param show_progress: Set to True if progress par should be displayed
+        :param threads_per_chain: When set up using nshards > 1, number of threads to run in parallel per chain
+        :param **kwargs: Other kwargs to be passed to cmdstanpy's sampling method
+        """
         # Use threads_per_chain = nshards as default
         if not threads_per_chain and self._nshards > 0:
             threads_per_chain = self._nshards
@@ -329,6 +353,10 @@ class StanFit:
         )
 
     def __getitem__(self, key):
+        """
+        Return samples from chains
+        :param key: Variable name
+        """
         if self._reload:
             return self._fit_output[key]
         else:
@@ -343,6 +371,16 @@ class StanFit:
         include_paths: List[str] = None,
         **kwargs,
     ):
+        """
+        Run setup and perform fit
+        :param iterations: int, number of MCMC iterations
+        :param chains: Number of chains to run in parallel
+        :param seed: random seed
+        :param show_progress: Set to True if progress par should be displayed
+        :param threads_per_chain: When set up using nshards > 1, number of threads to run in parallel per chain
+        :param **kwargs: Other kwargs to be passed to cmdstanpy's sampling method
+        """
+
         self.precomputation()
         self.generate_stan_code()
         self.compile_stan_code(include_paths=include_paths)
@@ -355,6 +393,11 @@ class StanFit:
         )
 
     def get_src_position(self, source_idx: int = 0):
+        """
+        Return source position
+        :param source_idx: Point source index
+        """
+
         try:
             if self._sources.N == 0:
                 raise AttributeError
@@ -375,6 +418,9 @@ class StanFit:
     def plot_trace(self, var_names=None, transform: bool = False, **kwargs):
         """
         Trace plot using list of stan parameter keys.
+        :param var_names: single parameter name or list of parameters
+        :param transform: set to True if log10(x) transformation should be applied
+        :param **kwargs: other kwargs passed to arviz.plot_trace
         """
 
         if not var_names:
@@ -394,6 +440,9 @@ class StanFit:
     def plot_trace_and_priors(self, var_names=None, transform: bool = False, **kwargs):
         """
         Trace plot and overplot the used priors.
+        :param var_names: single parameter name or list of parameters
+        :param transform: set to True if log10(x) transformation should be applied
+        :param **kwargs: other kwargs passed to arviz.plot_trace
         """
 
         fig, axs = self.plot_trace(
@@ -469,6 +518,13 @@ class StanFit:
         index: Union[int, slice, None] = None,
         transform: Callable = lambda x: x,
     ):
+        """
+        Retrieve kde approximation of samples for given parameter
+        :param var_name: parameter name
+        :param index: for vector/array parameters, only use this index
+        :param transform: Lambda function for transformation of variable
+        """
+
         chain = self[var_name]
         if index is not None:
             data = chain.T[index]
@@ -480,6 +536,8 @@ class StanFit:
         """
         Corner plot using list of Stan parameter keys and optional
         true values if working with simulated data.
+        :param var_names: Variable names for corner plot
+        :param truths: If provided, overplot True parameters
         """
 
         if not var_names:
@@ -1046,6 +1104,9 @@ class StanFit:
         :param energy_unit: Choose your favourite flux energy unit.
         :param area_unit: Choose your favourite flux area unit.
         :param x_energy_unit: Choose your favourite abscissa energy unit
+        :param upper_limit: Only plot upper limit if True
+        :param figsize: Tuple, figure size
+        :param ax: If provided, plot on existing axis and do not create a new figure
         """
 
         # Save some time calculating if the previous calculation has already used the same E_power
@@ -1120,6 +1181,14 @@ class StanFit:
         area_unit=u.cm**2,
         x_energy_unit=u.GeV,
     ):
+        """
+        Plot 2d kde contours of peak energy flux and energy at which peak lies
+        :param ax: Axis in which to plot
+        :param levels: HDI levels to plot
+        :param energy_unit: flux energy unit, i.e. energy_unit / area_unit / s
+        :param area_unit: flux area unit, i.e. energy_unit / area_unit / s
+        :param x_energy_unit: energy unit of x-axis
+        """
 
         from matplotlib.lines import Line2D
         import seaborn as sns
@@ -1294,6 +1363,10 @@ class StanFit:
         return path  # noqa: F821
 
     def diagnose(self):
+        """
+        Print fit diagnosis
+        """
+
         try:
             print(self._fit_output.diagnose().decode("ascii"))
         except:
@@ -1501,6 +1574,7 @@ class StanFit:
             config,
         )
 
+    '''
     def diagnose(self):
         """
         Print fit diagnose message.
@@ -1511,6 +1585,7 @@ class StanFit:
         except AttributeError:
             # TODO make compatible with loading multiple fits
             print(self._fit_meta["diagnose"])
+    '''
 
     def check_classification(self, sim_outputs):
         """
@@ -1581,6 +1656,10 @@ class StanFit:
 
     @property
     def chains(self):
+        """
+        Return number of chains
+        """
+
         if self._reload:
             return self._fit_meta["chains"]
         else:
@@ -1588,13 +1667,21 @@ class StanFit:
 
     @property
     def iterations(self):
+        """
+        Return number of iterations per chain
+        """
+
         if self._reload:
             return self._fit_meta["iter_sampling"]
         else:
             return self._fit_output.num_draws_sampling
 
     def _get_event_classifications(self):
-        # logprob is a misnomer, this is actually the rate parameter of each source component
+        """
+        Get list of event classifications
+        """
+
+        # logprob (lp) is a misnomer, this is actually the rate parameter of each source component
         if not self._reload:
             logprob = self._fit_output.stan_variable("lp").transpose(1, 2, 0)
         else:
@@ -1619,6 +1706,9 @@ class StanFit:
         return assoc_prob
 
     def _get_fit_inputs(self):
+        """
+        Return dictionary of fit inputs, passed to cmdstanpy
+        """
 
         self._get_par_ranges()
         fit_inputs = {}

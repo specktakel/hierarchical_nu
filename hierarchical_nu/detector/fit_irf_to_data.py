@@ -25,6 +25,11 @@ from hierarchical_nu.utils.fitting_tools import Spline1D
 from tqdm_joblib import tqdm_joblib
 from joblib import Parallel, delayed
 
+"""
+Defines class to compare experimental event rates with predictions.
+Currently only implements diffuse source components, i.e. astro diffuse and atmospheric.
+"""
+
 
 class RateCalculator:
     @u.quantity_input
@@ -155,6 +160,11 @@ class RateCalculator:
         return self._dec_idx
 
     def make_shifted_ereco_pdfs(self, a1, a2, b1, b2):
+        """
+        Create new energy resolution using linear transformations
+        on the reconstructed energy bins of the two lowest neutrino energies,
+        i.e. new bins = a * old bins + b
+        """
 
         ereco_pdfs = []
         shifts = [lambda x: x * a1 + b1, lambda x: x * a2 + b2] + [lambda x: x] * 20
@@ -172,7 +182,8 @@ class RateCalculator:
         hist: bool = False,
         shift: Callable = lambda x: x,
     ):
-        """This functions creates a spline for the reco energy
+        """
+        This functions creates a histogram or a spline of the histogram for the reco energy
         distribution given a true neutrino engery.
         Copied from skyllh and slightly adapted to be used
         with shifted reco energy bins.
@@ -523,24 +534,3 @@ class RateCalculator:
         ax.set_ylabel("pdf")
 
         return fig, ax
-
-
-"""
-if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("-s", "--season", type=str)
-    parser.add_argument("-d", "--declination", type=int)
-    parser.add_argument("-i", "--index", type=float, default=0.0)
-    args = parser.parse_args()
-    season = args.season
-    dec_bin = parser.declination
-    index = parser.index
-
-    flux = AtmosphericNuMuFlux(
-        1e1 * u.GeV, 1e9 * u.GeV, index=index, cache_dir="input/mceq"
-    )
-    aeff = R2021EffectiveArea(season=season)
-
-    calc = RateCalculator(Refrigerator.python2dm(season), flux, aeff, dec_bin)
-    sys.exit()
-"""

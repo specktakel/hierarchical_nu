@@ -2,6 +2,8 @@
 Implements ROI with cuts on sky region for analysis
 """
 
+# TODO: combine ROIList with ROI class
+
 import astropy.units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
@@ -15,6 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 class ROI(ABC):
+    """
+    Properties should be self explanatory
+    """
+
     def __init__(self):
         ROIList.add(self)
 
@@ -56,6 +62,12 @@ class ROIList:
 
     @staticmethod
     def add(roi):
+        """
+        Add ROI to stack
+        Currently only exclusively CircularROIs or non-CircularROIs can be stacked.
+        :param roi: ROI instance to be added
+        """
+
         if ROIList.STACK:
             if isinstance(roi, CircularROI) and not isinstance(
                 ROIList.STACK[0], CircularROI
@@ -67,11 +79,23 @@ class ROIList:
 
     @staticmethod
     def pop(i):
+        """
+        Remove ROI from stack
+        :param i: i-th ROI to be deleted
+        """
+
         ROIList.STACK.pop(i)
 
     @staticmethod
     def clear_registry():
+        """
+        Cleares entire stack of ROIs
+        """
+
         ROIList.STACK = []
+
+    # The properties are defined such that the entire stack of ROIs is scanned over
+    # and the most extreme values found will be returned
 
     # need to think about the wrapping at 2pi/0
     # TODO for future-Julian
@@ -133,6 +157,13 @@ class CircularROI(ROI):
         MJD_max=np.inf,
         apply_roi: bool = False,
     ):
+        """
+        :param center: SkyCoord instance of ROI's center
+        :param radius: Radius of ROI
+        :param MJD_min: Minimum MJD, only used for data selection
+        :param MJD_max: Maximum MJD, only used for data selection
+        :param apply_roi: True if ROI should by applied at data selection
+        """
         self._center = center
         self._radius = radius
         self._MJD_min = MJD_min
@@ -264,6 +295,16 @@ class RectangularROI(ROI):
         MJD_max=np.inf,
         apply_roi: bool = False,
     ):
+        """
+        :param RA_min: Minimum RA
+        :param RA_max: Maximum RA
+        :param DEC_min: Minimum DEC
+        :param DEC_max: Maximum DEC
+        :param MJD_min: Minimum MJD, only used for data selection
+        :param MJD_max: Maximum MJD, only used for data selection
+        :param apply_roi: True if ROI should by applied at data selection
+        """
+
         self._RA_min = RA_min
         self._RA_max = RA_max
         self._DEC_min = DEC_min
@@ -341,6 +382,11 @@ class RectangularROI(ROI):
         self._DEC_max = val
 
     def check_boundaries(self):
+        """
+        Check if all values are allowed,
+        actual checks done in setter methods
+        """
+
         self.RA_min = self._RA_min
         self.RA_max = self._RA_max
         self.DEC_min = self._DEC_min
@@ -362,6 +408,12 @@ class FullSkyROI(RectangularROI):
         MJD_max=np.inf,
         apply_roi: bool = False,
     ):
+        """
+        :param MJD_min: Minimum MJD, only used for data selection
+        :param MJD_max: Maximum MJD, only used for data selection
+        :param apply_roi: True if ROI should by applied at data selection
+        """
+
         super().__init__(MJD_min=MJD_min, MJD_max=MJD_max, apply_roi=apply_roi)
 
     def __repr__(self):
@@ -380,6 +432,12 @@ class NorthernSkyROI(RectangularROI):
         MJD_max=np.inf,
         apply_roi: bool = False,
     ):
+        """
+        :param MJD_min: Minimum MJD, only used for data selection
+        :param MJD_max: Maximum MJD, only used for data selection
+        :param apply_roi: True if ROI should by applied at data selection
+        """
+
         super().__init__(
             DEC_min=np.deg2rad(-5) * u.rad,
             MJD_min=MJD_min,
@@ -395,6 +453,9 @@ def ROI_width(d1, radius, d2):
     """
     Returns ROI width as function of declination.
     Only sensibly defined within the ROI of radius `radius`
+    :param d1: declination at which width is to be determined
+    :param radius: radius of ROI
+    :param d2: declination of ROI center
     """
 
     return -np.arccos(

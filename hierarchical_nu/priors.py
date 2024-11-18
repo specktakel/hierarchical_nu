@@ -37,6 +37,8 @@ class PriorDistribution(metaclass=ABCMeta):
 
 
 class NormalPrior(PriorDistribution):
+    """Normal distribution"""
+
     def __init__(self, name="normal", mu=0.0, sigma=1.0):
         super().__init__(name=name)
 
@@ -80,6 +82,8 @@ class NormalPrior(PriorDistribution):
 
 
 class LogNormalPrior(PriorDistribution):
+    """Log-normal distribution"""
+
     def __init__(self, name="lognormal", mu=1.0, sigma=1.0):
         super().__init__(name=name)
 
@@ -123,6 +127,10 @@ class LogNormalPrior(PriorDistribution):
 
 
 class ParetoPrior(PriorDistribution):
+    """
+    Pareto distribution, i.e. x^{-alpha}
+    """
+
     def __init__(self, name="pareto", xmin=1.0, alpha=1.0):
         super().__init__(name=name)
 
@@ -363,6 +371,10 @@ class UnitlessPrior:
 
 
 class LuminosityPrior(UnitPrior):
+    """
+    Source luminosity prior
+    """
+
     UNITS = u.GeV / u.s
     UNITS_STRING = UNITS.to_string()
 
@@ -385,6 +397,10 @@ class LuminosityPrior(UnitPrior):
 
 
 class EnergyPrior(UnitPrior):
+    """
+    Prior on break energy used in logparabola or pgamma spectrum
+    """
+
     UNITS = u.GeV
     UNITS_STRING = UNITS.to_string()
 
@@ -403,6 +419,10 @@ class EnergyPrior(UnitPrior):
 
 
 class FluxPrior(UnitPrior):
+    """
+    Prior on number flux dN/dA/dt
+    """
+
     UNITS = 1 / u.m**2 / u.s
     UNITS_STRING = UNITS.unit.to_string()
 
@@ -417,6 +437,10 @@ class FluxPrior(UnitPrior):
 
 
 class DifferentialFluxPrior(UnitPrior):
+    """
+    Prior on differential flux dN/dE/dA/dt
+    """
+
     UNITS = 1 / u.GeV / u.m**2 / u.s
     UNITS_STRING = UNITS.unit.to_string()
 
@@ -434,6 +458,10 @@ class DifferentialFluxPrior(UnitPrior):
 
 
 class IndexPrior(UnitlessPrior):
+    """
+    Spectral index or curvature (for logparabola) prior
+    """
+
     UNITS = 1
     UNITS_STRING = "1"
 
@@ -449,12 +477,16 @@ class IndexPrior(UnitlessPrior):
 
 class MultiSourcePrior:
     """
-    Container base class to handle priors with different parameters
-    in fits of multiple point sources. If all sources should
+    Container base class to handle priors on vector parameters,
+    e.g. index prior for multiple point sources. If all sources should
     have the same prior, use the normal classes above.
     """
 
     def __init__(self, priors):
+        """
+        :param priors: List of priors
+        """
+
         assert all(isinstance(_._prior, type(priors[0]._prior)) for _ in priors)
         self._priors = priors
 
@@ -651,6 +683,11 @@ class Priors(object):
         return priors_dict
 
     def save(self, file_name: str):
+        """
+        Save priors to file
+        :param file_name: filename
+        """
+
         with h5py.File(file_name, "w") as f:
             self._writeto(f)
 
@@ -673,6 +710,11 @@ class Priors(object):
                 create_dataset(g, value)
 
     def addto(self, file_name: str, group_name: str):
+        """
+        Save priors to existing file
+        :param file_name: existing h5 file
+        :param group_name: group name of prior data
+        """
         with h5py.File(file_name, "r+") as f:
             g = f.create_group(group_name)
 
@@ -680,11 +722,22 @@ class Priors(object):
 
     @classmethod
     def from_file(cls, file_name: str):
+        """
+        Load prior data from h5 file
+        :param file_name: filename
+        """
+
         with h5py.File(file_name, "r") as f:
             return cls._load_from(f)
 
     @classmethod
     def from_group(cls, file_name: str, group_name: str):
+        """
+        Load prior data from h5 file combined with other data
+        :param file_name: filename
+        :param group_name: group name of prior data
+        """
+
         with h5py.File(file_name, "r") as f:
             g = f[group_name]
 

@@ -2,6 +2,11 @@ import subprocess
 import inspect
 from os import path
 
+"""
+Find the software version or git hash
+"""
+
+
 # import arbitrary class defined in the package to get some directory inside the package
 from .lifetime import LifeTime
 
