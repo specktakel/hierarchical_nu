@@ -3,7 +3,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from hierarchical_nu.utils.roi import CircularROI, RectangularROI, FullSkyROI, ROIList
 from hierarchical_nu.events import Events
-from hierarchical_nu.detector.icecube import IC86_II, NT
+from hierarchical_nu.detector.icecube import IC86_II
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import PointSource, Sources
 from hierarchical_nu.simulation import Simulation
@@ -129,7 +129,7 @@ def test_rectangular_precomputation():
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
 
-    sim = Simulation(my_sources, NT, 5 * u.year)
+    sim = Simulation(my_sources, IC86_II, 5 * u.year)
 
     sim.precomputation()
 

@@ -52,6 +52,7 @@ class NorthernTracksEffectiveArea(EffectiveArea):
     NAME = "NorthernTracksEffectiveArea"
 
     def __init__(self) -> None:
+        logger.warning("Northern tracks detector model is no longer maintained")
         self.setup()
 
         self._func_name = "NorthernTracksEffectiveArea"
@@ -140,6 +141,8 @@ class NorthernTracksEnergyResolution(LogNormEnergyResolution):
             inputs: List[TExpression]
                 First item is true energy, second item is reco energy
         """
+
+        logger.warning("Northern tracks detector model is no longer maintained")
 
         self.mode = mode
         self._poly_params_mu: Sequence = []
@@ -372,6 +375,7 @@ class NorthernTracksAngularResolution(AngularResolution):
     RNG_NAME = "NorthernTracksAngularResolution_rng"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
+        logger.warning("Northern tracks detector model is no longer maintained")
         self.mode = mode
         if self.mode == DistributionMode.PDF:
             self._func_name = self.PDF_NAME
@@ -510,6 +514,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
     PDF_FILENAME = "northern_tracks_pdf.stan"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF):
+        logger.warning("Northern tracks detector model is no longer maintained")
         super().__init__(mode, event_type="tracks")
 
         if self.mode == DistributionMode.PDF:

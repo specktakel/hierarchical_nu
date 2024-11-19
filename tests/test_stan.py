@@ -1,7 +1,6 @@
 from cmdstanpy import CmdStanModel
 import numpy as np
 import pytest
-import inspect
 from os import path
 from pathlib import Path
 
