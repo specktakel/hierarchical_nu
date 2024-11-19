@@ -2,11 +2,8 @@ import pytest
 import numpy as np
 from astropy import units as u
 
-from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.source import Sources, PointSource
 from hierarchical_nu.source.flux_model import (
-    integral_power_law,
     LogParabolaSpectrum,
     PowerLawSpectrum,
 )
@@ -125,7 +122,9 @@ def test_logparabola():
     pl = PowerLawSpectrum(norm, Enorm, index, Emin, Emax)
     log = LogParabolaSpectrum(norm, E0, alpha, beta, Emin, Emax)
 
-    factor_pl = PowerLawSpectrum.flux_conv_(index.value, Emin.to_value(u.GeV), Emax.to_value(u.GeV), 0., 0.)
+    factor_pl = PowerLawSpectrum.flux_conv_(
+        index.value, Emin.to_value(u.GeV), Emax.to_value(u.GeV), 0.0, 0.0
+    )
     factor_log = log.flux_conv()
 
     flux_density_pl = pl.total_flux_density.to_value(u.erg / u.m**2 / u.s)
