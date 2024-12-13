@@ -1338,10 +1338,17 @@ class StanFit:
             f.create_dataset("version", data=git_hash)
 
             summary = self._fit_output.summary()
+            meta = self._fit_output.method_variables()
+
+            method_keys = [
+                "lp__",
+                "stepsize__",
+                "treedepth__",
+                "n_leapfrog__",
+            ]
 
             # List of keys for which we are looking in the entirety of stan parameters
             key_stubs = [
-                "lp__",
                 "L",
                 "_luminosity",
                 "src_index",
@@ -1373,6 +1380,9 @@ class StanFit:
             meta_folder.create_dataset("N_Eff", data=N_Eff)
             meta_folder.create_dataset("R_hat", data=R_hat)
             meta_folder.create_dataset("parameters", data=np.array(keys, dtype="S"))
+
+            for key in method_keys:
+                meta_folder.create_dataset(key, data=meta[key])
 
         self.events.to_file(path, append=True)
 
