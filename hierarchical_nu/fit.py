@@ -1603,17 +1603,6 @@ class StanFit:
             config,
         )
 
-    def diagnose(self):
-        """
-        Print fit diagnose message.
-        """
-
-        try:
-            print(self._fit_output.diagnose())
-        except AttributeError:
-            # TODO make compatible with loading multiple fits
-            print(self._fit_meta["diagnose"])
-
     def check_classification(self, sim_outputs):
         """
         For the case of simulated data, check if
