@@ -1398,7 +1398,7 @@ class StanFit:
 
     def diagnose(self):
         try:
-            print(self._fit_output.diagnose().decode("ascii"))
+            print(self._fit_output.diagnose())
         except:
             print(self._fit_meta["diagnose"].decode("ascii"))
 
