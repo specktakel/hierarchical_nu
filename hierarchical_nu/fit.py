@@ -1367,12 +1367,12 @@ class StanFit:
                         break
 
             R_hat = np.array([summary["R_hat"][k] for k in keys])
-            try:
+            if "ESS_bulk" in summary.keys():
                 ESS_bulk = np.array([summary["ESS_bulk"][k] for k in keys])
-                ESS_tail = np.array([summary["ESS_bulk"][k] for k in keys])
+                ESS_tail = np.array([summary["ESS_tail"][k] for k in keys])
                 meta_folder.create_dataset("ESS_bulk", data=ESS_bulk)
                 meta_folder.create_dataset("ESS_tail", data=ESS_tail)
-            except KeyError:
+            if "N_Eff" in summary.keys():
                 N_Eff = np.array([summary["N_Eff"][k] for k in keys])
                 meta_folder.create_dataset("N_Eff", data=N_Eff)
 
