@@ -729,7 +729,6 @@ class StanFit:
             lw=lw,
             plot_text=plot_text,
             textsize=textsize,
-            
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -940,7 +939,7 @@ class StanFit:
             assoc_threshold=assoc_threshold,
             lw=lw,
             plot_text=plot_text,
-            textsize=textsize
+            textsize=textsize,
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -1368,16 +1367,22 @@ class StanFit:
             ]
 
             keys = []
-            for k, v in summary["N_Eff"].items():
+            for k, v in summary["R_hat"].items():
                 for key in key_stubs:
                     if key in k:
                         keys.append(k)
                         break
 
             R_hat = np.array([summary["R_hat"][k] for k in keys])
-            N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+            if "ESS_bulk" in summary.keys():
+                ESS_bulk = np.array([summary["ESS_bulk"][k] for k in keys])
+                ESS_tail = np.array([summary["ESS_tail"][k] for k in keys])
+                meta_folder.create_dataset("ESS_bulk", data=ESS_bulk)
+                meta_folder.create_dataset("ESS_tail", data=ESS_tail)
+            if "N_Eff" in summary.keys():
+                N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+                meta_folder.create_dataset("N_Eff", data=N_Eff)
 
-            meta_folder.create_dataset("N_Eff", data=N_Eff)
             meta_folder.create_dataset("R_hat", data=R_hat)
             meta_folder.create_dataset("parameters", data=np.array(keys, dtype="S"))
 
