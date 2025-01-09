@@ -788,7 +788,7 @@ class Priors(object):
             pass
 
         try:
-            priros.ang_sys = prior_dict["ang_sys"]
+            priors.ang_sys = priors_dict["ang_sys"]
         except KeyError:
             pass
 
