@@ -1593,8 +1593,8 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 f"{self._season}AngularResolution",
-                ["true_dir", "reco_dir", "sigma"],
-                ["vector", "vector", "real"],
+                ["angular_separation", "sigma_squared"],
+                ["real", "real"],
                 "real",
             )
 
@@ -1610,7 +1610,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         with self:
             if self.mode == DistributionMode.PDF:
                 angular_parameterisation = RayleighParameterization(
-                    ["true_dir", "reco_dir"], "sigma", self.mode
+                    ["angular_separation"], "sigma_squared", self.mode
                 )
                 ReturnStatement([angular_parameterisation])
 

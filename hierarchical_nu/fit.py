@@ -228,6 +228,8 @@ class StanFit:
                 self._def_var_names.append("beta_index")
             if self._fit_Enorm:
                 self._def_var_names.append("E0_src")
+            if self._fit_ang_sys:
+                self._def_var_names.append("ang_sys_deg")
 
             self._def_var_names.append("Nex_src")
 
@@ -1749,8 +1751,14 @@ class StanFit:
                 Parameter.get_parameter("ang_sys_add").value.to_value(u.rad) ** 2
                 + self._events.ang_errs.to_value(u.rad) ** 2
             )
+        elif self._fit_ang_sys:
+            fit_inputs["ang_sys_min"], fit_inputs["ang_sys_max"] = (
+                self._ang_sys_par_range
+            )
+            fit_inputs["ang_err"] = self._events.ang_errs.to_value(u.rad)
         else:
             fit_inputs["ang_err"] = self._events.ang_errs.to_value(u.rad)
+
         fit_inputs["Ns"] = len(
             [s for s in self._sources.sources if isinstance(s, PointSource)]
         )
@@ -1909,6 +1917,10 @@ class StanFit:
                     ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
                     for ps in self._sources.point_source
                 ]
+
+            if self._fit_ang_sys:
+                fit_inputs["ang_sys_mu"] = self._priors.ang_sys.mu.to_value(u.rad)
+                fit_inputs["ang_sys_sigma"] = self._priors.ang_sys.sigma.to_value(u.rad)
 
         # Inputs for priors of point sources
         if self._priors.src_index.name not in ["normal", "lognormal"]:
@@ -2168,5 +2180,5 @@ class StanFit:
 
         if self._fit_ang_sys:
             self._ang_sys_par_range = Parameter.get_parameter(
-                "ang_sys"
+                "ang_sys_add"
             ).par_range.to_value(u.rad)

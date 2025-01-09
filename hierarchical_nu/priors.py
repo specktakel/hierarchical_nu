@@ -181,6 +181,7 @@ class PriorDictHandler:
             "beta_index": IndexPrior,
             "diff_index": IndexPrior,
             "E0_src": EnergyPrior,
+            "ang_sys": AngularPrior,
         }
         prior_name = prior_dict["name"]
         prior = translate[prior_dict["quantity"]]
@@ -360,6 +361,20 @@ class UnitlessPrior:
 
     def to_dict(self, units):
         return self._prior.to_dict(units)
+
+
+class AngularPrior(UnitPrior):
+    UNITS = u.rad
+    UNITS_STRING = UNITS.to_string()
+
+    @u.quantity_input
+    def __init__(
+        self,
+        name=NormalPrior,
+        mu: Union[u.Quantity[u.deg], None] = 0.2 * u.deg,
+        sigma: Union[u.Quantity[u.deg], None] = 0.2 * u.deg,
+    ):
+        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
 
 class LuminosityPrior(UnitPrior):
@@ -559,6 +574,18 @@ class Priors(object):
 
         self.E0_src = EnergyPrior()
 
+        self.ang_sys = AngularPrior()
+
+    @property
+    def ang_sys(self):
+        return self._ang_sys
+
+    @ang_sys.setter
+    def ang_sys(self, prior: AngularPrior):
+        if not isinstance(prior, AngularPrior):
+            raise ValueError("Wrong prior type")
+        self._ang_sys = prior
+
     @property
     def luminosity(self):
         return self._luminosity
@@ -648,6 +675,8 @@ class Priors(object):
 
         priors_dict["E0_src"] = self._E0_src
 
+        priors_dict["ang_sys"] = self._ang_sys
+
         return priors_dict
 
     def save(self, file_name: str):
@@ -725,10 +754,13 @@ class Priors(object):
                 elif key == "beta_index":
                     priors_dict[key] = MultiSourceIndexPrior(container)
                 elif key == "E0_src":
-                    raise NotImplementedError
+                    raise NotImplementedError()
                     # priors_dict[key] = MultiSourceEnergyPrior(container)
                 elif key == "L":
                     priors_dict[key] = MultiSourceLuminosityPrior(container)
+
+                elif key == "ang_sys":
+                    raise NotImplementedError()
 
         return cls.from_dict(priors_dict)
 
@@ -747,8 +779,17 @@ class Priors(object):
         try:
             # Backwards compatiblity
             priors.beta_index = priors_dict["beta_index"]
+        except KeyError:
+            pass
+
+        try:
             priors.E0_src = priors_dict["E0_src"]
-        except:
+        except KeyError:
+            pass
+
+        try:
+            priros.ang_sys = prior_dict["ang_sys"]
+        except KeyError:
             pass
 
         priors.diff_index = priors_dict["diff_index"]

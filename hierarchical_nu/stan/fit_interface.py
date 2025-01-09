@@ -212,8 +212,18 @@ class StanFitInterface(StanInterface):
                             ps_pos,
                             self._Edet[i],
                         )
-
-                        # add angular sys here to ang_err and store in self._spatial_loglike
+                    if self.sources.point_source and self._fit_ang_sys:
+                        # Calculate spatial likelihood if fitting ang_sys_add(_squared)
+                        with ForLoopContext(1, self._Ns, "k") as k:
+                            self._spatial_loglike[k, i] << FunctionCall(
+                                [
+                                    self._angular_separation[k, i],
+                                    self._ang_errs_squared[i]
+                                    + self._ang_sys_add_squared,
+                                    # self._kappa[i],
+                                ],
+                                event_type.F + "AngularResolution",
+                            )
 
             self._eres_src << StringExpression(["irf_return.1"])
             self._aeff_src << StringExpression(["irf_return.2"])
@@ -567,9 +577,11 @@ class StanFitInterface(StanInterface):
                         self._diff_index << glob[start]
                         start << start + 1
                     if self._fit_ang_sys:
-                        self._ang_sys_add = ForwardVariableDef("ang_sys_add", "real")
+                        self._ang_sys_add_squared = ForwardVariableDef(
+                            "ang_sys_add_squared", "real"
+                        )
                         end << end + 1
-                        self._ang_sys_add << glob[start]
+                        self._ang_sys_add_squared << glob[start]
                         start << start + 1
                     end << end + self._Ns_tot
                     self._logF = ForwardVariableDef(
@@ -675,14 +687,31 @@ class StanFitInterface(StanInterface):
                         (self._atmo_integrated_flux << real_data[start])
                         start << start + 1
 
-                    if self.sources.point_source and not self._fit_ang_sys:
+                    if self.sources.point_source:
                         self._spatial_loglike = ForwardArrayDef(
                             "spatial_loglike", "real", ["[Ns, N]"]
                         )
-                        with ForLoopContext(1, self._Ns, "k") as k:
+                        if not self._fit_ang_sys:
+                            with ForLoopContext(1, self._Ns, "k") as k:
+                                end << end + length
+                                (self._spatial_loglike[k] << real_data[start:end])
+                                start << start + length
+                        else:
+                            self._ang_errs_squared = ForwardArrayDef(
+                                "ang_errs_squared", "real", ["[N]"]
+                            )
                             end << end + length
-                            (self._spatial_loglike[k] << real_data[start:end])
+                            self._ang_errs_squared << real_data[start:end]
                             start << start + length
+
+                            self._angular_separation = ForwardArrayDef(
+                                "angular_separation", "real", ["[Ns, N]"]
+                            )
+                            with ForLoopContext(1, self._Ns, "k") as k:
+                                end << end + length
+                                self._angular_separation[k] << real_data[start:end]
+                                start << start + length
+
                     self._Emin_src = ForwardArrayDef("Emin_src", "real", ["[Ns]"])
                     self._Emax_src = ForwardArrayDef("Emax_src", "real", ["[Ns]"])
                     self._Emin = ForwardVariableDef("Emin", "real")
@@ -827,9 +856,7 @@ class StanFitInterface(StanInterface):
 
             # Angular uncertainty, 0.683 coverage
             self._ang_errs = ForwardVariableDef("ang_err", "vector[N]")
-
-            # Added (in quadrature) angular uncertainty to be fit
-            # TODO
+            # Added (in quadrature) angular uncertainty to be fit, done in transformed data
 
             # Event types as track/cascades
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
@@ -1073,6 +1100,23 @@ class StanFitInterface(StanInterface):
             self._Net_stan = ForwardVariableDef("Net", "int")
             self._Net_stan << StringExpression(["size(event_types)"])
 
+            if self._sources.point_source:
+                # Angular separation between sources and events, in rad
+                self._angular_separation = ForwardArrayDef(
+                    "angular_separation", "real", ["[Ns, N]"]
+                )
+                with ForLoopContext(1, self._Ns, "k") as k:
+                    with ForLoopContext(1, self._N, "i") as i:
+                        self._angular_separation[k, i] << FunctionCall(
+                            [self._varpi[k], self._omega_det[i]], "ang_sep"
+                        )
+
+                # If we do fit angular systematics, we only need the squared uncertainties
+                self._ang_errs_squared = ForwardVariableDef(
+                    "ang_errs_squared", "vector[N]"
+                )
+                self._ang_errs_squared << self._ang_errs**2
+
             for c, et in enumerate(self._event_types, 1):
                 self._et_stan[c] << et.S
 
@@ -1125,9 +1169,8 @@ class StanFitInterface(StanInterface):
                                     # should be used.
                                     self._spatial_loglike[k, i] << FunctionCall(
                                         [
-                                            self._varpi[k],
-                                            self._omega_det[i],
-                                            self._ang_errs[i],
+                                            self._angular_separation[k, i],
+                                            self._ang_errs_squared[i],
                                             # self._kappa[i],
                                         ],
                                         event_type.F + "AngularResolution",
@@ -1185,21 +1228,22 @@ class StanFitInterface(StanInterface):
                 # Find size for real_data array
                 sd_events_J = (
                     4 + grid_size
-                )  # reco energy, reco dir (unit vector), eres grid
+                )  # reco energy, reco dir (unit vector, counts as 3 entries), eres grid
                 sd_if_diff = 3  # redshift of diffuse component, Emin_diff/max
                 sd_Ns = 6  # redshift, Emin_src, Emax_src, x, y, z per point source
                 sd_other = 2  # Emin, Emax
                 # Need Ns * N for spatial loglike, added extra in sd_string -> J*Ns
                 if self._fit_ang_sys:
-                    # If we use ang_sys we need to pass ang_err
+                    # If we use ang_sys we need to pass ang_errs_squared
                     sd_events_J += 1
                 if self.sources.atmospheric:
                     # atmo_integrated_flux, why was this here before? not used as far as I can see
                     sd_other += 1  # no atmo in cascades
                 sd_string = f"{sd_events_J}*J + {sd_Ns}*Ns + {sd_other}"
-                if not self._fit_ang_sys:
-                    # If we do not use ang_sys we need to pass the fixed spatial loglike for J events x Ns sources
-                    sd_string += " + J*Ns"
+
+                # If we do not use ang_sys we need to pass the fixed spatial loglike for J events x Ns sources
+                # and if we do we need to pass angular separations between each source and event (disregard use_event_tag for now) TODO for me
+                sd_string += " + J*Ns"
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_diff}"
 
@@ -1317,9 +1361,19 @@ class StanFitInterface(StanInterface):
                             insert_end << insert_end + insert_len
                             (
                                 self.real_data[i, insert_start:insert_end]
-                                << self._ang_errs[start:end]
+                                << FunctionCall(
+                                    [self._ang_errs_squared[start:end]], "to_array_1d"
+                                )
                             )
                             insert_start << insert_start + insert_len
+
+                            with ForLoopContext(1, self._Ns, "k") as k:
+                                insert_end << insert_end + insert_len
+                                (
+                                    self.real_data[i, insert_start:insert_end]
+                                    << self._angular_separation[k, start:end]
+                                )
+                                insert_start << insert_start + insert_len
 
                     insert_end << insert_end + self._Ns
                     self.real_data[i, insert_start:insert_end] << self._Emin_src
@@ -1482,7 +1536,7 @@ class StanFitInterface(StanInterface):
 
             if self._fit_ang_sys:
                 self._ang_sys_add = ParameterDef(
-                    "ang_sys_add", "real", self._ang_sys_add_min, self._ang_sys_add_min
+                    "ang_sys_add", "real", self._ang_sys_add_min, self._ang_sys_add_max
                 )
 
     def _transformed_parameters(self):
@@ -1529,6 +1583,11 @@ class StanFitInterface(StanInterface):
                             # meaning that E0_src_glob is defined in the source frame
                             # and E0_src[k] is redshifted using z[k]
                             self._E0_src[k] << self._E0_src_glob / (1 + self._z[k])
+                if self._fit_ang_sys:
+                    self._ang_sys_add_squared = ForwardVariableDef(
+                        "ang_sys_add_squared", "real"
+                    )
+                    self._ang_sys_add_squared << self._ang_sys_add**2
 
                 if not self._shared_src_index and self._fit_Enorm:
                     with ForLoopContext(1, self._Ns, "k") as k:
@@ -1977,7 +2036,7 @@ class StanFitInterface(StanInterface):
                         start << start + self._Ns
                     if self._fit_ang_sys:
                         end << end + 1
-                        self._global_pars[start] << self._ang_sys_add
+                        self._global_pars[start] << self._ang_sys_add_squared
                         start << start + 1
                     end << end + StringExpression(["size(logF)"])
                     self._global_pars[start:end] << self._logF
@@ -2374,8 +2433,17 @@ class StanFitInterface(StanInterface):
                 self._eres_diff = ForwardVariableDef("eres_diff", "real")
                 self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
+                self._spatial_loglike = ForwardArrayDef(
+                    "spatial_loglike", "real", ["[Ns, N]"]
+                )
 
                 self._model_likelihood()
+
+                if self._fit_ang_sys:
+                    self._ang_sys_deg = ForwardVariableDef("ang_sys_deg", "real")
+                    self._ang_sys_deg << self._ang_sys_add * StringExpression(
+                        ["180 / pi()"]
+                    )
 
                 if self._debug:
                     self._lp_gen_q = ForwardVariableDef("lp_gen_q", "vector[N]")
