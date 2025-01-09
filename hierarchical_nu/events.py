@@ -27,8 +27,10 @@ from hierarchical_nu.utils.plotting import SphericalCircle
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.detector.icecube import EventType
 
+from time import time as thyme
 import logging
 from pathlib import Path
+import os
 
 from typing import List, Union
 import numpy.typing as npt
@@ -67,6 +69,8 @@ class Events:
         self._unit_vectors = np.array(
             [coords.x.value, coords.y.value, coords.z.value]
         ).T
+
+        self._coords.representation_type = "spherical"
 
         if all([t in self._recognised_types for t in types]):
             self._types = np.atleast_1d(types)
@@ -151,7 +155,17 @@ class Events:
         group_name=None,
         scramble_ra: bool = False,
         seed: int = 42,
+        apply_cuts: bool = True,
     ):
+        """
+        Load events from simulated .h5 file.
+        :param filename: Filename of event file
+        :param group_name: Optional group name of event group in event file
+        :param scramble_ra: Set to True if right ascension should be scrambled upon loading
+        :param seed: int, random seed for scrambling RA
+        :param apply_cuts: Set to True if ROI and Emin_det cuts should be applied
+        """
+
         with h5py.File(filename, "r") as f:
             if group_name is None:
                 events_folder = f["events"]
@@ -173,7 +187,7 @@ class Events:
             uvs.T[0], uvs.T[1], uvs.T[2], representation_type="cartesian", frame="icrs"
         )
 
-        time = Time(mjd, format="mjd")
+        mjd = Time(mjd, format="mjd")
 
         coords.representation_type = "spherical"
 
@@ -187,56 +201,38 @@ class Events:
             ra = rng.random(ra.size) * 2 * np.pi * u.rad
             coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        coords.representation_type = "cartesian"
-        mask = []
+        if not apply_cuts:
+            events = cls(energies, coords, types, ang_errs, mjd)
+            events._idxs = np.full(events.N, True)
+            if events.N == 0:
+                logger.warning("No events selected, check your simulation.")
+
+            return events
 
         if ROIList.STACK:
             logger.info("Applying ROIs to event selection")
-            for roi in ROIList.STACK:
-                if isinstance(roi, CircularROI):
-                    mask.append(
-                        (roi.radius >= roi.center.separation(coords))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-                else:
-                    if roi.RA_min > roi.RA_max:
-                        mask.append(
-                            (dec <= roi.DEC_max)
-                            & (dec >= roi.DEC_min)
-                            & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                            & (mjd <= roi.MJD_max)
-                            & (mjd >= roi.MJD_min)
-                        )
 
-                    else:
-                        mask.append(
-                            (dec <= roi.DEC_max)
-                            & (dec >= roi.DEC_min)
-                            & (ra >= roi.RA_min)
-                            & (ra <= roi.RA_max)
-                            & (mjd <= roi.MJD_max)
-                            & (mjd >= roi.MJD_min)
-                        )
+            mask = cls.apply_ROIS(coords, mjd)
 
             idxs = np.logical_or.reduce(mask)
 
             events = cls(
-                energies[idxs], coords[idxs], types[idxs], ang_errs[idxs], time[idxs]
+                energies[idxs], coords[idxs], types[idxs], ang_errs[idxs], mjd[idxs]
             )
             # Add the selection mask for easier comparison between simulations and fits
             # when using a subselection of the data
             events._idxs = idxs
         else:
             logger.info("Applying no ROIs to event selection")
-            events = cls(energies, coords, types, ang_errs, time)
+            events = cls(energies, coords, types, ang_errs, mjd)
             events._idxs = np.full(events.N, True)
 
         # Apply energy cuts
         try:
             _Emin_det = Parameter.get_parameter("Emin_det")
             mask = events.energies >= _Emin_det.value
-            logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
+            # logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
+            print(f"Applying Emin_det={_Emin_det.value} to event selection.")
 
         except ValueError:
             _types = np.unique(events.types)
@@ -249,9 +245,10 @@ class Events:
                     mask[events.types == _t] = (
                         events.energies[events.types == _t] >= _Emin_det.value
                     )
-                    logger.info(
-                        f"Applying Emin_det={_Emin_det.value} to event selection."
-                    )
+                    # logger.info(
+                    #     f"Applying Emin_det={_Emin_det.value} to event selection."
+                    # )
+                    print(f"Applying Emin_det={_Emin_det.value} to event selection.")
                 except ValueError:
                     pass
 
@@ -261,7 +258,9 @@ class Events:
 
         return events
 
-    def to_file(self, filename, append=False, group_name=None):
+    def to_file(
+        self, path: Path, append: bool = False, group_name=None, overwrite: bool = False
+    ):
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]
         self._file_values = [
             self.energies.to(u.GeV).value,
@@ -272,7 +271,7 @@ class Events:
         ]
 
         if append:
-            with h5py.File(filename, "r+") as f:
+            with h5py.File(path, "r+") as f:
                 if group_name is None:
                     event_folder = f.create_group("events")
                 else:
@@ -282,11 +281,35 @@ class Events:
                     event_folder.create_dataset(key, data=value)
 
         else:
-            with h5py.File(filename, "w") as f:
-                event_folder = f.create_group("events")
+            dirname = os.path.dirname(path)
+            filename = os.path.basename(path)
+            if dirname:
+                if not os.path.exists(dirname):
+                    logger.warning(
+                        f"{dirname} does not exist, saving instead to {os.getcwd()}"
+                    )
+                    dirname = os.getcwd()
+            else:
+                dirname = os.getcwd()
+            path = Path(dirname) / Path(filename)
+            if os.path.exists(filename) and not overwrite:
+                logger.warning(f"File {filename} already exists.")
+                file = os.path.splitext(filename)[0]
+                ext = os.path.splitext(filename)[1]
+                file += f"_{int(thyme())}"
+                filename = file + ext
+
+            path = Path(dirname) / Path(filename)
+
+            with h5py.File(path, "w") as f:
+                if group_name is None:
+                    event_folder = f.create_group("events")
+                else:
+                    event_folder = f.create_group(group_name)
 
                 for key, value in zip(self._file_keys, self._file_values):
                     event_folder.create_dataset(key, data=value)
+        return path
 
     def export_to_csv(self, basepath):
         header = "log10(E/GeV)\tAngErr[deg]\tRA[deg]\tDec[deg]"
@@ -322,7 +345,9 @@ class Events:
         return tags
 
     @classmethod
-    def from_ev_file(cls, *seasons: EventType, scramble_ra: bool = False, seed: int = 42):
+    def from_ev_file(
+        cls, *seasons: EventType, scramble_ra: bool = False, seed: int = 42
+    ):
         """
         Load events from the 2021 data release
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
@@ -330,6 +355,9 @@ class Events:
         """
 
         from icecube_tools.utils.data import RealEvents
+
+        if not len(seasons) == len(set(seasons)):
+            raise ValueError("Detector season is provided twice.")
 
         # Borrow from icecube_tools
         # Already exclude low energy events here, would be quite difficult later on
@@ -365,37 +393,9 @@ class Events:
         ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        mask = []
-        for roi in ROIList.STACK:
-            if isinstance(roi, CircularROI):
-                mask.append(
-                    (
-                        (roi.radius >= roi.center.separation(coords))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-                )
-            else:
-                if roi.RA_min > roi.RA_max:
-                    mask.append(
-                        (dec <= roi.DEC_max)
-                        & (dec >= roi.DEC_min)
-                        & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-
-                else:
-                    mask.append(
-                        (dec <= roi.DEC_max)
-                        & (dec >= roi.DEC_min)
-                        & (ra >= roi.RA_min)
-                        & (ra <= roi.RA_max)
-                        & (mjd <= roi.MJD_max)
-                        & (mjd >= roi.MJD_min)
-                    )
-
         mjd = Time(mjd, format="mjd")
+
+        mask = cls.apply_ROIS(coords, mjd)
 
         idxs = np.logical_or.reduce(mask)
 
@@ -410,6 +410,11 @@ class Events:
         return events
 
     def merge(self, events):
+        """
+        Merge events with a different instance of `Events`.
+        Returns newly created instance.
+        """
+
         self.coords.representation_type = "spherical"
         events.coords.representation_type = "spherical"
         ra = np.hstack((self.coords.ra.deg * u.deg, events.coords.ra.deg * u.deg))
@@ -512,8 +517,54 @@ class Events:
         sep = center_coords.separation(self.coords).deg
 
         fig, ax = plt.subplots()
-        ax.hist(sep**2, r2_bins, histtype="step")
+        n, bins, _ = ax.hist(sep**2, r2_bins, histtype="step")
         ax.set_xlabel("$\Psi^2$ [deg$^2$]")
         ax.set_ylabel("counts")
 
-        return fig, ax
+        return (
+            fig,
+            ax,
+            n,
+            bins,
+        )
+
+    @classmethod
+    def apply_ROIS(cls, coords: SkyCoord, mjd: Time):
+        """
+        Returns list of mask, one mask for each ROI on stack
+        """
+
+        ra = coords.icrs.ra
+        dec = coords.icrs.dec
+
+        mask = []
+        for roi in ROIList.STACK:
+            if isinstance(roi, CircularROI):
+                mask.append(
+                    (
+                        (roi.radius >= roi.center.separation(coords))
+                        & (mjd.mjd <= roi.MJD_max)
+                        & (mjd.mjd >= roi.MJD_min)
+                    )
+                )
+            else:
+                if roi.RA_min > roi.RA_max:
+                    mask.append(
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
+                        & (mjd.mjd <= roi.MJD_max)
+                        & (mjd.mjd >= roi.MJD_min)
+                    )
+
+                else:
+                    mask.append(
+                        (dec <= roi.DEC_max)
+                        & (dec >= roi.DEC_min)
+                        & (ra >= roi.RA_min)
+                        & (ra <= roi.RA_max)
+                        & (mjd.mjd <= roi.MJD_max)
+                        & (mjd.mjd >= roi.MJD_min)
+                    )
+
+        return mask

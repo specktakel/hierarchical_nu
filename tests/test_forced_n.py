@@ -4,7 +4,7 @@ from astropy import units as u
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 
-from hierarchical_nu.detector.icecube import Refrigerator, NT, CAS
+from hierarchical_nu.detector.icecube import Refrigerator, IC86_I, IC86_II
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
 
@@ -67,9 +67,9 @@ def test_N():
 
     sim = Simulation(
         my_sources,
-        [NT, CAS],
-        {NT: 5 * u.year, CAS: 5 * u.year},
-        N={CAS: [2, 3, 2], NT: [1, 2, 3]},
+        [IC86_I, IC86_II],
+        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
+        N={IC86_II: [2, 3, 2], IC86_I: [1, 2, 3]},
     )
 
     sim.precomputation()
@@ -83,7 +83,9 @@ def test_N():
     assert np.all(
         np.isclose(
             sim._sim_output.stan_variable("Lambda"),
-            np.array([[1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0]]),
+            np.array(
+                [[1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0]]
+            ),
         )
     )
 
@@ -162,9 +164,9 @@ def test_multi_ps_n():
 
     sim = Simulation(
         my_sources,
-        [NT, CAS],
-        {NT: 5 * u.year, CAS: 5 * u.year},
-        N={NT: [1, 2], CAS: [2, 1]},
+        [IC86_I, IC86_II],
+        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
+        N={IC86_I: [1, 2], IC86_II: [2, 1]},
     )
     sim.precomputation()
     sim.generate_stan_code()
@@ -174,7 +176,7 @@ def test_multi_ps_n():
     my_sources.add(point_source_2)
 
     sim.sources = my_sources
-    sim._N = {NT: [1, 2, 3], CAS: [4, 5, 6]}
+    sim._N = {IC86_I: [1, 2, 3], IC86_II: [4, 5, 6]}
     sim.precomputation()
     sim.run()
 
@@ -253,8 +255,8 @@ def test_asimov():
 
     sim = Simulation(
         my_sources,
-        [NT, CAS],
-        {NT: 5 * u.year, CAS: 5 * u.year},
+        [IC86_I, IC86_II],
+        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
         asimov=True,
     )
     sim.precomputation()

@@ -6,10 +6,17 @@ from hierarchical_nu.priors import (
     LuminosityPrior,
     IndexPrior,
     FluxPrior,
+    DifferentialFluxPrior,
     EnergyPrior,
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
-from hierarchical_nu.source.source import Sources, PointSource, SourceFrame, DetectorFrame
+from hierarchical_nu.source.source import (
+    Sources,
+    PointSource,
+    SourceFrame,
+    DetectorFrame,
+)
+from hierarchical_nu.source.flux_model import PGammaSpectrum
 from hierarchical_nu.source.parameter import Parameter, ParScale
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.roi import (
@@ -19,8 +26,6 @@ from hierarchical_nu.utils.roi import (
     FullSkyROI,
     RectangularROI,
 )
-from hierarchical_nu.simulation import Simulation
-from hierarchical_nu.fit import StanFit
 from hierarchical_nu.detector.input import mceq
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
@@ -28,6 +33,8 @@ from hierarchical_nu.events import Events
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
+
+from copy import deepcopy
 
 
 class ConfigParser:
@@ -45,9 +52,11 @@ class ConfigParser:
         index = []
         beta = []
         E0_src = []
-        if parameter_config["source_type"] == "power-law" or \
-        parameter_config["source_type"] == "twice-broken-power-law" or \
-        parameter_config["source_type"] == "logparabola":
+        if (
+            parameter_config["source_type"] == "power-law"
+            or parameter_config["source_type"] == "twice-broken-power-law"
+            or parameter_config["source_type"] == "logparabola"
+        ):
             if "src_index" in parameter_config["fit_params"] and share_src_index:
                 index.append(
                     Parameter(
@@ -68,6 +77,7 @@ class ConfigParser:
                             parameter_config["src_index_range"],
                         )
                     )
+
         if parameter_config["source_type"] == "logparabola":
             if "beta_index" in parameter_config["fit_params"] and share_src_index:
                 beta.append(
@@ -109,9 +119,31 @@ class ConfigParser:
                             name,
                             not "E0_src" in parameter_config["fit_params"],
                             parameter_config["E0_src_range"] * u.GeV,
-                            ParScale.log
+                            ParScale.log,
                         )
                     )
+        if parameter_config["source_type"] == "pgamma" and share_src_index:
+            E0_src.append(
+                Parameter(
+                    parameter_config["E0_src"][0] * u.GeV,
+                    "E0_src",
+                    False,
+                    parameter_config["E0_src_range"] * u.GeV,
+                    ParScale.log,
+                )
+            )
+        elif parameter_config["source_type"] == "pgamma":
+            for c, idx in enumerate(parameter_config["E0_src"]):
+                name = f"ps_{c}_E0_src"
+                E0_src.append(
+                    Parameter(
+                        idx * u.GeV,
+                        name,
+                        False,
+                        parameter_config["E0_src_range"] * u.GeV,
+                        ParScale.log,
+                    )
+                )
 
         diff_index = Parameter(
             parameter_config["diff_index"],
@@ -144,7 +176,7 @@ class ConfigParser:
             parameter_config["diff_norm"] * 1 / (u.GeV * u.m**2 * u.s),
             "diffuse_norm",
             fixed=True,
-            par_range=(0, np.inf),
+            par_range=parameter_config.diff_norm_range * (1 / u.GeV / u.m**2 / u.s),
         )
         Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
         Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
@@ -200,6 +232,8 @@ class ConfigParser:
             if share_src_index:
                 if index and "src_index" in parameter_config["fit_params"]:
                     idx = index[0]
+                elif parameter_config.source_type == "pgamma":
+                    pass
                 else:
                     idx = index[c]
                 if beta and "beta_index" in parameter_config["fit_params"]:
@@ -211,22 +245,24 @@ class ConfigParser:
                 elif E0_src:
                     E0 = E0_src[c]
             else:
-                idx = index[c]
+                if index:
+                    idx = index[c]
                 if beta:
                     idx_beta = beta[c]
                 if E0_src:
                     E0 = E0_src[c]
-            args = (
-                f"ps_{c}",
-                dec[c],
-                ra[c],
-                Lumi,
-                idx,
-                parameter_config["z"][c],
-                Emin_src,
-                Emax_src,
-                frame,
-            )
+            if not parameter_config.source_type == "pgamma":
+                args = (
+                    f"ps_{c}",
+                    dec[c],
+                    ra[c],
+                    Lumi,
+                    idx,
+                    parameter_config["z"][c],
+                    Emin_src,
+                    Emax_src,
+                    frame,
+                )
             if parameter_config.source_type == "twice-broken-power-law":
                 method = PointSource.make_twicebroken_powerlaw_source
             elif parameter_config.source_type == "power-law":
@@ -246,6 +282,19 @@ class ConfigParser:
                     E0,
                     frame,
                 )
+            elif parameter_config.source_type == "pgamma":
+                method = PointSource.make_pgamma_source
+                args = (
+                    f"ps_{c}",
+                    dec[c],
+                    ra[c],
+                    Lumi,
+                    parameter_config["z"][c],
+                    E0,
+                    Emin_src,
+                    Emax_src,
+                    frame,
+                )
             point_source = method(*args)
 
             sources.add(point_source)
@@ -254,14 +303,13 @@ class ConfigParser:
             sources.add_diffuse_component(
                 diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
             )
-            F_diff = Parameter.get_parameter("F_diff")
-            F_diff.par_range = parameter_config.F_diff_range * (1 / u.m**2 / u.s)
+            # F_diff = Parameter.get_parameter("F_diff")
+            # F_diff.par_range = parameter_config.F_diff_range * (1 / u.m**2 / u.s)
 
         if parameter_config.atmospheric:
             sources.add_atmospheric_component(cache_dir=mceq)
             F_atmo = Parameter.get_parameter("F_atmo")
             F_atmo.par_range = parameter_config.F_atmo_range * (1 / u.m**2 / u.s)
-
 
         self._sources = sources
 
@@ -303,15 +351,31 @@ class ConfigParser:
                 )
         elif roi_config.roi_type == "RectangularROI":
             size = size.to(u.rad)
-            RectangularROI(
-                RA_min=ra[0] - size,
-                RA_max=ra[0] + size,
-                DEC_min=dec[0] - size,
-                DEC_max=dec[0] + size,
-                MJD_min=MJD_min,
-                MJD_max=MJD_max,
-                apply_roi=apply_roi,
-            )
+            if not (
+                np.isclose(roi_config.RA_min, -1.0)
+                and np.isclose(roi_config.RA_max, 361.0)
+                and np.isclose(roi_config.DEC_min, -91.0)
+                and np.isclose(roi_config.DEC_max, 91.0)
+            ):
+                RectangularROI(
+                    RA_min=roi_config.RA_min * u.deg,
+                    RA_max=roi_config.RA_max * u.deg,
+                    DEC_min=roi_config.DEC_min * u.deg,
+                    DEC_max=roi_config.DEC_max * u.deg,
+                    MJD_min=MJD_min,
+                    MJD_max=MJD_max,
+                    apply_roi=apply_roi,
+                )
+            else:
+                RectangularROI(
+                    RA_min=ra[0] - size,
+                    RA_max=ra[0] + size,
+                    DEC_min=dec[0] - size,
+                    DEC_max=dec[0] + size,
+                    MJD_min=MJD_min,
+                    MJD_max=MJD_max,
+                    apply_roi=apply_roi,
+                )
         elif roi_config.roi_type == "FullSkyROI":
             FullSkyROI(
                 MJD_min=MJD_min,
@@ -376,15 +440,26 @@ class ConfigParser:
         )
         return _events
 
+    @property
+    def stan_kwargs(self):
+        return self._hnu_config.stan_config
+
     def create_simulation(self, sources, detector_models, obs_time):
+
+        from hierarchical_nu.simulation import Simulation
+
         asimov = self._hnu_config.parameter_config.asimov
         sim = Simulation(sources, detector_models, obs_time, asimov=asimov)
         return sim
 
     def create_fit(self, sources, events, detector_models, obs_time):
+
+        use_event_tag = self._hnu_config.parameter_config.use_event_tag
+        from hierarchical_nu.fit import StanFit
+
         priors = self.priors
 
-        nshards = self._hnu_config.parameter_config.threads_per_chain
+        nshards = self._hnu_config.stan_config.threads_per_chain
         fit = StanFit(
             sources,
             detector_models,
@@ -392,6 +467,7 @@ class ConfigParser:
             obs_time,
             priors=priors,
             nshards=nshards,
+            use_event_tag=use_event_tag,
         )
         return fit
 
@@ -427,13 +503,13 @@ class ConfigParser:
             elif p == "E0_src":
                 if prior == NormalPrior:
                     priors.E0_src = EnergyPrior(
-                        prior, mu=mu * EnergyPrior.UNITS,
-                        sigma=sigma * EnergyPrior.UNITS
+                        prior,
+                        mu=mu * EnergyPrior.UNITS,
+                        sigma=sigma * EnergyPrior.UNITS,
                     )
                 elif prior == LogNormalPrior:
                     priors.E0_src = EnergyPrior(
-                        prior, mu=mu * EnergyPrior.UNITS,
-                        sigma=sigma
+                        prior, mu=mu * EnergyPrior.UNITS, sigma=sigma
                     )
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
@@ -458,12 +534,14 @@ class ConfigParser:
                     raise NotImplementedError("Prior not recognised.")
             elif p == "diff_flux":
                 if prior == NormalPrior:
-                    priors.diffuse_flux = FluxPrior(
-                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma * FluxPrior.UNITS
+                    priors.diffuse_flux = DifferentialFluxPrior(
+                        prior,
+                        mu=mu * DifferentialFluxPrior.UNITS,
+                        sigma=sigma * DifferentialFluxPrior.UNITS,
                     )
                 elif prior == LogNormalPrior:
-                    priors.diffuse_flux = FluxPrior(
-                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma
+                    priors.diffuse_flux = DifferentialFluxPrior(
+                        prior, mu=mu * DifferentialFluxPrior.UNITS, sigma=sigma
                     )
                 else:
                     raise NotImplementedError("Prior not recognised.")

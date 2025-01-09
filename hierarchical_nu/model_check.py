@@ -83,7 +83,7 @@ class ModelCheck:
             self._detector_model_type = self.parser.detector_model
             self._obs_time = self.parser.obs_time
             # self._nshards = parameter_config["nshards"]
-            self._threads_per_chain = parameter_config["threads_per_chain"]
+            self._threads_per_chain = self.config.stan_config["threads_per_chain"]
 
             sim = self.parser.create_simulation(
                 self._sources, self._detector_model_type, self._obs_time
@@ -104,22 +104,32 @@ class ModelCheck:
 
             diffuse_bg = self._sources.diffuse
             if diffuse_bg:
-                self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
-                    flux_unit
-                ).value
+                # self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to_value(
+                #    flux_unit
+                # )
+                self.truths["diffuse_norm"] = (
+                    diffuse_bg.flux_model(
+                        diffuse_bg.flux_model.spectral_shape._normalisation_energy,
+                        0 * u.rad,
+                        0 * u.rad,
+                    )
+                    * 4.0
+                    * np.pi
+                    * u.sr
+                ).to_value(1 / u.GeV / u.m**2 / u.s)
             atmo_bg = self._sources.atmospheric
             if atmo_bg:
-                self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
+                self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to_value(
                     flux_unit
-                ).value
+                )
             try:
                 self.truths["L"] = [
-                    Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
+                    Parameter.get_parameter("luminosity").value.to_value(u.GeV / u.s)
                 ]
             except ValueError:
                 self.truths["L"] = [
                     Parameter.get_parameter(f"ps_{_}_luminosity")
-                    .value.to(u.GeV / u.s)
+                    .to_value(u.GeV / u.s)
                     .value
                     for _ in range(len(self._sources.point_source))
                 ]
@@ -134,7 +144,9 @@ class ModelCheck:
                 ]
             self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
             try:
-                self.truths["beta_index"] = [Parameter.get_parameter("beta_index").value]
+                self.truths["beta_index"] = [
+                    Parameter.get_parameter("beta_index").value
+                ]
             except ValueError:
                 try:
                     self.truths["beta_index"] = [
@@ -144,7 +156,9 @@ class ModelCheck:
                 except ValueError:
                     pass
             try:
-                self.truths["E0_src"] = [Parameter.get_parameter("E0_src").value.to_value(u.GeV)]
+                self.truths["E0_src"] = [
+                    Parameter.get_parameter("E0_src").value.to_value(u.GeV)
+                ]
             except ValueError:
                 try:
                     self.truths["beta_index"] = [
@@ -265,6 +279,12 @@ class ModelCheck:
                     elif key == "N_Eff":
                         for c, data in enumerate(res[key]):
                             folder.create_dataset(f"N_Eff_{c}", data=data)
+                    elif key == "ESS_bulk":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"ESS_bulk_{c}", data=data)
+                    elif key == "ESS_tail":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"ESS_tail_{c}", data=data)
                     elif key == "R_hat":
                         for c, data in enumerate(res[key]):
                             folder.create_dataset(f"R_hat_{c}", data=data)
@@ -389,7 +409,7 @@ class ModelCheck:
                 continue
             if (
                 var_name == "L"
-                or var_name == "F_diff"
+                # or var_name == "F_diff"
                 # or var_name == "F_atmo"
                 or var_name == "Fs"
                 or var_name == "E0_src"
@@ -475,7 +495,7 @@ class ModelCheck:
                 # this case distinction is overly complicated
                 if (
                     var_name == "L"
-                    or var_name == "F_diff"
+                    # or var_name == "F_diff"
                     or var_name == "F_atmo"
                     or var_name == "Fs"
                 ):
@@ -597,6 +617,8 @@ class ModelCheck:
         outputs["Lambda"] = []
         outputs["parameter_names"] = []
         outputs["N_Eff"] = []
+        outputs["ESS_bulk"] = []
+        outputs["ESS_tail"] = []
         outputs["R_hat"] = []
         if save_events:
             outputs["events"] = []
@@ -624,25 +646,42 @@ class ModelCheck:
 
             events = sim.events
 
-            lambd = sim._sim_output.stan_variable("Lambda").squeeze()
+            # create a mask for the sampled events
+            # for point sources, events may be scattered outside of the ROI
+            # we need to catch these and delete from the event lists used for the fit
+            mask = events.apply_ROIS(events.coords, events.mjd)
+            idx = np.logical_or.reduce(mask)
+
+            lambd = sim._sim_output.stan_variable("Lambda").squeeze()[idx]
 
             ps = np.sum(lambd == 1.0)
             diff = np.sum(lambd == 2.0)
             atmo = np.sum(lambd == 3.0)
             lam = np.array([ps, diff, atmo])
 
+            new_events = Events(
+                events.energies[idx],
+                events.coords[idx],
+                events.types[idx],
+                events.ang_errs[idx],
+                events.mjd[idx],
+            )
+
             # Fit
             # Same as above, save time
             # Also handle in case first sim has no events
             if not fit:
                 fit = self.parser.create_fit(
-                    sources, events, self.parser.detector_model, self.parser.obs_time
+                    sources,
+                    new_events,
+                    self.parser.detector_model,
+                    self.parser.obs_time,
                 )
                 fit.precomputation(self._exposure_integral)
                 fit.setup_stan_fit(".stan_files/model_code")
 
             else:
-                fit.events = events
+                fit.events = new_events
 
             start_time = time.time()
 
@@ -666,7 +705,7 @@ class ModelCheck:
                 F_atmo_init = 0.3 / u.m**2 / u.s
 
             inits = {
-                #TODO fix
+                # TODO fix
                 "F_diff": 1e-4,
                 "F_atmo": F_atmo_init.to_value(1 / (u.m**2 * u.s)),
                 "E": [1e5] * fit.events.N,
@@ -696,7 +735,7 @@ class ModelCheck:
                 outputs[key].append(fit._fit_output.method_variables()[key])
 
             if save_events:
-                outputs["events"].append(events)
+                outputs["events"].append(new_events)
                 outputs["association_prob"].append(
                     np.array(fit._get_event_classifications())
                 )
@@ -735,16 +774,22 @@ class ModelCheck:
 
             keys = []
             summary = fit._fit_output.summary()
-            for k, v in summary["N_Eff"].items():
+            for k, v in summary["R_hat"].items():
                 for key in key_stubs:
                     if key in k:
                         keys.append(k)
                         break
 
             R_hat = np.array([summary["R_hat"][k] for k in keys])
-            N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+            if "ESS_bulk" in summary.keys():
+                ESS_bulk = np.array([summary["ESS_bulk"][k] for k in keys])
+                ESS_tail = np.array([summary["ESS_tail"][k] for k in keys])
+                outputs["ESS_bulk"].append(ESS_bulk)
+                outputs["ESS_tail"].append(ESS_tail)
+            if "N_Eff" in summary.keys():
+                N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+                outputs["N_Eff"].append(N_Eff)
             outputs["parameter_names"].append(np.array(keys, dtype="S"))
-            outputs["N_Eff"].append(N_Eff)
             outputs["R_hat"].append(R_hat)
 
         return outputs

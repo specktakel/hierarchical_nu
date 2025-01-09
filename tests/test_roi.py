@@ -26,6 +26,7 @@ def test_circular_event_selection():
     )
     logger.warning(roi)
     events = Events.from_ev_file(IC86_II)
+    events.coords.representation_type = "cartesian"
     assert events.coords.z.min() >= 0.0
 
 
@@ -36,6 +37,7 @@ def test_rectangular_event_selection():
     roi = RectangularROI(DEC_min=0.0 * u.rad)
     logger.warning(roi)
     events = Events.from_ev_file(IC86_II)
+    events.coords.representation_type = "cartesian"
     assert events.coords.z.min() >= 0.0
 
 

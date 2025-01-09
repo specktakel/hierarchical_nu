@@ -1,8 +1,7 @@
 parameter_config:
-  source_type: logparabola
+  source_type: twice-broken-power-law
   fit_params:
   - src_index
-  - beta_index
   src_index:
   - 2.3
   beta_index:
@@ -10,6 +9,11 @@ parameter_config:
   beta_index_range:
   - -1.0
   - 1.0
+  E0_src:
+  - 1e5
+  E0_src_range:
+  - 1e3
+  - 1e8
   share_src_index: true
   src_index_range:
   - 1.0
@@ -19,7 +23,7 @@ parameter_config:
   - 1.0
   - 4.0
   L:
-  - 4.0e+46
+  - 1.2e+47
   share_L: true
   L_range:
   - 0
@@ -42,8 +46,14 @@ parameter_config:
   Emin_det: 2e2
   MJD_min: 56917
   MJD_max: 57113
-  threads_per_chain: 40
+  frame: source
   asimov: false
+stan_config:
+  threads_per_chain: 40
+  iterations: 1000
+  iter_warmup: 1000
+  seed: 1337
+  chains: 1
 prior_config:
   src_index:
     name: NormalPrior
@@ -60,21 +70,20 @@ prior_config:
   diff_index:
     name: NormalPrior
     mu: 2.52
-    sigma: 0.09
+    sigma: 0.04
   L:
     name: LogNormalPrior
     mu: 18.1e49
     sigma: 4.0
-  diff_flux:
-    name: LogNormalPrior
-    mu: 5.4e-4
-    sigma: 0.5
   atmo_flux:
     name: NormalPrior
     mu: 0.3
     sigma: 0.08
-  frame: source
 roi_config:
   roi_type: CircularROI
   size: 5.0
   apply_roi: true
+ppc_config:
+  n_samples: 100
+  seed: 42
+  directory: ppc

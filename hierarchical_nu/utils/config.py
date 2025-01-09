@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from omegaconf import OmegaConf
 import numpy as np
 import logging
+import astropy.units as u
 
 
 _local_config_path = Path(".")
@@ -22,9 +23,9 @@ logger.setLevel(logging.INFO)
 class ParameterConfig:
     source_type: str = (
         "twice-broken-power-law"  # Currently only supports one type for all sources,
-        # other option "power-law" covering the entire energy range
-        # or "logparabola". If logparabola, the two fit parameters used
-        # (two out of src_index, beta_index and E0_src) needs to be defined
+        # other options: "power-law" covering the entire energy range,
+        # or "logparabola", or "pgamma". If logparabola, up to two fit parameters used
+        # (out of src_index, beta_index and E0_src) need to be defined
         # in the field "fit_params", e.g. fit_params: ["src_index", "beta_index"]
     )
     fit_params: List[str] = field(default_factory=lambda: ["src_index"])
@@ -37,7 +38,10 @@ class ParameterConfig:
     E0_src_range: Tuple = (1e3, 1e8)
     diff_index: float = 2.5
     diff_index_range: Tuple = (1.0, 4.0)
-    F_diff_range: Tuple = (1e-6, 1e-3)  # 1 / m**2 / s
+    diff_norm: float = (
+        2e-13  # 1 / (u.GeV * u.m**2 * u.s), defined in the detector frame
+    )
+    diff_norm_range: Tuple = (1e-14, 1e-11)  # 1 / GeV / m**2 / s
     F_atmo_range: Tuple = (0.1, 0.5)  # 1 / m**2 / s
     L: List[float] = field(
         default_factory=lambda: [8e45]
@@ -53,9 +57,6 @@ class ParameterConfig:
     Emax_src: float = 1.4e7  # u.GeV
     Emin_diff: float = 1e2  # u.GeV, defined in the detector frame
     Emax_diff: float = 1e8  # u.GeV
-    diff_norm: float = (
-        2e-13  # 1 / (u.GeV * u.m**2 * u.s), defined in the detector frame
-    )
     z: List[float] = field(
         default_factory=lambda: [0.4]
     )  # cosmological redshift, dimensionless, only for point source
@@ -96,12 +97,6 @@ class ParameterConfig:
     # useful because of overlap near season changes
     restrict_to_list: bool = False
 
-    # Within-chain parallelisation
-    threads_per_chain: int = 1
-    chains: int = 1
-    iterations: int = 1000
-    iter_warmup: int = 1000
-
     # Background components
     atmospheric: bool = True
     diffuse: bool = True
@@ -111,6 +106,20 @@ class ParameterConfig:
 
     # exp event selection
     scramble_ra: bool = False
+
+    # use event tags, only relevant for multi ps fits
+    use_event_tag: bool = False
+
+
+@dataclass
+class StanConfig:
+    # Within-chain parallelisation
+    threads_per_chain: int = 1
+    chains: int = 1
+    iterations: int = 1000
+    iter_warmup: int = 1000
+    adapt_delta: float = 0.8
+    seed: int = 42
 
 
 @dataclass
@@ -129,7 +138,9 @@ class PriorConfig:
         default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=0.0, sigma=0.1)
     )
     E0_src: SinglePriorConfig = field(
-        default_factory=lambda: SinglePriorConfig(name="LogNormalPrior", mu=1e5, sigma=3.)
+        default_factory=lambda: SinglePriorConfig(
+            name="LogNormalPrior", mu=1e5, sigma=3.0
+        )
     )
     diff_index: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
@@ -144,17 +155,12 @@ class PriorConfig:
 
     diff_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=1e-4, sigma=1.0
+            name="NormalPrior", mu=2.26e-13, sigma=0.19e-13
         )
     )
     atmo_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
             name="NormalPrior", mu=0.314, sigma=0.08
-        )
-    )
-    energy: SinglePriorConfig = field(
-        default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=1e6, sigma=3
         )
     )
 
@@ -169,12 +175,28 @@ class ROIConfig:
     )
     apply_roi: bool = False
 
+    # If config has default values size data field takes precedence
+    RA_min: float = -1.0
+    RA_max: float = 361.0
+
+    DEC_min: float = -91.0
+    DEC_max: float = 91.0
+
+
+@dataclass
+class PPCConfig:
+    n_samples: int = 100
+    seed: int = 42
+    directory: str = "ppc"
+
 
 @dataclass
 class HierarchicalNuConfig:
     parameter_config: ParameterConfig = field(default_factory=lambda: ParameterConfig())
     prior_config: PriorConfig = field(default_factory=lambda: PriorConfig())
     roi_config: ROIConfig = field(default_factory=lambda: ROIConfig())
+    stan_config: StanConfig = field(default_factory=lambda: StanConfig())
+    ppc_config: PPCConfig = field(default_factory=lambda: PPCConfig())
 
     @classmethod
     def from_path(cls, path):
@@ -209,3 +231,72 @@ class HierarchicalNuConfig:
 
         hnu_config = OmegaConf.structured(cls)
         return hnu_config
+
+    @classmethod
+    def save(cls, path: Path, config):
+        path.parents[0].mkdir(parents=True, exist_ok=True)
+        with path.open("w") as f:
+            OmegaConf.save(config=config, f=f.name)
+
+    @classmethod
+    def make_config(cls, sources):
+        from ..source.parameter import Parameter
+
+        # this is useful for recreating a source list when loading a previously saved fit.
+        # is not intended to exactly recreate everything, maybe in future edits
+        config = HierarchicalNuConfig.load_default()
+
+        if sources.point_source:
+            ra = []
+            dec = []
+            z = []
+            fit_params = []
+            ps = sources.point_source[0]
+            spectrum = ps.flux_model.spectral_shape.name
+            try:
+                index = ps.flux_model.parameters["index"]
+                config.parameter_config.src_index_range = list(index.par_range)
+                if not index.fixed:
+                    fit_params.append("src_index")
+            except KeyError:
+                pass
+            try:
+                beta = ps.flux_model.parameters["beta"]
+                config.parameter_config.beta_index_range = list(beta.par_range)
+                if not beta.fixed:
+                    fit_params.append("beta_index")
+            except KeyError:
+                pass
+            try:
+                E0 = ps.flux_model.parameters["norm_energy"]
+                config.parameter_config.E0_src_range = [
+                    float(E0.par_range[0].to_value(u.GeV)),
+                    float(E0.par_range[1].to_value(u.GeV)),
+                ]
+                if not E0.fixed:
+                    fit_params.append("E0_src")
+            except KeyError:
+                pass
+            config.parameter_config.fit_params = fit_params
+            for ps in sources.point_source:
+                ra.append(float(ps.ra.to_value(u.deg)))
+                dec.append(float(ps.dec.to_value(u.deg)))
+                z.append(ps.redshift)
+            config.parameter_config.source_type = spectrum
+            config.parameter_config.src_ra = ra
+            config.parameter_config.src_dec = dec
+            config.parameter_config.z = z
+            config.parameter_config.share_src_index
+            config.parameter_config.share_L
+            config.parameter_config.frame = sources.point_source_frame.name
+            config.parameter_config.Emin_src = float(
+                Parameter.get_parameter("Emin_src").value.to_value(u.GeV)
+            )
+            config.parameter_config.Emax_src = float(
+                Parameter.get_parameter("Emax_src").value.to_value(u.GeV)
+            )
+
+        config.parameter_config.diffuse = True if sources.diffuse else False
+        config.parameter_config.atmospheric = True if sources.atmospheric else False
+
+        return config

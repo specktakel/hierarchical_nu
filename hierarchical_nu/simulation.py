@@ -24,7 +24,13 @@ from hierarchical_nu.detector.icecube import EventType, NT, CAS
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.flux_model import IsotropicDiffuseBG, LogParabolaSpectrum
+from hierarchical_nu.source.flux_model import (
+    IsotropicDiffuseBG,
+    LogParabolaSpectrum,
+    PowerLawSpectrum,
+    TwiceBrokenPowerLaw,
+    PGammaSpectrum,
+)
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.events import Events
 from hierarchical_nu.utils.roi import ROI, CircularROI, ROIList
@@ -72,7 +78,10 @@ class Simulation:
             event_types = [event_types]
         if isinstance(observation_time, u.quantity.Quantity):
             observation_time = {event_types[0]: observation_time}
-        assert len(event_types) == len(observation_time)
+        if not len(event_types) == len(observation_time):
+            raise ValueError(
+                "number of observation times must match number of event types"
+            )
         self._event_types = event_types
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
@@ -90,7 +99,10 @@ class Simulation:
 
         if N:
             for event_type in self._event_types:
-                assert len(N[event_type]) == len(sources)
+                if not len(N[event_type]) == len(sources):
+                    raise ValueError(
+                        "Provided event numbers must match number of sources"
+                    )
 
                 if CAS in self._event_types and self._sources.atmospheric:
                     if N[CAS][-1] != 0:
@@ -133,26 +145,46 @@ class Simulation:
                 + "NorthernTracksDetectorModel instead."
             )
 
+        # Check for shared luminosity and src_index params
+        try:
+            Parameter.get_parameter("luminosity")
+            self._shared_luminosity = True
+        except ValueError:
+            self._shared_luminosity = False
+
         if self._sources.point_source:
+            self._shared_src_index = False
+            self._power_law = False
+            self._logparabola = False
+            self._pgamma = False
             index = self._sources.point_source[0].parameters["index"]
             if not index.fixed and index.name == "src_index":
                 self._shared_src_index = True
             elif not index.fixed:
                 self._shared_src_index = False
-            else:
+            self._power_law = self._sources.point_source_spectrum in [
+                PowerLawSpectrum,
+                TwiceBrokenPowerLaw,
+            ]
+            self._logparabola = (
+                self._sources.point_source_spectrum == LogParabolaSpectrum
+            )
+            self._pgamma = self._sources.point_source_spectrum == PGammaSpectrum
+            if self._logparabola or self._pgamma:
                 beta = self._sources.point_source[0].parameters["beta"]
+                E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 if not beta.fixed and beta.name == "beta_index":
                     self._shared_src_index = True
-                elif not beta.fixed:
-                    self._shared_src_index = False
+                elif not E0_src.fixed and E0_src.name == "E0_src":
+                    self._shared_src_index = True
 
             self._fit_index = not index.fixed
-            try:
+            if self._logparabola or self._pgamma:
                 beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 self._fit_beta = not beta.fixed
                 self._fit_Enorm = not E0_src.fixed
-            except KeyError:
+            else:
                 self._fit_beta = False
                 self._fit_Enorm = False
         else:
@@ -160,6 +192,9 @@ class Simulation:
             self._fit_index = False
             self._fit_beta = False
             self._fit_Enorm = False
+            self._logparabola = False
+            self._power_law = False
+            self._pgamma = False
 
         # Check for shared luminosity and src_index params
         try:
@@ -237,7 +272,7 @@ class Simulation:
         self._sim_inputs["Nex_et"] = self._Nex_et.tolist()
 
         if verbose:
-            print(
+            sim_logger.info(
                 "Running a simulation with expected Nnu = %.2f events"
                 % self._expected_Nnu
             )
@@ -368,7 +403,10 @@ class Simulation:
         Esrc = self._sim_output.stan_variable("Esrc")[0]
         E = self._sim_output.stan_variable("E")[0]
         lam = self._sim_output.stan_variable("Lambda")[0] - 1
-        assert np.all(Esrc >= E)
+        if not np.all(Esrc >= E):
+            sim_logger.critical(
+                "Some event has lower energy in its source than in the detector frame"
+            )
         Edet = self.events.energies.value
         Emin_det = self._get_min_det_energy().to(u.GeV).value
 
@@ -596,11 +634,12 @@ class Simulation:
         integral_grid = []
         integral_grid_2d = []
         atmo_integ_val = []
+        rs_breaks = []
+        rs_slopes = []
+        rs_weights = []
+        rs_N = []
+        rs_norms = []
         Emin_det = []
-        rs_cvals = []
-        rs_bbpl_Eth = []
-        rs_bbpl_gamma1 = []
-        rs_bbpl_gamma2_scale = []
         forced_N = []
         obs_time = []
 
@@ -611,8 +650,7 @@ class Simulation:
 
         if sim_inputs["Emin"] < 1e2:
             raise ValueError("Emin is lower than detector minimum energy")
-        # TODO check value for 10yr PS data
-        if sim_inputs["Emax"] > 1e8:
+        if sim_inputs["Emax"] > 1e9:
             raise ValueError("Emax is higher than detector maximum energy")
 
         if asimov:
@@ -641,11 +679,6 @@ class Simulation:
             self._N = N
 
         if self._sources.point_source:
-            # Check for shared source index
-            logparabola = isinstance(
-                self._sources.point_source[0].flux_model.spectral_shape,
-                LogParabolaSpectrum,
-            )
             # This is copied from fit.py. While there is nothing being fit in a simulation,
             # for internal consistency the same approach of calculating Nex inside stan is used.
             # That means we need to check over which parameters is interpolated in the 1D or 2D grid,
@@ -668,37 +701,53 @@ class Simulation:
                     Parameter.get_parameter("luminosity").value.to_value(lumi_units)
                 ] * len(self._sources.point_source)
 
-            if logparabola:
-                key_beta = self._sources.point_source[0].parameters["beta"].name
-                key_Enorm = self._sources.point_source[0].parameters["norm_energy"].name
+            # Check for shared source index
+            if self._shared_src_index:
+                key = "src_index"
+                key_beta = "beta_index"
+                key_Enorm = "E0_src"
 
-                if self._fit_beta:
-                    sim_inputs["beta_index_grid"] = self._exposure_integral[
-                        self._event_types[0]
-                    ].par_grids[key_beta]
-                if self._fit_Enorm:
-                    sim_inputs["E0_src_grid"] = self._exposure_integral[
-                        self._event_types[0]
-                    ].par_grids[key_Enorm]
+            # Otherwise just use first source in the list
+            # grids is identical for all point sources
+            else:
+                key = "%s_src_index" % self._sources.point_source[0].name
+                key_beta = "%s_beta_index" % self._sources.point_source[0].name
+                key_Enorm = "%s_E0_src" % self._sources.point_source[0].name
 
+            event_type = self._event_types[0]
+            # This is a weird construct
             if self._fit_index:
                 sim_inputs["src_index_grid"] = self._exposure_integral[
-                    self._event_types[0]
-                ].par_grids[key_index]
+                    event_type
+                ].par_grids[key]
+            if self._logparabola or self._fit_index:
+                sim_inputs["src_index"] = [
+                    ps.flux_model.parameters["index"].value
+                    for ps in self._sources.point_source
+                ]
 
-            sim_inputs["src_index"] = [
-                s.flux_model.parameters["index"].value
-                for s in self._sources.point_source
-            ]
-
-            if logparabola:
+            if self._fit_beta:
+                sim_inputs["beta_index_grid"] = self._exposure_integral[
+                    event_type
+                ].par_grids[key_beta]
+            if self._logparabola:
                 sim_inputs["beta_index"] = [
                     ps.flux_model.parameters["beta"].value
                     for ps in self._sources.point_source
                 ]
 
+            if self._fit_Enorm:
+                sim_inputs["E0_src_grid"] = self._exposure_integral[
+                    event_type
+                ].par_grids[key_Enorm]
+            if self._fit_Enorm or self._logparabola:
                 sim_inputs["E0_src"] = [
                     ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
+                    for ps in self._sources.point_source
+                ]
+            if self._pgamma:
+                sim_inputs["src_index"] = [
+                    ps.flux_model.spectral_shape._src_index
                     for ps in self._sources.point_source
                 ]
 
@@ -755,7 +804,6 @@ class Simulation:
                 )
 
         for c, event_type in enumerate(self._event_types):
-            effective_area = self._exposure_integral[event_type].effective_area
             obs_time.append(self._observation_time[event_type].to(u.s).value)
 
             try:
@@ -771,10 +819,23 @@ class Simulation:
                 )
 
             # Rejection sampling
-            rs_bbpl_Eth.append(effective_area.rs_bbpl_params["threshold_energy"])
-            rs_bbpl_gamma1.append(effective_area.rs_bbpl_params["gamma1"])
-            rs_bbpl_gamma2_scale.append(effective_area.rs_bbpl_params["gamma2_scale"])
-            rs_cvals.append(self._exposure_integral[event_type].c_values)
+            # Loop over detector models
+            # loop over source components
+            container = self._exposure_integral[event_type]._envelope_container
+            rs_norms.append([])
+            rs_breaks.append([])
+            rs_slopes.append([])
+            rs_weights.append([])
+            rs_N.append([])
+            for c_s in range(self._sources.N):
+                # Do not normalise, the target is not normalised either and
+                # that is what we want to approximate
+                norms = container[c_s].low_values
+                rs_norms[-1].append(norms.tolist())
+                rs_breaks[-1].append(container[c_s].bins.tolist())
+                rs_slopes[-1].append(container[c_s].slopes.tolist())
+                rs_weights[-1].append(container[c_s].weights.tolist())
+                rs_N[-1].append(container[c_s].N)
 
             if self._force_N:
                 forced_N.append(self._N[event_type])
@@ -798,6 +859,23 @@ class Simulation:
                     .value
                 )
 
+        # Fill the various rs arrays with zero entries in the end
+        # because stan doesn't support ragged structures
+        # that might pop up if we use different bin sizes,
+        # energy ranges etc for different spectra
+        rs_N_max = np.max(rs_N)
+        for c, et in enumerate(self._event_types):
+            for c_s in range(self._sources.N):
+                # breaks has length rs_N_max + 1
+                while len(rs_breaks[c][c_s]) < rs_N_max + 1:
+                    rs_breaks[c][c_s].append(0)
+                while len(rs_norms[c][c_s]) < rs_N_max:
+                    rs_norms[c][c_s].append(0)
+                while len(rs_slopes[c][c_s]) < rs_N_max:
+                    rs_slopes[c][c_s].append(0)
+                while len(rs_weights[c][c_s]) < rs_N_max:
+                    rs_weights[c][c_s].append(0)
+
         try:
             ROIList.STACK[0]
         except IndexError:
@@ -819,7 +897,8 @@ class Simulation:
             if v_lim_low_detector > v_lim_low:
                 v_lim_low = v_lim_low_detector
 
-            assert v_lim_high > v_lim_low
+            if not v_lim_high > v_lim_low:
+                raise ValueError("")
 
         sim_inputs["v_low"] = v_lim_low
         sim_inputs["v_high"] = v_lim_high
@@ -864,10 +943,12 @@ class Simulation:
         if self._sources.atmospheric:
             sim_inputs["atmo_integ_val"] = atmo_integ_val
         sim_inputs["Emin_det"] = Emin_det
-        sim_inputs["rs_cvals"] = rs_cvals
-        sim_inputs["rs_bbpl_Eth"] = rs_bbpl_Eth
-        sim_inputs["rs_bbpl_gamma1"] = rs_bbpl_gamma1
-        sim_inputs["rs_bbpl_gamma2_scale"] = rs_bbpl_gamma2_scale
+        sim_inputs["rs_N"] = rs_N
+        sim_inputs["rs_breaks"] = rs_breaks
+        sim_inputs["rs_weights"] = rs_weights
+        sim_inputs["rs_slopes"] = rs_slopes
+        sim_inputs["rs_norms"] = rs_norms
+        sim_inputs["rs_N_max"] = rs_N_max
         sim_inputs["T"] = obs_time
         if self._force_N:
             sim_inputs["forced_N"] = forced_N
@@ -890,13 +971,30 @@ class Simulation:
 
         sim_inputs_ = sim_inputs.copy()
 
+        if self._logparabola:
+            spectrum = "logparabola"
+        elif self._pgamma:
+            spectrum = "pgamma"
+        elif self._power_law:
+            spectrum = "power_law"
+        else:
+            spectrum = "none"
+
+        fit_params = []
+        if self._fit_index:
+            fit_params.append("index")
+        if self._fit_beta:
+            fit_params.append("beta_index")
+        if self._fit_Enorm:
+            fit_params.append("E0_src")
+
         Nex_et = np.zeros((len(self._event_types), self._sources.N))
         for c, event_type in enumerate(self._event_types):
             integral_grid = sim_inputs_["integral_grid"][c]
             integral_grid_2d = sim_inputs_["integral_grid_2d"][c]
             try:
                 flux_conv_ = self._sources.point_source_spectrum.flux_conv_
-            except ValueError:
+            except (ValueError, AttributeError):
                 # In this case flux_conv_ is not used
                 flux_conv_ = lambda x: x
             Nex_et[c] = _get_expected_Nnu_(
@@ -905,7 +1003,9 @@ class Simulation:
                 flux_conv_,
                 integral_grid,
                 integral_grid_2d,
-                self._sources.point_source,
+                spectrum,
+                fit_params,
+                bool(self._sources.point_source),
                 self._sources.diffuse,
                 self._sources.atmospheric,
                 self._shared_luminosity,
@@ -968,9 +1068,14 @@ class SimInfo:
             source_folder = f["sim/source"]
             outputs_folder = f["sim/outputs"]
 
+            input_keys = list(f["sim/inputs"].keys())
+
             atmo = False
             diff = False
             ps = False
+            pgamma = False
+            powerlaw = False
+            logparabola = False
             for key in inputs_folder:
                 inputs[key] = inputs_folder[key][()]
 
@@ -983,6 +1088,13 @@ class SimInfo:
                 if key == "L":
                     ps = True
 
+            if "E0_src" and "beta_index" in input_keys:
+                logparabola = True
+            elif "E0_src" in input_keys:
+                pgamma = True
+            else:
+                powerlaw = True
+
             for key in source_folder:
                 inputs[key] = source_folder[key][()]
 
@@ -993,7 +1105,12 @@ class SimInfo:
 
         if ps:
             truths["L"] = inputs["L"]
-            truths["src_index"] = inputs["src_index"]
+            if powerlaw or logparabola:
+                truths["src_index"] = inputs["src_index"]
+            if logparabola:
+                truths["beta_index"] = inputs["beta_index"]
+            if pgamma or logparabola:
+                truths["E0_src"] = inputs["E0_src"]
 
         if diff:
             truths["F_diff"] = inputs["F_diff"]
@@ -1041,12 +1158,15 @@ class SimInfo:
         events = Events(energies, coords, types, ang_errs, mjd)
 
         # Truths keys
-        ps_keys = ["L", "src_index"]
+        ps_keys = ["L", "src_index", "beta_index", "E0_src"]
         bg_keys = ["F_atmo", "F_diff", "diff_index"]
 
         truths = {}
         for key in ps_keys:
-            truths[key] = ps.truths[key]
+            try:
+                truths[key] = ps.truths[key]
+            except KeyError:
+                continue
         for key in bg_keys:
             truths[key] = bg.truths[key]
 
@@ -1080,7 +1200,10 @@ class SimInfo:
             source_folder = sim_folder.create_group("source")
             inputs_folder = sim_folder.create_group("inputs")
             for key in ps_keys:
-                inputs_folder.create_dataset(key, data=ps.inputs[key])
+                try:
+                    inputs_folder.create_dataset(key, data=ps.inputs[key])
+                except KeyError:
+                    continue
             for key in bg_keys:
                 inputs_folder.create_dataset(key, data=bg.inputs[key])
             if ps_forced_N and bg_forced_N:
@@ -1104,6 +1227,8 @@ def _get_expected_Nnu_(
     flux_conv_,
     integral_grid,
     integral_grid_2d,
+    spectrum,
+    fit_params,
     point_source=False,
     diffuse=False,
     atmospheric=False,
@@ -1112,35 +1237,39 @@ def _get_expected_Nnu_(
     """
     Helper function for calculating expected Nnu
     using stan sim_inputs.
+    TODO: include in sim class, it is not used anywhere else for that matter
     """
 
+    n_params = 0
     if point_source:
-        try:
+        if spectrum == "logparabola":
             beta_index = sim_inputs["beta_index"]
             E0_src = sim_inputs["E0_src"]
-            logparabola = True
-        except KeyError:
-            logparabola = False
-        src_index = sim_inputs["src_index"]
+            src_index = sim_inputs["src_index"]
+        elif spectrum == "power_law":
+            src_index = sim_inputs["src_index"]
+        elif spectrum == "pgamma":
+            E0_src = sim_inputs["E0_src"]
+            src_index = [0.0] * len(sim_inputs["D"])
 
-        try:
+        if "index" in fit_params:
             src_index_grid = sim_inputs["src_index_grid"]
+            n_params += 1
             fit_index = True
-        except KeyError:
+        else:
             fit_index = False
-
-        try:
+        if "beta_index" in fit_params:
             beta_index_grid = sim_inputs["beta_index_grid"]
+            n_params += 1
             fit_beta = True
-        except KeyError:
+        else:
             fit_beta = False
-
-        try:
+        if "E0_src" in fit_params:
             E0_src_grid = sim_inputs["E0_src_grid"]
+            n_params += 1
             fit_Enorm = True
-        except KeyError:
+        else:
             fit_Enorm = False
-
     if diffuse:
         diff_index = sim_inputs["diff_index"]
         diff_index_grid = sim_inputs["diff_index_grid"]
@@ -1154,10 +1283,6 @@ def _get_expected_Nnu_(
         for i, (d, Emin_src, Emax_src) in enumerate(
             zip(sim_inputs["D"], sim_inputs["Emin_src"], sim_inputs["Emax_src"])
         ):
-            n_params = 0
-            n_params += 1 if fit_index else 0
-            n_params += 1 if fit_beta else 0
-            n_params += 1 if fit_Enorm else 0
 
             if n_params == 2:
                 first = True
@@ -1192,15 +1317,17 @@ def _get_expected_Nnu_(
                 grid = np.log(sim_inputs["E0_src_grid"])
                 param = np.log(E0_src[i])
 
-            if logparabola:
+            if spectrum == "logparabola":
                 E0 = E0_src[i]
                 beta = beta_index[i]
+            elif spectrum == "pgamma":
+                E0 = E0_src[i]
+                beta = 0
             else:
                 E0 = 0
                 beta = 0
             if n_params == 1:
                 eps.append(np.exp(np.interp(param, grid, integral_grid[i])))
-            # arbitrary values to fulfill function signature
 
             l = sim_inputs["L"][i]
 
