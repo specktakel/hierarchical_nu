@@ -164,6 +164,13 @@ class StanFit:
             self._shared_luminosity = False
 
         if self._sources.point_source:
+            try:
+                ang_sys = Parameter.get_parameter("ang_sys_add")
+                self._ang_sys = True
+                self._fit_ang_sys = not ang_sys.fixed
+            except ValueError:
+                self._ang_sys = False
+                self._fit_ang_sys = False
             self._shared_src_index = False
             self._power_law = False
             self._logparabola = False
@@ -206,6 +213,8 @@ class StanFit:
             self._power_law = False
             self._logparabola = False
             self._pgamma = False
+            self._ang_sys = False
+            self._fit_ang_sys = False
 
         # For use with plot methods
         self._def_var_names = []
@@ -1735,7 +1744,13 @@ class StanFit:
         ]
         fit_inputs["event_type"] = self._events.types
         fit_inputs["kappa"] = self._events.kappas
-        fit_inputs["ang_err"] = self._events.ang_errs.to_value(u.rad)
+        if self._ang_sys and not self._fit_ang_sys:
+            fit_inputs["ang_err"] = np.sqrt(
+                Parameter.get_parameter("ang_sys_add").value.to_value(u.rad) ** 2
+                + self._events.ang_errs.to_value(u.rad) ** 2
+            )
+        else:
+            fit_inputs["ang_err"] = self._events.ang_errs.to_value(u.rad)
         fit_inputs["Ns"] = len(
             [s for s in self._sources.sources if isinstance(s, PointSource)]
         )
@@ -2091,12 +2106,13 @@ class StanFit:
                     .integral_fixed_vals[0]
                     .to_value(u.m**2)
                 )
-
+        """
         try:
             ang_sys = Parameter.get_parameter("ang_sys_add")
 
         except ValueError:
             pass
+        """
 
         fit_inputs["integral_grid"] = integral_grid
         fit_inputs["integral_grid_2d"] = integral_grid_2d
@@ -2150,10 +2166,7 @@ class StanFit:
                 "F_atmo"
             ).par_range.to_value(1 / u.m**2 / u.s)
 
-        try:
-            # Try to find an additive systematic error on the angular reconstruction
-            # TODO multiplicative as alternative?
-            ang_sys = Parameter.get_parameter("ang_sys_add")
-            self._ang_sys_par_range = ang_sys.par_range.to_value(u.rad)
-        except ValueError:
-            pass
+        if self._fit_ang_sys:
+            self._ang_sys_par_range = Parameter.get_parameter(
+                "ang_sys"
+            ).par_range.to_value(u.rad)

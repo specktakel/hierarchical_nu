@@ -143,10 +143,12 @@ class StanFitInterface(StanInterface):
             )
 
         try:
-            Parameter.get_parameter("ang_sys_add")
+            ang_sys = Parameter.get_parameter("ang_sys_add")
             self._ang_sys = True
+            self._fit_ang_sys = not ang_sys.fixed
         except ValueError:
             self._ang_sys = False
+            self._fit_ang_sys = False
         # In case of pgamma create dummy references to hardcoded parameters
         # which are otherwise needed in for-loops
         # TODO: find better solution, possibly to actually use these but set fixed=True
@@ -564,7 +566,7 @@ class StanFitInterface(StanInterface):
                         self._diff_index = ForwardVariableDef("diff_index", "real")
                         self._diff_index << glob[start]
                         start << start + 1
-                    if self._ang_sys:
+                    if self._fit_ang_sys:
                         self._ang_sys_add = ForwardVariableDef("ang_sys_add", "real")
                         end << end + 1
                         self._ang_sys_add << glob[start]
@@ -673,7 +675,7 @@ class StanFitInterface(StanInterface):
                         (self._atmo_integrated_flux << real_data[start])
                         start << start + 1
 
-                    if self.sources.point_source and not self._ang_sys:
+                    if self.sources.point_source and not self._fit_ang_sys:
                         self._spatial_loglike = ForwardArrayDef(
                             "spatial_loglike", "real", ["[Ns, N]"]
                         )
@@ -825,6 +827,9 @@ class StanFitInterface(StanInterface):
 
             # Angular uncertainty, 0.683 coverage
             self._ang_errs = ForwardVariableDef("ang_err", "vector[N]")
+
+            # Added (in quadrature) angular uncertainty to be fit
+            # TODO
 
             # Event types as track/cascades
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
@@ -1050,11 +1055,11 @@ class StanFitInterface(StanInterface):
                     "f_atmo_sigma", "real"
                 )
 
-            if self._ang_sys:
+            if self._fit_ang_sys:
                 self._ang_sys_add_min = ForwardVariableDef("ang_sys_min", "real")
                 self._ang_sys_add_max = ForwardVariableDef("ang_sys_max", "real")
                 self._ang_sys_mu = ForwardVariableDef("ang_sys_mu", "real")
-                self._ag_sys_sigma = ForwardVariableDef("ang_sys_sigma", "real")
+                self._ang_sys_sigma = ForwardVariableDef("ang_sys_sigma", "real")
 
     def _transformed_data(self):
         """
@@ -1092,7 +1097,7 @@ class StanFitInterface(StanInterface):
             if self.sources.point_source:
                 # Vector to hold pre-calculated spatial loglikes
                 # This needs to be compatible with multiple point sources!
-                if not self._ang_sys:
+                if not self._fit_ang_sys:
                     self._spatial_loglike = ForwardArrayDef(
                         "spatial_loglike", "real", ["[Ns, N]"]
                     )
@@ -1123,7 +1128,7 @@ class StanFitInterface(StanInterface):
                                             self._varpi[k],
                                             self._omega_det[i],
                                             self._ang_errs[i],
-                                            self._kappa[i],
+                                            # self._kappa[i],
                                         ],
                                         event_type.F + "AngularResolution",
                                     )
@@ -1185,14 +1190,14 @@ class StanFitInterface(StanInterface):
                 sd_Ns = 6  # redshift, Emin_src, Emax_src, x, y, z per point source
                 sd_other = 2  # Emin, Emax
                 # Need Ns * N for spatial loglike, added extra in sd_string -> J*Ns
-                if self._ang_sys:
+                if self._fit_ang_sys:
                     # If we use ang_sys we need to pass ang_err
                     sd_events_J += 1
                 if self.sources.atmospheric:
                     # atmo_integrated_flux, why was this here before? not used as far as I can see
                     sd_other += 1  # no atmo in cascades
                 sd_string = f"{sd_events_J}*J + {sd_Ns}*Ns + {sd_other}"
-                if not self._ang_sys:
+                if not self._fit_ang_sys:
                     # If we do not use ang_sys we need to pass the fixed spatial loglike for J events x Ns sources
                     sd_string += " + J*Ns"
                 if self.sources.diffuse:
@@ -1295,7 +1300,7 @@ class StanFitInterface(StanInterface):
                         insert_start << insert_start + 1
 
                     if self.sources.point_source:
-                        if not self._ang_sys:
+                        if not self._fit_ang_sys:
                             with ForLoopContext(1, self._Ns, "k") as k:
                                 # Loop over sources
                                 insert_end << insert_end + insert_len
@@ -1475,7 +1480,7 @@ class StanFitInterface(StanInterface):
                 "E", "vector", self._N_str, self._Emin_at_det, self._Emax_at_det
             )
 
-            if self._ang_sys:
+            if self._fit_ang_sys:
                 self._ang_sys_add = ParameterDef(
                     "ang_sys_add", "real", self._ang_sys_add_min, self._ang_sys_add_min
                 )
@@ -1631,7 +1636,7 @@ class StanFitInterface(StanInterface):
                 if self.sources.atmospheric:
                     num_of_pars += " + 1"
 
-                if self._ang_sys:
+                if self._fit_ang_sys:
                     num_of_pars += " + 1"
 
                 self._global_pars = ForwardVariableDef(
@@ -1969,13 +1974,10 @@ class StanFitInterface(StanInterface):
                     if self.sources.diffuse:
                         end << end + 1
                         self._global_pars[start] << self._diff_index
-<<<<<<< HEAD
                         start << start + self._Ns
-                    if self._ang_sys:
+                    if self._fit_ang_sys:
                         end << end + 1
                         self._global_pars[start] << self._ang_sys_add
-=======
->>>>>>> master
                         start << start + 1
                     end << end + StringExpression(["size(logF)"])
                     self._global_pars[start:end] << self._logF
@@ -2294,7 +2296,7 @@ class StanFitInterface(StanInterface):
                         ),
                     ]
                 )
-            if self._ang_sys:
+            if self._fit_ang_sys:
                 StringExpression(
                     [
                         self._ang_sys_add,
