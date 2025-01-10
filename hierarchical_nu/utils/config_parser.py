@@ -397,7 +397,7 @@ class ConfigParser:
             else:
                 RectangularROI(
                     RA_min=RA - size,
-                    RA_max=DEC + size,
+                    RA_max=RA + size,
                     DEC_min=DEC - size,
                     DEC_max=DEC + size,
                     MJD_min=MJD_min,
