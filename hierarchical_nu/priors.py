@@ -67,15 +67,10 @@ class NormalPrior(PriorDistribution):
 
     def to_dict(self, units):
         prior_dict = {}
-
         prior_dict["name"] = self._name
-
         prior_dict["mu"] = self._mu
-
         prior_dict["sigma"] = self._sigma
-
         prior_dict["units"] = units
-
         return prior_dict
 
 
@@ -110,15 +105,10 @@ class LogNormalPrior(PriorDistribution):
 
     def to_dict(self, units):
         prior_dict = {}
-
         prior_dict["name"] = self._name
-
         prior_dict["mu"] = self._mu
-
         prior_dict["sigma"] = self._sigma
-
         prior_dict["units"] = units
-
         return prior_dict
 
 
@@ -155,14 +145,56 @@ class ParetoPrior(PriorDistribution):
         prior_dict = {}
 
         prior_dict["name"] = self._name
-
         prior_dict["xmin"] = self._xmin
-
         prior_dict["alpha"] = self._alpha
-
         prior_dict["units"] = units
-
         return prior_dict
+
+
+class ExponentialGaussianPrior(PriorDistribution):
+    def __init__(self, name="exponnorm", mu=0.0, sigma=1.0, lam=1.0):
+        super().__init__(name)
+        self._mu = mu
+        self._sigma = sigma
+        self._lam = lam
+
+    @property
+    def mu(self):
+        return self._mu
+
+    @mu.setter
+    def mu(self, val: float):
+        self._mu = val
+
+    @property
+    def sigma(self):
+        return self._sigma
+
+    @sigma.setter
+    def sigma(self, val: float):
+        self._sigma = val
+
+    @property
+    def lam(self):
+        return self._lam
+
+    @lam.setter
+    def lam(self, val: float):
+        self._lam = val
+
+    def pdf(self, x):
+        return stats.exponnorm.pdf(x, 1 / (self.lam * self.sigma), self.mu, self.sigma)
+
+    def sample(self, N):
+        return
+
+    def to_dict(self, units):
+        priors_dict = {}
+        priors_dict["mu"] = self.mu
+        priors_dict["sigma"] = self.sigma
+        priors_dict["lam"] = self.lam
+        priors_dict["units"] = units
+        return priors_dict
 
 
 class PriorDictHandler:
@@ -213,6 +245,18 @@ class UnitPrior:
             self._units = units
             self._prior = name(xmin=xmin.to_value(units), alpha=alpha)
 
+        elif name == ExponentialGaussianPrior:
+            mu = kwargs.get("mu")
+            sigma = kwargs.get("sigma")
+            lam = kwargs.get("lam")
+            units = kwargs.get("units")
+            self._units = units
+            self._prior = name(
+                mu=mu.to_value(units),
+                sigma=sigma.to_value(units),
+                lam=lam.to_value(1 / units),
+            )
+
         else:
             mu = kwargs.get("mu")
             sigma = kwargs.get("sigma")
@@ -241,28 +285,36 @@ class UnitPrior:
 
     @property
     def mu(self):
-        if isinstance(self._prior, NormalPrior):
+        if isinstance(self._prior, NormalPrior) or isinstance(
+            self._prior, ExponentialGaussianPrior
+        ):
             return self._prior.mu * self._units
         else:
             return self._prior.mu
 
     @mu.setter
     def mu(self, val):
-        if isinstance(self._prior, NormalPrior):
+        if isinstance(self._prior, NormalPrior) or isinstance(
+            self._prior, ExponentialGaussianPrior
+        ):
             self._prior.mu = val.to_value(self._units)
         else:
             self._prior.mu = val
 
     @property
     def sigma(self):
-        if isinstance(self._prior, NormalPrior):
+        if isinstance(self._prior, NormalPrior) or isinstance(
+            self._prior, ExponentialGaussianPrior
+        ):
             return self._prior.sigma * self._units
         else:
             return self._prior.sigma
 
     @sigma.setter
     def sigma(self, val):
-        if isinstance(self._prior, NormalPrior):
+        if isinstance(self._prior, NormalPrior) or isinstance(
+            self._prior, ExponentialGaussianPrior
+        ):
             self._prior.sigma = val.to_value(self._units)
         else:
             self._prior.sigma = val
@@ -283,6 +335,15 @@ class UnitPrior:
     @alpha.setter
     def alpha(self, val):
         self._prior.alpha = val
+
+    @property
+    def lam(self):
+        return self._prior.lam / self._units
+
+    @lam.setter
+    def lam(self, val):
+        if isinstance(self._prior, ExponentialGaussianPrior):
+            self._prior.lam = val.to_value(1 / self._units)
 
     @property
     def name(self):
@@ -373,8 +434,9 @@ class AngularPrior(UnitPrior):
         name=NormalPrior,
         mu: Union[u.Quantity[u.deg], None] = 0.2 * u.deg,
         sigma: Union[u.Quantity[u.deg], None] = 0.2 * u.deg,
+        lam: Union[u.Quantity[1 / u.deg], None] = None,
     ):
-        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
+        super().__init__(name, mu=mu, sigma=sigma, lam=lam, units=self.UNITS)
 
 
 class LuminosityPrior(UnitPrior):

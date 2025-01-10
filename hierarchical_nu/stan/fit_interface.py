@@ -1087,6 +1087,8 @@ class StanFitInterface(StanInterface):
                 self._ang_sys_add_max = ForwardVariableDef("ang_sys_max", "real")
                 self._ang_sys_mu = ForwardVariableDef("ang_sys_mu", "real")
                 self._ang_sys_sigma = ForwardVariableDef("ang_sys_sigma", "real")
+                if self._priors.ang_sys.name == "exponnorm":
+                    self._ang_sys_lam = ForwardVariableDef("ang_sys_lam", "real")
 
     def _transformed_data(self):
         """
@@ -2365,19 +2367,39 @@ class StanFitInterface(StanInterface):
                     ]
                 )
             if self._fit_ang_sys:
-                StringExpression(
-                    [
-                        self._ang_sys_add,
-                        " ~ ",
-                        FunctionCall(
-                            [
-                                self._ang_sys_mu,
-                                self._ang_sys_sigma,
-                            ],
-                            self._priors.ang_sys.name,
-                        ),
-                    ]
-                )
+                if self._priors.ang_sys.name == "normal":
+                    StringExpression(
+                        [
+                            self._ang_sys_add,
+                            " ~ ",
+                            FunctionCall(
+                                [
+                                    self._ang_sys_mu,
+                                    self._ang_sys_sigma,
+                                ],
+                                self._priors.ang_sys.name,
+                            ),
+                        ]
+                    )
+                elif self._priors.ang_sys.name == "exponnorm":
+                    StringExpression(
+                        [
+                            self._ang_sys_add,
+                            " ~ ",
+                            FunctionCall(
+                                [
+                                    self._ang_sys_mu,
+                                    self._ang_sys_sigma,
+                                    self._ang_sys_lam,
+                                ],
+                                "exp_mod_normal",
+                            ),
+                        ]
+                    )
+                else:
+                    raise NotImplementedError(
+                        "Prior type for angular systematics not recognised."
+                    )
 
     def _generated_quantities(self):
         """
@@ -2442,9 +2464,10 @@ class StanFitInterface(StanInterface):
                 self._eres_diff = ForwardVariableDef("eres_diff", "real")
                 self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
-                # self._spatial_loglike = ForwardArrayDef(
-                #     "spatial_loglike", "real", ["[Ns, N]"]
-                # )
+                if self._fit_ang_sys:
+                    self._spatial_loglike = ForwardArrayDef(
+                        "spatial_loglike", "real", ["[Ns, N]"]
+                    )
 
                 self._model_likelihood()
 

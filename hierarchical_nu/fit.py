@@ -1921,6 +1921,10 @@ class StanFit:
             if self._fit_ang_sys:
                 fit_inputs["ang_sys_mu"] = self._priors.ang_sys.mu.to_value(u.rad)
                 fit_inputs["ang_sys_sigma"] = self._priors.ang_sys.sigma.to_value(u.rad)
+                if self._priors.ang_sys.name == "exponnorm":
+                    fit_inputs["ang_sys_lam"] = self._priors.ang_sys.lam.to_value(
+                        1 / u.rad
+                    )
 
         # Inputs for priors of point sources
         if self._priors.src_index.name not in ["normal", "lognormal"]:
