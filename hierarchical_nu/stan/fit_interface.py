@@ -1164,17 +1164,25 @@ class StanFitInterface(StanInterface):
                                         )
                                     ]
                                 ):
-                                    # Hand over both ang_errs and kappa,
-                                    # the angular resolution will pick out the one that
-                                    # should be used.
-                                    self._spatial_loglike[k, i] << FunctionCall(
-                                        [
-                                            self._angular_separation[k, i],
-                                            self._ang_errs_squared[i],
-                                            # self._kappa[i],
-                                        ],
-                                        event_type.F + "AngularResolution",
-                                    )
+                                    # Determine which arguments are needed for the
+                                    # needed angular resolution
+                                    if event_type in [NT, CAS]:
+                                        self._spatial_loglike[k, i] << FunctionCall(
+                                            [
+                                                self._varpi[k],
+                                                self._omega_det[i],
+                                                self._kappa[i],
+                                            ],
+                                            event_type.F + "AngularResolution",
+                                        )
+                                    else:
+                                        self._spatial_loglike[k, i] << FunctionCall(
+                                            [
+                                                self._angular_separation[k, i],
+                                                self._ang_errs_squared[i],
+                                            ],
+                                            event_type.F + "AngularResolution",
+                                        )
 
             # Find largest permitted range of energies at the detector
             self._Emin_at_det = ForwardVariableDef("Emin_at_det", "real")
@@ -1358,6 +1366,7 @@ class StanFitInterface(StanInterface):
                                 )
                                 insert_start << insert_start + insert_len
                         else:
+                            # TODO raise error if this is used with NT or CAS
                             insert_end << insert_end + insert_len
                             (
                                 self.real_data[i, insert_start:insert_end]
@@ -2433,9 +2442,9 @@ class StanFitInterface(StanInterface):
                 self._eres_diff = ForwardVariableDef("eres_diff", "real")
                 self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
-                self._spatial_loglike = ForwardArrayDef(
-                    "spatial_loglike", "real", ["[Ns, N]"]
-                )
+                # self._spatial_loglike = ForwardArrayDef(
+                #     "spatial_loglike", "real", ["[Ns, N]"]
+                # )
 
                 self._model_likelihood()
 
