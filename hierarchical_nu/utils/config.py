@@ -182,6 +182,10 @@ class ROIConfig:
     DEC_min: float = -91.0
     DEC_max: float = 91.0
 
+    # If RA, DEC take default values, they will be overridden by the source selections
+    RA: float = -1.0
+    DEC: float = -91.0
+
 
 @dataclass
 class PPCConfig:

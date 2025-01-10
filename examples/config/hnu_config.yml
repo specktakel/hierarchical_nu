@@ -83,6 +83,8 @@ roi_config:
   roi_type: CircularROI
   size: 5.0
   apply_roi: true
+  DEC: 6.0
+  RA: 76.0
 ppc_config:
   n_samples: 100
   seed: 42
