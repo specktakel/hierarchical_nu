@@ -366,11 +366,14 @@ class ConfigParser:
                 )
         elif roi_config.roi_type == "RectangularROI":
             size = size.to(u.rad)
-            if not (
-                np.isclose(roi_config.RA_min, -1.0)
-                and np.isclose(roi_config.RA_max, 361.0)
-                and np.isclose(roi_config.DEC_min, -91.0)
-                and np.isclose(roi_config.DEC_max, 91.0)
+            if (
+                not (
+                    np.isclose(roi_config.RA_min, -1.0)
+                    and np.isclose(roi_config.RA_max, 361.0)
+                    and np.isclose(roi_config.DEC_min, -91.0)
+                    and np.isclose(roi_config.DEC_max, 91.0)
+                )
+                and not provided_center
             ):
                 RectangularROI(
                     RA_min=roi_config.RA_min * u.deg,
@@ -381,12 +384,22 @@ class ConfigParser:
                     MJD_max=MJD_max,
                     apply_roi=apply_roi,
                 )
-            else:
+            elif not provided_center:
                 RectangularROI(
                     RA_min=src_ra[0] - size,
                     RA_max=src_ra[0] + size,
                     DEC_min=src_dec[0] - size,
                     DEC_max=src_dec[0] + size,
+                    MJD_min=MJD_min,
+                    MJD_max=MJD_max,
+                    apply_roi=apply_roi,
+                )
+            else:
+                RectangularROI(
+                    RA_min=RA - size,
+                    RA_max=DEC + size,
+                    DEC_min=DEC - size,
+                    DEC_max=DEC + size,
                     MJD_min=MJD_min,
                     MJD_max=MJD_max,
                     apply_roi=apply_roi,
