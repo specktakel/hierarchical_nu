@@ -16,10 +16,12 @@ from .r2021 import (
 
 
 class EventType:
-    pass
+    # Only works with @dataclass(eq=False) decorator called in notebooks directly, but not in e.g. LifeTime.mjd_from_dm
+    def __eq__(self, other):
+        return self.S == other.S
 
 
-@dataclass
+@dataclass(eq=False)
 class NT(EventType):
     P = "northern_tracks"
     F = "NorthernTracks"
@@ -27,7 +29,7 @@ class NT(EventType):
     model = NorthernTracksDetectorModel
 
 
-@dataclass
+@dataclass(eq=False)
 class CAS(EventType):
     P = "cascades"
     F = "Cascades"
@@ -35,7 +37,7 @@ class CAS(EventType):
     model = CascadesDetectorModel
 
 
-@dataclass
+@dataclass(eq=False)
 class IC40(EventType):
     P = "IC40"
     F = P
@@ -43,7 +45,7 @@ class IC40(EventType):
     model = IC40DetectorModel
 
 
-@dataclass
+@dataclass(eq=False)
 class IC59(EventType):
     P = "IC59"
     F = P
@@ -51,7 +53,7 @@ class IC59(EventType):
     model = IC59DetectorModel
 
 
-@dataclass
+@dataclass(eq=False)
 class IC79(EventType):
     P = "IC79"
     F = P
@@ -59,7 +61,7 @@ class IC79(EventType):
     model = IC79DetectorModel
 
 
-@dataclass
+@dataclass(eq=False)
 class IC86_I(EventType):
     P = "IC86_I"
     F = P
@@ -67,7 +69,7 @@ class IC86_I(EventType):
     model = IC86_IDetectorModel
 
 
-@dataclass
+@dataclass(eq=False)
 class IC86_II(EventType):
     P = "IC86_II"
     F = P

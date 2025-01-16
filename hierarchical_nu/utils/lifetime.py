@@ -49,9 +49,11 @@ class LifeTime:
             output[et] = lifetime[et.P] * u.year
         return output
 
-    def mjd_from_dm(self, event_type: EventType) -> tuple[float]:
+    def mjd_from_dm(self, event_type) -> tuple[float]:
         mjd_min = self._uptime._data[event_type.P].min()
-        if event_type == IC86_II:
+        # Have to compare some attribute here, using the classes directly does not work :(
+        print(event_type)
+        if event_type.S == IC86_II.S:
             mjd_max = self._uptime._data["IC86_VII"].max()
         else:
             mjd_max = self._uptime._data[event_type.P].max()
