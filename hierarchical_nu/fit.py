@@ -1255,7 +1255,13 @@ class StanFit:
         for t, e in zip(legend.get_texts(), extends):
             t.set_position((max_extend - e, 0))
 
-    def save(self, path: Path, overwrite: bool = False, save_json: bool = False):
+    def save(
+        self,
+        path: Path,
+        overwrite: bool = False,
+        save_json: bool = False,
+        use_timestamp: bool = False,
+    ):
         """
         Save fit to h5 file.
         :param path: Path to which fit is saved.
@@ -1278,8 +1284,9 @@ class StanFit:
             dirname = os.getcwd()
         path = Path(dirname) / Path(filename)
 
-        if os.path.exists(path) and not overwrite:
-            logger.warning(f"File {filename} already exists.")
+        if (os.path.exists(path) and not overwrite) or use_timestamp:
+            if os.path.exists(path):
+                logger.warning(f"File {filename} already exists.")
             file = os.path.splitext(filename)[0]
             ext = os.path.splitext(filename)[1]
             file += f"_{int(thyme())}"
