@@ -118,7 +118,8 @@ class StanConfig:
     chains: int = 1
     iterations: int = 1000
     iter_warmup: int = 1000
-    adapt_delta: float = 0.8
+    adapt_delta: float = 0.8  # Default of cdmstanpy
+    max_treedepth: int = 10  # Default of cmdstanpy
     seed: int = 42
 
 

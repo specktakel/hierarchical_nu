@@ -1344,10 +1344,17 @@ class StanFit:
             f.create_dataset("version", data=git_hash)
 
             summary = self._fit_output.summary()
+            meta = self._fit_output.method_variables()
+
+            method_keys = [
+                "lp__",
+                "stepsize__",
+                "treedepth__",
+                "n_leapfrog__",
+            ]
 
             # List of keys for which we are looking in the entirety of stan parameters
             key_stubs = [
-                "lp__",
                 "L",
                 "_luminosity",
                 "src_index",
@@ -1386,6 +1393,9 @@ class StanFit:
             meta_folder.create_dataset("R_hat", data=R_hat)
             meta_folder.create_dataset("parameters", data=np.array(keys, dtype="S"))
 
+            for key in method_keys:
+                meta_folder.create_dataset(key, data=meta[key])
+
         self.events.to_file(path, append=True)
 
         # Add priors separately
@@ -1400,10 +1410,9 @@ class StanFit:
 
     def diagnose(self):
         try:
-            print(self._fit_output.diagnose().decode("ascii"))
+            print(self._fit_output.diagnose())
         except:
-            for item in self._fit_meta["diagnose"]:
-                print(item.decode("ascii"))
+            print(self._fit_meta["diagnose"].decode("ascii"))
 
     def save_csvfiles(self, directory):
         """
@@ -1605,17 +1614,6 @@ class StanFit:
             fit_meta,
             config,
         )
-
-    def diagnose(self):
-        """
-        Print fit diagnose message.
-        """
-
-        try:
-            print(self._fit_output.diagnose())
-        except AttributeError:
-            # TODO make compatible with loading multiple fits
-            print(self._fit_meta["diagnose"])
 
     def check_classification(self, sim_outputs):
         """
