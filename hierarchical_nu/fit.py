@@ -1327,7 +1327,16 @@ class StanFit:
                     )
 
             for key, value in self._fit_output.stan_variables().items():
-                outputs_folder.create_dataset(key, data=value)
+                if key == "irf_return":
+                    n_entries = len(value[0])
+                    for n in range(n_entries):
+                        if value[0][n].ndim < 2:
+                            out = np.concatenate([_[n] for _ in value])
+                        else:
+                            out = np.vstack([_[n] for _ in value])
+                        outputs_folder.create_dataset(key+f".{n}", data=out)
+                    continue
+                outputs_folder.create_dataset(key, data=value) 
 
             # Save some metadata for debugging, easier loading from file
             if np.any(self._fit_output.divergences):
