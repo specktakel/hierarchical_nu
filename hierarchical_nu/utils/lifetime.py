@@ -67,9 +67,10 @@ class LifeTime:
         Find MJD range of provided detector config/event type
         :param event_type: Event type
         """
-
         mjd_min = self._uptime._data[event_type.P].min()
-        if event_type == IC86_II:
+        # Have to compare some attribute here, using the classes directly does not work :(
+        print(event_type)
+        if event_type.S == IC86_II.S:
             mjd_max = self._uptime._data["IC86_VII"].max()
         else:
             mjd_max = self._uptime._data[event_type.P].max()

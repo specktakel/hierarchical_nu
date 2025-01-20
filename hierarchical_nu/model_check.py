@@ -298,6 +298,12 @@ class ModelCheck:
                     elif key == "N_Eff":
                         for c, data in enumerate(res[key]):
                             folder.create_dataset(f"N_Eff_{c}", data=data)
+                    elif key == "ESS_bulk":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"ESS_bulk_{c}", data=data)
+                    elif key == "ESS_tail":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"ESS_tail_{c}", data=data)
                     elif key == "R_hat":
                         for c, data in enumerate(res[key]):
                             folder.create_dataset(f"R_hat_{c}", data=data)
@@ -645,6 +651,8 @@ class ModelCheck:
         outputs["Lambda"] = []
         outputs["parameter_names"] = []
         outputs["N_Eff"] = []
+        outputs["ESS_bulk"] = []
+        outputs["ESS_tail"] = []
         outputs["R_hat"] = []
         if save_events:
             outputs["events"] = []
@@ -800,16 +808,22 @@ class ModelCheck:
 
             keys = []
             summary = fit._fit_output.summary()
-            for k, v in summary["N_Eff"].items():
+            for k, v in summary["R_hat"].items():
                 for key in key_stubs:
                     if key in k:
                         keys.append(k)
                         break
 
             R_hat = np.array([summary["R_hat"][k] for k in keys])
-            N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+            if "ESS_bulk" in summary.keys():
+                ESS_bulk = np.array([summary["ESS_bulk"][k] for k in keys])
+                ESS_tail = np.array([summary["ESS_tail"][k] for k in keys])
+                outputs["ESS_bulk"].append(ESS_bulk)
+                outputs["ESS_tail"].append(ESS_tail)
+            if "N_Eff" in summary.keys():
+                N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+                outputs["N_Eff"].append(N_Eff)
             outputs["parameter_names"].append(np.array(keys, dtype="S"))
-            outputs["N_Eff"].append(N_Eff)
             outputs["R_hat"].append(R_hat)
 
         return outputs

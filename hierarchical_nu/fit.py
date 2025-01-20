@@ -787,7 +787,6 @@ class StanFit:
             lw=lw,
             plot_text=plot_text,
             textsize=textsize,
-            
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -998,7 +997,7 @@ class StanFit:
             assoc_threshold=assoc_threshold,
             lw=lw,
             plot_text=plot_text,
-            textsize=textsize
+            textsize=textsize,
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -1322,7 +1321,13 @@ class StanFit:
         for t, e in zip(legend.get_texts(), extends):
             t.set_position((max_extend - e, 0))
 
-    def save(self, path: Path, overwrite: bool = False, save_json: bool = False):
+    def save(
+        self,
+        path: Path,
+        overwrite: bool = False,
+        save_json: bool = False,
+        use_timestamp: bool = False,
+    ):
         """
         Save fit to h5 file.
         :param path: Path to which fit is saved.
@@ -1345,8 +1350,9 @@ class StanFit:
             dirname = os.getcwd()
         path = Path(dirname) / Path(filename)
 
-        if os.path.exists(path) and not overwrite:
-            logger.warning(f"File {filename} already exists.")
+        if (os.path.exists(path) and not overwrite) or use_timestamp:
+            if os.path.exists(path):
+                logger.warning(f"File {filename} already exists.")
             file = os.path.splitext(filename)[0]
             ext = os.path.splitext(filename)[1]
             file += f"_{int(thyme())}"
@@ -1387,7 +1393,16 @@ class StanFit:
                     )
 
             for key, value in self._fit_output.stan_variables().items():
-                outputs_folder.create_dataset(key, data=value)
+                if key == "irf_return":
+                    n_entries = len(value[0])
+                    for n in range(n_entries):
+                        if value[0][n].ndim < 2:
+                            out = np.concatenate([_[n] for _ in value])
+                        else:
+                            out = np.vstack([_[n] for _ in value])
+                        outputs_folder.create_dataset(key+f".{n}", data=out)
+                    continue
+                outputs_folder.create_dataset(key, data=value) 
 
             # Save some metadata for debugging, easier loading from file
             if np.any(self._fit_output.divergences):
@@ -1404,10 +1419,17 @@ class StanFit:
             f.create_dataset("version", data=git_hash)
 
             summary = self._fit_output.summary()
+            meta = self._fit_output.method_variables()
+
+            method_keys = [
+                "lp__",
+                "stepsize__",
+                "treedepth__",
+                "n_leapfrog__",
+            ]
 
             # List of keys for which we are looking in the entirety of stan parameters
             key_stubs = [
-                "lp__",
                 "L",
                 "_luminosity",
                 "src_index",
@@ -1427,18 +1449,27 @@ class StanFit:
             ]
 
             keys = []
-            for k, v in summary["N_Eff"].items():
+            for k, v in summary["R_hat"].items():
                 for key in key_stubs:
                     if key in k:
                         keys.append(k)
                         break
 
             R_hat = np.array([summary["R_hat"][k] for k in keys])
-            N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+            if "ESS_bulk" in summary.keys():
+                ESS_bulk = np.array([summary["ESS_bulk"][k] for k in keys])
+                ESS_tail = np.array([summary["ESS_tail"][k] for k in keys])
+                meta_folder.create_dataset("ESS_bulk", data=ESS_bulk)
+                meta_folder.create_dataset("ESS_tail", data=ESS_tail)
+            if "N_Eff" in summary.keys():
+                N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+                meta_folder.create_dataset("N_Eff", data=N_Eff)
 
-            meta_folder.create_dataset("N_Eff", data=N_Eff)
             meta_folder.create_dataset("R_hat", data=R_hat)
             meta_folder.create_dataset("parameters", data=np.array(keys, dtype="S"))
+
+            for key in method_keys:
+                meta_folder.create_dataset(key, data=meta[key])
 
         self.events.to_file(path, append=True)
 
@@ -1458,10 +1489,9 @@ class StanFit:
         """
 
         try:
-            print(self._fit_output.diagnose().decode("ascii"))
+            print(self._fit_output.diagnose())
         except:
-            for item in self._fit_meta["diagnose"]:
-                print(item.decode("ascii"))
+            print(self._fit_meta["diagnose"].decode("ascii"))
 
     def save_csvfiles(self, directory):
         """
@@ -1663,19 +1693,6 @@ class StanFit:
             fit_meta,
             config,
         )
-
-    '''
-    def diagnose(self):
-        """
-        Print fit diagnose message.
-        """
-
-        try:
-            print(self._fit_output.diagnose())
-        except AttributeError:
-            # TODO make compatible with loading multiple fits
-            print(self._fit_meta["diagnose"])
-    '''
 
     def check_classification(self, sim_outputs):
         """

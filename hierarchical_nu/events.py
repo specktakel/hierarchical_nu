@@ -39,6 +39,45 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+class SingleEvent:
+
+    @u.quantity_input
+    def __init__(
+        self,
+        energy: u.GeV,
+        coord: SkyCoord,
+        type,
+        ang_err: u.deg,
+        mjd: Time,
+    ):
+
+        self._energy = energy
+        self._mjd = np.atleast_1d(mjd)
+        coord.representation_type = "spherical"
+        self._coord = coord
+        coord.representation_type = "cartesian"
+        self._unit_vector = np.array([coord.x.value, coord.y.value, coord.z.value]).T
+        self._coord.representation_type = "spherical"
+        self._type = type
+        self._ang_errs = ang_err
+
+    @property
+    def energy(self):
+        return self._energy
+
+    @property
+    def ang_err(self):
+        return self._ang_errs
+
+    @property
+    def coord(self):
+        return self._coord
+
+    @property
+    def mjd(self):
+        return self._mjd
+
+
 class Events:
     """
     Events class for the storage of event observables
@@ -158,6 +197,16 @@ class Events:
     @property
     def mjd(self):
         return self._mjd
+
+    def __getitem__(self, i):
+        event = SingleEvent(
+            self.energies[i],
+            self.coords[i],
+            self.types[i],
+            self.ang_errs[i],
+            self.mjd[i],
+        )
+        return event
 
     @classmethod
     def from_file(

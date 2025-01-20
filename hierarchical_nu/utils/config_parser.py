@@ -328,34 +328,52 @@ class ConfigParser:
         ROIList.clear_registry()
         parameter_config = self._hnu_config.parameter_config
         roi_config = self._hnu_config.roi_config
-        dec = np.deg2rad(parameter_config.src_dec) * u.rad
-        ra = np.deg2rad(parameter_config.src_ra) * u.rad
-        center = SkyCoord(ra=ra, dec=dec, frame="icrs")
+        src_dec = np.deg2rad(parameter_config.src_dec) * u.rad
+        src_ra = np.deg2rad(parameter_config.src_ra) * u.rad
+        RA = roi_config.RA
+        DEC = roi_config.DEC
+        if not np.isclose(RA, -1.0) and not np.isclose(DEC, -91.0):
+            # Use provided center
+            center = SkyCoord(
+                ra=np.deg2rad(RA) * u.rad, dec=np.deg2rad(DEC) * u.rad, frame="icrs"
+            )
+            provided_center = True
+        else:
+            center = SkyCoord(ra=src_ra, dec=src_dec, frame="icrs")
+            provided_center = False
 
         roi_config = self._hnu_config.roi_config
         size = roi_config.size * u.deg
         apply_roi = roi_config.apply_roi
 
-        if apply_roi and len(dec) > 1 and not roi_config.roi_type == "CircularROI":
+        if apply_roi and len(src_dec) > 1 and not roi_config.roi_type == "CircularROI":
             raise ValueError("Only CircularROIs can be stacked")
         MJD_min = self.MJD_min if not np.isclose(self.MJD_min, 98.0) else 0.0
         MJD_max = self.MJD_max if not np.isclose(self.MJD_max, 100.0) else 99999.0
         if roi_config.roi_type == "CircularROI":
-            for c in range(len(dec)):
+            if not provided_center:
+                for c in range(len(src_dec)):
+                    CircularROI(
+                        center[c],
+                        size,
+                        apply_roi=apply_roi,
+                        MJD_min=MJD_min,
+                        MJD_max=MJD_max,
+                    )
+            else:
                 CircularROI(
-                    center[c],
-                    size,
-                    apply_roi=apply_roi,
-                    MJD_min=MJD_min,
-                    MJD_max=MJD_max,
+                    center, size, apply_roi=apply_roi, MJD_min=MJD_min, MJD_max=MJD_max
                 )
         elif roi_config.roi_type == "RectangularROI":
             size = size.to(u.rad)
-            if not (
-                np.isclose(roi_config.RA_min, -1.0)
-                and np.isclose(roi_config.RA_max, 361.0)
-                and np.isclose(roi_config.DEC_min, -91.0)
-                and np.isclose(roi_config.DEC_max, 91.0)
+            if (
+                not (
+                    np.isclose(roi_config.RA_min, -1.0)
+                    and np.isclose(roi_config.RA_max, 361.0)
+                    and np.isclose(roi_config.DEC_min, -91.0)
+                    and np.isclose(roi_config.DEC_max, 91.0)
+                )
+                and not provided_center
             ):
                 RectangularROI(
                     RA_min=roi_config.RA_min * u.deg,
@@ -366,12 +384,22 @@ class ConfigParser:
                     MJD_max=MJD_max,
                     apply_roi=apply_roi,
                 )
+            elif not provided_center:
+                RectangularROI(
+                    RA_min=src_ra[0] - size,
+                    RA_max=src_ra[0] + size,
+                    DEC_min=src_dec[0] - size,
+                    DEC_max=src_dec[0] + size,
+                    MJD_min=MJD_min,
+                    MJD_max=MJD_max,
+                    apply_roi=apply_roi,
+                )
             else:
                 RectangularROI(
-                    RA_min=ra[0] - size,
-                    RA_max=ra[0] + size,
-                    DEC_min=dec[0] - size,
-                    DEC_max=dec[0] + size,
+                    RA_min=RA - size,
+                    RA_max=RA + size,
+                    DEC_min=DEC - size,
+                    DEC_max=DEC + size,
                     MJD_min=MJD_min,
                     MJD_max=MJD_max,
                     apply_roi=apply_roi,

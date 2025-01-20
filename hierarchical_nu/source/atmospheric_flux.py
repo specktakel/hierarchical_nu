@@ -255,6 +255,7 @@ class AtmosphericNuMuFlux(FluxModel):
 
             def run(month):
                 # Calculate the spectrum for each month's atmosphere
+                Cache.set_cache_dir(self.cache_dir)
                 mceq = MCEqRun(
                     # High-energy hadronic interaction model
                     interaction_model="SIBYLL23C",
