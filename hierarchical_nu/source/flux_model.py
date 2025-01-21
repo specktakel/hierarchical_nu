@@ -28,6 +28,10 @@ neutrino detection calculations
 
 
 class SpectralShape(ABC):
+    """
+    Abstract base class for spectral shapes
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__()
         self._parameters: Dict[str, Parameter] = {}
@@ -134,6 +138,13 @@ class PointSourceFluxModel(FluxModel):
     def __init__(
         self, spectral_shape: SpectralShape, dec: u.rad, ra: u.rad, *args, **kwargs
     ):
+        """
+        Define point source flux model at arbitrary position on the sky
+        :param spectral_shape: energy spectral shape
+        :param dec: source declination
+        :param ra: source right ascension
+        """
+
         super().__init__(self)
         self._spectral_shape = spectral_shape
         self._parameters = spectral_shape.parameters
@@ -188,6 +199,10 @@ class PointSourceFluxModel(FluxModel):
 
 class IsotropicDiffuseBG(FluxModel):
     def __init__(self, spectral_shape: SpectralShape, *args, **kwargs):
+        """
+        Isotropic flux model, i.e. for astrophysical diffuse flux
+        :param spectral_shape: energy spectral shape
+        """
         super().__init__(self)
         self._spectral_shape = spectral_shape
         self._parameters = spectral_shape.parameters
@@ -620,6 +635,7 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
     in any of those calculations.
     """
 
+    # Indices at the flanks
     _index0 = -15.0
     _index2 = 15.0
     _name = "twice-broken-power-law"
@@ -715,6 +731,7 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
 
 
 class LogParabolaSpectrum(SpectralShape):
+    """Logparabola spectral model"""
 
     _name = "logparabola"
 
@@ -731,13 +748,13 @@ class LogParabolaSpectrum(SpectralShape):
         **kwargs,
     ):
         """
-        Power law flux models.
+        Logparabola flux model.
         Lives in the detector frame.
 
         normalisation: float
             Flux normalisation [GeV^-1 m^-2 s^-1]
         normalisation_energy: float or Parameter
-            Energy at which flux is normalised [GeV].
+            Energy at which flux is normalised [GeV] and local index is alpha.
         alpha: Parameter
             Slope parameter of spectral shape
         beta: Parameter
@@ -1155,6 +1172,10 @@ class LogParabolaSpectrum(SpectralShape):
 
 
 class PGammaSpectrum(SpectralShape):
+    """
+    PGamma spectral shape as derived by https://www.aanda.org/articles/aa/full_html/2024/09/aa50592-24/aa50592-24.html
+    Approximated by a flat power law and a logparabola branch at high energies
+    """
 
     _src_index = 0.0
     _alpha = 0.0

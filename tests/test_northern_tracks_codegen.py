@@ -27,6 +27,7 @@ from hierarchical_nu.stan.interface import STAN_PATH
 from hierarchical_nu.source.source import Sources
 
 
+@pytest.mark.skip(reason="Detector model no longer maintained")
 def test_file_generation_northern_tracks(output_directory):
     _ = NorthernTracksDetectorModel.generate_code(
         mode=DistributionMode.PDF, path=output_directory, rewrite=True
@@ -44,6 +45,7 @@ def test_file_generation_northern_tracks(output_directory):
             ntd_rng.generate_rng_function_code()
 
 
+@pytest.mark.skip(reason="Detector model no longer maintained")
 def generate_distribution_test_code(output_directory):
     file_name = os.path.join(output_directory, "nt_distributions")
 
@@ -100,6 +102,7 @@ def generate_distribution_test_code(output_directory):
     return code_gen.filename
 
 
+@pytest.mark.skip(reason="Detector model no longer maintained")
 def test_distributions_northern_tracks(output_directory, random_seed):
     model_file = generate_distribution_test_code(output_directory)
 
@@ -150,6 +153,7 @@ def test_distributions_northern_tracks(output_directory, random_seed):
     assert np.min(eff_area) == 0.0
 
 
+@pytest.mark.skip(reason="Detector model no longer maintained")
 def generate_rv_test_code(output_directory):
     rng_file_name = os.path.join(output_directory, "nt_rng")
     pdf_file_name = os.path.join(output_directory, "nt_pdf")
@@ -214,6 +218,7 @@ def generate_rv_test_code(output_directory):
     return code_gen_rng.filename, code_gen_pdf.filename
 
 
+@pytest.mark.skip(reason="Detector model no longer maintained")
 def test_rv_generation(output_directory, random_seed):
     # Get Stan files
     rng_file_name, pdf_file_name = generate_rv_test_code(output_directory)

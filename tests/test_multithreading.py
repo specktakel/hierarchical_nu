@@ -1,5 +1,4 @@
 import pytest
-from astropy.coordinates import SkyCoord
 import astropy.units as u
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.simulation import Simulation
