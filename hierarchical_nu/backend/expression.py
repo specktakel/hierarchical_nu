@@ -119,7 +119,6 @@ class Expression(_BaseExpression):
         return StringExpression(output)
 
     """
-
     def __getitem__(self: _BaseExpression, key: TExpression):
 
         stan_code: TListTExpression = [self, "[", key, "]"]

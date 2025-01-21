@@ -63,6 +63,7 @@ class Simulation:
     ):
         """
         To set up and run simulations.
+        :param sources: Sources instance
         :param event_types: EventType or List thereof, to be included in the fit
         :param observation_time: astropy.units time for single event type or dictionary thereof with event type as key
         :param atmo_flux_energy_points: number of points for atmo spectrum energy interpolation
@@ -229,12 +230,26 @@ class Simulation:
             self._exposure_integral = exposure_integral
 
     def generate_stan_code(self):
+        """
+        Generate stan code from scratch
+        """
+
         self._main_sim_filename = self._stan_interface.generate()
 
     def set_stan_filename(self, sim_filename):
+        """
+        Set stan file name for existing simulation code
+        :param sim_filename: filename of stan code
+        """
+
         self._main_sim_filename = sim_filename
 
     def compile_stan_code(self, include_paths=None):
+        """
+        Compile stan simulation code
+        :param include_paths: list of directories to include stan files from
+        """
+
         if not include_paths:
             include_paths = [STAN_PATH, STAN_GEN_PATH]
 
@@ -248,6 +263,7 @@ class Simulation:
     def setup_stan_sim(self, exe_file: Union[str, Path] = ".stan_files/sim_code"):
         """
         Reuse previously compiled model
+        :param exe_file: Path to compiled stan file
         """
 
         self._main_sim = CmdStanModel(exe_file=exe_file)
@@ -394,7 +410,7 @@ class Simulation:
     ):
         """
         Show binned spectrum of simulated data
-        :param components: not used? what is this?
+        :param components: not used? what is this? # TODO fix
         :param scale: either `linear` or `log` to change y-axis scale of histograms
         :param population: if True, display all point sources as one entry
         """
@@ -967,6 +983,7 @@ class Simulation:
         """
         Calculates expected number of neutrinos to be simulated.
         Uses same approach as in the Stan code for cross-checks.
+        :param sim_inputs: simulation input dictionary
         """
 
         sim_inputs_ = sim_inputs.copy()
@@ -1135,6 +1152,9 @@ class SimInfo:
         Check if two simulations are compatible to merge and do so
         Intended to merge pure background and pure point source simulations
         Does not recalculate all derived quantities, e.g. fractional fluxes
+        :param background: path to background simulation
+        :param point_source: path to point source simulation
+        :param output: path at which merged simulation will be saved
         """
 
         # Meow

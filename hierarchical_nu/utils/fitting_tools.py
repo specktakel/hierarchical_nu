@@ -42,6 +42,12 @@ class Residuals:
 
 
 class Spline1D:
+    """
+    Spline implementation used for energy resolution.
+    Implementation copied from skyllh,
+    skyllh/analyses/i3/publicdata_ps/utils.py
+    """
+
     def __init__(self, f, x_edges, norm: bool = True):
         self.x_edges = x_edges
 
@@ -73,6 +79,10 @@ class Spline1D:
 
 
 class PowerLawSegment:
+    """
+    Define a power law segment of an envelope function
+    """
+
     def __init__(self, xmin, xmax, slope, val, low=True):
         """
         :param xmin: lower bound of definition
@@ -137,9 +147,11 @@ class SegmentedApprox(metaclass=ABCMeta):
         Metaclass of envelope creation used in rejection sampling.
         Child classes have to implement the order in which the segments
         are created.
-        :param target: target function, evaluated and `support`
+        :param target: target function, evaluated at array `support`
         :param support: support of `target`
         :param bins: bin edges of power law segments
+        :param diff: Power law index step size for creating segments.
+        :param max_tries: Max number of tries per segment
         """
 
         self.target = target
@@ -197,7 +209,7 @@ class SegmentedApprox(metaclass=ABCMeta):
         Fit a powerlaw segment by changing the slope
         until the power law just approaches the target
         """
-        self._trial_functions = []
+
         if low and val is None:
             val = self.__call__(xmin)
         elif not low and val is None:
@@ -230,7 +242,6 @@ class SegmentedApprox(metaclass=ABCMeta):
             new_function = self.segment_factory(
                 new_slope, logxmin, logxmax, val, low=low
             )
-            # self._trial_functions.append(new_function)
             negative = np.any(
                 new_function(support) - self.target_log_approx(support) < 0.0
             )
@@ -261,7 +272,6 @@ class SegmentedApprox(metaclass=ABCMeta):
             logger.warning(
                 f"Envelope search did not converge between {xmin} and {xmax} after {self.max_tries} steps."
             )
-            print("this should have produced a warning message")
 
         # Either way, produce the segment
         function = self.segment_factory(slope, logxmin, logxmax, val, low=low)
@@ -316,6 +326,14 @@ class TopDownSegmentation(SegmentedApprox):
     """
 
     def __init__(self, target, support, dec_width: float=0.5, diff: float=0.04, max_tries: int=400):
+        """
+        :param target: Function values evaluated at `support`
+        :param support: support of `target`
+        :param dec_width: decadic width of segmentation binning
+        :param diff: step width of index grid
+        :param max_tries: int, maximum number of tries to create a power law segment
+        """
+
         width = dec_width  # decadic width
         target_max_point = support[np.argmax(target).squeeze()]
         middle = np.log10(target_max_point)
@@ -353,6 +371,10 @@ class TopDownSegmentation(SegmentedApprox):
         self.bin_containing_peak = np.digitize(target_max_point, breaks) - 1
 
     def generate_segments(self):
+        """
+        Generates segments
+        """
+
         low_values = []
         for c, (l, h) in enumerate(
             zip(

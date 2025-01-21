@@ -24,12 +24,12 @@ logger = logging.getLogger(__file__)
 
 
 class PPC:
-    """
-    :param fit: StanFit used to sample parameters from, may be reloaded or alive
-    :param parser: ConfigParser instance used to create the fit
-    """
 
     def __init__(self, fit: StanFit, parser: ConfigParser):
+        """
+        :param fit: StanFit used to sample parameters from, may be reloaded or alive
+        :param parser: ConfigParser instance used to create the fit
+        """
         self._parser = parser
         self._config = parser._hnu_config.ppc_config
         self._fit = fit
@@ -37,6 +37,11 @@ class PPC:
         self._events = []
 
     def load(self, path):
+        """
+        Load events of saved PPC
+        :param path: Path to saved PPC
+        """
+
         i = 0
         while True:
             try:
@@ -48,9 +53,11 @@ class PPC:
                 break
 
     def _plot_radial_ppc(self, bins):
+        # TODO 
         raise NotImplementedError()
 
     def _plot_energy_ppc(self, bins):
+        # TODO
         raise NotImplementedError()
 
     def plot(
@@ -80,7 +87,7 @@ class PPC:
 
         fig, axs = plt.subplots(1, 2, figsize=figsize)
 
-        # Squred angular distance posterior predictive check
+        # Squared angular distance posterior predictive check
         # use squared distance for approximately flat background distribution
         ax = axs[0]
 
@@ -136,12 +143,20 @@ class PPC:
         )
 
         def transform(x):
+            """
+            Function for axis rescaling in pyplot
+            """
+
             output = np.zeros_like(x)
             output[x <= 0.0] = 0.0
             output[x > 0.0] = np.sqrt(x[x > 0.0])
             return output
 
         def inverse(x):
+            """
+            Function for axis rescaling in pyplot
+            """
+
             return np.power(x, 2)
 
         secax = ax.secondary_xaxis("top", functions=(transform, inverse))
@@ -201,6 +216,8 @@ class PPC:
     def setup(self, use_data_as_bg: bool = False):
         """
         Setup all objects to run simulations
+        :param use_data_as_bg: Bool, defaults to false. If true, use RA-scrambled data as background
+            and only simulate the point source
         """
 
         try:
@@ -235,7 +252,7 @@ class PPC:
     def run(self, show_progress: bool = True, output_file: Path = Path("ppc.h5")):
         """
         Method to run all simulations and save output
-        :param show_progres: Set to True if progress par shall be displayed, default
+        :param show_progres: Set to True if progress par shall be displayed, defaults to True
         :param output_file: Path to output file, defaults to ./ppc.h5
         """
 
