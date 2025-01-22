@@ -1648,7 +1648,6 @@ class StanFit:
                 # Add extra dimension for number of chains
                 if k == "local_pars" or k == "global_pars" or "irf_return" in k:
                     continue
-                print(k)
                 temp = v[()]
                 if len(temp.shape) == 1:
                     # non-vector variable
