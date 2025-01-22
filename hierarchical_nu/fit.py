@@ -1327,6 +1327,7 @@ class StanFit:
         overwrite: bool = False,
         save_json: bool = False,
         use_timestamp: bool = False,
+        save_warmup: bool = False,
     ):
         """
         Save fit to h5 file.
@@ -1393,6 +1394,8 @@ class StanFit:
                     )
 
             for key, value in self._fit_output.stan_variables().items():
+                if save_warmup:
+                    value = self._fit_output.stan_variable(key, inc_warmup=True)
                 if key == "irf_return":
                     n_entries = len(value[0])
                     for n in range(n_entries):
@@ -1400,9 +1403,9 @@ class StanFit:
                             out = np.concatenate([_[n] for _ in value])
                         else:
                             out = np.vstack([_[n] for _ in value])
-                        outputs_folder.create_dataset(key+f".{n}", data=out)
+                        outputs_folder.create_dataset(key + f".{n}", data=out)
                     continue
-                outputs_folder.create_dataset(key, data=value) 
+                outputs_folder.create_dataset(key, data=value)
 
             # Save some metadata for debugging, easier loading from file
             if np.any(self._fit_output.divergences):
@@ -1414,6 +1417,10 @@ class StanFit:
             meta_folder.create_dataset(
                 "iter_sampling", data=self._fit_output._iter_sampling
             )
+            meta_folder.create_dataset(
+                "iter_warmup", data=self._fit_output._iter_warmup
+            )
+            meta_folder.create_dataset("save_warmup", data=int(save_warmup))
             meta_folder.create_dataset("runset", data=str(self._fit_output.runset))
             meta_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
             f.create_dataset("version", data=git_hash)
@@ -1502,7 +1509,7 @@ class StanFit:
         self._fit_output.save_csvfiles(directory)
 
     @classmethod
-    def from_file(cls, *filename):
+    def from_file(cls, *filename, load_warmup: bool = False):
         """
         Load fit output from file. Allows to
         make plots and run classification check.
@@ -1520,7 +1527,7 @@ class StanFit:
                 outputs,
                 meta,
                 config,
-            ) = cls._from_file(filename[0])
+            ) = cls._from_file(filename[0], load_warmup=load_warmup)
 
             config_parser = ConfigParser(OmegaConf.create(config))
             sources = config_parser.sources
@@ -1542,7 +1549,7 @@ class StanFit:
                     outputs,
                     meta,
                     config,
-                ) = cls._from_file(file)
+                ) = cls._from_file(file, load_warmup=load_warmup)
                 fit_outputs.append(outputs)
                 fit_meta.append(meta)
                 if configs:
@@ -1583,8 +1590,13 @@ class StanFit:
         fit._fit_inputs = fit_inputs
         fit._fit_meta = meta
 
-        if "src_index_grid" in fit_inputs.keys():
+        fit._def_var_names = []
+
+        if sources.point_source:
             fit._def_var_names.append("L")
+            fit._def_var_names.append("Nex_src")
+
+        if "src_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("src_index")
 
         if "beta_index_grid" in fit_inputs.keys():
@@ -1592,9 +1604,6 @@ class StanFit:
 
         if "E0_src_grid" in fit_inputs.keys():
             fit._def_var_names.append("E0_src")
-
-        if sources.point_source:
-            fit._def_var_names.append("Nex_src")
 
         if "diff_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("diffuse_norm")
@@ -1606,7 +1615,7 @@ class StanFit:
         return fit
 
     @staticmethod
-    def _from_file(filename):
+    def _from_file(filename, load_warmup: bool = False):
 
         fit_inputs = {}
         fit_outputs = {}
@@ -1622,6 +1631,14 @@ class StanFit:
             except KeyError:
                 fit_meta["chains"] = 1
                 fit_meta["iter_sampling"] = 1000
+                fit_meta["iter_warmup"] = 1000
+
+            if "save_warmup" not in fit_meta:
+                # Backwards compatibility
+                fit_meta["save_warmup"] = False
+                save_warmup = False
+            else:
+                save_warmup = bool(fit_meta["save_warmup"])
 
             for k, v in f["fit/inputs"].items():
 
@@ -1629,24 +1646,42 @@ class StanFit:
 
             for k, v in f["fit/outputs"].items():
                 # Add extra dimension for number of chains
-                if k == "local_pars" or k == "global_pars":
+                if k == "local_pars" or k == "global_pars" or "irf_return" in k:
                     continue
-
+                print(k)
                 temp = v[()]
                 if len(temp.shape) == 1:
                     # non-vector variable
-                    fit_outputs[k] = temp.reshape(
-                        (fit_meta["chains"], fit_meta["iter_sampling"])
-                    )
+                    if save_warmup:
+                        shape = (
+                            fit_meta["chains"],
+                            fit_meta["iter_warmup"] + fit_meta["iter_sampling"],
+                        )
+                    else:
+                        shape = (fit_meta["chains"], fit_meta["iter_sampling"])
+                    fit_outputs[k] = temp.reshape(shape)
+                    if save_warmup and not load_warmup:
+                        fit_outputs[k] = fit_outputs[k][..., fit_meta["iter_warmup"] :]
                 else:
                     # Reshape to chains x draws x dim
-                    fit_outputs[k] = temp.reshape(
-                        (
+                    if save_warmup:
+                        shape = (
+                            fit_meta["chains"],
+                            fit_meta["iter_warmup"] + fit_meta["iter_sampling"],
+                            *temp.shape[1:],
+                        )
+                    else:
+                        shape = (
                             fit_meta["chains"],
                             fit_meta["iter_sampling"],
                             *temp.shape[1:],
                         )
-                    )
+                    fit_outputs[k] = temp.reshape(shape)
+                    if save_warmup and not load_warmup:
+                        fit_outputs[k] = fit_outputs[k][
+                            :, fit_meta["iter_warmup"] :, ...
+                        ]
+
             # requires config parser, which in turn imports fit, which in turn imports config parser...
             config = f["sources/config"][()].decode("ascii")
 
