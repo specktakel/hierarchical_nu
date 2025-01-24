@@ -1205,12 +1205,16 @@ class StanFit:
 
         # Save some time calculating if the previous calculation has already used the same E_power
         try:
-            if not np.isclose(self._E_power, E_power):
+            if (
+                not np.isclose(self._E_power, E_power)
+                and not energy_unit == self._energy_unit
+            ):
                 raise AttributeError
         except AttributeError:
             self._calculate_flux_grid(energy_unit, area_unit, E_power)
         finally:
             self._E_power = E_power
+            self._energy_unit = energy_unit
 
         flux_unit = 1 / energy_unit / area_unit / u.s
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
