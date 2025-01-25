@@ -1029,14 +1029,13 @@ class StanFit:
 
         return fig, axs
 
-    def _calculate_flux_grid(self, energy_unit, area_unit, E_power):
+    def _calculate_flux_grid(self):
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
         if not self._sources.point_source:
             raise ValueError("A valid source list is required")
 
-        flux_unit = 1 / energy_unit / area_unit / u.s
         if not self._reload:
             inputs = self._get_fit_inputs()
             iterations = self._fit_output._iter_sampling
@@ -1073,7 +1072,7 @@ class StanFit:
         share_index = N == 1
         N_samples = iterations * chains
 
-        self._flux_grid = np.zeros((len(self._sources.point_source), E.size, N_samples))
+        self._flux_grid = np.zeros((len(self._sources.point_source), E.size, N_samples)) << 1 / u.GeV / u.m**2 / u.s
 
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
@@ -1106,9 +1105,9 @@ class StanFit:
                     "norm_energy", E0_vals * u.GeV
                 )
 
-            flux_int = F[:, c_ps].flatten()
+            flux_int = F[:, c_ps].flatten() << 1 / u.m**2 / u.s
 
-            flux_grid = np.zeros((E.size, N_samples))
+            flux_grid = np.zeros((E.size, N_samples)) << 1 / u.GeV / u.m**2 / u.s
 
             for c in range(N_samples):
                 if self._fit_index:
@@ -1122,36 +1121,32 @@ class StanFit:
                         "norm_energy", E0_vals[c] * u.GeV
                     )
 
-                flux = ps.flux_model.spectral_shape(E).to_value(
-                    flux_unit,
-                    equivalencies=u.spectral(),
-                )
+                flux = ps.flux_model.spectral_shape(E)   # 1 / GeV / s / m2
 
                 # Needs to be in units used by stan
-                int_flux = ps.flux_model.total_flux_int.to_value(1 / u.m**2 / u.s)
+                int_flux = ps.flux_model.total_flux_int   # 1 / m2 / s
 
                 flux_grid[:, c] = (
                     flux
                     / int_flux
                     * flux_int[c]
-                    * np.power(
-                        E.to_value(energy_unit, equivalencies=u.spectral()), E_power
-                    )
                 )
 
             self._flux_grid[c_ps] = flux_grid
 
-    def _calculate_quantiles(self, source_idx, LL, UL):
+    def _calculate_quantiles(self, E_power, energy_unit, area_unit, source_idx, LL, UL):
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
         lower = np.zeros(E.size)
         upper = np.zeros(E.size)
 
+        flux_grid = self._flux_grid.copy().to_value(1 / energy_unit / area_unit / u.s) * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
+
         if source_idx == -1:
-            flux_grid = self._flux_grid.sum(axis=0)
+            flux_grid = flux_grid.sum(axis=0)
         else:
-            flux_grid = self._flux_grid[source_idx]
+            flux_grid = flux_grid[source_idx]
 
         for c in range(E.size):
             lower[c] = np.quantile(flux_grid[c], LL)
@@ -1204,17 +1199,8 @@ class StanFit:
         limit_kwargs |= kwargs
 
         # Save some time calculating if the previous calculation has already used the same E_power
-        try:
-            if (
-                not np.isclose(self._E_power, E_power)
-                and not energy_unit == self._energy_unit
-            ):
-                raise AttributeError
-        except AttributeError:
-            self._calculate_flux_grid(energy_unit, area_unit, E_power)
-        finally:
-            self._E_power = E_power
-            self._energy_unit = energy_unit
+        if not hasattr(self, "_flux_grid"):
+            self._calculate_flux_grid()
 
         flux_unit = 1 / energy_unit / area_unit / u.s
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
@@ -1234,7 +1220,7 @@ class StanFit:
                 UL = 0.5 - CI / 2
                 LL = 0.5 + CI / 2
 
-            lower, upper = self._calculate_quantiles(source_idx, LL, UL)
+            lower, upper = self._calculate_quantiles(E_power, energy_unit, area_unit, source_idx, LL, UL)
 
             if not upper_limit:
                 ax.fill_between(
