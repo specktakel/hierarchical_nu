@@ -16,7 +16,6 @@ from hierarchical_nu.source.source import (
     SourceFrame,
     DetectorFrame,
 )
-from hierarchical_nu.source.flux_model import PGammaSpectrum
 from hierarchical_nu.source.parameter import Parameter, ParScale
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.roi import (
@@ -33,11 +32,22 @@ from hierarchical_nu.events import Events
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
-
-from copy import deepcopy
+import omegaconf
 
 
 class ConfigParser:
+
+    @classmethod
+    def check_units(cls, entry, unit):
+        if isinstance(entry, omegaconf.listconfig.ListConfig):
+            for _ in entry:
+                cls.check_units(_, unit)  # I can do recursion lol
+        else:
+            try:
+                u.Quantity(entry).to(unit)
+            except u.UnitConversionError as e:
+                raise e
+
     def __init__(self, hnu_config: HierarchicalNuConfig):
         self._hnu_config = hnu_config
 
@@ -47,6 +57,23 @@ class ConfigParser:
         parameter_config = self._hnu_config["parameter_config"]
         share_L = parameter_config["share_L"]
         share_src_index = parameter_config["share_src_index"]
+
+        for k, v in dict(parameter_config).items():
+            print(k, v)
+            if "E" in k and k != "Emin_det_eq":
+                self.check_units(v, u.GeV)
+
+            if "L" == k:
+                self.check_units(v, u.GeV / u.s)
+
+            if k == "src_dec" or k == "src_ra":
+                self.check_units(v, u.deg)
+
+            if "F_atmo" in k:
+                self.check_units(v, 1 / u.m**2 / u.s)
+
+            if "diff_norm" in k:
+                self.check_units(v, 1 / u.GeV / u.m**2 / u.s)
 
         Parameter.clear_registry()
         index = []
@@ -118,7 +145,9 @@ class ConfigParser:
                             u.Quantity(val),
                             name,
                             not "E0_src" in parameter_config["fit_params"],
-                            tuple(u.Quantity(_) for _ in parameter_config["E0_src_range"]),
+                            tuple(
+                                u.Quantity(_) for _ in parameter_config["E0_src_range"]
+                            ),
                             ParScale.log,
                         )
                     )
@@ -160,7 +189,7 @@ class ConfigParser:
                         u.Quantity(Lumi),
                         name,
                         True,
-                        tuple(u.Quantity(_) for _ in parameter_config["L_range"])
+                        tuple(u.Quantity(_) for _ in parameter_config["L_range"]),
                     )
                 )
         else:
@@ -169,14 +198,14 @@ class ConfigParser:
                     u.Quantity(parameter_config["L"][0]),
                     "luminosity",
                     False,
-                    tuple(u.Quantity(_) for _ in parameter_config["L_range"])
+                    tuple(u.Quantity(_) for _ in parameter_config["L_range"]),
                 )
             )
         diffuse_norm = Parameter(
             u.Quantity(parameter_config["diff_norm"]),
             "diffuse_norm",
             True,
-            tuple(u.Quantity(_) for _ in parameter_config.diff_norm_range)
+            tuple(u.Quantity(_) for _ in parameter_config.diff_norm_range),
         )
         Enorm = Parameter(u.Quantity(parameter_config["Enorm"]), "Enorm", fixed=True)
         Emin = Parameter(u.Quantity(parameter_config["Emin"]), "Emin", fixed=True)
@@ -211,8 +240,18 @@ class ConfigParser:
                     fixed=True,
                 )
 
-        dec = np.array([u.Quantity(_).to_value(u.deg) for _ in parameter_config["src_dec"]]) << u.deg
-        ra = np.array([u.Quantity(_).to_value(u.deg) for _ in parameter_config["src_ra"]]) << u.deg
+        dec = (
+            np.array(
+                [u.Quantity(_).to_value(u.deg) for _ in parameter_config["src_dec"]]
+            )
+            << u.deg
+        )
+        ra = (
+            np.array(
+                [u.Quantity(_).to_value(u.deg) for _ in parameter_config["src_ra"]]
+            )
+            << u.deg
+        )
         _frame = parameter_config["frame"]
         if _frame == "detector":
             frame = DetectorFrame
@@ -309,7 +348,9 @@ class ConfigParser:
         if parameter_config.atmospheric:
             sources.add_atmospheric_component(cache_dir=mceq)
             F_atmo = Parameter.get_parameter("F_atmo")
-            F_atmo.par_range = tuple(u.Quantity(_) for _ in parameter_config.F_atmo_range)
+            F_atmo.par_range = tuple(
+                u.Quantity(_) for _ in parameter_config.F_atmo_range
+            )
 
         self._sources = sources
 
@@ -336,6 +377,9 @@ class ConfigParser:
             np.array([u.Quantity(_).to_value(u.deg) for _ in parameter_config.src_ra])
             << u.deg
         )
+
+        self.check_units(roi_config.RA, u.deg)
+        self.check_units(roi_config.DEC, u.deg)
         RA = u.Quantity(roi_config.RA)
         DEC = u.Quantity(roi_config.DEC)
         if not np.isclose(RA, -1.0 * u.deg) and not np.isclose(DEC, -91.0 * u.deg):
@@ -347,6 +391,7 @@ class ConfigParser:
             provided_center = False
 
         roi_config = self._hnu_config.roi_config
+        self.check_units(roi_config.size, u.deg)
         size = u.Quantity(roi_config.size)
         apply_roi = roi_config.apply_roi
 
@@ -354,6 +399,11 @@ class ConfigParser:
             raise ValueError("Only CircularROIs can be stacked")
         MJD_min = self.MJD_min if not np.isclose(self.MJD_min, 98.0) else 0.0
         MJD_max = self.MJD_max if not np.isclose(self.MJD_max, 100.0) else 99999.0
+
+        self.check_units(roi_config.RA_min, u.deg)
+        self.check_units(roi_config.RA_max, u.deg)
+        self.check_units(roi_config.DEC_min, u.deg)
+        self.check_units(roi_config.DEC_max, u.deg)
 
         ra_min = u.Quantity(roi_config.RA_min)
         ra_max = u.Quantity(roi_config.RA_max)

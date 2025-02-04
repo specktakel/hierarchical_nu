@@ -38,7 +38,7 @@ class ParameterConfig:
     E0_src_range: Tuple[str] = ("1e3 GeV", "1e8 GeV")
     diff_index: float = 2.5
     diff_index_range: Tuple = (1.0, 4.0)
-    diff_norm: str = "2e-13 GeV-1 m-2 s-1)"  # defined in the detector frame
+    diff_norm: str = "2e-13 GeV-1 m-2 s-1"  # defined in the detector frame
     diff_norm_range: Tuple[str] = (
         "1e-14 GeV-1 m-2 s-1",
         "1e-11 GeV-1 m-2 s-1",
@@ -51,13 +51,13 @@ class ParameterConfig:
     L_range: Tuple = (0, 1e60)
     src_dec: List[str] = field(default_factory=lambda: ["0.0 deg"])
     src_ra: List[str] = field(default_factory=lambda: ["90.0 deg"])
-    Enorm: str = "1e5 GeV"  # u.GeV, defined in the detector frame
-    Emin: str = "1e2 GeV"  # u.GeV, defined in the detector frame
-    Emax: str = "1e8 GeV"  # u.GeV
-    Emin_src: str = "1.4e4 GeV"  # u.GeV, defined in the source frame at redshift z
-    Emax_src: str = "1.4e7 GeV"  # u.GeV
-    Emin_diff: str = "1e2 GeV"  # u.GeV, defined in the detector frame
-    Emax_diff: str = "1e8 GeV"  # u.GeV
+    Enorm: str = "1e5 GeV"  # defined in the detector frame
+    Emin: str = "1e2 GeV"  # defined in the detector frame
+    Emax: str = "1e8 GeV"
+    Emin_src: str = "1.4e4 GeV"
+    Emax_src: str = "1.4e7 GeV"
+    Emin_diff: str = "1e2 GeV"  # defined in the detector frame
+    Emax_diff: str = "1e8 GeV"  # defined in the detector frame
     z: List[float] = field(
         default_factory=lambda: [0.4]
     )  # cosmological redshift, dimensionless, only for point source
@@ -68,14 +68,14 @@ class ParameterConfig:
 
     # Entries for un-used detector models are disregarded by the sim/fit/model check
     # defined in the detector frame
-    Emin_det: str = 1e4  # u.GeV
-    Emin_det_northern_tracks: str = "6e4 GeV"  # u.GeV
-    Emin_det_cascades: str = "6e4 GeV"  # u.GeV
-    Emin_det_IC40: str = "6e4 GeV"  # u.GeV
-    Emin_det_IC59: str = "6e4 GeV"  # u.GeV
-    Emin_det_IC79: str = "6e4 GeV"  # u.GeV
-    Emin_det_IC86_I: str = "6e4 GeV"  # u.GeV
-    Emin_det_IC86_II: str = "6e4 GeV"  # u.GeV
+    Emin_det: str = "1e4 GeV"
+    Emin_det_northern_tracks: str = "6e4 GeV"
+    Emin_det_cascades: str = "6e4 GeV"
+    Emin_det_IC40: str = "6e4 GeV"
+    Emin_det_IC59: str = "6e4 GeV"
+    Emin_det_IC79: str = "6e4 GeV"
+    Emin_det_IC86_I: str = "6e4 GeV"
+    Emin_det_IC86_II: str = "6e4 GeV"
 
     # Can be NT, CAS or IC40 through IC86_II or any combination,
     # see `hierarchical_nu.detector.icecube.Refrigerator`
