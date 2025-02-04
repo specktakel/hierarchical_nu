@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Union, Tuple
+from typing import List, Tuple, Any
 from dataclasses import dataclass, field
 from omegaconf import OmegaConf
 import numpy as np
@@ -127,8 +127,8 @@ class StanConfig:
 @dataclass
 class SinglePriorConfig:
     name: str = "LogNormalPrior"
-    mu: Union[float, str] = 1.0
-    sigma: Union[float, str] = 1.0
+    mu: Any = 1.0  # Should be str or float, but alas, OmegaConf does not support Unions
+    sigma: Any = 1.0
 
 
 @dataclass
@@ -278,8 +278,8 @@ class HierarchicalNuConfig:
             try:
                 E0 = ps.flux_model.parameters["norm_energy"]
                 config.parameter_config.E0_src_range = [
-                    float(E0.par_range[0].to_value(u.GeV)),
-                    float(E0.par_range[1].to_value(u.GeV)),
+                    E0.par_range[0].to(u.GeV).to_string(),
+                    E0.par_range[1].to(u.GeV).to_string(),
                 ]
                 if not E0.fixed:
                     fit_params.append("E0_src")
@@ -287,8 +287,8 @@ class HierarchicalNuConfig:
                 pass
             config.parameter_config.fit_params = fit_params
             for ps in sources.point_source:
-                ra.append(float(ps.ra.to_value(u.deg)))
-                dec.append(float(ps.dec.to_value(u.deg)))
+                ra.append(ps.ra.to(u.deg).to_string())
+                dec.append(float(ps.dec.to(u.deg).to_string()))
                 z.append(ps.redshift)
             config.parameter_config.source_type = spectrum
             config.parameter_config.src_ra = ra
@@ -297,11 +297,11 @@ class HierarchicalNuConfig:
             config.parameter_config.share_src_index
             config.parameter_config.share_L
             config.parameter_config.frame = sources.point_source_frame.name
-            config.parameter_config.Emin_src = float(
-                Parameter.get_parameter("Emin_src").value.to_value(u.GeV)
+            config.parameter_config.Emin_src = (
+                Parameter.get_parameter("Emin_src").value.to(u.GeV).to_string()
             )
-            config.parameter_config.Emax_src = float(
-                Parameter.get_parameter("Emax_src").value.to_value(u.GeV)
+            config.parameter_config.Emax_src = (
+                Parameter.get_parameter("Emax_src").value.to(u.GeV).to_string()
             )
 
         config.parameter_config.diffuse = True if sources.diffuse else False

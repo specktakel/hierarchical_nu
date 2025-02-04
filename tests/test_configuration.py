@@ -37,7 +37,7 @@ def test_user_config_merge():
     hnu_config = HierarchicalNuConfig()
 
     user_configs = [
-        {"parameter_config": {"src_index": [2.6], "L": [1e47]}},
+        {"parameter_config": {"src_index": [2.6], "L": ["1e47 GeV s-1"]}},
     ]
 
     for i, config in enumerate(user_configs):
@@ -54,4 +54,4 @@ def test_user_config_merge():
 
     assert hnu_config["parameter_config"]["src_index"][0] == 2.6
 
-    assert hnu_config["parameter_config"]["L"][0] == 1e47
+    assert hnu_config["parameter_config"]["L"][0] == "1e47 GeV s-1"
