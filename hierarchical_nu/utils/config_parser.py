@@ -588,39 +588,50 @@ class ConfigParser:
             elif p == "beta_index":
                 priors.beta_index = IndexPrior(prior, mu=mu, sigma=sigma)
             elif p == "E0_src":
+                self.check_units(mu, u.GeV)
                 if prior == NormalPrior:
+                    self.check_units(sigma, u.GeV)
                     priors.E0_src = EnergyPrior(
                         prior,
                         mu=mu,
                         sigma=sigma,
                     )
                 elif prior == LogNormalPrior:
+                    self.check_units(sigma, 1)
                     priors.E0_src = EnergyPrior(prior, mu=mu, sigma=sigma)
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
             elif p == "diff_index":
                 priors.diff_index = IndexPrior(prior, mu=mu, sigma=sigma)
             elif p == "L":
+                self.check_units(mu, u.GeV / u.s)
                 if prior == NormalPrior:
+                    self.check_units(sigma, u.GeV / u.s)
                     priors.luminosity = LuminosityPrior(
                         prior,
                         mu=mu,
                         sigma=sigma,
                     )
                 elif prior == LogNormalPrior:
+                    self.check_units(sigma, 1)
                     priors.luminosity = LuminosityPrior(prior, mu=mu, sigma=sigma)
                 elif prior == ParetoPrior:
+                    self.check_units(xmin, u.GeV / u.s)
+                    self.check_units(alpha, 1)
                     priors.luminosity = LuminosityPrior(prior, xmin=xmin, alpha=alpha)
                 else:
                     raise NotImplementedError("Prior not recognised.")
             elif p == "diff_flux":
+                self.check_units(mu, 1 / u.GeV / u.m**2 / u.s)
                 if prior == NormalPrior:
+                    self.check_units(sigma, 1 / u.GeV / u.m**2 / u.s)
                     priors.diffuse_flux = DifferentialFluxPrior(
                         prior,
                         mu=mu,
                         sigma=sigma,
                     )
                 elif prior == LogNormalPrior:
+                    self.check_units(sigma, 1)
                     priors.diffuse_flux = DifferentialFluxPrior(
                         prior, mu=mu, sigma=sigma
                     )
@@ -628,9 +639,12 @@ class ConfigParser:
                     raise NotImplementedError("Prior not recognised.")
 
             elif p == "atmo_flux":
+                self.check_units(mu, 1 / u.m**2 / u.s)
                 if prior == NormalPrior:
+                    self.check_units(sigma, 1 / u.m**2 / u.s)
                     priors.atmospheric_flux = FluxPrior(prior, mu=mu, sigma=sigma)
                 elif prior == LogNormalPrior:
+                    self.check_units(sigma, 1)
                     priors.atmospheric_flux = FluxPrior(prior, mu=mu, sigma=sigma)
                 else:
                     raise NotImplementedError("Prior not recognised.")
