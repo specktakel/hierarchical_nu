@@ -738,9 +738,15 @@ class ModelCheck:
             except ValueError:
                 F_atmo_init = 0.3 / u.m**2 / u.s
 
+            try:
+                diff_norm = Parameter.get_parameter("diff_norm").value
+                diff_init = diff_norm.to_value(1 / u.GeV / u.m**2 / u.s)
+            except ValueError:
+                diff_init = 2e-13
+
             inits = {
                 # TODO fix
-                "F_diff": 1e-4,
+                "diffuse_norm": diff_init,
                 "F_atmo": F_atmo_init.to_value(1 / (u.m**2 * u.s)),
                 "E": [1e5] * fit.events.N,
                 "L": L_init,

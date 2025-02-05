@@ -38,7 +38,7 @@ class ParameterConfig:
     E0_src_range: Tuple[str] = ("1e3 GeV", "1e8 GeV")
     diff_index: float = 2.5
     diff_index_range: Tuple = (1.0, 4.0)
-    diff_norm: str = "2e-13 GeV-1 m-2 s-1"  # defined in the detector frame
+    diff_norm: str = "2.26e-13 GeV-1 m-2 s-1"  # defined in the detector frame
     diff_norm_range: Tuple[str] = (
         "1e-14 GeV-1 m-2 s-1",
         "1e-11 GeV-1 m-2 s-1",
@@ -48,7 +48,7 @@ class ParameterConfig:
         default_factory=lambda: ["8e45 erg s-1"]
     )  # u.erg / u.s, defined in the source frame
     share_L: bool = True
-    L_range: Tuple = (0, 1e60)
+    L_range: Tuple = ("0 GeV s-1", "1e60 GeV s-1")
     src_dec: List[str] = field(default_factory=lambda: ["0.0 deg"])
     src_ra: List[str] = field(default_factory=lambda: ["90.0 deg"])
     Enorm: str = "1e5 GeV"  # defined in the detector frame
@@ -288,7 +288,7 @@ class HierarchicalNuConfig:
             config.parameter_config.fit_params = fit_params
             for ps in sources.point_source:
                 ra.append(ps.ra.to(u.deg).to_string())
-                dec.append(float(ps.dec.to(u.deg).to_string()))
+                dec.append(ps.dec.to(u.deg).to_string())
                 z.append(ps.redshift)
             config.parameter_config.source_type = spectrum
             config.parameter_config.src_ra = ra

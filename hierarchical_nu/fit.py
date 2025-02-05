@@ -1400,9 +1400,9 @@ class StanFit:
                             out = np.concatenate([_[n] for _ in value])
                         else:
                             out = np.vstack([_[n] for _ in value])
-                        outputs_folder.create_dataset(key+f".{n}", data=out)
+                        outputs_folder.create_dataset(key + f".{n}", data=out)
                     continue
-                outputs_folder.create_dataset(key, data=value) 
+                outputs_folder.create_dataset(key, data=value)
 
             # Save some metadata for debugging, easier loading from file
             if np.any(self._fit_output.divergences):
@@ -1629,15 +1629,19 @@ class StanFit:
 
             for k, v in f["fit/outputs"].items():
                 # Add extra dimension for number of chains
-                if k == "local_pars" or k == "global_pars":
+                if k == "local_pars" or k == "global_pars" or "irf_return" in k:
                     continue
 
                 temp = v[()]
                 if len(temp.shape) == 1:
                     # non-vector variable
-                    fit_outputs[k] = temp.reshape(
-                        (fit_meta["chains"], fit_meta["iter_sampling"])
-                    )
+                    try:
+                        fit_outputs[k] = temp.reshape(
+                            (fit_meta["chains"], fit_meta["iter_sampling"])
+                        )
+                    except Exception as e:
+                        print(k)
+                        raise e
                 else:
                     # Reshape to chains x draws x dim
                     fit_outputs[k] = temp.reshape(
@@ -2196,6 +2200,18 @@ class StanFit:
         fit_inputs["atmo_integ_val"] = atmo_integ_val
         fit_inputs["T"] = obs_time
         # To work with cmdstanpy serialization
+        temp = {}
+        for k, v in fit_inputs.items():
+            if not isinstance(v, np.ndarray):
+                temp[k] = v
+                continue
+
+            try:
+                temp[k] = v.tolist()
+            except NotImplementedError:
+                # Catch making a list of quantities, why would there even be quantities in here?
+                print(k, v)
+                temp[k] = v.value.tolist()
         fit_inputs = {
             k: v if not isinstance(v, np.ndarray) else v.tolist()
             for k, v in fit_inputs.items()

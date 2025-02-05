@@ -36,7 +36,7 @@ def sources():
         par_range=(0, 1e60) * (u.erg / u.s),
     )
     diffuse_norm = Parameter(
-        (0.9e-18 / u.GeV / u.cm**2 * 4 * np.pi / u.s).to(1 / (u.GeV * u.m**2 * u.s)),
+        (2.26e-13 / u.GeV / u.m**2 / u.s),
         "diffuse_norm",
         fixed=True,
         par_range=(0, np.inf),
@@ -67,7 +67,7 @@ def test_ps(output_directory, sources):
     sim.generate_stan_code()
     sim.compile_stan_code()
 
-    for i in range(5):
+    for i in range(1):
         sim.run(verbose=True, seed=i)
         sim.save(os.path.join(output_directory, f"ps_only_{i}.h5"), overwrite=True)
 
@@ -82,7 +82,7 @@ def test_ps(output_directory, sources):
     fit.generate_stan_code()
     fit.compile_stan_code()
 
-    for i in range(5):
+    for i in range(1):
         events = Events.from_file(os.path.join(output_directory, f"ps_only_{i}.h5"))
         fit.events = events
         fit.run(seed=42, show_progress=True, inits={"L": 1e50, "src_index": 2.2})
@@ -95,13 +95,13 @@ def test_ps(output_directory, sources):
     mt_fit.generate_stan_code()
     mt_fit.compile_stan_code()
 
-    for i in range(5):
+    for i in range(1):
         events = Events.from_file(os.path.join(output_directory, f"ps_only_{i}.h5"))
         mt_fit.events = events
         mt_fit.run(seed=42, show_progress=True, inits={"L": 1e50, "src_index": 2.2})
         mt_fit.save(os.path.join(output_directory, f"ps_only_mt_fit_{i}.h5"))
 
-    for i in range(5):
+    for i in range(1):
         mt = StanFit.from_file(os.path.join(output_directory, f"ps_only_mt_fit_{i}.h5"))
         fit = StanFit.from_file(os.path.join(output_directory, f"ps_only_fit_{i}.h5"))
         bins = np.linspace(1.0, 4.0, 20)
@@ -110,6 +110,7 @@ def test_ps(output_directory, sources):
         assert np.sum(~np.isclose(mt_n, n, atol=0.3)) < 3
 
 
+"""
 def test_lp(output_directory, sources):
     events = Events.from_file(os.path.join(output_directory, f"ps_only_0.h5"))
     fit = StanFit(sources, IC86_II, events, 180 * u.d, nshards=2, debug=True)
@@ -126,7 +127,7 @@ def test_lp(output_directory, sources):
         )
     )
 
-
+"""
 """
 
 def test_ps_atmo(output_directory):

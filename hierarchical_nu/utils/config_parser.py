@@ -59,7 +59,6 @@ class ConfigParser:
         share_src_index = parameter_config["share_src_index"]
 
         for k, v in dict(parameter_config).items():
-            print(k, v)
             if "E" in k and k != "Emin_det_eq":
                 self.check_units(v, u.GeV)
 
@@ -133,7 +132,11 @@ class ConfigParser:
                         u.Quantity(parameter_config["E0_src"][0]),
                         "E0_src",
                         False,
-                        tuple(u.Quantity(_) for _ in parameter_config["E0_src_range"]),
+                        tuple(
+                            u.Quantity(_).to_value(u.GeV)
+                            for _ in parameter_config["E0_src_range"]
+                        )
+                        * u.GeV,
                         ParScale.log,
                     )
                 )
@@ -146,8 +149,10 @@ class ConfigParser:
                             name,
                             not "E0_src" in parameter_config["fit_params"],
                             tuple(
-                                u.Quantity(_) for _ in parameter_config["E0_src_range"]
-                            ),
+                                u.Quantity(_).to_value(u.GeV)
+                                for _ in parameter_config["E0_src_range"]
+                            )
+                            * u.GeV,
                             ParScale.log,
                         )
                     )
@@ -157,7 +162,11 @@ class ConfigParser:
                     u.Quantity(parameter_config["E0_src"][0]),
                     "E0_src",
                     False,
-                    tuple(u.Quantity(_) for _ in parameter_config["E0_src_range"]),
+                    tuple(
+                        u.Quantity(_).to_value(u.GeV)
+                        for _ in parameter_config["E0_src_range"]
+                    )
+                    * u.GeV,
                     ParScale.log,
                 )
             )
@@ -169,7 +178,11 @@ class ConfigParser:
                         u.Quantity(val),
                         name,
                         False,
-                        tuple(u.Quantity(_) for _ in parameter_config["E0_src_range"]),
+                        tuple(
+                            u.Quantity(_).to_value(u.GeV)
+                            for _ in parameter_config["E0_src_range"]
+                        )
+                        * u.GeV,
                         ParScale.log,
                     )
                 )
@@ -189,7 +202,11 @@ class ConfigParser:
                         u.Quantity(Lumi),
                         name,
                         True,
-                        tuple(u.Quantity(_) for _ in parameter_config["L_range"]),
+                        tuple(
+                            u.Quantity(_).to_value(u.GeV / u.s)
+                            for _ in parameter_config["L_range"]
+                        )
+                        * (u.GeV / u.s),
                     )
                 )
         else:
@@ -198,14 +215,23 @@ class ConfigParser:
                     u.Quantity(parameter_config["L"][0]),
                     "luminosity",
                     False,
-                    tuple(u.Quantity(_) for _ in parameter_config["L_range"]),
+                    tuple(
+                        u.Quantity(_).to_value(u.GeV / u.s)
+                        for _ in parameter_config["L_range"]
+                    )
+                    * u.GeV
+                    / u.s,
                 )
             )
         diffuse_norm = Parameter(
             u.Quantity(parameter_config["diff_norm"]),
             "diffuse_norm",
             True,
-            tuple(u.Quantity(_) for _ in parameter_config.diff_norm_range),
+            tuple(
+                u.Quantity(_).to_value(1 / u.GeV / u.m**2 / u.s)
+                for _ in parameter_config.diff_norm_range
+            )
+            * (1 / u.GeV / u.m**2 / u.s),
         )
         Enorm = Parameter(u.Quantity(parameter_config["Enorm"]), "Enorm", fixed=True)
         Emin = Parameter(u.Quantity(parameter_config["Emin"]), "Emin", fixed=True)
@@ -349,8 +375,9 @@ class ConfigParser:
             sources.add_atmospheric_component(cache_dir=mceq)
             F_atmo = Parameter.get_parameter("F_atmo")
             F_atmo.par_range = tuple(
-                u.Quantity(_) for _ in parameter_config.F_atmo_range
-            )
+                u.Quantity(_).to_value(1 / u.m**2 / u.s)
+                for _ in parameter_config.F_atmo_range
+            ) * (1 / u.m**2 / u.s)
 
         self._sources = sources
 
@@ -570,15 +597,15 @@ class ConfigParser:
         for p, vals in prior_config.items():
             if vals.name == "NormalPrior":
                 prior = NormalPrior
-                mu = u.Quantity(vals.mu)
-                sigma = u.Quantity(vals.sigma)
+                mu = vals.mu
+                sigma = vals.sigma
             elif vals.name == "LogNormalPrior":
                 prior = LogNormalPrior
-                mu = u.Quantity(vals.mu)
-                sigma = u.Quantity(vals.sigma)
+                mu = vals.mu
+                sigma = vals.sigma
             elif vals.name == "ParetoPrior":
                 prior = ParetoPrior
-                xmin = u.Quantity(vals.xmin)
+                xmin = vals.xmin
                 alpha = vals.alpha
             else:
                 raise NotImplementedError("Prior type not recognised.")
@@ -593,12 +620,12 @@ class ConfigParser:
                     self.check_units(sigma, u.GeV)
                     priors.E0_src = EnergyPrior(
                         prior,
-                        mu=mu,
-                        sigma=sigma,
+                        mu=u.Quantity(mu),
+                        sigma=u.Quantity(sigma),
                     )
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
-                    priors.E0_src = EnergyPrior(prior, mu=mu, sigma=sigma)
+                    priors.E0_src = EnergyPrior(prior, mu=u.Quantity(mu), sigma=sigma)
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
             elif p == "diff_index":
@@ -609,16 +636,20 @@ class ConfigParser:
                     self.check_units(sigma, u.GeV / u.s)
                     priors.luminosity = LuminosityPrior(
                         prior,
-                        mu=mu,
-                        sigma=sigma,
+                        mu=u.Quantity(mu),
+                        sigma=u.Quantity(sigma),
                     )
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
-                    priors.luminosity = LuminosityPrior(prior, mu=mu, sigma=sigma)
+                    priors.luminosity = LuminosityPrior(
+                        prior, mu=u.Quantity(mu), sigma=sigma
+                    )
                 elif prior == ParetoPrior:
                     self.check_units(xmin, u.GeV / u.s)
                     self.check_units(alpha, 1)
-                    priors.luminosity = LuminosityPrior(prior, xmin=xmin, alpha=alpha)
+                    priors.luminosity = LuminosityPrior(
+                        prior, xmin=u.Quantity(xmin), alpha=alpha
+                    )
                 else:
                     raise NotImplementedError("Prior not recognised.")
             elif p == "diff_flux":
@@ -627,13 +658,13 @@ class ConfigParser:
                     self.check_units(sigma, 1 / u.GeV / u.m**2 / u.s)
                     priors.diffuse_flux = DifferentialFluxPrior(
                         prior,
-                        mu=mu,
-                        sigma=sigma,
+                        mu=u.Quantity(mu),
+                        sigma=u.Quantity(sigma),
                     )
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
                     priors.diffuse_flux = DifferentialFluxPrior(
-                        prior, mu=mu, sigma=sigma
+                        prior, mu=u.Quantity(mu), sigma=sigma
                     )
                 else:
                     raise NotImplementedError("Prior not recognised.")
@@ -642,25 +673,30 @@ class ConfigParser:
                 self.check_units(mu, 1 / u.m**2 / u.s)
                 if prior == NormalPrior:
                     self.check_units(sigma, 1 / u.m**2 / u.s)
-                    priors.atmospheric_flux = FluxPrior(prior, mu=mu, sigma=sigma)
+                    priors.atmospheric_flux = FluxPrior(
+                        prior, mu=u.Quantity(mu), sigma=u.Quantity(sigma)
+                    )
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
-                    priors.atmospheric_flux = FluxPrior(prior, mu=mu, sigma=sigma)
+                    priors.atmospheric_flux = FluxPrior(
+                        prior, mu=u.Quantity(mu), sigma=sigma
+                    )
                 else:
                     raise NotImplementedError("Prior not recognised.")
 
         return priors
 
-    @staticmethod
-    def _get_dm_from_config(dm_key):
+    @classmethod
+    def _get_dm_from_config(cls, dm_key):
         return [Refrigerator.python2dm(dm) for dm in dm_key]
 
-    @staticmethod
-    def _get_obs_time_from_config(dms, obs_time):
-        return {dm: obs_time[c] * u.year for c, dm in enumerate(dms)}
+    @classmethod
+    def _get_obs_time_from_config(cls, dms, obs_time):
+        cls.check_units(obs_time, u.yr)
+        return {dm: u.Quantity(obs_time[c]) for c, dm in enumerate(dms)}
 
-    @staticmethod
-    def _make_prior(p):
+    @classmethod
+    def _make_prior(cls, p):
         if p["name"] == "LogNormalPrior":
             prior = LogNormalPrior(mu=np.log(p["mu"]), sigma=p["sigma"])
         elif p["name"] == "NormalPrior":
