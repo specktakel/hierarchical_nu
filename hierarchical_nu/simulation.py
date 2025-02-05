@@ -713,9 +713,12 @@ class Simulation:
                 ]
             # If the individual parameters are not found we have a global luminosity
             except ValueError:
-                sim_inputs["L"] = [
-                    Parameter.get_parameter("luminosity").value.to_value(lumi_units)
-                ] * len(self._sources.point_source)
+                try:
+                    sim_inputs["L"] = [
+                        Parameter.get_parameter("luminosity").value.to_value(lumi_units)
+                    ] * len(self._sources.point_source)
+                except ValueError:
+                    sim_inputs["L"] = [np.nan] * len(self._sources.point_source)
 
             # Check for shared source index
             if self._shared_src_index:
@@ -1026,6 +1029,7 @@ class Simulation:
                 self._sources.diffuse,
                 self._sources.atmospheric,
                 self._shared_luminosity,
+                self._sources,
             )
 
         self._Nex_et = Nex_et
@@ -1253,6 +1257,7 @@ def _get_expected_Nnu_(
     diffuse=False,
     atmospheric=False,
     shared_luminosity=True,
+    sources=None,
 ):
     """
     Helper function for calculating expected Nnu
@@ -1351,14 +1356,26 @@ def _get_expected_Nnu_(
 
             l = sim_inputs["L"][i]
 
-            flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
-            flux = flux * flux_conv_(
-                alpha=src_index[i],
-                e_low=Emin_src,
-                e_up=Emax_src,
-                beta=beta,
-                e_0=E0,
-            )
+            if np.isnan(l):
+                flux = sources.point_source[i].flux_model.total_flux_density.to_value(
+                    u.GeV / u.s / u.m**2
+                )
+                flux = flux * flux_conv_(
+                    alpha=src_index[i],
+                    e_low=Emin_src,
+                    e_up=Emax_src,
+                    beta=beta,
+                    e_0=E0,
+                )
+            else:
+                flux = l / (4 * np.pi * np.power(d * 3.086e22, 2))
+                flux = flux * flux_conv_(
+                    alpha=src_index[i],
+                    e_low=Emin_src,
+                    e_up=Emax_src,
+                    beta=beta,
+                    e_0=E0,
+                )
             F.append(flux)
 
     if diffuse:
