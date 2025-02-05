@@ -197,14 +197,14 @@ class PriorDictHandler:
             xmin = prior_dict["xmin"]
             alpha = prior_dict["alpha"]
             return prior(ParetoPrior, xmin=xmin * units, alpha=alpha)
-        mu = prior_dict["mu"]
-        sigma = prior_dict["sigma"]
+        mu = np.atleast_1d(prior_dict["mu"])
+        sigma = np.atleast_1d(prior_dict["sigma"])
         if prior_name == "normal":
             sigma *= units
             mu *= units
-            return prior(NormalPrior, mu=mu, sigma=sigma)
+            return prior(NormalPrior, mu=mu[0], sigma=sigma[0])
         elif prior_name == "lognormal":
-            return prior(LogNormalPrior, mu=np.exp(mu) * units, sigma=sigma)
+            return prior(LogNormalPrior, mu=np.exp(mu[0]) * units, sigma=sigma[0])
 
 
 class UnitPrior:
@@ -778,8 +778,8 @@ class Priors(object):
                 elif key == "beta_index":
                     priors_dict[key] = MultiSourceIndexPrior(container)
                 elif key == "E0_src":
-                    raise NotImplementedError
-                    # priors_dict[key] = MultiSourceEnergyPrior(container)
+                    # raise NotImplementedError
+                    priors_dict[key] = MultiSourceEnergyPrior(container)
                 elif key == "L":
                     priors_dict[key] = MultiSourceLuminosityPrior(container)
 

@@ -8,6 +8,9 @@ from hierarchical_nu.priors import (
     FluxPrior,
     DifferentialFluxPrior,
     EnergyPrior,
+    MultiSourceEnergyPrior,
+    MultiSourceIndexPrior,
+    MultiSourceLuminosityPrior,
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.source.source import (
@@ -28,6 +31,8 @@ from hierarchical_nu.utils.roi import (
 from hierarchical_nu.detector.input import mceq
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
+
+import omegaconf
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -594,6 +599,42 @@ class ConfigParser:
         priors = Priors()
         prior_config = self._hnu_config.prior_config
 
+        def _make_prior(multiparameterprior, parameterprior, prior, mu, sigma):
+            if not isinstance(mu, omegaconf.listconfig.ListConfig):
+                mu = [mu]
+            if not isinstance(sigma, omegaconf.listconfig.ListConfig):
+                sigma = [sigma]
+            if len(mu) > 1 and len(sigma) > 1:
+                return multiparameterprior(
+                    [
+                        parameterprior(
+                            prior, mu=m, sigma=s
+                        )
+                        for m, s in zip(mu, sigma)
+                    ]
+                )
+            elif len(mu) > 1:
+                return multiparameterprior(
+                    [
+                        parameterprior(
+                            prior, mu=m, sigma=sigma[0]
+                        )
+                        for m in mu
+                    ]
+                )
+            elif len(sigma) > 1:
+                return multiparameterprior(
+                    [
+                        parameterprior(
+                            prior, mu=mu[0], sigma=s
+                        )
+                        for s in sigma
+                    ]
+                )
+            else:
+                return parameterprior(prior, mu=mu[0], sigma=sigma[0])
+
+
         for p, vals in prior_config.items():
             if vals.name == "NormalPrior":
                 prior = NormalPrior
@@ -611,47 +652,43 @@ class ConfigParser:
                 raise NotImplementedError("Prior type not recognised.")
 
             if p == "src_index":
-                priors.src_index = IndexPrior(prior, mu=mu, sigma=sigma)
+                self.check_units(mu, 1)
+                self.check_units(sigma, 1)
+                priors.src_index = _make_prior(MultiSourceIndexPrior, IndexPrior, prior, mu, sigma)
             elif p == "beta_index":
-                priors.beta_index = IndexPrior(prior, mu=mu, sigma=sigma)
+                self.check_units(mu, 1)
+                self.check_units(sigma, 1)
+                priors.beta_index = _make_prior(MultiSourceIndexPrior, IndexPrior, prior, mu, sigma)
             elif p == "E0_src":
                 self.check_units(mu, u.GeV)
                 if prior == NormalPrior:
                     self.check_units(sigma, u.GeV)
-                    priors.E0_src = EnergyPrior(
-                        prior,
-                        mu=u.Quantity(mu),
-                        sigma=u.Quantity(sigma),
-                    )
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
-                    priors.E0_src = EnergyPrior(prior, mu=u.Quantity(mu), sigma=sigma)
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
-            elif p == "diff_index":
-                priors.diff_index = IndexPrior(prior, mu=mu, sigma=sigma)
+                priors.E0_src = _make_prior(MultiSourceEnergyPrior, EnergyPrior, prior, mu, sigma)
             elif p == "L":
-                self.check_units(mu, u.GeV / u.s)
-                if prior == NormalPrior:
-                    self.check_units(sigma, u.GeV / u.s)
-                    priors.luminosity = LuminosityPrior(
-                        prior,
-                        mu=u.Quantity(mu),
-                        sigma=u.Quantity(sigma),
-                    )
-                elif prior == LogNormalPrior:
-                    self.check_units(sigma, 1)
-                    priors.luminosity = LuminosityPrior(
-                        prior, mu=u.Quantity(mu), sigma=sigma
-                    )
-                elif prior == ParetoPrior:
+                if prior == ParetoPrior:
                     self.check_units(xmin, u.GeV / u.s)
                     self.check_units(alpha, 1)
                     priors.luminosity = LuminosityPrior(
                         prior, xmin=u.Quantity(xmin), alpha=alpha
                     )
+                    continue
+
+                self.check_units(mu, u.GeV / u.s)
+                if prior == NormalPrior:
+                    self.check_units(sigma, u.GeV / u.s)
+                elif prior == LogNormalPrior:
+                    self.check_units(sigma, 1)
                 else:
-                    raise NotImplementedError("Prior not recognised.")
+                    raise NotImplementedError("Prior not recognised for E0_src.")
+                priors.luminosity = _make_prior(MultiSourceLuminosityPrior, LuminosityPrior, prior, mu, sigma)
+
+            elif p == "diff_index":
+                priors.diff_index = IndexPrior(prior, mu=mu[0], sigma=sigma[0])
+
             elif p == "diff_flux":
                 self.check_units(mu, 1 / u.GeV / u.m**2 / u.s)
                 if prior == NormalPrior:
@@ -668,7 +705,6 @@ class ConfigParser:
                     )
                 else:
                     raise NotImplementedError("Prior not recognised.")
-
             elif p == "atmo_flux":
                 self.check_units(mu, 1 / u.m**2 / u.s)
                 if prior == NormalPrior:
@@ -695,6 +731,7 @@ class ConfigParser:
         cls.check_units(obs_time, u.yr)
         return {dm: u.Quantity(obs_time[c]) for c, dm in enumerate(dms)}
 
+    """
     @classmethod
     def _make_prior(cls, p):
         if p["name"] == "LogNormalPrior":
@@ -704,3 +741,4 @@ class ConfigParser:
         else:
             raise ValueError("Currently no other prior implemented")
         return prior
+    """
