@@ -1072,7 +1072,10 @@ class StanFit:
         share_index = N == 1
         N_samples = iterations * chains
 
-        self._flux_grid = np.zeros((len(self._sources.point_source), E.size, N_samples)) << 1 / u.GeV / u.m**2 / u.s
+        self._flux_grid = (
+            np.zeros((len(self._sources.point_source), E.size, N_samples))
+            << 1 / u.GeV / u.m**2 / u.s
+        )
 
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
@@ -1121,16 +1124,12 @@ class StanFit:
                         "norm_energy", E0_vals[c] * u.GeV
                     )
 
-                flux = ps.flux_model.spectral_shape(E)   # 1 / GeV / s / m2
+                flux = ps.flux_model.spectral_shape(E)  # 1 / GeV / s / m2
 
                 # Needs to be in units used by stan
-                int_flux = ps.flux_model.total_flux_int   # 1 / m2 / s
+                int_flux = ps.flux_model.total_flux_int  # 1 / m2 / s
 
-                flux_grid[:, c] = (
-                    flux
-                    / int_flux
-                    * flux_int[c]
-                )
+                flux_grid[:, c] = flux / int_flux * flux_int[c]
 
             self._flux_grid[c_ps] = flux_grid
 
@@ -1141,7 +1140,10 @@ class StanFit:
         lower = np.zeros(E.size)
         upper = np.zeros(E.size)
 
-        flux_grid = self._flux_grid.copy().to_value(1 / energy_unit / area_unit / u.s) * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
+        flux_grid = (
+            self._flux_grid.copy().to_value(1 / energy_unit / area_unit / u.s)
+            * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
+        )
 
         if source_idx == -1:
             flux_grid = flux_grid.sum(axis=0)
@@ -1220,7 +1222,9 @@ class StanFit:
                 UL = 0.5 - CI / 2
                 LL = 0.5 + CI / 2
 
-            lower, upper = self._calculate_quantiles(E_power, energy_unit, area_unit, source_idx, LL, UL)
+            lower, upper = self._calculate_quantiles(
+                E_power, energy_unit, area_unit, source_idx, LL, UL
+            )
 
             if not upper_limit:
                 ax.fill_between(
@@ -2223,6 +2227,7 @@ class StanFit:
         fit_inputs["T"] = obs_time
         # To work with cmdstanpy serialization
         temp = {}
+        """
         for k, v in fit_inputs.items():
             if not isinstance(v, np.ndarray):
                 temp[k] = v
@@ -2234,6 +2239,7 @@ class StanFit:
                 # Catch making a list of quantities, why would there even be quantities in here?
                 print(k, v)
                 temp[k] = v.value.tolist()
+        """
         fit_inputs = {
             k: v if not isinstance(v, np.ndarray) else v.tolist()
             for k, v in fit_inputs.items()

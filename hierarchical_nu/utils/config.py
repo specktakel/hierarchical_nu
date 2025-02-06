@@ -130,6 +130,7 @@ class SinglePriorConfig:
     mu: Any = 1.0  # Should be str or float, but alas, OmegaConf does not support Unions
     sigma: Any = 1.0
 
+
 @dataclass
 class PriorConfig:
     src_index: SinglePriorConfig = field(
@@ -150,7 +151,7 @@ class PriorConfig:
     )
     diff_index: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=[2.52], sigma=[0.04]
+            name="NormalPrior", mu=2.52, sigma=0.04
         )
     )
     L: SinglePriorConfig = field(
@@ -162,13 +163,13 @@ class PriorConfig:
     diff_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
             name="NormalPrior",
-            mu=["2.26e-13  GeV-1 s-1 m-2"],
-            sigma=["0.19e-13 GeV-1 s-1 m-2"],
+            mu="2.26e-13  GeV-1 s-1 m-2",
+            sigma="0.19e-13 GeV-1 s-1 m-2",
         )
     )
     atmo_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=["0.314 m-2 s-1"], sigma=["0.08 m-2 s-1"]
+            name="NormalPrior", mu="0.314 m-2 s-1", sigma="0.08 m-2 s-1"
         )
     )
 

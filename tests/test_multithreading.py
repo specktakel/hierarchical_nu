@@ -67,7 +67,7 @@ def test_ps(output_directory, sources):
     sim.generate_stan_code()
     sim.compile_stan_code()
 
-    for i in range(1):
+    for i in range(5):
         sim.run(verbose=True, seed=i)
         sim.save(os.path.join(output_directory, f"ps_only_{i}.h5"), overwrite=True)
 
@@ -82,7 +82,7 @@ def test_ps(output_directory, sources):
     fit.generate_stan_code()
     fit.compile_stan_code()
 
-    for i in range(1):
+    for i in range(5):
         events = Events.from_file(os.path.join(output_directory, f"ps_only_{i}.h5"))
         fit.events = events
         fit.run(seed=42, show_progress=True, inits={"L": 1e50, "src_index": 2.2})
@@ -95,13 +95,13 @@ def test_ps(output_directory, sources):
     mt_fit.generate_stan_code()
     mt_fit.compile_stan_code()
 
-    for i in range(1):
+    for i in range(5):
         events = Events.from_file(os.path.join(output_directory, f"ps_only_{i}.h5"))
         mt_fit.events = events
         mt_fit.run(seed=42, show_progress=True, inits={"L": 1e50, "src_index": 2.2})
         mt_fit.save(os.path.join(output_directory, f"ps_only_mt_fit_{i}.h5"))
 
-    for i in range(1):
+    for i in range(5):
         mt = StanFit.from_file(os.path.join(output_directory, f"ps_only_mt_fit_{i}.h5"))
         fit = StanFit.from_file(os.path.join(output_directory, f"ps_only_fit_{i}.h5"))
         bins = np.linspace(1.0, 4.0, 20)

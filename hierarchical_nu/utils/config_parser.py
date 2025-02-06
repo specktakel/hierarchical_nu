@@ -52,6 +52,7 @@ class ConfigParser:
                 u.Quantity(entry).to(unit)
             except u.UnitConversionError as e:
                 raise e
+        return
 
     def __init__(self, hnu_config: HierarchicalNuConfig):
         self._hnu_config = hnu_config
@@ -600,40 +601,31 @@ class ConfigParser:
         prior_config = self._hnu_config.prior_config
 
         def _make_prior(multiparameterprior, parameterprior, prior, mu, sigma):
-            if not isinstance(mu, omegaconf.listconfig.ListConfig):
+            print(mu, sigma)
+            print(type(mu), type(sigma))
+            if not isinstance(mu, omegaconf.listconfig.ListConfig) and not isinstance(
+                mu, list
+            ):
                 mu = [mu]
-            if not isinstance(sigma, omegaconf.listconfig.ListConfig):
+            if not isinstance(
+                sigma, omegaconf.listconfig.ListConfig
+            ) and not isinstance(sigma, list):
                 sigma = [sigma]
+            print(mu, sigma)
             if len(mu) > 1 and len(sigma) > 1:
                 return multiparameterprior(
-                    [
-                        parameterprior(
-                            prior, mu=m, sigma=s
-                        )
-                        for m, s in zip(mu, sigma)
-                    ]
+                    [parameterprior(prior, mu=m, sigma=s) for m, s in zip(mu, sigma)]
                 )
             elif len(mu) > 1:
                 return multiparameterprior(
-                    [
-                        parameterprior(
-                            prior, mu=m, sigma=sigma[0]
-                        )
-                        for m in mu
-                    ]
+                    [parameterprior(prior, mu=m, sigma=sigma[0]) for m in mu]
                 )
             elif len(sigma) > 1:
                 return multiparameterprior(
-                    [
-                        parameterprior(
-                            prior, mu=mu[0], sigma=s
-                        )
-                        for s in sigma
-                    ]
+                    [parameterprior(prior, mu=mu[0], sigma=s) for s in sigma]
                 )
             else:
                 return parameterprior(prior, mu=mu[0], sigma=sigma[0])
-
 
         for p, vals in prior_config.items():
             if vals.name == "NormalPrior":
@@ -654,20 +646,28 @@ class ConfigParser:
             if p == "src_index":
                 self.check_units(mu, 1)
                 self.check_units(sigma, 1)
-                priors.src_index = _make_prior(MultiSourceIndexPrior, IndexPrior, prior, mu, sigma)
+                priors.src_index = _make_prior(
+                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma
+                )
             elif p == "beta_index":
                 self.check_units(mu, 1)
                 self.check_units(sigma, 1)
-                priors.beta_index = _make_prior(MultiSourceIndexPrior, IndexPrior, prior, mu, sigma)
+                priors.beta_index = _make_prior(
+                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma
+                )
             elif p == "E0_src":
                 self.check_units(mu, u.GeV)
+                mu = [u.Quantity(_) for _ in mu]
                 if prior == NormalPrior:
                     self.check_units(sigma, u.GeV)
+                    sigma = [u.Quantity(_) for _ in sigma]
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
-                priors.E0_src = _make_prior(MultiSourceEnergyPrior, EnergyPrior, prior, mu, sigma)
+                priors.E0_src = _make_prior(
+                    MultiSourceEnergyPrior, EnergyPrior, prior, mu, sigma
+                )
             elif p == "L":
                 if prior == ParetoPrior:
                     self.check_units(xmin, u.GeV / u.s)
@@ -678,16 +678,20 @@ class ConfigParser:
                     continue
 
                 self.check_units(mu, u.GeV / u.s)
+                mu = [u.Quantity(_) for _ in mu]
                 if prior == NormalPrior:
                     self.check_units(sigma, u.GeV / u.s)
+                    sigma = [u.Quantity(_) for _ in sigma]
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
-                priors.luminosity = _make_prior(MultiSourceLuminosityPrior, LuminosityPrior, prior, mu, sigma)
+                priors.luminosity = _make_prior(
+                    MultiSourceLuminosityPrior, LuminosityPrior, prior, mu, sigma
+                )
 
             elif p == "diff_index":
-                priors.diff_index = IndexPrior(prior, mu=mu[0], sigma=sigma[0])
+                priors.diff_index = IndexPrior(prior, mu=mu, sigma=sigma)
 
             elif p == "diff_flux":
                 self.check_units(mu, 1 / u.GeV / u.m**2 / u.s)
