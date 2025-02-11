@@ -229,6 +229,15 @@ class Simulation:
         else:
             self._exposure_integral = exposure_integral
 
+    def compute_c_values(self):
+        """
+        Method to re-compute all envelopes for rejection sampling,
+        necessary for PPCs when spectral parameters are changed.
+        """
+
+        for eps in self._exposure_integral.values():
+            eps._compute_c_values()
+
     def generate_stan_code(self):
         """
         Generate stan code from scratch

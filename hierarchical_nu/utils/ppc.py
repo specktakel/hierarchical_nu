@@ -18,6 +18,7 @@ from astropy.coordinates import SkyCoord
 import h5py
 from pathlib import Path
 from tqdm.autonotebook import tqdm
+from typing import Union
 import logging
 
 logger = logging.getLogger(__file__)
@@ -249,15 +250,18 @@ class PPC:
             self._ran_setup = False
             raise (e)
 
-    def run(self, show_progress: bool = True, output_file: Path = Path("ppc.h5")):
+    def run(self, show_progress: bool = True, output_file: Union[str, Path] = Path("ppc.h5")):
         """
         Method to run all simulations and save output
         :param show_progres: Set to True if progress par shall be displayed, defaults to True
-        :param output_file: Path to output file, defaults to ./ppc.h5
+        :param output_file: str or Path to output file, defaults to ./ppc.h5
         """
 
         if not self._ran_setup:
             raise ValueError("Need to run setup before running")
+
+        if not isinstance(output_file, Path):
+            output_file = Path(output_file)
 
         rng = np.random.default_rng(seed=self._config.seed)
         sources = self._sources
@@ -269,6 +273,8 @@ class PPC:
         # Peace and quiet
         cmdstanpy_logger = logging.getLogger("cmdstanpy")
         cmdstanpy_logger.disabled = True
+
+        seed = self._config.seed
 
         with tqdm(total=self._config.n_samples, disable=not show_progress) as pbar:
             for i in range(self._config.n_samples):
@@ -330,10 +336,21 @@ class PPC:
                                     param.value = (
                                         fit[param_name].flatten()[rint] * u.GeV
                                     )
+                sim.compute_c_values()
 
-                sim.run(
-                    seed=self._config.seed + i, show_progress=False, show_console=False
-                )
+                seed += 1
+                while True:
+                    sim.run(
+                        seed=seed, show_progress=False, show_console=False
+                    )
+                    if sim.events is not None:
+                        # I want to break free, but only if at least one event is sampled,
+                        # TODO: fix this later,
+                        # when using data as backgrounds this should be allowed
+                        # and fixed further down
+                        break
+
+                    seed += 1
 
                 # Output some more data for debugging
                 sim._get_expected_Nnu(sim._get_sim_inputs()).copy()
