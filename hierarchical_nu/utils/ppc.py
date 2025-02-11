@@ -245,12 +245,13 @@ class PPC:
             self._N = []
             self._N_comp = []
             self._ran_setup = True
+            self._events = []
         except Exception as e:
             # Except any error
             self._ran_setup = False
             raise (e)
 
-    def run(self, show_progress: bool = True, output_file: Union[str, Path] = Path("ppc.h5")):
+    def run(self, show_progress: bool = True, output_file: Union[str, Path] = Path("ppc.h5"), overwrite: bool = False):
         """
         Method to run all simulations and save output
         :param show_progres: Set to True if progress par shall be displayed, defaults to True
@@ -263,6 +264,7 @@ class PPC:
         if not isinstance(output_file, Path):
             output_file = Path(output_file)
 
+        self._events = []
         rng = np.random.default_rng(seed=self._config.seed)
         sources = self._sources
         sim = self._sim
@@ -336,19 +338,19 @@ class PPC:
                                     param.value = (
                                         fit[param_name].flatten()[rint] * u.GeV
                                     )
-                sim.compute_c_values()
+                sim.compute_c_values(replace=True)
 
                 seed += 1
                 while True:
                     sim.run(
                         seed=seed, show_progress=False, show_console=False
                     )
-                    if sim.events is not None:
+                    if sim.events is not None or (point_sources and self._use_data_as_bg):
                         # I want to break free, but only if at least one event is sampled,
-                        # TODO: fix this later,
-                        # when using data as backgrounds this should be allowed
-                        # and fixed further down
+                        # or we use data to estimate the background
                         break
+                    elif point_sources:
+                        continue
 
                     seed += 1
 
@@ -368,12 +370,16 @@ class PPC:
                         scramble_ra=True,
                         seed=self._config.seed + i,
                     )
-                    events = sim.events.merge(bg_events)
+                    try:
+                        events = sim.events.merge(bg_events)
+                    except AttributeError:
+                        events = bg_events
+
                 else:
                     events = sim.events
                 if i == 0:
                     output_file = events.to_file(
-                        output_file, append=False, group_name=f"events_{i}"
+                        output_file, append=False, group_name=f"events_{i}", overwrite=overwrite
                     )
                 else:
                     events.to_file(output_file, append=True, group_name=f"events_{i}")

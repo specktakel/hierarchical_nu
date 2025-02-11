@@ -424,13 +424,16 @@ class ExposureIntegral:
 
                 self.pdet_grid.append(aeff_slice)
 
-    def _compute_c_values(self):
+    def _compute_c_values(self, replace: bool = False):
         """
         For the rejection sampling implemented in the simulation, we need
         to find max(f/g) for the relevant energy range at different cosz,
         where:
         f, target function: aeff_factor * src_spectrum
         g, envelope function: bbpl envelope used for sampling
+
+        :param replace: set to True if only source components with variable spectral shape
+            shall be re-calculated
         """
 
         cosz_bin_cens = (
@@ -440,7 +443,7 @@ class ExposureIntegral:
 
         envelope_container = []
 
-        for source in self._sources.sources:
+        for c, source in enumerate(self._sources.sources):
             # Energy bounds in flux model are already redshift-corrected
             # and live in the detector frame
 
@@ -468,13 +471,19 @@ class ExposureIntegral:
 
                 segments = TopDownSegmentation(f_values, E_range)
                 segments.generate_segments()
-                envelope_container.append(segments)
+                if replace:
+                    self._envelope_container[c] = segments
+                else:
+                    envelope_container.append(segments)
 
             else:
                 # For diffuse sources, we need to find an envelope envelopping
                 # the maximum values along energy, marginalising over the declination.
                 # Calculate f-values on an energy x cosz grid, then take maximum
                 # and create the envelope function.
+
+                if replace and isinstance(source.flux_model, AtmosphericNuMuFlux):
+                    continue
                 f_values_all = []
 
                 for cosz in cosz_bin_cens:
@@ -509,11 +518,15 @@ class ExposureIntegral:
                 # Make array
                 # Take max along energy axis, and use result for creating the envelope
                 f_values = np.array(f_values_all).max(axis=0)
-                segment = TopDownSegmentation(f_values, E_range)
-                segment.generate_segments()
-                envelope_container.append(segment)
+                segments = TopDownSegmentation(f_values, E_range)
+                segments.generate_segments()
+                if replace:
+                    self._envelope_container[c] = segments
+                else:
+                    envelope_container.append(segments)
 
-        self._envelope_container = envelope_container
+        if not replace:
+            self._envelope_container = envelope_container
 
     def __call__(self):
         """
