@@ -244,6 +244,7 @@ class PPC:
             self._Nex_et = []
             self._N = []
             self._N_comp = []
+            self._Lambda = []
             self._ran_setup = True
             self._events = []
         except Exception as e:
@@ -358,8 +359,9 @@ class PPC:
                 sim._get_expected_Nnu(sim._get_sim_inputs()).copy()
                 self._Nex_et.append(sim._Nex_et.copy())
                 out = sim._sim_output.stan_variable
-                self._N.append(out("N_"))
-                self._N_comp.append(out("N_comp_"))
+                self._N.append(out("N_").astype(int))
+                self._Lambda.append(out("Lambda").astype(int).squeeze() - 1)
+                self._N_comp.append(out("N_comp_").astype(int))
 
                 if self._use_data_as_bg:
                     # Read in RA scrambled events here and merge with simulation
@@ -389,10 +391,14 @@ class PPC:
         N = np.concatenate(self._N)
         N_comp = np.concatenate(self._N_comp)
         Nex = np.concatenate(self._Nex_et)
+
         with h5py.File(output_file, "r+") as f:
             g = f.create_group("meta_data")
             g.create_dataset("N", data=N)
             g.create_dataset("N_comp", data=N_comp)
             g.create_dataset("Nex", data=Nex)
+            l = g.create_group("Lambdas")
+            for c, arr in enumerate(self._Lambda):
+                l.create_dataset(str(c), data=arr)
 
         return output_file

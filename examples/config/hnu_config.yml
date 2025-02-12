@@ -34,11 +34,11 @@ parameter_config:
   - 77.35
   Enorm: 100000.0
   Emin: 1e2
-  Emax: 1e8
-  Emin_src: 1.3365e2
-  Emax_src: 1.3365e8
+  Emax: 1e9
+  Emin_src: 1e2
+  Emax_src: 1e9
   Emin_diff: 1e2
-  Emax_diff: 1e8
+  Emax_diff: 1e9
   diff_norm: 2.0e-13
   z:
   - 0.3365
@@ -46,8 +46,10 @@ parameter_config:
   Emin_det: 2e2
   MJD_min: 56917
   MJD_max: 57113
-  frame: source
+  frame: detector
   asimov: false
+  atmospheric: true
+  diffuse: true
 stan_config:
   threads_per_chain: 40
   iterations: 1000
@@ -83,9 +85,9 @@ roi_config:
   roi_type: CircularROI
   size: 5.0
   apply_roi: true
-  DEC: 6.0
-  RA: 76.0
+  DEC: 5.7
+  RA: 77.35
 ppc_config:
-  n_samples: 100
+  n_samples: 10
   seed: 42
   directory: ppc
