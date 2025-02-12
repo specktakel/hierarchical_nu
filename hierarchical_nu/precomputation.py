@@ -469,7 +469,8 @@ class ExposureIntegral:
                     * aeff_values
                 )
 
-                segments = TopDownSegmentation(f_values, E_range)
+                log_break = np.log10(E_range[f_values.argmax()]) + 1.6
+                segments = TopDownSegmentation(f_values, E_range, log_break=log_break)
                 segments.generate_segments()
                 if replace:
                     self._envelope_container[c] = segments

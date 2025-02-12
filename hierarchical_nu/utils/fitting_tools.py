@@ -204,7 +204,7 @@ class SegmentedApprox(metaclass=ABCMeta):
             / self.target_log_approx(np.power(10, logxmin))
         ) / (logxmax - logxmin)
 
-    def _fit_segment(self, xmin, xmax, low=True, val=None):
+    def _fit_segment(self, xmin, xmax, low=True, val=None, slope_guess=None):
         """
         Fit a powerlaw segment by changing the slope
         until the power law just approaches the target
@@ -221,7 +221,10 @@ class SegmentedApprox(metaclass=ABCMeta):
         support = np.geomspace(xmin, xmax)
 
         # Propose first function
-        slope = self.init_slope(logxmin, logxmax)
+        if slope_guess is None:
+            slope = self.init_slope(logxmin, logxmax)
+        else:
+            slope = slope_guess
         function = self.segment_factory(slope, logxmin, logxmax, val, low=low)
 
         diff = function(support) - self.target_log_approx(support)
@@ -235,6 +238,7 @@ class SegmentedApprox(metaclass=ABCMeta):
         elif not low:
             step = self.diff
 
+        converged = False
         # Only allow max_tries steps to guarantee an exit condition,
         # although should raise warning message if convergence is not happening
         for i in range(self.max_tries):
@@ -251,14 +255,17 @@ class SegmentedApprox(metaclass=ABCMeta):
             elif step > 0.0 and low and not negative:
                 # We have just found the right slope, update
                 slope = new_slope
+                converged = True
                 break
             elif step < 0.0 and low and negative:
                 # Previous slope was the best guess, do not update
+                converged = True
                 break
             elif step < 0.0 and low and not negative:
                 slope = new_slope
             elif step > 0.0 and negative and not low:
                 # Previous slope was the best guess, do not update
+                converged = True
                 break
             elif step > 0.0 and not low and not negative:
                 slope = new_slope
@@ -267,15 +274,25 @@ class SegmentedApprox(metaclass=ABCMeta):
             elif step < 0.0 and not low and not negative:
                 # We have just found the right slope, update
                 slope = new_slope
+                converged = True
                 break
         else:
             logger.warning(
                 f"Envelope search did not converge between {xmin} and {xmax} after {self.max_tries} steps."
             )
+            function = self.segment_factory(slope, logxmin, logxmax, val, low=low)
+            evals = function(support)
+            if np.any(evals < self.target_log_approx(support)):
+                logger.critical("Segment is below target, faulty sampling incoming.")
+
+
+            # check if any part of the target exceeds the envelope,
+            # if not everything is fine but possibly inefficient
+
 
         # Either way, produce the segment
         function = self.segment_factory(slope, logxmin, logxmax, val, low=low)
-        return function
+        return function, converged
 
     @property
     def slopes(self):
@@ -325,7 +342,15 @@ class TopDownSegmentation(SegmentedApprox):
     at the flanks.
     """
 
-    def __init__(self, target, support, dec_width: float=0.5, diff: float=0.04, max_tries: int=400):
+    def __init__(
+            self,
+            target,
+            support,
+            dec_width: float=0.8,
+            diff: float=0.08,
+            max_tries: int=800,
+            log_break: float=6.
+        ):
         """
         :param target: Function values evaluated at `support`
         :param support: support of `target`
@@ -364,11 +389,21 @@ class TopDownSegmentation(SegmentedApprox):
                 if proposal == logSuppMin:
                     break
 
+        # get rid of possible tiny bins at the beginning
+        if np.diff(breaks)[0] < 0.3:
+            breaks[1] = breaks[0]
+            breaks = breaks[1:]
+        # above 1e6 GeV concatenate everything into one bin
+        breaks = np.array(breaks)
+        #print(breaks)
+        e6GeV = np.digitize(log_break, breaks)
+        breaks = np.concatenate((breaks[:e6GeV], np.atleast_1d(breaks[-1])))
         breaks = np.power(10, breaks)
 
         super().__init__(target, support, breaks, diff, max_tries)
 
         self.bin_containing_peak = np.digitize(target_max_point, breaks) - 1
+        self._converged = np.zeros(breaks.size - 1, dtype=bool)
 
     def generate_segments(self):
         """
@@ -387,7 +422,11 @@ class TopDownSegmentation(SegmentedApprox):
                 # Avoid accidental negative differences at the pivot if low==True
                 # may happen if the max coincides with the pivot point
                 val = self.target_max * 1.01
-            func = self._fit_segment(l, h, low=True, val=val)
+                slope_guess = None
+            else:
+                slope_guess = self._segmented_functions[idx - 1].slope
+            func, converged = self._fit_segment(l, h, low=True, val=val, slope_guess=slope_guess)
+            self._converged[idx] = converged
 
             val = func(h)
             low_values.append(func(l))
@@ -406,7 +445,9 @@ class TopDownSegmentation(SegmentedApprox):
             idx = self.bin_containing_peak - c
             if c == 1:
                 val = low_values[0]
-            func = self._fit_segment(l, h, low=False, val=val)
+            slope_guess = self._segmented_functions[idx + 1].slope
+            func, converged = self._fit_segment(l, h, low=False, val=val, slope_guess=slope_guess)
+            self._converged[idx] = converged
 
             val = func(l)
 
