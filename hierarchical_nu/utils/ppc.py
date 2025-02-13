@@ -54,7 +54,7 @@ class PPC:
                 break
 
     def _plot_radial_ppc(self, bins):
-        # TODO 
+        # TODO
         raise NotImplementedError()
 
     def _plot_energy_ppc(self, bins):
@@ -252,7 +252,12 @@ class PPC:
             self._ran_setup = False
             raise (e)
 
-    def run(self, show_progress: bool = True, output_file: Union[str, Path] = Path("ppc.h5"), overwrite: bool = False):
+    def run(
+        self,
+        show_progress: bool = True,
+        output_file: Union[str, Path] = Path("ppc.h5"),
+        overwrite: bool = False,
+    ):
         """
         Method to run all simulations and save output
         :param show_progres: Set to True if progress par shall be displayed, defaults to True
@@ -339,14 +344,14 @@ class PPC:
                                     param.value = (
                                         fit[param_name].flatten()[rint] * u.GeV
                                     )
-                sim.compute_c_values(replace=True)
+                sim.compute_c_values(inplace=True)
 
                 seed += 1
                 while True:
-                    sim.run(
-                        seed=seed, show_progress=False, show_console=False
-                    )
-                    if sim.events is not None or (point_sources and self._use_data_as_bg):
+                    sim.run(seed=seed, show_progress=False, show_console=False)
+                    if sim.events is not None or (
+                        point_sources and self._use_data_as_bg
+                    ):
                         # I want to break free, but only if at least one event is sampled,
                         # or we use data to estimate the background
                         break
@@ -381,7 +386,10 @@ class PPC:
                     events = sim.events
                 if i == 0:
                     output_file = events.to_file(
-                        output_file, append=False, group_name=f"events_{i}", overwrite=overwrite
+                        output_file,
+                        append=False,
+                        group_name=f"events_{i}",
+                        overwrite=overwrite,
                     )
                 else:
                     events.to_file(output_file, append=True, group_name=f"events_{i}")
