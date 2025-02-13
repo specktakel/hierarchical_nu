@@ -134,9 +134,9 @@ class PPC:
                     edgecolor="none",
                 )
 
-        ax.step(
+        ax.stairs(
+            obs,
             bins_ang_sep_sq,
-            obs[idxs],
             c="black",
             label="Observed",
             where="post",
@@ -204,7 +204,7 @@ class PPC:
         idxs = np.arange(obs.size + 1)
         idxs[-1] = idxs[-2]
 
-        ax.step(bins_Ereco, obs[idxs], c="black", label="Observed", where="post", lw=1)
+        ax.stairs(obs, bins_Ereco, c="black", label="Observed", lw=1)
 
         ax.set_xscale("log")
         ax.set_yscale("log")
@@ -349,14 +349,14 @@ class PPC:
                 seed += 1
                 while True:
                     sim.run(seed=seed, show_progress=False, show_console=False)
-                    if sim.events is not None or (
-                        point_sources and self._use_data_as_bg
-                    ):
+                    if sim.events is not None: #or (
+                    #    point_sources and self._use_data_as_bg
+                    #):
                         # I want to break free, but only if at least one event is sampled,
                         # or we use data to estimate the background
                         break
-                    elif point_sources:
-                        continue
+                    #elif point_sources:
+                    #    continue
 
                     seed += 1
 
@@ -365,7 +365,11 @@ class PPC:
                 self._Nex_et.append(sim._Nex_et.copy())
                 out = sim._sim_output.stan_variable
                 self._N.append(out("N_").astype(int))
-                self._Lambda.append(out("Lambda").astype(int).squeeze() - 1)
+                try:
+                    self._Lambda.append(out("Lambda").astype(int).squeeze() - 1)
+                except ValueError:
+                    print(sim.events)
+                    self._Lambda.append([[np.nan] * sim._sources.N])
                 self._N_comp.append(out("N_comp_").astype(int))
 
                 if self._use_data_as_bg:
