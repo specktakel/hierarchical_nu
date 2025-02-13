@@ -780,6 +780,7 @@ class StanSimInterface(StanInterface):
                                             ]
                                         ):
                                             self._inside << 1
+                                            StringExpression(["break"])
 
                         self._cosz[i] << FunctionCall(
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
