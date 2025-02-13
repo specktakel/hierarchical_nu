@@ -698,73 +698,88 @@ class StanSimInterface(StanInterface):
                         # Used for rejection sampling
                         self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
 
-                        # For point sources, the true direction is specified
-                        with IfBlockContext(
-                            [StringExpression([self._lam[i], " <= ", self._Ns])]
-                        ):
-                            self._omega << self._varpi[self._lam[i]]
+                        with WhileLoopContext([self._inside != 1]):
 
-                        # Otherwise, sample uniformly over sphere, considering v_lim
-                        if self.sources.atmospheric and not self.sources.diffuse:
-                            with ElseIfBlockContext(
-                                [StringExpression([self._lam[i], " == ", self._Ns + 1])]
+                            # For point sources, the true direction is specified
+                            with IfBlockContext(
+                                [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
-                                self._omega << FunctionCall(
-                                    [
-                                        1,
-                                        self._v_low,
-                                        self._v_high,
-                                        self._u_low,
-                                        self._u_high,
-                                    ],
-                                    "sphere_lim_rng",
-                                )
+                                self._omega << self._varpi[self._lam[i]]
+                                # Always accept point source events, even if scattered outside the ROI
+                                StringExpression(["break"])
 
-                        elif self.sources.diffuse:
-                            with ElseIfBlockContext(
-                                [StringExpression([self._lam[i], " == ", self._Ns + 1])]
-                            ):
-                                self._omega << FunctionCall(
+                            # Otherwise, sample uniformly over sphere, considering v_lim
+                            if self.sources.atmospheric and not self.sources.diffuse:
+                                with ElseIfBlockContext(
                                     [
-                                        1,
-                                        self._v_low,
-                                        self._v_high,
-                                        self._u_low,
-                                        self._u_high,
-                                    ],
-                                    "sphere_lim_rng",
-                                )
-
-                        if self.sources.atmospheric and self._sources.diffuse:
-                            with ElseIfBlockContext(
-                                [StringExpression([self._lam[i], " == ", self._Ns + 2])]
-                            ):
-                                self._omega << FunctionCall(
-                                    [
-                                        1,
-                                        self._v_low,
-                                        self._v_high,
-                                        self._u_low,
-                                        self._u_high,
-                                    ],
-                                    "sphere_lim_rng",
-                                )
-
-                        # For circular ROIs: see if diffuse event is inside one of the ROIs,
-                        # if not: don't query the rejection sampling and continue from scratch
-                        if isinstance(ROIList.STACK[0], CircularROI):
-                            with IfBlockContext([self._lam[i], " > ", self._Ns]):
-                                with ForLoopContext(1, self._n_roi, "n") as n:
-                                    with IfBlockContext(
+                                        StringExpression(
+                                            [self._lam[i], " == ", self._Ns + 1]
+                                        )
+                                    ]
+                                ):
+                                    self._omega << FunctionCall(
                                         [
-                                            "ang_sep(omega, roi_center[",
-                                            n,
-                                            "]) <= roi_radius[n]",
-                                        ]
-                                    ):
-                                        self._inside << 1
-                                with IfBlockContext([self._inside, "!=", 1]):
-                                    StringExpression(["continue"])
+                                            1,
+                                            self._v_low,
+                                            self._v_high,
+                                            self._u_low,
+                                            self._u_high,
+                                        ],
+                                        "sphere_lim_rng",
+                                    )
+
+                            elif self.sources.diffuse:
+                                with ElseIfBlockContext(
+                                    [
+                                        StringExpression(
+                                            [self._lam[i], " == ", self._Ns + 1]
+                                        )
+                                    ]
+                                ):
+                                    self._omega << FunctionCall(
+                                        [
+                                            1,
+                                            self._v_low,
+                                            self._v_high,
+                                            self._u_low,
+                                            self._u_high,
+                                        ],
+                                        "sphere_lim_rng",
+                                    )
+
+                            if self.sources.atmospheric and self._sources.diffuse:
+                                with ElseIfBlockContext(
+                                    [
+                                        StringExpression(
+                                            [self._lam[i], " == ", self._Ns + 2]
+                                        )
+                                    ]
+                                ):
+                                    self._omega << FunctionCall(
+                                        [
+                                            1,
+                                            self._v_low,
+                                            self._v_high,
+                                            self._u_low,
+                                            self._u_high,
+                                        ],
+                                        "sphere_lim_rng",
+                                    )
+
+                            # For circular ROIs: see if diffuse event is inside one of the ROIs,
+                            # if not: don't query the rejection sampling and continue from scratch
+                            if isinstance(ROIList.STACK[0], CircularROI):
+                                # FOllowing if should not be necessary as loop is broken in case of point source
+                                with IfBlockContext([self._lam[i], " > ", self._Ns]):
+                                    with ForLoopContext(1, self._n_roi, "n") as n:
+                                        with IfBlockContext(
+                                            [
+                                                "ang_sep(omega, roi_center[",
+                                                n,
+                                                "]) <= roi_radius[n]",
+                                            ]
+                                        ):
+                                            self._inside << 1
 
                         self._cosz[i] << FunctionCall(
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
