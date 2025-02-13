@@ -363,6 +363,8 @@ class PPC:
                 # Output some more data for debugging
                 sim._get_expected_Nnu(sim._get_sim_inputs()).copy()
                 self._Nex_et.append(sim._Nex_et.copy())
+                # If no events are sampled and we merge with background,
+                # the Lambda array should read N_ps + 1 for all events (take number from further down somehow)
                 out = sim._sim_output.stan_variable
                 self._N.append(out("N_").astype(int))
                 try:
