@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.CRITICAL)
 
 
 class Residuals:
@@ -285,10 +285,8 @@ class SegmentedApprox(metaclass=ABCMeta):
             if np.any(evals < self.target_log_approx(support)):
                 logger.critical("Segment is below target, faulty sampling incoming.")
 
-
             # check if any part of the target exceeds the envelope,
             # if not everything is fine but possibly inefficient
-
 
         # Either way, produce the segment
         function = self.segment_factory(slope, logxmin, logxmax, val, low=low)
@@ -343,14 +341,14 @@ class TopDownSegmentation(SegmentedApprox):
     """
 
     def __init__(
-            self,
-            target,
-            support,
-            dec_width: float=0.8,
-            diff: float=0.08,
-            max_tries: int=800,
-            log_break: float=6.
-        ):
+        self,
+        target,
+        support,
+        dec_width: float = 0.8,
+        diff: float = 0.08,
+        max_tries: int = 800,
+        log_break: float = 6.0,
+    ):
         """
         :param target: Function values evaluated at `support`
         :param support: support of `target`
@@ -395,7 +393,7 @@ class TopDownSegmentation(SegmentedApprox):
             breaks = breaks[1:]
         # above 1e6 GeV concatenate everything into one bin
         breaks = np.array(breaks)
-        #print(breaks)
+        # print(breaks)
         e6GeV = np.digitize(log_break, breaks)
         breaks = np.concatenate((breaks[:e6GeV], np.atleast_1d(breaks[-1])))
         breaks = np.power(10, breaks)
@@ -425,7 +423,9 @@ class TopDownSegmentation(SegmentedApprox):
                 slope_guess = None
             else:
                 slope_guess = self._segmented_functions[idx - 1].slope
-            func, converged = self._fit_segment(l, h, low=True, val=val, slope_guess=slope_guess)
+            func, converged = self._fit_segment(
+                l, h, low=True, val=val, slope_guess=slope_guess
+            )
             self._converged[idx] = converged
 
             val = func(h)
@@ -446,7 +446,9 @@ class TopDownSegmentation(SegmentedApprox):
             if c == 1:
                 val = low_values[0]
             slope_guess = self._segmented_functions[idx + 1].slope
-            func, converged = self._fit_segment(l, h, low=False, val=val, slope_guess=slope_guess)
+            func, converged = self._fit_segment(
+                l, h, low=False, val=val, slope_guess=slope_guess
+            )
             self._converged[idx] = converged
 
             val = func(l)
