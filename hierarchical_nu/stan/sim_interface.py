@@ -566,6 +566,7 @@ class StanSimInterface(StanInterface):
             self._N_comp_ << self._N_comp
             self._N_ = ForwardVariableDef("N_", "int")
             self._N_ << self._N
+            self._inside = InstantVariableDef("inside", "int", [0])
 
             if self.sources.point_source:
                 self._Nex_src_comp_ = ForwardArrayDef(
@@ -690,6 +691,7 @@ class StanSimInterface(StanInterface):
                     self._accept << 0
                     self._detected << 0
                     self._ntrials << 0
+                    self._inside << 0
 
                     # While not accepted
                     with WhileLoopContext([StringExpression([self._accept != 1])]):
@@ -747,6 +749,22 @@ class StanSimInterface(StanInterface):
                                     ],
                                     "sphere_lim_rng",
                                 )
+
+                        # For circular ROIs: see if diffuse event is inside one of the ROIs,
+                        # if not: don't query the rejection sampling and continue from scratch
+                        if isinstance(ROIList.STACK[0], CircularROI):
+                            with IfBlockContext([self._lam[i], " > ", self._Ns]):
+                                with ForLoopContext(1, self._n_roi, "n") as n:
+                                    with IfBlockContext(
+                                        [
+                                            "ang_sep(omega, roi_center[",
+                                            n,
+                                            "]) <= roi_radius[n]",
+                                        ]
+                                    ):
+                                        self._inside << 1
+                                with IfBlockContext([self._inside, "!=", 1]):
+                                    StringExpression(["continue"])
 
                         self._cosz[i] << FunctionCall(
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
@@ -967,7 +985,7 @@ class StanSimInterface(StanInterface):
                                     with IfBlockContext(
                                         [
                                             StringExpression(
-                                                [self._lam[i], " < ", self._Ns + 1]
+                                                [self._lam[i], " <=", self._Ns]
                                             )
                                         ]
                                     ):
