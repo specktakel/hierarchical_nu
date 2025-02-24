@@ -114,9 +114,6 @@ class PPC:
         ang_sep = coords.separation(self._fit.events.coords).deg
         obs = np.histogram(ang_sep**2, bins=bins_ang_sep_sq)[0]
 
-        idxs = np.arange(obs.size + 1)
-        idxs[-1] = idxs[-2]
-
         for (
             q,
             l,
@@ -137,9 +134,8 @@ class PPC:
         ax.stairs(
             obs,
             bins_ang_sep_sq,
-            c="black",
+            color="black",
             label="Observed",
-            where="post",
             lw=1,
         )
 
@@ -201,10 +197,7 @@ class PPC:
                     edgecolor="none",
                 )
 
-        idxs = np.arange(obs.size + 1)
-        idxs[-1] = idxs[-2]
-
-        ax.stairs(obs, bins_Ereco, c="black", label="Observed", lw=1)
+        ax.stairs(obs, bins_Ereco, color="black", label="Observed", lw=1)
 
         ax.set_xscale("log")
         ax.set_yscale("log")

@@ -1259,6 +1259,7 @@ class StanFit:
         energy_unit=u.TeV,
         area_unit=u.cm**2,
         x_energy_unit=u.GeV,
+        **kwargs,
     ):
         """
         Plot 2d kde contours of peak energy flux and energy at which peak lies
@@ -1289,7 +1290,7 @@ class StanFit:
             "flux": peak_flux.to_value(energy_unit / area_unit)[mask],
         }
 
-        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap=CMAP)
+        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap=CMAP, **kwargs)
 
         colours = ax.collections[-1]._mapped_colors
 
