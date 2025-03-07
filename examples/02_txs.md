@@ -5,9 +5,9 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.16.1
+      jupytext_version: 1.14.4
   kernelspec:
-    display_name: hi_nu
+    display_name: hnu_env
     language: python
     name: python3
 ---
@@ -157,7 +157,7 @@ priors.atmospheric_flux = FluxPrior(mu=mu, sigma=sigma)
 ```
 
 ```python
-fit = StanFit(my_sources, event_types, events, lifetime, nshards=40)
+fit = StanFit(my_sources, event_types, events, lifetime, nshards=8)
 ```
 
 ```python
@@ -180,7 +180,7 @@ fit.run(
 Confirm that there are no problems encountered by the HMC.
 
 ```python
-print(fit._fit_output.diagnose())
+fit.diagnose()
 ```
 
 Display the posterior distributions alongside the inputted prior distributions, where available.
@@ -188,7 +188,8 @@ Display the posterior distributions alongside the inputted prior distributions, 
 Compare the results to those of a likelihood analysis by IceCube: ns=11.87, gamma=2.22
 
 ```python
-fit.plot_trace_and_priors(var_names=fit._def_var_names+["Nex_src", "Nex_diff", "Nex_atmo"])
+fig, ax = fit.plot_trace_and_priors(var_names=fit._def_var_names+["Nex_src", "Nex_diff", "Nex_atmo"])
+fig.tight_layout()
 ```
 
 Marginalising over all posteriors, the association probability of each event with a source component can be extracted. Displayed in the following plots are a spatial and an energetic overview of all events. The blob size is arbitrary. The colorscale encodes the association probability, here to the proposed point source marked by a grey cross in the left plot.
@@ -202,9 +203,5 @@ fit.plot_energy_and_roi()
 Lastly, show the correlations between the parameters.
 
 ```python
-fit.corner_plot()
-```
-
-```python
-
+fit.corner_plot();
 ```
