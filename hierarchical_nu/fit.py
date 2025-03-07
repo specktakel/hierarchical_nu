@@ -558,6 +558,8 @@ class StanFit:
         if not var_names:
             var_names = self._def_var_names
 
+        var_names.pop("Nex")
+
         # Organise samples
         samples_list = []
         label_list = []

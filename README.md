@@ -7,7 +7,7 @@ A Bayesian hierarchical model for source-nu associations.
 The package can currently be installed from this directory via:
 
 ```
-pip install .
+pip install git+https://github.com/cescalara/hierarchical_nu
 ```
 
 The above command will go ahead and install any dependencies that you may be missing to run the core code.

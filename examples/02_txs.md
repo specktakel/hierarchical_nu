@@ -133,7 +133,7 @@ For each physical parameter there is a seperate prior class implemented, e.g. fo
 ```python
 priors = Priors()
 priors.luminosity = LuminosityPrior(
-    mu=L.value / sim._expected_Nnu_per_comp[0] * 10,   # we expect ~10 events
+    mu=L.value / sim.expected_Nnu_per_comp[0] * 10,   # we expect ~10 events
     sigma=2
 )
 priors.src_index = IndexPrior(mu=2.5, sigma=1)
@@ -142,7 +142,7 @@ priors.src_index = IndexPrior(mu=2.5, sigma=1)
 ```python
 # Copy flux
 atmo_flux_int = my_sources.atmospheric.flux_model.total_flux_int
-Nex = np.sum(sim._expected_Nnu_per_comp[2])
+Nex = np.sum(sim.expected_Nnu_per_comp[2])
 Nex_std = np.sqrt(Nex)
 N = events.N
 N_std = np.sqrt(N)

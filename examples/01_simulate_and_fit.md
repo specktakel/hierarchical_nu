@@ -44,7 +44,7 @@ dec = np.deg2rad(5) * u.rad
 z = 0.1
 
 # Diffuse flux
-diffuse_norm = Parameter(1e-13 * (1/u.GeV/u.m**2/u.s), "diffuse_norm", fixed=True, par_range=(0, np.inf))
+diffuse_norm = Parameter(1e-13 * (1/u.GeV/u.m**2/u.s), "diffuse_norm", fixed=True, par_range=(0, 1) * (1/u.GeV/u.m**2/u.s))
 diff_index = Parameter(2.5, "diff_index", fixed=False, par_range=(1, 4))
 Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
 
@@ -166,7 +166,7 @@ fig, ax = sim.show_skymap()
 ```python
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.priors import Priors, LogNormalPrior, LuminosityPrior, IndexPrior, FluxPrior
+from hierarchical_nu.priors import Priors, NormalPrior, LuminosityPrior, IndexPrior, DifferentialFluxPrior, FluxPrior
 ```
 
 We can start setting up the fit by loading the events from the output of our simulation. This file only contains the information we would have in a realistic data scenario (energies, directions, uncertainties, event types). We also need to specify the observation time and detector model for the fit, as for the simulation. Please make sure you are using the same ones in both for sensible results!
@@ -183,13 +183,13 @@ priors = Priors()
 # Use true values for atmospheric and diffuse
 flux_units = 1 / (u.m**2 * u.s)
 atmo_flux = my_sources.atmospheric.flux_model.total_flux_int 
-diffuse_flux = my_sources.diffuse.flux_model.total_flux_int
+diffuse_diff_flux = my_sources.diffuse.flux_model.total_flux(Enorm.value)
 
 priors.atmospheric_flux = FluxPrior(mu=atmo_flux, sigma=0.02 * flux_units)
 priors.luminosity = LuminosityPrior(mu=L.value, sigma=3)
 priors.src_index = IndexPrior(mu=2.0, sigma=0.5)
 priors.diff_index = IndexPrior(mu=2.5, sigma=0.2)
-priors.diffuse_flux = FluxPrior(LogNormalPrior, mu=diffuse_flux, sigma=0.1)
+priors.diffuse_flux = DifferentialFluxPrior(NormalPrior, mu=diffuse_diff_flux, sigma=0.1*diffuse_diff_flux)
 ```
 
 When defining the fit, we pass `my_sources` to the `StanFit`. This is used the define the source components, their free parameters and parameter boundaries. The values of the true source parameters define above in the simulation are not passed to the fit, and so can be set to arbitrary values. 
@@ -225,7 +225,7 @@ fit.run(show_progress=True, seed=99) #inits={"L": 1e50, "src_index": 2.2, "diff_
 ```
 
 ```python
-print(fit.fit_output.diagnose())
+fit.diagnose()
 ```
 
 Some methods are included for basic plots, but the `fit.fit_output` is a `CmdStanMCMC` object that can be passed to `arviz` for fancier options.
@@ -255,5 +255,10 @@ from hierarchical_nu.simulation import SimInfo
 
 ```python
 sim_info = SimInfo.from_file("test_sim_file.h5")
-fig = fit.corner_plot(truths=sim_info.truths)
+fig = fit.corner_plot(var_names=["L", "F_diff", "F_atmo", "src_index", "diff_index", "f_det_astro"], truths=sim_info.truths)
+```
+
+```python
+
+
 ```
