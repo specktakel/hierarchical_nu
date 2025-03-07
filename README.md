@@ -10,11 +10,7 @@ The package can currently be installed from this directory via:
 pip install .
 ```
 
-The above command will go ahead and install any dependencies that you may be missing to run the core code. If you want to use the optional popsynth interface to simulate populations, then you can also run:
-
-```
-pip install git+https://github.com/cescalara/popsynth.git
-```
+The above command will go ahead and install any dependencies that you may be missing to run the core code.
 
 ### Setting up Stan
 
