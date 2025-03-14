@@ -1072,7 +1072,10 @@ class StanFit:
         share_index = N == 1
         N_samples = iterations * chains
 
-        self._flux_grid = np.zeros((len(self._sources.point_source), E.size, N_samples)) << 1 / u.GeV / u.m**2 / u.s
+        self._flux_grid = (
+            np.zeros((len(self._sources.point_source), E.size, N_samples))
+            << 1 / u.GeV / u.m**2 / u.s
+        )
 
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
@@ -1121,16 +1124,12 @@ class StanFit:
                         "norm_energy", E0_vals[c] * u.GeV
                     )
 
-                flux = ps.flux_model.spectral_shape(E)   # 1 / GeV / s / m2
+                flux = ps.flux_model.spectral_shape(E)  # 1 / GeV / s / m2
 
                 # Needs to be in units used by stan
-                int_flux = ps.flux_model.total_flux_int   # 1 / m2 / s
+                int_flux = ps.flux_model.total_flux_int  # 1 / m2 / s
 
-                flux_grid[:, c] = (
-                    flux
-                    / int_flux
-                    * flux_int[c]
-                )
+                flux_grid[:, c] = flux / int_flux * flux_int[c]
 
             self._flux_grid[c_ps] = flux_grid
 
@@ -1141,7 +1140,10 @@ class StanFit:
         lower = np.zeros(E.size)
         upper = np.zeros(E.size)
 
-        flux_grid = self._flux_grid.copy().to_value(1 / energy_unit / area_unit / u.s) * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
+        flux_grid = (
+            self._flux_grid.copy().to_value(1 / energy_unit / area_unit / u.s)
+            * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
+        )
 
         if source_idx == -1:
             flux_grid = flux_grid.sum(axis=0)
@@ -1220,7 +1222,110 @@ class StanFit:
                 UL = 0.5 - CI / 2
                 LL = 0.5 + CI / 2
 
-            lower, upper = self._calculate_quantiles(E_power, energy_unit, area_unit, source_idx, LL, UL)
+            lower, upper = self._calculate_quantiles(
+                E_power, energy_unit, area_unit, source_idx, LL, UL
+            )
+
+            if not upper_limit:
+                ax.fill_between(
+                    E.to_value(
+                        x_energy_unit,
+                        equivalencies=u.spectral(),
+                    ),
+                    lower,
+                    upper,
+                    **fill_kwargs,
+                )
+            else:
+                ax.plot(
+                    E.to_value(x_energy_unit, equivalencies=u.spectral()),
+                    upper,
+                    **limit_kwargs,
+                    # TODO fix alignment of arrow base to the line
+                )
+
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+
+        ax.set_xlabel(f"$E$ [{x_energy_unit.to_string('latex_inline')}]")
+        ax.set_ylabel(
+            f"flux [{(energy_unit**E_power * flux_unit).unit.to_string('latex_inline')}]"
+        )
+        if upper_limit:
+            ax.set_ylim(bottom=np.min(upper) * 0.8)
+
+        return fig, ax
+
+    def plot_flux_band_HDI(
+        self,
+        E_power: float = 0.0,
+        credible_interval: Union[float, List[float]] = 0.5,
+        source_idx: int = 0,
+        energy_unit=u.TeV,
+        area_unit=u.cm**2,
+        x_energy_unit=u.GeV,
+        upper_limit: bool = False,
+        figsize=(8, 3),
+        ax=None,
+        **kwargs,
+    ):
+        """
+        Plot flux uncertainties.
+        :param E_power: float, plots flux * E**E_power.
+        :param credible_interval: set (equal-tailed) credible intervals to be plotted.
+        :param source_idx: Choose which point source's flux to plot. -1 for sum over all PS.
+        :param energy_unit: Choose your favourite flux energy unit.
+        :param area_unit: Choose your favourite flux area unit.
+        :param x_energy_unit: Choose your favourite abscissa energy unit
+        :param upper_limit: Set to True if only upper limit should be displayed
+        :param figsize: Figsize for new figure (requiring `ax=None`)
+        :param ax: Reuse existing axis, defaults to creating a new figure with single axis
+        :param kwargs: Remaining kwargs will be passed to `pyplot.axis.fill_between` or `pyplot.axis.plot`
+        """
+
+        # Have some defaults for plotting
+        fill_kwargs = dict(
+            alpha=0.3,
+            color="C0",
+            edgecolor="none",
+        )
+        limit_kwargs = dict(
+            alpha=0.3,
+            color="C0",
+            marker=r"$\downarrow$",
+            markevery=0.06,
+            markersize=10,
+        )
+
+        fill_kwargs |= kwargs
+        limit_kwargs |= kwargs
+
+        # Save some time calculating if the previous calculation has already used the same E_power
+        if not hasattr(self, "_flux_grid"):
+            self._calculate_flux_grid()
+
+        flux_unit = 1 / energy_unit / area_unit / u.s
+        E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.get_figure()
+
+        # Find the interval to be plotted
+        credible_interval = np.atleast_1d(credible_interval)
+        for CI in credible_interval:
+            if upper_limit:
+                UL = CI
+                LL = 0.0  # dummy
+            else:
+                UL = 0.5 - CI / 2
+                LL = 0.5 + CI / 2
+
+            lower, upper = av.hdi(self._flux_grid)
+            # self._calculate_quantiles(
+            #    E_power, energy_unit, area_unit, source_idx, LL, UL
+            # )
 
             if not upper_limit:
                 ax.fill_between(
