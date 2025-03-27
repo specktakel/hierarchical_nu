@@ -120,6 +120,10 @@ class StanFit:
 
         self._sources.organise()
 
+        self._bg = False
+        if self._sources.background:
+            self._bg = True
+
         stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
 
         self._reload = reload
@@ -134,6 +138,7 @@ class StanFit:
                 atmo_flux_theta_points=atmo_flux_theta_points,
                 use_event_tag=use_event_tag,
                 debug=debug,
+                bg=self._bg,
             )
         else:
             logger.debug("Reloading previous results.")
@@ -229,6 +234,9 @@ class StanFit:
         if self._sources.atmospheric:
             self._def_var_names.append("F_atmo")
 
+        if self._sources.background:
+            self._def_var_names.append("Nex_bg")
+
         self._exposure_integral = collections.OrderedDict()
 
     @property
@@ -278,11 +286,16 @@ class StanFit:
 
         if not exposure_integral:
             for event_type in self._event_types:
+                if self._bg:
+                    llh = self._sources.background._likelihoods[event_type]
+                else:
+                    llh = None
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
                     event_type,
                     self._n_grid_points,
                     show_progress=show_progress,
+                    bg_llh=llh,
                 )
 
         else:
@@ -1072,7 +1085,10 @@ class StanFit:
         share_index = N == 1
         N_samples = iterations * chains
 
-        self._flux_grid = np.zeros((len(self._sources.point_source), E.size, N_samples)) << 1 / u.GeV / u.m**2 / u.s
+        self._flux_grid = (
+            np.zeros((len(self._sources.point_source), E.size, N_samples))
+            << 1 / u.GeV / u.m**2 / u.s
+        )
 
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
@@ -1121,16 +1137,12 @@ class StanFit:
                         "norm_energy", E0_vals[c] * u.GeV
                     )
 
-                flux = ps.flux_model.spectral_shape(E)   # 1 / GeV / s / m2
+                flux = ps.flux_model.spectral_shape(E)  # 1 / GeV / s / m2
 
                 # Needs to be in units used by stan
-                int_flux = ps.flux_model.total_flux_int   # 1 / m2 / s
+                int_flux = ps.flux_model.total_flux_int  # 1 / m2 / s
 
-                flux_grid[:, c] = (
-                    flux
-                    / int_flux
-                    * flux_int[c]
-                )
+                flux_grid[:, c] = flux / int_flux * flux_int[c]
 
             self._flux_grid[c_ps] = flux_grid
 
@@ -1141,7 +1153,10 @@ class StanFit:
         lower = np.zeros(E.size)
         upper = np.zeros(E.size)
 
-        flux_grid = self._flux_grid.copy().to_value(1 / energy_unit / area_unit / u.s) * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
+        flux_grid = (
+            self._flux_grid.copy().to_value(1 / energy_unit / area_unit / u.s)
+            * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
+        )
 
         if source_idx == -1:
             flux_grid = flux_grid.sum(axis=0)
@@ -1220,7 +1235,9 @@ class StanFit:
                 UL = 0.5 - CI / 2
                 LL = 0.5 + CI / 2
 
-            lower, upper = self._calculate_quantiles(E_power, energy_unit, area_unit, source_idx, LL, UL)
+            lower, upper = self._calculate_quantiles(
+                E_power, energy_unit, area_unit, source_idx, LL, UL
+            )
 
             if not upper_limit:
                 ax.fill_between(
@@ -2098,6 +2115,55 @@ class StanFit:
                 raise ValueError(
                     "No other prior type for atmospheric flux implemented."
                 )
+        if self._sources.background:
+            fit_inputs["bg_llh"] = np.zeros(
+                self.events.N
+            )  # one long list? copy indexing from ereco_spline below
+            fit_inputs["bg_llh_weights"] = []
+            # ev_weight = []
+            # dm_weight = []
+
+            for dm in self._event_types:
+                # gather event numbers per dm
+                # should be a factor for each bg llh value
+                ev_weight = np.sqrt(np.sum(self.events.types == dm.S))
+                print(ev_weight)
+
+                # inverse factor i.e. divisor for each bg llh value
+                # TODO check if inverse is correct (theoretically yes but if done twice)
+                dm_weight = 1.0 / self._exposure_integral[dm].integral_fixed_vals[0]
+                print(dm_weight)
+
+                decs = self.events.coords[dm.S == self.events.types].dec.to_value(u.rad)
+                sindecs = np.sin(decs)
+                ereco = np.log10(
+                    self.events.energies[dm.S == self.events.types].to_value(u.GeV)
+                )
+                prob_omega = self.sources.background._likelihoods[dm].prob_omega(
+                    sindecs
+                )
+                prob_ereco = self.sources.background._likelihoods[
+                    dm
+                ].prob_ereco_given_omega(ereco, sindecs)
+
+                # normalisation of flat logx distribution
+                norm = 1 / (np.log(fit_inputs["Emax"] / fit_inputs["Emin"]))
+
+                fit_inputs["bg_llh"][dm.S == self.events.types] = np.log(
+                    prob_omega
+                    * prob_ereco
+                    * dm_weight
+                    * ev_weight
+                    / self._observation_time[event_type].to_value(u.s)
+                    * norm
+                )
+
+                # TODO also add nu energy flat distribution here?
+            # Insert likelihood evaluated at each event
+            # insert precomputed "exposure" (in this case normalisation for used ROI x Energy range)
+            # weights of N_det_i / (sum of all selected events) i being each detector configuration
+            pass
+
         # use the Eres slices for each event as data input
         # evaluate the splines at eadch event's reco energy
         # make this a loop over the IRFs

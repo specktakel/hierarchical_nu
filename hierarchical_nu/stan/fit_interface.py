@@ -70,6 +70,7 @@ class StanFitInterface(StanInterface):
         nshards: int = 1,
         use_event_tag: bool = False,
         debug: bool = False,
+        bg: bool = False,
     ):
         """
         An interface for generating Stan fit code.
@@ -85,6 +86,7 @@ class StanFitInterface(StanInterface):
         :param nshards: Number of shards for multithreading, defaults to zero
         :param use_event_tag: if True, only consider the closest PS for each event
         :param debug: if True, add function calls for debugging and tests
+        :param bg: if True, use data to construct background likelihood
         """
 
         super().__init__(
@@ -121,6 +123,7 @@ class StanFitInterface(StanInterface):
         self._nshards = nshards
         self._use_event_tag = use_event_tag
         self._debug = debug
+        self._bg = bg
 
         n_params = 0
         n_params += 1 if self._fit_index else 0
@@ -156,8 +159,16 @@ class StanFitInterface(StanInterface):
         """
 
         with ForLoopContext(1, self._N, "i") as i:
-            if not self._use_event_tag:
+            if self._bg and not self._use_event_tag:
+                self._lp[i, 1 : self._Ns] << self._logF
+                self._lp[i, self._k_bg] << self._log_N_bg + self._bg_llh[i]  - FunctionCall([self._E[i]], "log")
+
+            elif not self._use_event_tag:
+                # TODO fix this case later for use with data-background llh
                 self._lp[i] << self._logF
+
+            elif self._bg:
+                self._lp[i, 2] << self._log_N_bg + self._bg_llh[i] - FunctionCall([self._E[i]], "log")
 
             for c, event_type in enumerate(self._event_types):
                 if c == 0:
@@ -514,12 +525,21 @@ class StanFitInterface(StanInterface):
                     int_data = StringExpression(["int_data"])
                     real_data = StringExpression(["real_data"])
 
-                    if self._sources.diffuse and self._sources.atmospheric:
+                    if self.sources.diffuse and self.sources.atmospheric:
                         self._Ns_tot = "Ns+2"
-                    elif self._sources.diffuse or self._sources.atmospheric:
+                    elif (
+                        self.sources.diffuse
+                        or self.sources.atmospheric
+                        or self.sources.background
+                    ):
                         self._Ns_tot = "Ns+1"
                     else:
                         self._Ns_tot = "Ns"
+
+                    if self._bg:
+                        self._Ns_tot_flux = "Ns"
+                    else:
+                        self._Ns_tot_flux = self._Ns_tot
 
                     start = InstantVariableDef("start", "int", [1])
                     end = InstantVariableDef("end", "int", [0])
@@ -556,11 +576,15 @@ class StanFitInterface(StanInterface):
                         self._diff_index = ForwardVariableDef("diff_index", "real")
                         self._diff_index << glob[start]
                         start << start + 1
-                    end << end + self._Ns_tot
+                    end << end + self._Ns_tot_flux
                     self._logF = ForwardVariableDef(
-                        "logF", "vector[" + self._Ns_tot + "]"
+                        "logF", "vector[" + self._Ns_tot_flux + "]"
                     )
                     self._logF << glob[start:end]
+                    if self._bg:
+                        start << start + self._Ns_tot_flux
+                        self._log_N_bg = ForwardVariableDef("log_N_bg", "real")
+                        self._log_N_bg << glob[start]
 
                     # Local pars are only neutrino energies
                     self._E = ForwardVariableDef("E", "vector[N]")
@@ -606,9 +630,7 @@ class StanFitInterface(StanInterface):
                     end << self._N
 
                     self._Edet = ForwardVariableDef("Edet", "vector[N]")
-                    self._Edet << FunctionCall(
-                        [real_data[start:end]], "to_vector"
-                    )
+                    self._Edet << FunctionCall([real_data[start:end]], "to_vector")
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
                     grid_size = R2021EnergyResolution._log_tE_grid.size
@@ -629,6 +651,14 @@ class StanFitInterface(StanInterface):
                         )
                         start << start + 3
 
+                    if self._bg:
+                        end << end + self._N
+                        self._bg_llh = ForwardVariableDef("bg_llh", "vector[N]")
+                        self._bg_llh << FunctionCall(
+                            [real_data[start:end]], "to_vector"
+                        )
+                        start << start + self._N
+
                     self._varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
                     # Loop over sources to unpack source direction (for point sources only)
                     with ForLoopContext(1, self._Ns, "i") as i:
@@ -641,16 +671,12 @@ class StanFitInterface(StanInterface):
                     if self.sources.diffuse:
                         end << end + self._Ns + 1
                         self._z = ForwardVariableDef("z", "vector[Ns+1]")
-                        self._z << FunctionCall(
-                            [real_data[start:end]], "to_vector"
-                        )
+                        self._z << FunctionCall([real_data[start:end]], "to_vector")
                         start << start + self._Ns + 1
                     else:
                         end << end + self._Ns
                         self._z = ForwardVariableDef("z", "vector[Ns]")
-                        self._z << FunctionCall(
-                            [real_data[start:end]], "to_vector"
-                        )
+                        self._z << FunctionCall([real_data[start:end]], "to_vector")
                         start << start + self._Ns
 
                     if self.sources.atmospheric:
@@ -658,9 +684,7 @@ class StanFitInterface(StanInterface):
                             "atmo_integrated_flux", "real"
                         )
                         end << end + 1
-                        (
-                            self._atmo_integrated_flux << real_data[start]
-                        )
+                        (self._atmo_integrated_flux << real_data[start])
                         start << start + 1
 
                     if self.sources.point_source:
@@ -765,6 +789,9 @@ class StanFitInterface(StanInterface):
                     elif self.sources.atmospheric:
                         self._k_atmo = "Ns + 1"
 
+                    elif self.sources.background:
+                        self._k_bg = "Ns + 1"
+
                     self._model_likelihood()
                     results = ForwardArrayDef("results", "real", ["[N]"])
                     with ForLoopContext(1, self._N, "i") as i:
@@ -821,6 +848,9 @@ class StanFitInterface(StanInterface):
 
             # Uncertainty on the event's angular reconstruction
             self._kappa = ForwardVariableDef("kappa", "vector[N]")
+
+            if self._bg:
+                self._bg_llh = ForwardVariableDef("bg_llh", "vector[N]")
 
             # Event tags
             if self._use_event_tag:
@@ -1146,6 +1176,8 @@ class StanFitInterface(StanInterface):
                 sd_events_J = (
                     4 + grid_size
                 )  # reco energy, reco dir (unit vector), eres grid
+                if self._bg:
+                    sd_events_J += 1  # one bg llh entry per event
                 sd_if_diff = 3  # redshift of diffuse component, Emin_diff/max
                 sd_Ns = 6  # redshift, Emin_src, Emax_src, x, y, z per point source
                 sd_other = 2  # Emin, Emax
@@ -1226,6 +1258,13 @@ class StanFitInterface(StanInterface):
                             [self._omega_det[f]], "to_array_1d"
                         )
                         insert_start << insert_start + 3
+
+                    if self._bg:
+                        insert_end << insert_end + insert_len
+                        self.real_data[i, insert_start:insert_end] << FunctionCall(
+                            [self._bg_llh[start:end]], "to_array_1d"
+                        )
+                        insert_start << insert_start + insert_len
 
                     with ForLoopContext(1, self._Ns, "f") as f:
                         insert_end << insert_end + 3
@@ -1417,6 +1456,13 @@ class StanFitInterface(StanInterface):
                     "F_atmo", "real", self._F_atmo_min, self._F_atmo_max
                 )
 
+            if self._bg:
+                self._N_bg = ParameterDef(
+                    "N_bg",
+                    "real",
+                    0,
+                )
+
             # Vector of latent true neutrino energy for each event
             self._E = ParameterVectorDef(
                 "E", "vector", self._N_str, self._Emin_at_det, self._Emax_at_det
@@ -1494,6 +1540,10 @@ class StanFitInterface(StanInterface):
                     "Nex_diff_comp", "real", ["[", self._Net, "]"]
                 )
 
+            if self.sources.background:
+                self._log_N_bg = ForwardVariableDef("log_N_bg", "real")
+                self._log_N_bg << FunctionCall([self._N_bg], "log")
+
             # Total flux
             self._Ftot = ForwardVariableDef("Ftot", "real")
 
@@ -1535,15 +1585,27 @@ class StanFitInterface(StanInterface):
                 n_comps_max = "Ns+1"
 
             else:
+                # Even if background likelihood is used, only point sources may have a flux
                 self._F = ForwardVariableDef("F", "vector[Ns]")
                 self._logF = ForwardVariableDef("logF", "vector[Ns]")
 
                 if self._nshards in [0, 1]:
                     if self._use_event_tag:
-                        self._lp = ForwardArrayDef("lp", "vector[1]", self._N_str)
+                        if self._bg:
+                            # for PS + background use one entry for all PS and one for background
+                            self._lp = ForwardArrayDef("lp", "vector[2]", self._N_str)
+                        else:
+                            self._lp = ForwardArrayDef("lp", "vector[1]", self._N_str)
                     else:
-                        self._lp = ForwardArrayDef("lp", "vector[Ns]", self._N_str)
+                        if self._bg:
+                            # for PS + background Ns entries for PSs and one for background
+                            self._lp = ForwardArrayDef(
+                                "lp", "vector[Ns+1]", self._N_str
+                            )
+                        else:
+                            self._lp = ForwardArrayDef("lp", "vector[Ns]", self._N_str)
 
+                # No exposure for background likelihood
                 n_comps_max = "Ns"
 
             self._eps = ForwardArrayDef(
@@ -1572,7 +1634,8 @@ class StanFitInterface(StanInterface):
                     num_of_pars += " + 2"
                 if self.sources.atmospheric:
                     num_of_pars += " + 1"
-
+                if self.sources.background:
+                    num_of_pars += " + 1"
                 self._global_pars = ForwardVariableDef(
                     "global_pars", f"vector[{num_of_pars}]"
                 )
@@ -1846,7 +1909,10 @@ class StanFitInterface(StanInterface):
             if self.sources.atmospheric:
                 self._Nex_atmo << FunctionCall([self._Nex_atmo_comp], "sum")
 
-            self._Nex << FunctionCall([self._Nex_comp], "sum")
+            if self._bg:
+                self._Nex << FunctionCall([self._Nex_comp], "sum") + self._N_bg
+            else:
+                self._Nex << FunctionCall([self._Nex_comp], "sum")
 
             # Evaluate the different fractional associations as derived parameters
             if self.sources.diffuse and self.sources.atmospheric:
@@ -1885,6 +1951,9 @@ class StanFitInterface(StanInterface):
             elif self.sources.atmospheric:
                 self._k_atmo = "Ns + 1"
 
+            elif self.sources.background:
+                self._k_bg = "Ns + 1"
+
             # Evaluate logF, packup global parameters
             self._logF << StringExpression(["log(", self._F, ")"])
 
@@ -1911,6 +1980,9 @@ class StanFitInterface(StanInterface):
                         start << start + 1
                     end << end + StringExpression(["size(logF)"])
                     self._global_pars[start:end] << self._logF
+                    if self._bg:
+                        start << start + 1
+                        self._global_pars[start] << self._log_N_bg
                     # Likelihood is evaluated in `lp_reduce`
 
             else:
@@ -2233,7 +2305,7 @@ class StanFitInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
-            self._log_lik = ForwardArrayDef("log_lik", "real", ["[N]"])
+            # self._log_lik = ForwardArrayDef("log_lik", "real", ["[N]"])
             if self._pgamma:
                 self._E_peak = ForwardArrayDef("E_peak", "real", ["[Ns]"])
                 self._peak_flux = ForwardArrayDef("peak_energy_flux", "real", ["[Ns]"])
