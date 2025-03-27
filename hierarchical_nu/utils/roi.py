@@ -139,6 +139,14 @@ class ROIList:
 
         return dec_max
 
+    @staticmethod
+    def MJD_min():
+        return min([_.MJD_min for _ in ROIList.STACK])
+    
+    @staticmethod
+    def MJD_max():
+        return max([_.MJD_max for _ in ROIList.STACK])
+
     def __repr__(self):
         return "\n".join([roi.__repr__() for roi in ROIList.STACK])
 

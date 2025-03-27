@@ -55,6 +55,8 @@ from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.git import git_hash
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.utils.config_parser import ConfigParser
+from hierarchical_nu.utils.lifetime import LifeTime
+from hierarchical_nu.utils.roi import ROIList
 
 from omegaconf import OmegaConf
 
@@ -2123,10 +2125,28 @@ class StanFit:
             # ev_weight = []
             # dm_weight = []
 
+            time = LifeTime()
             for dm in self._event_types:
+                lifetime = time.lifetime_from_dm(dm)[dm].to_value(u.s)
+                dm_mjd_min, dm_mjd_max = time.mjd_from_dm(dm)
+
+                # get number of events per detector config over the respective detector lifetime in that config
+                N = 0
+                for roi in ROIList.STACK:
+                    mjd_min, mjd_max = roi.MJD_min, roi.MJD_max
+
+                    roi._MJD_min = dm_mjd_min
+                    roi._MJD_max = dm_mjd_max
+
+                    N += Events.from_ev_file(dm).N
+
+                    roi._MJD_min = mjd_min
+                    roi._MJD_max = mjd_max
+
+                # find total_events from the lifetime in the detector config
                 # gather event numbers per dm
                 # should be a factor for each bg llh value
-                ev_weight = np.sqrt(np.sum(self.events.types == dm.S))
+                ev_weight = np.sqrt(N)
                 print(ev_weight)
 
                 # inverse factor i.e. divisor for each bg llh value
@@ -2154,7 +2174,7 @@ class StanFit:
                     * prob_ereco
                     * dm_weight
                     * ev_weight
-                    / self._observation_time[event_type].to_value(u.s)
+                    / lifetime
                     * norm
                 )
 
