@@ -419,13 +419,20 @@ class Events:
 
     @classmethod
     def from_ev_file(
-        cls, *seasons: EventType, scramble_ra: bool = False, seed: int = 42
+        cls,
+        *seasons: EventType,
+        scramble_ra: bool = False,
+        seed: int = 42,
+        apply_roi: bool = True,
+        apply_Emin_det: bool = True
     ):
         """
         Load events from the 2021 data release
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
         :param scramble_ra: Set to true if RA should be randomised
         :param seed: int, random seed for RA scrambling
+        :param apply_roi: if True, apply ROI cuts
+        :param apply_Emin_det if True, apply Emin_det cuts
         :return: :class:`hierarchical_nu.events.Events`
         """
 
@@ -439,20 +446,22 @@ class Events:
         try:
             _Emin_det = Parameter.get_parameter("Emin_det").value.to_value(u.GeV)
             events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=True)
-            events.restrict(ereco_low=_Emin_det)
+            if apply_Emin_det:
+                events.restrict(ereco_low=_Emin_det)
         except ValueError:
             events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=True)
             # Create a dict of masks for each season
-            mask = {}
-            for s in seasons:
-                try:
-                    _Emin_det = Parameter.get_parameter(
-                        f"Emin_det_{s.P}"
-                    ).value.to_value(u.GeV)
-                    mask[s.P] = events.reco_energy[s.P] >= _Emin_det
-                except ValueError:
-                    raise ValueError("Emin_det not defined for all seasons.")
-            events.mask = mask
+            if apply_roi:
+                mask = {}
+                for s in seasons:
+                    try:
+                        _Emin_det = Parameter.get_parameter(
+                            f"Emin_det_{s.P}"
+                        ).value.to_value(u.GeV)
+                        mask[s.P] = events.reco_energy[s.P] >= _Emin_det
+                    except ValueError:
+                        raise ValueError("Emin_det not defined for all seasons.")
+                events.mask = mask
 
         ra = np.hstack([events.ra[s.P] * u.rad for s in seasons])
         if scramble_ra:
@@ -470,9 +479,12 @@ class Events:
 
         mjd = Time(mjd, format="mjd")
 
-        mask = cls.apply_ROIS(coords, mjd)
+        if apply_roi:
+            mask = cls.apply_ROIS(coords, mjd)
 
-        idxs = np.logical_or.reduce(mask)
+            idxs = np.logical_or.reduce(mask)
+        else:
+            idxs = np.ones(ang_err.size, dtype=bool)
 
         events = cls(
             reco_energy[idxs], coords[idxs], types[idxs], ang_err[idxs], mjd[idxs]
