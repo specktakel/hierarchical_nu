@@ -114,6 +114,8 @@ class StanFit:
             )
         self._event_types = event_types
         self._events = events
+        if not isinstance(observation_time, dict):
+            observation_time = {dm: observation_time}
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
         self._nshards = nshards
@@ -2127,62 +2129,70 @@ class StanFit:
 
             time = LifeTime()
             for dm in self._event_types:
-                lifetime = time.lifetime_from_dm(dm)[dm].to_value(u.s)
+
                 dm_mjd_min, dm_mjd_max = time.mjd_from_dm(dm)
 
                 # get number of events per detector config over the respective detector lifetime in that config
                 N = 0
+                N_dm = np.sum(self.events.types == dm.S)
+                print(N_dm)
                 for roi in ROIList.STACK:
                     mjd_min, mjd_max = roi.MJD_min, roi.MJD_max
 
                     roi._MJD_min = dm_mjd_min
                     roi._MJD_max = dm_mjd_max
 
-                    N += Events.from_ev_file(dm).N
+                    N += Events.from_ev_file(dm, apply_roi=False).N
 
                     roi._MJD_min = mjd_min
                     roi._MJD_max = mjd_max
+                print(N)
+                
+                print("from events:", N_dm / N)
+
+
+                # omit divisor, would have to be accounted for later in the actual event pdf, and would thus cancel out
+                time_ratio = self._observation_time[dm].to_value(u.s) / time.lifetime_from_dm(dm)[dm].to_value(u.s)
 
                 # find total_events from the lifetime in the detector config
                 # gather event numbers per dm
                 # should be a factor for each bg llh value
-                ev_weight = np.sqrt(N)
-                print(ev_weight)
+                #ev_weight = np.sqrt(N)
+                #print(ev_weight)
 
                 # inverse factor i.e. divisor for each bg llh value
                 # TODO check if inverse is correct (theoretically yes but if done twice)
-                dm_weight = 1.0 / self._exposure_integral[dm].integral_fixed_vals[0]
+                dm_weight = self._exposure_integral[dm].integral_fixed_vals[0]
                 print(dm_weight)
+                print(time_ratio)
+                # inverse_norm = time_ratio * dm_weight
+                inverse_norm = N_dm / N
 
                 decs = self.events.coords[dm.S == self.events.types].dec.to_value(u.rad)
                 sindecs = np.sin(decs)
                 ereco = np.log10(
                     self.events.energies[dm.S == self.events.types].to_value(u.GeV)
                 )
-                prob_omega = self.sources.background._likelihoods[dm].prob_omega(
-                    sindecs
-                )
-                prob_ereco = self.sources.background._likelihoods[
+                prob_ereco_and_omega = self.sources.background._likelihoods[
                     dm
-                ].prob_ereco_given_omega(ereco, sindecs)
+                ].prob_ereco_and_omega(ereco, sindecs)
 
                 # normalisation of flat logx distribution
-                norm = 1 / (np.log(fit_inputs["Emax"] / fit_inputs["Emin"]))
+                E_true_norm = 1 / (np.log(fit_inputs["Emax"] / fit_inputs["Emin"]))
 
                 fit_inputs["bg_llh"][dm.S == self.events.types] = np.log(
-                    prob_omega
-                    * prob_ereco
-                    * dm_weight
-                    * ev_weight
-                    / lifetime
-                    * norm
+                    prob_ereco_and_omega
+                    / time.lifetime_from_dm(dm)[dm].to_value(u.s)  # first three terms are proper pdf in Edet, dirdet and time
+                    * E_true_norm   # accounts for E_nu integral, with a flat log(E) distribution
+                    / inverse_norm
                 )
+
+                #print("from integration:", inverse_norm)
 
                 # TODO also add nu energy flat distribution here?
             # Insert likelihood evaluated at each event
             # insert precomputed "exposure" (in this case normalisation for used ROI x Energy range)
             # weights of N_det_i / (sum of all selected events) i being each detector configuration
-            pass
 
         # use the Eres slices for each event as data input
         # evaluate the splines at eadch event's reco energy

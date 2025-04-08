@@ -299,6 +299,9 @@ class ConfigParser:
 
             sources.add(point_source)
 
+        if (parameter_config.diffuse or parameter_config.diffuse) and parameter_config.data_bg:
+            raise ValueError("Cannot combine physical background model with data-driven background model.")
+
         if parameter_config.diffuse:
             sources.add_diffuse_component(
                 diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff, 0.0
@@ -310,6 +313,9 @@ class ConfigParser:
             sources.add_atmospheric_component(cache_dir=mceq)
             F_atmo = Parameter.get_parameter("F_atmo")
             F_atmo.par_range = parameter_config.F_atmo_range * (1 / u.m**2 / u.s)
+
+        if parameter_config.data_bg:
+            sources.add_background(*self.detector_model)
 
         self._sources = sources
 

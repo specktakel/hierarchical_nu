@@ -100,6 +100,7 @@ class ParameterConfig:
     # Background components
     atmospheric: bool = True
     diffuse: bool = True
+    data_bg: bool = False   # Use this for data-driven background likelihood
 
     # Asimov data - fix simulated event numbers to nearest integer of expected number
     asimov: bool = False

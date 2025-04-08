@@ -22,7 +22,12 @@ from hierarchical_nu.utils.plotting import SphericalCircle
 
 from hierarchical_nu.detector.icecube import EventType, NT, CAS
 from hierarchical_nu.precomputation import ExposureIntegral
-from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
+from hierarchical_nu.source.source import (
+    Sources,
+    PointSource,
+    icrs_to_uv,
+    BackgroundSource,
+)
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import (
     IsotropicDiffuseBG,
@@ -77,8 +82,8 @@ class Simulation:
         self._sources = sources
         if not isinstance(event_types, list):
             event_types = [event_types]
-        if isinstance(observation_time, u.quantity.Quantity):
-            observation_time = {event_types[0]: observation_time}
+        if not isinstance(observation_time, dict):
+            observation_time = {dm: observation_time}
         if not len(event_types) == len(observation_time):
             raise ValueError(
                 "number of observation times must match number of event types"
@@ -89,6 +94,10 @@ class Simulation:
         self._asimov = asimov
 
         self._sources.organise()
+
+        self._bg = False
+        if self._sources.background:
+            self._bg = True
 
         self._exposure_integral = collections.OrderedDict()
 
@@ -219,11 +228,16 @@ class Simulation:
 
         if not exposure_integral:
             for event_type in self._event_types:
+                if self._bg:
+                    llh = self._sources.background._likelihoods[event_type]
+                else:
+                    llh = None
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
                     event_type,
                     self._n_grid_points,
                     show_progress=show_progress,
+                    bg_llh=llh,
                 )
 
         else:
@@ -849,6 +863,8 @@ class Simulation:
             for c_s in range(self._sources.N):
                 # Do not normalise, the target is not normalised either and
                 # that is what we want to approximate
+                if isinstance(self._sources[c_s], BackgroundSource):
+                    break
                 norms = container[c_s].low_values
                 rs_norms[-1].append(norms.tolist())
                 rs_breaks[-1].append(container[c_s].bins.tolist())
@@ -885,6 +901,8 @@ class Simulation:
         rs_N_max = np.max(rs_N)
         for c, et in enumerate(self._event_types):
             for c_s in range(self._sources.N):
+                if isinstance(self._sources[c_s], BackgroundSource):
+                    break
                 # breaks has length rs_N_max + 1
                 while len(rs_breaks[c][c_s]) < rs_N_max + 1:
                     rs_breaks[c][c_s].append(0)
@@ -981,6 +999,18 @@ class Simulation:
         }
 
         return sim_inputs
+
+
+    @property
+    def expected_Nnu(self):
+        return self._get_expected_Nnu(self._get_sim_inputs())
+    
+
+    @property
+    def Nex_et(self):
+        self._get_expected_Nnu_(self._get_sim_inputs());
+        return self._Nex_et
+
 
     def _get_expected_Nnu(self, sim_inputs):
         """

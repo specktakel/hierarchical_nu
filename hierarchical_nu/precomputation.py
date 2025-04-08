@@ -17,6 +17,7 @@ from .source.source import (
     Sources,
     PointSource,
     icrs_to_uv,
+    BackgroundSource,
 )
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.flux_model import PGammaSpectrum
@@ -64,7 +65,7 @@ class ExposureIntegral:
         :param detector_model: An instance of EventType from the Refrigerator.
         :param n_grid_points: number of grid points for each parameter at which exposure is calculated.
         :param show_progress: set to True if progress bars should be displayed.
-        :param use_data_as_backgrtound: set to True to use skyllh-like background model
+        :param bg_llh: If data-driven background likelihood is to be used, pass according instance of `R2021BackgroundLLH`, else `None`
         """
 
         self._show_progress = show_progress
@@ -239,7 +240,7 @@ class ExposureIntegral:
                 raise ValueError("An ROI is needed at this point.")
 
             # Setup coordinate grids at which to evaulate effective area and flux
-            NSIDE = 128
+            NSIDE = 256
             NPIX = hp.nside2npix(NSIDE)
             # Surface element
             d_omega = 4 * np.pi / NPIX * u.sr
@@ -307,7 +308,7 @@ class ExposureIntegral:
                             np.log10(self._min_det_energy.to_value(u.GeV)),
                             12.0,  # just some arbitrary but high enough value
                         )
-                        * llh.prob_omega(np.sin(d))
+                        * llh.prob_omega(np.sin(d.to_value(u.rad)))
                         * c
                         * d_omega.to_value(u.sr)
                     )
@@ -471,6 +472,8 @@ class ExposureIntegral:
         envelope_container = []
 
         for source in self._sources.sources:
+            if isinstance(source, BackgroundSource):
+                continue
             # Energy bounds in flux model are already redshift-corrected
             # and live in the detector frame
 
@@ -554,7 +557,7 @@ class ExposureIntegral:
 
         self._slice_aeff_for_point_sources()
 
-        # self._compute_c_values()
+        self._compute_c_values()
 
 
 '''
