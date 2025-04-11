@@ -2,8 +2,14 @@ import tempfile
 import yaml
 from pathlib import Path
 from omegaconf import OmegaConf
+import pytest
 
 from hierarchical_nu.utils.config import HierarchicalNuConfig
+from hierarchical_nu.utils.config_parser import ConfigParser
+from astropy.units.core import UnitConversionError
+from astropy import units as u
+
+u.imperial.enable()
 
 
 def test_default_configuration():
@@ -55,3 +61,18 @@ def test_user_config_merge():
     assert hnu_config["parameter_config"]["src_index"][0] == 2.6
 
     assert hnu_config["parameter_config"]["L"][0] == "1e47 GeV s-1"
+
+
+def test_wrong_unit():
+    """
+    Test that exceptions are raised when loading configs with erroneous units
+    """
+
+    hnu_config = HierarchicalNuConfig.load_default()
+    hnu_config.parameter_config.L[0] = "1e47 GeV"
+    hnu_config.prior_config.src_index.mu = "2.2 fur Ry"
+    parser = ConfigParser(hnu_config)
+    with pytest.raises(UnitConversionError):
+        sources = parser.sources
+    with pytest.raises(UnitConversionError):
+        priors = parser.priors
