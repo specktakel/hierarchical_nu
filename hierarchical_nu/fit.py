@@ -2226,20 +2226,6 @@ class StanFit:
         fit_inputs["atmo_integ_val"] = atmo_integ_val
         fit_inputs["T"] = obs_time
         # To work with cmdstanpy serialization
-        temp = {}
-        """
-        for k, v in fit_inputs.items():
-            if not isinstance(v, np.ndarray):
-                temp[k] = v
-                continue
-
-            try:
-                temp[k] = v.tolist()
-            except NotImplementedError:
-                # Catch making a list of quantities, why would there even be quantities in here?
-                print(k, v)
-                temp[k] = v.value.tolist()
-        """
         fit_inputs = {
             k: v if not isinstance(v, np.ndarray) else v.tolist()
             for k, v in fit_inputs.items()
