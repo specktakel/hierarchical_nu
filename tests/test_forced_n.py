@@ -4,7 +4,7 @@ from astropy import units as u
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 
-from hierarchical_nu.detector.icecube import Refrigerator, IC86_I, IC86_II
+from hierarchical_nu.detector.icecube import IC86_I, IC86_II
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
 

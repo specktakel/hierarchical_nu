@@ -298,6 +298,7 @@ class TruncatedParameterization(Expression):
 class SimpleHistogram_rng(UserDefinedFunction):
     """
     Callable histogram rng
+    Function signature is bin counts and bin edges.
     """
 
     def __init__(
@@ -465,14 +466,16 @@ class SimpleHistogram(UserDefinedFunction):
 class TwoDimHistInterpolation(UserDefinedFunction):
     """
     2D Histogram that interpolates the returned value along the first axis
+    Used for interpolating effective areas. Assumes linear energy as first axis
+    and takes log of energy for interpolation.
     """
 
     def __init__(
         self, histogram: np.ndarray, binedges: Sequence[np.ndarray], name: str
     ):
 
-        # self._dim = len(binedges)
-        assert histogram.ndim == 2
+        if not histogram.ndim == 2:
+            raise ValueError("Only two dimensional histograms can be interpolated")
         self._dim = 2
 
         val_names = ["value_{}".format(i) for i in range(self._dim)]

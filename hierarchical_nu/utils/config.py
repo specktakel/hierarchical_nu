@@ -118,7 +118,8 @@ class StanConfig:
     chains: int = 1
     iterations: int = 1000
     iter_warmup: int = 1000
-    adapt_delta: float = 0.8
+    adapt_delta: float = 0.8  # Default of cdmstanpy
+    max_treedepth: int = 10  # Default of cmdstanpy
     seed: int = 42
 
 
@@ -181,6 +182,10 @@ class ROIConfig:
 
     DEC_min: float = -91.0
     DEC_max: float = 91.0
+
+    # If RA, DEC take default values, they will be overridden by the source selections
+    RA: float = -1.0
+    DEC: float = -91.0
 
 
 @dataclass

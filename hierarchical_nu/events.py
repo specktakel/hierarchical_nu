@@ -39,6 +39,45 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+class SingleEvent:
+
+    @u.quantity_input
+    def __init__(
+        self,
+        energy: u.GeV,
+        coord: SkyCoord,
+        type,
+        ang_err: u.deg,
+        mjd: Time,
+    ):
+
+        self._energy = energy
+        self._mjd = np.atleast_1d(mjd)
+        coord.representation_type = "spherical"
+        self._coord = coord
+        coord.representation_type = "cartesian"
+        self._unit_vector = np.array([coord.x.value, coord.y.value, coord.z.value]).T
+        self._coord.representation_type = "spherical"
+        self._type = type
+        self._ang_errs = ang_err
+
+    @property
+    def energy(self):
+        return self._energy
+
+    @property
+    def ang_err(self):
+        return self._ang_errs
+
+    @property
+    def coord(self):
+        return self._coord
+
+    @property
+    def mjd(self):
+        return self._mjd
+
+
 class Events:
     """
     Events class for the storage of event observables
@@ -55,6 +94,11 @@ class Events:
     ):
         """
         Events class for the storage of event observables
+        :param energies: Energies of events
+        :param coords: Coords of events, instance of SkyCoord
+        :param types: event types, e.g IC40
+        :param ang_errs: angular uncertainties
+        :param mjd: Arrival times of events in MJD
         """
 
         self._recognised_types = [_.S for _ in Refrigerator.detectors]
@@ -95,6 +139,10 @@ class Events:
 
     @property
     def N(self):
+        """
+        Returns number of events
+        """
+
         try:
             return self.types.size
         except AttributeError:
@@ -142,11 +190,23 @@ class Events:
 
     @property
     def kappas(self):
+        # TODO check conversion for correct p
+        # currently not used, could also be removed?
         return get_kappa(self._ang_errs.to_value(u.deg), p=0.683)
 
     @property
     def mjd(self):
         return self._mjd
+
+    def __getitem__(self, i):
+        event = SingleEvent(
+            self.energies[i],
+            self.coords[i],
+            self.types[i],
+            self.ang_errs[i],
+            self.mjd[i],
+        )
+        return event
 
     @classmethod
     def from_file(
@@ -261,6 +321,14 @@ class Events:
     def to_file(
         self, path: Path, append: bool = False, group_name=None, overwrite: bool = False
     ):
+        """
+        Save events to h5 file
+        :param path: Path at which to save events
+        :param append: Set to True if path already exists and events should be appended
+        :param group_name: If append, group name of events
+        :param overwrite: Set to True if existing files at path should be overwritten
+        """
+
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]
         self._file_values = [
             self.energies.to(u.GeV).value,
@@ -312,6 +380,11 @@ class Events:
         return path
 
     def export_to_csv(self, basepath):
+        """
+        Create new csv files with similar formatting to 10 year point source data
+        :param basepath: Directory in which to save the .csv files
+        """
+
         header = "log10(E/GeV)\tAngErr[deg]\tRA[deg]\tDec[deg]"
         energy = np.log10(self.energies.to_value(u.GeV))
         ang_errs = self.ang_errs.to_value(u.deg)
@@ -351,6 +424,8 @@ class Events:
         """
         Load events from the 2021 data release
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
+        :param scramble_ra: Set to true if RA should be randomised
+        :param seed: int, random seed for RA scrambling
         :return: :class:`hierarchical_nu.events.Events`
         """
 
@@ -413,6 +488,7 @@ class Events:
         """
         Merge events with a different instance of `Events`.
         Returns newly created instance.
+        :param events: Instance of Events to merge with
         """
 
         self.coords.representation_type = "spherical"
@@ -434,6 +510,14 @@ class Events:
         radius: u.deg = 3 * u.deg,
         lw: float = 1.0,
     ):
+        """
+        Plot events as coloured circles. Size corresponds to angular uncertainty,
+        colour to energy on a logarithmic scale
+        :param position: SkyCoord or PointSource instance to focus sky projection on
+        :param radius: Radius of sky region to plot
+        :param lw: line width of circles
+        """
+
         if isinstance(position, PointSource):
             center_coords = SkyCoord(ra=position.ra, dec=position.dec, frame="icrs")
         elif isinstance(position, SkyCoord):
@@ -501,9 +585,10 @@ class Events:
         Plot histogram of radial distance to a source located at center.
         Bin edges are equdistant in angle squared such that equal areas in polar coordinates
         (assuming Euclidian space for small angles) are covered by each bin.
-        :param center: SkyCoord of center
+        :param position: SkyCoord of center or PointSource instance
         :param radius: Max radius of histogram
         """
+
         if isinstance(position, PointSource):
             center_coords = SkyCoord(ra=position.ra, dec=position.dec, frame="icrs")
         elif isinstance(position, SkyCoord):

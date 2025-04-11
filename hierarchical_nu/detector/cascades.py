@@ -50,6 +50,7 @@ class CascadesEffectiveArea(EffectiveArea):
     NAME = "CascadesEffectiveArea"
 
     def __init__(self) -> None:
+        logger.warning("Cascades detector model is no longer maintained")
         self._func_name = self.NAME
         self.setup()
 
@@ -140,6 +141,7 @@ class CascadesEnergyResolution(LogNormEnergyResolution):
         are then fit with a polynomial for fast interpolation and evaluation.
         """
 
+        logger.warning("Cascades detector model is no longer maintained")
         self.mode = mode
 
         # Parameters of polynomials for lognormal mu and sd
@@ -348,6 +350,7 @@ class CascadesAngularResolution(AngularResolution):
     RNG_NAME = "CascadesAngularResolution_rng"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF) -> None:
+        logger.warning("Cascades detector model is no longer maintained")
         self.mode = mode
         self._kappa_grid: np.ndarray = None
         self._Egrid: np.ndarray = None
@@ -482,6 +485,7 @@ class CascadesDetectorModel(DetectorModel):
     PDF_FILENAME = "cascades_pdf.stan"
 
     def __init__(self, mode: DistributionMode = DistributionMode.PDF):
+        logger.warning("Cascades detector model is no longer maintained")
         super().__init__(mode, event_type="cascades")
 
         if self.mode == DistributionMode.PDF:

@@ -610,7 +610,7 @@ class StanSimInterface(StanInterface):
             self._pre_event = ForwardVectorDef("pre_event", [5])
 
             # Variables for rejection sampling
-            # Rejection sampling is based on a broken power law envelope,
+            # Rejection sampling is based on a (many times) broken power law envelope,
             # and then the true source spectrum x effective area is sampled.
             # The tail of the envelope must not be steeper than that of the true
             # distribution. See e.g. https://bookdown.org/rdpeng/advstatcomp/rejection-sampling.html
@@ -978,25 +978,6 @@ class StanSimInterface(StanInterface):
                                     self._event[i] << self._omega
                                 self._kappa[i] << self._pre_event[5]
                                 self._detected << 1
-                                """
-                                if isinstance(ROIList.STACK[0], CircularROI):
-                                    with ForLoopContext(1, self._n_roi, "n") as n:
-                                        with IfBlockContext(
-                                            [
-                                                "ang_sep(event[i], roi_center[",
-                                                n,
-                                                "]) <= roi_radius[n]",
-                                            ]
-                                        ):
-                                            self._detected << 1
-                                            StringExpression(["break"])
-                                else:
-                                    self._detected << 1
-                                """
-
-                                # Insert condition for the sample to be inside the ROI,
-                                # should also apply to the rectangular ROI as events
-                                # can be recontructed outside at large ang err
 
                             with ElseBlockContext():
                                 self._detected << 0

@@ -1856,12 +1856,13 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
     _logEreco_grid_edges = _logEreco_grid_edges = np.arange(1.045, 9.01, 0.01)
     _logEreco_grid = _logEreco_grid_edges[:-1] + np.diff(_logEreco_grid_edges) / 2
 
-    assert np.all(
+    if not np.all(
         np.isclose(
             _logEreco_grid_edges[:-1] + np.diff(_logEreco_grid_edges) / 2,
             _logEreco_grid,
         )
-    )
+    ):
+        raise ValueError("Why did I implement this?")
 
     _log_tE_grid = np.linspace(2.0, 9.0, 100)
 

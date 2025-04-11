@@ -51,6 +51,10 @@ logger.setLevel(logging.DEBUG)
 
 
 class _AtmosphericNuMuFluxStan(UserDefinedFunction):
+    """
+    Stan interface of atmospheric muon neutrino spectrum
+    """
+
     def __init__(
         self,
         splined_flux,
@@ -161,6 +165,10 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
 
 
 class AtmosphericNuMuFlux(FluxModel):
+    """
+    Python interface of atmospheric muon neutrino spectrum
+    """
+
     CACHE_FNAME = "mceq_flux.pickle"
     EMAX = 1e9 * u.GeV
     EMIN = 1 * u.GeV
@@ -168,9 +176,16 @@ class AtmosphericNuMuFlux(FluxModel):
 
     @u.quantity_input
     def __init__(self, lower_energy: u.GeV, upper_energy: u.GeV, **kwargs):
+        """
+        :param lower_energy: lower energy of flux model
+        :param upper_energy: upper energy of flux model
+        :param kwargs: Additional kwargs to modify cache dir
+        """
 
         self.cache_dir = kwargs.pop("cache_dir", ".cache")
         super().__init__()
+        # We can artificially add a powerlaw slope to the spectrum by multiplication
+        # Only for debugging event rates used
         self._add_index = kwargs.pop("index", 0.0)
         self._setup()
         self._parameters = {}
@@ -281,6 +296,11 @@ class AtmosphericNuMuFlux(FluxModel):
         Cache.set_cache_dir(".cache")
 
     def make_stan_function(self, energy_points=100, theta_points=50):
+        """
+        :param energy_points: number of points for interpolation over energy
+        :param theta_points: number of points for interpolation over declination,
+            defined over the entire sky if ROIs are not applied
+        """
         log_energy_grid = np.linspace(
             np.log10(self._lower_energy.to_value(u.GeV)),
             np.log10(self._upper_energy.to_value(u.GeV)),
@@ -296,6 +316,10 @@ class AtmosphericNuMuFlux(FluxModel):
     def __call__(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
     ) -> 1 / (u.GeV * u.s * u.cm**2 * u.sr):
+        """
+        Returns differential flux
+        """
+
         energy = np.atleast_1d(energy)
         if np.any((energy > self.EMAX) | (energy < self.EMIN)):
             raise ValueError(
@@ -341,6 +365,10 @@ class AtmosphericNuMuFlux(FluxModel):
 
     @u.quantity_input
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
+        """
+        Returns differential flux integrated over the sky
+        """
+
         energy = energy.to_value(u.GeV)
 
         def _integral(energy):
@@ -360,6 +388,10 @@ class AtmosphericNuMuFlux(FluxModel):
     def flux_per_dec_band(
         self, energy: u.GeV, dec_min: u.rad, dec_max: u.rad
     ) -> 1 / (u.m**2 * u.s * u.GeV):
+        """
+        Returns differential flux integrated over specificed declination range
+        """
+
         energy = energy.to_value(u.GeV)
 
         def _integral(energy):
@@ -382,6 +414,10 @@ class AtmosphericNuMuFlux(FluxModel):
     @property
     @u.quantity_input
     def total_flux_int(self) -> 1 / (u.m**2 * u.s):
+        """
+        Returns number flux integrated over energy and the entire sky
+        """
+    
         return self.integral(
             *self.energy_bounds,
             (-np.pi / 2) * u.rad,
@@ -412,6 +448,10 @@ class AtmosphericNuMuFlux(FluxModel):
         ra_low: u.rad,
         ra_up: u.rad,
     ) -> 1 / (u.m**2 * u.s):
+        """
+        Returns flux integrated over arbitrary energy and rectangular RA x DEC range
+        """
+
         def _integral(e_low, e_up, dec_low, dec_up, ra_low, ra_up):
             def wrap_call(log_energy, sindec):
                 return self.call_fast(

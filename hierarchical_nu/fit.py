@@ -300,12 +300,26 @@ class StanFit:
             self._exposure_integral = exposure_integral
 
     def generate_stan_code(self):
+        """
+        Generate stan code from scratch
+        """
+
         self._fit_filename = self._stan_interface.generate()
 
     def set_stan_filename(self, fit_filename):
+        """
+        Set filename of existing stan code
+        :param fit_filename: filename of stan code
+        """
+
         self._fit_filename = fit_filename
 
     def compile_stan_code(self, include_paths=None):
+        """
+        Compile stan code
+        :param include_paths: list of paths to include stan files from
+        """
+
         if not include_paths:
             include_paths = [STAN_PATH, STAN_GEN_PATH]
 
@@ -318,6 +332,7 @@ class StanFit:
     def setup_stan_fit(self, filename: Union[str, Path] = ".stan_files/model_code"):
         """
         Create stan model from already compiled file
+        :param filename: Path to compiled model file
         """
 
         self._fit = CmdStanModel(exe_file=filename)
@@ -331,6 +346,15 @@ class StanFit:
         threads_per_chain: Union[int, None] = None,
         **kwargs,
     ):
+        """
+        Run fit
+        :param iterations: int, number of MCMC iterations
+        :param chains: Number of chains to run in parallel
+        :param seed: random seed
+        :param show_progress: Set to True if progress par should be displayed
+        :param threads_per_chain: When set up using nshards > 1, number of threads to run in parallel per chain
+        :param **kwargs: Other kwargs to be passed to cmdstanpy's sampling method
+        """
         # Use threads_per_chain = nshards as default
         if not threads_per_chain and self._nshards > 0:
             threads_per_chain = self._nshards
@@ -348,6 +372,10 @@ class StanFit:
         )
 
     def __getitem__(self, key):
+        """
+        Return samples from chains
+        :param key: Variable name
+        """
         if self._reload:
             return self._fit_output[key]
         else:
@@ -362,6 +390,16 @@ class StanFit:
         include_paths: List[str] = None,
         **kwargs,
     ):
+        """
+        Run setup and perform fit
+        :param iterations: int, number of MCMC iterations
+        :param chains: Number of chains to run in parallel
+        :param seed: random seed
+        :param show_progress: Set to True if progress par should be displayed
+        :param threads_per_chain: When set up using nshards > 1, number of threads to run in parallel per chain
+        :param **kwargs: Other kwargs to be passed to cmdstanpy's sampling method
+        """
+
         self.precomputation()
         self.generate_stan_code()
         self.compile_stan_code(include_paths=include_paths)
@@ -374,6 +412,11 @@ class StanFit:
         )
 
     def get_src_position(self, source_idx: int = 0):
+        """
+        Return source position
+        :param source_idx: Point source index
+        """
+
         try:
             if self._sources.N == 0:
                 raise AttributeError
@@ -394,6 +437,9 @@ class StanFit:
     def plot_trace(self, var_names=None, transform: bool = False, **kwargs):
         """
         Trace plot using list of stan parameter keys.
+        :param var_names: single parameter name or list of parameters
+        :param transform: set to True if log10(x) transformation should be applied
+        :param **kwargs: other kwargs passed to arviz.plot_trace
         """
 
         if not var_names:
@@ -413,6 +459,9 @@ class StanFit:
     def plot_trace_and_priors(self, var_names=None, transform: bool = False, **kwargs):
         """
         Trace plot and overplot the used priors.
+        :param var_names: single parameter name or list of parameters
+        :param transform: set to True if log10(x) transformation should be applied
+        :param **kwargs: other kwargs passed to arviz.plot_trace
         """
 
         fig, axs = self.plot_trace(
@@ -488,6 +537,13 @@ class StanFit:
         index: Union[int, slice, None] = None,
         transform: Callable = lambda x: x,
     ):
+        """
+        Retrieve kde approximation of samples for given parameter
+        :param var_name: parameter name
+        :param index: for vector/array parameters, only use this index
+        :param transform: Lambda function for transformation of variable
+        """
+
         chain = self[var_name]
         if index is not None:
             data = chain.T[index]
@@ -499,6 +555,8 @@ class StanFit:
         """
         Corner plot using list of Stan parameter keys and optional
         true values if working with simulated data.
+        :param var_names: Variable names for corner plot
+        :param truths: If provided, overplot True parameters
         """
 
         if not var_names:
@@ -982,14 +1040,13 @@ class StanFit:
 
         return fig, axs
 
-    def _calculate_flux_grid(self, energy_unit, area_unit, E_power):
+    def _calculate_flux_grid(self):
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
         if not self._sources.point_source:
             raise ValueError("A valid source list is required")
 
-        flux_unit = 1 / energy_unit / area_unit / u.s
         if not self._reload:
             inputs = self._get_fit_inputs()
             iterations = self._fit_output._iter_sampling
@@ -1026,7 +1083,7 @@ class StanFit:
         share_index = N == 1
         N_samples = iterations * chains
 
-        self._flux_grid = np.zeros((len(self._sources.point_source), E.size, N_samples))
+        self._flux_grid = np.zeros((len(self._sources.point_source), E.size, N_samples)) << 1 / u.GeV / u.m**2 / u.s
 
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
@@ -1059,9 +1116,9 @@ class StanFit:
                     "norm_energy", E0_vals * u.GeV
                 )
 
-            flux_int = F[:, c_ps].flatten()
+            flux_int = F[:, c_ps].flatten() << 1 / u.m**2 / u.s
 
-            flux_grid = np.zeros((E.size, N_samples))
+            flux_grid = np.zeros((E.size, N_samples)) << 1 / u.GeV / u.m**2 / u.s
 
             for c in range(N_samples):
                 if self._fit_index:
@@ -1075,36 +1132,32 @@ class StanFit:
                         "norm_energy", E0_vals[c] * u.GeV
                     )
 
-                flux = ps.flux_model.spectral_shape(E).to_value(
-                    flux_unit,
-                    equivalencies=u.spectral(),
-                )
+                flux = ps.flux_model.spectral_shape(E)   # 1 / GeV / s / m2
 
                 # Needs to be in units used by stan
-                int_flux = ps.flux_model.total_flux_int.to_value(1 / u.m**2 / u.s)
+                int_flux = ps.flux_model.total_flux_int   # 1 / m2 / s
 
                 flux_grid[:, c] = (
                     flux
                     / int_flux
                     * flux_int[c]
-                    * np.power(
-                        E.to_value(energy_unit, equivalencies=u.spectral()), E_power
-                    )
                 )
 
             self._flux_grid[c_ps] = flux_grid
 
-    def _calculate_quantiles(self, source_idx, LL, UL):
+    def _calculate_quantiles(self, E_power, energy_unit, area_unit, source_idx, LL, UL):
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
         lower = np.zeros(E.size)
         upper = np.zeros(E.size)
 
+        flux_grid = self._flux_grid.copy().to_value(1 / energy_unit / area_unit / u.s) * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
+
         if source_idx == -1:
-            flux_grid = self._flux_grid.sum(axis=0)
+            flux_grid = flux_grid.sum(axis=0)
         else:
-            flux_grid = self._flux_grid[source_idx]
+            flux_grid = flux_grid[source_idx]
 
         for c in range(E.size):
             lower[c] = np.quantile(flux_grid[c], LL)
@@ -1157,13 +1210,8 @@ class StanFit:
         limit_kwargs |= kwargs
 
         # Save some time calculating if the previous calculation has already used the same E_power
-        try:
-            if not np.isclose(self._E_power, E_power):
-                raise AttributeError
-        except AttributeError:
-            self._calculate_flux_grid(energy_unit, area_unit, E_power)
-        finally:
-            self._E_power = E_power
+        if not hasattr(self, "_flux_grid"):
+            self._calculate_flux_grid()
 
         flux_unit = 1 / energy_unit / area_unit / u.s
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
@@ -1183,7 +1231,7 @@ class StanFit:
                 UL = 0.5 - CI / 2
                 LL = 0.5 + CI / 2
 
-            lower, upper = self._calculate_quantiles(source_idx, LL, UL)
+            lower, upper = self._calculate_quantiles(E_power, energy_unit, area_unit, source_idx, LL, UL)
 
             if not upper_limit:
                 ax.fill_between(
@@ -1223,6 +1271,14 @@ class StanFit:
         area_unit=u.cm**2,
         x_energy_unit=u.GeV,
     ):
+        """
+        Plot 2d kde contours of peak energy flux and energy at which peak lies
+        :param ax: Axis in which to plot
+        :param levels: HDI levels to plot
+        :param energy_unit: flux energy unit, i.e. energy_unit / area_unit / s
+        :param area_unit: flux area unit, i.e. energy_unit / area_unit / s
+        :param x_energy_unit: energy unit of x-axis
+        """
 
         from matplotlib.lines import Line2D
         import seaborn as sns
@@ -1266,7 +1322,14 @@ class StanFit:
         for t, e in zip(legend.get_texts(), extends):
             t.set_position((max_extend - e, 0))
 
-    def save(self, path: Path, overwrite: bool = False, save_json: bool = False):
+    def save(
+        self,
+        path: Path,
+        overwrite: bool = False,
+        save_json: bool = False,
+        use_timestamp: bool = False,
+        save_warmup: bool = False,
+    ):
         """
         Save fit to h5 file.
         :param path: Path to which fit is saved.
@@ -1289,8 +1352,9 @@ class StanFit:
             dirname = os.getcwd()
         path = Path(dirname) / Path(filename)
 
-        if os.path.exists(path) and not overwrite:
-            logger.warning(f"File {filename} already exists.")
+        if (os.path.exists(path) and not overwrite) or use_timestamp:
+            if os.path.exists(path):
+                logger.warning(f"File {filename} already exists.")
             file = os.path.splitext(filename)[0]
             ext = os.path.splitext(filename)[1]
             file += f"_{int(thyme())}"
@@ -1331,6 +1395,17 @@ class StanFit:
                     )
 
             for key, value in self._fit_output.stan_variables().items():
+                if save_warmup:
+                    value = self._fit_output.stan_variable(key, inc_warmup=True)
+                if key == "irf_return":
+                    n_entries = len(value[0])
+                    for n in range(n_entries):
+                        if value[0][n].ndim < 2:
+                            out = np.concatenate([_[n] for _ in value])
+                        else:
+                            out = np.vstack([_[n] for _ in value])
+                        outputs_folder.create_dataset(key + f".{n}", data=out)
+                    continue
                 outputs_folder.create_dataset(key, data=value)
 
             # Save some metadata for debugging, easier loading from file
@@ -1343,15 +1418,26 @@ class StanFit:
             meta_folder.create_dataset(
                 "iter_sampling", data=self._fit_output._iter_sampling
             )
+            meta_folder.create_dataset(
+                "iter_warmup", data=self._fit_output._iter_warmup
+            )
+            meta_folder.create_dataset("save_warmup", data=int(save_warmup))
             meta_folder.create_dataset("runset", data=str(self._fit_output.runset))
             meta_folder.create_dataset("diagnose", data=self._fit_output.diagnose())
             f.create_dataset("version", data=git_hash)
 
             summary = self._fit_output.summary()
+            meta = self._fit_output.method_variables()
+
+            method_keys = [
+                "lp__",
+                "stepsize__",
+                "treedepth__",
+                "n_leapfrog__",
+            ]
 
             # List of keys for which we are looking in the entirety of stan parameters
             key_stubs = [
-                "lp__",
                 "L",
                 "_luminosity",
                 "src_index",
@@ -1390,6 +1476,9 @@ class StanFit:
             meta_folder.create_dataset("R_hat", data=R_hat)
             meta_folder.create_dataset("parameters", data=np.array(keys, dtype="S"))
 
+            for key in method_keys:
+                meta_folder.create_dataset(key, data=meta[key])
+
         self.events.to_file(path, append=True)
 
         # Add priors separately
@@ -1403,11 +1492,14 @@ class StanFit:
         return path  # noqa: F821
 
     def diagnose(self):
+        """
+        Print fit diagnosis
+        """
+
         try:
-            print(self._fit_output.diagnose().decode("ascii"))
+            print(self._fit_output.diagnose())
         except:
-            for item in self._fit_meta["diagnose"]:
-                print(item.decode("ascii"))
+            print(self._fit_meta["diagnose"].decode("ascii"))
 
     def save_csvfiles(self, directory):
         """
@@ -1418,7 +1510,7 @@ class StanFit:
         self._fit_output.save_csvfiles(directory)
 
     @classmethod
-    def from_file(cls, *filename):
+    def from_file(cls, *filename, load_warmup: bool = False):
         """
         Load fit output from file. Allows to
         make plots and run classification check.
@@ -1436,7 +1528,7 @@ class StanFit:
                 outputs,
                 meta,
                 config,
-            ) = cls._from_file(filename[0])
+            ) = cls._from_file(filename[0], load_warmup=load_warmup)
 
             config_parser = ConfigParser(OmegaConf.create(config))
             sources = config_parser.sources
@@ -1458,7 +1550,7 @@ class StanFit:
                     outputs,
                     meta,
                     config,
-                ) = cls._from_file(file)
+                ) = cls._from_file(file, load_warmup=load_warmup)
                 fit_outputs.append(outputs)
                 fit_meta.append(meta)
                 if configs:
@@ -1499,8 +1591,13 @@ class StanFit:
         fit._fit_inputs = fit_inputs
         fit._fit_meta = meta
 
-        if "src_index_grid" in fit_inputs.keys():
+        fit._def_var_names = []
+
+        if sources.point_source:
             fit._def_var_names.append("L")
+            fit._def_var_names.append("Nex_src")
+
+        if "src_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("src_index")
 
         if "beta_index_grid" in fit_inputs.keys():
@@ -1508,9 +1605,6 @@ class StanFit:
 
         if "E0_src_grid" in fit_inputs.keys():
             fit._def_var_names.append("E0_src")
-
-        if sources.point_source:
-            fit._def_var_names.append("Nex_src")
 
         if "diff_index_grid" in fit_inputs.keys():
             fit._def_var_names.append("diffuse_norm")
@@ -1522,7 +1616,7 @@ class StanFit:
         return fit
 
     @staticmethod
-    def _from_file(filename):
+    def _from_file(filename, load_warmup: bool = False):
 
         fit_inputs = {}
         fit_outputs = {}
@@ -1538,6 +1632,14 @@ class StanFit:
             except KeyError:
                 fit_meta["chains"] = 1
                 fit_meta["iter_sampling"] = 1000
+                fit_meta["iter_warmup"] = 1000
+
+            if "save_warmup" not in fit_meta:
+                # Backwards compatibility
+                fit_meta["save_warmup"] = False
+                save_warmup = False
+            else:
+                save_warmup = bool(fit_meta["save_warmup"])
 
             for k, v in f["fit/inputs"].items():
 
@@ -1545,24 +1647,41 @@ class StanFit:
 
             for k, v in f["fit/outputs"].items():
                 # Add extra dimension for number of chains
-                if k == "local_pars" or k == "global_pars":
+                if k == "local_pars" or k == "global_pars" or "irf_return" in k:
                     continue
-
                 temp = v[()]
                 if len(temp.shape) == 1:
                     # non-vector variable
-                    fit_outputs[k] = temp.reshape(
-                        (fit_meta["chains"], fit_meta["iter_sampling"])
-                    )
+                    if save_warmup:
+                        shape = (
+                            fit_meta["chains"],
+                            fit_meta["iter_warmup"] + fit_meta["iter_sampling"],
+                        )
+                    else:
+                        shape = (fit_meta["chains"], fit_meta["iter_sampling"])
+                    fit_outputs[k] = temp.reshape(shape)
+                    if save_warmup and not load_warmup:
+                        fit_outputs[k] = fit_outputs[k][..., fit_meta["iter_warmup"] :]
                 else:
                     # Reshape to chains x draws x dim
-                    fit_outputs[k] = temp.reshape(
-                        (
+                    if save_warmup:
+                        shape = (
+                            fit_meta["chains"],
+                            fit_meta["iter_warmup"] + fit_meta["iter_sampling"],
+                            *temp.shape[1:],
+                        )
+                    else:
+                        shape = (
                             fit_meta["chains"],
                             fit_meta["iter_sampling"],
                             *temp.shape[1:],
                         )
-                    )
+                    fit_outputs[k] = temp.reshape(shape)
+                    if save_warmup and not load_warmup:
+                        fit_outputs[k] = fit_outputs[k][
+                            :, fit_meta["iter_warmup"] :, ...
+                        ]
+
             # requires config parser, which in turn imports fit, which in turn imports config parser...
             config = f["sources/config"][()].decode("ascii")
 
@@ -1609,17 +1728,6 @@ class StanFit:
             fit_meta,
             config,
         )
-
-    def diagnose(self):
-        """
-        Print fit diagnose message.
-        """
-
-        try:
-            print(self._fit_output.diagnose())
-        except AttributeError:
-            # TODO make compatible with loading multiple fits
-            print(self._fit_meta["diagnose"])
 
     def check_classification(self, sim_outputs):
         """
@@ -1690,6 +1798,10 @@ class StanFit:
 
     @property
     def chains(self):
+        """
+        Return number of chains
+        """
+
         if self._reload:
             return self._fit_meta["chains"]
         else:
@@ -1697,13 +1809,21 @@ class StanFit:
 
     @property
     def iterations(self):
+        """
+        Return number of iterations per chain
+        """
+
         if self._reload:
             return self._fit_meta["iter_sampling"]
         else:
             return self._fit_output.num_draws_sampling
 
     def _get_event_classifications(self):
-        # logprob is a misnomer, this is actually the rate parameter of each source component
+        """
+        Get list of event classifications
+        """
+
+        # logprob (lp) is a misnomer, this is actually the rate parameter of each source component
         if not self._reload:
             logprob = self._fit_output.stan_variable("lp").transpose(1, 2, 0)
         else:
@@ -1728,6 +1848,9 @@ class StanFit:
         return assoc_prob
 
     def _get_fit_inputs(self):
+        """
+        Return dictionary of fit inputs, passed to cmdstanpy
+        """
 
         self._get_par_ranges()
         fit_inputs = {}

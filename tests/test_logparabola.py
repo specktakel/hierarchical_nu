@@ -3,32 +3,17 @@ import astropy.units as u
 from hierarchical_nu.source.parameter import Parameter, ParScale
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.priors import Priors, EnergyPrior, LogNormalPrior
 from hierarchical_nu.source.source import (
     Sources,
     PointSource,
-    SourceFrame,
     DetectorFrame,
 )
-from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.priors import (
-    Priors,
-    LogNormalPrior,
-    NormalPrior,
-    LuminosityPrior,
-    IndexPrior,
-    FluxPrior,
-)
 from hierarchical_nu.detector.input import mceq
 from hierarchical_nu.utils.roi import CircularROI, ROIList
-from hierarchical_nu.detector.icecube import IC86_II, IC86_I, IC40, IC59, IC79
-from icecube_tools.utils.data import Uptime
+from hierarchical_nu.detector.icecube import IC86_II
 import numpy as np
-import matplotlib.pyplot as plt
-import ligo.skymap.plot
-import sys
 from pathlib import Path
 
 import pytest
