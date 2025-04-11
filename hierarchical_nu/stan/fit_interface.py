@@ -633,9 +633,7 @@ class StanFitInterface(StanInterface):
                     end << self._N
 
                     self._Edet = ForwardVariableDef("Edet", "vector[N]")
-                    self._Edet << FunctionCall(
-                        [real_data[start:end]], "to_vector"
-                    )
+                    self._Edet << FunctionCall([real_data[start:end]], "to_vector")
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
                     grid_size = R2021EnergyResolution._log_tE_grid.size
@@ -668,16 +666,12 @@ class StanFitInterface(StanInterface):
                     if self.sources.diffuse:
                         end << end + self._Ns + 1
                         self._z = ForwardVariableDef("z", "vector[Ns+1]")
-                        self._z << FunctionCall(
-                            [real_data[start:end]], "to_vector"
-                        )
+                        self._z << FunctionCall([real_data[start:end]], "to_vector")
                         start << start + self._Ns + 1
                     else:
                         end << end + self._Ns
                         self._z = ForwardVariableDef("z", "vector[Ns]")
-                        self._z << FunctionCall(
-                            [real_data[start:end]], "to_vector"
-                        )
+                        self._z << FunctionCall([real_data[start:end]], "to_vector")
                         start << start + self._Ns
 
                     if self.sources.atmospheric:
@@ -685,9 +679,7 @@ class StanFitInterface(StanInterface):
                             "atmo_integrated_flux", "real"
                         )
                         end << end + 1
-                        (
-                            self._atmo_integrated_flux << real_data[start]
-                        )
+                        (self._atmo_integrated_flux << real_data[start])
                         start << start + 1
 
                     if self.sources.point_source:
@@ -1357,13 +1349,9 @@ class StanFitInterface(StanInterface):
                             insert_end << insert_end + insert_len
                             (
                                 self.real_data[i, insert_start:insert_end]
-<<<<<<< HEAD
                                 << FunctionCall(
                                     [self._ang_errs_squared[start:end]], "to_array_1d"
                                 )
-=======
-                                << self._spatial_loglike[k, start:end]
->>>>>>> master
                             )
                             insert_start << insert_start + insert_len
 
