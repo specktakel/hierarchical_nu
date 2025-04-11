@@ -1000,17 +1000,14 @@ class Simulation:
 
         return sim_inputs
 
-
     @property
     def expected_Nnu(self):
         return self._get_expected_Nnu(self._get_sim_inputs())
-    
 
     @property
     def Nex_et(self):
-        self._get_expected_Nnu_(self._get_sim_inputs());
+        self._get_expected_Nnu(self._get_sim_inputs())
         return self._Nex_et
-
 
     def _get_expected_Nnu(self, sim_inputs):
         """
@@ -1060,6 +1057,7 @@ class Simulation:
                 self._sources.atmospheric,
                 self._shared_luminosity,
                 self._sources,
+                self._bg,
             )
 
         self._Nex_et = Nex_et
@@ -1288,6 +1286,7 @@ def _get_expected_Nnu_(
     atmospheric=False,
     shared_luminosity=True,
     sources=None,
+    data_bg=False,
 ):
     """
     Helper function for calculating expected Nnu
@@ -1414,6 +1413,9 @@ def _get_expected_Nnu_(
     if atmospheric:
         eps.append(sim_inputs["atmo_integ_val"][c])
 
+    if data_bg:
+        eps.append(0.0)
+
     eps = np.array(eps) * sim_inputs["T"][c]
 
     if diffuse:
@@ -1421,5 +1423,8 @@ def _get_expected_Nnu_(
 
     if atmospheric:
         F.append(sim_inputs["F_atmo"])
+
+    if data_bg:
+        F.append(0.0)
 
     return eps * np.array(F)

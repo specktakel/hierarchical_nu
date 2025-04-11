@@ -165,6 +165,13 @@ class StanFit:
         logger_code_gen = logging.getLogger("hierarchical_nu.backend.code_generator")
         logger_code_gen.propagate = False
 
+        # Check if we should use Nex_src directly as fit parameter and not use L
+        try:
+            Parameter.get_parameter("Nex_src")
+            self._use_nex = True
+        except ValueError:
+            self._use_nex = False
+
         # Check for shared luminosity and src_index params
         try:
             Parameter.get_parameter("luminosity")
@@ -2002,6 +2009,10 @@ class StanFit:
                     for ps in self._sources.point_source
                 ]
 
+            if self._use_nex:
+                fit_inputs["Nex_src_min"] = self._nex_par_range[0]
+                fit_inputs["Nex_src_max"] = self._nex_par_range[1]
+
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
 
@@ -2147,18 +2158,19 @@ class StanFit:
                     roi._MJD_min = mjd_min
                     roi._MJD_max = mjd_max
                 print(N)
-                
+
                 print("from events:", N_dm / N)
 
-
                 # omit divisor, would have to be accounted for later in the actual event pdf, and would thus cancel out
-                time_ratio = self._observation_time[dm].to_value(u.s) / time.lifetime_from_dm(dm)[dm].to_value(u.s)
+                time_ratio = self._observation_time[dm].to_value(
+                    u.s
+                ) / time.lifetime_from_dm(dm)[dm].to_value(u.s)
 
                 # find total_events from the lifetime in the detector config
                 # gather event numbers per dm
                 # should be a factor for each bg llh value
-                #ev_weight = np.sqrt(N)
-                #print(ev_weight)
+                # ev_weight = np.sqrt(N)
+                # print(ev_weight)
 
                 # inverse factor i.e. divisor for each bg llh value
                 # TODO check if inverse is correct (theoretically yes but if done twice)
@@ -2182,12 +2194,14 @@ class StanFit:
 
                 fit_inputs["bg_llh"][dm.S == self.events.types] = np.log(
                     prob_ereco_and_omega
-                    / time.lifetime_from_dm(dm)[dm].to_value(u.s)  # first three terms are proper pdf in Edet, dirdet and time
-                    * E_true_norm   # accounts for E_nu integral, with a flat log(E) distribution
+                    / time.lifetime_from_dm(dm)[dm].to_value(
+                        u.s
+                    )  # first three terms are proper pdf in Edet, dirdet and time
+                    * E_true_norm  # accounts for E_nu integral, with a flat log(E) distribution
                     / inverse_norm
                 )
 
-                #print("from integration:", inverse_norm)
+                # print("from integration:", inverse_norm)
 
                 # TODO also add nu energy flat distribution here?
             # Insert likelihood evaluated at each event
@@ -2330,6 +2344,9 @@ class StanFit:
         """
 
         if self._sources.point_source:
+            if self._use_nex:
+                Nex = Parameter.get_parameter("Nex_src")
+                self._nex_par_range = Nex.par_range
             # TODO make similar to spectral parameters, L is not appended to the parameter list of the source
             if self._shared_luminosity:
                 key = "luminosity"

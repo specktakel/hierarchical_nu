@@ -41,6 +41,7 @@ from ..backend.parameterizations import DistributionMode
 
 from ..source.flux_model import LogParabolaSpectrum
 from ..source.source import Sources
+from ..source.parameter import Parameter
 from ..detector.icecube import EventType, NT, CAS
 from ..detector.detector_model import (
     GridInterpolationEnergyResolution,
@@ -125,6 +126,12 @@ class StanFitInterface(StanInterface):
         self._debug = debug
         self._bg = bg
 
+        try:
+            Nex_src = Parameter.get_parameter("Nex_src")
+            self._fit_nex = True
+        except ValueError:
+            self._fit_nex = False
+
         n_params = 0
         n_params += 1 if self._fit_index else 0
         n_params += 1 if self._fit_beta else 0
@@ -161,14 +168,18 @@ class StanFitInterface(StanInterface):
         with ForLoopContext(1, self._N, "i") as i:
             if self._bg and not self._use_event_tag:
                 self._lp[i, 1 : self._Ns] << self._logF
-                self._lp[i, self._k_bg] << self._log_N_bg + self._bg_llh[i]  - FunctionCall([self._E[i]], "log")
+                self._lp[i, self._k_bg] << self._log_N_bg + self._bg_llh[
+                    i
+                ] - FunctionCall([self._E[i]], "log")
 
             elif not self._use_event_tag:
                 # TODO fix this case later for use with data-background llh
                 self._lp[i] << self._logF
 
             elif self._bg:
-                self._lp[i, 2] << self._log_N_bg + self._bg_llh[i] - FunctionCall([self._E[i]], "log")
+                self._lp[i, 2] << self._log_N_bg + self._bg_llh[i] - FunctionCall(
+                    [self._E[i]], "log"
+                )
 
             for c, event_type in enumerate(self._event_types):
                 if c == 0:
@@ -852,6 +863,10 @@ class StanFitInterface(StanInterface):
             if self._bg:
                 self._bg_llh = ForwardVariableDef("bg_llh", "vector[N]")
 
+            if self._fit_nex:
+                self._Nex_src_min = ForwardVariableDef("Nex_src_min", "real")
+                self._Nex_src_max = ForwardVariableDef("Nex_src_max", "real")
+
             # Event tags
             if self._use_event_tag:
                 self._event_tag = ForwardArrayDef("event_tag", "int", self._N_str)
@@ -1378,16 +1393,26 @@ class StanFitInterface(StanInterface):
             # For point sources, L and src_index can be shared or
             # independent.
             if self.sources.point_source:
-                if self._shared_luminosity:
-                    self._L_glob = ParameterDef("L", "real", self._Lmin, self._Lmax)
-                else:
-                    self._L = ParameterVectorDef(
-                        "L",
+                if self._fit_nex:
+                    self._Nex_per_ps = ParameterVectorDef(
+                        "Nex_per_ps",
                         "vector",
                         self._Ns_str,
-                        self._Lmin,
-                        self._Lmax,
+                        self._Nex_src_min,
+                        self._Nex_src_max,
                     )
+
+                if not self._fit_nex:
+                    if self._shared_luminosity:
+                        self._L_glob = ParameterDef("L", "real", self._Lmin, self._Lmax)
+                    else:
+                        self._L = ParameterVectorDef(
+                            "L",
+                            "vector",
+                            self._Ns_str,
+                            self._Lmin,
+                            self._Lmax,
+                        )
 
                 if self._shared_src_index:
                     if self._fit_index:
@@ -1477,13 +1502,14 @@ class StanFitInterface(StanInterface):
             # Expected number of events for different source components (atmo, diff, src) and detector components (_comp)
             self._Nex = ForwardVariableDef("Nex", "real")
             self._Nex_comp = ForwardArrayDef("Nex_comp", "real", ["[", self._Net, "]"])
+            self._flux_conv_val = ForwardArrayDef("flux_conv_val", "real", self._Ns_str)
             if self.sources.atmospheric:
                 self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
                 self._Nex_atmo_comp = ForwardArrayDef(
                     "Nex_atmo_comp", "real", ["[", self._Net, "]"]
                 )
             if self.sources.point_source:
-                if self._shared_luminosity:
+                if self._shared_luminosity or self._fit_nex:
                     self._L = ForwardVariableDef(
                         "L_ind",
                         "vector[Ns]",
@@ -1501,7 +1527,7 @@ class StanFitInterface(StanInterface):
                     self._E0_src = ForwardVariableDef("E0_src_ind", "vector[Ns]")
                 if self._shared_luminosity or self._shared_src_index:
                     with ForLoopContext(1, self._Ns, "k") as k:
-                        if self._shared_luminosity:
+                        if self._shared_luminosity and not self._fit_nex:
                             self._L[k] << self._L_glob
                         if self._shared_src_index and self._fit_index:
                             self._src_index[k] << self._src_index_glob
@@ -1522,11 +1548,13 @@ class StanFitInterface(StanInterface):
                 self._Nex_src_comp = ForwardArrayDef(
                     "Nex_src_comp", "real", ["[", self._Net, "]"]
                 )
-                self._Nex_per_ps = ForwardArrayDef("Nex_per_ps", "real", ["[Ns]"])
+
                 with ForLoopContext(1, self._Net_stan, "i") as i:
                     self._Nex_src_comp[i] << 0
-                with ForLoopContext(1, self._Ns, "i") as i:
-                    self._Nex_per_ps[i] << 0
+                if not self._fit_nex:
+                    self._Nex_per_ps = ForwardArrayDef("Nex_per_ps", "real", ["[Ns]"])
+                    with ForLoopContext(1, self._Ns, "i") as i:
+                        self._Nex_per_ps[i] << 0
             if self.sources.diffuse:
                 self._F_diff = ForwardVariableDef("F_diff", "real")
                 self._F_diff << self._diffuse_norm * self._diff_spectrum_flux_conv(
@@ -1688,16 +1716,17 @@ class StanFitInterface(StanInterface):
             if self.sources.point_source:
                 with ForLoopContext(1, self._Ns, "k") as k:
 
-                    self._F[k] << StringExpression(
-                        [
-                            self._L[k],
-                            "/ (4 * pi() * pow(",
-                            self._D[k],
-                            " * ",
-                            3.086e22,
-                            ", 2))",
-                        ]
-                    )
+                    if not self._fit_nex:
+                        self._F[k] << StringExpression(
+                            [
+                                self._L[k],
+                                "/ (4 * pi() * pow(",
+                                self._D[k],
+                                " * ",
+                                3.086e22,
+                                ", 2))",
+                            ]
+                        )
 
                     if self._logparabola or self._pgamma:
                         # create even more references
@@ -1752,31 +1781,20 @@ class StanFitInterface(StanInterface):
                                 "}",
                             ]
                         )
+                        self._flux_conv_val[k] << self._flux_conv(
+                            theta,
+                            x_r,
+                            x_i,
+                        )
 
-                        StringExpression(
-                            [
-                                self._F[k],
-                                "*=",
-                                self._flux_conv(
-                                    theta,
-                                    x_r,
-                                    x_i,
-                                ),
-                            ]
-                        )
                     else:
-                        StringExpression(
-                            [
-                                self._F[k],
-                                "*=",
-                                self._flux_conv(
-                                    self._src_index[k],
-                                    self._Emin_src[k],
-                                    self._Emax_src[k],
-                                ),
-                            ]
+                        self._flux_conv_val[k] << self._flux_conv(
+                            self._src_index[k],
+                            self._Emin_src[k],
+                            self._Emax_src[k],
                         )
-                    StringExpression([self._F_src, " += ", self._F[k]])
+                    if not self._fit_nex:
+                        StringExpression([self._F[k], "*=", self._flux_conv_val[k]])
 
                     with ForLoopContext(1, self._Net_stan, "i") as i:
                         # For each source, calculate the exposure via interpolation
@@ -1822,16 +1840,55 @@ class StanFitInterface(StanInterface):
                             * self._T[i]
                         )
 
+                        if not self._fit_nex:
+                            StringExpression(
+                                [
+                                    self._Nex_src_comp[i],
+                                    "+=",
+                                    self._F[k] * self._eps[i, k],
+                                ]
+                            )
+                    if self._fit_nex:
                         StringExpression(
                             [
-                                self._Nex_src_comp[i],
-                                "+=",
-                                self._F[k] * self._eps[i, k],
+                                self._F[k],
+                                " = ",
+                                self._Nex_per_ps[k],
+                                " / sum(eps[:, k])",
                             ]
                         )
-                    StringExpression(
-                        [self._Nex_per_ps[k], "+=", self._F[k], " * ", "sum(eps[:, k])"]
-                    )
+                        # self._Nex_per_ps[k] / FunctionCall([self._eps[:, k]], "sum")
+                        self._L[k] << self._F[k] / self._flux_conv_val[
+                            k
+                        ] * StringExpression(
+                            [
+                                "(4 * pi() * pow(",
+                                self._D[k],
+                                " * ",
+                                3.086e22,
+                                ", 2))",
+                            ]
+                        )
+
+                        with ForLoopContext(1, self._Net_stan, "i") as i:
+                            StringExpression(
+                                [
+                                    self._Nex_src_comp[i],
+                                    "+=",
+                                    self._F[k] * self._eps[i, k],
+                                ]
+                            )
+                    if not self._fit_nex:
+                        StringExpression(
+                            [
+                                self._Nex_per_ps[k],
+                                "+=",
+                                self._F[k],
+                                " * ",
+                                "sum(eps[:, k])",
+                            ]
+                        )
+                    StringExpression([self._F_src, " += ", self._F[k]])
 
             if self.sources.diffuse:
                 StringExpression("F[Ns+1]") << self._F_diff
@@ -1903,7 +1960,7 @@ class StanFitInterface(StanInterface):
                 self._Nex_comp[i] << FunctionCall([self._F, self._eps[i]], "get_Nex")
 
             if self.sources.point_source:
-                self._Nex_src << FunctionCall([self._Nex_src_comp], "sum")
+                self._Nex_src << FunctionCall([self._Nex_per_ps], "sum")
             if self.sources.diffuse:
                 self._Nex_diff << FunctionCall([self._Nex_diff_comp], "sum")
             if self.sources.atmospheric:
@@ -2014,7 +2071,7 @@ class StanFitInterface(StanInterface):
             # Priors
             if self.sources.point_source:
                 if self._priors.luminosity.name in ["normal", "lognormal"]:
-                    if self._shared_luminosity:
+                    if self._shared_luminosity and not self._fit_nex:
                         StringExpression(
                             [
                                 self._L_glob,
@@ -2028,7 +2085,10 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
-                    elif isinstance(self._priors.luminosity, MultiSourcePrior):
+                    elif (
+                        isinstance(self._priors.luminosity, MultiSourcePrior)
+                        and not self._fit_nex
+                    ):
                         with ForLoopContext(1, self._Ns, "i") as i:
                             StringExpression(
                                 [
@@ -2043,7 +2103,7 @@ class StanFitInterface(StanInterface):
                                     ),
                                 ]
                             )
-                    else:
+                    elif not self._fit_nex:
                         with ForLoopContext(1, self._Ns, "i") as i:
                             StringExpression(
                                 [
@@ -2063,7 +2123,7 @@ class StanFitInterface(StanInterface):
                     if isinstance(self._priors.luminosity, MultiSourcePrior):
                         raise ValueError("This is not intended")
 
-                    if self._shared_luminosity:
+                    if self._shared_luminosity and not self._fit_nex:
                         StringExpression(
                             [
                                 self._L_glob,
@@ -2077,7 +2137,7 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
-                    else:
+                    elif not self._fit_nex:
                         with ForLoopContext(1, self._Ns, "i") as i:
                             StringExpression(
                                 [
