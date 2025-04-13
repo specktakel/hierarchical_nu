@@ -209,6 +209,22 @@ class Simulation:
 
         self.events = None
 
+    @property
+    def expected_Nnu_per_comp(self):
+
+        sim_inputs = self._get_sim_inputs()
+        self._get_expected_Nnu(sim_inputs)
+
+        return self._expected_Nnu_per_comp
+
+    @property
+    def Nex_et(self):
+
+        sim_inputs = self._get_sim_inputs()
+        self._get_expected_Nnu(sim_inputs)
+
+        return self._Nex_et
+
     def precomputation(
         self,
         exposure_integral: collections.OrderedDict = None,

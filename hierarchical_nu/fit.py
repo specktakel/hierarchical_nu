@@ -231,6 +231,8 @@ class StanFit:
 
         self._exposure_integral = collections.OrderedDict()
 
+        self._fit_output = None
+
     @property
     def priors(self):
         return self._priors
@@ -264,6 +266,11 @@ class StanFit:
             self._events = events
         else:
             raise ValueError("events must be instance of Events")
+
+    @property
+    def fit_output(self):
+
+        return self._fit_output
 
     def precomputation(
         self,
@@ -550,6 +557,8 @@ class StanFit:
 
         if not var_names:
             var_names = self._def_var_names
+
+        var_names.pop("Nex")
 
         # Organise samples
         samples_list = []
