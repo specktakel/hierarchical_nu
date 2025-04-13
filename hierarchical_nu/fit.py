@@ -2162,9 +2162,9 @@ class StanFit:
                 print("from events:", N_dm / N)
 
                 # omit divisor, would have to be accounted for later in the actual event pdf, and would thus cancel out
-                time_ratio = self._observation_time[dm].to_value(
-                    u.s
-                ) / time.lifetime_from_dm(dm)[dm].to_value(u.s)
+                # time_ratio = self._observation_time[dm].to_value(
+                #     u.s
+                # ) / time.lifetime_from_dm(dm)[dm].to_value(u.s)
 
                 # find total_events from the lifetime in the detector config
                 # gather event numbers per dm
@@ -2174,9 +2174,9 @@ class StanFit:
 
                 # inverse factor i.e. divisor for each bg llh value
                 # TODO check if inverse is correct (theoretically yes but if done twice)
-                dm_weight = self._exposure_integral[dm].integral_fixed_vals[0]
-                print(dm_weight)
-                print(time_ratio)
+                # dm_weight = self._exposure_integral[dm].integral_fixed_vals[0]
+                # print(dm_weight)
+                # print(time_ratio)
                 # inverse_norm = time_ratio * dm_weight
                 inverse_norm = N_dm / N
 
@@ -2194,9 +2194,10 @@ class StanFit:
 
                 fit_inputs["bg_llh"][dm.S == self.events.types] = np.log(
                     prob_ereco_and_omega
-                    / time.lifetime_from_dm(dm)[dm].to_value(
-                        u.s
-                    )  # first three terms are proper pdf in Edet, dirdet and time
+                    # / time.lifetime_from_dm(dm)[dm].to_value(
+                    #     u.s
+                    #)  # first three terms are proper pdf in Edet, dirdet and time
+                    / sum(obs_time)
                     * E_true_norm  # accounts for E_nu integral, with a flat log(E) distribution
                     / inverse_norm
                 )
