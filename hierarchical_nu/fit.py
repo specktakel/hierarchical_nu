@@ -2131,21 +2131,16 @@ class StanFit:
                     "No other prior type for atmospheric flux implemented."
                 )
         if self._sources.background:
-            fit_inputs["bg_llh"] = np.zeros(
-                self.events.N
-            )  # one long list? copy indexing from ereco_spline below
-            fit_inputs["bg_llh_weights"] = []
-            # ev_weight = []
-            # dm_weight = []
+            fit_inputs["bg_llh"] = np.zeros(self.events.N)
 
             time = LifeTime()
-
             time_norm = sum(
                 [
                     time.lifetime_from_dm(dm)[dm].to_value(u.s)
                     for dm in self._event_types
                 ]
             )
+
             for dm in self._event_types:
 
                 dm_mjd_min, dm_mjd_max = time.mjd_from_dm(dm)
@@ -2164,27 +2159,7 @@ class StanFit:
 
                     roi._MJD_min = mjd_min
                     roi._MJD_max = mjd_max
-                print(N)
 
-                print("from events:", N_dm / N)
-
-                # omit divisor, would have to be accounted for later in the actual event pdf, and would thus cancel out
-                # time_ratio = self._observation_time[dm].to_value(
-                #     u.s
-                # ) / time.lifetime_from_dm(dm)[dm].to_value(u.s)
-
-                # find total_events from the lifetime in the detector config
-                # gather event numbers per dm
-                # should be a factor for each bg llh value
-                # ev_weight = np.sqrt(N)
-                # print(ev_weight)
-
-                # inverse factor i.e. divisor for each bg llh value
-                # TODO check if inverse is correct (theoretically yes but if done twice)
-                # dm_weight = self._exposure_integral[dm].integral_fixed_vals[0]
-                # print(dm_weight)
-                # print(time_ratio)
-                # inverse_norm = time_ratio * dm_weight
                 inverse_norm = N_dm / N
 
                 decs = self.events.coords[dm.S == self.events.types].dec.to_value(u.rad)
@@ -2197,24 +2172,17 @@ class StanFit:
                 ].prob_ereco_and_omega(ereco, sindecs)
 
                 # normalisation of flat logx distribution
+                # actual distribution values depend on E-parameter in stan, so only normalisation
+                # is accounted for at this stage
                 E_true_norm = 1 / (np.log(fit_inputs["Emax"] / fit_inputs["Emin"]))
 
                 fit_inputs["bg_llh"][dm.S == self.events.types] = np.log(
                     prob_ereco_and_omega
-                    # / time.lifetime_from_dm(dm)[dm].to_value(
-                    #     u.s
-                    # )  # first three terms are proper pdf in Edet, dirdet and time
-                    / time_norm
                     * E_true_norm  # accounts for E_nu integral, with a flat log(E) distribution
-                    / inverse_norm
+                    / inverse_norm  # properly normalises to number of events in ROI
+                    / time_norm  # properly normalises time because we use in the N_dm / N step the entire
+                    # lifetime of the detector configuration
                 )
-
-                # print("from integration:", inverse_norm)
-
-                # TODO also add nu energy flat distribution here?
-            # Insert likelihood evaluated at each event
-            # insert precomputed "exposure" (in this case normalisation for used ROI x Energy range)
-            # weights of N_det_i / (sum of all selected events) i being each detector configuration
 
         # use the Eres slices for each event as data input
         # evaluate the splines at eadch event's reco energy
