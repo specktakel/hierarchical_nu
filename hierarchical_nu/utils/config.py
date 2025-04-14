@@ -28,6 +28,10 @@ class ParameterConfig:
         # (out of src_index, beta_index and E0_src) need to be defined
         # in the field "fit_params", e.g. fit_params: ["src_index", "beta_index"]
     )
+    # Takes spectral shape parameters as arguments, i.e. src_index, beta_index, E0_src
+    # depending on chosen spectral type. Optional add Nex_src to use directly
+    # number of expected source events as fit parameter. This bypasses the luminosity
+    # (which is demoted to transformed parameter) and its prior.
     fit_params: List[str] = field(default_factory=lambda: ["src_index"])
     src_index: List[float] = field(default_factory=lambda: [2.3])
     share_src_index: bool = True
@@ -36,6 +40,7 @@ class ParameterConfig:
     beta_index_range: Tuple = (-1.0, 1.0)
     E0_src: List[float] = field(default_factory=lambda: [1e6])  # GeV
     E0_src_range: Tuple = (1e3, 1e8)
+    Nex_src_range: Tuple = (0.0, 100.0)
     diff_index: float = 2.5
     diff_index_range: Tuple = (1.0, 4.0)
     diff_norm: float = (

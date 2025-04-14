@@ -144,6 +144,8 @@ class ConfigParser:
                         ParScale.log,
                     )
                 )
+        if "Nex_src" in parameter_config["fit_params"]:
+            Nex_src = Parameter(0., "Nex_src", fixed=True, par_range=parameter_config["Nex_src_range"])
 
         diff_index = Parameter(
             parameter_config["diff_index"],
