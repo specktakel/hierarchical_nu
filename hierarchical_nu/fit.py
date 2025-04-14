@@ -2139,6 +2139,13 @@ class StanFit:
             # dm_weight = []
 
             time = LifeTime()
+
+            time_norm = sum(
+                [
+                    time.lifetime_from_dm(dm)[dm].to_value(u.s)
+                    for dm in self._event_types
+                ]
+            )
             for dm in self._event_types:
 
                 dm_mjd_min, dm_mjd_max = time.mjd_from_dm(dm)
@@ -2196,8 +2203,8 @@ class StanFit:
                     prob_ereco_and_omega
                     # / time.lifetime_from_dm(dm)[dm].to_value(
                     #     u.s
-                    #)  # first three terms are proper pdf in Edet, dirdet and time
-                    / sum(obs_time)
+                    # )  # first three terms are proper pdf in Edet, dirdet and time
+                    / time_norm
                     * E_true_norm  # accounts for E_nu integral, with a flat log(E) distribution
                     / inverse_norm
                 )
