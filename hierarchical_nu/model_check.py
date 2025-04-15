@@ -76,13 +76,13 @@ class ModelCheck:
         else:
             logger.info("Loading true values from config")
             # Config
-            parameter_config = self.config["parameter_config"]
             self.parser.ROI
 
             # Sources
             self._sources = self.parser.sources
-            f_arr = self._sources.f_arr().value
-            f_arr_astro = self._sources.f_arr_astro().value
+            if not self._sources.background:
+                f_arr = self._sources.f_arr().value
+                f_arr_astro = self._sources.f_arr_astro().value
 
             # Detector
             self._detector_model_type = self.parser.detector_model
@@ -112,6 +112,7 @@ class ModelCheck:
                 # self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to_value(
                 #    flux_unit
                 # )
+                self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
                 self.truths["diffuse_norm"] = (
                     diffuse_bg.flux_model(
                         diffuse_bg.flux_model.spectral_shape._normalisation_energy,
@@ -138,8 +139,9 @@ class ModelCheck:
                     .value
                     for _ in range(len(self._sources.point_source))
                 ]
-            self.truths["f_arr"] = f_arr
-            self.truths["f_arr_astro"] = f_arr_astro
+            if not self._sources.background:
+                self.truths["f_arr"] = f_arr
+                self.truths["f_arr_astro"] = f_arr_astro
             try:
                 self.truths["src_index"] = [Parameter.get_parameter("src_index").value]
             except ValueError:
@@ -147,7 +149,6 @@ class ModelCheck:
                     Parameter.get_parameter(f"ps_{_}_src_index").value
                     for _ in range(len(self._sources.point_source))
                 ]
-            self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
             try:
                 self.truths["beta_index"] = [
                     Parameter.get_parameter("beta_index").value

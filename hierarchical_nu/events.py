@@ -422,9 +422,10 @@ class Events:
         cls,
         *seasons: EventType,
         scramble_ra: bool = False,
+        scramble_mjd: bool = False,
         seed: int = 42,
         apply_roi: bool = True,
-        apply_Emin_det: bool = True
+        apply_Emin_det: bool = True,
     ):
         """
         Load events from the 2021 data release
@@ -473,10 +474,43 @@ class Events:
         types = np.hstack([events.ra[s.P].size * [s.S] for s in seasons])
         mjd = np.hstack([events.mjd[s.P] for s in seasons])
 
+        print(mjd)
+
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
+        if scramble_mjd:
+            from icecube_tools.utils.data import Uptime
+
+            rng = np.random.default_rng(seed=seed)
+            lt = Uptime()
+            ic86 = ["IC86_II", "IC86_III", "IC86_IV", "IC86_V", "IC86_VI", "IC86_VII"]
+
+            # I have no one but myself to blame for this
+            lt._data["IC86_II"] = np.vstack([lt._data[s] for s in ic86])
+
+            for s in seasons:
+                intervals = np.sum(lt._data[s.P], axis=1)
+                print(intervals.size)
+
+                # Sample new good time intervals for each event,
+                # weight is the intervals length
+                idxs = rng.choice(
+                    np.arange(intervals.size),
+                    size=np.sum(types == s.S, dtype=int),
+                    p=intervals / np.sum(intervals),
+                )
+                print(idxs.size)
+                # Sample new random arrival time uniformly within the previously determined interval
+                start = lt._data[s.P][idxs, 0]
+                end = lt._data[s.P][idxs, 1]
+                print(start.min())
+                print(end.max())
+                mjd[types == s.S] = rng.uniform(low=start, high=end, size=idxs.size)
+                print(mjd)
+
+            # scramble arrival time within each season separately
         mjd = Time(mjd, format="mjd")
 
         if apply_roi:
