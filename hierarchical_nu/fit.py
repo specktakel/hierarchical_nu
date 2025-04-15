@@ -2141,6 +2141,7 @@ class StanFit:
                 ]
             )
 
+
             for dm in self._event_types:
 
                 dm_mjd_min, dm_mjd_max = time.mjd_from_dm(dm)
@@ -2149,6 +2150,7 @@ class StanFit:
                 N = 0
                 N_dm = np.sum(self.events.types == dm.S)
                 print(N_dm)
+                dm_weight = sum(self.events.types == dm.S) / self.events.N
                 for roi in ROIList.STACK:
                     mjd_min, mjd_max = roi.MJD_min, roi.MJD_max
 
@@ -2178,6 +2180,7 @@ class StanFit:
 
                 fit_inputs["bg_llh"][dm.S == self.events.types] = np.log(
                     prob_ereco_and_omega
+                    * dm_weight
                     * E_true_norm  # accounts for E_nu integral, with a flat log(E) distribution
                     / inverse_norm  # properly normalises to number of events in ROI
                     / time_norm  # properly normalises time because we use in the N_dm / N step the entire
