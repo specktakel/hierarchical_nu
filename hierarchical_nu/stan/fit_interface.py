@@ -1502,6 +1502,11 @@ class StanFitInterface(StanInterface):
             # Expected number of events for different source components (atmo, diff, src) and detector components (_comp)
             self._Nex = ForwardVariableDef("Nex", "real")
             self._Nex_comp = ForwardArrayDef("Nex_comp", "real", ["[", self._Net, "]"])
+            self._Nex_per_dm_and_comp = ForwardArrayDef(
+                "Nex_per_dm_and_comp",
+                "real",
+                ["[", self._Net_stan, ",", self._Ns_tot, "]"],
+            )
             self._flux_conv_val = ForwardArrayDef("flux_conv_val", "real", self._Ns_str)
             if self.sources.atmospheric:
                 self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
@@ -1848,6 +1853,7 @@ class StanFitInterface(StanInterface):
                                     self._F[k] * self._eps[i, k],
                                 ]
                             )
+
                     if self._fit_nex:
                         StringExpression(
                             [
@@ -1890,6 +1896,9 @@ class StanFitInterface(StanInterface):
                         )
                     StringExpression([self._F_src, " += ", self._F[k]])
 
+                    with ForLoopContext(1, self._Net_stan, "i") as i:
+                        self._Nex_per_dm_and_comp[i, k] << self._F[k] * self._eps[i, k]
+
             if self.sources.diffuse:
                 StringExpression("F[Ns+1]") << self._F_diff
 
@@ -1926,6 +1935,14 @@ class StanFitInterface(StanInterface):
                         self._Nex_atmo_comp[i]
                         << self._F["Ns + 2"] * self._eps[i, "Ns + 2"]
                     )
+                    (
+                        self._Nex_per_dm_and_comp[i, "Ns + 1"]
+                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
+                    )
+                    (
+                        self._Nex_per_dm_and_comp[i, "Ns + 2"]
+                        << self._F["Ns + 2"] * self._eps[i, "Ns + 2"]
+                    )
 
             elif self.sources.diffuse:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
@@ -1946,6 +1963,10 @@ class StanFitInterface(StanInterface):
                         self._Nex_diff_comp[i]
                         << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
                     )
+                    (
+                        self._Nex_per_dm_and_comp[i, "Ns + 1"]
+                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
+                    )
 
             elif self.sources.atmospheric:
                 with ForLoopContext(1, self._Net_stan, "i") as i:
@@ -1954,6 +1975,10 @@ class StanFitInterface(StanInterface):
                     (
                         self._Nex_atmo_comp[i]
                         << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
+                    )
+                    (
+                        self._Nex_per_dm_and_comp[i, "Ns + 1"]
+                        << self._F["Ns + 1"] * self._eps["Ns + 1"]
                     )
 
             with ForLoopContext(1, self._Net_stan, "i") as i:
