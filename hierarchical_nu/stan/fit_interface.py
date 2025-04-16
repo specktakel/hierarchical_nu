@@ -34,6 +34,7 @@ from ..backend.variable_definitions import (
     ParameterDef,
     ParameterVectorDef,
     InstantVariableDef,
+    StanArray,
 )
 
 from ..backend.expression import StringExpression
@@ -42,7 +43,7 @@ from ..backend.parameterizations import DistributionMode
 from ..source.flux_model import LogParabolaSpectrum
 from ..source.source import Sources
 from ..source.parameter import Parameter
-from ..detector.icecube import EventType, NT, CAS
+from ..detector.icecube import EventType, NT, CAS, Refrigerator
 from ..detector.detector_model import (
     GridInterpolationEnergyResolution,
 )
@@ -457,6 +458,16 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
+
+                # Add here the scaling with (N_dm / N)_(given a source k)
+                # log(self._Nex_per_dm_and_comp[i, k] / sum(self._Nex_per_dm_and_comp[:, k]))
+                StringExpression(
+                    [
+                        self._lp[i][k],
+                        " += log(Nex_per_dm_and_comp[DMSToInternal(event_type[i]), k] / sum(Nex_per_dm_and_comp[:, k]))",
+                    ]
+                )
+
             if hasattr(self, "_log_lik"):
                 # If self._log_lik exists, fill it with data
                 self._log_lik[i] << FunctionCall(
@@ -515,6 +526,28 @@ class StanFitInterface(StanInterface):
                     energy_points=self._atmo_flux_energy_points,
                     theta_points=self._atmo_flux_theta_points,
                 )
+
+            # Write function that translates internally 1-indexed label of detector model to DetectorModel.S and back
+            with UserDefinedFunction(
+                "InternalToDMS", ["internal"], ["int"], "int"
+            ) as f:
+                l = []
+                for c, dm in enumerate(self._event_types, 1):
+                    # dm.S is what stan's variable `event_types` knows,
+                    # all for loops go from 1 to Net, so find mapping between both
+                    # relies on static ordering of detector models in all attributes, is this risky or what
+                    l.append(dm.S)
+
+                vals = StanArray("vals", "int", l)
+                ReturnStatement([vals["internal"]])
+
+            with UserDefinedFunction("DMSToInternal", ["stan"], ["int"], "int") as f:
+                l = [-1] * len(Refrigerator.detectors)
+                for c, dm in enumerate(self._event_types, 1):
+                    l[dm.S - 1] = c
+
+                vals = StanArray("vals", "int", l)
+                ReturnStatement([vals["stan"]])
 
             if self._nshards not in [0, 1]:
                 # Create a function to be used in map_rect in the model block
@@ -587,15 +620,31 @@ class StanFitInterface(StanInterface):
                         self._diff_index = ForwardVariableDef("diff_index", "real")
                         self._diff_index << glob[start]
                         start << start + 1
+
                     end << end + self._Ns_tot_flux
                     self._logF = ForwardVariableDef(
                         "logF", "vector[" + self._Ns_tot_flux + "]"
                     )
                     self._logF << glob[start:end]
+                    start << start + self._Ns_tot_flux
+
+                    self._Nex_per_dm_and_comp = ForwardArrayDef(
+                        "Nex_per_dm_and_comp",
+                        "real",
+                        ["[", self._Net, ",", self._Ns_tot, "]"],
+                    )
+                    with ForLoopContext(1, self._Net, "i") as i:
+                        end << end + self._Ns_tot
+                        self._Nex_per_dm_and_comp[i] << FunctionCall(
+                            [glob[start:end]], "to_array_1d"
+                        )
+                        start << start + self._Ns_tot
+
                     if self._bg:
-                        start << start + self._Ns_tot_flux
+                        end << end + 1
                         self._log_N_bg = ForwardVariableDef("log_N_bg", "real")
                         self._log_N_bg << glob[start]
+                        start << start + 1
 
                     # Local pars are only neutrino energies
                     self._E = ForwardVariableDef("E", "vector[N]")
@@ -818,6 +867,8 @@ class StanFitInterface(StanInterface):
             # Total number of detected events
             self._N = ForwardVariableDef("N", "int")
             self._N_str = ["[", self._N, "]"]
+            # Number of events per detector model
+            self._N_dm = ForwardArrayDef("N_dm", "int", ["[", self._Net, "]"])
 
             # Number of point sources
             self._Ns = ForwardVariableDef("Ns", "int")
@@ -855,7 +906,7 @@ class StanFitInterface(StanInterface):
             self._ang_errs = ForwardVariableDef("ang_err", "vector[N]")
 
             # Event types as track/cascades
-            self._event_type = ForwardVariableDef("event_type", "vector[N]")
+            self._event_type = ForwardArrayDef("event_type", "int", ["[N]"])
 
             # Uncertainty on the event's angular reconstruction
             self._kappa = ForwardVariableDef("kappa", "vector[N]")
@@ -1363,9 +1414,9 @@ class StanFitInterface(StanInterface):
                     insert_start << 3
                     # end index is inclusive, subtract one
                     insert_end << insert_start + insert_len - 1
-                    self.int_data[i, insert_start:insert_end] << FunctionCall(
-                        [FunctionCall([self._event_type[start:end]], "to_array_1d")],
-                        "to_int",
+                    (
+                        self.int_data[i, insert_start:insert_end]
+                        << self._event_type[start:end]
                     )
 
                     insert_start << insert_start + insert_len
@@ -1669,6 +1720,8 @@ class StanFitInterface(StanInterface):
                     num_of_pars += " + 1"
                 if self.sources.background:
                     num_of_pars += " + 1"
+
+                num_of_pars += " + Ns_tot * Net"
                 self._global_pars = ForwardVariableDef(
                     "global_pars", f"vector[{num_of_pars}]"
                 )
@@ -1978,7 +2031,14 @@ class StanFitInterface(StanInterface):
                     )
                     (
                         self._Nex_per_dm_and_comp[i, "Ns + 1"]
-                        << self._F["Ns + 1"] * self._eps["Ns + 1"]
+                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
+                    )
+
+            elif self.sources.background:
+                with ForLoopContext(1, self._Net_stan, "i") as i:
+                    (
+                        self._Nex_per_dm_and_comp[i, "Ns + 1"]
+                        << self._N_bg * self._N_dm[i] / self._N
                     )
 
             with ForLoopContext(1, self._Net_stan, "i") as i:
@@ -2060,11 +2120,23 @@ class StanFitInterface(StanInterface):
                         end << end + 1
                         self._global_pars[start] << self._diff_index
                         start << start + 1
+
                     end << end + StringExpression(["size(logF)"])
                     self._global_pars[start:end] << self._logF
+                    start << start + StringExpression(["size(logF)"])
+
+                    with ForLoopContext(1, self._Net_stan, "i") as i:
+                        end << end + self._Ns_tot
+                        self._global_pars[start:end] << FunctionCall(
+                            [self._Nex_per_dm_and_comp[i]], "to_vector"
+                        )
+                        start << start + self._Ns_tot
+
                     if self._bg:
-                        start << start + 1
+                        end << end + 1
                         self._global_pars[start] << self._log_N_bg
+                        start << start + 1
+
                     # Likelihood is evaluated in `lp_reduce`
 
             else:

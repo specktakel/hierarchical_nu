@@ -1874,10 +1874,12 @@ class StanFit:
         if self._events.N == 0:
             raise ValueError("Cannot perform fits with zero events")
         fit_inputs["N"] = self._events.N
-        if self._nshards not in [0, 1]:
-            # Number of shards and max. events per shards only used if multithreading is desired
-            fit_inputs["N_shards"] = self._nshards
-            fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
+        fit_inputs["N_dm"] = [
+            sum(self.events.types == dm.S) for dm in self._event_types
+        ]
+        # Number of shards and max. events per shards only used if multithreading is desired
+        fit_inputs["N_shards"] = self._nshards
+        fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
         fit_inputs["Ns_tot"] = len([s for s in self._sources.sources])
         fit_inputs["Edet"] = self._events.energies.to_value(u.GeV)
         fit_inputs["omega_det"] = self._events.unit_vectors
