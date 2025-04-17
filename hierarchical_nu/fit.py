@@ -1532,7 +1532,10 @@ class StanFit:
                 config,
             ) = cls._from_file(filename[0], load_warmup=load_warmup)
 
-            config_parser = ConfigParser(OmegaConf.create(config))
+            temp = OmegaConf.create(config)
+            default = HierarchicalNuConfig.load_default()
+            merged = OmegaConf.merge(default, temp)
+            config_parser = ConfigParser(merged)
             sources = config_parser.sources
             fit = cls(sources, event_types, events, obs_time_dict, priors, reload=True)
 
