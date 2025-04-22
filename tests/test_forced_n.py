@@ -1,5 +1,6 @@
 import numpy as np
 from astropy import units as u
+import pytest
 
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
@@ -89,6 +90,13 @@ def test_N():
         )
     )
 
+    assert np.all(
+        np.isclose(
+            sim._sim_output.stan_variable("event_type"),
+            np.array([[IC86_I.S] * 6 + [IC86_II.S] * 7]),
+        )
+    )
+
 
 def test_multi_ps_n():
     Parameter.clear_registry()
@@ -171,7 +179,22 @@ def test_multi_ps_n():
     sim.precomputation()
     sim.generate_stan_code()
     sim.compile_stan_code()
+
     sim.run()
+
+    assert np.all(
+        np.isclose(
+            sim._sim_output.stan_variable("Lambda"),
+            np.array([[1.0, 2.0, 2.0, 1.0, 1.0, 2.0]]),
+        )
+    )
+
+    assert np.all(
+        np.isclose(
+            sim._sim_output.stan_variable("event_type"),
+            np.array([[IC86_I.S] * 3 + [IC86_II.S] * 3]),
+        )
+    )
 
     my_sources.add(point_source_2)
 
@@ -179,6 +202,22 @@ def test_multi_ps_n():
     sim._N = {IC86_I: [1, 2, 3], IC86_II: [4, 5, 6]}
     sim.precomputation()
     sim.run()
+
+    assert np.all(
+        np.isclose(
+            sim._sim_output.stan_variable("Lambda"),
+            np.array(
+                [[1.0, 2.0, 2.0, 3.0, 3.0, 3.0] + [1.0] * 4 + [2.0] * 5 + [3.0] * 6]
+            ),
+        )
+    )
+
+    assert np.all(
+        np.isclose(
+            sim._sim_output.stan_variable("event_type"),
+            np.array([[IC86_I.S] * 6 + [IC86_II.S] * 15]),
+        )
+    )
 
 
 def test_asimov():
@@ -262,6 +301,7 @@ def test_asimov():
     sim.precomputation()
     sim.generate_stan_code()
     sim.compile_stan_code()
+
     sim.run()
 
     assert np.rint(np.sum(sim._Nex_et)) == np.sum(list(sim._N.values()))

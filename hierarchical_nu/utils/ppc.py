@@ -18,6 +18,7 @@ from astropy.coordinates import SkyCoord
 import h5py
 from pathlib import Path
 from tqdm.autonotebook import tqdm
+from typing import Union
 import logging
 
 logger = logging.getLogger(__file__)
@@ -53,7 +54,7 @@ class PPC:
                 break
 
     def _plot_radial_ppc(self, bins):
-        # TODO 
+        # TODO
         raise NotImplementedError()
 
     def _plot_energy_ppc(self, bins):
@@ -113,9 +114,6 @@ class PPC:
         ang_sep = coords.separation(self._fit.events.coords).deg
         obs = np.histogram(ang_sep**2, bins=bins_ang_sep_sq)[0]
 
-        idxs = np.arange(obs.size + 1)
-        idxs[-1] = idxs[-2]
-
         for (
             q,
             l,
@@ -133,12 +131,11 @@ class PPC:
                     edgecolor="none",
                 )
 
-        ax.step(
+        ax.stairs(
+            obs,
             bins_ang_sep_sq,
-            obs[idxs],
-            c="black",
+            color="black",
             label="Observed",
-            where="post",
             lw=1,
         )
 
@@ -200,10 +197,7 @@ class PPC:
                     edgecolor="none",
                 )
 
-        idxs = np.arange(obs.size + 1)
-        idxs[-1] = idxs[-2]
-
-        ax.step(bins_Ereco, obs[idxs], c="black", label="Observed", where="post", lw=1)
+        ax.stairs(obs, bins_Ereco, color="black", label="Observed", lw=1)
 
         ax.set_xscale("log")
         ax.set_yscale("log")
@@ -243,22 +237,33 @@ class PPC:
             self._Nex_et = []
             self._N = []
             self._N_comp = []
+            self._Lambda = []
             self._ran_setup = True
+            self._events = []
         except Exception as e:
             # Except any error
             self._ran_setup = False
             raise (e)
 
-    def run(self, show_progress: bool = True, output_file: Path = Path("ppc.h5")):
+    def run(
+        self,
+        show_progress: bool = True,
+        output_file: Union[str, Path] = Path("ppc.h5"),
+        overwrite: bool = False,
+    ):
         """
         Method to run all simulations and save output
         :param show_progres: Set to True if progress par shall be displayed, defaults to True
-        :param output_file: Path to output file, defaults to ./ppc.h5
+        :param output_file: str or Path to output file, defaults to ./ppc.h5
         """
 
         if not self._ran_setup:
             raise ValueError("Need to run setup before running")
 
+        if not isinstance(output_file, Path):
+            output_file = Path(output_file)
+
+        self._events = []
         rng = np.random.default_rng(seed=self._config.seed)
         sources = self._sources
         sim = self._sim
@@ -269,6 +274,8 @@ class PPC:
         # Peace and quiet
         cmdstanpy_logger = logging.getLogger("cmdstanpy")
         cmdstanpy_logger.disabled = True
+
+        seed = self._config.seed
 
         with tqdm(total=self._config.n_samples, disable=not show_progress) as pbar:
             for i in range(self._config.n_samples):
@@ -330,33 +337,59 @@ class PPC:
                                     param.value = (
                                         fit[param_name].flatten()[rint] * u.GeV
                                     )
+                sim.compute_c_values(inplace=True)
 
-                sim.run(
-                    seed=self._config.seed + i, show_progress=False, show_console=False
-                )
+                seed += 1
+                while True:
+                    sim.run(seed=seed, show_progress=False, show_console=False)
+                    if sim.events is not None or (
+                        point_sources and self._use_data_as_bg
+                    ):
+                        # I want to break free, but only if at least one event is sampled,
+                        # or we use data to estimate the background
+                        break
+                    # elif point_sources:
+                    #    continue
+
+                    seed += 1
 
                 # Output some more data for debugging
                 sim._get_expected_Nnu(sim._get_sim_inputs()).copy()
                 self._Nex_et.append(sim._Nex_et.copy())
+                # If no events are sampled and we merge with background,
+                # the Lambda array should read N_ps + 1 for all events (take number from further down somehow)
                 out = sim._sim_output.stan_variable
-                self._N.append(out("N_"))
-                self._N_comp.append(out("N_comp_"))
+                self._N.append(out("N_").astype(int))
+                try:
+                    self._Lambda.append(out("Lambda").astype(int).squeeze() - 1)
+                except ValueError:
+                    print(sim.events)
+                    self._Lambda.append([[np.nan] * sim._sources.N])
+                self._N_comp.append(out("N_comp_").astype(int))
 
                 if self._use_data_as_bg:
                     # Read in RA scrambled events here and merge with simulation
                     # How to proceed when only durations but no MJD is provided?
                     # Ignore for now, TODO for later...
                     bg_events = Events.from_ev_file(
+                        # TODO: change in future to also scramble MJD of events
                         *self._parser.detector_model,
                         scramble_ra=True,
                         seed=self._config.seed + i,
                     )
-                    events = sim.events.merge(bg_events)
+                    try:
+                        events = sim.events.merge(bg_events)
+                    except AttributeError:
+                        events = bg_events
+
                 else:
                     events = sim.events
                 if i == 0:
                     output_file = events.to_file(
-                        output_file, append=False, group_name=f"events_{i}"
+                        output_file,
+                        append=False,
+                        group_name=f"events_{i}",
+                        overwrite=overwrite,
                     )
                 else:
                     events.to_file(output_file, append=True, group_name=f"events_{i}")
@@ -366,10 +399,14 @@ class PPC:
         N = np.concatenate(self._N)
         N_comp = np.concatenate(self._N_comp)
         Nex = np.concatenate(self._Nex_et)
+
         with h5py.File(output_file, "r+") as f:
             g = f.create_group("meta_data")
             g.create_dataset("N", data=N)
             g.create_dataset("N_comp", data=N_comp)
             g.create_dataset("Nex", data=Nex)
+            l = g.create_group("Lambdas")
+            for c, arr in enumerate(self._Lambda):
+                l.create_dataset(str(c), data=arr)
 
         return output_file
