@@ -342,13 +342,13 @@ class PPC:
                 seed += 1
                 while True:
                     sim.run(seed=seed, show_progress=False, show_console=False)
-                    if sim.events is not None: #or (
-                    #    point_sources and self._use_data_as_bg
-                    #):
+                    if sim.events is not None or (
+                        point_sources and self._use_data_as_bg
+                    ):
                         # I want to break free, but only if at least one event is sampled,
                         # or we use data to estimate the background
                         break
-                    #elif point_sources:
+                    # elif point_sources:
                     #    continue
 
                     seed += 1
@@ -372,6 +372,7 @@ class PPC:
                     # How to proceed when only durations but no MJD is provided?
                     # Ignore for now, TODO for later...
                     bg_events = Events.from_ev_file(
+                        # TODO: change in future to also scramble MJD of events
                         *self._parser.detector_model,
                         scramble_ra=True,
                         seed=self._config.seed + i,
