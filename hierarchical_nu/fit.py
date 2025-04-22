@@ -1360,7 +1360,6 @@ class StanFit:
             # self._calculate_quantiles(
             #    E_power, energy_unit, area_unit, source_idx, LL, UL
             # )
-
             if not upper_limit:
                 ax.fill_between(
                     E.to_value(
