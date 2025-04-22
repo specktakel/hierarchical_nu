@@ -769,7 +769,10 @@ class StanSimInterface(StanInterface):
                             # For circular ROIs: see if diffuse event is inside one of the ROIs,
                             # if not: don't query the rejection sampling and continue from scratch
                             if isinstance(ROIList.STACK[0], CircularROI):
-                                # FOllowing if should not be necessary as loop is broken in case of point source
+                                # If the sampled source is point source, do not check this
+                                # We want to allow point source events to be scattered outside the ROI because
+                                # this is more realistic. For diffuse components, the spatial variation should
+                                # be almost constant over the typical angular scales considered.
                                 with IfBlockContext([self._lam[i], " > ", self._Ns]):
                                     with ForLoopContext(1, self._n_roi, "n") as n:
                                         with IfBlockContext(
@@ -781,6 +784,9 @@ class StanSimInterface(StanInterface):
                                         ):
                                             self._inside << 1
                                             StringExpression(["break"])
+                            else:
+                                # If RectangularROI, just break anyways
+                                StringExpression(["break"])
 
                         self._cosz[i] << FunctionCall(
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"

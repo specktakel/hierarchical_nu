@@ -86,8 +86,6 @@ class Simulation:
         self._event_types = event_types
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
-        if asimov:
-            raise NotImplementedError("Contains traces of bugs, do not use.")
         self._asimov = asimov
 
         self._sources.organise()
@@ -101,7 +99,6 @@ class Simulation:
                 N[event_type] = [1] * self._sources.N
 
         if N:
-            raise NotImplementedError("Contains traces of bugs, do not use.")
             for event_type in self._event_types:
                 if not len(N[event_type]) == len(sources):
                     raise ValueError(
