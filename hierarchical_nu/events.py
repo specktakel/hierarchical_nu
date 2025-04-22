@@ -439,6 +439,8 @@ class Events:
 
         from icecube_tools.utils.data import RealEvents
 
+        rng = np.random.default_rng(seed=seed)
+
         if not len(seasons) == len(set(seasons)):
             raise ValueError("Detector season is provided twice.")
 
@@ -465,25 +467,14 @@ class Events:
                 events.mask = mask
 
         ra = np.hstack([events.ra[s.P] * u.rad for s in seasons])
-        if scramble_ra:
-            rng = np.random.default_rng(seed=seed)
-            ra = rng.random(ra.size) * 2 * np.pi * u.rad
-
         dec = np.hstack([events.dec[s.P] * u.rad for s in seasons])
         reco_energy = np.hstack([events.reco_energy[s.P] * u.GeV for s in seasons])
         types = np.hstack([events.ra[s.P].size * [s.S] for s in seasons])
         mjd = np.hstack([events.mjd[s.P] for s in seasons])
 
-        print(mjd)
-
-        # Conversion from 50% containment to 68% is already done in RealEvents
-        ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
-        coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
-
         if scramble_mjd:
             from icecube_tools.utils.data import Uptime
 
-            rng = np.random.default_rng(seed=seed)
             lt = Uptime()
             ic86 = ["IC86_II", "IC86_III", "IC86_IV", "IC86_V", "IC86_VI", "IC86_VII"]
 
@@ -492,7 +483,6 @@ class Events:
 
             for s in seasons:
                 intervals = np.sum(lt._data[s.P], axis=1)
-                print(intervals.size)
 
                 # Sample new good time intervals for each event,
                 # weight is the intervals length
@@ -501,17 +491,17 @@ class Events:
                     size=np.sum(types == s.S, dtype=int),
                     p=intervals / np.sum(intervals),
                 )
-                print(idxs.size)
-                # Sample new random arrival time uniformly within the previously determined interval
                 start = lt._data[s.P][idxs, 0]
                 end = lt._data[s.P][idxs, 1]
-                print(start.min())
-                print(end.max())
+                # scramble arrival time within each season separately
                 mjd[types == s.S] = rng.uniform(low=start, high=end, size=idxs.size)
-                print(mjd)
 
-            # scramble arrival time within each season separately
         mjd = Time(mjd, format="mjd")
+        if scramble_ra:
+            ra = rng.random(ra.size) * 2 * np.pi * u.rad
+        # Conversion from 50% containment to 68% is already done in RealEvents
+        ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
+        coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
         if apply_roi:
             mask = cls.apply_ROIS(coords, mjd)
