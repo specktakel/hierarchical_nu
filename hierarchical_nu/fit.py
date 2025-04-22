@@ -440,14 +440,15 @@ class StanFit:
 
         if not var_names:
             var_names = self._def_var_names
-
         if transform:
             transform = lambda x: np.log10(x)
             axs = av.plot_trace(
-                self._fit_output, var_names=var_names, transform=transform, **kwargs
+                {key: self[key] for key in var_names}, transform=transform, **kwargs
             )
         else:
-            axs = av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+            axs = av.plot_trace(
+                {key: self[key] for key in var_names}, var_names=var_names, **kwargs
+            )
         fig = axs.flatten()[0].get_figure()
 
         return fig, axs
