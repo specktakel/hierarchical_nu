@@ -458,12 +458,13 @@ class R2021EffectiveArea(EffectiveArea):
             apply_roi = np.all(list(_.apply_roi for _ in ROIList.STACK))
         else:
             apply_roi = False
-
         if apply_roi:
-            cosz_min = -np.sin(ROIList.DEC_max())
-            cosz_max = -np.sin(ROIList.DEC_min())
+            cosz_min = -np.sin(ROIList.DEC_max().to_value(u.rad))
+            cosz_max = -np.sin(ROIList.DEC_min().to_value(u.rad))
             cosz_binc = self._cosz_bin_edges[:-1] + np.diff(self._cosz_bin_edges) / 2
             idx_min = np.digitize(cosz_min, cosz_binc) - 1
+            if idx_min < 0:
+                idx_min = 0
             idx_max = np.digitize(cosz_max, cosz_binc, right=True)
             eff_area = self._eff_area[:, idx_min : idx_max + 1]
             cosz_binc = cosz_binc[idx_min : idx_max + 1]

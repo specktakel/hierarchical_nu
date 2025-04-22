@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Francesca"
+    given-names: "Capel"
+    orcid: "https://orcid.org/0000-0002-1153-2139"
+title: "A hierarchical Bayesian approach to point source analysis in high-energy neutrino telescopes"
+url: "https://github.com/cescalara/hierarchical_nu"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Capel"
+      given-names: "Francesca"
+      orcid: "https://orcid.org/0000-0002-1153-2139"
+    - family-names: "Kuhlmann"
+      given-names: "Julian"
+    - family-names: "Haack"
+      given-names: "Christian"
+    - family-names: "Ha Minh"
+      given-names: "Martin"
+    - family-names: "Niederhausen"
+      given-names: "Hans"
+    - family-names: "Schumacher"
+      given-names: "Lisa"
+  doi: "10.3847/1538-4357/ad7fe9"
+  journal: "The Astrophysical Journal"
+  month: 11
+  start: 12 # First page number
+  title: "A hierarchical Bayesian approach to point source analysis in high-energy neutrino telescopes"
+  issue: 1
+  volume: 976
+  year: 2024
