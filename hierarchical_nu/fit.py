@@ -440,14 +440,15 @@ class StanFit:
 
         if not var_names:
             var_names = self._def_var_names
-
         if transform:
             transform = lambda x: np.log10(x)
             axs = av.plot_trace(
-                self._fit_output, var_names=var_names, transform=transform, **kwargs
+                {key: self[key] for key in var_names}, transform=transform, **kwargs
             )
         else:
-            axs = av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+            axs = av.plot_trace(
+                {key: self[key] for key in var_names}, var_names=var_names, **kwargs
+            )
         fig = axs.flatten()[0].get_figure()
 
         return fig, axs
@@ -1634,7 +1635,10 @@ class StanFit:
                 config,
             ) = cls._from_file(filename[0], load_warmup=load_warmup)
 
-            config_parser = ConfigParser(OmegaConf.create(config))
+            temp = OmegaConf.create(config)
+            default = HierarchicalNuConfig.load_default()
+            merged = OmegaConf.merge(default, temp)
+            config_parser = ConfigParser(merged)
             sources = config_parser.sources
             fit = cls(sources, event_types, events, obs_time_dict, priors, reload=True)
 
