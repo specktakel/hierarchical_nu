@@ -1874,9 +1874,10 @@ class StanFit:
         if self._events.N == 0:
             raise ValueError("Cannot perform fits with zero events")
         fit_inputs["N"] = self._events.N
-        # Number of shards and max. events per shards only used if multithreading is desired
-        fit_inputs["N_shards"] = self._nshards
-        fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
+        if self._nshards not in [0, 1]:
+            # Number of shards and max. events per shards only used if multithreading is desired
+            fit_inputs["N_shards"] = self._nshards
+            fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
         fit_inputs["Ns_tot"] = len([s for s in self._sources.sources])
         fit_inputs["Edet"] = self._events.energies.to_value(u.GeV)
         fit_inputs["omega_det"] = self._events.unit_vectors
@@ -2140,6 +2141,7 @@ class StanFit:
                 ]
             )
 
+
             for dm in self._event_types:
 
                 dm_mjd_min, dm_mjd_max = time.mjd_from_dm(dm)
@@ -2182,10 +2184,6 @@ class StanFit:
                     / time_norm  # properly normalises time because we use in the N_dm / N step the entire
                     # lifetime of the detector configuration
                 )
-
-        fit_inputs["N_per_dm"] = [
-            sum(self.events.types == dm.S) for dm in self._event_types
-        ]
 
         # use the Eres slices for each event as data input
         # evaluate the splines at eadch event's reco energy
