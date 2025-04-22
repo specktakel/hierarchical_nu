@@ -790,14 +790,15 @@ class Sources:
     """
 
     def __init__(self):
-        # Number of source components
-        self.N = 0
-
         # Initialise the source list
         self._sources = []
 
     def __len__(self):
-        return self.N
+        return len(self.sources)
+    
+    @property
+    def N(self):
+        return len(self)
 
     @property
     def sources(self):
@@ -813,7 +814,6 @@ class Sources:
 
         else:
             self._sources = value
-            self.N = len(self._sources)
 
     def add(self, source):
         """
@@ -822,7 +822,6 @@ class Sources:
 
         if isinstance(source, Source):
             self._sources.append(source)
-            self.N += 1
 
         elif isinstance(source, list) and all(isinstance(s, Source) for s in source):
             for s in source:
@@ -1199,6 +1198,10 @@ class Sources:
 
     def __getitem__(self, key):
         return self._sources[key]
+    
+
+    def __bool__(self):
+        return bool(len(self))
 
 
 def uv_to_icrs(unit_vector):
