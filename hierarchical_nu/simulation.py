@@ -206,6 +206,22 @@ class Simulation:
 
         self.events = None
 
+    @property
+    def expected_Nnu_per_comp(self):
+
+        sim_inputs = self._get_sim_inputs()
+        self._get_expected_Nnu(sim_inputs)
+
+        return self._expected_Nnu_per_comp
+
+    @property
+    def Nex_et(self):
+
+        sim_inputs = self._get_sim_inputs()
+        self._get_expected_Nnu(sim_inputs)
+
+        return self._Nex_et
+
     def precomputation(
         self,
         exposure_integral: collections.OrderedDict = None,
@@ -228,6 +244,15 @@ class Simulation:
 
         else:
             self._exposure_integral = exposure_integral
+
+    def compute_c_values(self, inplace: bool = False):
+        """
+        Method to re-compute all envelopes for rejection sampling,
+        necessary for PPCs when spectral parameters are changed.
+        """
+
+        for eps in self._exposure_integral.values():
+            eps._compute_c_values(inplace=inplace)
 
     def generate_stan_code(self):
         """

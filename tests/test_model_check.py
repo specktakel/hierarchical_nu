@@ -1,5 +1,6 @@
 import os
 from omegaconf import OmegaConf
+import pytest
 
 from hierarchical_nu.model_check import ModelCheck
 from hierarchical_nu.utils.config import HierarchicalNuConfig
@@ -51,9 +52,10 @@ def test_short_run_r2021(output_directory, random_seed):
     _local_config_file.unlink()
 
 
-"""
+@pytest.mark.skip(reason="Detector model no longer maintained")
 def test_short_run_icecube(output_directory, random_seed):
     # Edit configuration and save
+    hnu_config = HierarchicalNuConfig.load_default()
     hnu_config["parameter_config"]["detector_model_type"] = "icecube"
     hnu_config["parameter_config"]["src_index"] = 2.0
     hnu_config["parameter_config"]["L"] = 1e47
@@ -78,4 +80,3 @@ def test_short_run_icecube(output_directory, random_seed):
 
     # Clear config
     _local_config_file.unlink()
-"""

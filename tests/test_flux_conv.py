@@ -7,10 +7,18 @@ from hierarchical_nu.source.flux_model import (
     LogParabolaSpectrum,
     PowerLawSpectrum,
 )
+from hierarchical_nu.source.source import (
+    PointSource,
+    Sources,
+    DetectorFrame,
+    SourceFrame,
+)
+from hierarchical_nu.source.cosmology import luminosity_distance
+from hierarchical_nu.source.flux_model import integral_power_law
 
 Parameter.clear_registry()
 
-"""
+
 class TestPrecomputation:
 
     @pytest.fixture
@@ -105,7 +113,6 @@ class TestPrecomputation:
         assert self.point_source.flux_model.total_flux_int.value == pytest.approx(
             F.to(1 / (u.second * u.meter**2)).value, rel=1e-5
         )
-"""
 
 
 def test_logparabola():

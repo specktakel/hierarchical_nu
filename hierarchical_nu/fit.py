@@ -231,6 +231,8 @@ class StanFit:
 
         self._exposure_integral = collections.OrderedDict()
 
+        self._fit_output = None
+
     @property
     def priors(self):
         return self._priors
@@ -264,6 +266,11 @@ class StanFit:
             self._events = events
         else:
             raise ValueError("events must be instance of Events")
+
+    @property
+    def fit_output(self):
+
+        return self._fit_output
 
     def precomputation(
         self,
@@ -433,14 +440,15 @@ class StanFit:
 
         if not var_names:
             var_names = self._def_var_names
-
         if transform:
             transform = lambda x: np.log10(x)
             axs = av.plot_trace(
-                self._fit_output, var_names=var_names, transform=transform, **kwargs
+                {key: self[key] for key in var_names}, transform=transform, **kwargs
             )
         else:
-            axs = av.plot_trace(self._fit_output, var_names=var_names, **kwargs)
+            axs = av.plot_trace(
+                {key: self[key] for key in var_names}, var_names=var_names, **kwargs
+            )
         fig = axs.flatten()[0].get_figure()
 
         return fig, axs
@@ -550,6 +558,8 @@ class StanFit:
 
         if not var_names:
             var_names = self._def_var_names
+
+        var_names.pop("Nex")
 
         # Organise samples
         samples_list = []
@@ -1256,6 +1266,107 @@ class StanFit:
 
         return fig, ax
 
+    def plot_flux_band_HDI(
+        self,
+        E_power: float = 0.0,
+        credible_interval: Union[float, List[float]] = 0.5,
+        source_idx: int = 0,
+        energy_unit=u.TeV,
+        area_unit=u.cm**2,
+        x_energy_unit=u.GeV,
+        upper_limit: bool = False,
+        figsize=(8, 3),
+        ax=None,
+        **kwargs,
+    ):
+        """
+        Plot flux uncertainties.
+        :param E_power: float, plots flux * E**E_power.
+        :param credible_interval: set (equal-tailed) credible intervals to be plotted.
+        :param source_idx: Choose which point source's flux to plot. -1 for sum over all PS.
+        :param energy_unit: Choose your favourite flux energy unit.
+        :param area_unit: Choose your favourite flux area unit.
+        :param x_energy_unit: Choose your favourite abscissa energy unit
+        :param upper_limit: Set to True if only upper limit should be displayed
+        :param figsize: Figsize for new figure (requiring `ax=None`)
+        :param ax: Reuse existing axis, defaults to creating a new figure with single axis
+        :param kwargs: Remaining kwargs will be passed to `pyplot.axis.fill_between` or `pyplot.axis.plot`
+        """
+
+        # Have some defaults for plotting
+        fill_kwargs = dict(
+            alpha=0.3,
+            color="C0",
+            edgecolor="none",
+        )
+        limit_kwargs = dict(
+            alpha=0.3,
+            color="C0",
+            marker=r"$\downarrow$",
+            markevery=0.06,
+            markersize=10,
+        )
+
+        fill_kwargs |= kwargs
+        limit_kwargs |= kwargs
+
+        # Save some time calculating if the previous calculation has already used the same E_power
+        if not hasattr(self, "_flux_grid"):
+            self._calculate_flux_grid()
+
+        flux_unit = 1 / energy_unit / area_unit / u.s
+        E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.get_figure()
+
+        # Find the interval to be plotted
+        credible_interval = np.atleast_1d(credible_interval)
+        for CI in credible_interval:
+            if upper_limit:
+                UL = CI
+                LL = 0.0  # dummy
+            else:
+                UL = 0.5 - CI / 2
+                LL = 0.5 + CI / 2
+
+            lower, upper = av.hdi(self._flux_grid)
+            # self._calculate_quantiles(
+            #    E_power, energy_unit, area_unit, source_idx, LL, UL
+            # )
+
+            if not upper_limit:
+                ax.fill_between(
+                    E.to_value(
+                        x_energy_unit,
+                        equivalencies=u.spectral(),
+                    ),
+                    lower,
+                    upper,
+                    **fill_kwargs,
+                )
+            else:
+                ax.plot(
+                    E.to_value(x_energy_unit, equivalencies=u.spectral()),
+                    upper,
+                    **limit_kwargs,
+                    # TODO fix alignment of arrow base to the line
+                )
+
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+
+        ax.set_xlabel(f"$E$ [{x_energy_unit.to_string('latex_inline')}]")
+        ax.set_ylabel(
+            f"flux [{(energy_unit**E_power * flux_unit).unit.to_string('latex_inline')}]"
+        )
+        if upper_limit:
+            ax.set_ylim(bottom=np.min(upper) * 0.8)
+
+        return fig, ax
+
     def plot_peak_energy_flux(
         self,
         ax,
@@ -1263,6 +1374,7 @@ class StanFit:
         energy_unit=u.TeV,
         area_unit=u.cm**2,
         x_energy_unit=u.GeV,
+        **kwargs,
     ):
         """
         Plot 2d kde contours of peak energy flux and energy at which peak lies
@@ -1293,7 +1405,7 @@ class StanFit:
             "flux": peak_flux.to_value(energy_unit / area_unit)[mask],
         }
 
-        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap=CMAP)
+        sns.kdeplot(data, x="E", y="flux", ax=ax, levels=levels, cmap=CMAP, **kwargs)
 
         colours = ax.collections[-1]._mapped_colors
 
@@ -1523,7 +1635,10 @@ class StanFit:
                 config,
             ) = cls._from_file(filename[0], load_warmup=load_warmup)
 
-            config_parser = ConfigParser(OmegaConf.create(config))
+            temp = OmegaConf.create(config)
+            default = HierarchicalNuConfig.load_default()
+            merged = OmegaConf.merge(default, temp)
+            config_parser = ConfigParser(merged)
             sources = config_parser.sources
             fit = cls(sources, event_types, events, obs_time_dict, priors, reload=True)
 
