@@ -231,6 +231,10 @@ class Simulation:
 
         return self._Nex_et
 
+    @property
+    def sources(self):
+        return self._sources
+
     def precomputation(
         self,
         exposure_integral: collections.OrderedDict = None,
