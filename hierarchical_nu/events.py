@@ -527,6 +527,9 @@ class Events:
         :param events: Instance of Events to merge with
         """
 
+        if not isinstance(events, Events):
+            raise TypeError("`events` must be instance of `Events`")
+
         self.coords.representation_type = "spherical"
         events.coords.representation_type = "spherical"
         ra = np.hstack((self.coords.ra.deg * u.deg, events.coords.ra.deg * u.deg))
@@ -650,7 +653,13 @@ class Events:
         )
 
     @classmethod
-    def apply_ROIS(cls, coords: SkyCoord, mjd: Time):
+    def apply_ROIS(
+        cls,
+        coords: SkyCoord,
+        mjd: Time,
+        skip_time: bool = False,
+        skip_direction: bool = False,
+    ):
         """
         Returns list of mask, one mask for each ROI on stack
         """
@@ -660,32 +669,31 @@ class Events:
 
         mask = []
         for roi in ROIList.STACK:
+            time = (mjd.mjd <= roi.MJD_max) & (mjd.mjd >= roi.MJD_min)
             if isinstance(roi, CircularROI):
-                mask.append(
-                    (
-                        (roi.radius >= roi.center.separation(coords))
-                        & (mjd.mjd <= roi.MJD_max)
-                        & (mjd.mjd >= roi.MJD_min)
-                    )
-                )
+                direction = roi.radius >= roi.center.separation(coords)
             else:
                 if roi.RA_min > roi.RA_max:
-                    mask.append(
+                    direction = (
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                        & (mjd.mjd <= roi.MJD_max)
-                        & (mjd.mjd >= roi.MJD_min)
                     )
 
                 else:
-                    mask.append(
+                    direction = (
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & (ra >= roi.RA_min)
                         & (ra <= roi.RA_max)
-                        & (mjd.mjd <= roi.MJD_max)
-                        & (mjd.mjd >= roi.MJD_min)
                     )
+            if skip_time and skip_direction:
+                mask.append([True] * coords.size)
+            elif skip_time:
+                mask.append(direction)
+            elif skip_direction:
+                mask.append(time)
+            else:
+                mask.append(time & direction)
 
         return mask
