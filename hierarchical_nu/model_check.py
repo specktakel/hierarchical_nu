@@ -11,10 +11,12 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from cmdstanpy import CmdStanModel
 from scipy.stats import uniform
+from omegaconf import OmegaConf
 from typing import List, Union
+from pathlib import Path
+from time import time as thyme
 
 from hierarchical_nu.source.parameter import Parameter
-
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
@@ -42,22 +44,17 @@ class ModelCheck:
 
     def __init__(
         self,
-        config: Union[None, HierarchicalNuConfig] = None,
+        config: HierarchicalNuConfig,
         truths=None,
         priors=None,
     ):
         """
-        :param config: HhierarchicalNuConfig instance or None (uses default config)
+        :param config: HhierarchicalNuConfig instance
         :param truths: true parameter values
         :param priors: priors to overwrite the config's priors
         """
 
-        if config is None:
-            logger.info("Loading default config")
-            self.config = HierarchicalNuConfig.load_default()
-
-        else:
-            self.config = config
+        self.config = config
         self.parser = ConfigParser(self.config)
 
         if priors:
@@ -73,20 +70,20 @@ class ModelCheck:
             logger.info("Found true values")
             self.truths = truths
 
-        else:
+        # Config
+        self.parser.ROI
+
+        # Sources
+        self._sources = self.parser.sources
+        if not self._sources.background:
+            f_arr = self._sources.f_arr().value
+            f_arr_astro = self._sources.f_arr_astro().value
+
+        # Detector
+        self._detector_model_type = self.parser.detector_model
+        self._obs_time = self.parser.obs_time
+        if not truths:
             logger.info("Loading true values from config")
-            # Config
-            self.parser.ROI
-
-            # Sources
-            self._sources = self.parser.sources
-            if not self._sources.background:
-                f_arr = self._sources.f_arr().value
-                f_arr_astro = self._sources.f_arr_astro().value
-
-            # Detector
-            self._detector_model_type = self.parser.detector_model
-            self._obs_time = self.parser.obs_time
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = self.config.stan_config["threads_per_chain"]
 
@@ -101,7 +98,6 @@ class ModelCheck:
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
             self._Nex_et = sim._Nex_et
-
             # Truths
             self.truths = {}
 
@@ -190,7 +186,7 @@ class ModelCheck:
 
         self._default_var_names = [key for key in self.truths]
         self._default_var_names.append("Fs")
-
+        self._default_var_names.append("L_ind")
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
     @staticmethod
@@ -268,12 +264,24 @@ class ModelCheck:
             delayed(self._single_run)(n_subjobs, seed=s, **kwargs) for s in job_seeds
         )
 
-    def save(self, filename, save_events: bool = False):
+    def save(
+        self,
+        filename: Path,
+        save_events: bool = False,
+        overwrite: bool = False,
+    ):
         """
         Save model check
         :param filename: output filename
         :param save_events: If True save simulated events as well
         """
+
+        if os.path.exists(filename) and not overwrite:
+            logger.warning(f"File {filename} already exists.")
+            file = os.path.splitext(filename)[0]
+            ext = os.path.splitext(filename)[1]
+            file += f"_{int(thyme())}"
+            filename = file + ext
 
         with h5py.File(filename, "w") as f:
             truths_folder = f.create_group("truths")
@@ -318,6 +326,10 @@ class ModelCheck:
                                 f"event_Lambda_{i}_{c}", data=data
                             )
             f.create_dataset("version", data=git_hash)
+
+            # Create string of used config, to be loaded later to re-create source lists
+            config_string = OmegaConf.to_yaml(self.parser._hnu_config)
+            f.create_dataset("config", data=config_string)
 
         if save_events and "events" in res.keys():
             for i, res in enumerate(self._results):
@@ -373,6 +385,7 @@ class ModelCheck:
                         "Files in list have different truth settings and should not be combined"
                     )
 
+                """
                 n_jobs = len(
                     [
                         key
@@ -382,18 +395,30 @@ class ModelCheck:
                             and key != "priors"
                             and key != "sim"
                             and key != "version"
+                            and key != "config"
                         )
                     ]
                 )
+                """
 
-                for i in range(n_jobs):
-                    job_folder = f["results_%i" % i]
-                    for res_key in job_folder:
-                        results[res_key].extend(job_folder[res_key][()])
-                    # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
-                    sim_N.extend(sim_folder["sim_%i" % i][()])
+                i = 0
+                while True:
+                    try:
+                        # for i in range(n_jobs):
+                        job_folder = f["results_%i" % i]
+                        for res_key in job_folder:
+                            results[res_key].extend(job_folder[res_key][()])
+                        # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
+                        sim_N.extend(sim_folder["sim_%i" % i][()])
+                        i += 1
+                    except KeyError:
+                        break
 
-        output = cls(truths=truths, priors=priors)
+        with h5py.File(filename, "r") as f:
+            config_string = f["config"][()].decode("ascii")
+        config = OmegaConf.create(config_string)
+
+        output = cls(config, truths=truths, priors=priors)
         output.results = results
         output.sim_Lambdas = sim
         output.sim_N = sim_N
@@ -444,6 +469,7 @@ class ModelCheck:
                 continue
             if (
                 var_name == "L"
+                or var_name == "L_ind"
                 # or var_name == "F_diff"
                 # or var_name == "F_atmo"
                 or var_name == "Fs"
@@ -681,18 +707,15 @@ class ModelCheck:
 
             events = sim.events
 
-            # create a mask for the sampled events
-            # for point sources, events may be scattered outside of the ROI
-            # we need to catch these and delete from the event lists used for the fit
-            mask = events.apply_ROIS(events.coords, events.mjd)
+            # Create a mask for the sampled events
+            # for point sources; events may be scattered outside of the ROI,
+            # we need to catch these and delete from the event lists used for the fit.
+            # Skip the temporal selection because currently the sampled time stamps
+            # have an arbitrary value (we can only do time-averaged simulations)
+            mask = events.apply_ROIS(events.coords, events.mjd, skip_time=True)
             idx = np.logical_or.reduce(mask)
 
             lambd = sim._sim_output.stan_variable("Lambda").squeeze()[idx]
-
-            ps = np.sum(lambd == 1.0)
-            diff = np.sum(lambd == 2.0)
-            atmo = np.sum(lambd == 3.0)
-            lam = np.array([ps, diff, atmo])
 
             new_events = Events(
                 events.energies[idx],
@@ -701,6 +724,27 @@ class ModelCheck:
                 events.ang_errs[idx],
                 events.mjd[idx],
             )
+
+            if self.parser._hnu_config.parameter_config.data_bg:
+                # If we use data as background, sample scrambled data and add to point source events
+                bg_events = Events.from_ev_file(
+                    *self.parser.detector_model,
+                    scramble_ra=True,
+                    scramble_mjd=True,
+                    seed=seed,
+                )
+                N_bg = bg_events.N
+                new_events = new_events.merge(bg_events)
+                lambd = np.concatenate((lambd, np.array([4.0] * N_bg)))
+            else:
+                N_bg = 0
+
+            ps = np.sum(lambd == 1.0)
+            diff = np.sum(lambd == 2.0)
+            atmo = np.sum(lambd == 3.0)
+            lam = np.array([ps, diff, atmo, N_bg])
+
+            print(new_events.N)
 
             # Fit
             # Same as above, save time
@@ -741,11 +785,13 @@ class ModelCheck:
 
             inits = {
                 # TODO fix
-                "F_diff": 1e-4,
+                "F_diff": 2e-13,
                 "F_atmo": F_atmo_init.to_value(1 / (u.m**2 * u.s)),
                 "E": [1e5] * fit.events.N,
                 "L": L_init,
                 "src_index": src_init,
+                "Nex_per_ps": [5] * len(fit.sources.point_source),
+                "N_bg": fit.events.N - 5,
             }
             fit.run(
                 seed=s,
