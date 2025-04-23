@@ -324,7 +324,12 @@ class Simulation:
 
         # Create data field in sim inputs to handle number of expected events for each source component
         # self._Nex_et has all necessary information, dimension (detector models, source components)
-        self._sim_inputs["Nex_et"] = self._Nex_et.tolist()
+        # In case of data being used as background, cut out the corresponding zero-entries
+        if self.sources.background:
+            Nex_et = self.Nex_et[:, :-1]
+        else:
+            Nex_et = self.Nex_et
+        self._sim_inputs["Nex_et"] = Nex_et.tolist()
 
         if verbose:
             sim_logger.info(
