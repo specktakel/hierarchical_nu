@@ -721,9 +721,14 @@ class Simulation:
             # Round expected number of events to nearest integer per source
             # distribute this number weighted with the Nex per event type over the event types
             N = np.rint(self._Nex_et.sum(axis=0)).astype(int)
-            self._N = np.zeros_like(self._Nex_et)
-            for c, _ in enumerate(self._sources):
-
+            if not self.sources.background:
+                self._N = np.zeros_like(self._Nex_et)
+            else:
+                self._N = np.zeros_like(self._Nex_et[:, :-1])
+            for c, source in enumerate(self._sources):
+                if isinstance(source, BackgroundSource):
+                    print("sim inputs,background source")
+                    break
                 weights = self._Nex_et[:, c] / self._Nex_et[:, c].sum()
 
                 # Sample et_idx for each source
