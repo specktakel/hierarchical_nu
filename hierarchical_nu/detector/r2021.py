@@ -2653,7 +2653,7 @@ class R2021DetectorModel(ABC, DetectorModel):
             raise ValueError("This should not happen")
 
         if diffuse:
-            return_type += ", array[] real)"
+            return_type += ", real, real)"
         else:
             return_type += ")"
 
@@ -2715,26 +2715,26 @@ class R2021DetectorModel(ABC, DetectorModel):
             _return_statement = "(ps_eres, ps_aeff"
 
             if diffuse:
-                diff = ForwardArrayDef("diff", "real", ["[3]"])
+                diff_eres = ForwardVariableDef("diff_eres", "real")
+                diff_aeff = ForwardVariableDef("diff_aeff", "real")
 
                 if isinstance(
                     self.energy_resolution, GridInterpolationEnergyResolution
                 ):
-                    diff[1] << self.energy_resolution(log10Etrue, "eres_slice")
+                    diff_eres << self.energy_resolution(log10Etrue, "eres_slice")
                 else:
-                    diff[1] << self.energy_resolution(
+                    diff_eres << self.energy_resolution(
                         log10Etrue, log10Ereco, "omega_det"
                     )
-                diff[2] << FunctionCall(
+                diff_aeff << FunctionCall(
                     [
                         self.effective_area(log10Etrue, "omega_det"),
                     ],
                     "log",
                 )
 
-                diff[3] << diff[2]
 
-                _return_statement += ", diff)"
+                _return_statement += ", diff_eres, diff_aeff)"
             else:
                 _return_statement += ")"
 
