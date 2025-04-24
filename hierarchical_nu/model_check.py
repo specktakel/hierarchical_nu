@@ -661,6 +661,10 @@ class ModelCheck:
 
         sys.stderr.write("Random seed: %i\n" % seed)
 
+        # Something related to the used skyllh modules leads to all the logging
+        # being printed to the console. TODO properly fix this...
+        logging.disable(logging.CRITICAL)
+
         self.parser.ROI
 
         sources = self.parser.sources
@@ -743,8 +747,6 @@ class ModelCheck:
             diff = np.sum(lambd == 2.0)
             atmo = np.sum(lambd == 3.0)
             lam = np.array([ps, diff, atmo, N_bg])
-
-            print(new_events.N)
 
             # Fit
             # Same as above, save time
@@ -872,6 +874,8 @@ class ModelCheck:
                 outputs["N_Eff"].append(N_Eff)
             outputs["parameter_names"].append(np.array(keys, dtype="S"))
             outputs["R_hat"].append(R_hat)
+
+            logging.disable(logging.NOTSET)
 
         return outputs
 
