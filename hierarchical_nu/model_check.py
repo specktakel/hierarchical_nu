@@ -169,7 +169,8 @@ class ModelCheck:
                     ]
                 except ValueError:
                     pass
-            self.truths["Nex"] = Nex
+            if not self.parser._hnu_config.parameter_config.data_bg:
+                self.truths["Nex"] = Nex
             self.truths["Nex_src"] = np.sum(
                 Nex_per_comp[0 : len(self._sources.point_source)]
             )
@@ -187,6 +188,7 @@ class ModelCheck:
         self._default_var_names = [key for key in self.truths]
         self._default_var_names.append("Fs")
         self._default_var_names.append("L_ind")
+        self._default_var_names.append("Nex_bg")
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
     @staticmethod
@@ -708,14 +710,12 @@ class ModelCheck:
             # If asimov option is used and data added as background, just use the background
             # else continue
 
-            asimov = self.config.parameter_config.asimov
             data_bg = self.config.parameter_config.data_bg
             if not sim.events and not data_bg:
                 continue
 
-            if not data_bg:
-                events = sim.events
-
+            events = sim.events
+            if events:
                 # Create a mask for the sampled events
                 # for point sources; events may be scattered outside of the ROI,
                 # we need to catch these and delete from the event lists used for the fit.
@@ -733,9 +733,8 @@ class ModelCheck:
                     events.ang_errs[idx],
                     events.mjd[idx],
                 )
-                N_bg = 0
 
-            else:
+            if data_bg:
                 # If we use data as background, sample scrambled data and add to point source events
                 bg_events = Events.from_ev_file(
                     *self.parser.detector_model,
@@ -744,12 +743,14 @@ class ModelCheck:
                     seed=seed,
                 )
                 N_bg = bg_events.N
-                if sim.events:
+                if events:
                     new_events = new_events.merge(bg_events)
                     lambd = np.concatenate((lambd, np.array([4.0] * N_bg)))
                 else:
                     new_events = bg_events
                     lambd = np.array([4.0] * N_bg)
+            else:
+                N_bg = 0
 
             ps = np.sum(lambd == 1.0)
             diff = np.sum(lambd == 2.0)
@@ -850,8 +851,8 @@ class ModelCheck:
                 "_beta_index",
                 "E0_src",
                 "_E0_src",
-                "E[",
-                "Esrc[",
+                "E",
+                "Esrc",
                 "F_atmo",
                 "F_diff",
                 "diff_index",

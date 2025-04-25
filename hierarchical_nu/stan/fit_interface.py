@@ -1482,8 +1482,8 @@ class StanFitInterface(StanInterface):
                 )
 
             if self._bg:
-                self._N_bg = ParameterDef(
-                    "N_bg",
+                self._Nex_bg = ParameterDef(
+                    "Nex_bg",
                     "real",
                     0,
                 )
@@ -1570,19 +1570,19 @@ class StanFitInterface(StanInterface):
 
             if self.sources.background:
                 self._log_N_bg = ForwardVariableDef("log_N_bg", "real")
-                self._log_N_bg << FunctionCall([self._N_bg], "log")
+                self._log_N_bg << FunctionCall([self._Nex_bg], "log")
 
             # Total flux
-            self._Ftot = ForwardVariableDef("Ftot", "real")
+            # self._Ftot = ForwardVariableDef("Ftot", "real")
 
             # Total flux form point sources
-            self._F_src = ForwardVariableDef("Fs", "real")
+            # self._F_src = ForwardVariableDef("Fs", "real")
 
             # Different definitions of fractional association
-            self._f_arr = ForwardVariableDef("f_arr", "real")
-            self._f_det = ForwardVariableDef("f_det", "real")
-            self._f_arr_astro = ForwardVariableDef("f_arr_astro", "real")
-            self._f_det_astro = ForwardVariableDef("f_det_astro", "real")
+            # self._f_arr = ForwardVariableDef("f_arr", "real")
+            # self._f_det = ForwardVariableDef("f_det", "real")
+            # self._f_arr_astro = ForwardVariableDef("f_arr_astro", "real")
+            # self._f_det_astro = ForwardVariableDef("f_det_astro", "real")
 
             # Decide how many source components we have and calculate
             # `logF` accordingly.
@@ -1709,7 +1709,7 @@ class StanFitInterface(StanInterface):
                 self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
 
-            self._F_src << 0.0
+            # self._F_src << 0.0
             self._Nex_src << 0.0
 
             # For each source, calculate the number flux and update F, logF
@@ -1888,7 +1888,7 @@ class StanFitInterface(StanInterface):
                                 "sum(eps[:, k])",
                             ]
                         )
-                    StringExpression([self._F_src, " += ", self._F[k]])
+                    # StringExpression([self._F_src, " += ", self._F[k]])
 
             if self.sources.diffuse:
                 StringExpression("F[Ns+1]") << self._F_diff
@@ -1967,10 +1967,11 @@ class StanFitInterface(StanInterface):
                 self._Nex_atmo << FunctionCall([self._Nex_atmo_comp], "sum")
 
             if self._bg:
-                self._Nex << FunctionCall([self._Nex_comp], "sum") + self._N_bg
+                self._Nex << FunctionCall([self._Nex_comp], "sum") + self._Nex_bg
             else:
                 self._Nex << FunctionCall([self._Nex_comp], "sum")
 
+            """
             # Evaluate the different fractional associations as derived parameters
             if self.sources.diffuse and self.sources.atmospheric:
                 self._Ftot << self._F_src + self._F_diff + self._F_atmo
@@ -1997,7 +1998,7 @@ class StanFitInterface(StanInterface):
                 self._f_det_astro << 1.0
 
             self._f_arr << StringExpression([self._F_src, "/", self._Ftot])
-
+            """
             if self.sources.diffuse and self.sources.atmospheric:
                 self._k_diff = "Ns + 1"
                 self._k_atmo = "Ns + 2"
