@@ -2261,7 +2261,6 @@ class StanFit:
                 # get number of events per detector config over the respective detector lifetime in that config
                 N = 0
                 N_dm = np.sum(self.events.types == dm.S)
-                print(N_dm)
                 for roi in ROIList.STACK:
                     mjd_min, mjd_max = roi.MJD_min, roi.MJD_max
 

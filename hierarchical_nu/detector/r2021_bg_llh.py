@@ -6,7 +6,6 @@ from icecube_tools.utils.data import data_directory, available_datasets
 from skyllh.i3.backgroundpdf import DataBackgroundI3SpatialPDF
 
 
-
 from skyllh.core.config import Config
 from skyllh.i3.config import add_icecube_specific_analysis_required_data_fields
 
@@ -25,6 +24,7 @@ from typing import Union
 cfg = Config()
 add_icecube_specific_analysis_required_data_fields(cfg)
 base_path = Path(data_directory) / Path(available_datasets["20210126"]["dir"])
+
 
 class R2021BackgroundLLH:
 
@@ -68,8 +68,6 @@ class R2021BackgroundLLH:
         elow = log10_elow
         ehigh = log10_ehigh
 
-        # print(elow, ehigh)
-        # print(sin_dec)
         pdf = self._energy_pdf
         edges = pdf.binnings[0].binedges
         elow = max(elow, edges.min())
@@ -77,7 +75,6 @@ class R2021BackgroundLLH:
         sin_dec_idx = np.digitize(sin_dec, pdf.binnings[1].binedges) - 1
         if sin_dec_idx >= pdf.binnings[1].binedges.max():
             sin_dec_idx = pdf.binnings[1].bincenters.size - 1
-        # print(sin_dec_idx)
         new_edges = np.unique(
             np.hstack((np.atleast_1d(elow), edges, np.atleast_1d(ehigh)))
         )
@@ -88,9 +85,6 @@ class R2021BackgroundLLH:
 
         idx_l = np.digitize(elow, edges) - 1
         idx_h = np.digitize(ehigh, edges, right=True)
-        # print(idx_l)
-        # print(idx_h)
-        # print(new_edges[(new_edges <= ehigh) & (new_edges >= elow)])
         diff = np.diff(
             new_edges[(new_edges <= ehigh) & (new_edges >= elow)]
         )  # this is the corrsponding deltaE
@@ -99,9 +93,9 @@ class R2021BackgroundLLH:
 
     def prob_omega(self, sin_dec: Union[float, np.ndarray]):
         return 0.5 / np.pi * np.exp(self._spatial_pdf._log_spline(sin_dec))
-    
+
     def prob_ereco_given_sindec(
-            self, ereco:Union[float, np.ndarray], sin_dec: Union[float, np.ndarray]
+        self, ereco: Union[float, np.ndarray], sin_dec: Union[float, np.ndarray]
     ):
         pdf = self._energy_pdf
         edges = pdf.binnings[0].binedges
@@ -135,6 +129,4 @@ class R2021BackgroundLLH:
     ):
         p_sin_dec = self.prob_omega(sin_dec)
         p_ereco_given_sindec = self.prob_ereco_given_sindec(ereco, sin_dec)
-        print(p_ereco_given_sindec.shape)
-        print(p_sin_dec.shape)
         return p_ereco_given_sindec * p_sin_dec

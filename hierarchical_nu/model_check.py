@@ -249,7 +249,7 @@ class ModelCheck:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-    def parallel_run(self, n_jobs=1, n_subjobs=1, seed=None, **kwargs):
+    def parallel_run(self, n_jobs=1, n_subjobs=1, seed: int = 42, **kwargs):
         """
         Run model checks in parallel
         :param n_jobs: Number of parallel jobs
@@ -705,31 +705,37 @@ class ModelCheck:
             sim.run(seed=s, verbose=True)
             # self.sim = sim
 
-            # Skip if no detected events
-            if not sim.events:
+            # If asimov option is used and data added as background, just use the background
+            # else continue
+
+            asimov = self.config.parameter_config.asimov
+            data_bg = self.config.parameter_config.data_bg
+            if not sim.events and not data_bg:
                 continue
 
-            events = sim.events
+            if not data_bg:
+                events = sim.events
 
-            # Create a mask for the sampled events
-            # for point sources; events may be scattered outside of the ROI,
-            # we need to catch these and delete from the event lists used for the fit.
-            # Skip the temporal selection because currently the sampled time stamps
-            # have an arbitrary value (we can only do time-averaged simulations)
-            mask = events.apply_ROIS(events.coords, events.mjd, skip_time=True)
-            idx = np.logical_or.reduce(mask)
+                # Create a mask for the sampled events
+                # for point sources; events may be scattered outside of the ROI,
+                # we need to catch these and delete from the event lists used for the fit.
+                # Skip the temporal selection because currently the sampled time stamps
+                # have an arbitrary value (we can only do time-averaged simulations)
+                mask = events.apply_ROIS(events.coords, events.mjd, skip_time=True)
+                idx = np.logical_or.reduce(mask)
 
-            lambd = sim._sim_output.stan_variable("Lambda").squeeze()[idx]
+                lambd = sim._sim_output.stan_variable("Lambda").squeeze()[idx]
 
-            new_events = Events(
-                events.energies[idx],
-                events.coords[idx],
-                events.types[idx],
-                events.ang_errs[idx],
-                events.mjd[idx],
-            )
+                new_events = Events(
+                    events.energies[idx],
+                    events.coords[idx],
+                    events.types[idx],
+                    events.ang_errs[idx],
+                    events.mjd[idx],
+                )
+                N_bg = 0
 
-            if self.parser._hnu_config.parameter_config.data_bg:
+            else:
                 # If we use data as background, sample scrambled data and add to point source events
                 bg_events = Events.from_ev_file(
                     *self.parser.detector_model,
@@ -738,10 +744,12 @@ class ModelCheck:
                     seed=seed,
                 )
                 N_bg = bg_events.N
-                new_events = new_events.merge(bg_events)
-                lambd = np.concatenate((lambd, np.array([4.0] * N_bg)))
-            else:
-                N_bg = 0
+                if sim.events:
+                    new_events = new_events.merge(bg_events)
+                    lambd = np.concatenate((lambd, np.array([4.0] * N_bg)))
+                else:
+                    new_events = bg_events
+                    lambd = np.array([4.0] * N_bg)
 
             ps = np.sum(lambd == 1.0)
             diff = np.sum(lambd == 2.0)

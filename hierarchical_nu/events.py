@@ -292,7 +292,7 @@ class Events:
             _Emin_det = Parameter.get_parameter("Emin_det")
             mask = events.energies >= _Emin_det.value
             # logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
-            print(f"Applying Emin_det={_Emin_det.value} to event selection.")
+            logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
 
         except ValueError:
             _types = np.unique(events.types)
@@ -308,7 +308,9 @@ class Events:
                     # logger.info(
                     #     f"Applying Emin_det={_Emin_det.value} to event selection."
                     # )
-                    print(f"Applying Emin_det={_Emin_det.value} to event selection.")
+                    logger.info(
+                        f"Applying Emin_det={_Emin_det.value} to event selection."
+                    )
                 except ValueError:
                     pass
 

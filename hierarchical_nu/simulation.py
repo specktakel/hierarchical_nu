@@ -727,9 +727,12 @@ class Simulation:
                 self._N = np.zeros_like(self._Nex_et[:, :-1])
             for c, source in enumerate(self._sources):
                 if isinstance(source, BackgroundSource):
-                    print("sim inputs,background source")
                     break
                 weights = self._Nex_et[:, c] / self._Nex_et[:, c].sum()
+
+                if np.any(np.isnan(weights)):
+                    N[:, c] = 0
+                    continue
 
                 # Sample et_idx for each source
                 et_idx = np.random.choice(
