@@ -56,6 +56,53 @@ real interpolate(vector x_values, vector y_values, real x) {
   return y_left + dydx * (x - x_left);
 }
 
+real interpolate(array[] real x_values, array[] real y_values, real x) {
+
+  real x_left;
+  real y_left;
+  real x_right;
+  real y_right;
+  real dydx;
+  
+  int Nx = num_elements(x_values);
+  real xmin = x_values[1];
+  real xmax = x_values[Nx];
+  int i = 1;
+
+  if (x > xmax || x < xmin) {
+
+    /*
+    print("Warning, x is outside of interpolation range!");
+    print("Returning edge values.");
+    print("x:", x);
+    print("xmax", xmax);
+    */
+    
+    if(x > xmax) {
+      return y_values[Nx];
+    }
+    else if (x < xmin) {
+      return y_values[1];
+    }
+  }
+    
+  if( x >= x_values[Nx - 1] ) {
+    i = Nx - 1;
+  }
+  else {
+    i = binary_search(x, x_values);
+  }
+
+  x_left = x_values[i];
+  y_left = y_values[i];
+  x_right = x_values[i + 1];
+  y_right = y_values[i + 1];
+  
+  dydx = (y_right - y_left) / (x_right - x_left);
+    
+  return y_left + dydx * (x - x_left);
+}
+
 /**
  *like interpolate, only return eponentiated values.
  */

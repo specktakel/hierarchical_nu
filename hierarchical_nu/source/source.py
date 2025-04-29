@@ -15,6 +15,7 @@ from .flux_model import (
     PGammaSpectrum,
 )
 from .atmospheric_flux import AtmosphericNuMuFlux
+from .seyfert_model import SeyfertNuMuSpectrum
 from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
@@ -144,6 +145,7 @@ class PointSource(Source):
         redshift: float
         spectral_shape:
             Spectral shape of the source. Should return units 1/(GeV cm^2 s)
+        frame: Instance of `ReferenceFrame` in which energies are defined
     """
 
     @u.quantity_input
@@ -473,6 +475,45 @@ class PointSource(Source):
         norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
         norm.fixed = True
         return cls(name, dec, ra, redshift, spectral_shape, frame)
+    
+    @classmethod
+    def make_seyfert_source(
+        cls,
+        name: str,
+        dec: u.rad,
+        ra: u.rad,
+        P: Parameter,
+        eta: Parameter,
+        redshift: float,
+        # lower: Parameter,
+        # upper: Parameter,
+        frame: ReferenceFrame = DetectorFrame,
+    ):
+        """
+        Create source with Seyfert II neutrino flux.
+        Parameters:
+            name: str
+                Source name
+            dec: u.rad,
+                Declination of the source
+            ra: u.rad,
+                Right Ascension of the source
+            P: Parameter,
+                Cosmic ray pressure to thermal pressure ratio, acts as normalisation
+            eta: Parameter
+                Inverse magnetic turbulence strength
+            redshift: float
+            lower: Parameter
+                Lower energy bound
+            upper: Parameter
+                Upper energy bound
+            frame: ReferenceFrame
+                Reference frame in which source energy is defined
+        """
+
+        spectral_shape = SeyfertNuMuSpectrum(P, eta)
+        return cls(name, dec, ra, redshift, spectral_shape, frame)
+        
 
     @classmethod
     def _make_sources_from_file(

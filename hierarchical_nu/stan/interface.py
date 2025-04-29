@@ -3,7 +3,8 @@ from abc import ABCMeta, abstractmethod
 
 from hierarchical_nu.backend.stan_generator import StanFileGenerator
 from hierarchical_nu.source.parameter import Parameter
-from ..source.flux_model import LogParabolaSpectrum, PowerLawSpectrum, PGammaSpectrum
+from ..source.flux_model import LogParabolaSpectrum, PowerLawSpectrum, PGammaSpectrum, TwiceBrokenPowerLaw
+from ..source.seyfert_model import SeyfertNuMuSpectrum
 
 # To includes
 STAN_PATH = os.path.dirname(__file__)
@@ -76,12 +77,14 @@ class StanInterface(object, metaclass=ABCMeta):
 
         self._shared_luminosity = False
         self._shared_src_index = False
+        self._shared_eta = False
         if self.sources.point_source:
             self._ps_spectrum = self.sources.point_source_spectrum
             self._ps_frame = self.sources.point_source_frame
             self._logparabola = self._ps_spectrum == LogParabolaSpectrum
-            self._power_law = self._ps_spectrum == PowerLawSpectrum
+            self._power_law = (self._ps_spectrum == PowerLawSpectrum or self._ps_spectrum == TwiceBrokenPowerLaw)
             self._pgamma = self._ps_spectrum == PGammaSpectrum
+            self._seyfert = self._ps_spectrum == SeyfertNuMuSpectrum
 
             try:
                 Parameter.get_parameter("luminosity")
@@ -89,12 +92,13 @@ class StanInterface(object, metaclass=ABCMeta):
             except ValueError:
                 self._shared_luminosity = False
 
-            # Get source index and check if it is varied
-            src_index = self._sources.point_source[0].parameters["index"]
-            if not src_index.fixed and src_index.name == "src_index":
-                self._shared_src_index = True
-            elif not src_index.fixed:
-                self._shared_src_index = False
+            if self._power_law or self._pgamma or self._logparabola:
+                # Get source index and check if it is varied
+                src_index = self._sources.point_source[0].parameters["index"]
+                if not src_index.fixed and src_index.name == "src_index":
+                    self._shared_src_index = True
+                elif not src_index.fixed:
+                    self._shared_src_index = False
             if self._logparabola or self._pgamma:
                 beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
@@ -102,6 +106,16 @@ class StanInterface(object, metaclass=ABCMeta):
                     self._shared_src_index = True
                 elif not E0_src.fixed and E0_src.name == "E0_src":
                     self._shared_src_index = True
+            if self._seyfert:
+                eta = self._sources.point_source[0].parameters["eta"]
+                # also use self._shared_src_index bc it is shared (lol) among source spectra
+                if not eta.fixed and eta.name == "eta":
+                    self._shared_src_index = True
+                elif not eta.fixed:
+                    self._shared_src_index = False
+                self._fit_eta = not eta.fixed
+            else:
+                self._fit_eta = False
 
             try:
                 self._fit_index = (
@@ -132,10 +146,11 @@ class StanInterface(object, metaclass=ABCMeta):
             num_params += 1 if self._fit_index else 0
             num_params += 1 if self._fit_beta else 0
             num_params += 1 if self._fit_Enorm else 0
+            num_params += 1 if self._fit_eta else 0
             if not num_params <= 2:
                 raise NotImplementedError("Can only use 2D interpolation")
 
-        self._fit = [self._fit_index, self._fit_beta, self._fit_Enorm]
+        self._fit = [self._fit_index, self._fit_beta, self._fit_Enorm, self._fit_eta]
 
         if self.sources.diffuse:
             self._diff_spectrum = self.sources.diffuse_spectrum

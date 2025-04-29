@@ -126,6 +126,7 @@ class StanFitInterface(StanInterface):
         n_params += 1 if self._fit_index else 0
         n_params += 1 if self._fit_beta else 0
         n_params += 1 if self._fit_Enorm else 0
+        n_params += 1 if self._fit_eta else 0
 
         self._n_params = n_params
 
@@ -330,6 +331,17 @@ class StanFitInterface(StanInterface):
                                     ),
                                 ]
                             )
+                        elif self._seyfert:
+                            StringExpression(
+                                [
+                                    _lp,
+                                    " += ",
+                                    self._src_spectrum_lpdf(
+                                        self._E[i],
+                                        self._eta[k],
+                                    )
+                                ]
+                            )
                         else:
                             StringExpression(
                                 [
@@ -435,12 +447,13 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
+            """
             if hasattr(self, "_log_lik"):
                 # If self._log_lik exists, fill it with data
                 self._log_lik[i] << FunctionCall(
                     [self._lp[i]], "log_sum_exp"
                 ) - FunctionCall([self._Nex], "log")
-
+            """
     def _functions(self):
         """
         Write the functions section of the Stan file.
@@ -461,19 +474,25 @@ class StanFitInterface(StanInterface):
                     self._ps_spectrum.make_stan_utility_func(
                         self._fit_index, self._fit_beta, self._fit_Enorm
                     )
-                self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
-                    "src_spectrum_logpdf",
-                    self._fit_index,
-                    self._fit_beta,
-                    self._fit_Enorm,
-                )
+                if self._seyfert:
+                    self._src_spectrum_lpdf, self._src_flux_table, self._flux_conv = self._sources[
+                        0
+                    ]._flux_model.spectral_shape.make_stan_functions()
+                else:
+                    self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
+                        "src_spectrum_logpdf",
+                        self._fit_index,
+                        self._fit_beta,
+                        self._fit_Enorm,
+                    )
 
-                self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
-                    "flux_conv",
-                    self._fit_index,
-                    self._fit_beta,
-                    self._fit_Enorm,
-                )
+                    self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
+                        "flux_conv",
+                        self._fit_index,
+                        self._fit_beta,
+                        self._fit_Enorm,
+                    )
+
 
             # If we have diffuse sources, include the shape of their PDF
             if self.sources.diffuse:
@@ -550,6 +569,12 @@ class StanFitInterface(StanInterface):
                         self._E0_src = ForwardVariableDef("E0_src", "vector[Ns]")
                         self._E0_src << glob[start:end]
                         start << start + self._Ns
+                    if self._fit_eta:
+                        end << end + self._Ns
+                        self._eta = ForwardVariableDef("eta", "vector[Ns]")
+                        self._eta << glob[start:end]
+                        start << start + self._Ns
+
                     # Get diffuse index
                     if self.sources.diffuse:
                         end << end + 1
@@ -711,7 +736,7 @@ class StanFitInterface(StanInterface):
                     start << start + 1
 
                     data_idx = 1
-                    if not self._pgamma and not self._fit_index:
+                    if (self._power_law or self._logparabola) and not self._fit_index:
                         end << end + self._Ns
                         self._src_index = ForwardArrayDef("src_index", "real", ["[Ns]"])
                         self._src_index << real_data[start:end]
@@ -917,6 +942,17 @@ class StanFitInterface(StanInterface):
                         )
                     else:
                         self._E0_src_grid = 0
+                    if self._fit_eta:
+                        self._eta_min = ForwardVariableDef("eta_min", "real")
+                        self._eta_max = ForwardVariableDef("eta_max", "real")
+                        self._eta_grid = ForwardVariableDef(
+                            "eta_grid", "vector[Ngrid]"
+                        )
+
+                    if self._seyfert:
+                        self._P_min = ForwardVariableDef("P_min", "real")
+                        self._P_max = ForwardVariableDef("P_max", "real")
+
                     if self._n_params == 2:
                         self._integral_grid_2d = ForwardArrayDef(
                             "integral_grid_2d",
@@ -1339,6 +1375,7 @@ class StanFitInterface(StanInterface):
             # For point sources, L and src_index can be shared or
             # independent.
             if self.sources.point_source:
+                """
                 if self._shared_luminosity:
                     self._L_glob = ParameterDef("L", "real", self._Lmin, self._Lmax)
                 else:
@@ -1349,7 +1386,9 @@ class StanFitInterface(StanInterface):
                         self._Lmin,
                         self._Lmax,
                     )
-
+                """
+                if self._seyfert:
+                    self._P = ParameterDef("pressure_ratio", "real", self._P_min, self._P_max)
                 if self._shared_src_index:
                     if self._fit_index:
                         self._src_index_glob = ParameterDef(
@@ -1371,6 +1410,13 @@ class StanFitInterface(StanInterface):
                             "real",
                             self._E0_src_min,
                             self._E0_src_max,
+                        )
+                    if self._fit_eta:
+                        self._eta_glob = ParameterDef(
+                            "eta",
+                            "real",
+                            self._eta_min,
+                            self._eta_max,
                         )
 
                 else:
@@ -1398,6 +1444,14 @@ class StanFitInterface(StanInterface):
                             self._E0_src_min,
                             self._E0_src_max,
                         )
+                    if self._fit_eta:
+                        self._eta = ParameterVectorDef(
+                            "eta",
+                            "vector",
+                            self._Ns_str,
+                            self._eta_min, self._eta_max
+                        )
+
 
             # Specify F_diff and diff_index to characterise the diffuse comp
             if self.sources.diffuse:
@@ -1438,10 +1492,12 @@ class StanFitInterface(StanInterface):
                 )
             if self.sources.point_source:
                 if self._shared_luminosity:
+                    """
                     self._L = ForwardVariableDef(
                         "L_ind",
                         "vector[Ns]",
                     )
+                    """
                 if self._shared_src_index:
                     if self._fit_index:
                         self._src_index = ForwardVariableDef(
@@ -1451,12 +1507,14 @@ class StanFitInterface(StanInterface):
                         self._beta_index = ForwardVariableDef(
                             "beta_index_ind", "vector[Ns]"
                         )
+                    if self._fit_eta:
+                        self._eta = ForwardVariableDef("eta_ind", "vector[Ns]")
                 if self._fit_Enorm:
                     self._E0_src = ForwardVariableDef("E0_src_ind", "vector[Ns]")
                 if self._shared_luminosity or self._shared_src_index:
                     with ForLoopContext(1, self._Ns, "k") as k:
-                        if self._shared_luminosity:
-                            self._L[k] << self._L_glob
+                        #if self._shared_luminosity:
+                        #    self._L[k] << self._L_glob
                         if self._shared_src_index and self._fit_index:
                             self._src_index[k] << self._src_index_glob
                         if self._shared_src_index and self._fit_beta:
@@ -1466,6 +1524,8 @@ class StanFitInterface(StanInterface):
                             # meaning that E0_src_glob is defined in the source frame
                             # and E0_src[k] is redshifted using z[k]
                             self._E0_src[k] << self._E0_src_glob / (1 + self._z[k])
+                        if self._shared_src_index and self._fit_eta:
+                            self._eta[k] << self._eta_glob
 
                 if not self._shared_src_index and self._fit_Enorm:
                     with ForLoopContext(1, self._Ns, "k") as k:
@@ -1565,6 +1625,8 @@ class StanFitInterface(StanInterface):
                     python_counter += 1
                 if self._fit_Enorm:
                     python_counter += 1
+                if self._fit_eta:
+                    python_counter += 1
                 # always use individual, transformed parameters, even if shared_src_index
                 num_of_pars += f" + Ns * {python_counter:d}"
 
@@ -1624,7 +1686,7 @@ class StanFitInterface(StanInterface):
             # For each source, calculate the number flux and update F, logF
             if self.sources.point_source:
                 with ForLoopContext(1, self._Ns, "k") as k:
-
+                    """
                     self._F[k] << StringExpression(
                         [
                             self._L[k],
@@ -1635,6 +1697,8 @@ class StanFitInterface(StanInterface):
                             ", 2))",
                         ]
                     )
+                    """
+                    self._F[k] << self._P
 
                     if self._logparabola or self._pgamma:
                         # create even more references
@@ -1701,6 +1765,16 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
+                    elif self._seyfert:
+                        StringExpression(
+                            [
+                                self._F[k],
+                                "*=",
+                                self._src_flux_table(
+                                    self._eta[k],
+                                ),
+                            ]
+                        )
                     else:
                         StringExpression(
                             [
@@ -1747,6 +1821,13 @@ class StanFitInterface(StanInterface):
                                 self._E0_src_grid,
                                 self._integral_grid[i, k],
                                 self._E0_src[k],
+                            ]
+                            method = "interpolate_log_y"
+                        elif self._fit_eta:
+                            args = [
+                                self._eta_grid,
+                                self._integral_grid[i, k],
+                                self._eta[k]
                             ]
                             method = "interpolate_log_y"
 
@@ -1905,6 +1986,10 @@ class StanFitInterface(StanInterface):
                         end << end + self._Ns
                         self._global_pars[start:end] << self._E0_src
                         start << start + self._Ns
+                    if self._fit_eta:
+                        end << end + self._Ns
+                        self._global_pars[start:end] << self._eta
+                        start << start + self._Ns
                     if self.sources.diffuse:
                         end << end + 1
                         self._global_pars[start] << self._diff_index
@@ -1941,6 +2026,7 @@ class StanFitInterface(StanInterface):
 
             # Priors
             if self.sources.point_source:
+                """
                 if self._priors.luminosity.name in ["normal", "lognormal"]:
                     if self._shared_luminosity:
                         StringExpression(
@@ -2025,6 +2111,7 @@ class StanFitInterface(StanInterface):
                     raise NotImplementedError(
                         "Luminosity prior distribution not recognised."
                     )
+                """
 
                 if self._priors.src_index.name not in ["normal", "lognormal"]:
                     raise ValueError("Prior type for source index not recognised.")

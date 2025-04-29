@@ -36,6 +36,7 @@ from hierarchical_nu.source.flux_model import (
     TwiceBrokenPowerLaw,
     PowerLawSpectrum,
 )
+from hierarchical_nu.source.seyfert_model import SeyfertNuMuSpectrum
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.detector.r2021 import (
@@ -163,24 +164,30 @@ class StanFit:
         except ValueError:
             self._shared_luminosity = False
 
+        self._shared_luminosity = False
+        self._shared_src_index = False
         if self._sources.point_source:
-            self._shared_src_index = False
-            self._power_law = False
-            self._logparabola = False
-            self._pgamma = False
-            index = self._sources.point_source[0].parameters["index"]
-            if not index.fixed and index.name == "src_index":
-                self._shared_src_index = True
-            elif not index.fixed:
-                self._shared_src_index = False
-            self._power_law = self._sources.point_source_spectrum in [
-                PowerLawSpectrum,
-                TwiceBrokenPowerLaw,
-            ]
-            self._logparabola = (
-                self._sources.point_source_spectrum == LogParabolaSpectrum
-            )
-            self._pgamma = self._sources.point_source_spectrum == PGammaSpectrum
+            self._ps_spectrum = self.sources.point_source_spectrum
+            self._ps_frame = self.sources.point_source_frame
+            self._logparabola = self._ps_spectrum == LogParabolaSpectrum
+            self._power_law = self._ps_spectrum == PowerLawSpectrum
+            self._pgamma = self._ps_spectrum == PGammaSpectrum
+            self._seyfert = self._ps_spectrum == SeyfertNuMuSpectrum
+
+            if self._power_law or self._pgamma or self._logparabola:
+                index = self._sources.point_source[0].parameters["index"]
+                self._fit_index = not index.fixed
+                if not index.fixed and index.name == "src_index":
+                    self._shared_src_index = True
+                elif not index.fixed:
+                    self._shared_src_index = False
+                self._power_law = self._sources.point_source_spectrum in [
+                    PowerLawSpectrum,
+                    TwiceBrokenPowerLaw,
+                ]
+            else:
+                self._fit_index = False
+
             if self._logparabola or self._pgamma:
                 beta = self._sources.point_source[0].parameters["beta"]
                 E0_src = self._sources.point_source[0].parameters["norm_energy"]
@@ -188,24 +195,29 @@ class StanFit:
                     self._shared_src_index = True
                 elif not E0_src.fixed and E0_src.name == "E0_src":
                     self._shared_src_index = True
-
-            self._fit_index = not index.fixed
-            if self._logparabola or self._pgamma:
-                beta = self._sources.point_source[0].parameters["beta"]
-                E0_src = self._sources.point_source[0].parameters["norm_energy"]
                 self._fit_beta = not beta.fixed
                 self._fit_Enorm = not E0_src.fixed
             else:
                 self._fit_beta = False
                 self._fit_Enorm = False
+            
+            if self._seyfert:
+                eta = self._sources.point_source[0].parameters["eta"]
+                self._fit_eta = not eta.fixed
+                if not eta.fixed and eta.name == "eta":
+                    self._shared_src_index = True
+            else:
+                self._fit_eta = False
         else:
             self._shared_src_index = False
             self._fit_index = False
             self._fit_beta = False
             self._fit_Enorm = False
+            self._fit_eta = False
             self._power_law = False
             self._logparabola = False
             self._pgamma = False
+            self._seyfert = False
 
         # For use with plot methods
         self._def_var_names = []
@@ -214,11 +226,14 @@ class StanFit:
             self._def_var_names.append("L")
             if self._fit_index:
                 self._def_var_names.append("src_index")
-
             if self._fit_beta:
                 self._def_var_names.append("beta_index")
             if self._fit_Enorm:
                 self._def_var_names.append("E0_src")
+            if self._fit_eta:
+                self._def_var_names.append("eta")
+            if self._seyfert:
+                self._def_var_names.append("P_R")
 
             self._def_var_names.append("Nex_src")
 
@@ -2079,6 +2094,7 @@ class StanFit:
                 key = "src_index"
                 key_beta = "beta_index"
                 key_Enorm = "E0_src"
+                key_eta = "eta"
 
             # Otherwise just use first source in the list
             # src_index_grid is identical for all point sources
@@ -2086,6 +2102,7 @@ class StanFit:
                 key = "%s_src_index" % self._sources.point_source[0].name
                 key_beta = "%s_beta_index" % self._sources.point_source[0].name
                 key_Enorm = "%s_E0_src" % self._sources.point_source[0].name
+                key_eta = "%s_eta" % self._sources.point_source[0].name
 
             if self._fit_index:
                 fit_inputs["src_index_grid"] = self._exposure_integral[
@@ -2136,6 +2153,11 @@ class StanFit:
                     ps.flux_model.parameters["norm_energy"].value.to_value(u.GeV)
                     for ps in self._sources.point_source
                 ]
+            
+            if self._fit_eta:
+                fit_inputs["eta_grid"] = self._exposure_integral[event_type].par_grids[key_eta]
+                fit_inputs["eta_min"], fit_inputs["eta_max"] = self._eta_par_range
+                fit_inputs["P_min"], fit_inputs["P_max"] = self._P_par_range
 
         # Inputs for priors of point sources
         if self._priors.src_index.name not in ["normal", "lognormal"]:
@@ -2373,6 +2395,13 @@ class StanFit:
             if self._logparabola or self._pgamma:
                 self._E0_src_par_range = (
                     self._sources.point_source[0].parameters["norm_energy"].par_range
+                )
+            if self._seyfert:
+                self._eta_par_range = (
+                    self._sources.point_source[0].parameters["eta"].par_range
+                )
+                self._P_par_range = (
+                    self._sources.point_source[0].parameters["P"].par_range
                 )
 
         if self._sources.diffuse:
