@@ -41,6 +41,7 @@ from ..backend.parameterizations import DistributionMode
 
 from ..source.flux_model import LogParabolaSpectrum
 from ..source.source import Sources
+from ..source.parameter import Parameter
 from ..detector.icecube import EventType, NT, CAS
 from ..detector.detector_model import (
     GridInterpolationEnergyResolution,
@@ -70,6 +71,7 @@ class StanFitInterface(StanInterface):
         nshards: int = 1,
         use_event_tag: bool = False,
         debug: bool = False,
+        bg: bool = False,
     ):
         """
         An interface for generating Stan fit code.
@@ -85,6 +87,7 @@ class StanFitInterface(StanInterface):
         :param nshards: Number of shards for multithreading, defaults to zero
         :param use_event_tag: if True, only consider the closest PS for each event
         :param debug: if True, add function calls for debugging and tests
+        :param bg: if True, use data to construct background likelihood
         """
 
         super().__init__(
@@ -121,6 +124,13 @@ class StanFitInterface(StanInterface):
         self._nshards = nshards
         self._use_event_tag = use_event_tag
         self._debug = debug
+        self._bg = bg
+
+        try:
+            Nex_src = Parameter.get_parameter("Nex_src")
+            self._fit_nex = True
+        except ValueError:
+            self._fit_nex = False
 
         n_params = 0
         n_params += 1 if self._fit_index else 0
@@ -157,8 +167,20 @@ class StanFitInterface(StanInterface):
         """
 
         with ForLoopContext(1, self._N, "i") as i:
-            if not self._use_event_tag:
+            if self._bg and not self._use_event_tag:
+                self._lp[i, 1 : self._Ns] << self._logF
+                self._lp[i, self._k_bg] << self._log_N_bg + self._bg_llh[
+                    i
+                ] - FunctionCall([self._E[i]], "log")
+
+            elif not self._use_event_tag:
+                # TODO fix this case later for use with data-background llh
                 self._lp[i] << self._logF
+
+            elif self._bg:
+                self._lp[i, 2] << self._log_N_bg + self._bg_llh[i] - FunctionCall(
+                    [self._E[i]], "log"
+                )
 
             for c, event_type in enumerate(self._event_types):
                 if c == 0:
@@ -339,7 +361,7 @@ class StanFitInterface(StanInterface):
                                     self._src_spectrum_lpdf(
                                         self._E[i],
                                         self._eta[k],
-                                    )
+                                    ),
                                 ]
                             )
                         else:
@@ -454,6 +476,7 @@ class StanFitInterface(StanInterface):
                     [self._lp[i]], "log_sum_exp"
                 ) - FunctionCall([self._Nex], "log")
             """
+
     def _functions(self):
         """
         Write the functions section of the Stan file.
@@ -475,9 +498,11 @@ class StanFitInterface(StanInterface):
                         self._fit_index, self._fit_beta, self._fit_Enorm
                     )
                 if self._seyfert:
-                    self._src_spectrum_lpdf, self._src_flux_table, self._flux_conv = self._sources[
-                        0
-                    ]._flux_model.spectral_shape.make_stan_functions()
+                    self._src_spectrum_lpdf, self._src_flux_table, self._flux_conv = (
+                        self._sources[
+                            0
+                        ]._flux_model.spectral_shape.make_stan_functions()
+                    )
                 else:
                     self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
                         "src_spectrum_logpdf",
@@ -492,7 +517,6 @@ class StanFitInterface(StanInterface):
                         self._fit_beta,
                         self._fit_Enorm,
                     )
-
 
             # If we have diffuse sources, include the shape of their PDF
             if self.sources.diffuse:
@@ -533,12 +557,21 @@ class StanFitInterface(StanInterface):
                     int_data = StringExpression(["int_data"])
                     real_data = StringExpression(["real_data"])
 
-                    if self._sources.diffuse and self._sources.atmospheric:
+                    if self.sources.diffuse and self.sources.atmospheric:
                         self._Ns_tot = "Ns+2"
-                    elif self._sources.diffuse or self._sources.atmospheric:
+                    elif (
+                        self.sources.diffuse
+                        or self.sources.atmospheric
+                        or self.sources.background
+                    ):
                         self._Ns_tot = "Ns+1"
                     else:
                         self._Ns_tot = "Ns"
+
+                    if self._bg:
+                        self._Ns_tot_flux = "Ns"
+                    else:
+                        self._Ns_tot_flux = self._Ns_tot
 
                     start = InstantVariableDef("start", "int", [1])
                     end = InstantVariableDef("end", "int", [0])
@@ -581,11 +614,15 @@ class StanFitInterface(StanInterface):
                         self._diff_index = ForwardVariableDef("diff_index", "real")
                         self._diff_index << glob[start]
                         start << start + 1
-                    end << end + self._Ns_tot
+                    end << end + self._Ns_tot_flux
                     self._logF = ForwardVariableDef(
-                        "logF", "vector[" + self._Ns_tot + "]"
+                        "logF", "vector[" + self._Ns_tot_flux + "]"
                     )
                     self._logF << glob[start:end]
+                    if self._bg:
+                        start << start + self._Ns_tot_flux
+                        self._log_N_bg = ForwardVariableDef("log_N_bg", "real")
+                        self._log_N_bg << glob[start]
 
                     # Local pars are only neutrino energies
                     self._E = ForwardVariableDef("E", "vector[N]")
@@ -631,9 +668,7 @@ class StanFitInterface(StanInterface):
                     end << self._N
 
                     self._Edet = ForwardVariableDef("Edet", "vector[N]")
-                    self._Edet << FunctionCall(
-                        [real_data[start:end]], "to_vector"
-                    )
+                    self._Edet << FunctionCall([real_data[start:end]], "to_vector")
                     # Shift indices appropriate amount for next batch of data
                     start << start + length
                     grid_size = R2021EnergyResolution._log_tE_grid.size
@@ -654,6 +689,14 @@ class StanFitInterface(StanInterface):
                         )
                         start << start + 3
 
+                    if self._bg:
+                        end << end + self._N
+                        self._bg_llh = ForwardVariableDef("bg_llh", "vector[N]")
+                        self._bg_llh << FunctionCall(
+                            [real_data[start:end]], "to_vector"
+                        )
+                        start << start + self._N
+
                     self._varpi = ForwardArrayDef("varpi", "vector[3]", ["[Ns]"])
                     # Loop over sources to unpack source direction (for point sources only)
                     with ForLoopContext(1, self._Ns, "i") as i:
@@ -666,16 +709,12 @@ class StanFitInterface(StanInterface):
                     if self.sources.diffuse:
                         end << end + self._Ns + 1
                         self._z = ForwardVariableDef("z", "vector[Ns+1]")
-                        self._z << FunctionCall(
-                            [real_data[start:end]], "to_vector"
-                        )
+                        self._z << FunctionCall([real_data[start:end]], "to_vector")
                         start << start + self._Ns + 1
                     else:
                         end << end + self._Ns
                         self._z = ForwardVariableDef("z", "vector[Ns]")
-                        self._z << FunctionCall(
-                            [real_data[start:end]], "to_vector"
-                        )
+                        self._z << FunctionCall([real_data[start:end]], "to_vector")
                         start << start + self._Ns
 
                     if self.sources.atmospheric:
@@ -683,9 +722,7 @@ class StanFitInterface(StanInterface):
                             "atmo_integrated_flux", "real"
                         )
                         end << end + 1
-                        (
-                            self._atmo_integrated_flux << real_data[start]
-                        )
+                        (self._atmo_integrated_flux << real_data[start])
                         start << start + 1
 
                     if self.sources.point_source:
@@ -790,6 +827,9 @@ class StanFitInterface(StanInterface):
                     elif self.sources.atmospheric:
                         self._k_atmo = "Ns + 1"
 
+                    elif self.sources.background:
+                        self._k_bg = "Ns + 1"
+
                     self._model_likelihood()
                     results = ForwardArrayDef("results", "real", ["[N]"])
                     with ForLoopContext(1, self._N, "i") as i:
@@ -846,6 +886,13 @@ class StanFitInterface(StanInterface):
 
             # Uncertainty on the event's angular reconstruction
             self._kappa = ForwardVariableDef("kappa", "vector[N]")
+
+            if self._bg:
+                self._bg_llh = ForwardVariableDef("bg_llh", "vector[N]")
+
+            if self._fit_nex:
+                self._Nex_src_min = ForwardVariableDef("Nex_src_min", "real")
+                self._Nex_src_max = ForwardVariableDef("Nex_src_max", "real")
 
             # Event tags
             if self._use_event_tag:
@@ -945,9 +992,7 @@ class StanFitInterface(StanInterface):
                     if self._fit_eta:
                         self._eta_min = ForwardVariableDef("eta_min", "real")
                         self._eta_max = ForwardVariableDef("eta_max", "real")
-                        self._eta_grid = ForwardVariableDef(
-                            "eta_grid", "vector[Ngrid]"
-                        )
+                        self._eta_grid = ForwardVariableDef("eta_grid", "vector[Ngrid]")
 
                     if self._seyfert:
                         self._P_min = ForwardVariableDef("P_min", "real")
@@ -1182,6 +1227,8 @@ class StanFitInterface(StanInterface):
                 sd_events_J = (
                     4 + grid_size
                 )  # reco energy, reco dir (unit vector), eres grid
+                if self._bg:
+                    sd_events_J += 1  # one bg llh entry per event
                 sd_if_diff = 3  # redshift of diffuse component, Emin_diff/max
                 sd_Ns = 6  # redshift, Emin_src, Emax_src, x, y, z per point source
                 sd_other = 2  # Emin, Emax
@@ -1262,6 +1309,13 @@ class StanFitInterface(StanInterface):
                             [self._omega_det[f]], "to_array_1d"
                         )
                         insert_start << insert_start + 3
+
+                    if self._bg:
+                        insert_end << insert_end + insert_len
+                        self.real_data[i, insert_start:insert_end] << FunctionCall(
+                            [self._bg_llh[start:end]], "to_array_1d"
+                        )
+                        insert_start << insert_start + insert_len
 
                     with ForLoopContext(1, self._Ns, "f") as f:
                         insert_end << insert_end + 3
@@ -1375,20 +1429,34 @@ class StanFitInterface(StanInterface):
             # For point sources, L and src_index can be shared or
             # independent.
             if self.sources.point_source:
-                """
-                if self._shared_luminosity:
-                    self._L_glob = ParameterDef("L", "real", self._Lmin, self._Lmax)
-                else:
-                    self._L = ParameterVectorDef(
-                        "L",
+                if self._fit_nex:
+                    self._Nex_per_ps = ParameterVectorDef(
+                        "Nex_per_ps",
                         "vector",
                         self._Ns_str,
-                        self._Lmin,
-                        self._Lmax,
+                        self._Nex_src_min,
+                        self._Nex_src_max,
                     )
-                """
-                if self._seyfert:
-                    self._P = ParameterDef("pressure_ratio", "real", self._P_min, self._P_max)
+
+                elif self._seyfert:
+                    # TODO make vector option for multi ps with individual parameters,
+                    # hijack shared luminosity for this
+                    self._P = ParameterDef(
+                        "pressure_ratio", "real", self._P_min, self._P_max
+                    )
+
+                if not self._fit_nex:
+                    if self._shared_luminosity:
+                        self._L_glob = ParameterDef("L", "real", self._Lmin, self._Lmax)
+                    else:
+                        self._L = ParameterVectorDef(
+                            "L",
+                            "vector",
+                            self._Ns_str,
+                            self._Lmin,
+                            self._Lmax,
+                        )
+
                 if self._shared_src_index:
                     if self._fit_index:
                         self._src_index_glob = ParameterDef(
@@ -1446,12 +1514,8 @@ class StanFitInterface(StanInterface):
                         )
                     if self._fit_eta:
                         self._eta = ParameterVectorDef(
-                            "eta",
-                            "vector",
-                            self._Ns_str,
-                            self._eta_min, self._eta_max
+                            "eta", "vector", self._Ns_str, self._eta_min, self._eta_max
                         )
-
 
             # Specify F_diff and diff_index to characterise the diffuse comp
             if self.sources.diffuse:
@@ -1471,6 +1535,13 @@ class StanFitInterface(StanInterface):
                     "F_atmo", "real", self._F_atmo_min, self._F_atmo_max
                 )
 
+            if self._bg:
+                self._Nex_bg = ParameterDef(
+                    "Nex_bg",
+                    "real",
+                    0,
+                )
+
             # Vector of latent true neutrino energy for each event
             self._E = ParameterVectorDef(
                 "E", "vector", self._N_str, self._Emin_at_det, self._Emax_at_det
@@ -1485,19 +1556,18 @@ class StanFitInterface(StanInterface):
             # Expected number of events for different source components (atmo, diff, src) and detector components (_comp)
             self._Nex = ForwardVariableDef("Nex", "real")
             self._Nex_comp = ForwardArrayDef("Nex_comp", "real", ["[", self._Net, "]"])
+            self._flux_conv_val = ForwardArrayDef("flux_conv_val", "real", self._Ns_str)
             if self.sources.atmospheric:
                 self._Nex_atmo = ForwardVariableDef("Nex_atmo", "real")
                 self._Nex_atmo_comp = ForwardArrayDef(
                     "Nex_atmo_comp", "real", ["[", self._Net, "]"]
                 )
             if self.sources.point_source:
-                if self._shared_luminosity:
-                    """
+                if self._shared_luminosity or self._fit_nex:
                     self._L = ForwardVariableDef(
                         "L_ind",
                         "vector[Ns]",
                     )
-                    """
                 if self._shared_src_index:
                     if self._fit_index:
                         self._src_index = ForwardVariableDef(
@@ -1509,12 +1579,14 @@ class StanFitInterface(StanInterface):
                         )
                     if self._fit_eta:
                         self._eta = ForwardVariableDef("eta_ind", "vector[Ns]")
+                if self._fit_nex and self._seyfert:
+                    self._P = ForwardVariableDef("pressure_ratio", "vector[Ns]")
                 if self._fit_Enorm:
                     self._E0_src = ForwardVariableDef("E0_src_ind", "vector[Ns]")
                 if self._shared_luminosity or self._shared_src_index:
                     with ForLoopContext(1, self._Ns, "k") as k:
-                        #if self._shared_luminosity:
-                        #    self._L[k] << self._L_glob
+                        if self._shared_luminosity and not self._fit_nex:
+                            self._L[k] << self._L_glob
                         if self._shared_src_index and self._fit_index:
                             self._src_index[k] << self._src_index_glob
                         if self._shared_src_index and self._fit_beta:
@@ -1536,11 +1608,13 @@ class StanFitInterface(StanInterface):
                 self._Nex_src_comp = ForwardArrayDef(
                     "Nex_src_comp", "real", ["[", self._Net, "]"]
                 )
-                self._Nex_per_ps = ForwardArrayDef("Nex_per_ps", "real", ["[Ns]"])
+
                 with ForLoopContext(1, self._Net_stan, "i") as i:
                     self._Nex_src_comp[i] << 0
-                with ForLoopContext(1, self._Ns, "i") as i:
-                    self._Nex_per_ps[i] << 0
+                if not self._fit_nex:
+                    self._Nex_per_ps = ForwardArrayDef("Nex_per_ps", "real", ["[Ns]"])
+                    with ForLoopContext(1, self._Ns, "i") as i:
+                        self._Nex_per_ps[i] << 0
             if self.sources.diffuse:
                 self._F_diff = ForwardVariableDef("F_diff", "real")
                 self._F_diff << self._diffuse_norm * self._diff_spectrum_flux_conv(
@@ -1554,17 +1628,21 @@ class StanFitInterface(StanInterface):
                     "Nex_diff_comp", "real", ["[", self._Net, "]"]
                 )
 
+            if self.sources.background:
+                self._log_N_bg = ForwardVariableDef("log_N_bg", "real")
+                self._log_N_bg << FunctionCall([self._Nex_bg], "log")
+
             # Total flux
-            self._Ftot = ForwardVariableDef("Ftot", "real")
+            # self._Ftot = ForwardVariableDef("Ftot", "real")
 
             # Total flux form point sources
-            self._F_src = ForwardVariableDef("Fs", "real")
+            # self._F_src = ForwardVariableDef("Fs", "real")
 
             # Different definitions of fractional association
-            self._f_arr = ForwardVariableDef("f_arr", "real")
-            self._f_det = ForwardVariableDef("f_det", "real")
-            self._f_arr_astro = ForwardVariableDef("f_arr_astro", "real")
-            self._f_det_astro = ForwardVariableDef("f_det_astro", "real")
+            # self._f_arr = ForwardVariableDef("f_arr", "real")
+            # self._f_det = ForwardVariableDef("f_det", "real")
+            # self._f_arr_astro = ForwardVariableDef("f_arr_astro", "real")
+            # self._f_det_astro = ForwardVariableDef("f_det_astro", "real")
 
             # Decide how many source components we have and calculate
             # `logF` accordingly.
@@ -1595,15 +1673,27 @@ class StanFitInterface(StanInterface):
                 n_comps_max = "Ns+1"
 
             else:
+                # Even if background likelihood is used, only point sources may have a flux
                 self._F = ForwardVariableDef("F", "vector[Ns]")
                 self._logF = ForwardVariableDef("logF", "vector[Ns]")
 
                 if self._nshards in [0, 1]:
                     if self._use_event_tag:
-                        self._lp = ForwardArrayDef("lp", "vector[1]", self._N_str)
+                        if self._bg:
+                            # for PS + background use one entry for all PS and one for background
+                            self._lp = ForwardArrayDef("lp", "vector[2]", self._N_str)
+                        else:
+                            self._lp = ForwardArrayDef("lp", "vector[1]", self._N_str)
                     else:
-                        self._lp = ForwardArrayDef("lp", "vector[Ns]", self._N_str)
+                        if self._bg:
+                            # for PS + background Ns entries for PSs and one for background
+                            self._lp = ForwardArrayDef(
+                                "lp", "vector[Ns+1]", self._N_str
+                            )
+                        else:
+                            self._lp = ForwardArrayDef("lp", "vector[Ns]", self._N_str)
 
+                # No exposure for background likelihood
                 n_comps_max = "Ns"
 
             self._eps = ForwardArrayDef(
@@ -1634,7 +1724,8 @@ class StanFitInterface(StanInterface):
                     num_of_pars += " + 2"
                 if self.sources.atmospheric:
                     num_of_pars += " + 1"
-
+                if self.sources.background:
+                    num_of_pars += " + 1"
                 self._global_pars = ForwardVariableDef(
                     "global_pars", f"vector[{num_of_pars}]"
                 )
@@ -1680,25 +1771,27 @@ class StanFitInterface(StanInterface):
                 self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
                 self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
 
-            self._F_src << 0.0
+            # self._F_src << 0.0
             self._Nex_src << 0.0
 
             # For each source, calculate the number flux and update F, logF
             if self.sources.point_source:
                 with ForLoopContext(1, self._Ns, "k") as k:
-                    """
-                    self._F[k] << StringExpression(
-                        [
-                            self._L[k],
-                            "/ (4 * pi() * pow(",
-                            self._D[k],
-                            " * ",
-                            3.086e22,
-                            ", 2))",
-                        ]
-                    )
-                    """
-                    self._F[k] << self._P
+
+                    if not self._fit_nex and not self._seyfert:
+                        self._F[k] << StringExpression(
+                            [
+                                self._L[k],
+                                "/ (4 * pi() * pow(",
+                                self._D[k],
+                                " * ",
+                                3.086e22,
+                                ", 2))",
+                            ]
+                        )
+                    elif not self._fit_nex:
+                        # Use pressure_ratio * integrated flux (latter is normalised to the pressure ratio used in sims)
+                        self._F[k] << self._P * self._src_flux_table(self._eta[k])
 
                     if self._logparabola or self._pgamma:
                         # create even more references
@@ -1753,41 +1846,24 @@ class StanFitInterface(StanInterface):
                                 "}",
                             ]
                         )
-
-                        StringExpression(
-                            [
-                                self._F[k],
-                                "*=",
-                                self._flux_conv(
-                                    theta,
-                                    x_r,
-                                    x_i,
-                                ),
-                            ]
+                        self._flux_conv_val[k] << self._flux_conv(
+                            theta,
+                            x_r,
+                            x_i,
                         )
+
                     elif self._seyfert:
-                        StringExpression(
-                            [
-                                self._F[k],
-                                "*=",
-                                self._src_flux_table(
-                                    self._eta[k],
-                                ),
-                            ]
+                        self._flux_conv_val[k] << self._flux_conv(
+                            self._eta[k],
                         )
                     else:
-                        StringExpression(
-                            [
-                                self._F[k],
-                                "*=",
-                                self._flux_conv(
-                                    self._src_index[k],
-                                    self._Emin_src[k],
-                                    self._Emax_src[k],
-                                ),
-                            ]
+                        self._flux_conv_val[k] << self._flux_conv(
+                            self._src_index[k],
+                            self._Emin_src[k],
+                            self._Emax_src[k],
                         )
-                    StringExpression([self._F_src, " += ", self._F[k]])
+                    if not self._fit_nex and not self._seyfert:
+                        StringExpression([self._F[k], "*=", self._flux_conv_val[k]])
 
                     with ForLoopContext(1, self._Net_stan, "i") as i:
                         # For each source, calculate the exposure via interpolation
@@ -1827,7 +1903,7 @@ class StanFitInterface(StanInterface):
                             args = [
                                 self._eta_grid,
                                 self._integral_grid[i, k],
-                                self._eta[k]
+                                self._eta[k],
                             ]
                             method = "interpolate_log_y"
 
@@ -1840,16 +1916,63 @@ class StanFitInterface(StanInterface):
                             * self._T[i]
                         )
 
+                        if not self._fit_nex:
+                            StringExpression(
+                                [
+                                    self._Nex_src_comp[i],
+                                    "+=",
+                                    self._F[k] * self._eps[i, k],
+                                ]
+                            )
+                    if self._fit_nex:
                         StringExpression(
                             [
-                                self._Nex_src_comp[i],
-                                "+=",
-                                self._F[k] * self._eps[i, k],
+                                self._F[k],
+                                " = ",
+                                self._Nex_per_ps[k],
+                                " / sum(eps[:, k])",
                             ]
                         )
-                    StringExpression(
-                        [self._Nex_per_ps[k], "+=", self._F[k], " * ", "sum(eps[:, k])"]
-                    )
+                        # self._Nex_per_ps[k] / FunctionCall([self._eps[:, k]], "sum")
+                        self._L[k] << self._F[k] / self._flux_conv_val[
+                            k
+                        ] * StringExpression(
+                            [
+                                "(4 * pi() * pow(",
+                                self._D[k],
+                                " * ",
+                                3.086e22,
+                                ", 2))",
+                            ]
+                        )
+                        if self._seyfert:
+                            # Nex = P * F_tab(eta, divided by accomp. P) * eps, so F = P * F_tab(eta),
+                            # Nex = F * eps
+                            # F = F(eta) * P = Nex / eps
+                            # P = F / F(eta)
+                            self._P[k] << self._F[k] / self._src_flux_table(
+                                self._eta[k]
+                            )
+
+                        with ForLoopContext(1, self._Net_stan, "i") as i:
+                            StringExpression(
+                                [
+                                    self._Nex_src_comp[i],
+                                    "+=",
+                                    self._F[k] * self._eps[i, k],
+                                ]
+                            )
+                    if not self._fit_nex:
+                        StringExpression(
+                            [
+                                self._Nex_per_ps[k],
+                                "+=",
+                                self._F[k],
+                                " * ",
+                                "sum(eps[:, k])",
+                            ]
+                        )
+                    # StringExpression([self._F_src, " += ", self._F[k]])
 
             if self.sources.diffuse:
                 StringExpression("F[Ns+1]") << self._F_diff
@@ -1921,14 +2044,18 @@ class StanFitInterface(StanInterface):
                 self._Nex_comp[i] << FunctionCall([self._F, self._eps[i]], "get_Nex")
 
             if self.sources.point_source:
-                self._Nex_src << FunctionCall([self._Nex_src_comp], "sum")
+                self._Nex_src << FunctionCall([self._Nex_per_ps], "sum")
             if self.sources.diffuse:
                 self._Nex_diff << FunctionCall([self._Nex_diff_comp], "sum")
             if self.sources.atmospheric:
                 self._Nex_atmo << FunctionCall([self._Nex_atmo_comp], "sum")
 
-            self._Nex << FunctionCall([self._Nex_comp], "sum")
+            if self._bg:
+                self._Nex << FunctionCall([self._Nex_comp], "sum") + self._Nex_bg
+            else:
+                self._Nex << FunctionCall([self._Nex_comp], "sum")
 
+            """
             # Evaluate the different fractional associations as derived parameters
             if self.sources.diffuse and self.sources.atmospheric:
                 self._Ftot << self._F_src + self._F_diff + self._F_atmo
@@ -1955,7 +2082,7 @@ class StanFitInterface(StanInterface):
                 self._f_det_astro << 1.0
 
             self._f_arr << StringExpression([self._F_src, "/", self._Ftot])
-
+            """
             if self.sources.diffuse and self.sources.atmospheric:
                 self._k_diff = "Ns + 1"
                 self._k_atmo = "Ns + 2"
@@ -1965,6 +2092,9 @@ class StanFitInterface(StanInterface):
 
             elif self.sources.atmospheric:
                 self._k_atmo = "Ns + 1"
+
+            elif self.sources.background:
+                self._k_bg = "Ns + 1"
 
             # Evaluate logF, packup global parameters
             self._logF << StringExpression(["log(", self._F, ")"])
@@ -1996,6 +2126,9 @@ class StanFitInterface(StanInterface):
                         start << start + 1
                     end << end + StringExpression(["size(logF)"])
                     self._global_pars[start:end] << self._logF
+                    if self._bg:
+                        start << start + 1
+                        self._global_pars[start] << self._log_N_bg
                     # Likelihood is evaluated in `lp_reduce`
 
             else:
@@ -2028,7 +2161,7 @@ class StanFitInterface(StanInterface):
             if self.sources.point_source:
                 """
                 if self._priors.luminosity.name in ["normal", "lognormal"]:
-                    if self._shared_luminosity:
+                    if self._shared_luminosity and not self._fit_nex:
                         StringExpression(
                             [
                                 self._L_glob,
@@ -2042,7 +2175,10 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
-                    elif isinstance(self._priors.luminosity, MultiSourcePrior):
+                    elif (
+                        isinstance(self._priors.luminosity, MultiSourcePrior)
+                        and not self._fit_nex
+                    ):
                         with ForLoopContext(1, self._Ns, "i") as i:
                             StringExpression(
                                 [
@@ -2057,7 +2193,7 @@ class StanFitInterface(StanInterface):
                                     ),
                                 ]
                             )
-                    else:
+                    elif not self._fit_nex:
                         with ForLoopContext(1, self._Ns, "i") as i:
                             StringExpression(
                                 [
@@ -2077,7 +2213,7 @@ class StanFitInterface(StanInterface):
                     if isinstance(self._priors.luminosity, MultiSourcePrior):
                         raise ValueError("This is not intended")
 
-                    if self._shared_luminosity:
+                    if self._shared_luminosity and not self._fit_nex:
                         StringExpression(
                             [
                                 self._L_glob,
@@ -2091,7 +2227,7 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
-                    else:
+                    elif not self._fit_nex:
                         with ForLoopContext(1, self._Ns, "i") as i:
                             StringExpression(
                                 [
@@ -2320,7 +2456,7 @@ class StanFitInterface(StanInterface):
         """
 
         with GeneratedQuantitiesContext():
-            self._log_lik = ForwardArrayDef("log_lik", "real", ["[N]"])
+            # self._log_lik = ForwardArrayDef("log_lik", "real", ["[N]"])
             if self._pgamma:
                 self._E_peak = ForwardArrayDef("E_peak", "real", ["[Ns]"])
                 self._peak_flux = ForwardArrayDef("peak_energy_flux", "real", ["[Ns]"])

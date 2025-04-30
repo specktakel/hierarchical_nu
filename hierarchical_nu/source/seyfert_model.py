@@ -45,15 +45,19 @@ class SeyfertNuMuSpectrum(SpectralShape):
         # Load grid of flux values
         with h5py.File(self._filename, "r") as f:
             energy = f["Enu"][()]
-            flux_grid = f["numu_flux"][()] * 1e-4  # conversion from cm-2 to m-2, is already normalised to P_R = 1
+            flux_grid = (
+                f["numu_flux"][()] * 1e4
+            )  # conversion from cm-2 to m-2, is already normalised to P_R = 1
             eta = f["eta"][()]
         flux_grid[flux_grid == 0.0] = flux_grid[flux_grid != 0.0].min()
         self._energy = energy << u.GeV
         self._flux_grid = flux_grid << 1 / u.GeV / u.s / u.m**2
         self._eta = eta
 
-        self._spline = RectBivariateSpline(np.log10(energy), eta, np.log10(flux_grid).T, kx=1, ky=3)
-        
+        self._spline = RectBivariateSpline(
+            np.log10(energy), eta, np.log10(flux_grid).T, kx=1, ky=3
+        )
+
         # properly normalise everything: stan needs pdf in energy on a grid of eta
         # thus divide all slices by their integral over energy -> pdf(E;eta)
         # pass to stan implementation
@@ -74,7 +78,9 @@ class SeyfertNuMuSpectrum(SpectralShape):
         for c, e in enumerate(self._eta):
             eta.value = e
             integral = self.total_flux_int.to_value(1 / u.m**2 / u.s)
-            pdf_grid[c] = self._flux_grid[c].to_value(1 / u.GeV / u.m**2 / u.s) / integral
+            pdf_grid[c] = (
+                self._flux_grid[c].to_value(1 / u.GeV / u.m**2 / u.s) / integral
+            )
             integral_grid[c] = integral
             e_flux_int = self.total_flux_density.to_value(u.GeV / u.m**2 / u.s)
             energy_flux_grid[c] = e_flux_int
@@ -85,12 +91,14 @@ class SeyfertNuMuSpectrum(SpectralShape):
 
         self._integral_grid = integral_grid
         self._energy_flux_grid = energy_flux_grid
-        self._log_pdf_spline = RectBivariateSpline(np.log10(energy), self._eta, np.log(pdf_grid).T, kx=1, ky=3)
+        self._log_pdf_spline = RectBivariateSpline(
+            np.log10(energy), self._eta, np.log(pdf_grid).T, kx=1, ky=3
+        )
 
         log_energy_grid = np.linspace(
             np.log10(self._lower_energy.to_value(u.GeV)),
             np.log10(self._upper_energy.to_value(u.GeV)),
-            self.energy_points
+            self.energy_points,
         )
         eta_grid = np.linspace(self._eta.min(), self._eta.max(), self.eta_points)
         self.eta_grid = eta_grid
@@ -98,7 +106,9 @@ class SeyfertNuMuSpectrum(SpectralShape):
         self.log_energy_grid = log_energy_grid
 
         # Smoothen integral_grid
-        self._integral_grid_spline = make_smoothing_spline(self._eta, self._integral_grid)
+        self._integral_grid_spline = make_smoothing_spline(
+            self._eta, self._integral_grid
+        )
         self._flux_conv_spline = make_smoothing_spline(
             self._eta, self._integral_grid / self._energy_flux_grid
         )
@@ -111,10 +121,10 @@ class SeyfertNuMuSpectrum(SpectralShape):
     @property
     def energy_points(self):
         return self._energy_points
-    
+
     def make_stan_lpdf_func(self, f_name):
         return
-    
+
     def make_stan_flux_conv_func(self, f_name):
         return
 
@@ -140,7 +150,6 @@ class SeyfertNuMuSpectrum(SpectralShape):
             eta_grid = StanArray("eta_grid", "real", self.eta_grid)
             log_energy_grid = StanArray("log_energy_grid", "real", self.log_energy_grid)
             log_pdf_grid = StanArray("pdf_grid", "real", self.log_pdf_grid)
-            
 
             ReturnStatement(
                 [
@@ -161,8 +170,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
             "real",
         )
         # make a spline out of self._integral_grid, evaluate at eta points and use linear interpolation
-        
-        
+
         splined_values = self._integral_grid_spline(self.eta_grid)
         with flux_tab:
             eta = StringExpression("eta")
@@ -171,7 +179,6 @@ class SeyfertNuMuSpectrum(SpectralShape):
             ReturnStatement(
                 [FunctionCall([eta_grid, integral_grid, eta], "interpolate")]
             )
-
 
         # Flux conv, only needed when using luminosities as derived parameters
         splined_values = self._flux_conv_spline(self.eta_grid)
@@ -185,13 +192,8 @@ class SeyfertNuMuSpectrum(SpectralShape):
             eta = StringExpression("eta")
             eta_grid = StanArray("eta_grid", "real", self.eta_grid)
             conv_grid = StanArray("conv_grid", "real", splined_values)
-            ReturnStatement(
-                [FunctionCall([eta_grid, conv_grid, eta], "interpolate")]
-            )
+            ReturnStatement([FunctionCall([eta_grid, conv_grid, eta], "interpolate")])
         return flux_tab, flux_conv
-
-
-        
 
     def _spline_log_interpolation(self, logE: Union[Iterable, float], eta: float):
         """
@@ -201,9 +203,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         """
 
         logE = np.atleast_1d(logE)
-        return (
-            np.power(10, self._spline(logE, eta)).squeeze()
-        )
+        return np.power(10, self._spline(logE, eta)).squeeze()
 
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
@@ -214,21 +214,31 @@ class SeyfertNuMuSpectrum(SpectralShape):
 
         eta = self._parameters["eta"].value
         P = self._parameters["P"].value
-        eval = self._spline_log_interpolation(
-            np.log10(energy.to_value(u.GeV)), eta,
-        ) << 1 / u.GeV / u.s / u.m**2
+        eval = (
+            self._spline_log_interpolation(
+                np.log10(energy.to_value(u.GeV)),
+                eta,
+            )
+            << 1 / u.GeV / u.s / u.m**2
+        )
         flux = eval * P
         return flux
-    
+
     @u.quantity_input
     def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / u.m**2 / u.s:
         logElow = np.log10(lower.to_value(u.GeV))
         logEhigh = np.log10(upper.to_value(u.GeV))
         eta = self._parameters["eta"].value
         P = self._parameters["P"].value
+
         def integrand(logE, eta):
-            return self._spline_log_interpolation(logE, eta) * np.power(10, logE) * np.log(10)
-        integral = quad(integrand,logElow, logEhigh, (eta))[0] << 1 / u.s / u.m**2
+            return (
+                self._spline_log_interpolation(logE, eta)
+                * np.power(10, logE)
+                * np.log(10)
+            )
+
+        integral = quad(integrand, logElow, logEhigh, (eta))[0] << 1 / u.s / u.m**2
         return P * integral
 
     @property
@@ -250,8 +260,14 @@ class SeyfertNuMuSpectrum(SpectralShape):
         P = self._parameters["P"].value
         logElow = np.log10(self._lower_energy.to_value(u.GeV))
         logEhigh = np.log10(self._upper_energy.to_value(u.GeV))
+
         def integrand(logE, eta):
-            return self._spline_log_interpolation(logE, eta) * np.power(10, 2 * logE) * np.log(10)
+            return (
+                self._spline_log_interpolation(logE, eta)
+                * np.power(10, 2 * logE)
+                * np.log(10)
+            )
+
         integral = quad(integrand, logElow, logEhigh, (eta))[0] << u.GeV / u.s / u.m**2
         return (P * integral).to(u.erg / u.s / u.cm**2)
 
@@ -265,8 +281,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         # Create stan specific class, copy from AtmosphericNuMuFlux
         return
 
-    @classmethod    
+    @classmethod
     def make_stan_flux_conv_func(cls, f_name):
-        # Should be a lookup table 
+        # Should be a lookup table
         return
-

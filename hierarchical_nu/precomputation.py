@@ -6,6 +6,7 @@ to be passed to Stan models.
 from collections import defaultdict
 from itertools import product
 import logging
+from typing import Union
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord
@@ -16,6 +17,7 @@ from .source.source import (
     Sources,
     PointSource,
     icrs_to_uv,
+    BackgroundSource,
 )
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.flux_model import PGammaSpectrum
@@ -25,6 +27,7 @@ from .detector.detector_model import (
     LogNormEnergyResolution,
     GridInterpolationEnergyResolution,
 )
+from .detector.r2021_bg_llh import R2021BackgroundLLH
 from .utils.roi import CircularROI, ROIList
 from .detector.icecube import (
     EventType,
@@ -51,6 +54,7 @@ class ExposureIntegral:
         detector_model: EventType,
         n_grid_points: int = 50,
         show_progress: bool = False,
+        bg_llh: Union[None, R2021BackgroundLLH] = None,
     ):
         """
         Handles calculation of the exposure integral.
@@ -61,12 +65,14 @@ class ExposureIntegral:
         :param detector_model: An instance of EventType from the Refrigerator.
         :param n_grid_points: number of grid points for each parameter at which exposure is calculated.
         :param show_progress: set to True if progress bars should be displayed.
+        :param bg_llh: If data-driven background likelihood is to be used, pass according instance of `R2021BackgroundLLH`, else `None`
         """
 
         self._show_progress = show_progress
         self._detector_model = detector_model
         self._sources = sources
         self._n_grid_points = n_grid_points
+        self._bg_llh = bg_llh
 
         # Use Emin_det if available, otherwise use per event_type
         try:
@@ -234,7 +240,7 @@ class ExposureIntegral:
                 raise ValueError("An ROI is needed at this point.")
 
             # Setup coordinate grids at which to evaulate effective area and flux
-            NSIDE = 128
+            NSIDE = 256
             NPIX = hp.nside2npix(NSIDE)
             # Surface element
             d_omega = 4 * np.pi / NPIX * u.sr
@@ -287,50 +293,73 @@ class ExposureIntegral:
             log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
             E_grid, dec_grid = np.meshgrid(E_c, dec_c)
 
-            # Evaluate effective area and flux
-            aeff_vals = (
-                self._effective_area.eff_area_spline(
-                    np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
-                ).reshape(log_E_grid.shape)
-                * u.m**2
-            )
-
-            flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
-
-            if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
-                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    E_grid.flatten(),
-                    self._min_det_energy,
-                    dec_grid.flatten(),
-                    use_interpolation=True,
-                ).reshape(E_grid.shape)
-
-            elif isinstance(self.energy_resolution, LogNormEnergyResolution):
-                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    E_grid.flatten(),
-                    self._min_det_energy,
-                    dec_grid.flatten(),
-                    use_lognorm=True,
-                ).reshape(E_grid.shape)
+            if self._bg_llh is not None:
+                # for each slice in sin(dec) calculate integral over energy
+                output = 0
+                llh = self._bg_llh
+                for d, c in zip(dec_c, counts):
+                    # For each declination
+                    #       digitize sin(dec)
+                    #       calculate pdf integral over detected energy range, i.e. Emin_det to infinity
+                    #       multiply with pdf(sin(dec)) -> integral calculated
+                    output += (
+                        llh.energy_integral(
+                            np.sin(d.to_value(u.rad)),
+                            np.log10(self._min_det_energy.to_value(u.GeV)),
+                            12.0,  # just some arbitrary but high enough value
+                        )
+                        * llh.prob_omega(np.sin(d.to_value(u.rad)))
+                        * c
+                        * d_omega.to_value(u.sr)
+                    )
 
             else:
-                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    E_c, self._min_det_energy
+                # Evaluate effective area and flux
+                aeff_vals = (
+                    self._effective_area.eff_area_spline(
+                        np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
+                    ).reshape(log_E_grid.shape)
+                    * u.m**2
                 )
-                p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
 
-            # Inflate d_omega if needed
-            weights = np.repeat(np.expand_dims(counts, 1), p_Edet.shape[1], axis=1)
-            p_Edet = np.nan_to_num(p_Edet)
+                flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
 
-            output = np.sum(
-                np.sum(
-                    aeff_vals * flux_vals * p_Edet * d_omega * weights,
+                if isinstance(
+                    self.energy_resolution, GridInterpolationEnergyResolution
+                ):
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        E_grid.flatten(),
+                        self._min_det_energy,
+                        dec_grid.flatten(),
+                        use_interpolation=True,
+                    ).reshape(E_grid.shape)
+
+                elif isinstance(self.energy_resolution, LogNormEnergyResolution):
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        E_grid.flatten(),
+                        self._min_det_energy,
+                        dec_grid.flatten(),
+                        use_lognorm=True,
+                    ).reshape(E_grid.shape)
+
+                else:
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        E_c, self._min_det_energy
+                    )
+                    p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
+
+                # Inflate d_omega if needed
+                weights = np.repeat(np.expand_dims(counts, 1), p_Edet.shape[1], axis=1)
+                p_Edet = np.nan_to_num(p_Edet)
+
+                output = np.sum(
+                    np.sum(
+                        aeff_vals * flux_vals * p_Edet * d_omega * weights,
+                        axis=0,
+                    )
+                    * d_E,
                     axis=0,
                 )
-                * d_E,
-                axis=0,
-            )
 
         return output
 
@@ -353,6 +382,8 @@ class ExposureIntegral:
                         and self._detector_model == CAS
                     ):
                         self._integral_fixed_vals.append(0.0 * u.m**2)
+                    elif self._bg_llh is not None:
+                        self._integral_fixed_vals.append(self.calculate_rate(source))
                     else:
                         self._integral_fixed_vals.append(
                             self.calculate_rate(source)
@@ -444,6 +475,8 @@ class ExposureIntegral:
         envelope_container = []
 
         for c, source in enumerate(self._sources.sources):
+            if isinstance(source, BackgroundSource):
+                continue
             # Energy bounds in flux model are already redshift-corrected
             # and live in the detector frame
 

@@ -126,6 +126,68 @@ class LogNormalPrior(PriorDistribution):
         return prior_dict
 
 
+class UniformPrior(PriorDistribution):
+    """
+    Uniform prior
+
+    dummy class?
+    """
+
+    def __init__(self, name="uniform", xmin=0.0, xmax=np.infty):
+        super().__init__(name, xmin=xmin, xmax=xmax)
+
+
+class LogUniformPrior(PriorDistribution):
+    """
+    Log-uniform prior, i.e. flat in log(x)
+    """
+
+    def __init__(self, name="logflat", xmin=0.0, xmax=np.infty):
+        super().__init__(name)
+
+        self._xmin = xmin
+        self._xmax = xmax
+
+    @property
+    def norm(self):
+        return 1.0 / np.log(self.xmax / self.xmin)
+
+    @property
+    def xmin(self):
+        return self._xmin
+
+    @xmin.setter
+    def xmin(self, val: float):
+        self._xmin = val
+
+    @property
+    def xmax(self):
+        return self._xmax
+
+    @xmin.setter
+    def xmax(self, val: float):
+        self._xmax = val
+
+    def pdf(self, x):
+        return 1 / (self.norm * x)
+
+    def sample(self, N):
+        stats.loguniform.rvs(self.xmin, self.xmax, size=N)
+
+    def to_dict(self, units):
+        prior_dict = {}
+
+        prior_dict["name"] = self._name
+
+        prior_dict["xmin"] = self.xmin
+
+        prior_dict["xmax"] = self.xmax
+
+        prior_dict["units"] = units
+
+        return prior_dict
+
+
 class ParetoPrior(PriorDistribution):
     """
     Pareto distribution, i.e. x^{-alpha}
@@ -197,6 +259,9 @@ class PriorDictHandler:
             xmin = prior_dict["xmin"]
             alpha = prior_dict["alpha"]
             return prior(ParetoPrior, xmin=xmin * units, alpha=alpha)
+        if prior_name == "logflat":
+            xmin = prior_dict["xmin"]
+            xmax = prior_dict["xmax"]
         mu = prior_dict["mu"]
         sigma = prior_dict["sigma"]
         if prior_name == "normal":
@@ -205,6 +270,8 @@ class PriorDictHandler:
             return prior(NormalPrior, mu=mu, sigma=sigma)
         elif prior_name == "lognormal":
             return prior(LogNormalPrior, mu=np.exp(mu) * units, sigma=sigma)
+        elif prior_name == "logflat":
+            return prior(LogUniformPrior, xmin=xmin * units, xmax=xmax * units)
 
 
 class UnitPrior:
@@ -219,6 +286,13 @@ class UnitPrior:
             units = kwargs.get("units")
             self._units = units
             self._prior = name(xmin=xmin.to_value(units), alpha=alpha)
+
+        elif name == LogUniformPrior:
+            xmin = kwargs.get("xmin")
+            xmax = kwargs.get("xmax")
+            units = kwargs.get("units")
+            self.units = units
+            self._prior = name(xmin=xmin.to_value(units), xmax=xmax.to_value(units))
 
         else:
             mu = kwargs.get("mu")
@@ -385,6 +459,7 @@ class LuminosityPrior(UnitPrior):
         mu: Union[u.Quantity[u.GeV / u.s], None] = 1e49 * u.GeV / u.s,
         sigma: Union[u.Quantity[u.GeV / u.s], u.Quantity[1], None] = 3.0,
         xmin: Union[u.Quantity[u.GeV / u.s], None] = None,
+        xmax: Union[u.Quantity[u.GeV / u.s], None] = None,
         alpha: Union[float, None] = None,
     ):
         """
@@ -392,7 +467,13 @@ class LuminosityPrior(UnitPrior):
         """
         # This sigma thing is weird due to the log
         super().__init__(
-            name, mu=mu, sigma=sigma, xmin=xmin, alpha=alpha, units=self.UNITS
+            name,
+            mu=mu,
+            sigma=sigma,
+            xmin=xmin,
+            xmax=xmax,
+            alpha=alpha,
+            units=self.UNITS,
         )
 
 

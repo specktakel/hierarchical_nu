@@ -11,10 +11,12 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from cmdstanpy import CmdStanModel
 from scipy.stats import uniform
+from omegaconf import OmegaConf
 from typing import List, Union
+from pathlib import Path
+from time import time as thyme
 
 from hierarchical_nu.source.parameter import Parameter
-
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
@@ -42,22 +44,17 @@ class ModelCheck:
 
     def __init__(
         self,
-        config: Union[None, HierarchicalNuConfig] = None,
+        config: HierarchicalNuConfig,
         truths=None,
         priors=None,
     ):
         """
-        :param config: HhierarchicalNuConfig instance or None (uses default config)
+        :param config: HhierarchicalNuConfig instance
         :param truths: true parameter values
         :param priors: priors to overwrite the config's priors
         """
 
-        if config is None:
-            logger.info("Loading default config")
-            self.config = HierarchicalNuConfig.load_default()
-
-        else:
-            self.config = config
+        self.config = config
         self.parser = ConfigParser(self.config)
 
         if priors:
@@ -73,20 +70,20 @@ class ModelCheck:
             logger.info("Found true values")
             self.truths = truths
 
-        else:
-            logger.info("Loading true values from config")
-            # Config
-            parameter_config = self.config["parameter_config"]
-            self.parser.ROI
+        # Config
+        self.parser.ROI
 
-            # Sources
-            self._sources = self.parser.sources
+        # Sources
+        self._sources = self.parser.sources
+        if not self._sources.background:
             f_arr = self._sources.f_arr().value
             f_arr_astro = self._sources.f_arr_astro().value
 
-            # Detector
-            self._detector_model_type = self.parser.detector_model
-            self._obs_time = self.parser.obs_time
+        # Detector
+        self._detector_model_type = self.parser.detector_model
+        self._obs_time = self.parser.obs_time
+        if not truths:
+            logger.info("Loading true values from config")
             # self._nshards = parameter_config["nshards"]
             self._threads_per_chain = self.config.stan_config["threads_per_chain"]
 
@@ -101,7 +98,6 @@ class ModelCheck:
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
             self._Nex_et = sim._Nex_et
-
             # Truths
             self.truths = {}
 
@@ -112,6 +108,7 @@ class ModelCheck:
                 # self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to_value(
                 #    flux_unit
                 # )
+                self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
                 self.truths["diffuse_norm"] = (
                     diffuse_bg.flux_model(
                         diffuse_bg.flux_model.spectral_shape._normalisation_energy,
@@ -138,8 +135,9 @@ class ModelCheck:
                     .value
                     for _ in range(len(self._sources.point_source))
                 ]
-            self.truths["f_arr"] = f_arr
-            self.truths["f_arr_astro"] = f_arr_astro
+            if not self._sources.background:
+                self.truths["f_arr"] = f_arr
+                self.truths["f_arr_astro"] = f_arr_astro
             try:
                 self.truths["src_index"] = [Parameter.get_parameter("src_index").value]
             except ValueError:
@@ -147,7 +145,6 @@ class ModelCheck:
                     Parameter.get_parameter(f"ps_{_}_src_index").value
                     for _ in range(len(self._sources.point_source))
                 ]
-            self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
             try:
                 self.truths["beta_index"] = [
                     Parameter.get_parameter("beta_index").value
@@ -172,7 +169,8 @@ class ModelCheck:
                     ]
                 except ValueError:
                     pass
-            self.truths["Nex"] = Nex
+            if not self.parser._hnu_config.parameter_config.data_bg:
+                self.truths["Nex"] = Nex
             self.truths["Nex_src"] = np.sum(
                 Nex_per_comp[0 : len(self._sources.point_source)]
             )
@@ -189,7 +187,8 @@ class ModelCheck:
 
         self._default_var_names = [key for key in self.truths]
         self._default_var_names.append("Fs")
-
+        self._default_var_names.append("L_ind")
+        self._default_var_names.append("Nex_bg")
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
     @staticmethod
@@ -252,7 +251,7 @@ class ModelCheck:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-    def parallel_run(self, n_jobs=1, n_subjobs=1, seed=None, **kwargs):
+    def parallel_run(self, n_jobs=1, n_subjobs=1, seed: int = 42, **kwargs):
         """
         Run model checks in parallel
         :param n_jobs: Number of parallel jobs
@@ -267,12 +266,24 @@ class ModelCheck:
             delayed(self._single_run)(n_subjobs, seed=s, **kwargs) for s in job_seeds
         )
 
-    def save(self, filename, save_events: bool = False):
+    def save(
+        self,
+        filename: Path,
+        save_events: bool = False,
+        overwrite: bool = False,
+    ):
         """
         Save model check
         :param filename: output filename
         :param save_events: If True save simulated events as well
         """
+
+        if os.path.exists(filename) and not overwrite:
+            logger.warning(f"File {filename} already exists.")
+            file = os.path.splitext(filename)[0]
+            ext = os.path.splitext(filename)[1]
+            file += f"_{int(thyme())}"
+            filename = file + ext
 
         with h5py.File(filename, "w") as f:
             truths_folder = f.create_group("truths")
@@ -317,6 +328,10 @@ class ModelCheck:
                                 f"event_Lambda_{i}_{c}", data=data
                             )
             f.create_dataset("version", data=git_hash)
+
+            # Create string of used config, to be loaded later to re-create source lists
+            config_string = OmegaConf.to_yaml(self.parser._hnu_config)
+            f.create_dataset("config", data=config_string)
 
         if save_events and "events" in res.keys():
             for i, res in enumerate(self._results):
@@ -372,6 +387,7 @@ class ModelCheck:
                         "Files in list have different truth settings and should not be combined"
                     )
 
+                """
                 n_jobs = len(
                     [
                         key
@@ -381,18 +397,30 @@ class ModelCheck:
                             and key != "priors"
                             and key != "sim"
                             and key != "version"
+                            and key != "config"
                         )
                     ]
                 )
+                """
 
-                for i in range(n_jobs):
-                    job_folder = f["results_%i" % i]
-                    for res_key in job_folder:
-                        results[res_key].extend(job_folder[res_key][()])
-                    # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
-                    sim_N.extend(sim_folder["sim_%i" % i][()])
+                i = 0
+                while True:
+                    try:
+                        # for i in range(n_jobs):
+                        job_folder = f["results_%i" % i]
+                        for res_key in job_folder:
+                            results[res_key].extend(job_folder[res_key][()])
+                        # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
+                        sim_N.extend(sim_folder["sim_%i" % i][()])
+                        i += 1
+                    except KeyError:
+                        break
 
-        output = cls(truths=truths, priors=priors)
+        with h5py.File(filename, "r") as f:
+            config_string = f["config"][()].decode("ascii")
+        config = OmegaConf.create(config_string)
+
+        output = cls(config, truths=truths, priors=priors)
         output.results = results
         output.sim_Lambdas = sim
         output.sim_N = sim_N
@@ -443,6 +471,7 @@ class ModelCheck:
                 continue
             if (
                 var_name == "L"
+                or var_name == "L_ind"
                 # or var_name == "F_diff"
                 # or var_name == "F_atmo"
                 or var_name == "Fs"
@@ -634,6 +663,10 @@ class ModelCheck:
 
         sys.stderr.write("Random seed: %i\n" % seed)
 
+        # Something related to the used skyllh modules leads to all the logging
+        # being printed to the console. TODO properly fix this...
+        logging.disable(logging.CRITICAL)
+
         self.parser.ROI
 
         sources = self.parser.sources
@@ -674,32 +707,55 @@ class ModelCheck:
             sim.run(seed=s, verbose=True)
             # self.sim = sim
 
-            # Skip if no detected events
-            if not sim.events:
+            # If asimov option is used and data added as background, just use the background
+            # else continue
+
+            data_bg = self.config.parameter_config.data_bg
+            if not sim.events and not data_bg:
                 continue
 
             events = sim.events
+            if events:
+                # Create a mask for the sampled events
+                # for point sources; events may be scattered outside of the ROI,
+                # we need to catch these and delete from the event lists used for the fit.
+                # Skip the temporal selection because currently the sampled time stamps
+                # have an arbitrary value (we can only do time-averaged simulations)
+                mask = events.apply_ROIS(events.coords, events.mjd, skip_time=True)
+                idx = np.logical_or.reduce(mask)
 
-            # create a mask for the sampled events
-            # for point sources, events may be scattered outside of the ROI
-            # we need to catch these and delete from the event lists used for the fit
-            mask = events.apply_ROIS(events.coords, events.mjd)
-            idx = np.logical_or.reduce(mask)
+                lambd = sim._sim_output.stan_variable("Lambda").squeeze()[idx]
 
-            lambd = sim._sim_output.stan_variable("Lambda").squeeze()[idx]
+                new_events = Events(
+                    events.energies[idx],
+                    events.coords[idx],
+                    events.types[idx],
+                    events.ang_errs[idx],
+                    events.mjd[idx],
+                )
+
+            if data_bg:
+                # If we use data as background, sample scrambled data and add to point source events
+                bg_events = Events.from_ev_file(
+                    *self.parser.detector_model,
+                    scramble_ra=True,
+                    scramble_mjd=True,
+                    seed=seed,
+                )
+                N_bg = bg_events.N
+                if events:
+                    new_events = new_events.merge(bg_events)
+                    lambd = np.concatenate((lambd, np.array([4.0] * N_bg)))
+                else:
+                    new_events = bg_events
+                    lambd = np.array([4.0] * N_bg)
+            else:
+                N_bg = 0
 
             ps = np.sum(lambd == 1.0)
             diff = np.sum(lambd == 2.0)
             atmo = np.sum(lambd == 3.0)
-            lam = np.array([ps, diff, atmo])
-
-            new_events = Events(
-                events.energies[idx],
-                events.coords[idx],
-                events.types[idx],
-                events.ang_errs[idx],
-                events.mjd[idx],
-            )
+            lam = np.array([ps, diff, atmo, N_bg])
 
             # Fit
             # Same as above, save time
@@ -740,11 +796,13 @@ class ModelCheck:
 
             inits = {
                 # TODO fix
-                "F_diff": 1e-4,
+                "F_diff": 2e-13,
                 "F_atmo": F_atmo_init.to_value(1 / (u.m**2 * u.s)),
                 "E": [1e5] * fit.events.N,
                 "L": L_init,
                 "src_index": src_init,
+                "Nex_per_ps": [5] * len(fit.sources.point_source),
+                "N_bg": fit.events.N - 5,
             }
             fit.run(
                 seed=s,
@@ -793,8 +851,8 @@ class ModelCheck:
                 "_beta_index",
                 "E0_src",
                 "_E0_src",
-                "E[",
-                "Esrc[",
+                "E",
+                "Esrc",
                 "F_atmo",
                 "F_diff",
                 "diff_index",
@@ -825,6 +883,8 @@ class ModelCheck:
                 outputs["N_Eff"].append(N_Eff)
             outputs["parameter_names"].append(np.array(keys, dtype="S"))
             outputs["R_hat"].append(R_hat)
+
+            logging.disable(logging.NOTSET)
 
         return outputs
 
