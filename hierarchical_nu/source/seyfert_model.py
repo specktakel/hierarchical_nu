@@ -133,6 +133,11 @@ class SeyfertNuMuSpectrum(SpectralShape):
         flux_tab, flux_conv = self._make_stan_flux_conv_func()
         return lpdf, flux_tab, flux_conv
 
+    def pdf(self, energy: u.GeV, Emin: u.GeV, Emax: u.GeV, apply_lim: bool = True):
+        logE = np.log10(energy.to_value(u.GeV))
+        eta = self._parameters["eta"].value
+        return np.exp(self._log_pdf_spline(logE, eta).squeeze())
+
     def _make_stan_lpdf_func(self):
         # PDF
         func = UserDefinedFunction(
