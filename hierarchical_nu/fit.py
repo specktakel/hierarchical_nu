@@ -2149,8 +2149,11 @@ class StanFit:
                 fit_inputs["Nex_src_min"] = self._nex_par_range[0]
                 fit_inputs["Nex_src_max"] = self._nex_par_range[1]
 
-            fit_inputs["Lmin"] = self._lumi_par_range[0]
-            fit_inputs["Lmax"] = self._lumi_par_range[1]
+            try:
+                fit_inputs["Lmin"] = self._lumi_par_range[0]
+                fit_inputs["Lmax"] = self._lumi_par_range[1]
+            except AttributeError:
+                pass
 
             if self._fit_beta:
                 fit_inputs["beta_index_grid"] = self._exposure_integral[
@@ -2471,8 +2474,11 @@ class StanFit:
             else:
                 key = "%s_luminosity" % self._sources.point_source[0].name
 
-            self._lumi_par_range = Parameter.get_parameter(key).par_range
-            self._lumi_par_range = self._lumi_par_range.to_value(u.GeV / u.s)
+            try:
+                self._lumi_par_range = Parameter.get_parameter(key).par_range
+                self._lumi_par_range = self._lumi_par_range.to_value(u.GeV / u.s)
+            except ValueError:
+                pass
 
             if self._logparabola or self._power_law:
                 self._src_index_par_range = (

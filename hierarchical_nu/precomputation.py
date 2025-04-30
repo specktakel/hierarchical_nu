@@ -572,10 +572,7 @@ class ExposureIntegral:
 
         self._slice_aeff_for_point_sources()
 
-        try:
-            self._compute_c_values()
-        except:
-            pass
+        self._compute_c_values()
 
 
 '''

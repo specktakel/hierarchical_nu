@@ -918,8 +918,9 @@ class StanFitInterface(StanInterface):
             self._Emin = ForwardVariableDef("Emin", "real")
             self._Emax = ForwardVariableDef("Emax", "real")
             if self.sources.point_source:
-                self._Lmin = ForwardVariableDef("Lmin", "real")
-                self._Lmax = ForwardVariableDef("Lmax", "real")
+                if not self._seyfert:
+                    self._Lmin = ForwardVariableDef("Lmin", "real")
+                    self._Lmax = ForwardVariableDef("Lmax", "real")
                 if self._fit_index:
                     self._src_index_min = ForwardVariableDef("src_index_min", "real")
                     self._src_index_max = ForwardVariableDef("src_index_max", "real")
@@ -1445,7 +1446,7 @@ class StanFitInterface(StanInterface):
                         "pressure_ratio", "real", self._P_min, self._P_max
                     )
 
-                if not self._fit_nex:
+                elif not self._fit_nex:
                     if self._shared_luminosity:
                         self._L_glob = ParameterDef("L", "real", self._Lmin, self._Lmax)
                     else:
@@ -1563,7 +1564,7 @@ class StanFitInterface(StanInterface):
                     "Nex_atmo_comp", "real", ["[", self._Net, "]"]
                 )
             if self.sources.point_source:
-                if self._shared_luminosity or self._fit_nex:
+                if self._shared_luminosity or self._fit_nex or self._seyfert:
                     self._L = ForwardVariableDef(
                         "L_ind",
                         "vector[Ns]",
@@ -1864,6 +1865,18 @@ class StanFitInterface(StanInterface):
                         )
                     if not self._fit_nex and not self._seyfert:
                         StringExpression([self._F[k], "*=", self._flux_conv_val[k]])
+                    if self._seyfert:
+                        self._L[k] << self._F[k] / self._flux_conv_val[
+                            k
+                        ] * StringExpression(
+                            [
+                                "(4 * pi() * pow(",
+                                self._D[k],
+                                " * ",
+                                3.086e22,
+                                ", 2))",
+                            ]
+                        )
 
                     with ForLoopContext(1, self._Net_stan, "i") as i:
                         # For each source, calculate the exposure via interpolation
