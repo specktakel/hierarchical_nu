@@ -1865,18 +1865,6 @@ class StanFitInterface(StanInterface):
                         )
                     if not self._fit_nex and not self._seyfert:
                         StringExpression([self._F[k], "*=", self._flux_conv_val[k]])
-                    if self._seyfert:
-                        self._L[k] << self._F[k] / self._flux_conv_val[
-                            k
-                        ] * StringExpression(
-                            [
-                                "(4 * pi() * pow(",
-                                self._D[k],
-                                " * ",
-                                3.086e22,
-                                ", 2))",
-                            ]
-                        )
 
                     with ForLoopContext(1, self._Net_stan, "i") as i:
                         # For each source, calculate the exposure via interpolation
