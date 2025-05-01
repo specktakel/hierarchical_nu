@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class SeyfertNuMuSpectrum(SpectralShape):
     _lower_energy = 1e2 * u.GeV
     _upper_energy = 1e7 * u.GeV
-
+    _name = "SeyfertII"
     def __init__(
         self,
         P: Parameter,
@@ -41,7 +41,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         self._energy_points = energy_points
         self._eta_points = eta_points
 
-        self._filename = "/remote/ceph2/user/k/kuhlmann/seyfert_nu_spectra/spectra/hnu_input_ngc_1068.h5"
+        self._filename = "/viper/u/jdk/icecube/hierarchical_nu/hierarchical_nu/source/hnu_input_ngc_1068.h5"
         # Load grid of flux values
         with h5py.File(self._filename, "r") as f:
             energy = f["Enu"][()]
