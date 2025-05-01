@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 class SeyfertNuMuSpectrum(SpectralShape):
     _lower_energy = 1e2 * u.GeV
     _upper_energy = 1e7 * u.GeV
+    _name = "SeyfertII"
 
     def __init__(
         self,
