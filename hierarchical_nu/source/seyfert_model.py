@@ -32,8 +32,8 @@ class SeyfertNuMuSpectrum(SpectralShape):
         self,
         P: Parameter,
         eta: Parameter,
-        energy_points: int = 100,
-        eta_points: int = 150,
+        energy_points: int = 80,
+        eta_points: int = 100,
     ):
         super().__init__(self)
         self._parameters["eta"] = eta
@@ -273,8 +273,13 @@ class SeyfertNuMuSpectrum(SpectralShape):
                 * np.log(10)
             )
 
-        integral = quad(integrand, logElow, logEhigh, (eta))[0] << u.GeV / u.s / u.m**2
-        return (P * integral).to(u.erg / u.s / u.cm**2)
+        integral = quad(integrand, logElow, logEhigh, (eta), limit=100)
+        val = integral[0]
+        err = integral[1]
+        ratio = err / val
+        if ratio > 1e-3:
+            logger.warning(f"Flux density integral has a large error of {100*ratio:.3f}%.")
+        return (P * val * u.GeV / u.s / u.m**2).to(u.erg / u.s / u.cm**2)
 
     @classmethod
     def make_stan_sampling_func(cls, f_name):
