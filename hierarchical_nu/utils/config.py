@@ -24,7 +24,7 @@ class ParameterConfig:
     source_type: str = (
         "twice-broken-power-law"  # Currently only supports one type for all sources,
         # other options: "power-law" covering the entire energy range,
-        # or "logparabola", or "pgamma". If logparabola, up to two fit parameters used
+        # "logparabola", "pgamma" or "seyfert". If logparabola, up to two fit parameters used
         # (out of src_index, beta_index and E0_src) need to be defined
         # in the field "fit_params", e.g. fit_params: ["src_index", "beta_index"]
     )
@@ -40,6 +40,10 @@ class ParameterConfig:
     beta_index_range: Tuple = (-1.0, 1.0)
     E0_src: List[float] = field(default_factory=lambda: [1e6])  # GeV
     E0_src_range: Tuple = (1e3, 1e8)
+    eta: List[float] = field(default_factory=lambda: [40])  # inverse turbulence strength
+    eta_range: Tuple = (1., 150.)
+    P: List[float] = field(default_factory=lambda: [0.5])   # cosmic ray to thermal pressure ratio
+    P_range: Tuple = (0., 100.)
     Nex_src_range: Tuple = (0.0, 100.0)
     diff_index: float = 2.5
     diff_index_range: Tuple = (1.0, 4.0)
