@@ -36,13 +36,17 @@ class SeyfertNuMuSpectrum(SpectralShape):
         energy_points: int = 80,
         eta_points: int = 100,
     ):
+        local_path = "input/hnu_input_ngc_1068.h5"
+        DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
+
         super().__init__(self)
         self._parameters["eta"] = eta
         self._parameters["P"] = P
         self._energy_points = energy_points
         self._eta_points = eta_points
 
-        self._filename = "/remote/ceph2/user/k/kuhlmann/seyfert_nu_spectra/spectra/hnu_input_ngc_1068.h5"
+
+        self._filename = DATA_PATH
         # Load grid of flux values
         with h5py.File(self._filename, "r") as f:
             energy = f["Enu"][()]
