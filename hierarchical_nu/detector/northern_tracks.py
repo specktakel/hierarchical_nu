@@ -393,8 +393,16 @@ class NorthernTracksAngularResolution(AngularResolution):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 self.PDF_NAME,
-                ["true_dir", "reco_dir", "sigma", "kappa"],
-                ["vector", "vector", "real", "real"],
+                [
+                    "true_dir",
+                    "reco_dir",
+                    "kappa",
+                ],
+                [
+                    "vector",
+                    "vector",
+                    "real",
+                ],
                 "real",
             )
 
@@ -409,7 +417,7 @@ class NorthernTracksAngularResolution(AngularResolution):
         with self:
             if self.mode == DistributionMode.PDF:
                 angular_parameterisation = VMFParameterization(
-                    ["true_dir", "reco_dir"], "sigma", self.mode
+                    ["true_dir", "reco_dir"], "kappa", self.mode
                 )
                 ReturnStatement([angular_parameterisation])
 

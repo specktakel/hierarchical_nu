@@ -369,8 +369,8 @@ class CascadesAngularResolution(AngularResolution):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 self._func_name,
-                ["true_dir", "reco_dir", "sigma", "kappa"],
-                ["vector", "vector", "real", "real"],
+                ["true_dir", "reco_dir", "kappa"],
+                ["vector", "vector", "real"],
                 "real",
             )
 
