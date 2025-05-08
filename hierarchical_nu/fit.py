@@ -44,11 +44,7 @@ from hierarchical_nu.detector.r2021 import (
 )
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
-from hierarchical_nu.priors import (
-    Priors,
-    UnitPrior,
-    MultiSourcePrior,
-)
+from hierarchical_nu.priors import Priors, UnitPrior, MultiSourcePrior, NoPriorSetError
 from hierarchical_nu.source.source import uv_to_icrs
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
@@ -566,7 +562,7 @@ class StanFit:
                         title = f"{name} [{unit.to_string('latex_inline')}]"
                     ax.set_title(title)
 
-            except KeyError:
+            except (KeyError, NoPriorSetError):
                 pass
 
         fig = axs.flatten()[0].get_figure()
@@ -604,7 +600,7 @@ class StanFit:
         if not var_names:
             var_names = self._def_var_names
 
-        var_names.pop("Nex")
+        # var_names.pop("Nex")
 
         # Organise samples
         samples_list = []

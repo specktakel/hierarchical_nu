@@ -2169,8 +2169,9 @@ class StanFitInterface(StanInterface):
 
             # Priors
             if self.sources.point_source:
-                """
-                if self._priors.luminosity.name in ["normal", "lognormal"]:
+                if self._priors.luminosity.name == "notaprior":
+                    pass
+                elif self._priors.luminosity.name in ["normal", "lognormal"]:
                     if self._shared_luminosity and not self._fit_nex:
                         StringExpression(
                             [
@@ -2252,16 +2253,20 @@ class StanFitInterface(StanInterface):
                                     ),
                                 ]
                             )
-
                 else:
                     raise NotImplementedError(
                         "Luminosity prior distribution not recognised."
                     )
-                """
 
-                if self._priors.src_index.name not in ["normal", "lognormal"]:
+                if self._priors.src_index.name not in [
+                    "normal",
+                    "lognormal",
+                    "notaprior",
+                ]:
                     raise ValueError("Prior type for source index not recognised.")
-                if (
+                if self._priors.src_index.name == "notaprior":
+                    pass
+                elif (
                     isinstance(self._priors.src_index, MultiSourcePrior)
                     and self._fit_index
                 ):
