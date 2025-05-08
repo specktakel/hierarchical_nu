@@ -601,8 +601,6 @@ class ConfigParser:
         prior_config = self._hnu_config.prior_config
 
         def _make_prior(multiparameterprior, parameterprior, prior, mu, sigma):
-            print(mu, sigma)
-            print(type(mu), type(sigma))
             if not isinstance(mu, omegaconf.listconfig.ListConfig) and not isinstance(
                 mu, list
             ):
@@ -611,7 +609,6 @@ class ConfigParser:
                 sigma, omegaconf.listconfig.ListConfig
             ) and not isinstance(sigma, list):
                 sigma = [sigma]
-            print(mu, sigma)
             if len(mu) > 1 and len(sigma) > 1:
                 return multiparameterprior(
                     [parameterprior(prior, mu=m, sigma=s) for m, s in zip(mu, sigma)]
@@ -734,15 +731,3 @@ class ConfigParser:
     def _get_obs_time_from_config(cls, dms, obs_time):
         cls.check_units(obs_time, u.yr)
         return {dm: u.Quantity(obs_time[c]) for c, dm in enumerate(dms)}
-
-    """
-    @classmethod
-    def _make_prior(cls, p):
-        if p["name"] == "LogNormalPrior":
-            prior = LogNormalPrior(mu=np.log(p["mu"]), sigma=p["sigma"])
-        elif p["name"] == "NormalPrior":
-            prior = NormalPrior(mu=p["mu"], sigma=p["sigma"])
-        else:
-            raise ValueError("Currently no other prior implemented")
-        return prior
-    """
