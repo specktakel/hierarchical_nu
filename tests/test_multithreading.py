@@ -110,7 +110,6 @@ def test_ps(output_directory, sources):
         assert np.sum(~np.isclose(mt_n, n, atol=0.3)) < 3
 
 
-"""
 def test_lp(output_directory, sources):
     events = Events.from_file(os.path.join(output_directory, f"ps_only_0.h5"))
     fit = StanFit(sources, IC86_II, events, 180 * u.d, nshards=2, debug=True)
@@ -127,19 +126,25 @@ def test_lp(output_directory, sources):
         )
     )
 
-"""
-"""
 
 def test_ps_atmo(output_directory):
     Parameter.clear_registry()
     Emin_det = Parameter(1e3 * u.GeV, "Emin_det", fixed=True)
     sources = Sources()
     z = 0.3365
-    src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1., 4.))
-    L = Parameter(1e47* (u.erg / u.s), "luminosity", fixed=True, 
-                par_range=(0, 1e60)*(u.erg/u.s))
-    diffuse_norm = Parameter((0.9e-18 / u.GeV / u.cm**2 * 4 * np.pi / u.s).to(1/(u.GeV*u.m**2*u.s)), "diffuse_norm", fixed=True, 
-                            par_range=(0, np.inf))
+    src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1.0, 4.0))
+    L = Parameter(
+        1e47 * (u.erg / u.s),
+        "luminosity",
+        fixed=True,
+        par_range=(0, 1e60) * (u.erg / u.s),
+    )
+    diffuse_norm = Parameter(
+        (0.9e-18 / u.GeV / u.cm**2 * 4 * np.pi / u.s).to(1 / (u.GeV * u.m**2 * u.s)),
+        "diffuse_norm",
+        fixed=True,
+        par_range=(0, np.inf),
+    )
     diff_index = Parameter(2.13, "diff_index", fixed=False, par_range=(1.5, 3.5))
     Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
     Emin = Parameter(1e2 * u.GeV, "Emin", fixed=True)
@@ -149,11 +154,13 @@ def test_ps_atmo(output_directory):
     Emin_src = Parameter(Emin.value * (1 + z), "Emin_src", fixed=True)
     Emax_src = Parameter(Emax.value * (1 + z), "Emax_src", fixed=True)
 
-    ps = PointSource.make_powerlaw_source("txs", dec*u.rad,
-                                                ra*u.rad, 
-                                                    L, src_index, z, Emin_src, Emax_src)
+    ps = PointSource.make_powerlaw_source(
+        "txs", dec * u.rad, ra * u.rad, L, src_index, z, Emin_src, Emax_src
+    )
     sources.add(ps)
-    sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff)
+    sources.add_diffuse_component(
+        diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
+    )
 
     sim = Simulation(sources, IC86_II, 180 * u.d)
 
@@ -163,8 +170,6 @@ def test_ps_atmo(output_directory):
 
     sim.generate_stan_code()
     sim.compile_stan_code()
-
-
 
     for i in range(5):
         sim.run(verbose=True, seed=i)
@@ -200,13 +205,10 @@ def test_ps_atmo(output_directory):
         mt_fit.run(seed=42, show_progress=True, inits={"L": 1e50, "src_index": 2.2})
         mt_fit.save(os.path.join(output_directory, f"ps_only_mt_fit_{i}.h5"))
 
-
     for i in range(5):
         mt = StanFit.from_file(os.path.join(output_directory, f"ps_only_mt_fit_{i}.h5"))
         fit = StanFit.from_file(os.path.join(output_directory, f"ps_only_fit_{i}.h5"))
         bins = np.linspace(1.0, 4.0, 20)
-        mt_n, _= np.histogram(mt._fit_output["src_index"][0], bins=bins, density=True)
+        mt_n, _ = np.histogram(mt._fit_output["src_index"][0], bins=bins, density=True)
         n, _ = np.histogram(fit._fit_output["src_index"][0], bins=bins, density=True)
         assert np.sum(~np.isclose(mt_n, n, atol=0.3)) < 3
-
-"""
