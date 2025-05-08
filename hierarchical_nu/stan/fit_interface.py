@@ -996,8 +996,8 @@ class StanFitInterface(StanInterface):
                         self._eta_grid = ForwardVariableDef("eta_grid", "vector[Ngrid]")
 
                     if self._seyfert:
-                        self._P_min = ForwardVariableDef("P_min", "real")
-                        self._P_max = ForwardVariableDef("P_max", "real")
+                        self._Pmin = ForwardVariableDef("P_min", "real")
+                        self._Pmax = ForwardVariableDef("P_max", "real")
 
                     if self._n_params == 2:
                         self._integral_grid_2d = ForwardArrayDef(
@@ -1442,9 +1442,18 @@ class StanFitInterface(StanInterface):
                 elif self._seyfert:
                     # TODO make vector option for multi ps with individual parameters,
                     # hijack shared luminosity for this
-                    self._P = ParameterDef(
-                        "pressure_ratio", "real", self._P_min, self._P_max
-                    )
+                    if self._shared_luminosity:
+                        self._P = ParameterDef(
+                            "pressure_ratio", "real", self._Pmin, self._Pmax
+                        )
+                    else:
+                        self._P = ParameterVectorDef(
+                            "pressure_ratio",
+                            "vector",
+                            self._Ns_str,
+                            self._Pmin,
+                            self._Pmax,
+                        )
 
                 elif not self._fit_nex:
                     if self._shared_luminosity:
