@@ -8,6 +8,7 @@ from scipy.integrate import dblquad, quad, trapezoid
 from scipy.interpolate import RectBivariateSpline, make_smoothing_spline
 import h5py
 import logging
+import os
 
 from .flux_model import SpectralShape
 from .parameter import Parameter
