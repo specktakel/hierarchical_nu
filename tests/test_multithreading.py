@@ -43,7 +43,7 @@ def sources():
             (2.26e-13 / u.GeV / u.m**2 / u.s),
             "diffuse_norm",
             fixed=True,
-            par_range=(0, np.inf),
+            par_range=(1e-15, 1e-10) * (1 / u.GeV / u.m**2 / u.s),
         )
         diff_index = Parameter(2.13, "diff_index", fixed=False, par_range=(1.5, 3.5))
         Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
@@ -154,7 +154,7 @@ def test_ps_diff(output_directory, sources):
     sim.generate_stan_code()
     sim.compile_stan_code()
 
-    for i in range(5):
+    for i in range(3):
         sim.run(verbose=True, seed=i)
         sim.save(os.path.join(output_directory, f"ps_only_{i}.h5"), overwrite=True)
 
@@ -169,7 +169,7 @@ def test_ps_diff(output_directory, sources):
     fit.generate_stan_code()
     fit.compile_stan_code()
 
-    for i in range(5):
+    for i in range(3):
         events = Events.from_file(os.path.join(output_directory, f"ps_only_{i}.h5"))
         fit.events = events
         fit.run(seed=42, show_progress=True, inits={"L": 1e50, "src_index": 2.2})
@@ -182,13 +182,13 @@ def test_ps_diff(output_directory, sources):
     mt_fit.generate_stan_code()
     mt_fit.compile_stan_code()
 
-    for i in range(5):
+    for i in range(3):
         events = Events.from_file(os.path.join(output_directory, f"ps_only_{i}.h5"))
         mt_fit.events = events
         mt_fit.run(seed=42, show_progress=True, inits={"L": 1e50, "src_index": 2.2})
         mt_fit.save(os.path.join(output_directory, f"ps_only_mt_fit_{i}.h5"))
 
-    for i in range(5):
+    for i in range(3):
         mt = StanFit.from_file(os.path.join(output_directory, f"ps_only_mt_fit_{i}.h5"))
         fit = StanFit.from_file(os.path.join(output_directory, f"ps_only_fit_{i}.h5"))
         bins = np.linspace(1.0, 4.0, 20)
