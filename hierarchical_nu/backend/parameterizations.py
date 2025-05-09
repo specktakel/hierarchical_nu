@@ -4,32 +4,46 @@ from enum import Enum
 from hierarchical_nu.backend.expression import TListTExpression
 import numpy as np  # type: ignore
 from .stan_generator import UserDefinedFunction, ForLoopContext
-from .expression import (Expression, TExpression, TListTExpression,
-                         ReturnStatement, StringExpression)
+from .expression import (
+    Expression,
+    TExpression,
+    TListTExpression,
+    ReturnStatement,
+    StringExpression,
+)
 from .operations import FunctionCall
 from .pymc_generator import pymcify
 from .variable_definitions import (
-    StanArray, ForwardVariableDef, ForwardArrayDef, ForwardVectorDef
+    StanArray,
+    ForwardVariableDef,
+    ForwardArrayDef,
+    ForwardVectorDef,
 )
 from .typedefs import TArrayOrNumericIterable
 
 
 import logging
+
 logger = logging.getLogger(__name__)
 
-__all__ = ["LogParameterization", "RayleighParameterization",
-           "PolynomialParameterization", "LognormalParameterization",
-           "VMFParameterization", "TruncatedParameterization",
-           "SimpleHistogram", "SimpleHistogram_rng",
-           "DistributionMode", "LognormalMixture",
-           "TwoDimHistInterpolation"
-           ]
+__all__ = [
+    "LogParameterization",
+    "RayleighParameterization",
+    "PolynomialParameterization",
+    "LognormalParameterization",
+    "VMFParameterization",
+    "TruncatedParameterization",
+    "SimpleHistogram",
+    "SimpleHistogram_rng",
+    "DistributionMode",
+    "LognormalMixture",
+    "TwoDimHistInterpolation",
+]
 
 DistributionMode = Enum("DistributionMode", "PDF RNG")
 
 
-class Distribution(Expression,
-                   metaclass=ABCMeta):
+class Distribution(Expression, metaclass=ABCMeta):
     """
     Class for probility distributions.
 
@@ -37,9 +51,7 @@ class Distribution(Expression,
     for switching between RNG and PDF mode.
     """
 
-    def __init__(self,
-                 inputs: TListTExpression,
-                 mode: DistributionMode):
+    def __init__(self, inputs: TListTExpression, mode: DistributionMode):
         self._mode = mode
 
         if self._mode == DistributionMode.PDF:
@@ -60,9 +72,8 @@ class Distribution(Expression,
 
 class LogParameterization(Expression):
     """log with customizable base"""
-    def __init__(self,
-                 inputs: TExpression,
-                 base: float = 10):
+
+    def __init__(self, inputs: TExpression, base: float = 10):
         self._base = base
 
         x_eval_stan = inputs
@@ -76,10 +87,11 @@ class LogParameterization(Expression):
 
     def to_pymc(self):
         import theano.tensor as tt  # type: ignore
+
         x_eval_pymc = pymcify(self._inputs[0])
 
         if self._base != 10:
-            return tt.log10(x_eval_pymc)/tt.log10(self._base)
+            return tt.log10(x_eval_pymc) / tt.log10(self._base)
         else:
             return tt.log10(x_eval_pymc)
 
@@ -88,15 +100,13 @@ class PolynomialParameterization(Expression):
     """Polynomial parametrization"""
 
     def __init__(
-            self,
-            inputs: TExpression,
-            coefficients: TArrayOrNumericIterable,
-            coeffs_var_name: str) -> None:
+        self,
+        inputs: TExpression,
+        coefficients: TArrayOrNumericIterable,
+        coeffs_var_name: str,
+    ) -> None:
 
-        coeffs = StanArray(
-            coeffs_var_name,
-            "vector",
-            coefficients)
+        coeffs = StanArray(coeffs_var_name, "vector", coefficients)
         coeffs.add_output(self)
 
         x_eval_stan = inputs
@@ -107,7 +117,7 @@ class PolynomialParameterization(Expression):
             ",",
             coeffs,
             ")",
-           ]
+        ]
 
         Expression.__init__(self, [inputs], stan_code)
 
@@ -115,12 +125,13 @@ class PolynomialParameterization(Expression):
 class LognormalParameterization(Distribution):
     """Lognormal distribution"""
 
-    def __init__(self,
-                 inputs: TExpression,
-                 mu: TExpression,
-                 sigma: TExpression,
-                 mode: DistributionMode = DistributionMode.PDF
-                 ):
+    def __init__(
+        self,
+        inputs: TExpression,
+        mu: TExpression,
+        sigma: TExpression,
+        mode: DistributionMode = DistributionMode.PDF,
+    ):
         if isinstance(mu, Expression):
             mu.add_output(self)
         if isinstance(sigma, Expression):
@@ -134,15 +145,21 @@ class LognormalParameterization(Distribution):
 
     def stan_code_rng(self, inputs: TListTExpression):
         stan_code: TListTExpression = []
-        stan_code += ["lognormal_rng(", self._mu, ", ",
-                      self._sigma, ")"]
+        stan_code += ["lognormal_rng(", self._mu, ", ", self._sigma, ")"]
         return stan_code
 
     def stan_code_pdf(self, inputs: TListTExpression):
         x_obs_stan = inputs[0]
         stan_code: TListTExpression = []
-        stan_code += ["lognormal_lpdf(", x_obs_stan, " | ", self._mu, ", ",
-                      self._sigma, ")"]
+        stan_code += [
+            "lognormal_lpdf(",
+            x_obs_stan,
+            " | ",
+            self._mu,
+            ", ",
+            self._sigma,
+            ")",
+        ]
         return stan_code
 
 
@@ -155,11 +172,11 @@ class RayleighParameterization(Distribution):
     """
 
     def __init__(
-            self,
-            inputs: TListTExpression, 
-            sigma: TExpression,
-            mode: DistributionMode = DistributionMode.PDF,
-        ):
+        self,
+        inputs: TListTExpression,
+        sigma: TExpression,
+        mode: DistributionMode = DistributionMode.PDF,
+    ):
         self._sigma = sigma
         Distribution.__init__(self, inputs, mode)
 
@@ -174,28 +191,22 @@ class RayleighParameterization(Distribution):
         return stan_code
 
     def stan_code_pdf(self, inputs: TListTExpression) -> TListTExpression:
-        x_true = inputs[0]
-        x_reco = inputs[1]
+        ang_sep = inputs[0]
 
-        stan_code : TListTExpression = []
+        stan_code: TListTExpression = []
+
         stan_code += [
-            "log(ang_sep(",
-            x_true, 
-            ", ",
-            x_reco,
-            ") / sin(ang_sep(",
-            x_true,
-            ", ",
-            x_reco,
-            "))) - log(2 * pi() * pow(",
+            "log(",
+            ang_sep,
+            " / sin(",
+            ang_sep,
+            ")) - log(2 * pi() * ",
             self._sigma,
-             ", 2)) -  0.5 * pow(ang_sep(",
-            x_true,
-            ", ",
-            x_reco,
-            ") / ",
+            ") -  0.5 * (pow(",
+            ang_sep,
+            ", 2) / ",
             self._sigma,
-            ", 2)",
+            ")",
         ]
 
         return stan_code
@@ -207,10 +218,11 @@ class VMFParameterization(Distribution):
     """
 
     def __init__(
-            self,
-            inputs: TListTExpression,
-            kappa: TExpression,
-            mode: DistributionMode = DistributionMode.PDF):
+        self,
+        inputs: TListTExpression,
+        kappa: TExpression,
+        mode: DistributionMode = DistributionMode.PDF,
+    ):
 
         self._kappa = kappa
         if isinstance(kappa, Expression):
@@ -227,8 +239,15 @@ class VMFParameterization(Distribution):
 
         stan_code: TListTExpression = []
 
-        stan_code += ["vMF_lpdf(", x_obs_stan, " | ", x_true_stan, ", ",
-                      self._kappa, ")"]
+        stan_code += [
+            "vMF_lpdf(",
+            x_obs_stan,
+            " | ",
+            x_true_stan,
+            ", ",
+            self._kappa,
+            ")",
+        ]
 
         return stan_code
 
@@ -237,8 +256,7 @@ class VMFParameterization(Distribution):
         x_true_stan = inputs[0]
         stan_code: TListTExpression = []
 
-        stan_code += ["vMF_rng(", x_true_stan, ", ",
-                      self._kappa, ")"]
+        stan_code += ["vMF_rng(", x_true_stan, ", ", self._kappa, ")"]
 
         return stan_code
 
@@ -251,8 +269,7 @@ class TruncatedParameterization(Expression):
     Truncate parameter to range
     """
 
-    def __init__(self, inputs: TExpression, min_val: TExpression,
-                 max_val: TExpression):
+    def __init__(self, inputs: TExpression, min_val: TExpression, max_val: TExpression):
         """
         Args:
             inputs: TExpression
@@ -273,11 +290,9 @@ class TruncatedParameterization(Expression):
 
         stan_code: TListTExpression = []
 
-        stan_code += ["truncate_value(", x_obs_stan, ", ", min_val, ", ",
-                      max_val, ")"]
+        stan_code += ["truncate_value(", x_obs_stan, ", ", min_val, ", ", max_val, ")"]
 
         Expression.__init__(self, [inputs], stan_code)
-
 
 
 class SimpleHistogram_rng(UserDefinedFunction):
@@ -290,34 +305,46 @@ class SimpleHistogram_rng(UserDefinedFunction):
         self,
         name: str,
     ):
-        super().__init__(name, ["hist_array", "hist_edges"], ["array[] real", "array[] real"], "real")
+        super().__init__(
+            name, ["hist_array", "hist_edges"], ["array[] real", "array[] real"], "real"
+        )
 
         with self:
-            self._bin_width = ForwardArrayDef("bin_width", "real", ["[size(hist_array)]"])
-            self._multiplied = ForwardArrayDef("multiplied", "real", ["[size(hist_array)]"])
+            self._bin_width = ForwardArrayDef(
+                "bin_width", "real", ["[size(hist_array)]"]
+            )
+            self._multiplied = ForwardArrayDef(
+                "multiplied", "real", ["[size(hist_array)]"]
+            )
             self._normalised = ForwardVectorDef("normalised", ["size(hist_array)"])
             with ForLoopContext(2, "size(hist_edges)", "i") as i:
-                self._bin_width[i-1] << StringExpression(["hist_edges[i] - hist_edges[i-1]"])
+                self._bin_width[i - 1] << StringExpression(
+                    ["hist_edges[i] - hist_edges[i-1]"]
+                )
             with ForLoopContext(1, "size(hist_array)", "i") as i:
-                self._multiplied[i] << StringExpression(["hist_array[i] * bin_width[i]"])
+                self._multiplied[i] << StringExpression(
+                    ["hist_array[i] * bin_width[i]"]
+                )
             with ForLoopContext(1, "size(hist_array)", "i") as i:
-                self._normalised[i] << StringExpression(["hist_array[i] / sum(multiplied)"])
-            
+                self._normalised[i] << StringExpression(
+                    ["hist_array[i] / sum(multiplied)"]
+                )
+
             index = ForwardVariableDef("index", "int")
             index << StringExpression(["categorical_rng(", self._normalised, ")"])
 
             _ = ReturnStatement(["uniform_rng(hist_edges[index], hist_edges[index+1])"])
 
 
-
 class LognormalMixture(UserDefinedFunction):
     """LognormalMixture Mixture Model"""
 
     def __init__(
-            self,
-            name: str,
-            n_components: int,
-            mode: DistributionMode = DistributionMode.PDF):
+        self,
+        name: str,
+        n_components: int,
+        mode: DistributionMode = DistributionMode.PDF,
+    ):
         """
         Args:
             inputs: TExpression
@@ -345,8 +372,7 @@ class LognormalMixture(UserDefinedFunction):
         else:
             raise RuntimeError("This should not happen")
 
-        UserDefinedFunction.__init__(
-            self, name, val_names, val_types, "real")
+        UserDefinedFunction.__init__(self, name, val_names, val_types, "real")
 
         if mode == DistributionMode.PDF:
             self._build_pdf()
@@ -361,28 +387,24 @@ class LognormalMixture(UserDefinedFunction):
 
             index << ["categorical_rng(", self.weights, ")"]
             distribution = LognormalParameterization(
-                    [],
-                    self.means[index],
-                    self.sigmas[index],
-                    mode=DistributionMode.RNG)
+                [], self.means[index], self.sigmas[index], mode=DistributionMode.RNG
+            )
             ReturnStatement([distribution])
 
     def _build_pdf(self):
 
         with self:
             result = ForwardVariableDef(
-                "result",
-                "vector["+str(self.n_components)+"]")
+                "result", "vector[" + str(self.n_components) + "]"
+            )
 
             log_weights = FunctionCall([self.weights], "log")
             with ForLoopContext(1, self.n_components, "i") as i:
                 distribution = LognormalParameterization(
-                    "x",
-                    self.means[i],
-                    self.sigmas[i],
-                    mode=DistributionMode.PDF)
+                    "x", self.means[i], self.sigmas[i], mode=DistributionMode.PDF
+                )
 
-                result[i] << [log_weights[i]+distribution]
+                result[i] << [log_weights[i] + distribution]
 
             result_sum = ["log_sum_exp(", result, ")"]
 
@@ -404,31 +426,34 @@ class SimpleHistogram(UserDefinedFunction):
     """
     A step function implemented as lookup table
     """
+
     def __init__(
-            self,
-            histogram: np.ndarray,
-            binedges: Sequence[np.ndarray],
-            name: str
-            ):
+        self, histogram: np.ndarray, binedges: Sequence[np.ndarray], name: str
+    ):
 
         self._dim = len(binedges)
 
         val_names = ["value_{}".format(i) for i in range(self._dim)]
-        val_types = ["real"]*self._dim
+        val_types = ["real"] * self._dim
 
-        UserDefinedFunction.__init__(
-            self, name, val_names, val_types, "real")
+        UserDefinedFunction.__init__(self, name, val_names, val_types, "real")
 
         with self:
             self._histogram = StanArray("hist_array", "real", histogram)
             self._binedges = [
                 StanArray("hist_edge_{}".format(i), "real", be)
-                for i, be in enumerate(binedges)]
+                for i, be in enumerate(binedges)
+            ]
 
             stan_code: TListTExpression = [self._histogram]
             for i in range(self._dim):
-                stan_code += ["[binary_search(", val_names[i], ", ",
-                              self._binedges[i], ")]"]
+                stan_code += [
+                    "[binary_search(",
+                    val_names[i],
+                    ", ",
+                    self._binedges[i],
+                    ")]",
+                ]
             _ = ReturnStatement(stan_code)
 
         """
@@ -446,36 +471,41 @@ class TwoDimHistInterpolation(UserDefinedFunction):
     """
 
     def __init__(
-            self,
-            histogram: np.ndarray,
-            binedges: Sequence[np.ndarray],
-            name: str
-            ):
+        self, histogram: np.ndarray, binedges: Sequence[np.ndarray], name: str
+    ):
 
         if not histogram.ndim == 2:
             raise ValueError("Only two dimensional histograms can be interpolated")
         self._dim = 2
 
         val_names = ["value_{}".format(i) for i in range(self._dim)]
-        val_types = ["real"]*self._dim
+        val_types = ["real"] * self._dim
 
-        UserDefinedFunction.__init__(
-            self, name, val_names, val_types, "real")
+        UserDefinedFunction.__init__(self, name, val_names, val_types, "real")
 
         with self:
             self._histogram = StanArray("hist_array", "real", histogram)
             self._binedges = [
                 StanArray("hist_edge_{}".format(i), "real", be)
-                for i, be in enumerate(binedges)]
-            loge_c = np.power(10, (np.log10(binedges[0][:-1]) + np.log10(binedges[0][1:])) / 2)
+                for i, be in enumerate(binedges)
+            ]
+            loge_c = np.power(
+                10, (np.log10(binedges[0][:-1]) + np.log10(binedges[0][1:])) / 2
+            )
             self._loge = StanArray("energy", "real", loge_c)
-            temp = ForwardArrayDef("temp", "real", ["[", binedges[0].size-1, "]"])
+            temp = ForwardArrayDef("temp", "real", ["[", binedges[0].size - 1, "]"])
             temp << StringExpression(
                 [
-                    "hist_array[:, binary_search(", val_names[1], ", ", self._binedges[1], ")]"
+                    "hist_array[:, binary_search(",
+                    val_names[1],
+                    ", ",
+                    self._binedges[1],
+                    ")]",
                 ]
             )
-            return_this: TListTExpression = ["interpolate(to_vector(energy), to_vector(temp), value_0)"]
+            return_this: TListTExpression = [
+                "interpolate(to_vector(energy), to_vector(temp), value_0)"
+            ]
             _ = ReturnStatement(return_this)
 
 
@@ -512,26 +542,19 @@ if __name__ == "__main__":
             lognorm_mix = LognormalMixture(
                 "lognorm",
                 2,
-                )
-            lognorm_mix_rng = LognormalMixture(
-                "lognorm",
-                2,
-                mode=DistributionMode.RNG)
+            )
+            lognorm_mix_rng = LognormalMixture("lognorm", 2, mode=DistributionMode.RNG)
             lognorm_mix_def = ForwardVariableDef("lognorm_mix", "real")
 
-            lognorm_mix_def << lognorm_mix("x",
-                                           lognorm_means,
-                                           lognorm_sigmas,
-                                           lognorm_weights
-                                           )
+            lognorm_mix_def << lognorm_mix(
+                "x", lognorm_means, lognorm_sigmas, lognorm_weights
+            )
 
             lognorm_mix_rng_def = ForwardVariableDef("lognorm_mix_rng", "real")
 
-            lognorm_mix_rng_def << lognorm_mix_rng("x",
-                                                   lognorm_means,
-                                                   lognorm_sigmas,
-                                                   lognorm_weights
-                                                   )
+            lognorm_mix_rng_def << lognorm_mix_rng(
+                "x", lognorm_means, lognorm_sigmas, lognorm_weights
+            )
 
             """
             # histogram test

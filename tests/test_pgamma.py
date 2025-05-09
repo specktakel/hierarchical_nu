@@ -150,7 +150,7 @@ def test_satanic():
         "Emax": Emax,
         "N": N,
     }
-    samples = model.sample(fixed_param=True, data=data, iter_warmup=1, iter_sampling=1)
+    samples = model.sample(fixed_param=True, data=data, iter_warmup=1, iter_sampling=1, chains=1)
 
     stan_conv = samples.stan_variable("conv").squeeze()
     stan_lpdf = samples.stan_variable("lpdf").squeeze()
