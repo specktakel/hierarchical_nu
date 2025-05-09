@@ -114,8 +114,6 @@ class StanFit:
             )
         self._event_types = event_types
         self._events = events
-        if not isinstance(observation_time, dict):
-            observation_time = {dm: observation_time}
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
         self._nshards = nshards
