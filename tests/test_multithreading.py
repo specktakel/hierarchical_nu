@@ -60,7 +60,7 @@ def sources():
             source_list.add(ps)
         if diff:
             source_list.add_diffuse_component(
-                diffuse_norm, Enorm, diff_index, Emin_diff, Emax_diff
+                diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
             )
         if atmo:
             source_list.add_atmospheric_component()
