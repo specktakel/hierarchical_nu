@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Union, Tuple
+from typing import List, Tuple, Any
 from dataclasses import dataclass, field
 from omegaconf import OmegaConf
 import numpy as np
@@ -38,30 +38,31 @@ class ParameterConfig:
     src_index_range: Tuple = (1.0, 4.0)
     beta_index: List[float] = field(default_factory=lambda: [0.0])
     beta_index_range: Tuple = (-1.0, 1.0)
-    E0_src: List[float] = field(default_factory=lambda: [1e6])  # GeV
-    E0_src_range: Tuple = (1e3, 1e8)
     Nex_src_range: Tuple = (0.0, 100.0)
+    E0_src: List[str] = field(default_factory=lambda: ["1e6 GeV"])
+    E0_src_range: Tuple[str] = ("1e3 GeV", "1e8 GeV")
     diff_index: float = 2.5
     diff_index_range: Tuple = (1.0, 4.0)
-    diff_norm: float = (
-        2e-13  # 1 / (u.GeV * u.m**2 * u.s), defined in the detector frame
+    diff_norm: str = "2.26e-13 GeV-1 m-2 s-1"  # defined in the detector frame
+    diff_norm_range: Tuple[str] = (
+        "1e-14 GeV-1 m-2 s-1",
+        "1e-11 GeV-1 m-2 s-1",
     )
-    diff_norm_range: Tuple = (1e-14, 1e-11)  # 1 / GeV / m**2 / s
-    F_atmo_range: Tuple = (0.1, 0.5)  # 1 / m**2 / s
-    L: List[float] = field(
-        default_factory=lambda: [8e45]
+    F_atmo_range: Tuple = ("0.1 m-2 s-1", "0.5 m-2 s-1")
+    L: List[str] = field(
+        default_factory=lambda: ["8e45 erg s-1"]
     )  # u.erg / u.s, defined in the source frame
     share_L: bool = True
-    L_range: Tuple = (0, 1e60)
-    src_dec: List[float] = field(default_factory=lambda: [0.0])  # u.deg
-    src_ra: List[float] = field(default_factory=lambda: [90.0])  # u.deg
-    Enorm: float = 1e5  # u.GeV, defined in the detector frame
-    Emin: float = 1e2  # u.GeV, defined in the detector frame
-    Emax: float = 1e8  # u.GeV
-    Emin_src: float = 1.4e4  # u.GeV, defined in the source frame at redshift z
-    Emax_src: float = 1.4e7  # u.GeV
-    Emin_diff: float = 1e2  # u.GeV, defined in the detector frame
-    Emax_diff: float = 1e8  # u.GeV
+    L_range: Tuple = ("0 GeV s-1", "1e60 GeV s-1")
+    src_dec: List[str] = field(default_factory=lambda: ["0.0 deg"])
+    src_ra: List[str] = field(default_factory=lambda: ["90.0 deg"])
+    Enorm: str = "1e5 GeV"  # defined in the detector frame
+    Emin: str = "1e2 GeV"  # defined in the detector frame
+    Emax: str = "1e8 GeV"
+    Emin_src: str = "1.4e4 GeV"
+    Emax_src: str = "1.4e7 GeV"
+    Emin_diff: str = "1e2 GeV"  # defined in the detector frame
+    Emax_diff: str = "1e8 GeV"  # defined in the detector frame
     z: List[float] = field(
         default_factory=lambda: [0.4]
     )  # cosmological redshift, dimensionless, only for point source
@@ -72,14 +73,14 @@ class ParameterConfig:
 
     # Entries for un-used detector models are disregarded by the sim/fit/model check
     # defined in the detector frame
-    Emin_det: float = 1e4  # u.GeV
-    Emin_det_northern_tracks: float = 6e4  # u.GeV
-    Emin_det_cascades: float = 6e4  # u.GeV
-    Emin_det_IC40: float = 6e4  # u.GeV
-    Emin_det_IC59: float = 6e4  # u.GeV
-    Emin_det_IC79: float = 6e4  # u.GeV
-    Emin_det_IC86_I: float = 6e4  # u.GeV
-    Emin_det_IC86_II: float = 6e4  # u.GeV
+    Emin_det: str = "1e4 GeV"
+    Emin_det_northern_tracks: str = "6e4 GeV"
+    Emin_det_cascades: str = "6e4 GeV"
+    Emin_det_IC40: str = "6e4 GeV"
+    Emin_det_IC59: str = "6e4 GeV"
+    Emin_det_IC79: str = "6e4 GeV"
+    Emin_det_IC86_I: str = "6e4 GeV"
+    Emin_det_IC86_II: str = "6e4 GeV"
 
     # Can be NT, CAS or IC40 through IC86_II or any combination,
     # see `hierarchical_nu.detector.icecube.Refrigerator`
@@ -93,7 +94,7 @@ class ParameterConfig:
     # provide mjd_min, mjd_max to automatically determine the detectors and their obs times
     detector_model_type: List[str] = field(default_factory=lambda: ["IC86_II"])
     frame: str = "source"
-    obs_time: List = field(default_factory=lambda: [3.0])  # years
+    obs_time: List[str] = field(default_factory=lambda: ["3.0 yr"])
 
     # With these default values obs_time takes precedence
     MJD_min: float = 98.0
@@ -133,21 +134,26 @@ class StanConfig:
 @dataclass
 class SinglePriorConfig:
     name: str = "LogNormalPrior"
-    mu: float = 1.0
-    sigma: float = 1.0
+    mu: Any = 1.0  # Should be str or float, but alas, OmegaConf does not support Unions
+    sigma: Any = 1.0
 
 
 @dataclass
 class PriorConfig:
     src_index: SinglePriorConfig = field(
-        default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=2.5, sigma=0.5)
+        default_factory=lambda: SinglePriorConfig(
+            name="NormalPrior", mu=[2.5], sigma=[0.5]
+        )
     )
+
     beta_index: SinglePriorConfig = field(
-        default_factory=lambda: SinglePriorConfig(name="NormalPrior", mu=0.0, sigma=0.1)
+        default_factory=lambda: SinglePriorConfig(
+            name="NormalPrior", mu=[0.0], sigma=[0.1]
+        )
     )
     E0_src: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=1e5, sigma=3.0
+            name="LogNormalPrior", mu=["1e5 GeV"], sigma=[3.0]
         )
     )
     diff_index: SinglePriorConfig = field(
@@ -157,18 +163,20 @@ class PriorConfig:
     )
     L: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="LogNormalPrior", mu=1e49, sigma=3
+            name="LogNormalPrior", mu=["1e49 GeV s-1"], sigma=[3.0]
         )
     )
 
     diff_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=2.26e-13, sigma=0.19e-13
+            name="NormalPrior",
+            mu="2.26e-13  GeV-1 s-1 m-2",
+            sigma="0.19e-13 GeV-1 s-1 m-2",
         )
     )
     atmo_flux: SinglePriorConfig = field(
         default_factory=lambda: SinglePriorConfig(
-            name="NormalPrior", mu=0.314, sigma=0.08
+            name="NormalPrior", mu="0.314 m-2 s-1", sigma="0.08 m-2 s-1"
         )
     )
 
@@ -178,21 +186,21 @@ class ROIConfig:
     roi_type: str = (
         "CircularROI"  # can be "CircularROI", "FullSkyROI", or "RectangularROI"
     )
-    size: float = (
-        5.0  # size in degrees; for circular: radius, fullsky: disregarded, rectangular: center +/- size in RA and DEC
+    size: str = (
+        "5.0 deg"  # for circular: radius, fullsky: disregarded, rectangular: center +/- size in RA and DEC
     )
     apply_roi: bool = False
 
     # If config has default values size data field takes precedence
-    RA_min: float = -1.0
-    RA_max: float = 361.0
+    RA_min: str = "-1.0 deg"
+    RA_max: str = "361.0 deg"
 
-    DEC_min: float = -91.0
-    DEC_max: float = 91.0
+    DEC_min: str = "-91.0 deg"
+    DEC_max: str = "91.0 deg"
 
     # If RA, DEC take default values, they will be overridden by the source selections
-    RA: float = -1.0
-    DEC: float = -91.0
+    RA: str = "-1.0 deg"
+    DEC: str = "-91.0 deg"
 
 
 @dataclass
@@ -282,8 +290,8 @@ class HierarchicalNuConfig:
             try:
                 E0 = ps.flux_model.parameters["norm_energy"]
                 config.parameter_config.E0_src_range = [
-                    float(E0.par_range[0].to_value(u.GeV)),
-                    float(E0.par_range[1].to_value(u.GeV)),
+                    E0.par_range[0].to(u.GeV).to_string(),
+                    E0.par_range[1].to(u.GeV).to_string(),
                 ]
                 if not E0.fixed:
                     fit_params.append("E0_src")
@@ -291,8 +299,8 @@ class HierarchicalNuConfig:
                 pass
             config.parameter_config.fit_params = fit_params
             for ps in sources.point_source:
-                ra.append(float(ps.ra.to_value(u.deg)))
-                dec.append(float(ps.dec.to_value(u.deg)))
+                ra.append(ps.ra.to(u.deg).to_string())
+                dec.append(ps.dec.to(u.deg).to_string())
                 z.append(ps.redshift)
             config.parameter_config.source_type = spectrum
             config.parameter_config.src_ra = ra
@@ -301,11 +309,11 @@ class HierarchicalNuConfig:
             config.parameter_config.share_src_index
             config.parameter_config.share_L
             config.parameter_config.frame = sources.point_source_frame.name
-            config.parameter_config.Emin_src = float(
-                Parameter.get_parameter("Emin_src").value.to_value(u.GeV)
+            config.parameter_config.Emin_src = (
+                Parameter.get_parameter("Emin_src").value.to(u.GeV).to_string()
             )
-            config.parameter_config.Emax_src = float(
-                Parameter.get_parameter("Emax_src").value.to_value(u.GeV)
+            config.parameter_config.Emax_src = (
+                Parameter.get_parameter("Emax_src").value.to(u.GeV).to_string()
             )
 
         config.parameter_config.diffuse = True if sources.diffuse else False

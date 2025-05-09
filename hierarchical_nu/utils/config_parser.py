@@ -8,6 +8,9 @@ from hierarchical_nu.priors import (
     FluxPrior,
     DifferentialFluxPrior,
     EnergyPrior,
+    MultiSourceEnergyPrior,
+    MultiSourceIndexPrior,
+    MultiSourceLuminosityPrior,
 )
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.source.source import (
@@ -16,7 +19,6 @@ from hierarchical_nu.source.source import (
     SourceFrame,
     DetectorFrame,
 )
-from hierarchical_nu.source.flux_model import PGammaSpectrum
 from hierarchical_nu.source.parameter import Parameter, ParScale
 from hierarchical_nu.detector.icecube import Refrigerator
 from hierarchical_nu.utils.roi import (
@@ -30,14 +32,28 @@ from hierarchical_nu.detector.input import mceq
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
 
+import omegaconf
+
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
-
-from copy import deepcopy
+import omegaconf
 
 
 class ConfigParser:
+
+    @classmethod
+    def check_units(cls, entry, unit):
+        if isinstance(entry, omegaconf.listconfig.ListConfig):
+            for _ in entry:
+                cls.check_units(_, unit)  # I can do recursion lol
+        else:
+            try:
+                u.Quantity(entry).to(unit)
+            except u.UnitConversionError as e:
+                raise e
+        return
+
     def __init__(self, hnu_config: HierarchicalNuConfig):
         self._hnu_config = hnu_config
 
@@ -47,6 +63,22 @@ class ConfigParser:
         parameter_config = self._hnu_config["parameter_config"]
         share_L = parameter_config["share_L"]
         share_src_index = parameter_config["share_src_index"]
+
+        for k, v in dict(parameter_config).items():
+            if "E" in k and k != "Emin_det_eq":
+                self.check_units(v, u.GeV)
+
+            if "L" == k:
+                self.check_units(v, u.GeV / u.s)
+
+            if k == "src_dec" or k == "src_ra":
+                self.check_units(v, u.deg)
+
+            if "F_atmo" in k:
+                self.check_units(v, 1 / u.m**2 / u.s)
+
+            if "diff_norm" in k:
+                self.check_units(v, 1 / u.GeV / u.m**2 / u.s)
 
         Parameter.clear_registry()
         index = []
@@ -103,44 +135,60 @@ class ConfigParser:
             if "E0_src" in parameter_config["fit_params"] and share_src_index:
                 E0_src.append(
                     Parameter(
-                        parameter_config["E0_src"][0] * u.GeV,
+                        u.Quantity(parameter_config["E0_src"][0]),
                         "E0_src",
                         False,
-                        parameter_config["E0_src_range"] * u.GeV,
+                        tuple(
+                            u.Quantity(_).to_value(u.GeV)
+                            for _ in parameter_config["E0_src_range"]
+                        )
+                        * u.GeV,
                         ParScale.log,
                     )
                 )
             else:
-                for c, idx in enumerate(parameter_config["E0_src"]):
+                for c, val in enumerate(parameter_config["E0_src"]):
                     name = f"ps_{c}_E0_src"
                     E0_src.append(
                         Parameter(
-                            idx * u.GeV,
+                            u.Quantity(val),
                             name,
                             not "E0_src" in parameter_config["fit_params"],
-                            parameter_config["E0_src_range"] * u.GeV,
+                            tuple(
+                                u.Quantity(_).to_value(u.GeV)
+                                for _ in parameter_config["E0_src_range"]
+                            )
+                            * u.GeV,
                             ParScale.log,
                         )
                     )
         if parameter_config["source_type"] == "pgamma" and share_src_index:
             E0_src.append(
                 Parameter(
-                    parameter_config["E0_src"][0] * u.GeV,
+                    u.Quantity(parameter_config["E0_src"][0]),
                     "E0_src",
                     False,
-                    parameter_config["E0_src_range"] * u.GeV,
+                    tuple(
+                        u.Quantity(_).to_value(u.GeV)
+                        for _ in parameter_config["E0_src_range"]
+                    )
+                    * u.GeV,
                     ParScale.log,
                 )
             )
         elif parameter_config["source_type"] == "pgamma":
-            for c, idx in enumerate(parameter_config["E0_src"]):
+            for c, val in enumerate(parameter_config["E0_src"]):
                 name = f"ps_{c}_E0_src"
                 E0_src.append(
                     Parameter(
-                        idx * u.GeV,
+                        u.Quantity(val),
                         name,
                         False,
-                        parameter_config["E0_src_range"] * u.GeV,
+                        tuple(
+                            u.Quantity(_).to_value(u.GeV)
+                            for _ in parameter_config["E0_src_range"]
+                        )
+                        * u.GeV,
                         ParScale.log,
                     )
                 )
@@ -159,48 +207,61 @@ class ConfigParser:
                 name = f"ps_{c}_luminosity"
                 L.append(
                     Parameter(
-                        Lumi * u.erg / u.s,
+                        u.Quantity(Lumi),
                         name,
-                        fixed=True,
-                        par_range=parameter_config["L_range"] * u.erg / u.s,
+                        True,
+                        tuple(
+                            u.Quantity(_).to_value(u.GeV / u.s)
+                            for _ in parameter_config["L_range"]
+                        )
+                        * (u.GeV / u.s),
                     )
                 )
         else:
             L.append(
                 Parameter(
-                    parameter_config["L"][0] * u.erg / u.s,
+                    u.Quantity(parameter_config["L"][0]),
                     "luminosity",
-                    fixed=False,
-                    par_range=parameter_config["L_range"] * u.erg / u.s,
+                    False,
+                    tuple(
+                        u.Quantity(_).to_value(u.GeV / u.s)
+                        for _ in parameter_config["L_range"]
+                    )
+                    * u.GeV
+                    / u.s,
                 )
             )
         diffuse_norm = Parameter(
-            parameter_config["diff_norm"] * 1 / (u.GeV * u.m**2 * u.s),
+            u.Quantity(parameter_config["diff_norm"]),
             "diffuse_norm",
-            fixed=True,
-            par_range=parameter_config.diff_norm_range * (1 / u.GeV / u.m**2 / u.s),
+            True,
+            tuple(
+                u.Quantity(_).to_value(1 / u.GeV / u.m**2 / u.s)
+                for _ in parameter_config.diff_norm_range
+            )
+            * (1 / u.GeV / u.m**2 / u.s),
         )
-        Enorm = Parameter(parameter_config["Enorm"] * u.GeV, "Enorm", fixed=True)
-        Emin = Parameter(parameter_config["Emin"] * u.GeV, "Emin", fixed=True)
-        Emax = Parameter(parameter_config["Emax"] * u.GeV, "Emax", fixed=True)
+        Enorm = Parameter(u.Quantity(parameter_config["Enorm"]), "Enorm", fixed=True)
+        Emin = Parameter(u.Quantity(parameter_config["Emin"]), "Emin", fixed=True)
+        Emax = Parameter(u.Quantity(parameter_config["Emax"]), "Emax", fixed=True)
 
         Emin_src = Parameter(
-            parameter_config["Emin_src"] * u.GeV, "Emin_src", fixed=True
+            u.Quantity(parameter_config["Emin_src"]), "Emin_src", fixed=True
         )
         Emax_src = Parameter(
-            parameter_config["Emax_src"] * u.GeV, "Emax_src", fixed=True
+            u.Quantity(parameter_config["Emax_src"]), "Emax_src", fixed=True
         )
 
         Emin_diff = Parameter(
-            parameter_config["Emin_diff"] * u.GeV, "Emin_diff", fixed=True
+            u.Quantity(parameter_config["Emin_diff"]), "Emin_diff", fixed=True
         )
         Emax_diff = Parameter(
-            parameter_config["Emax_diff"] * u.GeV, "Emax_diff", fixed=True
+            u.Quantity(parameter_config["Emax_diff"]), "Emax_diff", fixed=True
         )
 
         if parameter_config["Emin_det_eq"]:
             Emin_det = Parameter(
-                parameter_config["Emin_det"] * u.GeV, "Emin_det", fixed=True
+                u.Quantity(parameter_config["Emin_det"]), "Emin_det", fixed=True
             )
 
         else:
@@ -208,13 +269,23 @@ class ConfigParser:
                 # Create a parameter for each detector
                 # If the detector is not used, the parameter is disregarded
                 _ = Parameter(
-                    parameter_config[f"Emin_det_{dm.P}"] * u.GeV,
+                    u.Quantity(parameter_config[f"Emin_det_{dm.P}"]),
                     f"Emin_det_{dm.P}",
                     fixed=True,
                 )
 
-        dec = np.deg2rad(parameter_config["src_dec"]) * u.rad
-        ra = np.deg2rad(parameter_config["src_ra"]) * u.rad
+        dec = (
+            np.array(
+                [u.Quantity(_).to_value(u.deg) for _ in parameter_config["src_dec"]]
+            )
+            << u.deg
+        )
+        ra = (
+            np.array(
+                [u.Quantity(_).to_value(u.deg) for _ in parameter_config["src_ra"]]
+            )
+            << u.deg
+        )
         _frame = parameter_config["frame"]
         if _frame == "detector":
             frame = DetectorFrame
@@ -314,7 +385,10 @@ class ConfigParser:
         if parameter_config.atmospheric:
             sources.add_atmospheric_component(cache_dir=mceq)
             F_atmo = Parameter.get_parameter("F_atmo")
-            F_atmo.par_range = parameter_config.F_atmo_range * (1 / u.m**2 / u.s)
+            F_atmo.par_range = tuple(
+                u.Quantity(_).to_value(1 / u.m**2 / u.s)
+                for _ in parameter_config.F_atmo_range
+            ) * (1 / u.m**2 / u.s)
 
         if parameter_config.data_bg:
             sources.add_background(*self.detector_model)
@@ -336,28 +410,46 @@ class ConfigParser:
         ROIList.clear_registry()
         parameter_config = self._hnu_config.parameter_config
         roi_config = self._hnu_config.roi_config
-        src_dec = np.deg2rad(parameter_config.src_dec) * u.rad
-        src_ra = np.deg2rad(parameter_config.src_ra) * u.rad
-        RA = roi_config.RA
-        DEC = roi_config.DEC
-        if not np.isclose(RA, -1.0) and not np.isclose(DEC, -91.0):
+        src_dec = (
+            np.array([u.Quantity(_).to_value(u.deg) for _ in parameter_config.src_dec])
+            << u.deg
+        )
+        src_ra = (
+            np.array([u.Quantity(_).to_value(u.deg) for _ in parameter_config.src_ra])
+            << u.deg
+        )
+
+        self.check_units(roi_config.RA, u.deg)
+        self.check_units(roi_config.DEC, u.deg)
+        RA = u.Quantity(roi_config.RA)
+        DEC = u.Quantity(roi_config.DEC)
+        if not np.isclose(RA, -1.0 * u.deg) and not np.isclose(DEC, -91.0 * u.deg):
             # Use provided center
-            center = SkyCoord(
-                ra=np.deg2rad(RA) * u.rad, dec=np.deg2rad(DEC) * u.rad, frame="icrs"
-            )
+            center = SkyCoord(ra=RA, dec=DEC, frame="icrs")
             provided_center = True
         else:
             center = SkyCoord(ra=src_ra, dec=src_dec, frame="icrs")
             provided_center = False
 
         roi_config = self._hnu_config.roi_config
-        size = roi_config.size * u.deg
+        self.check_units(roi_config.size, u.deg)
+        size = u.Quantity(roi_config.size)
         apply_roi = roi_config.apply_roi
 
         if apply_roi and len(src_dec) > 1 and not roi_config.roi_type == "CircularROI":
             raise ValueError("Only CircularROIs can be stacked")
         MJD_min = self.MJD_min if not np.isclose(self.MJD_min, 98.0) else 0.0
         MJD_max = self.MJD_max if not np.isclose(self.MJD_max, 100.0) else 99999.0
+
+        self.check_units(roi_config.RA_min, u.deg)
+        self.check_units(roi_config.RA_max, u.deg)
+        self.check_units(roi_config.DEC_min, u.deg)
+        self.check_units(roi_config.DEC_max, u.deg)
+
+        ra_min = u.Quantity(roi_config.RA_min)
+        ra_max = u.Quantity(roi_config.RA_max)
+        dec_min = u.Quantity(roi_config.DEC_min)
+        dec_max = u.Quantity(roi_config.DEC_max)
         if roi_config.roi_type == "CircularROI":
             if not provided_center:
                 for c in range(len(src_dec)):
@@ -376,18 +468,18 @@ class ConfigParser:
             size = size.to(u.rad)
             if (
                 not (
-                    np.isclose(roi_config.RA_min, -1.0)
-                    and np.isclose(roi_config.RA_max, 361.0)
-                    and np.isclose(roi_config.DEC_min, -91.0)
-                    and np.isclose(roi_config.DEC_max, 91.0)
+                    np.isclose(ra_min, -1.0 * u.deg)
+                    and np.isclose(ra_max, 361.0 * u.deg)
+                    and np.isclose(dec_min, -91.0 * u.deg)
+                    and np.isclose(dec_max, 91.0 * u.deg)
                 )
                 and not provided_center
             ):
                 RectangularROI(
-                    RA_min=roi_config.RA_min * u.deg,
-                    RA_max=roi_config.RA_max * u.deg,
-                    DEC_min=roi_config.DEC_min * u.deg,
-                    DEC_max=roi_config.DEC_max * u.deg,
+                    RA_min=ra_min,
+                    RA_max=ra_max,
+                    DEC_min=dec_min,
+                    DEC_max=dec_max,
                     MJD_min=MJD_min,
                     MJD_max=MJD_max,
                     apply_roi=apply_roi,
@@ -516,6 +608,30 @@ class ConfigParser:
         priors = Priors()
         prior_config = self._hnu_config.prior_config
 
+        def _make_prior(multiparameterprior, parameterprior, prior, mu, sigma):
+            if not isinstance(mu, omegaconf.listconfig.ListConfig) and not isinstance(
+                mu, list
+            ):
+                mu = [mu]
+            if not isinstance(
+                sigma, omegaconf.listconfig.ListConfig
+            ) and not isinstance(sigma, list):
+                sigma = [sigma]
+            if len(mu) > 1 and len(sigma) > 1:
+                return multiparameterprior(
+                    [parameterprior(prior, mu=m, sigma=s) for m, s in zip(mu, sigma)]
+                )
+            elif len(mu) > 1:
+                return multiparameterprior(
+                    [parameterprior(prior, mu=m, sigma=sigma[0]) for m in mu]
+                )
+            elif len(sigma) > 1:
+                return multiparameterprior(
+                    [parameterprior(prior, mu=mu[0], sigma=s) for s in sigma]
+                )
+            else:
+                return parameterprior(prior, mu=mu[0], sigma=sigma[0])
+
         for p, vals in prior_config.items():
             if vals.name == "NormalPrior":
                 prior = NormalPrior
@@ -533,83 +649,93 @@ class ConfigParser:
                 raise NotImplementedError("Prior type not recognised.")
 
             if p == "src_index":
-                priors.src_index = IndexPrior(prior, mu=mu, sigma=sigma)
+                self.check_units(mu, 1)
+                self.check_units(sigma, 1)
+                priors.src_index = _make_prior(
+                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma
+                )
             elif p == "beta_index":
-                priors.beta_index = IndexPrior(prior, mu=mu, sigma=sigma)
+                self.check_units(mu, 1)
+                self.check_units(sigma, 1)
+                priors.beta_index = _make_prior(
+                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma
+                )
             elif p == "E0_src":
+                self.check_units(mu, u.GeV)
+                mu = [u.Quantity(_) for _ in mu]
                 if prior == NormalPrior:
-                    priors.E0_src = EnergyPrior(
-                        prior,
-                        mu=mu * EnergyPrior.UNITS,
-                        sigma=sigma * EnergyPrior.UNITS,
-                    )
+                    self.check_units(sigma, u.GeV)
+                    sigma = [u.Quantity(_) for _ in sigma]
                 elif prior == LogNormalPrior:
-                    priors.E0_src = EnergyPrior(
-                        prior, mu=mu * EnergyPrior.UNITS, sigma=sigma
-                    )
+                    self.check_units(sigma, 1)
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
+                priors.E0_src = _make_prior(
+                    MultiSourceEnergyPrior, EnergyPrior, prior, mu, sigma
+                )
+            elif p == "L":
+                if prior == ParetoPrior:
+                    self.check_units(xmin, u.GeV / u.s)
+                    self.check_units(alpha, 1)
+                    priors.luminosity = LuminosityPrior(
+                        prior, xmin=u.Quantity(xmin), alpha=alpha
+                    )
+                    continue
+
+                self.check_units(mu, u.GeV / u.s)
+                mu = [u.Quantity(_) for _ in mu]
+                if prior == NormalPrior:
+                    self.check_units(sigma, u.GeV / u.s)
+                    sigma = [u.Quantity(_) for _ in sigma]
+                elif prior == LogNormalPrior:
+                    self.check_units(sigma, 1)
+                else:
+                    raise NotImplementedError("Prior not recognised for E0_src.")
+                priors.luminosity = _make_prior(
+                    MultiSourceLuminosityPrior, LuminosityPrior, prior, mu, sigma
+                )
+
             elif p == "diff_index":
                 priors.diff_index = IndexPrior(prior, mu=mu, sigma=sigma)
-            elif p == "L":
-                if prior == NormalPrior:
-                    priors.luminosity = LuminosityPrior(
-                        prior,
-                        mu=mu * LuminosityPrior.UNITS,
-                        sigma=sigma * LuminosityPrior.UNITS,
-                    )
-                elif prior == LogNormalPrior:
-                    priors.luminosity = LuminosityPrior(
-                        prior, mu=mu * LuminosityPrior.UNITS, sigma=sigma
-                    )
-                elif prior == ParetoPrior:
-                    priors.luminosity = LuminosityPrior(
-                        prior, xmin=xmin * LuminosityPrior.UNITS, alpha=alpha
-                    )
-                else:
-                    raise NotImplementedError("Prior not recognised.")
-            elif p == "diff_flux":
-                if prior == NormalPrior:
-                    priors.diffuse_flux = DifferentialFluxPrior(
-                        prior,
-                        mu=mu * DifferentialFluxPrior.UNITS,
-                        sigma=sigma * DifferentialFluxPrior.UNITS,
-                    )
-                elif prior == LogNormalPrior:
-                    priors.diffuse_flux = DifferentialFluxPrior(
-                        prior, mu=mu * DifferentialFluxPrior.UNITS, sigma=sigma
-                    )
-                else:
-                    raise NotImplementedError("Prior not recognised.")
 
-            elif p == "atmo_flux":
+            elif p == "diff_flux":
+                self.check_units(mu, 1 / u.GeV / u.m**2 / u.s)
                 if prior == NormalPrior:
-                    priors.atmospheric_flux = FluxPrior(
-                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma * FluxPrior.UNITS
+                    self.check_units(sigma, 1 / u.GeV / u.m**2 / u.s)
+                    priors.diffuse_flux = DifferentialFluxPrior(
+                        prior,
+                        mu=u.Quantity(mu),
+                        sigma=u.Quantity(sigma),
                     )
                 elif prior == LogNormalPrior:
+                    self.check_units(sigma, 1)
+                    priors.diffuse_flux = DifferentialFluxPrior(
+                        prior, mu=u.Quantity(mu), sigma=sigma
+                    )
+                else:
+                    raise NotImplementedError("Prior not recognised.")
+            elif p == "atmo_flux":
+                self.check_units(mu, 1 / u.m**2 / u.s)
+                if prior == NormalPrior:
+                    self.check_units(sigma, 1 / u.m**2 / u.s)
                     priors.atmospheric_flux = FluxPrior(
-                        prior, mu=mu * FluxPrior.UNITS, sigma=sigma
+                        prior, mu=u.Quantity(mu), sigma=u.Quantity(sigma)
+                    )
+                elif prior == LogNormalPrior:
+                    self.check_units(sigma, 1)
+                    priors.atmospheric_flux = FluxPrior(
+                        prior, mu=u.Quantity(mu), sigma=sigma
                     )
                 else:
                     raise NotImplementedError("Prior not recognised.")
 
         return priors
 
-    @staticmethod
-    def _get_dm_from_config(dm_key):
+    @classmethod
+    def _get_dm_from_config(cls, dm_key):
         return [Refrigerator.python2dm(dm) for dm in dm_key]
 
-    @staticmethod
-    def _get_obs_time_from_config(dms, obs_time):
-        return {dm: obs_time[c] * u.year for c, dm in enumerate(dms)}
-
-    @staticmethod
-    def _make_prior(p):
-        if p["name"] == "LogNormalPrior":
-            prior = LogNormalPrior(mu=np.log(p["mu"]), sigma=p["sigma"])
-        elif p["name"] == "NormalPrior":
-            prior = NormalPrior(mu=p["mu"], sigma=p["sigma"])
-        else:
-            raise ValueError("Currently no other prior implemented")
-        return prior
+    @classmethod
+    def _get_obs_time_from_config(cls, dms, obs_time):
+        cls.check_units(obs_time, u.yr)
+        return {dm: u.Quantity(obs_time[c]) for c, dm in enumerate(dms)}
