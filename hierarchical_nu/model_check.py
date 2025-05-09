@@ -724,27 +724,43 @@ class ModelCheck:
 
             if not share_L:
                 L_init = [1e49] * len(self._sources.point_source)
+                P_init = [0.3] * len(self._sources.point_source)
             else:
                 L_init = 1e49
+                P_init = 0.3
 
             if not share_src_index:
                 src_init = [2.3] * len(self._sources.point_source)
+                beta_init = [0.05] * len(self._sources.point_source)
+                E0_init = [1e6] * len(self._sources.point_source)
+                eta_init = [40] * len(self._sources.point_source)
             else:
                 src_init = 2.3
-
+                beta_init = 0.05
+                E0_init = 1e6
+                eta_init = 40
             try:
                 F_atmo_range = Parameter.get_parameter("F_atmo").par_range
                 F_atmo_init = np.sum(F_atmo_range) / 2
             except ValueError:
                 F_atmo_init = 0.3 / u.m**2 / u.s
 
+            try:
+                diff_norm = Parameter.get_parameter("diff_norm").value
+                diff_init = diff_norm.to_value(1 / u.GeV / u.m**2 / u.s)
+            except ValueError:
+                diff_init = 2e-13
+
             inits = {
-                # TODO fix
-                "F_diff": 1e-4,
+                "diffuse_norm": diff_init,
                 "F_atmo": F_atmo_init.to_value(1 / (u.m**2 * u.s)),
                 "E": [1e5] * fit.events.N,
                 "L": L_init,
                 "src_index": src_init,
+                "E0_src": E0_init,
+                "beta_index": beta_init,
+                "eta": eta_init,
+                "pressure_ratio": P_init,
             }
             fit.run(
                 seed=s,

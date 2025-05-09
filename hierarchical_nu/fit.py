@@ -1771,6 +1771,7 @@ class StanFit:
                 temp = v[()]
                 if len(temp.shape) == 1:
                     # non-vector variable
+
                     if save_warmup:
                         shape = (
                             fit_meta["chains"],
@@ -1781,6 +1782,7 @@ class StanFit:
                     fit_outputs[k] = temp.reshape(shape)
                     if save_warmup and not load_warmup:
                         fit_outputs[k] = fit_outputs[k][..., fit_meta["iter_warmup"] :]
+
                 else:
                     # Reshape to chains x draws x dim
                     if save_warmup:
