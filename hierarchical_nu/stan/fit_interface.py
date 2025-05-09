@@ -240,7 +240,7 @@ class StanFitInterface(StanInterface):
 
             self._eres_src << StringExpression(["irf_return.1"])
             self._aeff_src << StringExpression(["irf_return.2"])
-            if (self.sources.diffuse or self.sources.atmospheric):
+            if self.sources.diffuse or self.sources.atmospheric:
                 self._eres_diff << StringExpression(["irf_return.3"])
                 self._aeff_diff << StringExpression(["irf_return.4"])
 
@@ -446,15 +446,15 @@ class StanFitInterface(StanInterface):
                         if CAS in self._event_types:
                             # The amount of indentation is too damn high
                             with IfBlockContext(
-                        [
-                            StringExpression(
                                 [
-                                    self._event_type[i],
-                                    " == ",
-                                    CAS.S,
+                                    StringExpression(
+                                        [
+                                            self._event_type[i],
+                                            " == ",
+                                            CAS.S,
+                                        ]
+                                    )
                                 ]
-                            )
-                        ]
                             ):
                                 StringExpression(
                                     [
@@ -817,7 +817,9 @@ class StanFitInterface(StanInterface):
                         start << start + self._Ns
 
                     # Define tracks and cascades to sort events into correct detector response
-                    if self._use_event_tag and not (self.sources.diffuse or self.sources.atmospheric):
+                    if self._use_event_tag and not (
+                        self.sources.diffuse or self.sources.atmospheric
+                    ):
                         self._irf_return = ForwardVariableDef(
                             "irf_return",
                             "tuple(real, real)",
@@ -827,7 +829,7 @@ class StanFitInterface(StanInterface):
                             "irf_return",
                             "tuple(real, real, real, real)",
                         )
-                    elif (self.sources.diffuse or self.sources.atmospheric):
+                    elif self.sources.diffuse or self.sources.atmospheric:
                         self._irf_return = ForwardVariableDef(
                             "irf_return",
                             "tuple(array[Ns] real, array[Ns] real, real, real)",
@@ -845,7 +847,7 @@ class StanFitInterface(StanInterface):
                         self._eres_src = ForwardVariableDef("eres_src", "real")
                         self._aeff_src = ForwardVariableDef("aeff_src", "real")
 
-                    if (self.sources.diffuse or self.sources.atmospheric):
+                    if self.sources.diffuse or self.sources.atmospheric:
                         self._eres_diff = ForwardVariableDef("eres_diff", "real")
                         self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
 
@@ -1770,7 +1772,9 @@ class StanFitInterface(StanInterface):
                         self._local_pars[i] << self._E[start:end]
 
             else:
-                if self._use_event_tag and not (self.sources.diffuse or self.sources.atmospheric):
+                if self._use_event_tag and not (
+                    self.sources.diffuse or self.sources.atmospheric
+                ):
                     self._irf_return = ForwardVariableDef(
                         "irf_return",
                         "tuple(real, real)",
@@ -1780,7 +1784,7 @@ class StanFitInterface(StanInterface):
                         "irf_return",
                         "tuple(real, real, real, real)",
                     )
-                elif (self.sources.diffuse or self.sources.atmospheric):
+                elif self.sources.diffuse or self.sources.atmospheric:
                     self._irf_return = ForwardVariableDef(
                         "irf_return",
                         "tuple(array[Ns] real, array[Ns] real, real, real)",
@@ -1797,7 +1801,7 @@ class StanFitInterface(StanInterface):
                     self._eres_src = ForwardVariableDef("eres_src", "real")
                     self._aeff_src = ForwardVariableDef("aeff_src", "real")
 
-                if (self.sources.diffuse or self.sources.atmospheric):
+                if self.sources.diffuse or self.sources.atmospheric:
                     self._eres_diff = ForwardVariableDef("eres_diff", "real")
                     self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
 
@@ -2495,7 +2499,9 @@ class StanFitInterface(StanInterface):
                     self._lp = ForwardArrayDef("lp", "vector[Ns_tot-Ns+1]", self._N_str)
                 else:
                     self._lp = ForwardArrayDef("lp", "vector[Ns_tot]", self._N_str)
-                if self._use_event_tag and not (self.sources.diffuse or self.sources.atmospheric):
+                if self._use_event_tag and not (
+                    self.sources.diffuse or self.sources.atmospheric
+                ):
                     self._irf_return = ForwardVariableDef(
                         "irf_return",
                         "tuple(real, real)",
@@ -2505,7 +2511,7 @@ class StanFitInterface(StanInterface):
                         "irf_return",
                         "tuple(real, real, real, real)",
                     )
-                elif (self.sources.diffuse or self.sources.atmospheric):
+                elif self.sources.diffuse or self.sources.atmospheric:
                     self._irf_return = ForwardVariableDef(
                         "irf_return",
                         "tuple(array[Ns] real, array[Ns] real, real, real)",
@@ -2522,19 +2528,14 @@ class StanFitInterface(StanInterface):
                     self._eres_src = ForwardVariableDef("eres_src", "real")
                     self._aeff_src = ForwardVariableDef("aeff_src", "real")
 
-<<<<<<< HEAD
-                if (self.sources.diffuse or self.sources.atmospheric):
+                if self.sources.diffuse or self.sources.atmospheric:
                     self._eres_diff = ForwardVariableDef("eres_diff", "real")
                     self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
-=======
-                self._eres_diff = ForwardVariableDef("eres_diff", "real")
-                self._aeff_diff = ForwardVariableDef("aeff_diff", "real")
-                self._aeff_atmo = ForwardVariableDef("aeff_atmo", "real")
+
                 if self._fit_ang_sys:
                     self._spatial_loglike = ForwardArrayDef(
                         "spatial_loglike", "real", ["[Ns, N]"]
                     )
->>>>>>> master
 
                 self._model_likelihood()
 
