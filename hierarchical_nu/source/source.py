@@ -19,7 +19,6 @@ from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
 from ..backend.stan_generator import UserDefinedFunction
-from ..detector.r2021_bg_llh import R2021BackgroundLLH
 
 import logging
 
@@ -771,6 +770,8 @@ class BackgroundSource(Source):
     """
 
     def __init__(self, name, *detector_model):
+        from ..detector.r2021_bg_llh import R2021BackgroundLLH
+
         super().__init__(name, DetectorFrame)
         self._name = name
         self._flux_model = None
@@ -795,7 +796,7 @@ class Sources:
 
     def __len__(self):
         return len(self.sources)
-    
+
     @property
     def N(self):
         return len(self)
@@ -1189,7 +1190,6 @@ class Sources:
 
     def __getitem__(self, key):
         return self._sources[key]
-    
 
     def __bool__(self):
         return bool(len(self))
