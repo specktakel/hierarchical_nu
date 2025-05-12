@@ -614,7 +614,7 @@ class StanFitInterface(StanInterface):
                         end << end + 1
                         self._ang_sys_add_squared << glob[start]
                         start << start + 1
-                    end << end + self._Ns_tot
+                    end << end + self._Ns_tot_flux
                     self._logF = ForwardVariableDef(
                         "logF", "vector[" + self._Ns_tot_flux + "]"
                     )
