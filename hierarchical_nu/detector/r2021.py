@@ -2606,11 +2606,13 @@ class R2021DetectorModel(ABC, DetectorModel):
                 f.write(code)
             return os.path.join(path, cls._RNG_FILENAME(season))
 
-    def generate_pdf_function_code(self, single_ps: bool = False):
+    def generate_pdf_function_code(self, single_ps: bool = False, diffuse: bool = True):
         """
         Generate a wrapper for the IRF in `DistributionMode.PDF`.
-        Assumes that astro diffuse and atmo diffuse model components are present.
-        If not, they are disregarded by the model likelihood.
+        If argument `diffuse` is True, then it assumes that physical diffuse
+        (i.e. astro diffuse or atmospheric diffuse) components are present.
+        For use with data-background likelihood pass instead False to skip
+        generation of extra components.
         Has signature dependent on the parameter `single_ps`, defaulting to False:
         real true_energy [Gev] : true neutrino energy
         real detected_energy [GeV] : detected muon energy
@@ -2625,23 +2627,21 @@ class R2021DetectorModel(ABC, DetectorModel):
         For cascades the last entry is negative_infinity().
         """
 
-        if not single_ps:
-            signature = [
-                "true_energy",
-                "omega_det",
-                "src_pos",
-            ]
-            sig_type = ["real", "vector", "array[] vector"]
-            return_type = "tuple(array[] real, array[] real, array[] real)"
+        signature = ["true_energy"]
+        sig_type = ["real"]
+        return_type = "tuple("
 
+        if diffuse:
+            signature += ["omega_det"]
+            sig_type += ["vector"]
+
+        signature += ["src_pos"]
+        if not single_ps:
+            sig_type += ["array[] vector"]
+            return_type += "array[] real, array[] real"
         else:
-            signature = [
-                "true_energy",
-                "omega_det",
-                "src_pos",
-            ]
-            sig_type = ["real", "vector", "vector", "vector"]
-            return_type = "tuple(real, real, array[] real)"
+            sig_type += ["vector"]
+            return_type += "real, real"
 
         if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
             signature += ["eres_slice"]
@@ -2651,6 +2651,12 @@ class R2021DetectorModel(ABC, DetectorModel):
             sig_type += ["real"]
         else:
             raise ValueError("This should not happen")
+
+        if diffuse:
+            return_type += ", real, real)"
+        else:
+            return_type += ")"
+
         UserDefinedFunction.__init__(
             self,
             self._func_name,
@@ -2706,22 +2712,33 @@ class R2021DetectorModel(ABC, DetectorModel):
                     "log",
                 )
 
-            diff = ForwardArrayDef("diff", "real", ["[3]"])
+            _return_statement = "(ps_eres, ps_aeff"
 
-            if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
-                diff[1] << self.energy_resolution(log10Etrue, "eres_slice")
+            if diffuse:
+                diff_eres = ForwardVariableDef("diff_eres", "real")
+                diff_aeff = ForwardVariableDef("diff_aeff", "real")
+
+                if isinstance(
+                    self.energy_resolution, GridInterpolationEnergyResolution
+                ):
+                    diff_eres << self.energy_resolution(log10Etrue, "eres_slice")
+                else:
+                    diff_eres << self.energy_resolution(
+                        log10Etrue, log10Ereco, "omega_det"
+                    )
+                diff_aeff << FunctionCall(
+                    [
+                        self.effective_area(log10Etrue, "omega_det"),
+                    ],
+                    "log",
+                )
+
+
+                _return_statement += ", diff_eres, diff_aeff)"
             else:
-                diff[1] << self.energy_resolution(log10Etrue, log10Ereco, "omega_det")
-            diff[2] << FunctionCall(
-                [
-                    self.effective_area(log10Etrue, "omega_det"),
-                ],
-                "log",
-            )
+                _return_statement += ")"
 
-            diff[3] << diff[2]
-
-            ReturnStatement(["(ps_eres, ps_aeff, diff)"])
+            ReturnStatement([_return_statement])
 
     def generate_rng_function_code(self):
         """
