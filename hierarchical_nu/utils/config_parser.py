@@ -617,6 +617,8 @@ class ConfigParser:
                 sigma, omegaconf.listconfig.ListConfig
             ) and not isinstance(sigma, list):
                 sigma = [sigma]
+            mu = [u.Quantity(_) for _ in mu]
+            sigma = [u.Quantity(_) for _ in sigma]
             if len(mu) > 1 and len(sigma) > 1:
                 return multiparameterprior(
                     [parameterprior(prior, mu=m, sigma=s) for m, s in zip(mu, sigma)]
@@ -662,10 +664,8 @@ class ConfigParser:
                 )
             elif p == "E0_src":
                 self.check_units(mu, u.GeV)
-                mu = [u.Quantity(_) for _ in mu]
                 if prior == NormalPrior:
                     self.check_units(sigma, u.GeV)
-                    sigma = [u.Quantity(_) for _ in sigma]
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
                 else:
@@ -683,10 +683,8 @@ class ConfigParser:
                     continue
 
                 self.check_units(mu, u.GeV / u.s)
-                mu = [u.Quantity(_) for _ in mu]
                 if prior == NormalPrior:
                     self.check_units(sigma, u.GeV / u.s)
-                    sigma = [u.Quantity(_) for _ in sigma]
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
                 else:
