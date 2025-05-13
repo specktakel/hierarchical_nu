@@ -556,12 +556,8 @@ class ModelCheck:
                 N = len(self.results[var_name][0]) * 100
 
                 # this case distinction is overly complicated
-                if (
-                    var_name == "L"
-                    # or var_name == "F_diff"
-                    or var_name == "F_atmo"
-                    or var_name == "Fs"
-                ):
+                if var_name == "L" or var_name == "F_atmo" or var_name == "Fs":
+                    # wtf, where is the elif or else here?
                     pass
 
                 if "f_" in var_name and not "diff" in var_name:  # yikes
@@ -570,6 +566,11 @@ class ModelCheck:
                 elif "Nex" in var_name:
                     plot = False
 
+                elif "L_ind" == var_name or "L" == var_name:
+                    plot = True
+                    prior = self.priors.to_dict()["L"]
+                    prior_density = prior.pdf_logspace(prior_supp * prior.UNITS)
+
                 elif "index" in var_name:
                     prior_density = self.priors.to_dict()[var_name].pdf(
                         prior_supp * self.priors.to_dict()[var_name].UNITS
@@ -577,7 +578,6 @@ class ModelCheck:
                     plot = True
 
                 elif not "Fs" in var_name:
-                    # prior_samples = self.priors.to_dict()[var_name].sample(N)
                     prior_density = self.priors.to_dict()[var_name].pdf_logspace(
                         prior_supp * self.priors.to_dict()[var_name].UNITS
                     )
