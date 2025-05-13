@@ -112,8 +112,6 @@ class StanFit(SourceInfo):
             )
         self._event_types = event_types
         self._events = events
-        if not isinstance(observation_time, dict):
-            observation_time = {dm: observation_time}
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
         self._nshards = nshards
@@ -1936,8 +1934,11 @@ class StanFit(SourceInfo):
             raise ValueError("Cannot perform fits with zero events")
         fit_inputs["N"] = self._events.N
         # Number of shards and max. events per shards only used if multithreading is desired
-        fit_inputs["N_shards"] = self._nshards
-        fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
+        fit_inputs["N_shards"] = self._nshards if self._nshards > 0 else 1
+        try:
+            fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
+        except ZeroDivisionError:
+            fit_inputs["J"] = fit_inputs["N"]
         fit_inputs["Ns_tot"] = len([s for s in self._sources.sources])
         fit_inputs["Edet"] = self._events.energies.to_value(u.GeV)
         fit_inputs["omega_det"] = self._events.unit_vectors

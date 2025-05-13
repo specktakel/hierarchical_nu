@@ -686,7 +686,15 @@ class ConfigParser:
         priors = Priors()
         prior_config = self._hnu_config.prior_config
 
-        def _make_prior(multiparameterprior, parameterprior, prior, mu, sigma):
+        def _make_prior(
+            multiparameterprior,
+            parameterprior,
+            prior,
+            mu,
+            sigma,
+            mu_unit: bool,
+            sigma_unit: bool,
+        ):
             if not isinstance(mu, omegaconf.listconfig.ListConfig) and not isinstance(
                 mu, list
             ):
@@ -695,6 +703,11 @@ class ConfigParser:
                 sigma, omegaconf.listconfig.ListConfig
             ) and not isinstance(sigma, list):
                 sigma = [sigma]
+
+            if mu_unit:
+                mu = [u.Quantity(_) for _ in mu]
+            if sigma_unit:
+                sigma = [u.Quantity(_) for _ in sigma]
             if len(mu) > 1 and len(sigma) > 1:
                 return multiparameterprior(
                     [parameterprior(prior, mu=m, sigma=s) for m, s in zip(mu, sigma)]
@@ -715,10 +728,12 @@ class ConfigParser:
                 prior = NormalPrior
                 mu = vals.mu
                 sigma = vals.sigma
+                sigma_unit = True
             elif vals.name == "LogNormalPrior":
                 prior = LogNormalPrior
                 mu = vals.mu
                 sigma = vals.sigma
+                sigma_unit = False
             elif vals.name == "ParetoPrior":
                 prior = ParetoPrior
                 xmin = vals.xmin
@@ -730,26 +745,30 @@ class ConfigParser:
                 self.check_units(mu, 1)
                 self.check_units(sigma, 1)
                 priors.src_index = _make_prior(
-                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma
+                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma, False, False
                 )
             elif p == "beta_index":
                 self.check_units(mu, 1)
                 self.check_units(sigma, 1)
                 priors.beta_index = _make_prior(
-                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma
+                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma, False, False
                 )
             elif p == "E0_src":
                 self.check_units(mu, u.GeV)
-                mu = [u.Quantity(_) for _ in mu]
                 if prior == NormalPrior:
                     self.check_units(sigma, u.GeV)
-                    sigma = [u.Quantity(_) for _ in sigma]
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
                 priors.E0_src = _make_prior(
-                    MultiSourceEnergyPrior, EnergyPrior, prior, mu, sigma
+                    MultiSourceEnergyPrior,
+                    EnergyPrior,
+                    prior,
+                    mu,
+                    sigma,
+                    True,
+                    sigma_unit,
                 )
             elif p == "L":
                 if prior == ParetoPrior:
@@ -761,16 +780,20 @@ class ConfigParser:
                     continue
 
                 self.check_units(mu, u.GeV / u.s)
-                mu = [u.Quantity(_) for _ in mu]
                 if prior == NormalPrior:
                     self.check_units(sigma, u.GeV / u.s)
-                    sigma = [u.Quantity(_) for _ in sigma]
                 elif prior == LogNormalPrior:
                     self.check_units(sigma, 1)
                 else:
                     raise NotImplementedError("Prior not recognised for E0_src.")
                 priors.luminosity = _make_prior(
-                    MultiSourceLuminosityPrior, LuminosityPrior, prior, mu, sigma
+                    MultiSourceLuminosityPrior,
+                    LuminosityPrior,
+                    prior,
+                    mu,
+                    sigma,
+                    True,
+                    sigma_unit,
                 )
 
             elif p == "diff_index":

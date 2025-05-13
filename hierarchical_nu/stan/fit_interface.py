@@ -679,7 +679,13 @@ class StanFitInterface(StanInterface):
                         self._diff_index = ForwardVariableDef("diff_index", "real")
                         self._diff_index << glob[start]
                         start << start + 1
-
+                    if self._fit_ang_sys:
+                        self._ang_sys_add_squared = ForwardVariableDef(
+                            "ang_sys_add_squared", "real"
+                        )
+                        end << end + 1
+                        self._ang_sys_add_squared << glob[start]
+                        start << start + 1
                     end << end + self._Ns_tot_flux
                     self._logF = ForwardVariableDef(
                         "logF", "vector[" + self._Ns_tot_flux + "]"
@@ -1916,7 +1922,6 @@ class StanFitInterface(StanInterface):
                     par_counter += 1
                 if self.sources.background:
                     par_counter += 1
-
                 if self._fit_ang_sys:
                     par_counter += 1
                 num_of_pars += f" + {par_counter:d}"

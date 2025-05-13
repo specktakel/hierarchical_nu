@@ -84,7 +84,7 @@ class Simulation(SourceInfo):
         if not isinstance(event_types, list):
             event_types = [event_types]
         if not isinstance(observation_time, dict):
-            observation_time = {dm: observation_time}
+            observation_time = {event_types[0]: observation_time}
         if not len(event_types) == len(observation_time):
             raise ValueError(
                 "number of observation times must match number of event types"

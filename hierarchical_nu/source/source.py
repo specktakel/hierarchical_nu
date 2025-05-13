@@ -810,6 +810,8 @@ class BackgroundSource(Source):
     """
 
     def __init__(self, name, *detector_model):
+        from ..detector.r2021_bg_llh import R2021BackgroundLLH
+
         super().__init__(name, DetectorFrame)
         self._name = name
         self._flux_model = None

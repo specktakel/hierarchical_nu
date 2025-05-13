@@ -198,9 +198,14 @@ def test_multi_ps_n():
 
     my_sources.add(point_source_2)
 
-    sim.sources = my_sources
-    sim._N = {IC86_I: [1, 2, 3], IC86_II: [4, 5, 6]}
+    sim = Simulation(
+        my_sources,
+        [IC86_I, IC86_II],
+        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
+        N={IC86_I: [1, 2, 3], IC86_II: [4, 5, 6]},
+    )
     sim.precomputation()
+    sim.setup_stan_sim()
     sim.run()
 
     assert np.all(
@@ -308,8 +313,15 @@ def test_asimov():
 
     my_sources.add(point_source_2)
 
-    sim.sources = my_sources
+    sim = Simulation(
+        my_sources,
+        [IC86_I, IC86_II],
+        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
+        asimov=True,
+    )
+
     sim.precomputation()
+    sim.setup_stan_sim()
     sim.run()
 
     assert np.rint(np.sum(sim._Nex_et)) == np.sum(list(sim._N.values()))
