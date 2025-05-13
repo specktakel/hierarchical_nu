@@ -908,15 +908,6 @@ class Sources:
         )
         flux_model = IsotropicDiffuseBG(spectral_shape)
 
-        # Create a parameter for F_diff to carry information on the par_range
-        # The value itself is irrelevant for fits
-        F_diff = Parameter(
-            flux_model.total_flux_int,
-            "F_diff",
-            par_range=(1e-6, 1e-3) * (1 / (u.m**2 * u.s)),
-            fixed=True,
-        )
-
         # define component
         diffuse_component = DiffuseSource(
             "diffuse_bg", z, flux_model=flux_model, frame=frame

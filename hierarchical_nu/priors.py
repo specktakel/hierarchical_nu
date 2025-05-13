@@ -69,15 +69,10 @@ class NormalPrior(PriorDistribution):
 
     def to_dict(self, units):
         prior_dict = {}
-
         prior_dict["name"] = self._name
-
         prior_dict["mu"] = self._mu
-
         prior_dict["sigma"] = self._sigma
-
         prior_dict["units"] = units
-
         return prior_dict
 
 
@@ -114,15 +109,10 @@ class LogNormalPrior(PriorDistribution):
 
     def to_dict(self, units):
         prior_dict = {}
-
         prior_dict["name"] = self._name
-
         prior_dict["mu"] = self._mu
-
         prior_dict["sigma"] = self._sigma
-
         prior_dict["units"] = units
-
         return prior_dict
 
 
@@ -225,13 +215,9 @@ class ParetoPrior(PriorDistribution):
         prior_dict = {}
 
         prior_dict["name"] = self._name
-
         prior_dict["xmin"] = self._xmin
-
         prior_dict["alpha"] = self._alpha
-
         prior_dict["units"] = units
-
         return prior_dict
 
 
@@ -258,6 +244,52 @@ class Ignorance(PriorDistribution):
         return dict(name=self._name)
 
 
+class ExponentialGaussianPrior(PriorDistribution):
+    def __init__(self, name="exponnorm", mu=0.0, sigma=1.0, lam=1.0):
+        super().__init__(name)
+        self._mu = mu
+        self._sigma = sigma
+        self._lam = lam
+
+    @property
+    def mu(self):
+        return self._mu
+
+    @mu.setter
+    def mu(self, val: float):
+        self._mu = val
+
+    @property
+    def sigma(self):
+        return self._sigma
+
+    @sigma.setter
+    def sigma(self, val: float):
+        self._sigma = val
+
+    @property
+    def lam(self):
+        return self._lam
+
+    @lam.setter
+    def lam(self, val: float):
+        self._lam = val
+
+    def pdf(self, x):
+        return stats.exponnorm.pdf(x, 1 / (self.lam * self.sigma), self.mu, self.sigma)
+
+    def sample(self, N):
+        return
+
+    def to_dict(self, units):
+        priors_dict = {}
+        priors_dict["mu"] = self.mu
+        priors_dict["sigma"] = self.sigma
+        priors_dict["lam"] = self.lam
+        priors_dict["units"] = units
+        return priors_dict
+
+
 class PriorDictHandler:
     """
     Class to translate priors from and to dictionaries.
@@ -274,6 +306,7 @@ class PriorDictHandler:
             "beta_index": IndexPrior,
             "diff_index": IndexPrior,
             "E0_src": EnergyPrior,
+            "ang_sys": AngularPrior,
         }
         prior_name = prior_dict["name"]
         prior = translate[prior_dict["quantity"]]
@@ -285,16 +318,15 @@ class PriorDictHandler:
         if prior_name == "logflat":
             xmin = prior_dict["xmin"]
             xmax = prior_dict["xmax"]
-        mu = prior_dict["mu"]
-        sigma = prior_dict["sigma"]
+            return prior(LogUniformPrior, xmin=xmin * units, xmax=xmax * units)
+        mu = np.atleast_1d(prior_dict["mu"])
+        sigma = np.atleast_1d(prior_dict["sigma"])
         if prior_name == "normal":
             sigma *= units
             mu *= units
-            return prior(NormalPrior, mu=mu, sigma=sigma)
+            return prior(NormalPrior, mu=mu[0], sigma=sigma[0])
         elif prior_name == "lognormal":
-            return prior(LogNormalPrior, mu=np.exp(mu) * units, sigma=sigma)
-        elif prior_name == "logflat":
-            return prior(LogUniformPrior, xmin=xmin * units, xmax=xmax * units)
+            return prior(LogNormalPrior, mu=np.exp(mu[0]) * units, sigma=sigma[0])
         elif prior_name == "notaprior":
             return prior(Ignorance)
 
@@ -318,6 +350,17 @@ class UnitPrior:
             units = kwargs.get("units")
             self.units = units
             self._prior = name(xmin=xmin.to_value(units), xmax=xmax.to_value(units))
+        elif name == ExponentialGaussianPrior:
+            mu = kwargs.get("mu")
+            sigma = kwargs.get("sigma")
+            lam = kwargs.get("lam")
+            units = kwargs.get("units")
+            self._units = units
+            self._prior = name(
+                mu=mu.to_value(units),
+                sigma=sigma.to_value(units),
+                lam=lam.to_value(1 / units),
+            )
 
         else:
             mu = kwargs.get("mu")
@@ -347,28 +390,36 @@ class UnitPrior:
 
     @property
     def mu(self):
-        if isinstance(self._prior, NormalPrior):
+        if isinstance(self._prior, NormalPrior) or isinstance(
+            self._prior, ExponentialGaussianPrior
+        ):
             return self._prior.mu * self._units
         else:
             return self._prior.mu
 
     @mu.setter
     def mu(self, val):
-        if isinstance(self._prior, NormalPrior):
+        if isinstance(self._prior, NormalPrior) or isinstance(
+            self._prior, ExponentialGaussianPrior
+        ):
             self._prior.mu = val.to_value(self._units)
         else:
             self._prior.mu = val
 
     @property
     def sigma(self):
-        if isinstance(self._prior, NormalPrior):
+        if isinstance(self._prior, NormalPrior) or isinstance(
+            self._prior, ExponentialGaussianPrior
+        ):
             return self._prior.sigma * self._units
         else:
             return self._prior.sigma
 
     @sigma.setter
     def sigma(self, val):
-        if isinstance(self._prior, NormalPrior):
+        if isinstance(self._prior, NormalPrior) or isinstance(
+            self._prior, ExponentialGaussianPrior
+        ):
             self._prior.sigma = val.to_value(self._units)
         else:
             self._prior.sigma = val
@@ -389,6 +440,15 @@ class UnitPrior:
     @alpha.setter
     def alpha(self, val):
         self._prior.alpha = val
+
+    @property
+    def lam(self):
+        return self._prior.lam / self._units
+
+    @lam.setter
+    def lam(self, val):
+        if isinstance(self._prior, ExponentialGaussianPrior):
+            self._prior.lam = val.to_value(1 / self._units)
 
     @property
     def name(self):
@@ -472,6 +532,21 @@ class UnitlessPrior:
 
     def to_dict(self, units):
         return self._prior.to_dict(units)
+
+
+class AngularPrior(UnitPrior):
+    UNITS = u.rad
+    UNITS_STRING = UNITS.to_string()
+
+    @u.quantity_input
+    def __init__(
+        self,
+        name=NormalPrior,
+        mu: Union[u.Quantity[u.deg], None] = 0.2 * u.deg,
+        sigma: Union[u.Quantity[u.deg], None] = 0.2 * u.deg,
+        lam: Union[u.Quantity[1 / u.deg], None] = None,
+    ):
+        super().__init__(name, mu=mu, sigma=sigma, lam=lam, units=self.UNITS)
 
 
 class LuminosityPrior(UnitPrior):
@@ -746,6 +821,17 @@ class Priors(object):
         if not isinstance(prior, EtaPrior):
             raise ValueError("Wrong prior type")
         self._eta = prior
+        self.ang_sys = AngularPrior()
+
+    @property
+    def ang_sys(self):
+        return self._ang_sys
+
+    @ang_sys.setter
+    def ang_sys(self, prior: AngularPrior):
+        if not isinstance(prior, AngularPrior):
+            raise ValueError("Wrong prior type")
+        self._ang_sys = prior
 
     @property
     def luminosity(self):
@@ -839,6 +925,8 @@ class Priors(object):
         priors_dict["eta"] = self.eta
 
         priors_dict["pressure_ratio"] = self.pressure_ratio
+
+        priors_dict["ang_sys"] = self._ang_sys
 
         return priors_dict
 
@@ -938,10 +1026,12 @@ class Priors(object):
                 elif key == "beta_index":
                     priors_dict[key] = MultiSourceIndexPrior(container)
                 elif key == "E0_src":
-                    raise NotImplementedError
-                    # priors_dict[key] = MultiSourceEnergyPrior(container)
+                    priors_dict[key] = MultiSourceEnergyPrior(container)
                 elif key == "L":
                     priors_dict[key] = MultiSourceLuminosityPrior(container)
+
+                elif key == "ang_sys":
+                    raise NotImplementedError()
 
         return cls.from_dict(priors_dict)
 
@@ -960,8 +1050,17 @@ class Priors(object):
         try:
             # Backwards compatiblity
             priors.beta_index = priors_dict["beta_index"]
+        except KeyError:
+            pass
+
+        try:
             priors.E0_src = priors_dict["E0_src"]
-        except:
+        except KeyError:
+            pass
+
+        try:
+            priors.ang_sys = priors_dict["ang_sys"]
+        except KeyError:
             pass
 
         priors.diff_index = priors_dict["diff_index"]
