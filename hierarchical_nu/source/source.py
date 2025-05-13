@@ -19,7 +19,6 @@ from .seyfert_model import SeyfertNuMuSpectrum
 from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
-from ..backend.stan_generator import UserDefinedFunction
 from ..detector.r2021_bg_llh import R2021BackgroundLLH
 
 import logging
@@ -476,7 +475,7 @@ class PointSource(Source):
         norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
         norm.fixed = True
         return cls(name, dec, ra, redshift, spectral_shape, frame)
-    
+
     @classmethod
     def make_seyfert_source(
         cls,
@@ -514,7 +513,6 @@ class PointSource(Source):
 
         spectral_shape = SeyfertNuMuSpectrum(P, eta)
         return cls(name, dec, ra, redshift, spectral_shape, frame)
-        
 
     @classmethod
     def _make_sources_from_file(
@@ -836,7 +834,7 @@ class Sources:
 
     def __len__(self):
         return len(self.sources)
-    
+
     @property
     def N(self):
         return len(self)
@@ -1230,7 +1228,6 @@ class Sources:
 
     def __getitem__(self, key):
         return self._sources[key]
-    
 
     def __bool__(self):
         return bool(len(self))

@@ -15,7 +15,7 @@ from pathlib import Path
 
 from time import time as thyme
 
-from icecube_tools.utils.vMF import get_theta_p
+# from icecube_tools.utils.vMF import get_theta_p
 
 
 from hierarchical_nu.utils.plotting import SphericalCircle
@@ -43,13 +43,14 @@ from hierarchical_nu.utils.roi import ROI, CircularROI, ROIList
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.utils.git import git_hash
+from .source.source_info import SourceInfo
 
 
 sim_logger = logging.getLogger(__name__)
-sim_logger.setLevel(logging.DEBUG)
+sim_logger.setLevel(logging.WARNING)
 
 
-class Simulation:
+class Simulation(SourceInfo):
     """
     To set up and run simulations.
     """
@@ -79,7 +80,7 @@ class Simulation:
         :param asimov: set to True to simulate closest integer of expected number of events.
         """
 
-        self._sources = sources
+        super().__init__(sources)
         if not isinstance(event_types, list):
             event_types = [event_types]
         if not isinstance(observation_time, dict):
@@ -92,12 +93,6 @@ class Simulation:
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
         self._asimov = asimov
-
-        self._sources.organise()
-
-        self._bg = False
-        if self._sources.background:
-            self._bg = True
 
         self._exposure_integral = collections.OrderedDict()
 
@@ -154,64 +149,6 @@ class Simulation:
                 + "for IceCubeDetectorModel is not implemented. Just use "
                 + "NorthernTracksDetectorModel instead."
             )
-
-        # Check for shared luminosity and src_index params
-        try:
-            Parameter.get_parameter("luminosity")
-            self._shared_luminosity = True
-        except ValueError:
-            self._shared_luminosity = False
-
-        if self._sources.point_source:
-            self._shared_src_index = False
-            self._power_law = False
-            self._logparabola = False
-            self._pgamma = False
-            index = self._sources.point_source[0].parameters["index"]
-            if not index.fixed and index.name == "src_index":
-                self._shared_src_index = True
-            elif not index.fixed:
-                self._shared_src_index = False
-            self._power_law = self._sources.point_source_spectrum in [
-                PowerLawSpectrum,
-                TwiceBrokenPowerLaw,
-            ]
-            self._logparabola = (
-                self._sources.point_source_spectrum == LogParabolaSpectrum
-            )
-            self._pgamma = self._sources.point_source_spectrum == PGammaSpectrum
-            if self._logparabola or self._pgamma:
-                beta = self._sources.point_source[0].parameters["beta"]
-                E0_src = self._sources.point_source[0].parameters["norm_energy"]
-                if not beta.fixed and beta.name == "beta_index":
-                    self._shared_src_index = True
-                elif not E0_src.fixed and E0_src.name == "E0_src":
-                    self._shared_src_index = True
-
-            self._fit_index = not index.fixed
-            if self._logparabola or self._pgamma:
-                beta = self._sources.point_source[0].parameters["beta"]
-                E0_src = self._sources.point_source[0].parameters["norm_energy"]
-                self._fit_beta = not beta.fixed
-                self._fit_Enorm = not E0_src.fixed
-            else:
-                self._fit_beta = False
-                self._fit_Enorm = False
-        else:
-            self._shared_src_index = False
-            self._fit_index = False
-            self._fit_beta = False
-            self._fit_Enorm = False
-            self._logparabola = False
-            self._power_law = False
-            self._pgamma = False
-
-        # Check for shared luminosity and src_index params
-        try:
-            Parameter.get_parameter("luminosity")
-            self._shared_luminosity = True
-        except ValueError:
-            self._shared_luminosity = False
 
         self.events = None
 

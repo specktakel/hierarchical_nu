@@ -54,15 +54,16 @@ from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.utils.config_parser import ConfigParser
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.utils.roi import ROIList
+from .source.source_info import SourceInfo
 
 from omegaconf import OmegaConf
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 
 
-class StanFit:
+class StanFit(SourceInfo):
     """
     To set up and run fits in Stan.
     """
@@ -99,7 +100,7 @@ class StanFit:
         :param reload: set to True if no stan interface should be created, i.e. reloading results
         """
 
-        self._sources = sources
+        super().__init__(self, sources)
         # self._detector_model_type = detector_model
         if not isinstance(event_types, list):
             event_types = [event_types]
@@ -118,12 +119,6 @@ class StanFit:
         self._nshards = nshards
         self._priors = priors
         self._use_event_tag = use_event_tag
-
-        self._sources.organise()
-
-        self._bg = False
-        if self._sources.background:
-            self._bg = True
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
 
@@ -168,85 +163,6 @@ class StanFit:
             self._use_nex = True
         except ValueError:
             self._use_nex = False
-
-        # Check for shared luminosity and src_index params
-
-        self._shared_luminosity = False
-        self._shared_src_index = False
-        try:
-            Parameter.get_parameter("luminosity")
-            self._shared_luminosity = True
-        except ValueError:
-            pass
-        try:
-            # Hijack shared_luminosity for Seyferts, where the pressure ratio acts as luminosity
-            Parameter.get_parameter("pressure_ratio")
-            self._shared_luminosity = True
-        except:
-            pass
-        if self._sources.point_source:
-
-            try:
-                ang_sys = Parameter.get_parameter("ang_sys_add")
-                self._ang_sys = True
-                self._fit_ang_sys = not ang_sys.fixed
-            except ValueError:
-                self._ang_sys = False
-                self._fit_ang_sys = False
-
-            self._ps_spectrum = self.sources.point_source_spectrum
-            self._ps_frame = self.sources.point_source_frame
-            self._logparabola = self._ps_spectrum == LogParabolaSpectrum
-            self._power_law = self._ps_spectrum == PowerLawSpectrum
-            self._pgamma = self._ps_spectrum == PGammaSpectrum
-            self._seyfert = self._ps_spectrum == SeyfertNuMuSpectrum
-
-            if self._power_law or self._pgamma or self._logparabola:
-                index = self._sources.point_source[0].parameters["index"]
-                self._fit_index = not index.fixed
-                if not index.fixed and index.name == "src_index":
-                    self._shared_src_index = True
-                elif not index.fixed:
-                    self._shared_src_index = False
-                self._power_law = self._sources.point_source_spectrum in [
-                    PowerLawSpectrum,
-                    TwiceBrokenPowerLaw,
-                ]
-            else:
-                self._fit_index = False
-
-            if self._logparabola or self._pgamma:
-                beta = self._sources.point_source[0].parameters["beta"]
-                E0_src = self._sources.point_source[0].parameters["norm_energy"]
-                if not beta.fixed and beta.name == "beta_index":
-                    self._shared_src_index = True
-                elif not E0_src.fixed and E0_src.name == "E0_src":
-                    self._shared_src_index = True
-                self._fit_beta = not beta.fixed
-                self._fit_Enorm = not E0_src.fixed
-            else:
-                self._fit_beta = False
-                self._fit_Enorm = False
-
-            if self._seyfert:
-                eta = self._sources.point_source[0].parameters["eta"]
-                self._fit_eta = not eta.fixed
-                if not eta.fixed and eta.name == "eta":
-                    self._shared_src_index = True
-            else:
-                self._fit_eta = False
-        else:
-            self._shared_src_index = False
-            self._fit_index = False
-            self._fit_beta = False
-            self._fit_Enorm = False
-            self._fit_eta = False
-            self._power_law = False
-            self._logparabola = False
-            self._pgamma = False
-            self._seyfert = False
-            self._ang_sys = False
-            self._fit_ang_sys = False
 
         # For use with plot methods
         self._def_var_names = []

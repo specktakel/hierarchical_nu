@@ -47,7 +47,7 @@ months = [
 ]
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 
 
 class _AtmosphericNuMuFluxStan(UserDefinedFunction):
@@ -417,7 +417,7 @@ class AtmosphericNuMuFlux(FluxModel):
         """
         Returns number flux integrated over energy and the entire sky
         """
-    
+
         return self.integral(
             *self.energy_bounds,
             (-np.pi / 2) * u.rad,
