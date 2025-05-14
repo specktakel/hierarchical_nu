@@ -593,7 +593,7 @@ class StanFitInterface(StanInterface):
                 )
 
             # If we have atmospheric sources, include the atmospheric flux table
-            # the density of the grid in theta (ie. declination) is specified here
+            # the density of the grid in theta (i.e. declination) is specified here
             if self.sources.atmospheric:
                 # Increasing theta points too much makes compilation very slow
                 # Could switch to passing array as data if problematic

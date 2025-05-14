@@ -46,7 +46,6 @@ class SeyfertNuMuSpectrum(SpectralShape):
         self._energy_points = energy_points
         self._eta_points = eta_points
 
-
         self._filename = DATA_PATH
         # Load grid of flux values
         with h5py.File(self._filename, "r") as f:
@@ -127,12 +126,6 @@ class SeyfertNuMuSpectrum(SpectralShape):
     @property
     def energy_points(self):
         return self._energy_points
-
-    def make_stan_lpdf_func(self, f_name):
-        return
-
-    def make_stan_flux_conv_func(self, f_name):
-        return
 
     def make_stan_functions(self):
         lpdf = self._make_stan_lpdf_func()
@@ -284,7 +277,9 @@ class SeyfertNuMuSpectrum(SpectralShape):
         err = integral[1]
         ratio = err / val
         if ratio > 1e-3:
-            logger.warning(f"Flux density integral has a large error of {100*ratio:.3f}%.")
+            logger.warning(
+                f"Flux density integral has a large error of {100*ratio:.3f}%."
+            )
         return (P * val * u.GeV / u.s / u.m**2).to(u.erg / u.s / u.cm**2)
 
     @classmethod

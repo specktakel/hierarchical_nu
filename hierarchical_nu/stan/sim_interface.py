@@ -3,9 +3,9 @@ from collections import OrderedDict
 from astropy import units as u
 
 
-from hierarchical_nu.stan.interface import StanInterface
+from .interface import StanInterface
 
-from hierarchical_nu.backend.stan_generator import (
+from ..backend.stan_generator import (
     FunctionsContext,
     Include,
     DataContext,
@@ -19,24 +19,18 @@ from hierarchical_nu.backend.stan_generator import (
     FunctionCall,
 )
 
-from hierarchical_nu.backend.variable_definitions import (
+from ..backend.variable_definitions import (
     ForwardVariableDef,
     ForwardArrayDef,
     ForwardVectorDef,
     InstantVariableDef,
 )
 
-from hierarchical_nu.backend.expression import StringExpression
-from hierarchical_nu.backend.parameterizations import DistributionMode
-
-# from hierarchical_nu.events import NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II
-
-from hierarchical_nu.detector.icecube import EventType
-
-from hierarchical_nu.source.source import Sources, DetectorFrame
-from hierarchical_nu.source.flux_model import PGammaSpectrum
-
-from hierarchical_nu.utils.roi import CircularROI, ROIList
+from ..backend.expression import StringExpression
+from ..backend.parameterizations import DistributionMode
+from ..detector.icecube import EventType
+from ..source.source import Sources, DetectorFrame
+from ..utils.roi import CircularROI, ROIList
 
 
 class StanSimInterface(StanInterface):
@@ -122,18 +116,25 @@ class StanSimInterface(StanInterface):
             if self.sources.point_source:
                 if self._logparabola or self._pgamma:
                     self._ps_spectrum.make_stan_utility_func(False, False, False)
-                self._src_spectrum_lpdf = (
-                    # Use a different function here
-                    # because for the twicebroken powerlaw we
-                    # do not want to sample the steep flanks
-                    self._ps_spectrum.make_stan_sampling_lpdf_func(
-                        "src_spectrum_logpdf",
+                if self._seyfert:
+                    self._src_spectrum_lpdf, self._src_flux_table, self._flux_conv = (
+                        self._sources[
+                            0
+                        ]._flux_model.spectral_shape.make_stan_functions()
                     )
-                )
+                else:
+                    self._src_spectrum_lpdf = (
+                        # Use a different function here
+                        # because for the twicebroken powerlaw we
+                        # do not want to sample the steep flanks
+                        self._ps_spectrum.make_stan_sampling_lpdf_func(
+                            "src_spectrum_logpdf",
+                        )
+                    )
 
-                self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
-                    "flux_conv", False, False, False
-                )
+                    self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
+                        "flux_conv", False, False, False
+                    )
 
             # If we have diffuse sources, include the shape of their PDF
             if self.sources.diffuse:
@@ -174,14 +175,18 @@ class StanSimInterface(StanInterface):
                 Ns_string = "Ns"
 
             if self.sources.point_source:
-                self._L = ForwardVariableDef("L", "vector[Ns]")
+                if not self._seyfert:
+                    self._L = ForwardVariableDef("L", "vector[Ns]")
+                    self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
                 self._Emin_src = ForwardVariableDef("Emin_src", "vector[Ns]")
                 self._Emax_src = ForwardVariableDef("Emax_src", "vector[Ns]")
-                self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
                 if self._logparabola:
                     self._beta_index = ForwardVariableDef("beta_index", "vector[Ns]")
                 if self._logparabola or self._pgamma:
                     self._E0_src = ForwardVariableDef("E0_src", "vector[Ns]")
+                if self._seyfert:
+                    self._P = ForwardVariableDef("pressure_ratio", "vector[Ns]")
+                    self._eta = ForwardVariableDef("eta", "vector[Ns]")
 
             # True directions of point sources as a unit vector
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
@@ -360,16 +365,19 @@ class StanSimInterface(StanInterface):
 
             if self.sources.point_source:
                 with ForLoopContext(1, self._Ns, "k") as k:
-                    self._F[k] << StringExpression(
-                        [
-                            self._L[k],
-                            "/ (4 * pi() * pow(",
-                            self._D[k],
-                            " * ",
-                            3.086e22,
-                            ", 2))",
-                        ]
-                    )
+                    if self._seyfert:
+                        self._F[k] << self._P[k] * self._src_flux_table(self._eta[k])
+                    else:
+                        self._F[k] << StringExpression(
+                            [
+                                self._L[k],
+                                "/ (4 * pi() * pow(",
+                                self._D[k],
+                                " * ",
+                                3.086e22,
+                                ", 2))",
+                            ]
+                        )
 
                     if self._logparabola:
                         x_r = StringExpression(
@@ -418,6 +426,10 @@ class StanSimInterface(StanInterface):
                                     x_i,
                                 ),
                             ]
+                        )
+                    elif self._seyfert:
+                        StringExpression(
+                            [self._F[k], "*=", self._flux_conv(self._eta[k])]
                         )
                     else:
                         StringExpression(
@@ -876,6 +888,15 @@ class StanSimInterface(StanInterface):
                                                 x_r,
                                                 x_i,
                                             )
+                                        ],
+                                        "exp",
+                                    )
+                                elif self._seyfert:
+                                    self._src_factor << FunctionCall(
+                                        [
+                                            self._src_spectrum_lpdf(
+                                                self._E[i], self._eta[self._lam[i]]
+                                            ),
                                         ],
                                         "exp",
                                     )

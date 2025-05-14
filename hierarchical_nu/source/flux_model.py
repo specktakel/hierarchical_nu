@@ -604,7 +604,11 @@ class PowerLawSpectrum(SpectralShape):
         return func
 
     @staticmethod
-    def flux_conv_(alpha, e_low, e_up, beta, e_0):
+    def flux_conv_(**kwargs):
+        alpha = kwargs["alpha"]
+        e_low = kwargs["e_low"]
+        e_up = kwargs["e_up"]
+
         if alpha == 1.0:
             f1 = np.log(e_up) - np.log(e_low)
         else:
@@ -890,7 +894,12 @@ class LogParabolaSpectrum(SpectralShape):
         return f1 / f2 / E0
 
     @classmethod
-    def flux_conv_(cls, alpha, e_low, e_up, beta, e_0):
+    def flux_conv_(cls, **kwargs):
+        alpha = kwargs["alpha"]
+        beta = kwargs["beta"]
+        e_up = kwargs["e_up"]
+        e_low = kwargs["e_low"]
+        e_0 = kwargs["e_0"]
         xl = np.log(e_low / e_0)
         xh = np.log(e_up / e_0)
 
@@ -1338,11 +1347,14 @@ class PGammaSpectrum(SpectralShape):
         ).to(1 / u.GeV)
 
     @classmethod
-    def flux_conv_(cls, alpha, e_low, e_up, beta, e_0):
+    def flux_conv_(cls, **kwargs):
         # Stitch together from power law and logparabola
         # NB: f1 and f2 have to be each stitched together, not per domain!
         # Misnormer, e_0 is break energy and norm energy
 
+        e_0 = kwargs["e_0"]
+        e_low = kwargs["e_low"]
+        e_up = kwargs["e_up"]
         if not e_0 > e_low:
             e_0 = e_low
 
