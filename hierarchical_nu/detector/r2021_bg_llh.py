@@ -30,6 +30,7 @@ class R2021BackgroundLLH:
         add_icecube_specific_analysis_required_data_fields(cfg)
 
         cfg["datafields"].pop("run", None)
+        cfg["repository"]["download_from_origin"] = False
         dsc = create_dataset_collection(
             cfg=cfg,
             base_path=base_path,
@@ -37,7 +38,6 @@ class R2021BackgroundLLH:
 
         if season == "IC86_II":
             season = "IC86_II-VII"
-
 
         ds = dsc[season]
         data = ds.load_and_prepare_data(
