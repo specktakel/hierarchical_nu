@@ -79,11 +79,9 @@ def test_pythonic():
     ).to_value(flux_units)
 
     assert pytest.approx(pgamma.flux_conv().to_value(1 / u.GeV)) == pgamma.flux_conv_(
-        0.0,
-        Emin.value.to_value(u.GeV),
-        Emax.value.to_value(u.GeV),
-        0.0,
-        E0.value.to_value(u.GeV),
+        e_low=Emin.value.to_value(u.GeV),
+        e_up=Emax.value.to_value(u.GeV),
+        e_0=E0.value.to_value(u.GeV),
     )
 
 
@@ -150,7 +148,9 @@ def test_satanic():
         "Emax": Emax,
         "N": N,
     }
-    samples = model.sample(fixed_param=True, data=data, iter_warmup=1, iter_sampling=1, chains=1)
+    samples = model.sample(
+        fixed_param=True, data=data, iter_warmup=1, iter_sampling=1, chains=1
+    )
 
     stan_conv = samples.stan_variable("conv").squeeze()
     stan_lpdf = samples.stan_variable("lpdf").squeeze()

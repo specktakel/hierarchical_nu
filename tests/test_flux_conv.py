@@ -130,7 +130,7 @@ def test_logparabola():
     log = LogParabolaSpectrum(norm, E0, alpha, beta, Emin, Emax)
 
     factor_pl = PowerLawSpectrum.flux_conv_(
-        index.value, Emin.to_value(u.GeV), Emax.to_value(u.GeV), 0.0, 0.0
+        alpha=index.value, e_low=Emin.to_value(u.GeV), e_up=Emax.to_value(u.GeV)
     )
     factor_log = log.flux_conv()
 

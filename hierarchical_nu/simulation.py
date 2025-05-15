@@ -1398,7 +1398,7 @@ def _get_expected_Nnu_(
             if spectrum == "logparabola":
                 E0 = E0_src[i]
                 beta = beta_index[i]
-                kwargs = {"e_0": E0, "beta": beta}
+                kwargs = {"alpha": src_index[i], "e_0": E0, "beta": beta}
             elif spectrum == "pgamma":
                 E0 = E0_src[i]
                 kwargs = {"e_0": E0}

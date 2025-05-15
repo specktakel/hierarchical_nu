@@ -48,7 +48,10 @@ class SourceInfo:
             self._ps_spectrum = self.sources.point_source_spectrum
             self._ps_frame = self.sources.point_source_frame
             self._logparabola = self._ps_spectrum == LogParabolaSpectrum
-            self._power_law = self._ps_spectrum == PowerLawSpectrum
+            self._power_law = self._sources.point_source_spectrum in [
+                PowerLawSpectrum,
+                TwiceBrokenPowerLaw,
+            ]
             self._pgamma = self._ps_spectrum == PGammaSpectrum
             self._seyfert = self._ps_spectrum == SeyfertNuMuSpectrum
 
@@ -59,10 +62,6 @@ class SourceInfo:
                     self._shared_src_index = True
                 elif not index.fixed:
                     self._shared_src_index = False
-                self._power_law = self._sources.point_source_spectrum in [
-                    PowerLawSpectrum,
-                    TwiceBrokenPowerLaw,
-                ]
             else:
                 self._fit_index = False
 

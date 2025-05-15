@@ -100,7 +100,7 @@ class StanFit(SourceInfo):
         :param reload: set to True if no stan interface should be created, i.e. reloading results
         """
 
-        super().__init__(self, sources)
+        super().__init__(sources)
         # self._detector_model_type = detector_model
         if not isinstance(event_types, list):
             event_types = [event_types]

@@ -240,8 +240,8 @@ class Ignorance(PriorDistribution):
             "I am running out of references, anyway, Ignorance cannot be sampled from"
         )
 
-    def to_dict(self):
-        return dict(name=self._name)
+    def to_dict(self, units):
+        return dict(name=self._name, units=units)
 
 
 class ExponentialGaussianPrior(PriorDistribution):
@@ -307,6 +307,8 @@ class PriorDictHandler:
             "diff_index": IndexPrior,
             "E0_src": EnergyPrior,
             "ang_sys": AngularPrior,
+            "eta": EtaPrior,
+            "pressure_ratio": PressureRatioPrior,
         }
         prior_name = prior_dict["name"]
         prior = translate[prior_dict["quantity"]]
@@ -319,6 +321,8 @@ class PriorDictHandler:
             xmin = prior_dict["xmin"]
             xmax = prior_dict["xmax"]
             return prior(LogUniformPrior, xmin=xmin * units, xmax=xmax * units)
+        elif prior_name == "notaprior":
+            return prior(Ignorance)
         mu = np.atleast_1d(prior_dict["mu"])
         sigma = np.atleast_1d(prior_dict["sigma"])
         if prior_name == "normal":
@@ -327,8 +331,6 @@ class PriorDictHandler:
             return prior(NormalPrior, mu=mu[0], sigma=sigma[0])
         elif prior_name == "lognormal":
             return prior(LogNormalPrior, mu=np.exp(mu[0]) * units, sigma=sigma[0])
-        elif prior_name == "notaprior":
-            return prior(Ignorance)
 
 
 class UnitPrior:
@@ -664,14 +666,14 @@ class PressureRatioPrior(UnitlessPrior):
     """
 
     @u.quantity_input
-    def __init__(self, name=Ignorance):
-        super().__init__(name, units=self.UNITS)
+    def __init__(self, name=Ignorance, mu: float = 0.2, sigma: float = 0.1):
+        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
 
 class EtaPrior(UnitlessPrior):
     @u.quantity_input
-    def __init__(self, name=Ignorance):
-        super().__init__(name, units=self.UNITS)
+    def __init__(self, mu: float = 40, sigma: float = 10, name=Ignorance):
+        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
 
 class MultiSourcePrior:
@@ -768,11 +770,31 @@ class MultiSourceEnergyPrior(MultiSourcePrior, EnergyPrior):
 
 
 class MultiSourcePressureRatioPrior(MultiSourcePrior, PressureRatioPrior):
-    pass
+    def __init__(self, priors: Iterable[PressureRatioPrior]):
+        assert all(isinstance(_, PressureRatioPrior) for _ in priors)
+        super().__init__(priors)
+
+    @property
+    def mu(self):
+        return np.array([_.mu for _ in self._priors])
+
+    @property
+    def sigma(self):
+        return np.array([_.sigma for _ in self._priors])
 
 
 class MultiSourceEtaPrior(MultiSourcePrior, EtaPrior):
-    pass
+    def __init__(self, priors):
+        assert all(isinstance(_, EtaPrior) for _ in priors)
+        super().__init__(priors)
+
+    @property
+    def mu(self):
+        return np.array([_.mu for _ in self._priors])
+
+    @property
+    def sigma(self):
+        return np.array([_.sigma for _ in self._priors])
 
 
 class Priors(object):
@@ -802,6 +824,8 @@ class Priors(object):
 
         self.eta = EtaPrior()
 
+        self.ang_sys = AngularPrior()
+
     @property
     def pressure_ratio(self):
         return self._pressure_ratio
@@ -821,7 +845,6 @@ class Priors(object):
         if not isinstance(prior, EtaPrior):
             raise ValueError("Wrong prior type")
         self._eta = prior
-        self.ang_sys = AngularPrior()
 
     @property
     def ang_sys(self):
@@ -926,7 +949,7 @@ class Priors(object):
 
         priors_dict["pressure_ratio"] = self.pressure_ratio
 
-        priors_dict["ang_sys"] = self._ang_sys
+        priors_dict["ang_sys"] = self.ang_sys
 
         return priors_dict
 
@@ -1050,6 +1073,21 @@ class Priors(object):
         try:
             # Backwards compatiblity
             priors.beta_index = priors_dict["beta_index"]
+        except KeyError:
+            pass
+
+        try:
+            priors.eta = priors_dict["eta"]
+        except KeyError:
+            pass
+
+        try:
+            priors.pressure_ratio = priors_dict["pressure_ratio"]
+        except KeyError:
+            pass
+
+        try:
+            priors.ang_sys = priors_dict["ang_sys"]
         except KeyError:
             pass
 
