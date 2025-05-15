@@ -339,10 +339,22 @@ class StanFit(SourceInfo):
         Return samples from chains
         :param key: Variable name
         """
+
         if self._reload:
-            return self._fit_output[key]
+            data = self._fit_output[key]
         else:
-            return self._fit_output.stan_variable(key)
+            data = self._fit_output.stan_variable(key)
+
+        shape = (
+            self.chains,
+            self.iterations,
+            int(data.size / self.chains / self.iterations),
+        )
+
+        if self._reload:
+            return self._fit_output[key].reshape(shape)
+        else:
+            return self._fit_output.stan_variable(key).reshape(shape)
 
     def setup_and_run(
         self,
