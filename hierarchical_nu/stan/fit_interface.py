@@ -1618,7 +1618,7 @@ class StanFitInterface(StanInterface):
                     # TODO make vector option for multi ps with individual parameters,
                     # hijack shared luminosity for this
                     if self._shared_luminosity:
-                        self._P = ParameterDef(
+                        self._P_glob = ParameterDef(
                             "pressure_ratio", "real", self._Pmin, self._Pmax
                         )
                     else:
@@ -1781,6 +1781,8 @@ class StanFitInterface(StanInterface):
                             and not self._seyfert
                         ):
                             self._L[k] << self._L_glob
+                        if self._shared_luminosity and self._seyfert:
+                            self._P[k] << self._P_glob
                         if self._shared_src_index and self._fit_index:
                             self._src_index[k] << self._src_index_glob
                         if self._shared_src_index and self._fit_beta:
@@ -2381,6 +2383,14 @@ class StanFitInterface(StanInterface):
 
             # Priors
             if self.sources.point_source:
+
+                if self._shared_luminosity and self._seyfert and not self._fit_nex:
+                    # use global prior for pressure ratio
+                    StringExpression([self._P_glob])
+                elif self._seyfert and not self._fit_nex:
+                    # use individual priors for pressure ratio vector
+                    pass
+
                 if self._priors.luminosity.name == "notaprior" or self._seyfert:
                     pass
 
@@ -2625,7 +2635,33 @@ class StanFitInterface(StanInterface):
                             ]
                         )
 
-            # TODO add eta prior here
+            if self._priors.eta.name == "notaprior":
+                pass
+            elif self._prior.eta.name not in ["normal", "lognormal"]:
+                raise ValueError("Prior type not recognised for eta")
+            elif self._fit_eta and isinstance(self._priors.eta, MultiSourcePrior):
+                with ForLoopContext(1, self._Ns, "i") as i:
+                    StringExpression(
+                        [
+                            self._eta[i],
+                            " ~ ",
+                            FunctionCall(
+                                [self._stan_prior_eta_mu, self._stan_prior_eta_sigma],
+                                self._priors.eta.name,
+                            ),
+                        ]
+                    )
+            elif self._fit_eta:
+                StringExpression(
+                    [
+                        self._eta_glob,
+                        " ~ ",
+                        FunctionCall(
+                            [self._stan_prior_eta_mu, self._stan_prior_eta_sigma],
+                            self._priors.eta.name,
+                        ),
+                    ]
+                )
 
             if self.sources.diffuse:
                 if self._priors.diffuse_flux.name not in ["normal", "lognormal"]:
