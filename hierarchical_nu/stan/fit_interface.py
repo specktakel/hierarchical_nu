@@ -1775,7 +1775,11 @@ class StanFitInterface(StanInterface):
                     self._E0_src = ForwardVariableDef("E0_src_ind", "vector[Ns]")
                 if self._shared_luminosity or self._shared_src_index:
                     with ForLoopContext(1, self._Ns, "k") as k:
-                        if self._shared_luminosity and not self._fit_nex:
+                        if (
+                            self._shared_luminosity
+                            and not self._fit_nex
+                            and not self._seyfert
+                        ):
                             self._L[k] << self._L_glob
                         if self._shared_src_index and self._fit_index:
                             self._src_index[k] << self._src_index_glob
@@ -2377,8 +2381,9 @@ class StanFitInterface(StanInterface):
 
             # Priors
             if self.sources.point_source:
-                if self._priors.luminosity.name == "notaprior":
+                if self._priors.luminosity.name == "notaprior" or self._seyfert:
                     pass
+
                 elif self._priors.luminosity.name in ["normal", "lognormal"]:
                     if self._shared_luminosity and not self._fit_nex:
                         StringExpression(
@@ -2465,6 +2470,8 @@ class StanFitInterface(StanInterface):
                     raise NotImplementedError(
                         "Luminosity prior distribution not recognised."
                     )
+
+                # TODO add pressure ratio prior here
 
                 if self._priors.src_index.name not in [
                     "normal",
@@ -2617,6 +2624,8 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
+
+            # TODO add eta prior here
 
             if self.sources.diffuse:
                 if self._priors.diffuse_flux.name not in ["normal", "lognormal"]:
