@@ -85,6 +85,11 @@ class SourceInfo:
                     self._shared_src_index = True
             else:
                 self._fit_eta = False
+            try:
+                Nex_src = Parameter.get_parameter("Nex_src")
+                self._fit_nex = True
+            except ValueError:
+                self._fit_nex = False
         else:
             self._shared_src_index = False
             self._fit_index = False
@@ -99,6 +104,7 @@ class SourceInfo:
             self._fit_ang_sys = False
             self._ps_frame = None
             self._ps_spectrum = None
+            self._fit_nex = False
 
         if self.sources.diffuse:
             self._diff_frame = self.sources.diffuse.frame

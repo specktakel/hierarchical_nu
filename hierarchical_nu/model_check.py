@@ -353,7 +353,12 @@ class ModelCheck:
             filename_list = [filename_list]
         with h5py.File(filename_list[0], "r") as f:
             job_folder = f["results_0"]
-            _result_names = [key for key in job_folder]
+            _result_names = []
+            for key in job_folder:
+                if "association_prob" in key:
+                    _result_names.append("association_prob")
+                else:
+                    _result_names.append(key)
 
         truths = {}
         priors = None
@@ -406,10 +411,14 @@ class ModelCheck:
                 i = 0
                 while True:
                     try:
-                        # for i in range(n_jobs):
                         job_folder = f["results_%i" % i]
                         for res_key in job_folder:
-                            results[res_key].extend(job_folder[res_key][()])
+                            if "association_prob" in res_key:
+                                results["association_prob"].append(
+                                    np.vstack(job_folder[res_key][()])
+                                )
+                            else:
+                                results[res_key].extend(job_folder[res_key][()])
                         # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
                         sim_N.extend(sim_folder["sim_%i" % i][()])
                         i += 1
