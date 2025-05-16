@@ -260,7 +260,7 @@ class ModelCheck:
         :param kwargs: kwargs to be passed to hierarchical_nu.fit.StanFit
         """
 
-        job_seeds = [(seed + job) * 10 for job in range(n_jobs)]
+        job_seeds = [(seed + job) * n_subjobs for job in range(n_jobs)]
 
         self._results = Parallel(n_jobs=n_jobs, backend="loky")(
             delayed(self._single_run)(n_subjobs, seed=s, **kwargs) for s in job_seeds
@@ -740,7 +740,7 @@ class ModelCheck:
                     *self.parser.detector_model,
                     scramble_ra=True,
                     scramble_mjd=True,
-                    seed=seed,
+                    seed=s,
                 )
                 N_bg = bg_events.N
                 if events:
