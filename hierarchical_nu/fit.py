@@ -155,13 +155,6 @@ class StanFit(SourceInfo):
         logger_code_gen = logging.getLogger("hierarchical_nu.backend.code_generator")
         logger_code_gen.propagate = False
 
-        # Check if we should use Nex_src directly as fit parameter and not use L
-        try:
-            Parameter.get_parameter("Nex_src")
-            self._use_nex = True
-        except ValueError:
-            self._use_nex = False
-
         # For use with plot methods
         self._def_var_names = []
 
@@ -2096,7 +2089,7 @@ class StanFit(SourceInfo):
                     for ps in self._sources.point_source
                 ]
 
-            if self._use_nex:
+            if self._fit_nex:
                 fit_inputs["Nex_src_min"] = self._nex_par_range[0]
                 fit_inputs["Nex_src_max"] = self._nex_par_range[1]
 
@@ -2177,6 +2170,14 @@ class StanFit(SourceInfo):
             fit_inputs["lumi_alpha"] = self._priors.luminosity.alpha
         else:
             raise ValueError("No other prior type for luminosity implemented.")
+
+        if self._priors.pressure_ratio.name in ["normal", "lognormal"]:
+            fit_inputs["P_mu"] = self._priors.pressure_ratio.mu
+            fit_inputs["P_sigma"] = self._priors.pressure_ratio.sigma
+
+        if self._priors.eta.name in ["normal", "lognormal"]:
+            fit_inputs["eta_mu"] = self._priors.eta.mu
+            fit_inputs["eta_sigma"] = self._priors.eta.sigma
 
         if self._sources.diffuse:
             # Just take any for now, using default parameters it doesn't matter
@@ -2430,7 +2431,7 @@ class StanFit(SourceInfo):
         """
 
         if self._sources.point_source:
-            if self._use_nex:
+            if self._fit_nex:
                 Nex = Parameter.get_parameter("Nex_src")
                 self._nex_par_range = Nex.par_range
             # TODO make similar to spectral parameters, L is not appended to the parameter list of the source

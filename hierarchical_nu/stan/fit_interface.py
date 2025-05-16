@@ -127,12 +127,6 @@ class StanFitInterface(StanInterface):
         self._debug = debug
         self._bg = bg
 
-        try:
-            Nex_src = Parameter.get_parameter("Nex_src")
-            self._fit_nex = True
-        except ValueError:
-            self._fit_nex = False
-
         n_params = 0
         n_params += 1 if self._fit_index else 0
         n_params += 1 if self._fit_beta else 0
@@ -1033,6 +1027,9 @@ class StanFitInterface(StanInterface):
                 if not self._seyfert:
                     self._Lmin = ForwardVariableDef("Lmin", "real")
                     self._Lmax = ForwardVariableDef("Lmax", "real")
+                if self._seyfert:
+                    self._Pmin = ForwardVariableDef("P_min", "real")
+                    self._Pmax = ForwardVariableDef("P_max", "real")
                 if self._fit_index:
                     self._src_index_min = ForwardVariableDef("src_index_min", "real")
                     self._src_index_max = ForwardVariableDef("src_index_max", "real")
@@ -1107,10 +1104,6 @@ class StanFitInterface(StanInterface):
                         self._eta_max = ForwardVariableDef("eta_max", "real")
                         self._eta_grid = ForwardVariableDef("eta_grid", "vector[Ngrid]")
 
-                    if self._seyfert:
-                        self._Pmin = ForwardVariableDef("P_min", "real")
-                        self._Pmax = ForwardVariableDef("P_max", "real")
-
                     if self._n_params == 2:
                         self._integral_grid_2d = ForwardArrayDef(
                             "integral_grid_2d",
@@ -1184,6 +1177,13 @@ class StanFitInterface(StanInterface):
                     E0_src_mu_def = ForwardVariableDef("E0_src_mu", "real")
                     E0_src_sigma_def = ForwardVariableDef("E0_src_sigma", "real")
 
+                if isinstance(self._priors.eta, MultiSourcePrior) and self._fit_eta:
+                    eta_mu_def = ForwardArrayDef("eta_mu", "real", self._Ns_str)
+                    eta_sigma_def = ForwardArrayDef("eta_sigma", "real", self._Ns_str)
+                elif self._fit_eta:
+                    eta_mu_def = ForwardVariableDef("eta_mu", "real")
+                    eta_sigma_def = ForwardVariableDef("eta_sigma", "real")
+
                 # Store prior data definitions
                 if self._fit_index:
                     self._stan_prior_src_index_mu = index_mu_def
@@ -1194,8 +1194,13 @@ class StanFitInterface(StanInterface):
                 if self._fit_Enorm:
                     self._stan_prior_E0_src_mu = E0_src_mu_def
                     self._stan_prior_E0_src_sigma = E0_src_sigma_def
+                if self._fit_eta:
+                    self._stan_prior_eta_mu = eta_mu_def
+                    self._stan_prior_eta_sigma = eta_sigma_def
                 # check for luminosity, if they all have the same prior
-                if self._priors.luminosity.name in ["normal", "lognormal"]:
+                if self._fit_nex or self._seyfert:
+                    pass
+                elif self._priors.luminosity.name in ["normal", "lognormal"]:
                     if isinstance(self._priors.luminosity, MultiSourcePrior):
                         mu_def = ForwardArrayDef("lumi_mu", "real", self._Ns_str)
                         sigma_def = ForwardArrayDef("lumi_sigma", "real", self._Ns_str)
@@ -1214,6 +1219,21 @@ class StanFitInterface(StanInterface):
 
                     self._stan_prior_lumi_xmin = xmin_def
                     self._stan_prior_lumi_alpha = alpha_def
+
+                if self._fit_nex:
+                    pass
+                elif self._seyfert:
+                    if self._priors.pressure_ratio.name == "notaprior":
+                        pass
+                    elif isinstance(self._priors.pressure_ratio, MultiSourcePrior):
+                        mu_def = ForwardArrayDef("P_mu", "real", self._Ns_str)
+                        sigma_def = ForwardArrayDef("P_sigma", "real", self._Ns_str)
+                    else:
+                        mu_def = ForwardVariableDef("P_mu", "real")
+                        sigma_def = ForwardVariableDef("P_sigma", "real")
+                    if self._priors.pressure_ratio.name != "notaprior":
+                        self._stan_prior_pressure_ratio_mu = mu_def
+                        self._stan_prior_pressure_ratio_sigma = sigma_def
 
             if self._sources.diffuse:
                 self._stan_prior_f_diff_mu = ForwardVariableDef("f_diff_mu", "real")
@@ -1630,7 +1650,7 @@ class StanFitInterface(StanInterface):
                             self._Pmax,
                         )
 
-                elif not self._fit_nex:
+                else:
                     if self._shared_luminosity:
                         self._L_glob = ParameterDef("L", "real", self._Lmin, self._Lmax)
                     else:
@@ -1771,6 +1791,8 @@ class StanFitInterface(StanInterface):
                         self._eta = ForwardVariableDef("eta_ind", "vector[Ns]")
                 if self._fit_nex and self._seyfert:
                     self._P = ForwardVariableDef("pressure_ratio", "vector[Ns]")
+                elif self._shared_luminosity and self._seyfert:
+                    self._P = ForwardVariableDef("pressure_ratio_ind", "vector[Ns]")
                 if self._fit_Enorm:
                     self._E0_src = ForwardVariableDef("E0_src_ind", "vector[Ns]")
                 if self._shared_luminosity or self._shared_src_index:
@@ -1781,7 +1803,11 @@ class StanFitInterface(StanInterface):
                             and not self._seyfert
                         ):
                             self._L[k] << self._L_glob
-                        if self._shared_luminosity and self._seyfert:
+                        if (
+                            self._shared_luminosity
+                            and self._seyfert
+                            and not self._fit_nex
+                        ):
                             self._P[k] << self._P_glob
                         if self._shared_src_index and self._fit_index:
                             self._src_index[k] << self._src_index_glob
@@ -2011,7 +2037,7 @@ class StanFitInterface(StanInterface):
                         )
                     elif not self._fit_nex:
                         # Use pressure_ratio * integrated flux (latter is normalised to the pressure ratio used in sims)
-                        self._F[k] << self._P * self._src_flux_table(self._eta[k])
+                        self._F[k] << self._P[k] * self._src_flux_table(self._eta[k])
 
                     if self._logparabola or self._pgamma:
                         # create even more references
@@ -2384,14 +2410,61 @@ class StanFitInterface(StanInterface):
             # Priors
             if self.sources.point_source:
 
-                if self._shared_luminosity and self._seyfert and not self._fit_nex:
-                    # use global prior for pressure ratio
-                    StringExpression([self._P_glob])
-                elif self._seyfert and not self._fit_nex:
-                    # use individual priors for pressure ratio vector
+                if self._fit_nex or self._priors.pressure_ratio.name == "notaprior":
                     pass
+                elif self._shared_luminosity and self._seyfert:
+                    # use global prior for pressure ratio
+                    StringExpression(
+                        [
+                            self._P_glob,
+                            " ~ ",
+                            FunctionCall(
+                                [
+                                    self._stan_prior_pressure_ratio_mu,
+                                    self._stan_prior_pressure_ratio_sigma,
+                                ],
+                                self._priors.pressure_ratio.name,
+                            ),
+                        ]
+                    )
+                elif self._seyfert and isinstance(
+                    self._priors.pressure_ratio, MultiSourcePrior
+                ):
+                    with ForLoopContext(1, self._Ns, "i") as i:
+                        StringExpression(
+                            [
+                                self._P[i],
+                                " ~ ",
+                                FunctionCall(
+                                    [
+                                        self._stan_prior_pressure_ratio_mu[i],
+                                        self._stan_prior_pressure_ratio_sigma[i],
+                                    ],
+                                    self._priors.pressure_ratio.name,
+                                ),
+                            ]
+                        )
 
-                if self._priors.luminosity.name == "notaprior" or self._seyfert:
+                else:
+                    with ForLoopContext(1, self._Ns, "i") as i:
+                        StringExpression(
+                            [
+                                self._P[i],
+                                " ~ ",
+                                FunctionCall(
+                                    [
+                                        self._stan_prior_pressure_ratio_mu,
+                                        self._stan_prior_pressure_ratio_sigma,
+                                    ],
+                                    self._priors.pressure_ratio.name,
+                                ),
+                            ]
+                        )
+                if (
+                    self._priors.luminosity.name == "notaprior"
+                    or self._seyfert
+                    or self._fit_nex
+                ):
                     pass
 
                 elif self._priors.luminosity.name in ["normal", "lognormal"]:
@@ -2409,10 +2482,7 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
-                    elif (
-                        isinstance(self._priors.luminosity, MultiSourcePrior)
-                        and not self._fit_nex
-                    ):
+                    elif isinstance(self._priors.luminosity, MultiSourcePrior):
                         with ForLoopContext(1, self._Ns, "i") as i:
                             StringExpression(
                                 [
@@ -2637,7 +2707,7 @@ class StanFitInterface(StanInterface):
 
             if self._priors.eta.name == "notaprior":
                 pass
-            elif self._prior.eta.name not in ["normal", "lognormal"]:
+            elif self._priors.eta.name not in ["normal", "lognormal"]:
                 raise ValueError("Prior type not recognised for eta")
             elif self._fit_eta and isinstance(self._priors.eta, MultiSourcePrior):
                 with ForLoopContext(1, self._Ns, "i") as i:
