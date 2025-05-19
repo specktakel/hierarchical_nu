@@ -8,7 +8,9 @@ from scipy.integrate import dblquad, quad, trapezoid
 from scipy.interpolate import RectBivariateSpline, make_smoothing_spline
 import h5py
 import logging
+from pathlib import Path
 import os
+import sys
 
 from .flux_model import SpectralShape
 from .parameter import Parameter
@@ -26,41 +28,90 @@ logger = logging.getLogger(__name__)
 
 
 class SeyfertNuMuSpectrum(SpectralShape):
+
+    # Replace by stuff from the simulation?
     _lower_energy = 1e2 * u.GeV
     _upper_energy = 1e7 * u.GeV
     _name = "SeyfertII"
 
     def __init__(
         self,
+        logLx: float,
         P: Parameter,
         eta: Parameter,
+        z: float,
         energy_points: int = 80,
         eta_points: int = 100,
+        name: str = "ps",
     ):
-        local_path = "input/hnu_input_ngc_1068.h5"
-        DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
+        """
+        Implements source model of Seyfert II galaxies.
+        Parameters:
+            P: Parameter
+                Pressure ratio of source, realistically capped at 0.5
+            eta: Parameter
+                Inverse magnetic turbulence strength, limited by simulation inputs to (2, 150)
+            logLx: float
+                log10(x-ray luminosity / (erg / s))
+            z: float
+                Source redshift
+            energy_points: int
+                Number of energy grid points used for interpolation in stan (less=faster)
+            eta_points:
+                Number of eta grid points used for interpolation in stan (less=faster)
+            name: str
+                Name to use as prefix in stan function names, needed for mutli ps fits
+        """
 
         super().__init__(self)
         self._parameters["eta"] = eta
         self._parameters["P"] = P
+        self._name = name
+
+        # Load appropriate file containing the energy density in the source environment
+        # and, together with redshift, convert it into a number flux at the detector
+
+        # TODO properly replace this
+        sys.path.append("/Volumes/INTENSO/spectra_for_Julian")
+        from nu_pop_model.diffuse_flux import mu_nu_flux
+
+        # This part of the code is sponsored by Intenso. Just kidding, I am not paid by them. But I wouldn't say no to some sponsorship...
+        path_to_simulations = Path("/Volumes/INTENSO/spectra_for_Julian/combined_files")
+        self._filename = (
+            path_to_simulations / f"neutrino_density_logLx_{np.round(logLx, 2):.2f}.h5"
+        )
+
+        with h5py.File(self._filename, "r") as f:
+            Enu = f["energy"][()] * u.Unit(f["energy_unit"][()].decode("ascii"))
+            energy_density = f["energy_density"][()] * u.Unit(
+                f["energy_density_unit"][()].decode("ascii")
+            )
+            eta = f["eta"][()]
+
+        flux_grid = np.zeros((eta.size, Enu.size))
+        for c, e in enumerate(eta):
+            flux_grid[c] = (
+                mu_nu_flux(
+                    Enu.to_value(u.GeV),
+                    Enu.to_value(u.GeV),
+                    energy_density[c].to_value(1 / u.GeV / u.s),
+                    z,
+                )
+                * 1e4
+            )  # conversion from cm-2 to m-2
+        flux_grid[flux_grid == 0.0] = flux_grid[flux_grid != 0.0].min()
+        self._energy = Enu
+        self._flux_grid = flux_grid << 1 / u.GeV / u.s / u.m**2
+        self._eta = eta
         self._energy_points = energy_points
         self._eta_points = eta_points
 
-        self._filename = DATA_PATH
-        # Load grid of flux values
-        with h5py.File(self._filename, "r") as f:
-            energy = f["Enu"][()]
-            flux_grid = (
-                f["numu_flux"][()] * 1e4
-            )  # conversion from cm-2 to m-2, is already normalised to P_R = 1
-            eta = f["eta"][()]
-        flux_grid[flux_grid == 0.0] = flux_grid[flux_grid != 0.0].min()
-        self._energy = energy << u.GeV
-        self._flux_grid = flux_grid << 1 / u.GeV / u.s / u.m**2
-        self._eta = eta
-
         self._spline = RectBivariateSpline(
-            np.log10(energy), eta, np.log10(flux_grid).T, kx=1, ky=3
+            np.log10(self._energy.to_value(u.GeV)),
+            self._eta,
+            np.log10(self._flux_grid.to_value(1 / u.GeV / u.s / u.m**2)).T,
+            kx=1,
+            ky=3,
         )
 
         # properly normalise everything: stan needs pdf in energy on a grid of eta
@@ -74,7 +125,12 @@ class SeyfertNuMuSpectrum(SpectralShape):
         fixed = eta.fixed
         eta.fixed = False
 
+        # Fix pressure ratio to 1 for the following calculation
+        # this is needed because we use integration methods of this class
+        # which multiply results by the pressure ratio
         P = self._parameters["P"]
+        par_range = P.par_range
+        P.par_range = (0, 10)
         fixed_P = P.fixed
         P_init_val = P.value
         P.fixed = False
@@ -93,11 +149,12 @@ class SeyfertNuMuSpectrum(SpectralShape):
         eta.fixed = fixed
         P.value = P_init_val
         P.fixed = fixed_P
+        P.par_range = par_range
 
         self._integral_grid = integral_grid
         self._energy_flux_grid = energy_flux_grid
         self._log_pdf_spline = RectBivariateSpline(
-            np.log10(energy), self._eta, np.log(pdf_grid).T, kx=1, ky=3
+            np.log10(Enu.to_value(u.GeV)), self._eta, np.log(pdf_grid).T, kx=1, ky=3
         )
 
         log_energy_grid = np.linspace(
@@ -120,6 +177,10 @@ class SeyfertNuMuSpectrum(SpectralShape):
         # make spline out of energy density
 
     @property
+    def name(self):
+        return self._name
+
+    @property
     def eta_points(self):
         return self._eta_points
 
@@ -140,7 +201,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
     def _make_stan_lpdf_func(self):
         # PDF
         func = UserDefinedFunction(
-            "SeyfertNuMu_logpdf",
+            f"{self.name}_SeyfertNuMu_logpdf",
             ["true_energy", "eta"],
             ["real", "real"],
             "real",
@@ -168,7 +229,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
     def _make_stan_flux_conv_func(self):
         # Integrated flux, needed for likelihood
         flux_tab = UserDefinedFunction(
-            "integrated_flux",
+            f"{self.name}_integrated_flux",
             ["eta"],
             ["real"],
             "real",
@@ -187,7 +248,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         # Flux conv, only needed when using luminosities as derived parameters
         splined_values = self._flux_conv_spline(self.eta_grid)
         flux_conv = UserDefinedFunction(
-            "flux_conv",
+            f"{self.name}_flux_conv",
             ["eta"],
             ["real"],
             "real",
