@@ -663,10 +663,6 @@ class ModelCheck:
 
         sys.stderr.write("Random seed: %i\n" % seed)
 
-        # Something related to the used skyllh modules leads to all the logging
-        # being printed to the console. TODO properly fix this...
-        logging.disable(logging.CRITICAL)
-
         self.parser.ROI
 
         sources = self.parser.sources
