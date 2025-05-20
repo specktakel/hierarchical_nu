@@ -1320,6 +1320,7 @@ def _get_expected_Nnu_(
             src_index = [0.0] * len(sim_inputs["D"])
         elif spectrum == "seyfert":
             eta = sim_inputs["eta"]
+            print(eta)
 
         if "index" in fit_params:
             src_index_grid = sim_inputs["src_index_grid"]
@@ -1378,8 +1379,8 @@ def _get_expected_Nnu_(
                 interp = RegularGridInterpolator(
                     (first_grid, second_grid), integral_grid_2d[i]
                 )
-                E0 = sim_inputs["E0_src"][i]
-                beta = sim_inputs["beta_index"][i]
+                # E0 = sim_inputs["E0_src"][i]
+                # beta = sim_inputs["beta_index"][i]
                 eps.append(np.exp(interp(np.array([first_param, second_param])))[0])
             elif fit_index:
                 grid = sim_inputs["src_index_grid"]
@@ -1396,15 +1397,15 @@ def _get_expected_Nnu_(
 
             # Create dummy values for all other parameters
             if spectrum == "logparabola":
-                E0 = E0_src[i]
-                beta = beta_index[i]
-                kwargs = {"alpha": src_index[i], "e_0": E0, "beta": beta}
+                kwargs = {
+                    "alpha": src_index[i],
+                    "e_0": E0_src[i],
+                    "beta": beta_index[i],
+                }
             elif spectrum == "pgamma":
-                E0 = E0_src[i]
-                kwargs = {"e_0": E0}
+                kwargs = {"e_0": E0_src[i]}
             elif spectrum == "seyfert":
-                eta = eta[i]
-                kwargs = {"eta": eta}
+                kwargs = {"eta": eta[i]}
             else:
                 kwargs = {"alpha": src_index[i]}
             if n_params == 1:

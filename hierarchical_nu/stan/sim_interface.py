@@ -118,9 +118,7 @@ class StanSimInterface(StanInterface):
                     self._ps_spectrum.make_stan_utility_func(False, False, False)
                 if self._seyfert:
                     self._src_spectrum_lpdf, self._src_flux_table, self._flux_conv = (
-                        self._sources[
-                            0
-                        ]._flux_model.spectral_shape.make_stan_functions()
+                        self._sources.make_seyfert_functions()
                     )
                 else:
                     self._src_spectrum_lpdf = (
@@ -366,7 +364,20 @@ class StanSimInterface(StanInterface):
             if self.sources.point_source:
                 with ForLoopContext(1, self._Ns, "k") as k:
                     if self._seyfert:
-                        self._F[k] << self._P[k] * self._src_flux_table(self._eta[k])
+                        if len(self.sources.point_source) == 1:
+                            self._F[k] << self._P[k] * self._src_flux_table[0](
+                                self._eta[k]
+                            )
+                        else:
+                            for j in range(1, len(self.sources.point_source) + 1):
+                                if j == 1:
+                                    context = IfBlockContext
+                                else:
+                                    context == ElseIfBlockContext
+                                with context([k, " == ", j]):
+                                    self._F[k] << self._P[k] * self._src_flux_table[
+                                        j - 1
+                                    ](self._eta[k])
                     else:
                         self._F[k] << StringExpression(
                             [
@@ -428,10 +439,27 @@ class StanSimInterface(StanInterface):
                             ]
                         )
                     elif self._seyfert:
-                        StringExpression(
-                            [self._F[k], "*=", self._flux_conv(self._eta[k])]
-                        )
+                        if len(self.sources.point_source) == 1:
+                            StringExpression(
+                                [self._F[k], "*=", self._flux_conv[0](self._eta[k])]
+                            )
+                        else:
+                            for j in range(1, len(self.sources.point_source) + 1):
+                                if j == 1:
+                                    context = IfBlockContext
+                                else:
+                                    context = ElseIfBlockContext
+                                with context([k, " == ", j]):
+                                    StringExpression(
+                                        [
+                                            self._F[k],
+                                            "*=",
+                                            self._flux_conv[j - 1](self._eta[k]),
+                                        ]
+                                    )
+
                     else:
+
                         StringExpression(
                             [
                                 self._F[k],
@@ -892,14 +920,39 @@ class StanSimInterface(StanInterface):
                                         "exp",
                                     )
                                 elif self._seyfert:
-                                    self._src_factor << FunctionCall(
-                                        [
-                                            self._src_spectrum_lpdf(
-                                                self._E[i], self._eta[self._lam[i]]
-                                            ),
-                                        ],
-                                        "exp",
-                                    )
+                                    if len(self.sources.point_source) == 1:
+                                        self._src_factor << FunctionCall(
+                                            [
+                                                self._src_spectrum_lpdf[0](
+                                                    self._E[i],
+                                                    self._eta[self._lam[i]],
+                                                )
+                                            ],
+                                            "exp",
+                                        )
+                                    else:
+                                        for l in range(
+                                            1, len(self.sources.point_source) + 1
+                                        ):
+                                            if l == 1:
+                                                context = IfBlockContext
+                                            else:
+                                                context = ElseIfBlockContext
+                                            with context([self._lam[i], " == ", l]):
+                                                (
+                                                    self._src_factor
+                                                    << FunctionCall(
+                                                        [
+                                                            self._src_spectrum_lpdf[
+                                                                l - 1
+                                                            ](
+                                                                self._E[i],
+                                                                self._eta[self._lam[i]],
+                                                            )
+                                                        ],
+                                                        "exp",
+                                                    )
+                                                )
                                 else:
                                     self._src_factor << FunctionCall(
                                         [
