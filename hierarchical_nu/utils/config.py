@@ -28,12 +28,17 @@ class ParameterConfig:
         # (out of src_index, beta_index and E0_src) need to be defined
         # in the field "fit_params", e.g. fit_params: ["src_index", "beta_index"]
     )
+    # Takes spectral shape parameters as arguments, i.e. src_index, beta_index, E0_src
+    # depending on chosen spectral type. Optional add Nex_src to use directly
+    # number of expected source events as fit parameter. This bypasses the luminosity
+    # (which is demoted to transformed parameter) and its prior.
     fit_params: List[str] = field(default_factory=lambda: ["src_index"])
     src_index: List[float] = field(default_factory=lambda: [2.3])
     share_src_index: bool = True
     src_index_range: Tuple = (1.0, 4.0)
     beta_index: List[float] = field(default_factory=lambda: [0.0])
     beta_index_range: Tuple = (-1.0, 1.0)
+    Nex_src_range: Tuple = (0.0, 100.0)
     E0_src: List[str] = field(default_factory=lambda: ["1e6 GeV"])
     E0_src_range: Tuple[str] = ("1e3 GeV", "1e8 GeV")
     diff_index: float = 2.5
@@ -101,12 +106,14 @@ class ParameterConfig:
     # Background components
     atmospheric: bool = True
     diffuse: bool = True
+    data_bg: bool = False  # Use this for data-driven background likelihood
 
     # Asimov data - fix simulated event numbers to nearest integer of expected number
     asimov: bool = False
 
     # exp event selection
     scramble_ra: bool = False
+    scramble_mjd: bool = False  # TODO: add functionality
 
     # use event tags, only relevant for multi ps fits
     use_event_tag: bool = False

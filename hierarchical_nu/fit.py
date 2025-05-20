@@ -55,6 +55,8 @@ from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.git import git_hash
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.utils.config_parser import ConfigParser
+from hierarchical_nu.utils.lifetime import LifeTime
+from hierarchical_nu.utils.roi import ROIList
 
 from omegaconf import OmegaConf
 
@@ -120,6 +122,10 @@ class StanFit:
 
         self._sources.organise()
 
+        self._bg = False
+        if self._sources.background:
+            self._bg = True
+
         stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
 
         self._reload = reload
@@ -134,6 +140,7 @@ class StanFit:
                 atmo_flux_theta_points=atmo_flux_theta_points,
                 use_event_tag=use_event_tag,
                 debug=debug,
+                bg=self._bg,
             )
         else:
             logger.debug("Reloading previous results.")
@@ -155,6 +162,13 @@ class StanFit:
         # Silence log output
         logger_code_gen = logging.getLogger("hierarchical_nu.backend.code_generator")
         logger_code_gen.propagate = False
+
+        # Check if we should use Nex_src directly as fit parameter and not use L
+        try:
+            Parameter.get_parameter("Nex_src")
+            self._use_nex = True
+        except ValueError:
+            self._use_nex = False
 
         # Check for shared luminosity and src_index params
         try:
@@ -240,6 +254,9 @@ class StanFit:
         if self._sources.atmospheric:
             self._def_var_names.append("F_atmo")
 
+        if self._sources.background:
+            self._def_var_names.append("Nex_bg")
+
         self._exposure_integral = collections.OrderedDict()
 
         self._fit_output = None
@@ -296,11 +313,16 @@ class StanFit:
 
         if not exposure_integral:
             for event_type in self._event_types:
+                if self._bg:
+                    llh = self._sources.background._likelihoods[event_type]
+                else:
+                    llh = None
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
                     event_type,
                     self._n_grid_points,
                     show_progress=show_progress,
+                    bg_llh=llh,
                 )
 
         else:
@@ -1347,7 +1369,6 @@ class StanFit:
             # self._calculate_quantiles(
             #    E_power, energy_unit, area_unit, source_idx, LL, UL
             # )
-
             if not upper_limit:
                 ax.fill_between(
                     E.to_value(
@@ -1978,10 +1999,12 @@ class StanFit:
         if self._events.N == 0:
             raise ValueError("Cannot perform fits with zero events")
         fit_inputs["N"] = self._events.N
-        if self._nshards not in [0, 1]:
-            # Number of shards and max. events per shards only used if multithreading is desired
-            fit_inputs["N_shards"] = self._nshards
+        # Number of shards and max. events per shards only used if multithreading is desired
+        fit_inputs["N_shards"] = self._nshards if self._nshards > 0 else 1
+        try:
             fit_inputs["J"] = ceil(fit_inputs["N"] / fit_inputs["N_shards"])
+        except ZeroDivisionError:
+            fit_inputs["J"] = fit_inputs["N"]
         fit_inputs["Ns_tot"] = len([s for s in self._sources.sources])
         fit_inputs["Edet"] = self._events.energies.to_value(u.GeV)
         fit_inputs["omega_det"] = self._events.unit_vectors
@@ -2125,6 +2148,10 @@ class StanFit:
                     for ps in self._sources.point_source
                 ]
 
+            if self._use_nex:
+                fit_inputs["Nex_src_min"] = self._nex_par_range[0]
+                fit_inputs["Nex_src_max"] = self._nex_par_range[1]
+
             fit_inputs["Lmin"] = self._lumi_par_range[0]
             fit_inputs["Lmax"] = self._lumi_par_range[1]
 
@@ -2250,6 +2277,59 @@ class StanFit:
                 raise ValueError(
                     "No other prior type for atmospheric flux implemented."
                 )
+        if self._sources.background:
+            fit_inputs["bg_llh"] = np.zeros(self.events.N)
+
+            time = LifeTime()
+            time_norm = sum(
+                [
+                    time.lifetime_from_dm(dm)[dm].to_value(u.s)
+                    for dm in self._event_types
+                ]
+            )
+
+            for dm in self._event_types:
+
+                dm_mjd_min, dm_mjd_max = time.mjd_from_dm(dm)
+
+                # get number of events per detector config over the respective detector lifetime in that config
+                N = 0
+                N_dm = np.sum(self.events.types == dm.S)
+                for roi in ROIList.STACK:
+                    mjd_min, mjd_max = roi.MJD_min, roi.MJD_max
+
+                    roi._MJD_min = dm_mjd_min
+                    roi._MJD_max = dm_mjd_max
+
+                    N += Events.from_ev_file(dm, apply_roi=False).N
+
+                    roi._MJD_min = mjd_min
+                    roi._MJD_max = mjd_max
+
+                inverse_norm = N_dm / N
+
+                decs = self.events.coords[dm.S == self.events.types].dec.to_value(u.rad)
+                sindecs = np.sin(decs)
+                ereco = np.log10(
+                    self.events.energies[dm.S == self.events.types].to_value(u.GeV)
+                )
+                prob_ereco_and_omega = self.sources.background._likelihoods[
+                    dm
+                ].prob_ereco_and_omega(ereco, sindecs)
+
+                # normalisation of flat logx distribution
+                # actual distribution values depend on E-parameter in stan, so only normalisation
+                # is accounted for at this stage
+                E_true_norm = 1 / (np.log(fit_inputs["Emax"] / fit_inputs["Emin"]))
+
+                fit_inputs["bg_llh"][dm.S == self.events.types] = np.log(
+                    prob_ereco_and_omega
+                    * E_true_norm  # accounts for E_nu integral, with a flat log(E) distribution
+                    / inverse_norm  # properly normalises to number of events in ROI
+                    / time_norm  # properly normalises time because we use in the N_dm / N step the entire
+                    # lifetime of the detector configuration
+                )
+
         # use the Eres slices for each event as data input
         # evaluate the splines at eadch event's reco energy
         # make this a loop over the IRFs
@@ -2393,6 +2473,9 @@ class StanFit:
         """
 
         if self._sources.point_source:
+            if self._use_nex:
+                Nex = Parameter.get_parameter("Nex_src")
+                self._nex_par_range = Nex.par_range
             # TODO make similar to spectral parameters, L is not appended to the parameter list of the source
             if self._shared_luminosity:
                 key = "luminosity"

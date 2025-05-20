@@ -69,7 +69,6 @@ class LifeTime:
         """
         mjd_min = self._uptime._data[event_type.P].min()
         # Have to compare some attribute here, using the classes directly does not work :(
-        print(event_type)
         if event_type.S == IC86_II.S:
             mjd_max = self._uptime._data["IC86_VII"].max()
         else:

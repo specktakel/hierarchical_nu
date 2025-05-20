@@ -292,7 +292,7 @@ class Events:
             _Emin_det = Parameter.get_parameter("Emin_det")
             mask = events.energies >= _Emin_det.value
             # logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
-            print(f"Applying Emin_det={_Emin_det.value} to event selection.")
+            logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
 
         except ValueError:
             _types = np.unique(events.types)
@@ -308,7 +308,9 @@ class Events:
                     # logger.info(
                     #     f"Applying Emin_det={_Emin_det.value} to event selection."
                     # )
-                    print(f"Applying Emin_det={_Emin_det.value} to event selection.")
+                    logger.info(
+                        f"Applying Emin_det={_Emin_det.value} to event selection."
+                    )
                 except ValueError:
                     pass
 
@@ -419,17 +421,27 @@ class Events:
 
     @classmethod
     def from_ev_file(
-        cls, *seasons: EventType, scramble_ra: bool = False, seed: int = 42
+        cls,
+        *seasons: EventType,
+        scramble_ra: bool = False,
+        scramble_mjd: bool = False,
+        seed: int = 42,
+        apply_roi: bool = True,
+        apply_Emin_det: bool = True,
     ):
         """
         Load events from the 2021 data release
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
         :param scramble_ra: Set to true if RA should be randomised
         :param seed: int, random seed for RA scrambling
+        :param apply_roi: if True, apply ROI cuts
+        :param apply_Emin_det if True, apply Emin_det cuts
         :return: :class:`hierarchical_nu.events.Events`
         """
 
         from icecube_tools.utils.data import RealEvents
+
+        rng = np.random.default_rng(seed=seed)
 
         if not len(seasons) == len(set(seasons)):
             raise ValueError("Detector season is provided twice.")
@@ -439,40 +451,66 @@ class Events:
         try:
             _Emin_det = Parameter.get_parameter("Emin_det").value.to_value(u.GeV)
             events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=True)
-            events.restrict(ereco_low=_Emin_det)
+            if apply_Emin_det:
+                events.restrict(ereco_low=_Emin_det)
         except ValueError:
             events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=True)
             # Create a dict of masks for each season
-            mask = {}
-            for s in seasons:
-                try:
-                    _Emin_det = Parameter.get_parameter(
-                        f"Emin_det_{s.P}"
-                    ).value.to_value(u.GeV)
-                    mask[s.P] = events.reco_energy[s.P] >= _Emin_det
-                except ValueError:
-                    raise ValueError("Emin_det not defined for all seasons.")
-            events.mask = mask
+            if apply_roi:
+                mask = {}
+                for s in seasons:
+                    try:
+                        _Emin_det = Parameter.get_parameter(
+                            f"Emin_det_{s.P}"
+                        ).value.to_value(u.GeV)
+                        mask[s.P] = events.reco_energy[s.P] >= _Emin_det
+                    except ValueError:
+                        raise ValueError("Emin_det not defined for all seasons.")
+                events.mask = mask
 
         ra = np.hstack([events.ra[s.P] * u.rad for s in seasons])
-        if scramble_ra:
-            rng = np.random.default_rng(seed=seed)
-            ra = rng.random(ra.size) * 2 * np.pi * u.rad
-
         dec = np.hstack([events.dec[s.P] * u.rad for s in seasons])
         reco_energy = np.hstack([events.reco_energy[s.P] * u.GeV for s in seasons])
         types = np.hstack([events.ra[s.P].size * [s.S] for s in seasons])
         mjd = np.hstack([events.mjd[s.P] for s in seasons])
 
+        if scramble_mjd:
+            from icecube_tools.utils.data import Uptime
+
+            lt = Uptime()
+            ic86 = ["IC86_II", "IC86_III", "IC86_IV", "IC86_V", "IC86_VI", "IC86_VII"]
+
+            # I have no one but myself to blame for this
+            lt._data["IC86_II"] = np.vstack([lt._data[s] for s in ic86])
+
+            for s in seasons:
+                intervals = np.sum(lt._data[s.P], axis=1)
+
+                # Sample new good time intervals for each event,
+                # weight is the intervals length
+                idxs = rng.choice(
+                    np.arange(intervals.size),
+                    size=np.sum(types == s.S, dtype=int),
+                    p=intervals / np.sum(intervals),
+                )
+                start = lt._data[s.P][idxs, 0]
+                end = lt._data[s.P][idxs, 1]
+                # scramble arrival time within each season separately
+                mjd[types == s.S] = rng.uniform(low=start, high=end, size=idxs.size)
+
+        mjd = Time(mjd, format="mjd")
+        if scramble_ra:
+            ra = rng.random(ra.size) * 2 * np.pi * u.rad
         # Conversion from 50% containment to 68% is already done in RealEvents
         ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        mjd = Time(mjd, format="mjd")
+        if apply_roi:
+            mask = cls.apply_ROIS(coords, mjd)
 
-        mask = cls.apply_ROIS(coords, mjd)
-
-        idxs = np.logical_or.reduce(mask)
+            idxs = np.logical_or.reduce(mask)
+        else:
+            idxs = np.ones(ang_err.size, dtype=bool)
 
         events = cls(
             reco_energy[idxs], coords[idxs], types[idxs], ang_err[idxs], mjd[idxs]
@@ -490,6 +528,9 @@ class Events:
         Returns newly created instance.
         :param events: Instance of Events to merge with
         """
+
+        if not isinstance(events, Events):
+            raise TypeError("`events` must be instance of `Events`")
 
         self.coords.representation_type = "spherical"
         events.coords.representation_type = "spherical"
@@ -614,7 +655,13 @@ class Events:
         )
 
     @classmethod
-    def apply_ROIS(cls, coords: SkyCoord, mjd: Time):
+    def apply_ROIS(
+        cls,
+        coords: SkyCoord,
+        mjd: Time,
+        skip_time: bool = False,
+        skip_direction: bool = False,
+    ):
         """
         Returns list of mask, one mask for each ROI on stack
         """
@@ -624,32 +671,31 @@ class Events:
 
         mask = []
         for roi in ROIList.STACK:
+            time = (mjd.mjd <= roi.MJD_max) & (mjd.mjd >= roi.MJD_min)
             if isinstance(roi, CircularROI):
-                mask.append(
-                    (
-                        (roi.radius >= roi.center.separation(coords))
-                        & (mjd.mjd <= roi.MJD_max)
-                        & (mjd.mjd >= roi.MJD_min)
-                    )
-                )
+                direction = roi.radius >= roi.center.separation(coords)
             else:
                 if roi.RA_min > roi.RA_max:
-                    mask.append(
+                    direction = (
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & ((ra >= roi.RA_min) | (ra <= roi.RA_max))
-                        & (mjd.mjd <= roi.MJD_max)
-                        & (mjd.mjd >= roi.MJD_min)
                     )
 
                 else:
-                    mask.append(
+                    direction = (
                         (dec <= roi.DEC_max)
                         & (dec >= roi.DEC_min)
                         & (ra >= roi.RA_min)
                         & (ra <= roi.RA_max)
-                        & (mjd.mjd <= roi.MJD_max)
-                        & (mjd.mjd >= roi.MJD_min)
                     )
+            if skip_time and skip_direction:
+                mask.append([True] * coords.size)
+            elif skip_time:
+                mask.append(direction)
+            elif skip_direction:
+                mask.append(time)
+            else:
+                mask.append(time & direction)
 
         return mask

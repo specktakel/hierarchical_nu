@@ -22,7 +22,12 @@ from hierarchical_nu.utils.plotting import SphericalCircle
 
 from hierarchical_nu.detector.icecube import EventType, NT, CAS
 from hierarchical_nu.precomputation import ExposureIntegral
-from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv
+from hierarchical_nu.source.source import (
+    Sources,
+    PointSource,
+    icrs_to_uv,
+    BackgroundSource,
+)
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.flux_model import (
     IsotropicDiffuseBG,
@@ -77,7 +82,7 @@ class Simulation:
         self._sources = sources
         if not isinstance(event_types, list):
             event_types = [event_types]
-        if isinstance(observation_time, u.quantity.Quantity):
+        if not isinstance(observation_time, dict):
             observation_time = {event_types[0]: observation_time}
         if not len(event_types) == len(observation_time):
             raise ValueError(
@@ -89,6 +94,10 @@ class Simulation:
         self._asimov = asimov
 
         self._sources.organise()
+
+        self._bg = False
+        if self._sources.background:
+            self._bg = True
 
         self._exposure_integral = collections.OrderedDict()
 
@@ -222,6 +231,10 @@ class Simulation:
 
         return self._Nex_et
 
+    @property
+    def sources(self):
+        return self._sources
+
     def precomputation(
         self,
         exposure_integral: collections.OrderedDict = None,
@@ -235,11 +248,16 @@ class Simulation:
 
         if not exposure_integral:
             for event_type in self._event_types:
+                if self._bg:
+                    llh = self._sources.background._likelihoods[event_type]
+                else:
+                    llh = None
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
                     event_type,
                     self._n_grid_points,
                     show_progress=show_progress,
+                    bg_llh=llh,
                 )
 
         else:
@@ -310,33 +328,46 @@ class Simulation:
 
         # Create data field in sim inputs to handle number of expected events for each source component
         # self._Nex_et has all necessary information, dimension (detector models, source components)
-        self._sim_inputs["Nex_et"] = self._Nex_et.tolist()
+        # In case of data being used as background, cut out the corresponding zero-entries
+        if self.sources.background:
+            Nex_et = self.Nex_et[:, :-1]
+        else:
+            Nex_et = self.Nex_et
+        self._sim_inputs["Nex_et"] = Nex_et.tolist()
 
+        skip = True if (self._expected_Nnu < 0.5 and self._asimov) else False
         if verbose:
-            sim_logger.info(
-                "Running a simulation with expected Nnu = %.2f events"
-                % self._expected_Nnu
+            if skip:
+                sim_logger.info("Asimov simulation with 0 events, skipping simulation.")
+            else:
+                sim_logger.info(
+                    "Running a simulation with expected Nnu = %.2f events"
+                    % self._expected_Nnu
+                )
+
+        if not skip:
+
+            sim_output = self._main_sim.sample(
+                data=self._sim_inputs,
+                iter_sampling=1,
+                chains=1,
+                fixed_param=True,
+                seed=seed,
+                **kwargs,
             )
 
-        sim_output = self._main_sim.sample(
-            data=self._sim_inputs,
-            iter_sampling=1,
-            chains=1,
-            fixed_param=True,
-            seed=seed,
-            **kwargs,
-        )
+            self._sim_output = sim_output
 
-        self._sim_output = sim_output
+            energies, coords, event_types, ang_errs = self._extract_sim_output()
 
-        energies, coords, event_types, ang_errs = self._extract_sim_output()
+            # Create filler MJD values, we are only doing time-averaged simulations
+            mjd = Time([99.0] * len(energies), format="mjd")
 
-        # Create filler MJD values, we are only doing time-averaged simulations
-        mjd = Time([99.0] * len(energies), format="mjd")
-
-        # Check for detected events
-        if len(energies) != 0:
-            self.events = Events(energies, coords, event_types, ang_errs, mjd)
+            # Check for detected events
+            if len(energies) != 0:
+                self.events = Events(energies, coords, event_types, ang_errs, mjd)
+            else:
+                self.events = None
         else:
             self.events = None
 
@@ -698,10 +729,18 @@ class Simulation:
             # Round expected number of events to nearest integer per source
             # distribute this number weighted with the Nex per event type over the event types
             N = np.rint(self._Nex_et.sum(axis=0)).astype(int)
-            self._N = np.zeros_like(self._Nex_et)
-            for c, _ in enumerate(self._sources):
-
+            if not self.sources.background:
+                self._N = np.zeros_like(self._Nex_et)
+            else:
+                self._N = np.zeros_like(self._Nex_et[:, :-1])
+            for c, source in enumerate(self._sources):
+                if isinstance(source, BackgroundSource):
+                    break
                 weights = self._Nex_et[:, c] / self._Nex_et[:, c].sum()
+
+                if np.any(np.isnan(weights)):
+                    N[:, c] = 0
+                    continue
 
                 # Sample et_idx for each source
                 et_idx = np.random.choice(
@@ -874,6 +913,8 @@ class Simulation:
             for c_s in range(self._sources.N):
                 # Do not normalise, the target is not normalised either and
                 # that is what we want to approximate
+                if isinstance(self._sources[c_s], BackgroundSource):
+                    break
                 norms = container[c_s].low_values
                 rs_norms[-1].append(norms.tolist())
                 rs_breaks[-1].append(container[c_s].bins.tolist())
@@ -910,6 +951,8 @@ class Simulation:
         rs_N_max = np.max(rs_N)
         for c, et in enumerate(self._event_types):
             for c_s in range(self._sources.N):
+                if isinstance(self._sources[c_s], BackgroundSource):
+                    break
                 # breaks has length rs_N_max + 1
                 while len(rs_breaks[c][c_s]) < rs_N_max + 1:
                     rs_breaks[c][c_s].append(0)
@@ -1007,6 +1050,15 @@ class Simulation:
 
         return sim_inputs
 
+    @property
+    def expected_Nnu(self):
+        return self._get_expected_Nnu(self._get_sim_inputs())
+
+    @property
+    def Nex_et(self):
+        self._get_expected_Nnu(self._get_sim_inputs())
+        return self._Nex_et
+
     def _get_expected_Nnu(self, sim_inputs):
         """
         Calculates expected number of neutrinos to be simulated.
@@ -1055,6 +1107,7 @@ class Simulation:
                 self._sources.atmospheric,
                 self._shared_luminosity,
                 self._sources,
+                self._bg,
             )
 
         self._Nex_et = Nex_et
@@ -1283,6 +1336,7 @@ def _get_expected_Nnu_(
     atmospheric=False,
     shared_luminosity=True,
     sources=None,
+    data_bg=False,
 ):
     """
     Helper function for calculating expected Nnu
@@ -1409,6 +1463,9 @@ def _get_expected_Nnu_(
     if atmospheric:
         eps.append(sim_inputs["atmo_integ_val"][c])
 
+    if data_bg:
+        eps.append(0.0)
+
     eps = np.array(eps) * sim_inputs["T"][c]
 
     if diffuse:
@@ -1416,5 +1473,8 @@ def _get_expected_Nnu_(
 
     if atmospheric:
         F.append(sim_inputs["F_atmo"])
+
+    if data_bg:
+        F.append(0.0)
 
     return eps * np.array(F)
