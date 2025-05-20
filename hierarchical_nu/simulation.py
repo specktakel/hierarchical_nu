@@ -272,31 +272,39 @@ class Simulation(SourceInfo):
             Nex_et = self.Nex_et
         self._sim_inputs["Nex_et"] = Nex_et.tolist()
 
+        skip = True if (self._expected_Nnu < 0.5 and self._asimov) else False
         if verbose:
-            sim_logger.info(
-                "Running a simulation with expected Nnu = %.2f events"
-                % self._expected_Nnu
+            if skip:
+                sim_logger.info("Asimov simulation with 0 events, skipping simulation.")
+            else:
+                sim_logger.info(
+                    "Running a simulation with expected Nnu = %.2f events"
+                    % self._expected_Nnu
+                )
+
+        if not skip:
+
+            sim_output = self._main_sim.sample(
+                data=self._sim_inputs,
+                iter_sampling=1,
+                chains=1,
+                fixed_param=True,
+                seed=seed,
+                **kwargs,
             )
 
-        sim_output = self._main_sim.sample(
-            data=self._sim_inputs,
-            iter_sampling=1,
-            chains=1,
-            fixed_param=True,
-            seed=seed,
-            **kwargs,
-        )
+            self._sim_output = sim_output
 
-        self._sim_output = sim_output
+            energies, coords, event_types, ang_errs = self._extract_sim_output()
 
-        energies, coords, event_types, ang_errs = self._extract_sim_output()
+            # Create filler MJD values, we are only doing time-averaged simulations
+            mjd = Time([99.0] * len(energies), format="mjd")
 
-        # Create filler MJD values, we are only doing time-averaged simulations
-        mjd = Time([99.0] * len(energies), format="mjd")
-
-        # Check for detected events
-        if len(energies) != 0:
-            self.events = Events(energies, coords, event_types, ang_errs, mjd)
+            # Check for detected events
+            if len(energies) != 0:
+                self.events = Events(energies, coords, event_types, ang_errs, mjd)
+            else:
+                self.events = None
         else:
             self.events = None
 
