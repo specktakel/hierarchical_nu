@@ -72,11 +72,13 @@ class SeyfertNuMuSpectrum(SpectralShape):
         # and, together with redshift, convert it into a number flux at the detector
 
         # TODO properly replace this
-        sys.path.append("/Volumes/INTENSO/spectra_for_Julian")
+        sys.path.append(os.path.expanduser("~/icecube/seyfert_spectra"))
         from nu_pop_model.diffuse_flux import mu_nu_flux
 
         # This part of the code is sponsored by Intenso. Just kidding, I am not paid by them. But I wouldn't say no to some sponsorship...
-        path_to_simulations = Path("/Volumes/INTENSO/spectra_for_Julian/combined_files")
+        path_to_simulations = Path(
+            os.path.expanduser("~/icecube/seyfert_spectra/combined_files")
+        )
         self._filename = (
             path_to_simulations / f"neutrino_density_logLx_{np.round(logLx, 2):.2f}.h5"
         )

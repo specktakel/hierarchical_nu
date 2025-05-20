@@ -1288,6 +1288,18 @@ class Sources:
     def __bool__(self):
         return bool(len(self))
 
+    def make_seyfert_functions(self):
+        lpdf = []
+        flux_tab = []
+        flux_conv = []
+        for s in self.point_source:
+            ret = s._flux_model.spectral_shape.make_stan_functions()
+            lpdf.append(ret[0])
+            flux_tab.append(ret[1])
+            flux_conv.append(ret[2])
+
+        return lpdf, flux_tab, flux_conv
+
 
 def uv_to_icrs(unit_vector):
     """

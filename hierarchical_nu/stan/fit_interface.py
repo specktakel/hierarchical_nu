@@ -381,16 +381,35 @@ class StanFitInterface(StanInterface):
                                 ]
                             )
                         elif self._seyfert:
-                            StringExpression(
-                                [
-                                    _lp,
-                                    " += ",
-                                    self._src_spectrum_lpdf(
-                                        self._E[i],
-                                        self._eta[k],
-                                    ),
-                                ]
-                            )
+
+                            if len(self.sources.point_source) == 1:
+                                StringExpression(
+                                    [
+                                        _lp,
+                                        " += ",
+                                        self._src_spectrum_lpdf[0](
+                                            self._E[i],
+                                            self._eta[k],
+                                        ),
+                                    ]
+                                )
+                            else:
+                                for j in range(1, len(self.sources.point_source) + 1):
+                                    if j == 1:
+                                        context = IfBlockContext
+                                    else:
+                                        context = ElseIfBlockContext
+                                    with context([k, " == ", j]):
+                                        StringExpression(
+                                            [
+                                                _lp,
+                                                " += ",
+                                                self._src_spectrum_lpdf[j - 1](
+                                                    self._E[i],
+                                                    self._eta[k],
+                                                ),
+                                            ]
+                                        )
                         else:
                             StringExpression(
                                 [
@@ -557,10 +576,13 @@ class StanFitInterface(StanInterface):
                         self._fit_index, self._fit_beta, self._fit_Enorm
                     )
                 if self._seyfert:
+                    # self._src_spectrum_lpdf, self._src_flux_table, self._flux_conv = (
+                    #    self._sources[
+                    #        0
+                    #    ]._flux_model.spectral_shape.make_stan_functions()
+                    # )
                     self._src_spectrum_lpdf, self._src_flux_table, self._flux_conv = (
-                        self._sources[
-                            0
-                        ]._flux_model.spectral_shape.make_stan_functions()
+                        self._sources.make_seyfert_functions()
                     )
                 else:
                     self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
@@ -1177,7 +1199,9 @@ class StanFitInterface(StanInterface):
                     E0_src_mu_def = ForwardVariableDef("E0_src_mu", "real")
                     E0_src_sigma_def = ForwardVariableDef("E0_src_sigma", "real")
 
-                if isinstance(self._priors.eta, MultiSourcePrior) and self._fit_eta:
+                if self._priors.eta.name == "notaprior":
+                    pass
+                elif isinstance(self._priors.eta, MultiSourcePrior) and self._fit_eta:
                     eta_mu_def = ForwardArrayDef("eta_mu", "real", self._Ns_str)
                     eta_sigma_def = ForwardArrayDef("eta_sigma", "real", self._Ns_str)
                 elif self._fit_eta:
@@ -1194,7 +1218,7 @@ class StanFitInterface(StanInterface):
                 if self._fit_Enorm:
                     self._stan_prior_E0_src_mu = E0_src_mu_def
                     self._stan_prior_E0_src_sigma = E0_src_sigma_def
-                if self._fit_eta:
+                if self._fit_eta and self._priors.eta.name != "notaprior":
                     self._stan_prior_eta_mu = eta_mu_def
                     self._stan_prior_eta_sigma = eta_sigma_def
                 # check for luminosity, if they all have the same prior
@@ -2037,7 +2061,20 @@ class StanFitInterface(StanInterface):
                         )
                     elif not self._fit_nex:
                         # Use pressure_ratio * integrated flux (latter is normalised to the pressure ratio used in sims)
-                        self._F[k] << self._P[k] * self._src_flux_table(self._eta[k])
+                        if len(self.sources.point_source) == 1:
+                            self._F[k] << self._P[k] * self._src_flux_table[0](
+                                self._eta[k]
+                            )
+                        else:
+                            for j in range(1, len(self.sources.point_source) + 1):
+                                if j == 1:
+                                    context = IfBlockContext
+                                else:
+                                    context == ElseIfBlockContext
+                                with context([k, " == ", j]):
+                                    self._F[k] << self._P[k] * self._src_flux_table[
+                                        j - 1
+                                    ](self._eta[k])
 
                     if self._logparabola or self._pgamma:
                         # create even more references
@@ -2099,9 +2136,20 @@ class StanFitInterface(StanInterface):
                         )
 
                     elif self._seyfert:
-                        self._flux_conv_val[k] << self._flux_conv(
-                            self._eta[k],
-                        )
+                        if len(self.sources.point_source) == 1:
+                            self._flux_conv_val[k] << self._flux_conv[0](
+                                self._eta[k],
+                            )
+                        else:
+                            for j in range(1, len(self.sources.point_source) + 1):
+                                if j == 1:
+                                    context = IfBlockContext
+                                else:
+                                    context = ElseIfBlockContext
+                                with context([k, " == ", j]):
+                                    self._flux_conv_val[k] << self._flux_conv[j - 1](
+                                        self._eta[k]
+                                    )
                     else:
                         self._flux_conv_val[k] << self._flux_conv(
                             self._src_index[k],
