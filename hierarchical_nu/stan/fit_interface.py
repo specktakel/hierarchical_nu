@@ -381,7 +381,6 @@ class StanFitInterface(StanInterface):
                                 ]
                             )
                         elif self._seyfert:
-
                             if len(self.sources.point_source) == 1:
                                 StringExpression(
                                     [
@@ -576,11 +575,6 @@ class StanFitInterface(StanInterface):
                         self._fit_index, self._fit_beta, self._fit_Enorm
                     )
                 if self._seyfert:
-                    # self._src_spectrum_lpdf, self._src_flux_table, self._flux_conv = (
-                    #    self._sources[
-                    #        0
-                    #    ]._flux_model.spectral_shape.make_stan_functions()
-                    # )
                     self._src_spectrum_lpdf, self._src_flux_table, self._flux_conv = (
                         self._sources.make_seyfert_functions()
                     )
@@ -2244,9 +2238,20 @@ class StanFitInterface(StanInterface):
                             # Nex = F * eps
                             # F = F(eta) * P = Nex / eps
                             # P = F / F(eta)
-                            self._P[k] << self._F[k] / self._src_flux_table(
-                                self._eta[k]
-                            )
+                            if len(self.sources.point_source) == 1:
+                                self._P[k] << self._F[k] / self._src_flux_table[0](
+                                    self._eta[k]
+                                )
+                            else:
+                                for j in range(1, len(self.sources.point_source) + 1):
+                                    if j == 1:
+                                        context = IfBlockContext
+                                    else:
+                                        context = ElseIfBlockContext
+                                    with context([k, " == ", j]):
+                                        self._P[k] << self._F[k] / self._src_flux_table[
+                                            j - 1
+                                        ](self._eta[k])
 
                         with ForLoopContext(1, self._Net_stan, "i") as i:
                             StringExpression(
