@@ -1476,7 +1476,7 @@ class StanFit(SourceInfo):
                 if key == "irf_return":
                     n_entries = len(value[0])
                     for n in range(n_entries):
-                        if value[0][n].ndim < 2:
+                        if len(value[0][n].shape) >= 1:
                             out = np.concatenate([_[n] for _ in value])
                         else:
                             out = np.vstack([_[n] for _ in value])
