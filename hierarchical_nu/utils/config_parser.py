@@ -1,4 +1,4 @@
-from hierarchical_nu.priors import (
+from ..priors import (
     Priors,
     LogNormalPrior,
     NormalPrior,
@@ -11,26 +11,31 @@ from hierarchical_nu.priors import (
     MultiSourceEnergyPrior,
     MultiSourceIndexPrior,
     MultiSourceLuminosityPrior,
+    EtaPrior,
+    MultiSourceEtaPrior,
+    PressureRatioPrior,
+    MultiSourcePressureRatioPrior,
+    Ignorance,
 )
-from hierarchical_nu.utils.config import HierarchicalNuConfig
-from hierarchical_nu.source.source import (
+from ..utils.config import HierarchicalNuConfig
+from ..source.source import (
     Sources,
     PointSource,
     SourceFrame,
     DetectorFrame,
 )
-from hierarchical_nu.source.parameter import Parameter, ParScale
-from hierarchical_nu.detector.icecube import Refrigerator
-from hierarchical_nu.utils.roi import (
+from ..source.parameter import Parameter, ParScale
+from ..detector.icecube import Refrigerator
+from ..utils.roi import (
     ROIList,
     CircularROI,
     NorthernSkyROI,
     FullSkyROI,
     RectangularROI,
 )
-from hierarchical_nu.detector.input import mceq
-from hierarchical_nu.utils.lifetime import LifeTime
-from hierarchical_nu.events import Events
+from ..detector.input import mceq
+from ..utils.lifetime import LifeTime
+from ..events import Events
 
 import omegaconf
 
@@ -220,6 +225,8 @@ class ConfigParser:
                         ParScale.lin,
                     )
                 )
+        if parameter_config.source_type == "SeyfertII":
+            logLx = parameter_config.logLx
 
         if "Nex_src" in parameter_config["fit_params"]:
             Nex_src = Parameter(
@@ -437,10 +444,10 @@ class ConfigParser:
                     f"ps_{c}",
                     dec[c],
                     ra[c],
+                    logLx[c],
                     _P,
                     _eta,
                     parameter_config.z[c],
-                    frame,
                 )
             point_source = method(*args)
 
@@ -738,6 +745,8 @@ class ConfigParser:
                 prior = ParetoPrior
                 xmin = vals.xmin
                 alpha = vals.alpha
+            elif vals.name == "Ignorance":
+                prior = Ignorance
             else:
                 raise NotImplementedError("Prior type not recognised.")
 
@@ -769,6 +778,28 @@ class ConfigParser:
                     sigma,
                     True,
                     sigma_unit,
+                )
+            elif p == "eta":
+                if prior != Ignorance:
+                    self.check_units(mu, 1)
+                    self.check_units(sigma, 1)
+                else:
+                    mu = 1.0
+                    sigma = 1.0
+                prior.eta = _make_prior(
+                    MultiSourceEtaPrior, EtaPrior, prior, mu, sigma, False, False
+                )
+            elif p == "P":
+                self.check_units(mu, 1)
+                self.check_units(sigma, 1)
+                priors.pressure_ratio = _make_prior(
+                    MultiSourcePressureRatioPrior,
+                    PressureRatioPrior,
+                    prior,
+                    mu,
+                    sigma,
+                    False,
+                    False,
                 )
             elif p == "L":
                 if prior == ParetoPrior:

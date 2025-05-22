@@ -672,7 +672,7 @@ class PressureRatioPrior(UnitlessPrior):
 
 class EtaPrior(UnitlessPrior):
     @u.quantity_input
-    def __init__(self, mu: float = 40, sigma: float = 10, name=Ignorance):
+    def __init__(self, name=Ignorance, mu: float = 40, sigma: float = 10):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
 

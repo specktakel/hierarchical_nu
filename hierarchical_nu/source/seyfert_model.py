@@ -42,7 +42,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         z: float,
         energy_points: int = 80,
         eta_points: int = 100,
-        name: str = "ps",
+        source_name: str = "ps",
     ):
         """
         Implements source model of Seyfert II galaxies.
@@ -59,14 +59,14 @@ class SeyfertNuMuSpectrum(SpectralShape):
                 Number of energy grid points used for interpolation in stan (less=faster)
             eta_points:
                 Number of eta grid points used for interpolation in stan (less=faster)
-            name: str
+            source_name: str
                 Name to use as prefix in stan function names, needed for mutli ps fits
         """
 
         super().__init__(self)
         self._parameters["eta"] = eta
         self._parameters["P"] = P
-        self._name = name
+        self._source_name = source_name
 
         # Load appropriate file containing the energy density in the source environment
         # and, together with redshift, convert it into a number flux at the detector
@@ -179,6 +179,10 @@ class SeyfertNuMuSpectrum(SpectralShape):
         # make spline out of energy density
 
     @property
+    def source_name(self):
+        return self._source_name
+
+    @property
     def name(self):
         return self._name
 
@@ -203,7 +207,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
     def _make_stan_lpdf_func(self):
         # PDF
         func = UserDefinedFunction(
-            f"{self.name}_SeyfertNuMu_logpdf",
+            f"{self.source_name}_SeyfertNuMu_logpdf",
             ["true_energy", "eta"],
             ["real", "real"],
             "real",
@@ -231,7 +235,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
     def _make_stan_flux_conv_func(self):
         # Integrated flux, needed for likelihood
         flux_tab = UserDefinedFunction(
-            f"{self.name}_integrated_flux",
+            f"{self.source_name}_integrated_flux",
             ["eta"],
             ["real"],
             "real",
@@ -250,7 +254,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         # Flux conv, only needed when using luminosities as derived parameters
         splined_values = self._flux_conv_spline(self.eta_grid)
         flux_conv = UserDefinedFunction(
-            f"{self.name}_flux_conv",
+            f"{self.source_name}_flux_conv",
             ["eta"],
             ["real"],
             "real",
