@@ -124,27 +124,44 @@ class ModelCheck:
                 self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to_value(
                     flux_unit
                 )
-            try:
-                self.truths["L"] = [
-                    Parameter.get_parameter("luminosity").value.to_value(u.GeV / u.s)
-                ]
-            except ValueError:
-                self.truths["L"] = [
-                    Parameter.get_parameter(f"ps_{_}_luminosity")
-                    .to_value(u.GeV / u.s)
-                    .value
-                    for _ in range(len(self._sources.point_source))
-                ]
+
+            if config.parameter_config.source_type == "SeyfertII":
+                try:
+                    self.truths["pressure_ratio"] = [
+                        Parameter.get_parameter("pressure_ratio").value
+                    ]
+                except ValueError:
+                    self.truths["pressure_ratio"] = [
+                        Parameter.get_parameter(f"ps_{_}_pressure_ratio").value
+                        for _ in range(len(self._sources.point_source))
+                    ]
+            else:
+                try:
+                    self.truths["L"] = [
+                        Parameter.get_parameter("luminosity").value.to_value(
+                            u.GeV / u.s
+                        )
+                    ]
+                except ValueError:
+                    self.truths["L"] = [
+                        Parameter.get_parameter(f"ps_{_}_luminosity").value.to_value(
+                            u.GeV / u.s
+                        )
+                        for _ in range(len(self._sources.point_source))
+                    ]
             if not self._sources.background:
                 self.truths["f_arr"] = f_arr
                 self.truths["f_arr_astro"] = f_arr_astro
             try:
                 self.truths["src_index"] = [Parameter.get_parameter("src_index").value]
             except ValueError:
-                self.truths["src_index"] = [
-                    Parameter.get_parameter(f"ps_{_}_src_index").value
-                    for _ in range(len(self._sources.point_source))
-                ]
+                try:
+                    self.truths["src_index"] = [
+                        Parameter.get_parameter(f"ps_{_}_src_index").value
+                        for _ in range(len(self._sources.point_source))
+                    ]
+                except ValueError:
+                    pass
             try:
                 self.truths["beta_index"] = [
                     Parameter.get_parameter("beta_index").value
@@ -165,6 +182,16 @@ class ModelCheck:
                 try:
                     self.truths["beta_index"] = [
                         Parameter.get_parameter(f"ps_{_}_E0_src").value.to_value(u.GeV)
+                        for _ in range(len(self._sources.point_source))
+                    ]
+                except ValueError:
+                    pass
+            try:
+                self.truths["eta"] = [Parameter.get_parameter("eta").value]
+            except:
+                try:
+                    self.truths["eta"] = [
+                        Parameter.get_parameter(f"ps_{_}_eta")
                         for _ in range(len(self._sources.point_source))
                     ]
                 except ValueError:
