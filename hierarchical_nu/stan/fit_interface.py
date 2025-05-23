@@ -2222,6 +2222,7 @@ class StanFitInterface(StanInterface):
                             ]
                         )
                         # self._Nex_per_ps[k] / FunctionCall([self._eps[:, k]], "sum")
+                    if self._fit_nex or self._seyfert:
                         self._L[k] << self._F[k] / self._flux_conv_val[
                             k
                         ] * StringExpression(
@@ -2233,34 +2234,34 @@ class StanFitInterface(StanInterface):
                                 ", 2))",
                             ]
                         )
-                        if self._seyfert:
-                            # Nex = P * F_tab(eta, divided by accomp. P) * eps, so F = P * F_tab(eta),
-                            # Nex = F * eps
-                            # F = F(eta) * P = Nex / eps
-                            # P = F / F(eta)
-                            if len(self.sources.point_source) == 1:
-                                self._P[k] << self._F[k] / self._src_flux_table[0](
-                                    self._eta[k]
-                                )
-                            else:
-                                for j in range(1, len(self.sources.point_source) + 1):
-                                    if j == 1:
-                                        context = IfBlockContext
-                                    else:
-                                        context = ElseIfBlockContext
-                                    with context([k, " == ", j]):
-                                        self._P[k] << self._F[k] / self._src_flux_table[
-                                            j - 1
-                                        ](self._eta[k])
-
-                        with ForLoopContext(1, self._Net_stan, "i") as i:
-                            StringExpression(
-                                [
-                                    self._Nex_src_comp[i],
-                                    "+=",
-                                    self._F[k] * self._eps[i, k],
-                                ]
+                    if self._seyfert and self._fit_nex:
+                        # Nex = P * F_tab(eta, divided by accomp. P) * eps, so F = P * F_tab(eta),
+                        # Nex = F * eps
+                        # F = F(eta) * P = Nex / eps
+                        # P = F / F(eta)
+                        if len(self.sources.point_source) == 1:
+                            self._P[k] << self._F[k] / self._src_flux_table[0](
+                                self._eta[k]
                             )
+                        else:
+                            for j in range(1, len(self.sources.point_source) + 1):
+                                if j == 1:
+                                    context = IfBlockContext
+                                else:
+                                    context = ElseIfBlockContext
+                                with context([k, " == ", j]):
+                                    self._P[k] << self._F[k] / self._src_flux_table[
+                                        j - 1
+                                    ](self._eta[k])
+
+                    with ForLoopContext(1, self._Net_stan, "i") as i:
+                        StringExpression(
+                            [
+                                self._Nex_src_comp[i],
+                                "+=",
+                                self._F[k] * self._eps[i, k],
+                            ]
+                        )
                     if not self._fit_nex:
                         StringExpression(
                             [
