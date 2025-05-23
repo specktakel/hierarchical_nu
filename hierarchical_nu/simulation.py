@@ -1328,7 +1328,6 @@ def _get_expected_Nnu_(
             src_index = [0.0] * len(sim_inputs["D"])
         elif spectrum == "seyfert":
             eta = sim_inputs["eta"]
-            print(eta)
 
         if "index" in fit_params:
             src_index_grid = sim_inputs["src_index_grid"]
