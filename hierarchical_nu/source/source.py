@@ -1112,7 +1112,6 @@ class Sources:
 
     def remove(self, i):
         self._sources.pop(i)
-        self.N -= 1
 
     def total_flux_int(self):
         tot = 0
