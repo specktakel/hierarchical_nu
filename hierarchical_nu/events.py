@@ -214,16 +214,22 @@ class Events:
         filename,
         group_name=None,
         scramble_ra: bool = False,
+        scramble_mjd: bool = False,  # TODO implement
         seed: int = 42,
-        apply_cuts: bool = True,
+        apply_spatial_cuts: bool = True,
+        apply_temporal_cuts: bool = False,
+        apply_Emin_det: bool = True,
     ):
         """
         Load events from simulated .h5 file.
         :param filename: Filename of event file
         :param group_name: Optional group name of event group in event file
         :param scramble_ra: Set to True if right ascension should be scrambled upon loading
+        :param scramble_mjd: Not implemented yet, should scramble MJD
         :param seed: int, random seed for scrambling RA
-        :param apply_cuts: Set to True if ROI and Emin_det cuts should be applied
+        :param apply_spatial_cuts: Set to True if spatial ROI cuts should be applied
+        :param apply_temporal_cuts: Set to True if temporal ROI cuts should be applied
+        :param apply_Emin_det: Set to False if Emin_det should not be applied
         """
 
         with h5py.File(filename, "r") as f:
@@ -261,7 +267,7 @@ class Events:
             ra = rng.random(ra.size) * 2 * np.pi * u.rad
             coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        if not apply_cuts:
+        if not apply_spatial_cuts and not apply_temporal_cuts and not apply_Emin_det:
             events = cls(energies, coords, types, ang_errs, mjd)
             events._idxs = np.full(events.N, True)
             if events.N == 0:
@@ -272,7 +278,12 @@ class Events:
         if ROIList.STACK:
             logger.info("Applying ROIs to event selection")
 
-            mask = cls.apply_ROIS(coords, mjd)
+            mask = cls.apply_ROIS(
+                coords,
+                mjd,
+                skip_time=not apply_temporal_cuts,
+                skip_direction=not apply_spatial_cuts,
+            )
 
             idxs = np.logical_or.reduce(mask)
 
@@ -288,33 +299,31 @@ class Events:
             events._idxs = np.full(events.N, True)
 
         # Apply energy cuts
-        try:
-            _Emin_det = Parameter.get_parameter("Emin_det")
-            mask = events.energies >= _Emin_det.value
-            # logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
-            logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
+        if apply_Emin_det:
+            try:
+                _Emin_det = Parameter.get_parameter("Emin_det")
+                mask = events.energies >= _Emin_det.value
+                # logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
+                logger.info(f"Applying Emin_det={_Emin_det.value} to event selection.")
 
-        except ValueError:
-            _types = np.unique(events.types)
-            mask = np.full(events.energies.size, True)
-            for _t in _types:
-                try:
-                    _Emin_det = Parameter.get_parameter(
-                        f"Emin_det_{Refrigerator.stan2python(_t)}"
-                    )
-                    mask[events.types == _t] = (
-                        events.energies[events.types == _t] >= _Emin_det.value
-                    )
-                    # logger.info(
-                    #     f"Applying Emin_det={_Emin_det.value} to event selection."
-                    # )
-                    logger.info(
-                        f"Applying Emin_det={_Emin_det.value} to event selection."
-                    )
-                except ValueError:
-                    pass
+            except ValueError:
+                _types = np.unique(events.types)
+                mask = np.full(events.energies.size, True)
+                for _t in _types:
+                    try:
+                        _Emin_det = Parameter.get_parameter(
+                            f"Emin_det_{Refrigerator.stan2python(_t)}"
+                        )
+                        mask[events.types == _t] = (
+                            events.energies[events.types == _t] >= _Emin_det.value
+                        )
+                        logger.info(
+                            f"Applying Emin_det={_Emin_det.value} to event selection."
+                        )
+                    except ValueError:
+                        pass
 
-        events.select(mask)
+            events.select(mask)
         if events.N == 0:
             logger.warning("No events selected, check your ROI and MJD")
 
@@ -426,7 +435,8 @@ class Events:
         scramble_ra: bool = False,
         scramble_mjd: bool = False,
         seed: int = 42,
-        apply_roi: bool = True,
+        apply_spatial_cuts: bool = True,
+        apply_temporal_cuts: bool = True,
         apply_Emin_det: bool = True,
     ):
         """
@@ -434,7 +444,8 @@ class Events:
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
         :param scramble_ra: Set to true if RA should be randomised
         :param seed: int, random seed for RA scrambling
-        :param apply_roi: if True, apply ROI cuts
+        :param apply_spatial_cuts: if True, apply spatial cuts
+        :param apply_temporal_cuts: if True, apply_temporal cuts
         :param apply_Emin_det if True, apply Emin_det cuts
         :return: :class:`hierarchical_nu.events.Events`
         """
@@ -456,7 +467,7 @@ class Events:
         except ValueError:
             events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=True)
             # Create a dict of masks for each season
-            if apply_roi:
+            if apply_Emin_det:
                 mask = {}
                 for s in seasons:
                     try:
@@ -505,8 +516,13 @@ class Events:
         ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        if apply_roi:
-            mask = cls.apply_ROIS(coords, mjd)
+        if apply_temporal_cuts or apply_temporal_cuts:
+            mask = cls.apply_ROIS(
+                coords,
+                mjd,
+                skip_time=not apply_temporal_cuts,
+                skip_direction=not apply_spatial_cuts,
+            )
 
             idxs = np.logical_or.reduce(mask)
         else:
