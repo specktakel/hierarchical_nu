@@ -45,6 +45,13 @@ from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.git import git_hash
 
 
+try:
+    from roque_cmap import roque_chill
+
+    CMAP = roque_chill().reversed()
+except ModuleNotFoundError:
+    CMAP = "viridis_r"
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -518,7 +525,7 @@ class StanFit:
             norm = colors.LogNorm(1e-8, 1.0, clip=True)
         else:
             raise ValueError("No other scale supported")
-        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        mapper = cm.ScalarMappable(norm=norm, cmap=CMAP)
         color = mapper.to_rgba(assoc_prob)
 
         indices = np.arange(self._events.N, dtype=int)[mask]
@@ -531,7 +538,7 @@ class StanFit:
                 np.power(10, supp),
                 pdf,
                 color=color[c],
-                zorder=assoc_prob[c] + 1,
+                zorder=assoc_prob[c],
             )
         _, yhigh = ax.get_ylim()
         ax.set_xscale("log")
@@ -543,7 +550,7 @@ class StanFit:
                 1.05 * yhigh,
                 color=color[c],
                 lw=1,
-                zorder=assoc_prob[c] + 1,
+                zorder=assoc_prob[c],
             )
             if highlight is not None and highlight[i]:
                 x, y = self._get_kde("E", i, lambda x: np.log10(x))
@@ -576,6 +583,7 @@ class StanFit:
                     )
 
         ax.text(1e7, yhigh, "$\hat E$", fontsize=8.,)
+        ax.set_ylim(0,)
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
@@ -640,7 +648,7 @@ class StanFit:
             norm = colors.LogNorm(1e-8, max, clip=True)
         else:
             raise ValueError("No other scale supported")
-        mapper = cm.ScalarMappable(norm=norm, cmap=cm.viridis_r)
+        mapper = cm.ScalarMappable(norm=norm, cmap=CMAP)
         color = mapper.to_rgba(assoc_prob)
 
         events = self.events
@@ -791,7 +799,7 @@ class StanFit:
         ax, _ = self._plot_roi(center, ax, radius, assoc_idx, color_scale, highlight)
         axs.insert(0, ax)
 
-        return fig, ax
+        return fig, axs
 
     def plot_flux_band(
         self,

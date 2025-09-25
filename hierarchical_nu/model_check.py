@@ -502,10 +502,13 @@ class ModelCheck:
                         counts_50_quantile += 1
                 length = len(self.results[var_name]) - mask_results.size
                 text = [
-                    f"fraction in 50% HDI: {counts_hdi / length:.2f}\n"
-                    + f"fraction in 50% central interval: {counts_50_quantile / length:.2f}"
+                    fr"fraction in 50\% HDI: {counts_hdi / length:.2f}",
+                    fr"fraction in 50\% central interval: {counts_50_quantile / length:.2f}"
                 ]
                 handles = [
+                    mpl_patches.Rectangle(
+                        (0, 0), 1, 1, fc="white", ec="white", lw=0, alpha=0
+                    ),
                     mpl_patches.Rectangle(
                         (0, 0), 1, 1, fc="white", ec="white", lw=0, alpha=0
                     )
@@ -513,7 +516,7 @@ class ModelCheck:
                 ax[v].legend(
                     handles=handles,
                     labels=text,
-                    loc="best",
+                    loc="upper left",
                     handlelength=0,
                     handletextpad=0,
                 )
