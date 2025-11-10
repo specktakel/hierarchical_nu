@@ -87,6 +87,7 @@ class StanFit(SourceInfo):
         n_grid_points: int = 50,
         nshards: int = 0,
         use_event_tag: bool = False,
+        use_assoc_radius = None,
         debug: bool = False,
         reload: bool = False,
     ):
@@ -123,6 +124,7 @@ class StanFit(SourceInfo):
         self._nshards = nshards
         self._priors = priors
         self._use_event_tag = use_event_tag
+        self._use_assoc_radius = use_assoc_radius
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
 
@@ -137,6 +139,7 @@ class StanFit(SourceInfo):
                 atmo_flux_energy_points=atmo_flux_energy_points,
                 atmo_flux_theta_points=atmo_flux_theta_points,
                 use_event_tag=use_event_tag,
+                use_assoc_radius=True if self._use_assoc_radius is not None else False,
                 debug=debug,
                 bg=self._bg,
             )
@@ -2129,10 +2132,23 @@ class StanFit(SourceInfo):
 
         fit_inputs["Ngrid"] = self._exposure_integral[event_type]._n_grid_points
 
-        if self._use_event_tag:
+
+        if self._use_assoc_radius is not None:
+            # get list of allowed point sources from event object
+            # pad s.t. each event's entry is length of 4
+            tags = self.events.get_tags(self.sources, self._use_assoc_radius)
+            fit_inputs["event_tag"] = []
+            for tag in tags:
+                size = tag.size
+                tag = tag + 1   # stan indixes starting from one
+                tag = tag.tolist()
+                tag += (4 - size) * [0]
+                fit_inputs["event_tag"].append(tag)
+        elif self._use_event_tag:
             fit_inputs["event_tag"] = (
                 np.array(self._events.get_tags(self._sources)).astype(int) + 1
             )
+
 
         if self._sources.point_source:
             # Check for shared source index

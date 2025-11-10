@@ -71,6 +71,7 @@ class StanFitInterface(StanInterface):
         priors: Priors = Priors(),
         nshards: int = 1,
         use_event_tag: bool = False,
+        use_assoc_radius: bool = False,
         debug: bool = False,
         bg: bool = False,
     ):
@@ -87,6 +88,7 @@ class StanFitInterface(StanInterface):
         :param priors: Priors object detailing the priors to use
         :param nshards: Number of shards for multithreading, defaults to zero
         :param use_event_tag: if True, only consider the closest PS for each event
+        :param use_assoc_radius: if True, modifies event tag use to provided mask of allowed associations
         :param debug: if True, add function calls for debugging and tests
         :param bg: if True, use data to construct background likelihood
         """
@@ -124,6 +126,7 @@ class StanFitInterface(StanInterface):
 
         self._nshards = nshards
         self._use_event_tag = use_event_tag
+        self._use_assoc_radius = use_assoc_radius
         self._debug = debug
         self._bg = bg
 
@@ -175,8 +178,12 @@ class StanFitInterface(StanInterface):
                     i
                 ] - FunctionCall([self._E[i]], "log")
 
+
+            elif self._use_assoc_radius:
+                pass
             elif not self._use_event_tag:
                 # TODO fix this case later for use with data-background llh
+                # haha lol
                 self._lp[i] << self._logF
 
             elif self._bg:
@@ -268,7 +275,7 @@ class StanFitInterface(StanInterface):
                     with IfBlockContext([StringExpression([k, " < ", self._Ns + 1])]):
                         if self._use_event_tag:
                             # Create new reference to proper entry in lp to reuse more code
-                            _lp = self._lp[i][1]
+                            _lp = self._lp[i, 1]
                             _eres_src = self._eres_src
                             _aeff_src = self._aeff_src
                             # If the source label k does not match the tag, continue
@@ -282,6 +289,19 @@ class StanFitInterface(StanInterface):
                             _eres_src = self._eres_src[k]
                             _aeff_src = self._aeff_src[k]
 
+                        if self._use_assoc_radius:
+                            # do stuff here
+                            # e.g.
+                            with ForLoopContext(1, 4, "j") as j:
+                                with IfBlockContext([k, "==", j]):
+                                    #
+                                    StringExpression(
+                                        [
+                                            _lp,
+                                            " = ",
+                                            self._logF[k]
+                                        ]
+                                    )
                         StringExpression(
                             [
                                 _lp,
@@ -719,6 +739,8 @@ class StanFitInterface(StanInterface):
                             size += 1
                         if self._sources.atmospheric:
                             size += 1
+                        if self._sources.background:
+                            size += 1
                         # reduce lp to 3 components per event since we only allow for one PS association
                         self._lp = ForwardArrayDef(
                             "lp", "vector[" + str(size) + "]", ["[N]"]
@@ -730,16 +752,20 @@ class StanFitInterface(StanInterface):
 
                     # Unpack event types (Tracks, cascades, IC40...)
                     self._event_type = ForwardArrayDef("event_type", "int", ["[N]"])
-
-                    # Define indices for unpacking of real_data
                     start << 3
                     end << 2 + self._N
-
                     self._event_type << int_data[start:end]
+                    start << start + self._N
 
-                    if self._use_event_tag:
+
+                    if self._use_assoc_radius:
+                        self._event_tag = ForwardArrayDef("event_tag", "int", ["[N, 4]"])
+                        with ForLoopContext(1, self._N, "j") as j:
+                            end << end + 4
+                            self._event_tag[j] << int_data[start:end]
+                            start << start + 4
+                    elif self._use_event_tag:
                         self._event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
-                        start << start + self._N
                         end << end + self._N
                         self._event_tag << StringExpression(["int_data[3+N:2+2*N]"])
 
@@ -1014,6 +1040,10 @@ class StanFitInterface(StanInterface):
             # Event tags
             if self._use_event_tag:
                 self._event_tag = ForwardArrayDef("event_tag", "int", self._N_str)
+            if self._use_assoc_radius:
+                # hardcode limit of 4 sources for each event for now
+                # would this consume to much memory otherwise?
+                self._event_tag = ForwardArrayDef("event_tag", "int", ["[N, 4]"])
 
             # To store the Ereco-grid index for each event, speeds up the 2d interpolation
             # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", self._N_str)
@@ -1429,6 +1459,7 @@ class StanFitInterface(StanInterface):
 
                 # If we do not use ang_sys we need to pass the fixed spatial loglike for J events x Ns sources
                 # and if we do we need to pass angular separations between each source and event (disregard use_event_tag for now) TODO for me
+                # later Julian here: what did I mean by this? TODO for future Julian: be more clear in your TODOs...................^^
                 sd_string += " + J*Ns"
                 if self.sources.diffuse:
                     sd_string += f" + {sd_if_diff}"
@@ -1450,7 +1481,9 @@ class StanFitInterface(StanInterface):
                     "real_data", "real", ["[N_shards,", sd_string, "]"]
                 )
 
-                if self._use_event_tag:
+                if self._use_assoc_radius:
+                    size = "2+5*J"  # N, Ns, event_type for each event, mask for event_tag/assoc_radius (up to 4 entries)
+                elif self._use_event_tag:
                     size = "2+2*J"
                 else:
                     size = "2+J"
@@ -1545,6 +1578,7 @@ class StanFitInterface(StanInterface):
                                 # if I use [k, start:end], a single line of "k;" is printed after entering
                                 # the for loop
                                 # TODO: fix this in code generator
+                                # I don't think I will
                                 (
                                     self.real_data[i, insert_start:insert_end]
                                     << self._spatial_loglike[k][start:end]
@@ -1621,7 +1655,13 @@ class StanFitInterface(StanInterface):
                     )
 
                     insert_start << insert_start + insert_len
-                    if self._use_event_tag:
+                    if self._use_assoc_radius:
+                        with ForLoopContext(start, end, "j") as j:
+                            # TODO maybe remove the hardcoded 4 possible associations (or change as necessary)
+                            insert_end << insert_end + 4
+                            self.int_data[i, insert_start:insert_end] << self._event_tag[j]
+                            insert_start << insert_start + 4
+                    elif self._use_event_tag:
                         insert_end << insert_end + insert_len
                         (
                             self.int_data[i, insert_start:insert_end]
@@ -2433,7 +2473,7 @@ class StanFitInterface(StanInterface):
                     end << end + StringExpression(["size(logF)"])
                     self._global_pars[start:end] << self._logF
                     if self._bg:
-                        start << start + 1
+                        start << end + 1
                         self._global_pars[start] << self._log_N_bg
                     # Likelihood is evaluated in `lp_reduce`
 

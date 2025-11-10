@@ -410,10 +410,12 @@ class Events:
             np.savetxt(filename, array, fmt=fmt, delimiter="\t\t", header=header)
         return
 
-    def get_tags(self, sources: Sources):
+    @u.quantity_input
+    def get_tags(self, sources: Sources, assoc_radius=None):
         """
         Idea: each event gets one PS (smallest distance), assumes that CircularROIs do not overlap
         :param sources: instance of `Sources`
+        :param assoc_radius: Ignore if None, else restrict point source associations to this radius
         """
 
         logger.warning("Applying tags is experimental.")
@@ -424,8 +426,14 @@ class Events:
         tags = []
         for coord in self.coords:
             ang_dist = coord.separation(ps_coords).deg
-            # Take source with smallest angular separation
-            tags.append(np.argmin(ang_dist))
+            if assoc_radius is None:
+                # Take source with smallest angular separation
+                tags.append(np.argmin(ang_dist))
+            else:
+                # Get a list which sources are within assoc_radius
+                _tag = np.where(coord.separation(ps_coords) <= assoc_radius)[0]
+                tags.append(_tag)
+
         return tags
 
     @classmethod
@@ -516,7 +524,7 @@ class Events:
         ang_err = np.hstack([events.ang_err[s.P] * u.deg for s in seasons])
         coords = SkyCoord(ra=ra, dec=dec, frame="icrs")
 
-        if apply_temporal_cuts or apply_temporal_cuts:
+        if apply_temporal_cuts or apply_spatial_cuts:
             mask = cls.apply_ROIS(
                 coords,
                 mjd,
@@ -687,10 +695,13 @@ class Events:
 
         mask = []
         for roi in ROIList.STACK:
+            print(roi)
             time = (mjd.mjd <= roi.MJD_max) & (mjd.mjd >= roi.MJD_min)
             if isinstance(roi, CircularROI):
+                print("is circular")
                 direction = roi.radius >= roi.center.separation(coords)
             else:
+                print("is rectangular")
                 if roi.RA_min > roi.RA_max:
                     direction = (
                         (dec <= roi.DEC_max)
