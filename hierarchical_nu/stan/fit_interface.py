@@ -171,8 +171,13 @@ class StanFitInterface(StanInterface):
         when generating, depending on the configutation.
         """
 
+        results = ForwardArrayDef("results", "real", ["[N]"])
+        if self._use_assoc_radius:
+            # tracks the entries required from self._event_tags for the i-th event
+            start_pos = InstantVariableDef("start_pos_", "int", ["1"])
+            end_pos = InstantVariableDef("end_pos_", "int", ["0"])
         with ForLoopContext(1, self._N, "i") as i:
-            if self._bg and not self._use_event_tag:
+            if self._bg and not self._use_event_tag and not self._use_assoc_radius:
                 self._lp[i, 1 : self._Ns] << self._logF
                 self._lp[i, self._k_bg] << self._log_N_bg + self._bg_llh[
                     i
@@ -252,7 +257,7 @@ class StanFitInterface(StanInterface):
                     if self.sources.point_source and self._fit_ang_sys:
                         # Calculate spatial likelihood if fitting ang_sys_add(_squared)
                         with ForLoopContext(1, self._Ns, "k") as k:
-                            self._spatial_loglike[k, i] << FunctionCall(
+                            self._spatial_loglike[i, k] << FunctionCall(
                                 [
                                     self._angular_separation[k, i],
                                     self._ang_errs_squared[i]
@@ -268,6 +273,17 @@ class StanFitInterface(StanInterface):
                 self._eres_diff << StringExpression(["irf_return.3"])
                 self._aeff_diff << StringExpression(["irf_return.4"])
 
+
+            # treat case of assoc_radius separately
+            if self._use_assoc_radius:
+                end_pos << end_pos + self._tag_sizes[i]
+                self._assoc_idx = ForwardArrayDef("assoc_idx", "int", ["[", self._tag_sizes[i], "]"])
+                self._assoc_idx << self._event_tag[start_pos:end_pos]   # this idx needed to index logF and lp
+                self._lp[i][self._assoc_idx] << self._logF[self._assoc_idx]
+                StringExpression([self._lp[i][self._assoc_idx], "+= to_vector(", self._spatial_loglike[i][self._assoc_idx], ")"])
+                start_pos << start_pos + self._tag_sizes[i]
+
+        
             # Sum over sources => evaluate and store components
             with ForLoopContext(1, self._Ns_tot, "k") as k:
                 # Point source components
@@ -289,26 +305,14 @@ class StanFitInterface(StanInterface):
                             _eres_src = self._eres_src[k]
                             _aeff_src = self._aeff_src[k]
 
-                        if self._use_assoc_radius:
-                            # do stuff here
-                            # e.g.
-                            with ForLoopContext(1, 4, "j") as j:
-                                with IfBlockContext([k, "==", j]):
-                                    #
-                                    StringExpression(
-                                        [
-                                            _lp,
-                                            " = ",
-                                            self._logF[k]
-                                        ]
-                                    )
-                        StringExpression(
-                            [
-                                _lp,
-                                " += ",
-                                self._spatial_loglike[k, i],
-                            ]
-                        )
+                        if not self._use_assoc_radius:
+                            StringExpression(
+                                [
+                                    _lp,
+                                    " += ",
+                                    self._spatial_loglike[i, k],
+                                ]
+                            )
                         StringExpression([_lp, " += ", _aeff_src])
                         StringExpression([_lp, " += ", _eres_src])
 
@@ -570,6 +574,11 @@ class StanFitInterface(StanInterface):
                 ) - FunctionCall([self._Nex], "log")
             """
 
+            if self._use_assoc_radius:
+                results[i] << FunctionCall([self._lp[i][self._assoc_idx]], "log_sum_exp")
+            else:
+                results[i] << FunctionCall([self._lp[i]], "log_sum_exp")
+
     def _functions(self):
         """
         Write the functions section of the Stan file.
@@ -670,7 +679,10 @@ class StanFitInterface(StanInterface):
 
                     start = InstantVariableDef("start", "int", [1])
                     end = InstantVariableDef("end", "int", [0])
-                    length = ForwardVariableDef("length", "int")
+                    if self._use_assoc_radius:
+                        length = InstantVariableDef("length", "int", ["int_data[3]"])
+                    else:
+                        length = ForwardVariableDef("length", "int")
                     self._x_r_len = 2
                     if self._logparabola:
                         self._x_r_len += 1 if not self._fit_index else 0
@@ -752,22 +764,33 @@ class StanFitInterface(StanInterface):
 
                     # Unpack event types (Tracks, cascades, IC40...)
                     self._event_type = ForwardArrayDef("event_type", "int", ["[N]"])
-                    start << 3
-                    end << 2 + self._N
+                    if self._use_assoc_radius:
+                        start << 4
+                        end << 3 + self._N
+                    else:
+                        start << 3
+                        end << 2 + self._N
                     self._event_type << int_data[start:end]
                     start << start + self._N
 
 
                     if self._use_assoc_radius:
-                        self._event_tag = ForwardArrayDef("event_tag", "int", ["[N, 4]"])
-                        with ForLoopContext(1, self._N, "j") as j:
-                            end << end + 4
-                            self._event_tag[j] << int_data[start:end]
-                            start << start + 4
+                        self._tag_sizes = ForwardArrayDef("tag_sizes", "int", ["[N]"])
+                        end << end + self._N
+                        self._tag_sizes << int_data[start:end]
+                        start << start + self._N
+                        end << end + length
+                        self._event_tag = ForwardArrayDef("event_tag", "int", ["[", length, "]"])
+                        self._event_tag << int_data[start:end]
+                        start << start + length
+                        StringExpression(["print(event_tag)"])
+
                     elif self._use_event_tag:
                         self._event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
                         end << end + self._N
                         self._event_tag << StringExpression(["int_data[3+N:2+2*N]"])
+
+
 
                     # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[N]"])
                     # self._ereco_idx << StringExpression("int_data[3+N:2+2*N]")
@@ -837,12 +860,12 @@ class StanFitInterface(StanInterface):
 
                     if self.sources.point_source:
                         self._spatial_loglike = ForwardArrayDef(
-                            "spatial_loglike", "real", ["[Ns, N]"]
+                            "spatial_loglike", "real", ["[N, Ns]"]
                         )
                         if not self._fit_ang_sys:
                             with ForLoopContext(1, self._Ns, "k") as k:
                                 end << end + length
-                                (self._spatial_loglike[k] << real_data[start:end])
+                                (self._spatial_loglike[":", k] << real_data[start:end])
                                 start << start + length
                         else:
                             self._ang_errs_squared = ForwardArrayDef(
@@ -973,14 +996,13 @@ class StanFitInterface(StanInterface):
                         self._k_bg = "Ns + 1"
 
                     self._model_likelihood()
-                    results = ForwardArrayDef("results", "real", ["[N]"])
-                    with ForLoopContext(1, self._N, "i") as i:
-                        results[i] << FunctionCall([self._lp[i]], "log_sum_exp")
+
                     if self._debug:
                         # Only for debugging purposes, this makes fits for large N really slow
-                        ReturnStatement([FunctionCall([results], "to_vector")])
+                        ReturnStatement([FunctionCall(["results"], "to_vector")])
                     else:
                         ReturnStatement(["[sum(results)]'"])
+
 
     def _data(self):
         with DataContext():
@@ -1043,7 +1065,11 @@ class StanFitInterface(StanInterface):
             if self._use_assoc_radius:
                 # hardcode limit of 4 sources for each event for now
                 # would this consume to much memory otherwise?
-                self._event_tag = ForwardArrayDef("event_tag", "int", ["[N, 4]"])
+                self._tag_sizes = ForwardArrayDef("tag_sizes", "int", ["[N]"])    # number of associations per event
+                self._max_tag_size = ForwardVariableDef("max_tag_size", "int")     # maximum number of associations to put in a single shard, determines int_data size
+                self._event_tag_size = ForwardVariableDef("event_tag_size", "int")  # total number of associations
+                self._event_tag = ForwardArrayDef("event_tag", "int", ["[event_tag_size]"])   # list of all associations, to be indexed using the above variables
+                self._tag_size_per_shard = ForwardArrayDef("tag_size_per_shard", "int", self._N_shards_str)   # is padded in StanFit._get_fit_inputs
 
             # To store the Ereco-grid index for each event, speeds up the 2d interpolation
             # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", self._N_str)
@@ -1349,7 +1375,7 @@ class StanFitInterface(StanInterface):
                 # This needs to be compatible with multiple point sources!
                 if not self._fit_ang_sys:
                     self._spatial_loglike = ForwardArrayDef(
-                        "spatial_loglike", "real", ["[Ns, N]"]
+                        "spatial_loglike", "real", ["[N, Ns]"]
                     )
                     with ForLoopContext(1, self._N, "i") as i:
                         with ForLoopContext(1, self._Ns, "k") as k:
@@ -1373,7 +1399,7 @@ class StanFitInterface(StanInterface):
                                     # Determine which arguments are needed for the
                                     # needed angular resolution
                                     if event_type in [NT, CAS]:
-                                        self._spatial_loglike[k, i] << FunctionCall(
+                                        self._spatial_loglike[i, k] << FunctionCall(
                                             [
                                                 self._varpi[k],
                                                 self._omega_det[i],
@@ -1382,7 +1408,7 @@ class StanFitInterface(StanInterface):
                                             event_type.F + "AngularResolution",
                                         )
                                     else:
-                                        self._spatial_loglike[k, i] << FunctionCall(
+                                        self._spatial_loglike[i, k] << FunctionCall(
                                             [
                                                 self._angular_separation[k, i],
                                                 self._ang_errs_squared[i],
@@ -1481,12 +1507,11 @@ class StanFitInterface(StanInterface):
                     "real_data", "real", ["[N_shards,", sd_string, "]"]
                 )
 
+                size = "2 + J"   # N, Ns, and event_type for J events
                 if self._use_assoc_radius:
-                    size = "2+5*J"  # N, Ns, event_type for each event, mask for event_tag/assoc_radius (up to 4 entries)
+                    size += " + 1 + J + max_tag_size"    # J entries for number of associations, max number of associations per shard
                 elif self._use_event_tag:
-                    size = "2+2*J"
-                else:
-                    size = "2+J"
+                    size += " + J"
                 self.int_data = ForwardArrayDef(
                     "int_data", "int", ["[", self._N_shards, ", ", size, "]"]
                 )
@@ -1494,12 +1519,17 @@ class StanFitInterface(StanInterface):
                 # Pack data into shards
                 # Format is (obviously) the same as the unpacking done in `lp_reduce`
                 # First dimension is number of shard, second dimension is what `lp_reduce` will see
+                # following two variables are used for indexing in case assoc_radius is used
+                start_pos = InstantVariableDef("start_pos", "int", ["1"])
+                end_pos = InstantVariableDef("end_pos", "int", ["0"])
                 with ForLoopContext(1, self._N_shards, "i") as i:
                     start = ForwardVariableDef("start", "int")
                     end = ForwardVariableDef("end", "int")
+                    # insert_start, insert_end, and insert_len mark position in real_data
                     insert_start = ForwardVariableDef("insert_start", "int")
                     insert_end = ForwardVariableDef("insert_end", "int")
                     insert_len = ForwardVariableDef("insert_len", "int")
+                    # start and end mark the index of events to use in i-th shard
                     start << (i - 1) * self._J + 1
                     insert_start << 1
                     end << i * self._J
@@ -1581,7 +1611,7 @@ class StanFitInterface(StanInterface):
                                 # I don't think I will
                                 (
                                     self.real_data[i, insert_start:insert_end]
-                                    << self._spatial_loglike[k][start:end]
+                                    << self._spatial_loglike[start:end, k]
                                 )
                                 insert_start << insert_start + insert_len
                         else:
@@ -1646,7 +1676,11 @@ class StanFitInterface(StanInterface):
                     # Pack integer data so real_data can be sorted into correct blocks in `lp_reduce`
                     self.int_data[i, 1] << insert_len
                     self.int_data[i, 2] << self._Ns
-                    insert_start << 3
+                    if self._use_assoc_radius:
+                        self.int_data[i, 3] << FunctionCall([self._tag_sizes[start:end]], "sum")
+                        insert_start << 4
+                    else:
+                        insert_start << 3
                     # end index is inclusive, subtract one
                     insert_end << insert_start + insert_len - 1
                     self.int_data[i, insert_start:insert_end] << FunctionCall(
@@ -1656,11 +1690,19 @@ class StanFitInterface(StanInterface):
 
                     insert_start << insert_start + insert_len
                     if self._use_assoc_radius:
-                        with ForLoopContext(start, end, "j") as j:
-                            # TODO maybe remove the hardcoded 4 possible associations (or change as necessary)
-                            insert_end << insert_end + 4
-                            self.int_data[i, insert_start:insert_end] << self._event_tag[j]
-                            insert_start << insert_start + 4
+                        # insert array of number of assocs for events first
+                        insert_end << insert_end + insert_len
+                        self.int_data[i, insert_start:insert_end] << self._tag_sizes[start:end]
+                        insert_start << insert_start + insert_len
+                        
+                        # get the concatenated list of allowed associations
+                        # the length for the i-th shard is stored in self._tag_size_per_shard
+                        insert_end << insert_end + self._tag_size_per_shard[i]
+                        end_pos << end_pos + self._tag_size_per_shard[i]
+                        self.int_data[i, insert_start:insert_end] << self._event_tag[start_pos:end_pos]
+                        insert_start << insert_start + self._tag_size_per_shard[i]
+                        start_pos << start_pos + self._tag_size_per_shard[i]
+                        
                     elif self._use_event_tag:
                         insert_end << insert_end + insert_len
                         (
@@ -3014,7 +3056,7 @@ class StanFitInterface(StanInterface):
 
                 if self._fit_ang_sys:
                     self._spatial_loglike = ForwardArrayDef(
-                        "spatial_loglike", "real", ["[Ns, N]"]
+                        "spatial_loglike", "real", ["[N, Ns]"]
                     )
 
                 self._model_likelihood()

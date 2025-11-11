@@ -2135,15 +2135,35 @@ class StanFit(SourceInfo):
 
         if self._use_assoc_radius is not None:
             # get list of allowed point sources from event object
-            # pad s.t. each event's entry is length of 4
+            # create ragged list structure
+            
             tags = self.events.get_tags(self.sources, self._use_assoc_radius)
+            fit_inputs["tag_sizes"] = []
             fit_inputs["event_tag"] = []
-            for tag in tags:
+            fit_inputs["tag_size_per_shard"] = []
+            max_size = 0
+            _size = 0
+            J = fit_inputs["J"]
+            # simultaneously determine the maximum number of associations allowed
+            # for the data over each shard
+            # this is needed for the creation of the array int_data in the transformed data block
+            n_shards_in_use = int(np.ceil(self.events.N / np.ceil(self.events.N / fit_inputs["N_shards"])))
+            for c, tag in enumerate(tags, 1):
                 size = tag.size
                 tag = tag + 1   # stan indixes starting from one
                 tag = tag.tolist()
-                tag += (4 - size) * [0]
-                fit_inputs["event_tag"].append(tag)
+                fit_inputs["tag_sizes"].append(len(tag))
+                fit_inputs["event_tag"] += tag
+                _size += len(tag)
+                if c % J == 0 or c == self.events.N:
+                    max_size = max(max_size, _size)
+                    fit_inputs["tag_size_per_shard"].append(_size)
+                    _size = 0
+
+            fit_inputs["max_tag_size"] = max_size
+            fit_inputs["event_tag_size"] = len(fit_inputs["event_tag"])
+            fit_inputs["tag_size_per_shard"] += (self._nshards - len(fit_inputs["tag_size_per_shard"])) * [0]
+
         elif self._use_event_tag:
             fit_inputs["event_tag"] = (
                 np.array(self._events.get_tags(self._sources)).astype(int) + 1
