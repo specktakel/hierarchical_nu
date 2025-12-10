@@ -648,6 +648,7 @@ class StanFit:
         lw: float = 1.0,
         plot_text: bool = True,
         textsize: float = 8,
+        plot_Edet: bool = True,
     ):
         ev_class = np.array(self._get_event_classifications())
         if radius is not None and center is not None:
@@ -695,6 +696,8 @@ class StanFit:
         ax.set_xscale("log")
 
         for c, i in enumerate(indices):
+            if not plot_Edet:
+                break
             ax.vlines(
                 self.events.energies[mask][c].to_value(u.GeV),
                 yhigh,
@@ -732,7 +735,7 @@ class StanFit:
                         color="black",
                         ls="--",
                     )
-        if plot_text:
+        if plot_text and plot_Edet:
             ax.text(
                 1.3e2,
                 yhigh * 1.025,
@@ -769,6 +772,7 @@ class StanFit:
         lw: float = 1.0,
         plot_text: bool = True,
         textsize: float = 8,
+        plot_Edet: bool = True,
     ):
         """
         Plot energy posteriors in log10-space.
@@ -797,6 +801,7 @@ class StanFit:
             lw=lw,
             plot_text=plot_text,
             textsize=textsize,
+            plot_Edet=plot_Edet,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -961,6 +966,7 @@ class StanFit:
         s: float = 20.0,
         plot_text: bool = True,
         textsize: float = 8,
+        plot_Edet: bool = True,
     ):
         """
         Create plot of the ROI.
@@ -1008,6 +1014,7 @@ class StanFit:
             lw=lw,
             plot_text=plot_text,
             textsize=textsize,
+            plot_Edet=plot_Edet,
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
