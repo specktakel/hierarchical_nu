@@ -1,7 +1,6 @@
 from cmdstanpy import CmdStanModel
 import numpy as np
 import pytest
-import inspect
 from os import path
 from pathlib import Path
 
@@ -27,6 +26,7 @@ def test_interpolation():
         data=data,
         iter_sampling=1,
         fixed_param=True,
+        chains=1,
     )
     # output is truncated at lowest and highest value
     assert samples.stan_variable("interpolated").squeeze() == pytest.approx(
@@ -54,7 +54,7 @@ def test_binary_search():
         "L": 5,
     }
 
-    samples = search_model.sample(data=data, iter_sampling=1, fixed_param=True)
+    samples = search_model.sample(data=data, iter_sampling=1, fixed_param=True, chains=1)
     assert samples.stan_variable("search").squeeze() == pytest.approx(
         np.array([0.0, 1.0, 9.0, 9.0, 11.0])
     )
@@ -80,6 +80,7 @@ def test_angles():
         data=data,
         iter_sampling=1,
         fixed_param=True,
+        chains=1,
     )
 
     assert samples.stan_variable("weights").squeeze() == pytest.approx(

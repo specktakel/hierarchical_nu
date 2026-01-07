@@ -40,35 +40,66 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
     def _make_spline(self):
         log_tE_lower_bin_edges = np.log10(self._tE_bin_edges[:-1])
         log_tE_upper_bin_edges = np.log10(self._tE_bin_edges[1:])
+        """
         log_tE_bin_c = np.concatenate(
             (
                 np.array([log_tE_lower_bin_edges[0]]),
                 (log_tE_lower_bin_edges + log_tE_upper_bin_edges) / 2,
+                np.array([log_tE_upper_bin_edges[-1]]),
             ),
         )
+        """
+        log_tE_bin_c = (log_tE_lower_bin_edges + log_tE_upper_bin_edges) / 2
+        log_tE_bin_c[0] = log_tE_lower_bin_edges[0]
+        log_tE_bin_c[-1] = log_tE_upper_bin_edges[-1]
+        tE_bin_c = np.power(10, log_tE_bin_c)
 
         cosz_lower = self._cosz_bin_edges[:-1]
         cosz_upper = self._cosz_bin_edges[1:]
         cosz_c = np.concatenate(
-            (np.array([cosz_lower[0]]), (cosz_lower + cosz_upper) / 2)
+            (
+                np.array([cosz_lower[0]]),
+                (cosz_lower + cosz_upper) / 2,
+                np.array([cosz_upper[-1]]),
+            )
         )
 
-        # Duplicate slice at lowest energy
+        # Duplicate slice at lowest and highest energy
+        """
         to_be_splined_aeff = np.concatenate(
-            (np.atleast_2d(self.eff_area[0, :]), self.eff_area), axis=0
+            (
+                np.atleast_2d(self.eff_area[0, :]),
+                self.eff_area,
+                (np.atleast_2d(self.eff_area[-1, :])),
+            ),
+            axis=0,
         )
-        # Duplicate slice at cosz=-1 (vertical upgoing)
+        """
+        to_be_splined_aeff = self.eff_area.copy()
+        # Duplicate slice at cosz=-1 (vertical upgoing) and cosz=1 (vertical downgoing)
         to_be_splined_aeff = np.concatenate(
-            (np.atleast_2d(to_be_splined_aeff[:, 0]).T, to_be_splined_aeff), axis=1
+            (
+                np.atleast_2d(to_be_splined_aeff[:, 0]).T,
+                to_be_splined_aeff,
+                (np.atleast_2d(to_be_splined_aeff[:, -1]).T),
+            ),
+            axis=1,
         )
+        non_zero_min = to_be_splined_aeff[to_be_splined_aeff > 0.0].min()
+        to_be_splined_aeff[to_be_splined_aeff == 0.0] = non_zero_min
 
+        # fill_value = np.log10(np.min(to_be_splined_aeff[to_be_splined_aeff > 0.]))
         self._eff_area_spline = RegularGridInterpolator(
             (log_tE_bin_c, cosz_c),
-            to_be_splined_aeff,
+            np.log10(to_be_splined_aeff),
             bounds_error=False,
-            fill_value=0,
+            fill_value=np.log10(non_zero_min),
+            # fill_value=0.0,
             method="linear",
         )
+
+    def spline(self, logE, cosz):
+        return self.eff_area_spline((logE, cosz))
 
     @abstractmethod
     def setup(self) -> None:
@@ -120,13 +151,13 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
 
         return self._rs_bbpl_params
 
-    @property
-    def eff_area_spline(self):
+    # @property
+    def eff_area_spline(self, vals):
         """
         2D spline of effective area.
         """
 
-        return self._eff_area_spline
+        return np.power(10, self._eff_area_spline(vals))
 
     @abstractmethod
     def generate_code(self):

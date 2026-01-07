@@ -1,10 +1,11 @@
 import numpy as np
 from astropy import units as u
+import pytest
 
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 
-from hierarchical_nu.detector.icecube import Refrigerator, NT, CAS
+from hierarchical_nu.detector.icecube import IC86_I, IC86_II
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
 
@@ -67,9 +68,9 @@ def test_N():
 
     sim = Simulation(
         my_sources,
-        [NT, CAS],
-        {NT: 5 * u.year, CAS: 5 * u.year},
-        N={CAS: [2, 3, 2], NT: [1, 2, 3]},
+        [IC86_I, IC86_II],
+        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
+        N={IC86_II: [2, 3, 2], IC86_I: [1, 2, 3]},
     )
 
     sim.precomputation()
@@ -83,7 +84,16 @@ def test_N():
     assert np.all(
         np.isclose(
             sim._sim_output.stan_variable("Lambda"),
-            np.array([[1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0]]),
+            np.array(
+                [[1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0]]
+            ),
+        )
+    )
+
+    assert np.all(
+        np.isclose(
+            sim._sim_output.stan_variable("event_type"),
+            np.array([[IC86_I.S] * 6 + [IC86_II.S] * 7]),
         )
     )
 
@@ -162,21 +172,57 @@ def test_multi_ps_n():
 
     sim = Simulation(
         my_sources,
-        [NT, CAS],
-        {NT: 5 * u.year, CAS: 5 * u.year},
-        N={NT: [1, 2], CAS: [2, 1]},
+        [IC86_I, IC86_II],
+        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
+        N={IC86_I: [1, 2], IC86_II: [2, 1]},
     )
     sim.precomputation()
     sim.generate_stan_code()
     sim.compile_stan_code()
+
     sim.run()
+
+    assert np.all(
+        np.isclose(
+            sim._sim_output.stan_variable("Lambda"),
+            np.array([[1.0, 2.0, 2.0, 1.0, 1.0, 2.0]]),
+        )
+    )
+
+    assert np.all(
+        np.isclose(
+            sim._sim_output.stan_variable("event_type"),
+            np.array([[IC86_I.S] * 3 + [IC86_II.S] * 3]),
+        )
+    )
 
     my_sources.add(point_source_2)
 
-    sim.sources = my_sources
-    sim._N = {NT: [1, 2, 3], CAS: [4, 5, 6]}
+    sim = Simulation(
+        my_sources,
+        [IC86_I, IC86_II],
+        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
+        N={IC86_I: [1, 2, 3], IC86_II: [4, 5, 6]},
+    )
     sim.precomputation()
+    sim.setup_stan_sim()
     sim.run()
+
+    assert np.all(
+        np.isclose(
+            sim._sim_output.stan_variable("Lambda"),
+            np.array(
+                [[1.0, 2.0, 2.0, 3.0, 3.0, 3.0] + [1.0] * 4 + [2.0] * 5 + [3.0] * 6]
+            ),
+        )
+    )
+
+    assert np.all(
+        np.isclose(
+            sim._sim_output.stan_variable("event_type"),
+            np.array([[IC86_I.S] * 6 + [IC86_II.S] * 15]),
+        )
+    )
 
 
 def test_asimov():
@@ -253,21 +299,29 @@ def test_asimov():
 
     sim = Simulation(
         my_sources,
-        [NT, CAS],
-        {NT: 5 * u.year, CAS: 5 * u.year},
+        [IC86_I, IC86_II],
+        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
         asimov=True,
     )
     sim.precomputation()
     sim.generate_stan_code()
     sim.compile_stan_code()
+
     sim.run()
 
-    assert np.rint(np.sum(sim._Nex_et)) == np.sum(list(sim._N.values()))
+    assert np.sum(np.rint(sim._Nex_et.sum(axis=0))) == np.sum(list(sim._N.values()))
 
     my_sources.add(point_source_2)
 
-    sim.sources = my_sources
+    sim = Simulation(
+        my_sources,
+        [IC86_I, IC86_II],
+        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
+        asimov=True,
+    )
+
     sim.precomputation()
+    sim.setup_stan_sim()
     sim.run()
 
-    assert np.rint(np.sum(sim._Nex_et)) == np.sum(list(sim._N.values()))
+    assert np.sum(np.rint(sim._Nex_et.sum(axis=0))) == np.sum(list(sim._N.values()))

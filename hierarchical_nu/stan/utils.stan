@@ -75,6 +75,12 @@ vector get_exposure_weights(vector F, vector eps) {
   vector[K] weights = F .* eps;
   return weights / sum(weights);
 }
+
+vector get_exposure_weights_from_Nex_et(array[] real Nex) {
+  int K = num_elements(Nex);
+  vector[K] weights = to_vector(Nex) / sum(Nex);
+  return weights;
+}
   
 /**
  * Integral over power law without normalisation, i.e. \int_x1^x2 x^{-gamma}

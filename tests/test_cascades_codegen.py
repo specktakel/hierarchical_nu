@@ -1,9 +1,10 @@
 from hierarchical_nu.detector.cascades import CascadesDetectorModel
 from hierarchical_nu.backend.parameterizations import DistributionMode
 from hierarchical_nu.backend import FunctionsContext, StanGenerator
-from hierarchical_nu.source.source import Sources
+import pytest
 
 
+@pytest.mark.skip(reason="Detector model no longer maintained")
 def test_file_generation_cascades(output_directory):
     _ = CascadesDetectorModel.generate_code(
         mode=DistributionMode.PDF, path=output_directory, rewrite=True

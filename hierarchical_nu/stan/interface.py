@@ -2,7 +2,7 @@ import os
 from abc import ABCMeta, abstractmethod
 
 from hierarchical_nu.backend.stan_generator import StanFileGenerator
-from hierarchical_nu.source.parameter import Parameter
+from ..source.source_info import SourceInfo
 
 # To includes
 STAN_PATH = os.path.dirname(__file__)
@@ -11,7 +11,7 @@ STAN_PATH = os.path.dirname(__file__)
 STAN_GEN_PATH = os.path.join(os.getcwd(), ".stan_files")
 
 
-class StanInterface(object, metaclass=ABCMeta):
+class StanInterface(SourceInfo, metaclass=ABCMeta):
     """
     Abstract base class for fleixble interface to
     Stan code generation.
@@ -51,31 +51,21 @@ class StanInterface(object, metaclass=ABCMeta):
         Store some useful source info.
         """
 
-        self._ps_spectrum = None
+        super().__init__(self._sources)
 
-        self._diff_spectrum = None
+        num_params = 0
+        num_params += 1 if self._fit_index else 0
+        num_params += 1 if self._fit_beta else 0
+        num_params += 1 if self._fit_Enorm else 0
+        num_params += 1 if self._fit_eta else 0
+        if not num_params <= 2:
+            raise NotImplementedError("Can only use 2D interpolation")
 
-        self._shared_luminosity = True
-
-        self._shared_src_index = True
-
-        if self.sources.point_source:
-            self._ps_spectrum = self.sources.point_source_spectrum
-
-            try:
-                Parameter.get_parameter("luminosity")
-                self._shared_luminosity = True
-            except ValueError:
-                self._shared_luminosity = False
-
-            try:
-                Parameter.get_parameter("src_index")
-                self._shared_src_index = True
-            except ValueError:
-                self._shared_src_index = False
+        self._fit = [self._fit_index, self._fit_beta, self._fit_Enorm, self._fit_eta]
 
         if self.sources.diffuse:
             self._diff_spectrum = self.sources.diffuse_spectrum
+            self._diff_frame = self.sources.diffuse.frame
 
         if self.sources.atmospheric:
             self._atmo_flux = self.sources.atmospheric_flux

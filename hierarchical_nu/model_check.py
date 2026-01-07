@@ -6,17 +6,20 @@ import arviz as av
 import time
 from matplotlib import pyplot as plt
 from matplotlib import colors
+from matplotlib import colors as mc
+import colorsys
 import matplotlib.patches as mpl_patches
 import matplotlib.cm as cm
 from joblib import Parallel, delayed
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from cmdstanpy import CmdStanModel
 from scipy.stats import uniform
-from typing import List, Union, Iterable
+from omegaconf import OmegaConf
+from typing import List, Union
+from pathlib import Path
+from time import time as thyme
 
 from hierarchical_nu.source.parameter import Parameter
-
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
@@ -44,17 +47,17 @@ class ModelCheck:
 
     def __init__(
         self,
-        config: Union[None, HierarchicalNuConfig] = None,
+        config: HierarchicalNuConfig,
         truths=None,
         priors=None,
     ):
+        """
+        :param config: HhierarchicalNuConfig instance
+        :param truths: true parameter values
+        :param priors: priors to overwrite the config's priors
+        """
 
-        if config is None:
-            logger.info("Loading default config")
-            self.config = HierarchicalNuConfig.load_default()
-
-        else:
-            self.config = config
+        self.config = config
         self.parser = ConfigParser(self.config)
 
         if priors:
@@ -70,22 +73,22 @@ class ModelCheck:
             logger.info("Found true values")
             self.truths = truths
 
-        else:
-            logger.info("Loading true values from config")
-            # Config
-            parameter_config = self.config["parameter_config"]
-            self.parser.ROI
+        # Config
+        self.parser.ROI
 
-            # Sources
-            self._sources = self.parser.sources
+        # Sources
+        self._sources = self.parser.sources
+        if not self._sources.background:
             f_arr = self._sources.f_arr().value
             f_arr_astro = self._sources.f_arr_astro().value
 
-            # Detector
-            self._detector_model_type = self.parser.detector_model
-            self._obs_time = self.parser.obs_time
+        # Detector
+        self._detector_model_type = self.parser.detector_model
+        self._obs_time = self.parser.obs_time
+        if not truths:
+            logger.info("Loading true values from config")
             # self._nshards = parameter_config["nshards"]
-            self._threads_per_chain = parameter_config["threads_per_chain"]
+            self._threads_per_chain = self.config.stan_config["threads_per_chain"]
 
             sim = self.parser.create_simulation(
                 self._sources, self._detector_model_type, self._obs_time
@@ -98,7 +101,6 @@ class ModelCheck:
             Nex = sim._get_expected_Nnu(sim_inputs)
             Nex_per_comp = sim._expected_Nnu_per_comp
             self._Nex_et = sim._Nex_et
-
             # Truths
             self.truths = {}
 
@@ -106,37 +108,99 @@ class ModelCheck:
 
             diffuse_bg = self._sources.diffuse
             if diffuse_bg:
-                self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to(
-                    flux_unit
-                ).value
+                # self.truths["F_diff"] = diffuse_bg.flux_model.total_flux_int.to_value(
+                #    flux_unit
+                # )
+                self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
+                self.truths["diffuse_norm"] = (
+                    diffuse_bg.flux_model(
+                        diffuse_bg.flux_model.spectral_shape._normalisation_energy,
+                        0 * u.rad,
+                        0 * u.rad,
+                    )
+                    * 4.0
+                    * np.pi
+                    * u.sr
+                ).to_value(1 / u.GeV / u.m**2 / u.s)
             atmo_bg = self._sources.atmospheric
             if atmo_bg:
-                self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to(
+                self.truths["F_atmo"] = atmo_bg.flux_model.total_flux_int.to_value(
                     flux_unit
-                ).value
-            try:
-                self.truths["L"] = [
-                    Parameter.get_parameter("luminosity").value.to(u.GeV / u.s).value
-                ]
-            except ValueError:
-                self.truths["L"] = [
-                    Parameter.get_parameter(f"ps_{_}_luminosity")
-                    .value.to(u.GeV / u.s)
-                    .value
-                    for _ in range(len(self._sources.point_source))
-                ]
-            self.truths["f_arr"] = f_arr
-            self.truths["f_arr_astro"] = f_arr_astro
+                )
+
+            if config.parameter_config.source_type == "SeyfertII":
+                try:
+                    self.truths["pressure_ratio"] = [
+                        Parameter.get_parameter("pressure_ratio").value
+                    ]
+                except ValueError:
+                    self.truths["pressure_ratio"] = [
+                        Parameter.get_parameter(f"ps_{_}_pressure_ratio").value
+                        for _ in range(len(self._sources.point_source))
+                    ]
+            else:
+                try:
+                    self.truths["L"] = [
+                        Parameter.get_parameter("luminosity").value.to_value(
+                            u.GeV / u.s
+                        )
+                    ]
+                except ValueError:
+                    self.truths["L"] = [
+                        Parameter.get_parameter(f"ps_{_}_luminosity").value.to_value(
+                            u.GeV / u.s
+                        )
+                        for _ in range(len(self._sources.point_source))
+                    ]
+            if not self._sources.background:
+                self.truths["f_arr"] = f_arr
+                self.truths["f_arr_astro"] = f_arr_astro
             try:
                 self.truths["src_index"] = [Parameter.get_parameter("src_index").value]
             except ValueError:
-                self.truths["src_index"] = [
-                    Parameter.get_parameter(f"ps_{_}_src_index").value
-                    for _ in range(len(self._sources.point_source))
+                try:
+                    self.truths["src_index"] = [
+                        Parameter.get_parameter(f"ps_{_}_src_index").value
+                        for _ in range(len(self._sources.point_source))
+                    ]
+                except ValueError:
+                    pass
+            try:
+                self.truths["beta_index"] = [
+                    Parameter.get_parameter("beta_index").value
                 ]
-            self.truths["diff_index"] = Parameter.get_parameter("diff_index").value
-
-            self.truths["Nex"] = Nex
+            except ValueError:
+                try:
+                    self.truths["beta_index"] = [
+                        Parameter.get_parameter(f"ps_{_}_beta_index").value
+                        for _ in range(len(self._sources.point_source))
+                    ]
+                except ValueError:
+                    pass
+            try:
+                self.truths["E0_src"] = [
+                    Parameter.get_parameter("E0_src").value.to_value(u.GeV)
+                ]
+            except ValueError:
+                try:
+                    self.truths["beta_index"] = [
+                        Parameter.get_parameter(f"ps_{_}_E0_src").value.to_value(u.GeV)
+                        for _ in range(len(self._sources.point_source))
+                    ]
+                except ValueError:
+                    pass
+            try:
+                self.truths["eta"] = [Parameter.get_parameter("eta").value]
+            except:
+                try:
+                    self.truths["eta"] = [
+                        Parameter.get_parameter(f"ps_{_}_eta")
+                        for _ in range(len(self._sources.point_source))
+                    ]
+                except ValueError:
+                    pass
+            if not self.parser._hnu_config.parameter_config.data_bg:
+                self.truths["Nex"] = Nex
             self.truths["Nex_src"] = np.sum(
                 Nex_per_comp[0 : len(self._sources.point_source)]
             )
@@ -153,7 +217,8 @@ class ModelCheck:
 
         self._default_var_names = [key for key in self.truths]
         self._default_var_names.append("Fs")
-
+        self._default_var_names.append("L_ind")
+        self._default_var_names.append("Nex_bg")
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
     @staticmethod
@@ -216,14 +281,40 @@ class ModelCheck:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-    def parallel_run(self, n_jobs=1, n_subjobs=1, seed=None, **kwargs):
-        job_seeds = [(seed + job) * 10 for job in range(n_jobs)]
+    def parallel_run(self, n_jobs=1, n_subjobs=1, seed: int = 42, **kwargs):
+        """
+        Run model checks in parallel
+        :param n_jobs: Number of parallel jobs
+        :param n_subjobs: Number of sequential simulations/fits per parallel job
+        :param seed: random seed for simulation and fit
+        :param kwargs: kwargs to be passed to hierarchical_nu.fit.StanFit
+        """
+
+        job_seeds = [(seed + job) * n_subjobs for job in range(n_jobs)]
 
         self._results = Parallel(n_jobs=n_jobs, backend="loky")(
             delayed(self._single_run)(n_subjobs, seed=s, **kwargs) for s in job_seeds
         )
 
-    def save(self, filename, save_events: bool = False):
+    def save(
+        self,
+        filename: Path,
+        save_events: bool = False,
+        overwrite: bool = False,
+    ):
+        """
+        Save model check
+        :param filename: output filename
+        :param save_events: If True save simulated events as well
+        """
+
+        if os.path.exists(filename) and not overwrite:
+            logger.warning(f"File {filename} already exists.")
+            file = os.path.splitext(filename)[0]
+            ext = os.path.splitext(filename)[1]
+            file += f"_{int(thyme())}"
+            filename = file + ext
+
         with h5py.File(filename, "w") as f:
             truths_folder = f.create_group("truths")
             for key, value in self.truths.items():
@@ -250,6 +341,12 @@ class ModelCheck:
                     elif key == "N_Eff":
                         for c, data in enumerate(res[key]):
                             folder.create_dataset(f"N_Eff_{c}", data=data)
+                    elif key == "ESS_bulk":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"ESS_bulk_{c}", data=data)
+                    elif key == "ESS_tail":
+                        for c, data in enumerate(res[key]):
+                            folder.create_dataset(f"ESS_tail_{c}", data=data)
                     elif key == "R_hat":
                         for c, data in enumerate(res[key]):
                             folder.create_dataset(f"R_hat_{c}", data=data)
@@ -264,6 +361,10 @@ class ModelCheck:
                             )
             f.create_dataset("version", data=git_hash)
 
+            # Create string of used config, to be loaded later to re-create source lists
+            config_string = OmegaConf.to_yaml(self.parser._hnu_config)
+            f.create_dataset("config", data=config_string)
+
         if save_events and "events" in res.keys():
             for i, res in enumerate(self._results):
                 for c, events in enumerate(res["events"]):
@@ -274,12 +375,22 @@ class ModelCheck:
         self.priors.addto(filename, "priors")
 
     @classmethod
-    def load(cls, filename_list, config: HierarchicalNuConfig):
+    def load(cls, filename_list):
+        """
+        Load previously saved model checks
+        :param filename_list: list of model check filenames
+        """
+
         if not isinstance(filename_list, list):
             filename_list = [filename_list]
         with h5py.File(filename_list[0], "r") as f:
             job_folder = f["results_0"]
-            _result_names = [key for key in job_folder]
+            _result_names = []
+            for key in job_folder:
+                if "association_prob" in key:
+                    _result_names.append("association_prob")
+                else:
+                    _result_names.append(key)
 
         truths = {}
         priors = None
@@ -314,6 +425,7 @@ class ModelCheck:
                         "Files in list have different truth settings and should not be combined"
                     )
 
+                """
                 n_jobs = len(
                     [
                         key
@@ -323,31 +435,34 @@ class ModelCheck:
                             and key != "priors"
                             and key != "sim"
                             and key != "version"
+                            and key != "config"
                         )
                     ]
                 )
+                """
 
-                for i in range(n_jobs):
-                    job_folder = f["results_%i" % i]
-                    n_subjobs = 0
-                    keys = job_folder.keys()
-                    # Count the number of ran subjobs by
-                    # counting the number of debugging variables
-                    for k in keys:
-                        n_subjobs += 1 if "N_Eff" in k else 0
-
-                    for res_key in job_folder:
-                        results[res_key].extend(job_folder[res_key][()])
+                i = 0
+                while True:
                     try:
-                        sim["sim_%i_Lambda" % i] = [
-                            sim_folder[f"event_Lambda_{i}_{c}"][()]
-                            for c in range(n_subjobs)
-                        ]
+                        job_folder = f["results_%i" % i]
+                        for res_key in job_folder:
+                            if "association_prob" in res_key:
+                                results["association_prob"].append(
+                                    np.vstack(job_folder[res_key][()])
+                                )
+                            else:
+                                results[res_key].extend(job_folder[res_key][()])
+                        # sim["sim_%i_Lambda" % i] = sim_folder["sim_%i" % i][()]
+                        sim_N.extend(sim_folder["sim_%i" % i][()])
+                        i += 1
                     except KeyError:
-                        pass
-                    sim_N.extend(sim_folder["sim_%i" % i][()])
+                        break
 
-        output = cls(truths=truths, priors=priors)
+        with h5py.File(filename, "r") as f:
+            config_string = f["config"][()].decode("ascii")
+        config = OmegaConf.create(config_string)
+
+        output = cls(config, truths=truths, priors=priors)
         output.results = results
         output.sim_Lambdas = sim
         output.sim_N = sim_N
@@ -468,12 +583,35 @@ class ModelCheck:
         mask_results: Union[None, np.ndarray] = None,
         alpha=0.1,
         show_N: bool = False,
+        band_quantiles: List[float] = [],
+        band_color: str = "C0",
+        mean_color: str = "C1",
     ):
+        """
+        Compare posteriors of parameters with simulation inputs
+        :param var_names: Parameter names to compare
+        :param var_labels: x-labels to be plotted
+        :param show_prior: True if prior distributions should be overplotted
+        :param nbins: Number of bins for posterior histograms
+        :param mask_results: numpy array mask to mask out single samples
+        :param alpha: alpha of histograms
+        :param show_N: overplot true number of events per source component
+        :param band_quantiles: if provided, plot bands containing the provided quantile of all fits
+        """
         if not var_names:
             var_names = self._default_var_names
 
         if not var_labels:
             var_labels = self._default_var_names
+
+        if len(band_quantiles) > 0:
+            use_quantiles = True
+            band_quantiles = np.atleast_1d(band_quantiles)
+            quantiles = np.sort(
+                np.hstack((0.5 + band_quantiles / 2, 0.5 - band_quantiles / 2))
+            )
+        else:
+            use_quantiles = False
 
         mask = np.tile(False, len(self.results[var_names[0]]))
         if mask_results is not None:
@@ -483,13 +621,23 @@ class ModelCheck:
 
         N = len(var_names)
         fig, ax = plt.subplots(N, figsize=(5, N * 3))
+        if N == 1:
+            ax = [ax]
 
         for v, var_name in enumerate(var_names):
+            # Check if var_name exists
+            if var_name not in self.results.keys():
+                continue
+            # Check if entry is empty
+            if not self.results[var_name]:
+                continue
             if (
                 var_name == "L"
-                or var_name == "F_diff"
+                or var_name == "L_ind"
+                # or var_name == "F_diff"
                 # or var_name == "F_atmo"
                 or var_name == "Fs"
+                or var_name == "E0_src"
             ):
                 log = True
                 bins = np.geomspace(
@@ -516,66 +664,108 @@ class ModelCheck:
                     np.max(np.array(self.results[var_name])[~mask]),
                     nbins,
                 )
-            max_value = 0
 
-            for i in range(len(self.results[var_name])):
-                if i not in mask_results and len(self.results[var_name]) != 0:
-                    if log:
-                        n, _ = np.histogram(
-                            np.log10(self.results[var_name][i]),
-                            np.log10(bins),
-                            density=True,
+            band_handles = []
+            band_labels = []
+
+            if use_quantiles:
+                hists = []
+                results = self.results[var_name]
+                for r in results:
+                    hists.append(np.histogram(r, bins=bins)[0])
+
+                hists = np.array(hists)
+
+                mean = []
+                band = []
+                for b in hists.T:
+                    mean.append(np.quantile(b, 0.5))
+                    band.append(np.quantile(b, quantiles))
+                mean = np.array(mean)
+                band = np.array(band).T
+
+                alpha = np.linspace(0.1, 1.0, len(quantiles) * 2)
+
+                # TODO change alpha value to this from hnu_paper repo / https://stackoverflow.com/questions/37765197/darken-or-lighten-a-color-in-matplotlib
+                # l = [1, 0.7, 0.4]
+                saturation = np.sort(band_quantiles)
+
+                color = colorsys.rgb_to_hls(*mc.to_rgb(band_color))
+
+                # hnu_colors = []
+                # for i in l:
+                #    color = colorsys.rgb_to_hls(*mc.to_rgb("C0"))
+                #    color = colorsys.hls_to_rgb(color[0], 1 - i * (1 - color[1]), color[2])
+                #    hnu_colors.append(color)
+                for low, high, s, q in zip(
+                    band[: len(quantiles) + 1],
+                    band[len(quantiles) :: -1],
+                    saturation,
+                    saturation[::-1],
+                ):
+
+                    c = colorsys.hls_to_rgb(color[0], 1 - s * (1 - color[1]), color[2])
+                    band_handles.append(
+                        ax[v].stairs(
+                            high,
+                            bins,
+                            baseline=low,
+                            facecolor=c,
+                            # alpha=0.2,
+                            fill=True,
+                            edgecolor="none",
                         )
-                    else:
-                        n, _ = np.histogram(
-                            self.results[var_name][i], bins, density=True
+                    )
+                    band_labels.append(f"{q*100:.0f}\% central quantile")
+                band_handles.append(ax[v].stairs(mean, bins, color=mean_color))
+                band_labels.append("median")
+
+            else:
+
+                for i in range(len(self.results[var_name])):
+                    if i not in mask_results and len(self.results[var_name]) != 0:
+                        if log:
+                            n, _ = np.histogram(
+                                np.log10(self.results[var_name][i]),
+                                np.log10(bins),
+                                density=True,
+                            )
+                        else:
+                            n, _ = np.histogram(
+                                self.results[var_name][i], bins, density=True
+                            )
+                        ax[v].stairs(
+                            n,
+                            bins,
+                            color="#017B76",
+                            alpha=alpha,
+                            lw=1.0,
                         )
-                    n = np.hstack((np.array([0]), n, np.array([n[-1], 0])))
-                    plot_bins = np.hstack(
-                        (np.array([bins[0] - 1e-10]), bins, np.array([bins[-1]]))
-                    )
 
-                    low = np.nonzero(n)[0].min()
-                    high = np.nonzero(n)[0].max()
-                    ax[v].step(
-                        plot_bins[low - 1 : high + 2],
-                        n[low - 1 : high + 2],
-                        color="#017B76",
-                        alpha=alpha,
-                        lw=1.0,
-                        where="post",
-                    )
+            if show_N and var_name == "Nex_src":
+                for val in self.sim_N:
+                    # Overplot the actual number of events for each component
+                    # for line in val:
+                    ax[v].axvline(val[0], ls="-", c="red", lw=0.3)
 
-                    if show_N and var_name == "Nex_src":
-                        for val in self.sim_N:
-                            # Overplot the actual number of events for each component
-                            # for line in val:
-                            ax[v].axvline(val[0], ls="-", c="red", lw=0.3)
+            elif show_N and var_name == "Nex_diff":
+                for val in self.sim_N:
+                    # Overplot the actual number of events for each component
+                    # for line in val:
+                    ax[v].axvline(val[1], ls="-", c="red", lw=0.3)
 
-                    elif show_N and var_name == "Nex_diff":
-                        for val in self.sim_N:
-                            # Overplot the actual number of events for each component
-                            # for line in val:
-                            ax[v].axvline(val[1], ls="-", c="red", lw=0.3)
-
-                    elif show_N and var_name == "Nex_atmo":
-                        for val in self.sim_N:
-                            # Overplot the actual number of events for each component
-                            # for line in val:
-                            ax[v].axvline(val[2], ls="-", c="red", lw=0.3)
-
-                    max_value = n.max() if n.max() > max_value else max_value
+            elif show_N and var_name == "Nex_atmo":
+                for val in self.sim_N:
+                    # Overplot the actual number of events for each component
+                    # for line in val:
+                    ax[v].axvline(val[2], ls="-", c="red", lw=0.3)
 
             if show_prior:
                 N = len(self.results[var_name][0]) * 100
 
                 # this case distinction is overly complicated
-                if (
-                    var_name == "L"
-                    or var_name == "F_diff"
-                    or var_name == "F_atmo"
-                    or var_name == "Fs"
-                ):
+                if var_name == "L" or var_name == "F_atmo" or var_name == "Fs":
+                    # wtf, where is the elif or else here?
                     pass
 
                 if "f_" in var_name and not "diff" in var_name:  # yikes
@@ -584,6 +774,11 @@ class ModelCheck:
                 elif "Nex" in var_name:
                     plot = False
 
+                elif "L_ind" == var_name or "L" == var_name:
+                    plot = True
+                    prior = self.priors.to_dict()["L"]
+                    prior_density = prior.pdf_logspace(prior_supp * prior.UNITS)
+
                 elif "index" in var_name:
                     prior_density = self.priors.to_dict()[var_name].pdf(
                         prior_supp * self.priors.to_dict()[var_name].UNITS
@@ -591,7 +786,6 @@ class ModelCheck:
                     plot = True
 
                 elif not "Fs" in var_name:
-                    # prior_samples = self.priors.to_dict()[var_name].sample(N)
                     prior_density = self.priors.to_dict()[var_name].pdf_logspace(
                         prior_supp * self.priors.to_dict()[var_name].UNITS
                     )
@@ -610,35 +804,46 @@ class ModelCheck:
                     )
 
             if var_name in self.truths.keys():
+                # TODO fix plotting for scalar and vector variables
                 ax[v].axvline(
                     self.truths[var_name], color="k", linestyle="-", label="Truth"
                 )
                 counts_hdi = 0
                 counts_50_quantile = 0
+                iterations = self.config.stan_config.iterations
+                chains = self.config.stan_config.chains
                 for d in self.results[var_name]:
-                    hdi = av.hdi(d, 0.5)
-                    quantile = np.quantile(d, [0.25, 0.75])
-                    true_val = self.truths[var_name]
+                    hdi = av.hdi(d.flatten(), 0.5)
+                    quantile = np.quantile(d.flatten(), [0.25, 0.75])
+                    try:
+                        true_val = float(self.truths[var_name])
+                    except:
+                        continue
                     if true_val <= hdi[1] and true_val >= hdi[0]:
                         counts_hdi += 1
                     if true_val <= quantile[1] and true_val >= hdi[0]:
                         counts_50_quantile += 1
                 length = len(self.results[var_name]) - mask_results.size
                 text = [
-                    f"fraction in 50% HDI: {counts_hdi / length:.2f}\n"
-                    + f"fraction in 50% central interval: {counts_50_quantile / length:.2f}"
+                    f"fraction in\n50\% HDI: {counts_hdi / length:.2f}\n"
+                    + f"50\% central interval: {counts_50_quantile / length:.2f}"
                 ]
                 handles = [
                     mpl_patches.Rectangle(
                         (0, 0), 1, 1, fc="white", ec="white", lw=0, alpha=0
                     )
                 ]
+                if band_handles:
+                    handles += band_handles
+                    text += band_labels
                 ax[v].legend(
                     handles=handles,
                     labels=text,
                     loc="best",
-                    handlelength=0,
-                    handletextpad=0,
+                    # handlelength=0,
+                    # handletextpad=0,
+                    # edgecolor="none",
+                    framealpha=0.8,
                 )
 
             ax[v].set_xlabel(var_labels[v], labelpad=10)
@@ -694,6 +899,8 @@ class ModelCheck:
         outputs["Lambda"] = []
         outputs["parameter_names"] = []
         outputs["N_Eff"] = []
+        outputs["ESS_bulk"] = []
+        outputs["ESS_tail"] = []
         outputs["R_hat"] = []
         if save_events:
             outputs["events"] = []
@@ -715,31 +922,71 @@ class ModelCheck:
             sim.run(seed=s, verbose=True)
             # self.sim = sim
 
-            # Skip if no detected events
-            if not sim.events:
+            # If asimov option is used and data added as background, just use the background
+            # else continue
+
+            data_bg = self.config.parameter_config.data_bg
+            if not sim.events and not data_bg:
                 continue
 
             events = sim.events
+            if events:
+                # Create a mask for the sampled events
+                # for point sources; events may be scattered outside of the ROI,
+                # we need to catch these and delete from the event lists used for the fit.
+                # Skip the temporal selection because currently the sampled time stamps
+                # have an arbitrary value (we can only do time-averaged simulations)
+                mask = events.apply_ROIS(events.coords, events.mjd, skip_time=True)
+                idx = np.logical_or.reduce(mask)
 
-            lambd = sim._sim_output.stan_variable("Lambda").squeeze()
+                lambd = sim._sim_output.stan_variable("Lambda").squeeze()[idx]
+
+                new_events = Events(
+                    events.energies[idx],
+                    events.coords[idx],
+                    events.types[idx],
+                    events.ang_errs[idx],
+                    events.mjd[idx],
+                )
+
+            if data_bg:
+                # If we use data as background, sample scrambled data and add to point source events
+                bg_events = Events.from_ev_file(
+                    *self.parser.detector_model,
+                    scramble_ra=True,
+                    scramble_mjd=True,
+                    seed=s,
+                )
+                N_bg = bg_events.N
+                if events:
+                    new_events = new_events.merge(bg_events)
+                    lambd = np.concatenate((lambd, np.array([4.0] * N_bg)))
+                else:
+                    new_events = bg_events
+                    lambd = np.array([4.0] * N_bg)
+            else:
+                N_bg = 0
 
             ps = np.sum(lambd == 1.0)
             diff = np.sum(lambd == 2.0)
             atmo = np.sum(lambd == 3.0)
-            lam = np.array([ps, diff, atmo])
+            lam = np.array([ps, diff, atmo, N_bg])
 
             # Fit
             # Same as above, save time
             # Also handle in case first sim has no events
             if not fit:
                 fit = self.parser.create_fit(
-                    sources, events, self.parser.detector_model, self.parser.obs_time
+                    sources,
+                    new_events,
+                    self.parser.detector_model,
+                    self.parser.obs_time,
                 )
                 fit.precomputation(self._exposure_integral)
                 fit.setup_stan_fit(".stan_files/model_code")
 
             else:
-                fit.events = events
+                fit.events = new_events
 
             start_time = time.time()
 
@@ -748,26 +995,45 @@ class ModelCheck:
 
             if not share_L:
                 L_init = [1e49] * len(self._sources.point_source)
+                P_init = [0.3] * len(self._sources.point_source)
             else:
                 L_init = 1e49
+                P_init = 0.3
 
             if not share_src_index:
                 src_init = [2.3] * len(self._sources.point_source)
+                beta_init = [0.05] * len(self._sources.point_source)
+                E0_init = [1e5] * len(self._sources.point_source)
+                eta_init = [40] * len(self._sources.point_source)
             else:
                 src_init = 2.3
-
+                beta_init = 0.05
+                E0_init = 1e5
+                eta_init = 40
             try:
                 F_atmo_range = Parameter.get_parameter("F_atmo").par_range
                 F_atmo_init = np.sum(F_atmo_range) / 2
             except ValueError:
                 F_atmo_init = 0.3 / u.m**2 / u.s
 
+            try:
+                diff_norm = Parameter.get_parameter("diff_norm").value
+                diff_init = diff_norm.to_value(1 / u.GeV / u.m**2 / u.s)
+            except ValueError:
+                diff_init = 2e-13
+
             inits = {
-                "F_diff": 1e-4,
+                "diffuse_norm": diff_init,
                 "F_atmo": F_atmo_init.to_value(1 / (u.m**2 * u.s)),
                 "E": [1e5] * fit.events.N,
                 "L": L_init,
                 "src_index": src_init,
+                "Nex_per_ps": [5] * len(fit.sources.point_source),
+                "N_bg": fit.events.N - 5,
+                "E0_src": E0_init,
+                "beta_index": beta_init,
+                "eta": eta_init,
+                "pressure_ratio": P_init,
             }
             fit.run(
                 seed=s,
@@ -784,13 +1050,15 @@ class ModelCheck:
             outputs["Lambda"].append(lam)
 
             for key in self._default_var_names:
-                outputs[key].append(fit._fit_output.stan_variable(key))
-
+                try:
+                    outputs[key].append(fit._fit_output.stan_variable(key))
+                except ValueError:
+                    pass
             for key in self._diagnostic_names:
                 outputs[key].append(fit._fit_output.method_variables()[key])
 
             if save_events:
-                outputs["events"].append(events)
+                outputs["events"].append(new_events)
                 outputs["association_prob"].append(
                     np.array(fit._get_event_classifications())
                 )
@@ -810,8 +1078,12 @@ class ModelCheck:
                 "_luminosity",
                 "src_index",
                 "_src_index",
-                "E[",
-                "Esrc[",
+                "beta_index",
+                "_beta_index",
+                "E0_src",
+                "_E0_src",
+                "E",
+                "Esrc",
                 "F_atmo",
                 "F_diff",
                 "diff_index",
@@ -825,17 +1097,25 @@ class ModelCheck:
 
             keys = []
             summary = fit._fit_output.summary()
-            for k, v in summary["N_Eff"].items():
+            for k, v in summary["R_hat"].items():
                 for key in key_stubs:
                     if key in k:
                         keys.append(k)
                         break
 
             R_hat = np.array([summary["R_hat"][k] for k in keys])
-            N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+            if "ESS_bulk" in summary.keys():
+                ESS_bulk = np.array([summary["ESS_bulk"][k] for k in keys])
+                ESS_tail = np.array([summary["ESS_tail"][k] for k in keys])
+                outputs["ESS_bulk"].append(ESS_bulk)
+                outputs["ESS_tail"].append(ESS_tail)
+            if "N_Eff" in summary.keys():
+                N_Eff = np.array([summary["N_Eff"][k] for k in keys])
+                outputs["N_Eff"].append(N_Eff)
             outputs["parameter_names"].append(np.array(keys, dtype="S"))
-            outputs["N_Eff"].append(N_Eff)
             outputs["R_hat"].append(R_hat)
+
+            logging.disable(logging.NOTSET)
 
         return outputs
 

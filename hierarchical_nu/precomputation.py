@@ -6,30 +6,34 @@ to be passed to Stan models.
 from collections import defaultdict
 from itertools import product
 import logging
+from typing import Union
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 import healpy as hp
 import numpy as np
 
-from hierarchical_nu.source.source import (
+from .source.source import (
     Sources,
     PointSource,
     icrs_to_uv,
+    BackgroundSource,
 )
-from hierarchical_nu.source.atmospheric_flux import AtmosphericNuMuFlux
-from hierarchical_nu.source.parameter import ParScale, Parameter
-from hierarchical_nu.backend.stan_generator import StanGenerator
-from hierarchical_nu.detector.detector_model import (
+from .source.atmospheric_flux import AtmosphericNuMuFlux
+from .source.flux_model import PGammaSpectrum
+from .source.parameter import ParScale, Parameter
+from .backend.stan_generator import StanGenerator
+from .detector.detector_model import (
     LogNormEnergyResolution,
     GridInterpolationEnergyResolution,
 )
-from hierarchical_nu.utils.roi import CircularROI, ROIList
-from hierarchical_nu.detector.icecube import (
+from .detector.r2021_bg_llh import R2021BackgroundLLH
+from .utils.roi import CircularROI, ROIList
+from .detector.icecube import (
     EventType,
-    Refrigerator,
     CAS,
 )
+from .utils.fitting_tools import TopDownSegmentation
 
 from tqdm.autonotebook import tqdm
 
@@ -49,6 +53,8 @@ class ExposureIntegral:
         sources: Sources,
         detector_model: EventType,
         n_grid_points: int = 50,
+        show_progress: bool = False,
+        bg_llh: Union[None, R2021BackgroundLLH] = None,
     ):
         """
         Handles calculation of the exposure integral.
@@ -57,11 +63,16 @@ class ExposureIntegral:
 
         :param sources: An instance of Sources.
         :param detector_model: An instance of EventType from the Refrigerator.
+        :param n_grid_points: number of grid points for each parameter at which exposure is calculated.
+        :param show_progress: set to True if progress bars should be displayed.
+        :param bg_llh: If data-driven background likelihood is to be used, pass according instance of `R2021BackgroundLLH`, else `None`
         """
 
+        self._show_progress = show_progress
         self._detector_model = detector_model
         self._sources = sources
         self._n_grid_points = n_grid_points
+        self._bg_llh = bg_llh
 
         # Use Emin_det if available, otherwise use per event_type
         try:
@@ -88,24 +99,45 @@ class ExposureIntegral:
         self._original_param_values = defaultdict(list)
 
         for source in sources:
+            c = 0
             for par in source.parameters.values():
                 if not par.fixed:
                     self._parameter_source_map[par.name].append(source)
                     self._source_parameter_map[source].append(par.name)
                     self._original_param_values[par.name].append(par.value)
+                    c += 1
+                if c > 2:
+                    raise NotImplementedError(
+                        "Max two free parameters per source are currently implemented."
+                    )
 
         self._par_grids = {}
+        self._par_units = {}
         for par_name in list(self._parameter_source_map.keys()):
             par = Parameter.get_parameter(par_name)
-            if not np.all(np.isfinite(par.par_range)):
-                raise ValueError("Parameter {} has non-finite bounds".format(par.name))
+            try:
+                units = par.value.unit
+                self._par_units[par_name] = units
+                pmin, pmax = par.par_range
+                par_range = (pmin.to_value(units), pmax.to_value(units))
+                if not np.all(np.isfinite(par_range)):
+                    raise ValueError(
+                        "Parameter {} has non-finite bounds".format(par.name)
+                    )
+            except:
+                par_range = par.par_range
+                if not np.all(np.isfinite(par_range)):
+                    raise ValueError(
+                        "Parameter {} has non-finite bounds".format(par.name)
+                    )
+
             if par.scale == ParScale.lin:
-                grid = np.linspace(*par.par_range, num=self._n_grid_points)
+                grid = np.linspace(*par_range, num=self._n_grid_points)
             elif par.scale == ParScale.log:
-                grid = np.logspace(*np.log10(par.par_range), num=self._n_grid_points)
+                grid = np.logspace(*np.log10(par_range), num=self._n_grid_points)
             elif par.scale == ParScale.cos:
                 grid = np.arccos(
-                    np.linspace(*np.cos(par.par_range), num=self._n_grid_points)
+                    np.linspace(*np.cos(par_range), num=self._n_grid_points)
                 )
             else:
                 raise NotImplementedError(
@@ -174,7 +206,7 @@ class ExposureIntegral:
                 aeff_vals = self.effective_area.eff_area_spline(
                     np.vstack(
                         (np.log10(E_c.to_value(u.GeV)), np.full(E_c.shape, cosz))
-                    ).T,
+                    ).T
                 ) << (u.m**2)
 
             if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
@@ -261,50 +293,73 @@ class ExposureIntegral:
             log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
             E_grid, dec_grid = np.meshgrid(E_c, dec_c)
 
-            # Evaluate effective area and flux
-            aeff_vals = (
-                self._effective_area.eff_area_spline(
-                    np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
-                ).reshape(log_E_grid.shape)
-                * u.m**2
-            )
-
-            flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
-
-            if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
-                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    E_grid.flatten(),
-                    self._min_det_energy,
-                    dec_grid.flatten(),
-                    use_interpolation=True,
-                ).reshape(E_grid.shape)
-
-            elif isinstance(self.energy_resolution, LogNormEnergyResolution):
-                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    E_grid.flatten(),
-                    self._min_det_energy,
-                    dec_grid.flatten(),
-                    use_lognorm=True,
-                ).reshape(E_grid.shape)
+            if self._bg_llh is not None:
+                # for each slice in sin(dec) calculate integral over energy
+                output = 0
+                llh = self._bg_llh
+                for d, c in zip(dec_c, counts):
+                    # For each declination
+                    #       digitize sin(dec)
+                    #       calculate pdf integral over detected energy range, i.e. Emin_det to infinity
+                    #       multiply with pdf(sin(dec)) -> integral calculated
+                    output += (
+                        llh.energy_integral(
+                            np.sin(d.to_value(u.rad)),
+                            np.log10(self._min_det_energy.to_value(u.GeV)),
+                            12.0,  # just some arbitrary but high enough value
+                        )
+                        * llh.prob_omega(np.sin(d.to_value(u.rad)))
+                        * c
+                        * d_omega.to_value(u.sr)
+                    )
 
             else:
-                p_Edet = self.energy_resolution.prob_Edet_above_threshold(
-                    E_c, self._min_det_energy
+                # Evaluate effective area and flux
+                aeff_vals = (
+                    self._effective_area.eff_area_spline(
+                        np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
+                    ).reshape(log_E_grid.shape)
+                    * u.m**2
                 )
-                p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
 
-            # Inflate d_omega if needed
-            weights = np.repeat(np.expand_dims(counts, 1), p_Edet.shape[1], axis=1)
-            p_Edet = np.nan_to_num(p_Edet)
+                flux_vals = source.flux_model(E_grid, dec_grid, 0 * u.rad)
 
-            output = np.sum(
-                np.sum(
-                    aeff_vals * flux_vals * p_Edet * d_omega * weights,
+                if isinstance(
+                    self.energy_resolution, GridInterpolationEnergyResolution
+                ):
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        E_grid.flatten(),
+                        self._min_det_energy,
+                        dec_grid.flatten(),
+                        use_interpolation=True,
+                    ).reshape(E_grid.shape)
+
+                elif isinstance(self.energy_resolution, LogNormEnergyResolution):
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        E_grid.flatten(),
+                        self._min_det_energy,
+                        dec_grid.flatten(),
+                        use_lognorm=True,
+                    ).reshape(E_grid.shape)
+
+                else:
+                    p_Edet = self.energy_resolution.prob_Edet_above_threshold(
+                        E_c, self._min_det_energy
+                    )
+                    p_Edet = np.repeat(np.expand_dims(p_Edet, 0), d_omega.size, axis=0)
+
+                # Inflate d_omega if needed
+                weights = np.repeat(np.expand_dims(counts, 1), p_Edet.shape[1], axis=1)
+                p_Edet = np.nan_to_num(p_Edet)
+
+                output = np.sum(
+                    np.sum(
+                        aeff_vals * flux_vals * p_Edet * d_omega * weights,
+                        axis=0,
+                    )
+                    * d_E,
                     axis=0,
                 )
-                * d_E,
-                axis=0,
-            )
 
         return output
 
@@ -317,7 +372,7 @@ class ExposureIntegral:
 
         self._integral_fixed_vals = []
 
-        with tqdm(total=self._sources.N) as pbar:
+        with tqdm(total=self._sources.N, disable=not self._show_progress) as pbar:
             for k, source in enumerate(self._sources.sources):
                 pbar.set_description(f"Source {k}")
 
@@ -327,6 +382,8 @@ class ExposureIntegral:
                         and self._detector_model == CAS
                     ):
                         self._integral_fixed_vals.append(0.0 * u.m**2)
+                    elif self._bg_llh is not None:
+                        self._integral_fixed_vals.append(self.calculate_rate(source))
                     else:
                         self._integral_fixed_vals.append(
                             self.calculate_rate(source)
@@ -343,14 +400,20 @@ class ExposureIntegral:
                     [self._n_grid_points] * len(this_par_grids)
                 ) << (u.m**2)
 
-                with tqdm(total=integral_grids_tmp.size) as pbar_parameter:
+                with tqdm(
+                    total=integral_grids_tmp.size, disable=not self._show_progress
+                ) as pbar_parameter:
                     for i, grid_points in enumerate(product(*this_par_grids)):
                         pbar_parameter.set_description(f"Parameter value {i}")
                         indices = np.unravel_index(i, integral_grids_tmp.shape)
 
                         for par_name, par_value in zip(this_free_pars, grid_points):
                             par = Parameter.get_parameter(par_name)
-                            par.value = par_value
+                            try:
+                                units = self._par_units[par_name]
+                            except KeyError:
+                                units = 1.0
+                            par.value = par_value * units
 
                         # To make units compatible with Stan model parametrisation
                         integral_grids_tmp[indices] += self.calculate_rate(
@@ -392,13 +455,16 @@ class ExposureIntegral:
 
                 self.pdet_grid.append(aeff_slice)
 
-    def _compute_c_values(self):
+    def _compute_c_values(self, inplace: bool = False):
         """
         For the rejection sampling implemented in the simulation, we need
         to find max(f/g) for the relevant energy range at different cosz,
         where:
         f, target function: aeff_factor * src_spectrum
         g, envelope function: bbpl envelope used for sampling
+
+        :param inplace: set to True if only source components with variable spectral shape
+            shall be re-calculated
         """
 
         cosz_bin_cens = (
@@ -406,13 +472,11 @@ class ExposureIntegral:
             + np.diff(self.effective_area.cosz_bin_edges) / 2
         )
 
-        Eth = self.effective_area.rs_bbpl_params["threshold_energy"]
-        gamma1 = self.effective_area.rs_bbpl_params["gamma1"]
-        gamma2_scale = self.effective_area.rs_bbpl_params["gamma2_scale"]
+        envelope_container = []
 
-        c_values = []
-
-        for source in self._sources.sources:
+        for c, source in enumerate(self._sources.sources):
+            if isinstance(source, BackgroundSource):
+                continue
             # Energy bounds in flux model are already redshift-corrected
             # and live in the detector frame
 
@@ -423,71 +487,56 @@ class ExposureIntegral:
                 Emin = source.flux_model._lower_energy.to_value(u.GeV)
                 Emax = source.flux_model._upper_energy.to_value(u.GeV)
 
-            E_range = 10 ** np.linspace(np.log10(Emin), np.log10(Emax))
-
+            E_range = np.geomspace(Emin, Emax, 1_000)
             if isinstance(source, PointSource):
                 # Point source has one declination/cosz,
                 # no loop over cosz necessary
                 cosz = source.cosz
-                idx_cosz = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
-                aeff_values = []
-                for E in E_range:
-                    idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
-                    if (
-                        np.isclose(E, Emax)
-                        and idx_E == self.effective_area.tE_bin_edges.size - 1
-                    ):
-                        idx_E -= 1
-                    aeff_values.append(self.effective_area.eff_area[idx_E][idx_cosz])
+                aeff_values = self.effective_area.eff_area_spline(
+                    np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T
+                )
                 f_values = (
                     source.flux_model.spectral_shape.pdf(
                         E_range * u.GeV, Emin * u.GeV, Emax * u.GeV, apply_lim=False
                     )
                     * aeff_values
                 )
-                gamma2 = (
-                    gamma2_scale
-                    - source.flux_model.spectral_shape.parameters["index"].value
-                )
+
+                log_break = np.log10(E_range[f_values.argmax()]) + 1.6
+                segments = TopDownSegmentation(f_values, E_range, log_break=log_break)
+                segments.generate_segments()
+                if inplace:
+                    self._envelope_container[c] = segments
+                else:
+                    envelope_container.append(segments)
 
             else:
-                # For diffuse sources, we need to find the largest c value
-                # that is then used at all declinations.
-                # In the case of the atmospheric background,
-                # the distribution is bivariate. We are not allowed to
-                # pick c-values for each declination separetely
-                # because then we assume independent distributions
-                # at each declination, all "relative information"
-                # is then lost.
+                # For diffuse sources, we need to find an envelope envelopping
+                # the maximum values along energy, marginalising over the declination.
+                # Calculate f-values on an energy x cosz grid, then take maximum
+                # and create the envelope function.
+
+                if inplace and isinstance(source.flux_model, AtmosphericNuMuFlux):
+                    continue
                 f_values_all = []
 
                 for cosz in cosz_bin_cens:
-                    idx_cosz = np.digitize(cosz, self.effective_area.cosz_bin_edges) - 1
-                    aeff_values = []
-                    for E in E_range:
-                        idx_E = np.digitize(E, self.effective_area.tE_bin_edges) - 1
-                        if (
-                            np.isclose(E, Emax)
-                            and idx_E == self.effective_area.tE_bin_edges.size - 1
-                        ):
-                            idx_E -= 1
-                        aeff_values.append(
-                            self.effective_area.eff_area[idx_E][idx_cosz]
-                        )
+                    aeff_values = self.effective_area.eff_area_spline(
+                        np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T,
+                    )
 
                     dec = np.arcsin(-cosz)  # Only for IceCube
 
                     if isinstance(source.flux_model, AtmosphericNuMuFlux):
-                        atmo_flux_integ_val = source.flux_model.total_flux_int.to(
+                        atmo_flux_integ_val = source.flux_model.total_flux_int.to_value(
                             1 / (u.m**2 * u.s)
-                        ).value
+                        )
                         f_values = (
                             source.flux_model(
-                                E_range * u.GeV, dec * u.rad, 0 * u.rad
+                                E_range.copy() * u.GeV, dec * u.rad, 0 * u.rad
                             ).to_value(1 / (u.GeV * u.s * u.sr * u.m**2))
                             / atmo_flux_integ_val
                         ) * aeff_values
-                        gamma2 = gamma2_scale - 3.6
                     else:
                         f_values = (
                             source.flux_model.spectral_shape.pdf(
@@ -498,57 +547,21 @@ class ExposureIntegral:
                             )
                             * aeff_values
                         )
-                        gamma2 = (
-                            gamma2_scale
-                            - source.flux_model.spectral_shape.parameters["index"].value
-                        )
 
                     f_values_all.append(f_values)
+                # Make array
+                # Take max along energy axis, and use result for creating the envelope
+                f_values = np.array(f_values_all).max(axis=0)
+                log_break = np.log10(E_range[f_values.argmax()]) + 1.6
+                segments = TopDownSegmentation(f_values, E_range, log_break=log_break)
+                segments.generate_segments()
+                if inplace:
+                    self._envelope_container[c] = segments
+                else:
+                    envelope_container.append(segments)
 
-            if Emin < Eth and Emax > Eth:
-                g_values = bbpl_pdf(
-                    E_range,
-                    Emin,
-                    Eth,
-                    Emax,
-                    gamma1,
-                    gamma2,
-                )
-
-            elif Emin < Eth and Emax <= Eth:
-                Eth_tmp = Emin + (Emax - Emin) / 2
-
-                g_values = bbpl_pdf(
-                    E_range,
-                    Emin,
-                    Eth_tmp,
-                    Emax,
-                    gamma1,
-                    gamma1,
-                )
-
-            elif Emin >= Eth and Emax > Eth:
-                Eth_tmp = Emin + (Emax - Emin) / 2
-                g_values = bbpl_pdf(
-                    E_range,
-                    Emin,
-                    Eth_tmp,
-                    Emax,
-                    gamma2,
-                    gamma2,
-                )
-            if isinstance(source, PointSource):
-                # Pick the largest
-                c_values_src = max(f_values / g_values)
-            else:
-                # Pick the larget of the largest, encompassing now all declinations.
-                c_values_src = max(
-                    [max(f_values / g_values) for f_values in f_values_all]
-                )
-
-            c_values.append(c_values_src)
-
-        self.c_values = c_values
+        if not inplace:
+            self._envelope_container = envelope_container
 
     def __call__(self):
         """
@@ -562,6 +575,7 @@ class ExposureIntegral:
         self._compute_c_values()
 
 
+'''
 def bbpl_pdf(x, x0, x1, x2, gamma1, gamma2):
     """
     Bounded broken power law PDF.
@@ -590,3 +604,4 @@ def bbpl_pdf(x, x0, x1, x2, gamma1, gamma2):
     output[mask2] = N * x1 ** (gamma1 - gamma2) * x[mask2] ** gamma2
 
     return output
+'''

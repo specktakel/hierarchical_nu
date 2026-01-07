@@ -178,6 +178,7 @@ class TestR2021:
                     iter_sampling=num_samples,
                     chains=1,
                     seed=random_seed,
+                    fixed_param=True,
                 )
 
                 e_res = np.log10(output.stan_variable("reco_energy"))

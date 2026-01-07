@@ -16,6 +16,9 @@ def test_event_class(output_directory):
     ROIList.clear_registry()
     roi = FullSkyROI()
 
+    Parameter.clear_registry()
+    Emin_det = Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
+
     N_in = 50
     energies_in = np.linspace(1, 10, N_in) * u.TeV
 
@@ -37,7 +40,7 @@ def test_event_class(output_directory):
     )
 
     events_file = output_directory / events_file_name
-    events_in.to_file(events_file)
+    events_in.to_file(events_file, overwrite=True)
     events_out = Events.from_file(events_file)
 
     assert np.all(events_out.energies == energies_in)

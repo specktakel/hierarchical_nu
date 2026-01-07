@@ -5,9 +5,9 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.1
+      jupytext_version: 1.14.4
   kernelspec:
-    display_name: hi_nu
+    display_name: hnu_env
     language: python
     name: python3
 ---
@@ -26,13 +26,14 @@ from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.priors import Priors
-from hierarchical_nu.source.source import Sources, PointSource
+from hierarchical_nu.source.source import Sources, PointSource, DetectorFrame
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
-from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, LuminosityPrior, IndexPrior, FluxPrior
+from hierarchical_nu.priors import Priors, LogNormalPrior, NormalPrior, LuminosityPrior, IndexPrior, FluxPrior, DifferentialFluxPrior
 from hierarchical_nu.utils.roi import CircularROI
 from hierarchical_nu.detector.icecube import IC86_II, IC86_I
+from hierarchical_nu.detector.input import mceq
 from icecube_tools.utils.data import Uptime
 import numpy as np
 import ligo.skymap.plot
@@ -44,17 +45,17 @@ First, we define the source and fit parameters, as already seen in `simulate_and
 # define high-level parameters
 Parameter.clear_registry()
 src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1, 4))
-diff_index = Parameter(2.13, "diff_index", fixed=False, par_range=(1, 4))
-L = Parameter(2E49 * (u.erg / u.s), "luminosity", fixed=True, 
+diff_index = Parameter(2.52, "diff_index", fixed=False, par_range=(1, 4))
+L = Parameter(1e47 * (u.erg / u.s), "luminosity", fixed=True, 
               par_range=(0, 1E60) * (u.erg/u.s))
-diffuse_norm = Parameter(1e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
-                         par_range=(0, np.inf))
+diffuse_norm = Parameter(2.26e-13 /u.GeV/u.m**2/u.s, "diffuse_norm", fixed=True, 
+                         par_range=(1e-14, 1e-11)*(1/u.GeV/u.s/u.m**2))
 z = 0.3365
 Enorm = Parameter(1E5 * u.GeV, "Enorm", fixed=True)
 Emin = Parameter(1E2 * u.GeV, "Emin", fixed=True)
 Emax = Parameter(1E8 * u.GeV, "Emax", fixed=True)
-Emin_src = Parameter(Emin.value * (1 + z), "Emin_src", fixed=True)
-Emax_src = Parameter(Emax.value * (1 + z), "Emax_src", fixed=True)
+Emin_src = Parameter(Emin.value, "Emin_src", fixed=True)
+Emax_src = Parameter(Emax.value, "Emax_src", fixed=True)
 Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
 Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 ```
@@ -70,13 +71,13 @@ dec = np.deg2rad(5.7) * u.rad
 width = np.deg2rad(6) * u.rad
 txs = SkyCoord(ra=ra, dec=dec, frame="icrs")
 point_source = PointSource.make_powerlaw_source(
-    "test", dec, ra, L, src_index, z, Emin_src, Emax_src
+    "test", dec, ra, L, src_index, z, Emin_src, Emax_src, DetectorFrame,
 )
 
 my_sources = Sources()
 my_sources.add(point_source)
 my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff) 
-my_sources.add_atmospheric_component()
+my_sources.add_atmospheric_component(cache_dir=mceq)
 ```
 
 We now need to decide on the time period of observation (start and end times in MJD). The detector lifetime is automatically calculated from the "good time intervals" provided in the data release. Event selection respects the start and end times with which an ROI is instanciated.
@@ -127,21 +128,21 @@ print(sim._get_expected_Nnu(sim._get_sim_inputs()))
 print(sim._expected_Nnu_per_comp)
 ```
 
+For each physical parameter there is a seperate prior class implemented, e.g. for the luminosity a `LuminosityPrior`. We can pass different types of distributions, namely `NormalPrior`, `LogNormalPrior` and for the luminosity only `ParetoPrior` with appropriate $\mu, \sigma$ (or $x_{min}, \alpha$). The priors convert the passed units to the internally used ones. `IndexPriors` do not use units. Fluxes are integrated number fluxes, i.e. dimension is 1 / area / time.
+
 ```python
 priors = Priors()
-priors.diffuse_flux = FluxPrior(LogNormalPrior, mu=my_sources.diffuse.flux_model.total_flux_int, sigma=0.5)
 priors.luminosity = LuminosityPrior(
-    mu=L.value / sim._expected_Nnu_per_comp[0] * 10,   # we expect ~10 events
+    mu=L.value / sim.expected_Nnu_per_comp[0] * 10,   # we expect ~10 events
     sigma=2
 )
-priors.diff_index = IndexPrior(mu=2.52, sigma=0.08)
 priors.src_index = IndexPrior(mu=2.5, sigma=1)
 ```
 
 ```python
 # Copy flux
 atmo_flux_int = my_sources.atmospheric.flux_model.total_flux_int
-Nex = np.sum(sim._expected_Nnu_per_comp[2])
+Nex = np.sum(sim.expected_Nnu_per_comp[2])
 Nex_std = np.sqrt(Nex)
 N = events.N
 N_std = np.sqrt(N)
@@ -156,7 +157,7 @@ priors.atmospheric_flux = FluxPrior(mu=mu, sigma=sigma)
 ```
 
 ```python
-fit = StanFit(my_sources, event_types, events, lifetime, priors, nshards=40)
+fit = StanFit(my_sources, event_types, events, lifetime, nshards=8)
 ```
 
 ```python
@@ -172,14 +173,14 @@ Run the fit with some appropriate initial values. With 40 threads, this will tak
 
 ```python
 fit.run(
-    show_progress=True, inits={"L": 1e48, "src_index": 2.2, "diff_index": 2.2, "F_atmo": 1e-1, "F_diff": 1e-5}
+    show_progress=True, inits={"L": 1e48, "src_index": 2.2, "diff_index": 2.2, "F_atmo": 0.3, "diffuse_norm": 2.2e-13}
 )
 ```
 
 Confirm that there are no problems encountered by the HMC.
 
 ```python
-print(fit._fit_output.diagnose())
+fit.diagnose()
 ```
 
 Display the posterior distributions alongside the inputted prior distributions, where available.
@@ -187,7 +188,8 @@ Display the posterior distributions alongside the inputted prior distributions, 
 Compare the results to those of a likelihood analysis by IceCube: ns=11.87, gamma=2.22
 
 ```python
-fit.plot_trace_and_priors(var_names=fit._def_var_names+["Nex_src", "Nex_diff", "Nex_atmo"])
+fig, ax = fit.plot_trace_and_priors(var_names=fit._def_var_names+["Nex_src", "Nex_diff", "Nex_atmo"])
+fig.tight_layout()
 ```
 
 Marginalising over all posteriors, the association probability of each event with a source component can be extracted. Displayed in the following plots are a spatial and an energetic overview of all events. The blob size is arbitrary. The colorscale encodes the association probability, here to the proposed point source marked by a grey cross in the left plot.
@@ -201,9 +203,5 @@ fit.plot_energy_and_roi()
 Lastly, show the correlations between the parameters.
 
 ```python
-fit.corner_plot()
-```
-
-```python
-
+fit.corner_plot();
 ```

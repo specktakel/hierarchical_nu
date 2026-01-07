@@ -14,7 +14,7 @@ luminosity distribution:
   ParetoDistribution:
     Lmin: 3.0e+46
     alpha: 1
-seed: 1234
+seed: 42
 spatial distribution:
   SFRDistribution:
     a: 0.0

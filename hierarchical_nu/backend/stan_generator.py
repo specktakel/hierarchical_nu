@@ -1,4 +1,5 @@
 """Module for autogenerating Stan code"""
+
 from typing import Iterable, Union, Sequence
 from .code_generator import (
     CodeGenerator,
@@ -10,6 +11,7 @@ from .code_generator import (
 from .stan_code import StanCodeBit
 from .expression import (
     TExpression,
+    TListTExpression,
     TNamedExpression,
     Expression,
     NamedExpression,
@@ -43,6 +45,7 @@ __all__ = [
     "ElseBlockContext",
     "DefinitionContext",
     "ForLoopContext",
+    "DummyContext",
 ]
 
 
@@ -139,6 +142,69 @@ class WhileLoopContext(Contextable, ContextStack):
     def __enter__(self):
         ContextStack.__enter__(self)
         return None
+
+
+class DummyContext(Contextable, ContextStack):
+    def __init__(self) -> None:
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        self._name = ""
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return None
+
+
+class _IndexingHeaderContext(Contextable, ContextStack):
+    def __init__(self) -> None:
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        self._name = ""
+        self._delimiters = ("", "")
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return None
+
+
+class IndexingContext(Contextable, ContextStack):
+
+    def __init__(self, key) -> None:
+
+        self._name = ""
+        self._delimiters = ("", "")
+
+        with _IndexingHeaderContext():
+            if isinstance(key, tuple):
+                stan_code: TListTExpression = ["["]
+                for c, k in enumerate(key, start=-len(key) + 1):
+                    if isinstance(k, slice):
+                        stan_code += [k.start, ":", k.stop]
+                    else:
+                        stan_code += [k]
+                    # If it's not the last key-entry, add a comma
+                    if c != 0:
+                        stan_code += [","]
+                    # Last entry: close bracket
+                    else:
+                        stan_code += ["]"]
+            elif isinstance(key, slice):
+                start = key.start
+                stop = key.stop
+                stan_code: TListTExpression = ["[", start, ":", stop, "]"]
+            else:
+                stan_code: TListTExpression = ["[", key, "]"]
+
+        ContextStack.__init__(self)
+        Contextable.__init__(self)
+
+        self._idx = stan_code
+
+    def __enter__(self):
+        ContextStack.__enter__(self)
+        return self._idx
 
 
 class _IfHeaderContext(Contextable, ContextStack):

@@ -56,6 +56,53 @@ real interpolate(vector x_values, vector y_values, real x) {
   return y_left + dydx * (x - x_left);
 }
 
+real interpolate(array[] real x_values, array[] real y_values, real x) {
+
+  real x_left;
+  real y_left;
+  real x_right;
+  real y_right;
+  real dydx;
+  
+  int Nx = num_elements(x_values);
+  real xmin = x_values[1];
+  real xmax = x_values[Nx];
+  int i = 1;
+
+  if (x > xmax || x < xmin) {
+
+    /*
+    print("Warning, x is outside of interpolation range!");
+    print("Returning edge values.");
+    print("x:", x);
+    print("xmax", xmax);
+    */
+    
+    if(x > xmax) {
+      return y_values[Nx];
+    }
+    else if (x < xmin) {
+      return y_values[1];
+    }
+  }
+    
+  if( x >= x_values[Nx - 1] ) {
+    i = Nx - 1;
+  }
+  else {
+    i = binary_search(x, x_values);
+  }
+
+  x_left = x_values[i];
+  y_left = y_values[i];
+  x_right = x_values[i + 1];
+  y_right = y_values[i + 1];
+  
+  dydx = (y_right - y_left) / (x_right - x_left);
+    
+  return y_left + dydx * (x - x_left);
+}
+
 /**
  *like interpolate, only return eponentiated values.
  */
@@ -179,4 +226,46 @@ real interp2d_reduced(int idx_x, real x, real y, array[] real xp, array[] real y
   real y_vals_high = interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, idx_yp1]), x);
   real val = interpolate_2bins(to_vector(yp[idx_y:idx_yp1]), [y_vals_low, y_vals_high]', y);
   return val;
+}
+real interp2dlog_logy(real x, real y, array[] real xp, array[] real yp, array[,] real fp) {
+  real logy = log(y);
+  int idx_y = binary_search(logy, yp);
+  int idx_yp1 = idx_y + 1;
+  int idx_x = binary_search(x, xp);
+  int idx_xp1 = idx_x + 1;
+  vector[2] x_slice = to_vector(xp[idx_x:idx_xp1]);
+  //safeguard against y values outside the defined range
+  // interpolate will take care of the same issue in x direction
+  if (idx_y == 0) {
+    // return result from lowest slice
+    return interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, 1]), x);
+  }
+  else if (idx_y >= size(yp)) {
+    return interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, size(yp)]), x);
+  }
+  real y_vals_low = interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, idx_y]), x);
+  real y_vals_high = interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, idx_yp1]), x);
+  real val = interpolate_2bins(to_vector(yp[idx_y:idx_yp1]), [y_vals_low, y_vals_high]', logy);
+  return exp(val);
+}
+
+real interp2dlog(real x, real y, array[] real xp, array[] real yp, array[,] real fp) {
+  int idx_y = binary_search(y, yp);
+  int idx_yp1 = idx_y + 1;
+  int idx_x = binary_search(x, xp);
+  int idx_xp1 = idx_x + 1;
+  vector[2] x_slice = to_vector(xp[idx_x:idx_xp1]);
+  //safeguard against y values outside the defined range
+  // interpolate will take care of the same issue in x direction
+  if (idx_y == 0) {
+    // return result from lowest slice
+    return interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, 1]), x);
+  }
+  else if (idx_y >= size(yp)) {
+    return interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, size(yp)]), x);
+  }
+  real y_vals_low = interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, idx_y]), x);
+  real y_vals_high = interpolate_2bins(x_slice, to_vector(fp[idx_x:idx_xp1, idx_yp1]), x);
+  real val = interpolate_2bins(to_vector(yp[idx_y:idx_yp1]), [y_vals_low, y_vals_high]', y);
+  return exp(val);
 }

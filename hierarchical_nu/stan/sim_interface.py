@@ -3,9 +3,9 @@ from collections import OrderedDict
 from astropy import units as u
 
 
-from hierarchical_nu.stan.interface import StanInterface
+from .interface import StanInterface
 
-from hierarchical_nu.backend.stan_generator import (
+from ..backend.stan_generator import (
     FunctionsContext,
     Include,
     DataContext,
@@ -19,27 +19,18 @@ from hierarchical_nu.backend.stan_generator import (
     FunctionCall,
 )
 
-from hierarchical_nu.backend.variable_definitions import (
+from ..backend.variable_definitions import (
     ForwardVariableDef,
     ForwardArrayDef,
     ForwardVectorDef,
     InstantVariableDef,
 )
 
-from hierarchical_nu.backend.expression import StringExpression
-from hierarchical_nu.backend.parameterizations import DistributionMode
-
-# from hierarchical_nu.events import NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II
-
-from hierarchical_nu.detector.icecube import EventType
-
-from hierarchical_nu.source.source import Sources
-from hierarchical_nu.source.flux_model import (
-    PowerLawSpectrum,
-    TwiceBrokenPowerLaw,
-)
-
-from hierarchical_nu.utils.roi import ROI, CircularROI, ROIList
+from ..backend.expression import StringExpression
+from ..backend.parameterizations import DistributionMode
+from ..detector.icecube import EventType
+from ..source.source import Sources, DetectorFrame
+from ..utils.roi import CircularROI, ROIList
 
 
 class StanSimInterface(StanInterface):
@@ -72,7 +63,7 @@ class StanSimInterface(StanInterface):
         atmospheric flux
         :param includes: List of names of stan files to include into the
         functions block of the generated file
-        :param N: dict with keys "tracks" and/or "cascades". Value needs to be a list of length `len(sources)`
+        :param force_N: True if either asimov option or fixed number of events is used.
         """
 
         super().__init__(
@@ -96,9 +87,7 @@ class StanSimInterface(StanInterface):
 
         for et in self._event_types:
             # Include the PDF mode of the detector model
-            dm = et.model(
-                DistributionMode.RNG
-            )
+            dm = et.model(DistributionMode.RNG)
 
             if dm.RNG_FILENAME not in self._includes:
                 self._includes.append(dm.RNG_FILENAME)
@@ -125,13 +114,25 @@ class StanSimInterface(StanInterface):
             # If we have point sources, include the shape of their PDF
             # and how to convert from energy to number flux
             if self.sources.point_source:
-                self._src_spectrum_lpdf = self._ps_spectrum.make_stan_lpdf_func(
-                    "src_spectrum_logpdf"
-                )
+                if self._logparabola or self._pgamma:
+                    self._ps_spectrum.make_stan_utility_func(False, False, False)
+                if self._seyfert:
+                    self._src_spectrum_lpdf, self._src_flux_table, self._flux_conv = (
+                        self._sources.make_seyfert_functions()
+                    )
+                else:
+                    self._src_spectrum_lpdf = (
+                        # Use a different function here
+                        # because for the twicebroken powerlaw we
+                        # do not want to sample the steep flanks
+                        self._ps_spectrum.make_stan_sampling_lpdf_func(
+                            "src_spectrum_logpdf",
+                        )
+                    )
 
-                self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
-                    "flux_conv"
-                )
+                    self._flux_conv = self._ps_spectrum.make_stan_flux_conv_func(
+                        "flux_conv", False, False, False
+                    )
 
             # If we have diffuse sources, include the shape of their PDF
             if self.sources.diffuse:
@@ -171,99 +172,83 @@ class StanSimInterface(StanInterface):
             else:
                 Ns_string = "Ns"
 
-            if self.sources.diffuse:
-                Ns_string_int_grid = "Ns+1"
-            else:
-                Ns_string_int_grid = "Ns"
+            if self.sources.point_source:
+                if not self._seyfert:
+                    self._L = ForwardVariableDef("L", "vector[Ns]")
+                    self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
+                self._Emin_src = ForwardVariableDef("Emin_src", "vector[Ns]")
+                self._Emax_src = ForwardVariableDef("Emax_src", "vector[Ns]")
+                if self._logparabola:
+                    self._beta_index = ForwardVariableDef("beta_index", "vector[Ns]")
+                if self._logparabola or self._pgamma:
+                    self._E0_src = ForwardVariableDef("E0_src", "vector[Ns]")
+                if self._seyfert:
+                    self._P = ForwardVariableDef("pressure_ratio", "vector[Ns]")
+                    self._eta = ForwardVariableDef("eta", "vector[Ns]")
 
             # True directions of point sources as a unit vector
             self._varpi = ForwardArrayDef("varpi", "unit_vector[3]", self._Ns_str)
 
             # Distance of sources in Mpc
-            self._D = ForwardVariableDef("D", "vector[Ns]")
-
-            # For diffuse and point sources, we have an interpolation grid
-            # for the integral of expected number of events to pass
-            if self.sources.diffuse or self.sources.point_source:
-                self._Ngrid = ForwardVariableDef("Ngrid", "int")
+            if self.sources.point_source:
+                self._D = ForwardVariableDef("D", "vector[Ns]")
 
             # Diffuse sources have a redshift (default z=0) a spectral index,
             # and a grid over this index for the interpolation mentioned above
             if self.sources.diffuse:
-                self._z = ForwardVariableDef("z", "vector[Ns+1]")
                 self._diff_index = ForwardVariableDef("diff_index", "real")
-                self._diff_index_grid = ForwardVariableDef(
-                    "diff_index_grid", "vector[Ngrid]"
-                )
-
+                # Energy range considered for diffuse astrophysical sources, defined at redshift z of shell
+                self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
+                self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
+                self._F_diff = ForwardVariableDef("F_diff", "real")
+                self._z = ForwardVariableDef("z", "vector[Ns+1]")
             else:
                 self._z = ForwardVariableDef("z", "vector[Ns]")
-
-            # Point sources can have shared/individual spectral indices, and
-            # a grid over the spectral index is also passed, as for diffuse sources.
-            if self.sources.point_source:
-                if self._shared_src_index:
-                    self._src_index = ForwardVariableDef("src_index", "real")
-                else:
-                    self._src_index = ForwardVariableDef("src_index", "vector[Ns]")
-
-                self._src_index_grid = ForwardVariableDef(
-                    "src_index_grid", "vector[Ngrid]"
-                )
-
-            # The energy range is specified at the source
-            self._Emin_src = ForwardVariableDef("Emin_src", "real")
-            self._Emax_src = ForwardVariableDef("Emax_src", "real")
 
             # Energy range that the detector should consider
             # Is influenced by parameterisation of energy resolution
             self._Emin = ForwardVariableDef("Emin", "real")
             self._Emax = ForwardVariableDef("Emax", "real")
 
-            # Energy range considered for diffuse astrophysical sources, defined at redshift z of shell
-            self._Emin_diff = ForwardVariableDef("Emin_diff", "real")
-            self._Emax_diff = ForwardVariableDef("Emax_diff", "real")
-
             # For tracks, we specify Emin_det, and several parameters for the
             # rejection sampling, denoted by rs_...
             # Separate interpolation grids are also provided for all event types
 
             self._Emin_det = ForwardArrayDef("Emin_det", "real", ["[", self._Net, "]"])
-            self._rs_bbpl_Eth = ForwardArrayDef(
-                "rs_bbpl_Eth", "real", ["[", self._Net, "]"]
-            )
-            self._rs_bbpl_gamma1 = ForwardArrayDef(
-                "rs_bbpl_gamma1", "real", ["[", self._Net, "]"]
-            )
-            self._rs_bbpl_gamma2_scale = ForwardArrayDef(
-                "rs_bbpl_gamma2_scale", "real", ["[", self._Net, "]"]
-            )
-            # entry for each component
-            self._rs_cvals = ForwardArrayDef(
-                "rs_cvals", "real", ["[", self._Net, ",", Ns_string, "]"]
-            )
 
-            self._integral_grid = ForwardArrayDef(
-                "integral_grid",
-                "vector[Ngrid]",
-                ["[", self._Net, ",", Ns_string_int_grid, "]"],
+            self._rs_N = ForwardArrayDef(
+                "rs_N", "int", ["[", self._Net, ", ", Ns_string, "]"]
             )
-
+            self._rs_N_max = ForwardVariableDef("rs_N_max", "int")
+            self._rs_slopes = ForwardArrayDef(
+                "rs_slopes",
+                "real",
+                ["[", self._Net, ", ", Ns_string, ", ", self._rs_N_max, "]"],
+            )
+            self._rs_breaks = ForwardArrayDef(
+                "rs_breaks",
+                "real",
+                ["[", self._Net, ", ", Ns_string, ", rs_N_max+1]"],
+            )
+            self._rs_weights = ForwardArrayDef(
+                "rs_weights",
+                "vector[rs_N_max]",
+                ["[", self._Net, ", ", Ns_string, "]"],
+            )
+            self._rs_norms = ForwardArrayDef(
+                "rs_norms",
+                "real",
+                ["[", self._Net, ", ", Ns_string, ", ", self._rs_N_max, "]"],
+            )
             if self._force_N:
                 self._forced_N = ForwardArrayDef(
                     "forced_N", "int", ["[", self._Net, ",", Ns_string, "]"]
                 )
-
-            # We define the necessary source input parameters depending on
-            # what kind of sources we have
-            if self.sources.point_source:
-                if self._shared_luminosity:
-                    self._L = ForwardVariableDef("L", "real")
-                else:
-                    self._L = ForwardVariableDef("L", "vector[Ns]")
-
-            if self.sources.diffuse:
-                self._F_diff = ForwardVariableDef("F_diff", "real")
+            # Get number of expected events per detector model and source component from python
+            # rids us of all the interpolation needed here (done twice, first in python...)
+            self._Nex_et = ForwardArrayDef(
+                "Nex_et", "real", ["[", self._Net, ",", Ns_string, "]"]
+            )
 
             if self.sources.atmospheric:
                 self._F_atmo = ForwardVariableDef("F_atmo", "real")
@@ -329,19 +314,16 @@ class StanSimInterface(StanInterface):
             for et in self._event_types:
                 self._et_stan[idx] << et.S
                 idx += 1
+            if not self._force_N:
+                # Relative exposure weights of sources
+                self._w_exposure = ForwardArrayDef(
+                    "w_exposure", "simplex" + N_tot, ["[", self._Net, "]"]
+                )
 
-            # Relative exposure weights of sources for tracks
-            self._w_exposure = ForwardArrayDef(
-                "w_exposure", "simplex" + N_tot, ["[", self._Net, "]"]
-            )
-
-            # Exposure of sources for tracks
-            self._eps = ForwardArrayDef("eps", "vector" + N_tot, ["[", self._Net, "]"])
-
-            # Expected number of events for tracks
+            # Expected number of events
             self._Nex = ForwardArrayDef("Nex", "real", ["[", self._Net, "]"])
 
-            # Sampled number of events for tracks
+            # Sampled number of events
             self._N_comp = ForwardArrayDef("N_comp", "int", ["[", self._Net, "]"])
 
             # Total flux
@@ -362,7 +344,7 @@ class StanSimInterface(StanInterface):
                 self._Nex_src_comp = ForwardArrayDef(
                     "Nex_src_comp", "real", ["[", self._Net, "]"]
                 )
-                self._Nex_src = ForwardVariableDef("Nex_src", "real")
+            self._Nex_src = InstantVariableDef("Nex_src", "real", [0])
             if self.sources.diffuse:
                 self._Nex_diff_comp = ForwardArrayDef(
                     "Nex_diff_comp", "real", ["[", self._Net, "]"]
@@ -378,47 +360,117 @@ class StanSimInterface(StanInterface):
             self._N = ForwardVariableDef("N", "int")
 
             self._F_src << 0.0
-            with ForLoopContext(1, self._Net_stan, "i") as i:
-                self._Nex_src_comp[i] << 0.0
-            self._Nex_src << 0.0
 
             if self.sources.point_source:
                 with ForLoopContext(1, self._Ns, "k") as k:
-                    if self._shared_luminosity:
-                        L_ref = self._L
+                    if self._seyfert:
+                        if len(self.sources.point_source) == 1:
+                            self._F[k] << self._P[k] * self._src_flux_table[0](
+                                self._eta[k]
+                            )
+                        else:
+                            for j in range(1, len(self.sources.point_source) + 1):
+                                if j == 1:
+                                    context = IfBlockContext
+                                else:
+                                    context == ElseIfBlockContext
+                                with context([k, " == ", j]):
+                                    self._F[k] << self._P[k] * self._src_flux_table[
+                                        j - 1
+                                    ](self._eta[k])
                     else:
-                        L_ref = self._L[k]
+                        self._F[k] << StringExpression(
+                            [
+                                self._L[k],
+                                "/ (4 * pi() * pow(",
+                                self._D[k],
+                                " * ",
+                                3.086e22,
+                                ", 2))",
+                            ]
+                        )
 
-                    if self._shared_src_index:
-                        src_index_ref = self._src_index
+                    if self._logparabola:
+                        x_r = StringExpression(
+                            [
+                                "{",
+                                self._src_index[k],
+                                ",",
+                                self._beta_index[k],
+                                ",",
+                                self._E0_src[k],
+                                ",",
+                                self._Emin_src[k],
+                                ",",
+                                self._Emax_src[k],
+                                "}",
+                            ]
+                        )
+                    elif self._pgamma:
+                        x_r = StringExpression(
+                            [
+                                "{",
+                                self._E0_src[k],
+                                ",",
+                                self._Emin_src[k],
+                                ",",
+                                self._Emax_src[k],
+                                "}",
+                            ]
+                        )
+                    if self._logparabola or self._pgamma:
+                        theta = StringExpression(["{1.}"])
+                        x_i = StringExpression(
+                            [
+                                "{",
+                                0,
+                                "}",
+                            ]
+                        )
+                        StringExpression(
+                            [
+                                self._F[k],
+                                "*=",
+                                self._flux_conv(
+                                    theta,
+                                    x_r,
+                                    x_i,
+                                ),
+                            ]
+                        )
+                    elif self._seyfert:
+                        if len(self.sources.point_source) == 1:
+                            StringExpression(
+                                [self._F[k], "*=", self._flux_conv[0](self._eta[k])]
+                            )
+                        else:
+                            for j in range(1, len(self.sources.point_source) + 1):
+                                if j == 1:
+                                    context = IfBlockContext
+                                else:
+                                    context = ElseIfBlockContext
+                                with context([k, " == ", j]):
+                                    StringExpression(
+                                        [
+                                            self._F[k],
+                                            "*=",
+                                            self._flux_conv[j - 1](self._eta[k]),
+                                        ]
+                                    )
+
                     else:
-                        src_index_ref = self._src_index[k]
 
-                    # Calculate energy flux from L and D
-                    self._F[k] << StringExpression(
-                        [
-                            L_ref,
-                            "/ (4 * pi() * pow(",
-                            self._D[k],
-                            " * ",
-                            3.086e22,
-                            ", 2))",
-                        ]
-                    )
-
-                    # Convert energy flux to number flux based on spectral
-                    # shape and energy bounds
-                    StringExpression(
-                        [
-                            self._F[k],
-                            "*=",
-                            self._flux_conv(
-                                src_index_ref,
-                                self._Emin_src / (1 + self._z[k]),
-                                self._Emax_src / (1 + self._z[k]),
-                            ),
-                        ]
-                    )
+                        StringExpression(
+                            [
+                                self._F[k],
+                                "*=",
+                                self._flux_conv(
+                                    self._src_index[k],
+                                    self._Emin_src[k],
+                                    self._Emax_src[k],
+                                ),
+                            ]
+                        )
 
                     # Sum point source flux
                     StringExpression([self._F_src, " += ", self._F[k]])
@@ -432,102 +484,30 @@ class StanSimInterface(StanInterface):
             if self.sources.atmospheric and self.sources.diffuse:
                 StringExpression("F[Ns+2]") << self._F_atmo
 
-            # For each source, calculate the exposure for different
-            # event types
-            if self.sources.point_source:
-                with ForLoopContext(1, self._Ns, "k") as k:
-                    if self._shared_src_index:
-                        src_index_ref = self._src_index
-                    else:
-                        src_index_ref = self._src_index[k]
-
-                    with ForLoopContext(1, self._Net_stan, "i") as i:
-                        (
-                            self._eps[i, k]
-                            << FunctionCall(
-                                [
-                                    self._src_index_grid,
-                                    self._integral_grid[i, k],
-                                    src_index_ref,
-                                ],
-                                "interpolate_log_y",
-                            )
-                            * self._T[i]
-                        )
-
-                        StringExpression(
-                            [self._Nex_src_comp[i], "+=", self._F[k] * self._eps[i, k]]
-                        )
-
             # Calculate the exposure for diffuse/atmospheric sources
             # For cascades, we assume no atmo component
-            if self.sources.diffuse and self.sources.atmospheric:
-                with ForLoopContext(1, self._Net_stan, "i") as i:
-                    (
-                        self._eps[i, "Ns+1"]
-                        << FunctionCall(
-                            [
-                                self._diff_index_grid,
-                                self._integral_grid[i, "Ns + 1"],
-                                self._diff_index,
-                            ],
-                            "interpolate_log_y",
-                        )
-                        * self._T[i]
-                    )
-
-                    (
-                        self._Nex_diff_comp[i]
-                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
-                    )
-
-                    # no interpolation needed for atmo as spectral shape is fixed
-                    self._eps[i, "Ns + 2"] << self._atmo_integ_val[i] * self._T[i]
-
-                    (
-                        self._Nex_atmo_comp[i]
-                        << self._F["Ns + 2"] * self._eps[i, "Ns + 2"]
-                    )
-
-            elif self.sources.diffuse:
-                with ForLoopContext(1, self._Net_stan, "i") as i:
-                    (
-                        self._eps[i, "Ns + 1"]
-                        << FunctionCall(
-                            [
-                                self._diff_index_grid,
-                                self._integral_grid[i, "Ns + 1"],
-                                self._diff_index,
-                            ],
-                            "interpolate_log_y",
-                        )
-                        * self._T[i]
-                    )
-
-                    (
-                        self._Nex_diff_comp[i]
-                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
-                    )
-
-            elif self.sources.atmospheric:
-                with ForLoopContext(1, self._Net_stan, "i") as i:
-                    self._eps[i, "Ns + 1"] << self._atmo_integ_val[i] * self._T[i]
-
-                    (
-                        self._Nex_atmo_comp[i]
-                        << self._F["Ns + 1"] * self._eps[i, "Ns + 1"]
-                    )
-
-            # Get the relative exposure weights of all sources
-            # This will be used to sample the labels
-            # Also sample the number of events
-            # if "tracks" in self._event_types:
 
             with ForLoopContext(1, self._Net_stan, "i") as i:
-                self._Nex[i] << FunctionCall([self._F, self._eps[i]], "get_Nex")
-                self._w_exposure[i] << FunctionCall(
-                    [self._F, self._eps[i]], "get_exposure_weights"
-                )
+                if not self._force_N:
+                    if self.sources.point_source:
+                        self._Nex_src_comp[i] << FunctionCall(
+                            [self._Nex_et[i, 1 : self._Ns]], "sum"
+                        )
+                    if self.sources.diffuse:
+                        self._Nex_diff_comp[i] << self._Nex_et[i, "Ns+1"]
+                    if self.sources.atmospheric and not self.sources.diffuse:
+                        self._Nex_atmo_comp[i] << self._Nex_et[i, "Ns+1"]
+                    elif self.sources.atmospheric:
+                        self._Nex_atmo_comp[i] << self._Nex_et[i, "Ns+2"]
+
+                    # Get the relative exposure weights of all sources
+                    # This will be used to sample the labels
+                    # Also sample the number of events
+
+                    self._Nex[i] << FunctionCall([self._Nex_et[i]], "sum")
+                    self._w_exposure[i] << FunctionCall(
+                        [self._Nex_et[i]], "get_exposure_weights_from_Nex_et"
+                    )
 
                 # If we passed the `force_N` keyword we ignore the exposure weighting
                 # and sample a fixed amount of events
@@ -542,7 +522,10 @@ class StanSimInterface(StanInterface):
                         ["poisson_rng(", self._Nex[i], ")"]
                     )
 
-            self._Nex_src << StringExpression(["sum(", self._Nex_src_comp, ")"])
+            if self.sources.point_source:
+                self._Nex_src << StringExpression(["sum(", self._Nex_src_comp, ")"])
+            else:
+                self._Nex_src << StringExpression(["0"])
             if self.sources.diffuse:
                 self._Nex_diff << StringExpression(["sum(", self._Nex_diff_comp, ")"])
             if self.sources.atmospheric:
@@ -587,6 +570,25 @@ class StanSimInterface(StanInterface):
         Write the generated quantities section of the Stan file.
         """
 
+        if self.sources.atmospheric and self.sources.diffuse:
+            Ns_string = "Ns+2"
+        elif self.sources.diffuse or self.sources.atmospheric:
+            Ns_string = "Ns+1"
+        else:
+            Ns_string = "Ns"
+
+        if self.sources.diffuse and self.sources.atmospheric:
+
+            N_tot = "[Ns+2]"
+
+        elif self.sources.diffuse or self.sources.atmospheric:
+
+            N_tot = "[Ns+1]"
+
+        else:
+
+            N_tot = "[Ns]"
+
         with GeneratedQuantitiesContext():
             self._loop_start = ForwardVariableDef("loop_start", "int")
             self._loop_end = ForwardVariableDef("loop_end", "int")
@@ -600,6 +602,33 @@ class StanSimInterface(StanInterface):
             self._f_arr_astro << self._f_arr_astro_
             self._f_det << self._f_det_
             self._f_det_astro << self._f_det_astro_
+            self._N_comp_ = ForwardArrayDef("N_comp_", "int", ["[", self._Net, "]"])
+            self._N_comp_ << self._N_comp
+            self._N_ = ForwardVariableDef("N_", "int")
+            self._N_ << self._N
+            self._inside = InstantVariableDef("inside", "int", [0])
+
+            if self.sources.point_source:
+                self._Nex_src_comp_ = ForwardArrayDef(
+                    "Nex_src_comp_", "real", ["[", self._Net, "]"]
+                )
+                self._Nex_src_comp_ << self._Nex_src_comp
+            self._Nex_src_ = InstantVariableDef("Nex_src_", "real", [0])
+            self._Nex_src_ << self._Nex_src
+            if self.sources.diffuse:
+                self._Nex_diff_comp_ = ForwardArrayDef(
+                    "Nex_diff_comp_", "real", ["[", self._Net, "]"]
+                )
+                self._Nex_diff_comp_ << self._Nex_diff_comp
+                self._Nex_diff_ = ForwardVariableDef("Nex_diff_", "real")
+                self._Nex_diff_ << self._Nex_diff
+            if self.sources.atmospheric:
+                self._Nex_atmo_comp_ = ForwardArrayDef(
+                    "Nex_atmo_comp_", "real", ["[", self._Net, "]"]
+                )
+                self._Nex_atmo_comp_ << self._Nex_atmo_comp
+                self._Nex_atmo_ = ForwardVariableDef("Nex_atmo_", "real")
+                self._Nex_atmo_ << self._Nex_atmo
 
             self._N_str = ["[", self._N, "]"]
 
@@ -613,9 +642,6 @@ class StanSimInterface(StanInterface):
             self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
             self._E = ForwardVariableDef("E", "vector[N]")
             self._Edet = ForwardVariableDef("Edet", "vector[N]")
-            self._Emin_src_arr = ForwardVariableDef("Emin_src_arr", "real")
-            self._Emax_src_arr = ForwardVariableDef("Emax_src_arr", "real")
-            self._rs_bbpl_Eth_tmp = ForwardVariableDef("rs_bbpl_Eth_tmp", "real")
 
             # The cos(zenith) corresponding to each omega and assuming South Pole detector
             self._cosz = ForwardArrayDef("cosz", "real", self._N_str)
@@ -625,7 +651,7 @@ class StanSimInterface(StanInterface):
             self._pre_event = ForwardVectorDef("pre_event", [5])
 
             # Variables for rejection sampling
-            # Rejection sampling is based on a broken power law envelope,
+            # Rejection sampling is based on a (many times) broken power law envelope,
             # and then the true source spectrum x effective area is sampled.
             # The tail of the envelope must not be steeper than that of the true
             # distribution. See e.g. https://bookdown.org/rdpeng/advstatcomp/rejection-sampling.html
@@ -637,9 +663,7 @@ class StanSimInterface(StanInterface):
             self._src_factor = ForwardVariableDef("src_factor", "real")
             self._f_value = ForwardVariableDef("f_value", "real")
             self._g_value = ForwardVariableDef("g_value", "real")
-            self._c_value = ForwardVariableDef("c_value", "real")
             self._idx_cosz = ForwardVariableDef("idx_cosz", "int")
-            self._gamma2 = ForwardVariableDef("gamma2", "real")
 
             # Label for the currently sampled source component, starts obviously with 1
             # Is reset to 1 when using multiple detector models and sampling moves on to the next
@@ -707,424 +731,249 @@ class StanSimInterface(StanInterface):
                     self._accept << 0
                     self._detected << 0
                     self._ntrials << 0
+                    self._inside << 0
 
                     # While not accepted
                     with WhileLoopContext([StringExpression([self._accept != 1])]):
                         # Used for rejection sampling
                         self._u_samp << FunctionCall([0.0, 1.0], "uniform_rng")
 
-                        # For point sources, the true direction is specified
-                        with IfBlockContext(
-                            [StringExpression([self._lam[i], " <= ", self._Ns])]
-                        ):
-                            self._omega << self._varpi[self._lam[i]]
+                        with WhileLoopContext([self._inside != 1]):
 
-                        # Otherwise, sample uniformly over sphere, considering v_lim
-                        if self.sources.atmospheric and not self.sources.diffuse:
-                            with ElseIfBlockContext(
-                                [StringExpression([self._lam[i], " == ", self._Ns + 1])]
+                            # For point sources, the true direction is specified
+                            with IfBlockContext(
+                                [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
-                                self._omega << FunctionCall(
-                                    [
-                                        1,
-                                        self._v_low,
-                                        self._v_high,
-                                        self._u_low,
-                                        self._u_high,
-                                    ],
-                                    "sphere_lim_rng",
-                                )
+                                self._omega << self._varpi[self._lam[i]]
+                                # Always accept point source events, even if scattered outside the ROI
+                                StringExpression(["break"])
 
-                        elif self.sources.diffuse:
-                            with ElseIfBlockContext(
-                                [StringExpression([self._lam[i], " == ", self._Ns + 1])]
-                            ):
-                                self._omega << FunctionCall(
+                            # Otherwise, sample uniformly over sphere, considering v_lim
+                            if self.sources.atmospheric and not self.sources.diffuse:
+                                with ElseIfBlockContext(
                                     [
-                                        1,
-                                        self._v_low,
-                                        self._v_high,
-                                        self._u_low,
-                                        self._u_high,
-                                    ],
-                                    "sphere_lim_rng",
-                                )
+                                        StringExpression(
+                                            [self._lam[i], " == ", self._Ns + 1]
+                                        )
+                                    ]
+                                ):
+                                    self._omega << FunctionCall(
+                                        [
+                                            1,
+                                            self._v_low,
+                                            self._v_high,
+                                            self._u_low,
+                                            self._u_high,
+                                        ],
+                                        "sphere_lim_rng",
+                                    )
 
-                        if self.sources.atmospheric and self._sources.diffuse:
-                            with ElseIfBlockContext(
-                                [StringExpression([self._lam[i], " == ", self._Ns + 2])]
-                            ):
-                                self._omega << FunctionCall(
+                            elif self.sources.diffuse:
+                                with ElseIfBlockContext(
                                     [
-                                        1,
-                                        self._v_low,
-                                        self._v_high,
-                                        self._u_low,
-                                        self._u_high,
-                                    ],
-                                    "sphere_lim_rng",
-                                )
+                                        StringExpression(
+                                            [self._lam[i], " == ", self._Ns + 1]
+                                        )
+                                    ]
+                                ):
+                                    self._omega << FunctionCall(
+                                        [
+                                            1,
+                                            self._v_low,
+                                            self._v_high,
+                                            self._u_low,
+                                            self._u_high,
+                                        ],
+                                        "sphere_lim_rng",
+                                    )
+
+                            if self.sources.atmospheric and self._sources.diffuse:
+                                with ElseIfBlockContext(
+                                    [
+                                        StringExpression(
+                                            [self._lam[i], " == ", self._Ns + 2]
+                                        )
+                                    ]
+                                ):
+                                    self._omega << FunctionCall(
+                                        [
+                                            1,
+                                            self._v_low,
+                                            self._v_high,
+                                            self._u_low,
+                                            self._u_high,
+                                        ],
+                                        "sphere_lim_rng",
+                                    )
+
+                            # For circular ROIs: see if diffuse event is inside one of the ROIs,
+                            # if not: don't query the rejection sampling and continue from scratch
+                            if isinstance(ROIList.STACK[0], CircularROI):
+                                # If the sampled source is point source, do not check this
+                                # We want to allow point source events to be scattered outside the ROI because
+                                # this is more realistic. For diffuse components, the spatial variation should
+                                # be almost constant over the typical angular scales considered.
+                                with IfBlockContext([self._lam[i], " > ", self._Ns]):
+                                    with ForLoopContext(1, self._n_roi, "n") as n:
+                                        with IfBlockContext(
+                                            [
+                                                "ang_sep(omega, roi_center[",
+                                                n,
+                                                "]) <= roi_radius[n]",
+                                            ]
+                                        ):
+                                            self._inside << 1
+                                            StringExpression(["break"])
+                            else:
+                                # If RectangularROI, just break anyways
+                                StringExpression(["break"])
 
                         self._cosz[i] << FunctionCall(
                             [FunctionCall([self._omega], "omega_to_zenith")], "cos"
                         )
 
+                        # Rejection sampling procedure:
+                        # 1) get the appropriate envelope for the considered source
+                        # 2) sample proposal energy from multiple_bbpl_rng
+                        # 3) sample uniform value and reject or accept based on f/g
+                        # 4) if accept: query detector response
+
+                        # Step 1
+                        # workaround for 2d indexing with nested indexing...
+                        # get the source index
+                        source = ForwardVariableDef("source_idx", "int")
+                        source << self._lam[i]
+                        # get the correct length for the rs envelope parameters
+                        sl_max = ForwardVariableDef("sl_max", "int")
+                        sl_max << self._rs_N[j, source]
+                        sl_max_break = ForwardVariableDef("sl_max_break", "int")
+                        sl_max_break << sl_max + 1
+
+                        self._E[i] << FunctionCall(
+                            [
+                                self._rs_breaks[j, source, 1:sl_max_break],
+                                self._rs_slopes[j, source, 1:sl_max],
+                                self._rs_weights[j, source, 1:sl_max],
+                            ],
+                            "multiple_bbpl_rng",
+                        )
+
+                        # Step 2) depends on the source considered. Query the src_factor
                         # Calculate the envelope for rejection sampling and the shape of
                         # the source spectrum for the various source components
                         if self.sources.point_source:
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
-                                if self._shared_src_index:
-                                    src_index_ref = self._src_index
-                                else:
-                                    src_index_ref = self._src_index[self._lam[i]]
-
-                                # The shape of the envelope to use depends on the
-                                # source spectrum. This is to make things more efficient.
-                                (
-                                    self._gamma2
-                                    << self._rs_bbpl_gamma2_scale[j] - src_index_ref
-                                )
-
-                                # Handle energy thresholds
-                                # 3 cases:
-                                # Emin < Eth and Emax > Eth - use broken pl
-                                # Emin < Eth and Emax <= Eth - use pl
-                                # Emin >= Eth and Emax > Eth - use pl
-                                self._Emin_src_arr << self._Emin_src / (
-                                    1 + self._z[self._lam[i]]
-                                )
-                                self._Emax_src_arr << self._Emax_src / (
-                                    1 + self._z[self._lam[i]]
-                                )
-
-                                with IfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                "<=",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                ">=",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
 
                                 # Store the value of the source PDF at this energy
-                                if self._ps_spectrum == PowerLawSpectrum:
-                                    self._src_factor << self._src_spectrum_lpdf(
-                                        self._E[i],
-                                        src_index_ref,
-                                        self._Emin_src / (1 + self._z[self._lam[i]]),
-                                        self._Emax_src / (1 + self._z[self._lam[i]]),
+                                if self._logparabola:
+                                    x_r = StringExpression(
+                                        [
+                                            "{",
+                                            self._src_index[self._lam[i]],
+                                            ",",
+                                            self._beta_index[self._lam[i]],
+                                            ",",
+                                            self._E0_src[self._lam[i]],
+                                            ",",
+                                            self._Emin_src[self._lam[i]],
+                                            ",",
+                                            self._Emax_src[self._lam[i]],
+                                            "}",
+                                        ]
                                     )
-                                elif self._ps_spectrum == TwiceBrokenPowerLaw:
-                                    self._src_factor << self._src_spectrum_lpdf(
-                                        self._E[i],
-                                        -10.0,
-                                        src_index_ref,
-                                        10.0,
-                                        self._Emin,
-                                        self._Emin_src / (1 + self._z[self._lam[i]]),
-                                        self._Emax_src / (1 + self._z[self._lam[i]]),
-                                        self._Emax,
+                                elif self._pgamma:
+                                    x_r = StringExpression(
+                                        [
+                                            "{",
+                                            self._E0_src[self._lam[i]],
+                                            ",",
+                                            self._Emin_src[self._lam[i]],
+                                            ",",
+                                            self._Emax_src[self._lam[i]],
+                                            "}",
+                                        ]
                                     )
+                                if self._logparabola or self._pgamma:
+                                    theta = StringExpression(
+                                        [
+                                            "{1.}",
+                                        ]
+                                    )
+                                    x_i = StringExpression(
+                                        [
+                                            "{",
+                                            0,
+                                            "}",
+                                        ]
+                                    )
+                                    self._src_factor << FunctionCall(
+                                        [
+                                            self._src_spectrum_lpdf(
+                                                self._E[i],
+                                                theta,
+                                                x_r,
+                                                x_i,
+                                            )
+                                        ],
+                                        "exp",
+                                    )
+                                elif self._seyfert:
+                                    if len(self.sources.point_source) == 1:
+                                        self._src_factor << FunctionCall(
+                                            [
+                                                self._src_spectrum_lpdf[0](
+                                                    self._E[i],
+                                                    self._eta[self._lam[i]],
+                                                )
+                                            ],
+                                            "exp",
+                                        )
+                                    else:
+                                        for l in range(
+                                            1, len(self.sources.point_source) + 1
+                                        ):
+                                            if l == 1:
+                                                context = IfBlockContext
+                                            else:
+                                                context = ElseIfBlockContext
+                                            with context([self._lam[i], " == ", l]):
+                                                (
+                                                    self._src_factor
+                                                    << FunctionCall(
+                                                        [
+                                                            self._src_spectrum_lpdf[
+                                                                l - 1
+                                                            ](
+                                                                self._E[i],
+                                                                self._eta[self._lam[i]],
+                                                            )
+                                                        ],
+                                                        "exp",
+                                                    )
+                                                )
                                 else:
-                                    raise ValueError(
-                                        f"{self._ps_spectrum} not recognised."
+                                    self._src_factor << FunctionCall(
+                                        [
+                                            self._src_spectrum_lpdf(
+                                                self._E[i],
+                                                self._src_index[self._lam[i]],
+                                                self._Emin_src[self._lam[i]],
+                                                self._Emax_src[self._lam[i]],
+                                            )
+                                        ],
+                                        "exp",
                                     )
-
-                                # It is log, to take the exp()
-                                self._src_factor << FunctionCall(
-                                    [self._src_factor], "exp"
-                                )
-
                                 # Account for energy redshift losses
-                                self._Esrc[i] << self._E[i] * (
-                                    1 + self._z[self._lam[i]]
+                                self._Esrc[i] << DetectorFrame.stan_to_src(
+                                    self._E[i], self._z, self._lam, i
                                 )
 
-                        # Treat the atmospheric and diffuse components similarly
                         if self.sources.atmospheric and not self.sources.diffuse:
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-                                # Assume fixed index of ~3.6 for atmo to get reasonable
-                                # envelope function
-                                self._gamma2 << self._rs_bbpl_gamma2_scale[j] - 3.6
-
-                                # Handle energy thresholds
-                                # 3 cases:
-                                # Emin < Eth and Emax > Eth - use broken pl
-                                # Emin < Eth and Emax <= Eth - use pl
-                                # Emin >= Eth and Emax > Eth - use pl
-                                self._Emin_src_arr << self._Emin
-                                self._Emax_src_arr << self._Emax
-                                with IfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                "<=",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                ">=",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
                                 (
                                     self._src_factor
                                     << self._atmo_flux(self._E[i], self._omega)
@@ -1136,334 +985,47 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 1])]
                             ):
-                                (
-                                    self._gamma2
-                                    << self._rs_bbpl_gamma2_scale[j] - self._diff_index
-                                )
-
-                                # Handle energy thresholds
-                                # 3 cases:
-                                # Emin < Eth and Emax > Eth - use broken pl
-                                # Emin < Eth and Emax <= Eth - use pl
-                                # Emin >= Eth and Emax > Eth - use pl
-
-                                self._Emin_src_arr << self._Emin_diff / (
-                                    1 + self._z[self._lam[i]]
-                                )
-                                self._Emax_src_arr << self._Emax_diff / (
-                                    1 + self._z[self._lam[i]]
-                                )
-
-                                with IfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                "<=",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                ">=",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                self._src_factor << self._diff_spectrum_lpdf(
-                                    self._E[i],
-                                    self._diff_index,
-                                    self._Emin_diff / (1 + self._z[self._lam[i]]),
-                                    self._Emax_diff / (1 + self._z[self._lam[i]]),
-                                )
                                 self._src_factor << FunctionCall(
-                                    [self._src_factor], "exp"
+                                    [
+                                        self._diff_spectrum_lpdf(
+                                            self._E[i],
+                                            self._diff_index,
+                                            self._diff_frame.stan_to_det(
+                                                self._Emin_diff, self._z, self._lam, i
+                                            ),
+                                            self._diff_frame.stan_to_det(
+                                                self._Emax_diff, self._z, self._lam, i
+                                            ),
+                                        )
+                                    ],
+                                    "exp",
                                 )
 
-                                self._Esrc[i] << self._E[i] * (
-                                    1 + self._z[self._lam[i]]
+                                self._Esrc[i] << DetectorFrame.stan_to_src(
+                                    self._E[i], self._z, self._lam[i]
                                 )
 
                         if self.sources.diffuse and self.sources.atmospheric:
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " == ", self._Ns + 2])]
                             ):
-                                self._gamma2 << self._rs_bbpl_gamma2_scale[j] - 3.6
-
-                                # Handle energy thresholds
-                                # 3 cases:
-                                # Emin < Eth and Emax > Eth - use broken pl
-                                # Emin < Eth and Emax <= Eth - use pl
-                                # Emin >= Eth and Emax > Eth - use pl
-                                self._Emin_src_arr << self._Emin
-                                self._Emax_src_arr << self._Emax
-
-                                with IfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth[j],
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                "<",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                "<=",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._rs_bbpl_gamma1[j],
-                                            self._rs_bbpl_gamma1[j],
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
-                                with ElseIfBlockContext(
-                                    [
-                                        StringExpression(
-                                            [
-                                                "(",
-                                                self._Emin_src_arr,
-                                                ">=",
-                                                self._rs_bbpl_Eth[j],
-                                                ") && (",
-                                                self._Emax_src_arr,
-                                                ">",
-                                                self._rs_bbpl_Eth[j],
-                                                ")",
-                                            ]
-                                        )
-                                    ]
-                                ):
-                                    # Sample a true energy from the envelope function
-                                    # Modify to power law
-                                    (
-                                        self._rs_bbpl_Eth_tmp
-                                        << self._Emin_src_arr
-                                        + (self._Emax_src_arr - self._Emin_src_arr) / 2
-                                    )
-                                    self._E[i] << FunctionCall(
-                                        [
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_rng",
-                                    )
-
-                                    # Also store the value of the envelope function at this true energy
-                                    self._g_value << FunctionCall(
-                                        [
-                                            self._E[i],
-                                            self._Emin_src_arr,
-                                            self._rs_bbpl_Eth_tmp,
-                                            self._Emax_src_arr,
-                                            self._gamma2,
-                                            self._gamma2,
-                                        ],
-                                        "bbpl_pdf",
-                                    )
-
                                 (
                                     self._src_factor
                                     << self._atmo_flux(self._E[i], self._omega)
                                     / self._F_atmo
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
+
+                        # Also store the value of the envelope function at this true energy
+                        self._g_value << FunctionCall(
+                            [
+                                self._E[i],
+                                self._rs_breaks[j, source, 1:sl_max_break],
+                                self._rs_slopes[j, source, 1:sl_max],
+                                self._rs_norms[j, source, 1:sl_max],
+                            ],
+                            "multiple_bbpl_pdf",
+                        )
 
                         for c, event_type in enumerate(self._event_types):
                             with IfBlockContext(
@@ -1481,14 +1043,10 @@ class StanSimInterface(StanInterface):
                         # Value of the distribution that we want to sample from
                         self._f_value << self._src_factor * self._aeff_factor
 
-                        # Find the precomputed c_value for this source and cosz
-                        # self._idx_cosz << FunctionCall(
-                        #    [self._cosz[i], self._rs_cosz_bin_edges_t], "binary_search"
-                        # )
-                        self._c_value << self._rs_cvals[j][self._lam[i]]
                         # Debugging when sampling gets stuck
                         StringExpression([self._ntrials, " += ", 1])
 
+                        # Step 3)
                         with IfBlockContext(
                             [StringExpression([self._ntrials, "< 1000000"])]
                         ):
@@ -1499,8 +1057,7 @@ class StanSimInterface(StanInterface):
                                         [
                                             self._u_samp,
                                             " < ",
-                                            self._f_value
-                                            / (self._c_value * self._g_value),
+                                            self._f_value / self._g_value,
                                         ]
                                     )
                                 ]
@@ -1513,6 +1070,7 @@ class StanSimInterface(StanInterface):
                                             event_type.S,
                                         ]
                                     ):
+                                        # Step 4) before rejecting or accepting because Edet is part of the detection procedure
                                         self._pre_event << self._dm[event_type](
                                             self._E[i],
                                             self._omega,
@@ -1523,7 +1081,7 @@ class StanSimInterface(StanInterface):
                                     with IfBlockContext(
                                         [
                                             StringExpression(
-                                                [self._lam[i], " < ", self._Ns + 1]
+                                                [self._lam[i], " <=", self._Ns]
                                             )
                                         ]
                                     ):
@@ -1533,24 +1091,7 @@ class StanSimInterface(StanInterface):
                                 else:
                                     self._event[i] << self._omega
                                 self._kappa[i] << self._pre_event[5]
-                                self._detected << 0
-                                if isinstance(ROIList.STACK[0], CircularROI):
-                                    with ForLoopContext(1, self._n_roi, "n") as n:
-                                        with IfBlockContext(
-                                            [
-                                                "ang_sep(event[i], roi_center[",
-                                                n,
-                                                "]) <= roi_radius[n]",
-                                            ]
-                                        ):
-                                            self._detected << 1
-                                            StringExpression(["break"])
-                                else:
-                                    self._detected << 1
-
-                                # Insert condition for the sample to be inside the ROI,
-                                # should also apply to the rectangular ROI as events
-                                # can be recontructed outside at large ang err
+                                self._detected << 1
 
                             with ElseBlockContext():
                                 self._detected << 0

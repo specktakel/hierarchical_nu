@@ -6,21 +6,20 @@ import numpy as np
 from scipy import stats
 from scipy.integrate import quad
 from scipy.interpolate import RectBivariateSpline
+from scipy.signal import convolve
 from astropy import units as u
 import matplotlib.pyplot as plt
 
 from abc import ABC
 
-from hierarchical_nu.utils.roi import ROI, ROIList, CircularROI
+from hierarchical_nu.utils.roi import ROIList
 from hierarchical_nu.stan.interface import STAN_GEN_PATH
 from hierarchical_nu.backend.stan_generator import (
     ElseBlockContext,
     IfBlockContext,
     StanGenerator,
 )
-from hierarchical_nu.stan.interface import STAN_PATH
 from ..utils.cache import Cache
-from ..utils.fitting_tools import Residuals
 from ..backend import (
     VMFParameterization,
     RayleighParameterization,
@@ -51,7 +50,6 @@ from .detector_model import (
     DetectorModel,
 )
 
-from ..source.source import Sources
 from ..utils.fitting_tools import Spline1D
 
 from icecube_tools.detector.r2021 import R2021IRF
@@ -62,13 +60,15 @@ from icecube_tools.point_source_likelihood.energy_likelihood import (
 
 from icecube_tools.detector.r2021 import R2021IRF
 
-from icecube_tools.utils.data import data_directory
-
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.CRITICAL)
 Cache.set_cache_dir(".cache")
+
+# Silence output
+ict_logger = logging.getLogger("icecube_tools.detector.r2021")
+ict_logger.setLevel(logging.CRITICAL)
 
 
 """
@@ -440,18 +440,17 @@ class R2021EffectiveArea(EffectiveArea):
         self._make_spline()
 
     def generate_code(self):
+
+        if self.mode == DistributionMode.PDF:
+            signature = ["log10tE", "true_dir"]
+        else:
+            signature = ["tE", "true_dir"]
         super().__init__(
             self._func_name,
-            ["true_energy", "true_dir"],
+            signature,
             ["real", "vector"],
             "real",
         )
-
-        # Define Stan interface.
-        if self.mode == DistributionMode.PDF:
-            type_ = TwoDimHistInterpolation
-        else:
-            type_ = SimpleHistogram
 
         # Check if ROI should be applied to the effective area
         # This will speed up the fit but requires recompilation for different ROIs
@@ -459,33 +458,65 @@ class R2021EffectiveArea(EffectiveArea):
             apply_roi = np.all(list(_.apply_roi for _ in ROIList.STACK))
         else:
             apply_roi = False
-
         if apply_roi:
-            cosz_min = -np.sin(ROIList.DEC_max())
-            cosz_max = -np.sin(ROIList.DEC_min())
-            idx_min = np.digitize(cosz_min, self._cosz_bin_edges) - 1
-            idx_max = np.digitize(cosz_max, self._cosz_bin_edges, right=True) - 1
+            cosz_min = -np.sin(ROIList.DEC_max().to_value(u.rad))
+            cosz_max = -np.sin(ROIList.DEC_min().to_value(u.rad))
+            cosz_binc = self._cosz_bin_edges[:-1] + np.diff(self._cosz_bin_edges) / 2
+            idx_min = np.digitize(cosz_min, cosz_binc) - 1
+            if idx_min < 0:
+                idx_min = 0
+            idx_max = np.digitize(cosz_max, cosz_binc, right=True)
             eff_area = self._eff_area[:, idx_min : idx_max + 1]
-            cosz_bin_edges = self._cosz_bin_edges[idx_min : idx_max + 2]
+            cosz_binc = cosz_binc[idx_min : idx_max + 1]
         else:
             cosz_bin_edges = self._cosz_bin_edges
+            cosz_binc = cosz_bin_edges[:-1] + np.diff(cosz_bin_edges)
             eff_area = self._eff_area
-        # Define Stan interface.
-        if self.mode == DistributionMode.PDF:
-            type_ = TwoDimHistInterpolation
-        else:
-            type_ = SimpleHistogram
-
-        with self:
-            hist = type_(
+        eff_area = np.concatenate(
+            (
+                np.atleast_2d(eff_area[0, :]),
                 eff_area,
-                [self._tE_bin_edges, cosz_bin_edges],
-                f"{self._season}EffAreaHist",
+                np.atleast_2d(eff_area[-1, :]),
+            ),
+            axis=0,
+        )
+        tE_binc = self._tE_bin_edges[:-1] + np.diff(self._tE_bin_edges) / 2
+        tE_binc = np.concatenate(
+            (
+                np.atleast_1d(self._tE_bin_edges[0]),
+                tE_binc,
+                np.atleast_1d(self._tE_bin_edges[-1]),
             )
-            # Uses cos(z), so calculate z = pi - theta
-            cos_dir = "cos(pi() - acos(true_dir[3]))"
+        )
 
-            _ = ReturnStatement([hist("true_energy", cos_dir)])
+        eff_area[eff_area == 0.0] = eff_area[eff_area > 0.0].min()
+        with self:
+            logArea = StanArray(
+                "Area",
+                "real",
+                np.log10(eff_area),
+            )
+            log10_E_c = StanArray("log10_E_c", "real", np.log10(tE_binc))
+            cos_z_c = StanArray("cosz_c", "real", cosz_binc)
+            cosz = "cos(pi() - acos(true_dir[3]))"
+            if self.mode == DistributionMode.RNG:
+                log10tE = InstantVariableDef("log10tE", "real", ["log10(tE)"])
+            else:
+                log10tE = StringExpression(["log10tE"])
+            ReturnStatement(
+                [
+                    FunctionCall(
+                        [
+                            10,
+                            FunctionCall(
+                                    [log10tE, cosz, log10_E_c, cos_z_c, logArea],
+                                    "interp2d",
+                                )
+                        ],
+                        "pow",
+                    )
+                ]
+            )
 
     def setup(self) -> None:
         if self.CACHE_FNAME in Cache:
@@ -515,7 +546,9 @@ class R2021EffectiveArea(EffectiveArea):
 
         self._eff_area = eff_area
         self._tE_bin_edges = tE_bin_edges
+        self._tE_binc = tE_bin_edges[:-1] + np.diff(tE_bin_edges) / 2
         self._cosz_bin_edges = cosz_bin_edges
+        self._cosz_binc = cosz_bin_edges[:-1] + np.diff(cosz_bin_edges) / 2
 
         self._rs_bbpl_params = {}
         self._rs_bbpl_params["threshold_energy"] = 5e4  # GeV
@@ -1567,8 +1600,8 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         if self.mode == DistributionMode.PDF:
             super().__init__(
                 f"{self._season}AngularResolution",
-                ["true_dir", "reco_dir", "sigma", "kappa"],
-                ["vector", "vector", "real", "real"],
+                ["angular_separation", "sigma_squared"],
+                ["real", "real"],
                 "real",
             )
 
@@ -1584,14 +1617,14 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         with self:
             if self.mode == DistributionMode.PDF:
                 angular_parameterisation = RayleighParameterization(
-                    ["true_dir", "reco_dir"], "sigma", self.mode
+                    ["angular_separation"], "sigma_squared", self.mode
                 )
                 ReturnStatement([angular_parameterisation])
 
             elif self.mode == DistributionMode.RNG:
-                angular_parameterisation = RayleighParameterization(
-                    ["true_dir"], "ang_err", self.mode
-                )
+                # angular_parameterisation = RayleighParameterization(
+                #    ["true_dir"], "ang_err", self.mode
+                # )
 
                 # Create all psf histogram
                 self._make_histogram(
@@ -1683,6 +1716,27 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                     ],
                     "hist_cat_rng",
                 )
+                psf_ang = ForwardVariableDef("psf_ang", "real")
+                psf_ang << FunctionCall(
+                    [
+                        10,
+                        FunctionCall(
+                            [
+                                FunctionCall(
+                                    [psf_hist_idx],
+                                    f"{self._season}_psf_get_ragged_edges",
+                                )[psf_idx],
+                                FunctionCall(
+                                    [psf_hist_idx],
+                                    f"{self._season}_psf_get_ragged_edges",
+                                )[psf_idx + 1],
+                            ],
+                            "uniform_rng",
+                        ),
+                    ],
+                    "pow",
+                )
+                psf_ang << StringExpression(["pi() * psf_ang / 180.0"])
 
                 # Repeat with angular error
                 ang_hist_idx = ForwardVariableDef("ang_hist_idx", "int")
@@ -1722,8 +1776,12 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
                 # Make a vector of length 4, last component is kappa
                 return_vec = ForwardVectorDef("return_this", [4])
                 # Deflect true direction
-                StringExpression(["return_this[1:3] = ", angular_parameterisation])
-                StringExpression(["return_this[4] = kappa"])
+                # StringExpression(["return_this[1:3] = ", angular_parameterisation])
+                return_vec[1:3] << FunctionCall(
+                    ["true_dir", "psf_ang"], "deflected_rng"
+                )
+                return_vec[4] << kappa
+                # StringExpression(["return_this[4] = kappa"])
                 ReturnStatement([return_vec])
 
     def setup(self) -> None:
@@ -1802,17 +1860,18 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
     https://icecube.wisc.edu/data-releases/2021/01/all-sky-point-source-icecube-data-years-2008-2018/
     """
 
-    _logEreco_grid_edges = _logEreco_grid_edges = np.arange(1.045, 8.01, 0.01)
+    _logEreco_grid_edges = _logEreco_grid_edges = np.arange(1.045, 9.01, 0.01)
     _logEreco_grid = _logEreco_grid_edges[:-1] + np.diff(_logEreco_grid_edges) / 2
 
-    assert np.all(
+    if not np.all(
         np.isclose(
             _logEreco_grid_edges[:-1] + np.diff(_logEreco_grid_edges) / 2,
             _logEreco_grid,
         )
-    )
+    ):
+        raise ValueError("Why did I implement this?")
 
-    _log_tE_grid = np.linspace(2.0, 8.0, 100)
+    _log_tE_grid = np.linspace(2.0, 9.0, 100)
 
     def __init__(
         self,
@@ -1893,6 +1952,26 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         binc = bin_edges[:-1] + np.diff(bin_edges) / 2
         pdf_vals = self.irf.reco_energy[tE_idx, dec_idx].pdf(binc)
 
+        # Skip for now
+        if False:
+            # if self._season == "IC86_II" and dec_idx == 1:
+            a1 = 0.688
+            a2 = 0.82
+            b1 = 0.91
+            b2 = 0.64
+            if tE_idx not in [0, 1]:
+                pass
+            else:
+                logger.warning("Adding shfits to Ereco histograms")
+                if tE_idx == 0:
+                    bin_edges = a1 * bin_edges + b1
+                    binc = a1 * binc + b1
+                elif tE_idx == 1:
+                    bin_edges = a2 * bin_edges + b2
+                    binc = a2 * bin_edges + b2
+                norm = np.sum(pdf_vals * np.diff(bin_edges))
+                pdf_vals /= norm
+
         # Check for empty bins that are surrounded by non-empty bins
         # Not treating these leads to issues with the splining of log-values
         # Insert a linear interpolation from the neighbouring non-empty bins
@@ -1923,10 +2002,12 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                         next_val = pdf_vals[next_idx]
                         # if the zero-entries are bunched up, fix all
                         next_zero_idxs = c + np.nonzero(pdf_vals[c:next_idx] == 0)[0]
-                        pdf_vals[next_zero_idxs] = np.interp(
-                            binc[next_zero_idxs],
-                            [binc[c - 1], binc[next_idx]],
-                            [prev, next_val],
+                        pdf_vals[next_zero_idxs] = np.exp(
+                            np.interp(
+                                binc[next_zero_idxs],
+                                [binc[c - 1], binc[next_idx]],
+                                np.log([prev, next_val]),
+                            )
                         )
             # re-normalise the histogram
             norm = np.sum(pdf_vals * np.diff(bin_edges))
@@ -2128,6 +2209,13 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                 self._log_tE_binc.size,
             )
         )
+        self._evaluations_wo_flanks = np.zeros(
+            (
+                self._dec_binc.size,
+                self._log_rE_binc.size,
+                self._log_tE_binc.size,
+            )
+        )
 
         # Loop over the declination bins of the IRF
         for c, dec in enumerate(self._dec_binc):
@@ -2141,6 +2229,8 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                     for c_E, E in enumerate(self._log_tE_binc)
                 ]
             ).T
+            self._evaluations_wo_flanks[c] = self._evaluations[c].copy()
+
             for c_E, logE in enumerate(self._log_tE_binc):
                 # Find the highest and lowest non-zero entry
                 # in each spline's evaluation, outside all values are zero
@@ -2169,11 +2259,31 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                     np.power(E_cont, self._fill_index)
                     * self._evaluations[c, idx, c_E]
                 )
+            """
+            evals = np.log(self._evaluations[c])
+            # Copy first and last entry along true energy axis
+            expanded = np.hstack(
+                (evals[:, 0][:, np.newaxis], evals, evals[:, -1][:, np.newaxis])
+            )
+            # Define kernel for smoothing along true energy in log(p) space
+            tE_kernel = np.array([0.2, 1.0, 0.2])
+            kernel = np.expand_dims(tE_kernel, 0)
+            # Convolve with kernel
+            convolved = convolve(expanded, kernel, mode="same")[:, 1:-1]
+            # Normalise, using the linear values
+            norm = np.sum(
+                np.exp(convolved) * np.diff(self._logEreco_grid_edges)[:, np.newaxis],
+                axis=0,
+            )[np.newaxis, :]
+
+            convolved -= np.log(norm)
+            """
             # Spline the evaluations linearly, used in `prob_Edet_above_threshold`
             self._2dsplines.append(
                 RectBivariateSpline(
                     self._log_rE_binc,
                     self._log_tE_binc,
+                    # convolved,
                     np.log(self._evaluations[c]),
                     kx=3,
                     ky=3,
@@ -2502,11 +2612,13 @@ class R2021DetectorModel(ABC, DetectorModel):
                 f.write(code)
             return os.path.join(path, cls._RNG_FILENAME(season))
 
-    def generate_pdf_function_code(self, single_ps: bool = False):
+    def generate_pdf_function_code(self, single_ps: bool = False, diffuse: bool = True):
         """
         Generate a wrapper for the IRF in `DistributionMode.PDF`.
-        Assumes that astro diffuse and atmo diffuse model components are present.
-        If not, they are disregarded by the model likelihood.
+        If argument `diffuse` is True, then it assumes that physical diffuse
+        (i.e. astro diffuse or atmospheric diffuse) components are present.
+        For use with data-background likelihood pass instead False to skip
+        generation of extra components.
         Has signature dependent on the parameter `single_ps`, defaulting to False:
         real true_energy [Gev] : true neutrino energy
         real detected_energy [GeV] : detected muon energy
@@ -2521,23 +2633,21 @@ class R2021DetectorModel(ABC, DetectorModel):
         For cascades the last entry is negative_infinity().
         """
 
-        if not single_ps:
-            signature = [
-                "true_energy",
-                "omega_det",
-                "src_pos",
-            ]
-            sig_type = ["real", "vector", "array[] vector"]
-            return_type = "tuple(array[] real, array[] real, array[] real)"
+        signature = ["true_energy"]
+        sig_type = ["real"]
+        return_type = "tuple("
 
+        if diffuse:
+            signature += ["omega_det"]
+            sig_type += ["vector"]
+
+        signature += ["src_pos"]
+        if not single_ps:
+            sig_type += ["array[] vector"]
+            return_type += "array[] real, array[] real"
         else:
-            signature = [
-                "true_energy",
-                "omega_det",
-                "src_pos",
-            ]
-            sig_type = ["real", "vector", "vector", "vector"]
-            return_type = "tuple(real, real, array[] real)"
+            sig_type += ["vector"]
+            return_type += "real, real"
 
         if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
             signature += ["eres_slice"]
@@ -2547,6 +2657,12 @@ class R2021DetectorModel(ABC, DetectorModel):
             sig_type += ["real"]
         else:
             raise ValueError("This should not happen")
+
+        if diffuse:
+            return_type += ", real, real)"
+        else:
+            return_type += ")"
+
         UserDefinedFunction.__init__(
             self,
             self._func_name,
@@ -2580,7 +2696,7 @@ class R2021DetectorModel(ABC, DetectorModel):
                         )
                     ps_aeff[i] << FunctionCall(
                         [
-                            self.effective_area("true_energy", "src_pos[i]"),
+                            self.effective_area(log10Etrue, "src_pos[i]"),
                         ],
                         "log",
                     )
@@ -2591,33 +2707,44 @@ class R2021DetectorModel(ABC, DetectorModel):
                 if isinstance(
                     self.energy_resolution, GridInterpolationEnergyResolution
                 ):
-                    ps_eres[i] << self.energy_resolution(log10Etrue, "eres_slice")
+                    ps_eres << self.energy_resolution(log10Etrue, "eres_slice")
                 else:
                     ps_eres << self.energy_resolution(log10Etrue, log10Ereco, "src_pos")
                     pass
                 ps_aeff << FunctionCall(
                     [
-                        self.effective_area("true_energy", "src_pos"),
+                        self.effective_area(log10Etrue, "src_pos"),
                     ],
                     "log",
                 )
 
-            diff = ForwardArrayDef("diff", "real", ["[3]"])
+            _return_statement = "(ps_eres, ps_aeff"
 
-            if isinstance(self.energy_resolution, GridInterpolationEnergyResolution):
-                diff[1] << self.energy_resolution(log10Etrue, "eres_slice")
+            if diffuse:
+                diff_eres = ForwardVariableDef("diff_eres", "real")
+                diff_aeff = ForwardVariableDef("diff_aeff", "real")
+
+                if isinstance(
+                    self.energy_resolution, GridInterpolationEnergyResolution
+                ):
+                    diff_eres << self.energy_resolution(log10Etrue, "eres_slice")
+                else:
+                    diff_eres << self.energy_resolution(
+                        log10Etrue, log10Ereco, "omega_det"
+                    )
+                diff_aeff << FunctionCall(
+                    [
+                        self.effective_area(log10Etrue, "omega_det"),
+                    ],
+                    "log",
+                )
+
+
+                _return_statement += ", diff_eres, diff_aeff)"
             else:
-                diff[1] << self.energy_resolution(log10Etrue, log10Ereco, "omega_det")
-            diff[2] << FunctionCall(
-                [
-                    self.effective_area("true_energy", "omega_det"),
-                ],
-                "log",
-            )
+                _return_statement += ")"
 
-            diff[3] << diff[2]
-
-            ReturnStatement(["(ps_eres, ps_aeff, diff)"])
+            ReturnStatement([_return_statement])
 
     def generate_rng_function_code(self):
         """
