@@ -183,7 +183,6 @@ class StanFitInterface(StanInterface):
                     i
                 ] - FunctionCall([self._E[i]], "log")
 
-
             elif self._use_assoc_radius:
                 pass
             elif not self._use_event_tag:
@@ -273,17 +272,26 @@ class StanFitInterface(StanInterface):
                 self._eres_diff << StringExpression(["irf_return.3"])
                 self._aeff_diff << StringExpression(["irf_return.4"])
 
-
             # treat case of assoc_radius separately
             if self._use_assoc_radius:
                 end_pos << end_pos + self._tag_sizes[i]
-                self._assoc_idx = ForwardArrayDef("assoc_idx", "int", ["[", self._tag_sizes[i], "]"])
-                self._assoc_idx << self._event_tag[start_pos:end_pos]   # this idx needed to index logF and lp
+                self._assoc_idx = ForwardArrayDef(
+                    "assoc_idx", "int", ["[", self._tag_sizes[i], "]"]
+                )
+                (
+                    self._assoc_idx << self._event_tag[start_pos:end_pos]
+                )  # this idx needed to index logF and lp
                 self._lp[i][self._assoc_idx] << self._logF[self._assoc_idx]
-                StringExpression([self._lp[i][self._assoc_idx], "+= to_vector(", self._spatial_loglike[i][self._assoc_idx], ")"])
+                StringExpression(
+                    [
+                        self._lp[i][self._assoc_idx],
+                        "+= to_vector(",
+                        self._spatial_loglike[i][self._assoc_idx],
+                        ")",
+                    ]
+                )
                 start_pos << start_pos + self._tag_sizes[i]
 
-        
             # Sum over sources => evaluate and store components
             with ForLoopContext(1, self._Ns_tot, "k") as k:
                 # Point source components
@@ -575,7 +583,9 @@ class StanFitInterface(StanInterface):
             """
 
             if self._use_assoc_radius:
-                results[i] << FunctionCall([self._lp[i][self._assoc_idx]], "log_sum_exp")
+                results[i] << FunctionCall(
+                    [self._lp[i][self._assoc_idx]], "log_sum_exp"
+                )
             else:
                 results[i] << FunctionCall([self._lp[i]], "log_sum_exp")
 
@@ -773,14 +783,15 @@ class StanFitInterface(StanInterface):
                     self._event_type << int_data[start:end]
                     start << start + self._N
 
-
                     if self._use_assoc_radius:
                         self._tag_sizes = ForwardArrayDef("tag_sizes", "int", ["[N]"])
                         end << end + self._N
                         self._tag_sizes << int_data[start:end]
                         start << start + self._N
                         end << end + length
-                        self._event_tag = ForwardArrayDef("event_tag", "int", ["[", length, "]"])
+                        self._event_tag = ForwardArrayDef(
+                            "event_tag", "int", ["[", length, "]"]
+                        )
                         self._event_tag << int_data[start:end]
                         start << start + length
                         StringExpression(["print(event_tag)"])
@@ -789,8 +800,6 @@ class StanFitInterface(StanInterface):
                         self._event_tag = ForwardArrayDef("event_tag", "int", ["[N]"])
                         end << end + self._N
                         self._event_tag << StringExpression(["int_data[3+N:2+2*N]"])
-
-
 
                     # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", ["[N]"])
                     # self._ereco_idx << StringExpression("int_data[3+N:2+2*N]")
@@ -1003,7 +1012,6 @@ class StanFitInterface(StanInterface):
                     else:
                         ReturnStatement(["[sum(results)]'"])
 
-
     def _data(self):
         with DataContext():
             # Total number of detected events
@@ -1065,11 +1073,21 @@ class StanFitInterface(StanInterface):
             if self._use_assoc_radius:
                 # hardcode limit of 4 sources for each event for now
                 # would this consume to much memory otherwise?
-                self._tag_sizes = ForwardArrayDef("tag_sizes", "int", ["[N]"])    # number of associations per event
-                self._max_tag_size = ForwardVariableDef("max_tag_size", "int")     # maximum number of associations to put in a single shard, determines int_data size
-                self._event_tag_size = ForwardVariableDef("event_tag_size", "int")  # total number of associations
-                self._event_tag = ForwardArrayDef("event_tag", "int", ["[event_tag_size]"])   # list of all associations, to be indexed using the above variables
-                self._tag_size_per_shard = ForwardArrayDef("tag_size_per_shard", "int", self._N_shards_str)   # is padded in StanFit._get_fit_inputs
+                self._tag_sizes = ForwardArrayDef(
+                    "tag_sizes", "int", ["[N]"]
+                )  # number of associations per event
+                self._max_tag_size = ForwardVariableDef(
+                    "max_tag_size", "int"
+                )  # maximum number of associations to put in a single shard, determines int_data size
+                self._event_tag_size = ForwardVariableDef(
+                    "event_tag_size", "int"
+                )  # total number of associations
+                self._event_tag = ForwardArrayDef(
+                    "event_tag", "int", ["[event_tag_size]"]
+                )  # list of all associations, to be indexed using the above variables
+                self._tag_size_per_shard = ForwardArrayDef(
+                    "tag_size_per_shard", "int", self._N_shards_str
+                )  # is padded in StanFit._get_fit_inputs
 
             # To store the Ereco-grid index for each event, speeds up the 2d interpolation
             # self._ereco_idx = ForwardArrayDef("ereco_idx", "int", self._N_str)
@@ -1275,7 +1293,9 @@ class StanFitInterface(StanInterface):
                 if self._fit_nex or self._seyfert:
                     if self._priors.Nex_src.name != "notaprior":
                         self._stan_prior_nex_mu = ForwardVariableDef("Nex_mu", "real")
-                        self._stan_prior_nex_sigma = ForwardVariableDef("Nex_sigma", "real")
+                        self._stan_prior_nex_sigma = ForwardVariableDef(
+                            "Nex_sigma", "real"
+                        )
                 elif self._priors.luminosity.name in ["normal", "lognormal"]:
                     if isinstance(self._priors.luminosity, MultiSourcePrior):
                         mu_def = ForwardArrayDef("lumi_mu", "real", self._Ns_str)
@@ -1507,9 +1527,9 @@ class StanFitInterface(StanInterface):
                     "real_data", "real", ["[N_shards,", sd_string, "]"]
                 )
 
-                size = "2 + J"   # N, Ns, and event_type for J events
+                size = "2 + J"  # N, Ns, and event_type for J events
                 if self._use_assoc_radius:
-                    size += " + 1 + J + max_tag_size"    # J entries for number of associations, max number of associations per shard
+                    size += " + 1 + J + max_tag_size"  # J entries for number of associations, max number of associations per shard
                 elif self._use_event_tag:
                     size += " + J"
                 self.int_data = ForwardArrayDef(
@@ -1677,7 +1697,9 @@ class StanFitInterface(StanInterface):
                     self.int_data[i, 1] << insert_len
                     self.int_data[i, 2] << self._Ns
                     if self._use_assoc_radius:
-                        self.int_data[i, 3] << FunctionCall([self._tag_sizes[start:end]], "sum")
+                        self.int_data[i, 3] << FunctionCall(
+                            [self._tag_sizes[start:end]], "sum"
+                        )
                         insert_start << 4
                     else:
                         insert_start << 3
@@ -1692,17 +1714,23 @@ class StanFitInterface(StanInterface):
                     if self._use_assoc_radius:
                         # insert array of number of assocs for events first
                         insert_end << insert_end + insert_len
-                        self.int_data[i, insert_start:insert_end] << self._tag_sizes[start:end]
+                        (
+                            self.int_data[i, insert_start:insert_end]
+                            << self._tag_sizes[start:end]
+                        )
                         insert_start << insert_start + insert_len
-                        
+
                         # get the concatenated list of allowed associations
                         # the length for the i-th shard is stored in self._tag_size_per_shard
                         insert_end << insert_end + self._tag_size_per_shard[i]
                         end_pos << end_pos + self._tag_size_per_shard[i]
-                        self.int_data[i, insert_start:insert_end] << self._event_tag[start_pos:end_pos]
+                        (
+                            self.int_data[i, insert_start:insert_end]
+                            << self._event_tag[start_pos:end_pos]
+                        )
                         insert_start << insert_start + self._tag_size_per_shard[i]
                         start_pos << start_pos + self._tag_size_per_shard[i]
-                        
+
                     elif self._use_event_tag:
                         insert_end << insert_end + insert_len
                         (
@@ -2515,7 +2543,7 @@ class StanFitInterface(StanInterface):
                     end << end + StringExpression(["size(logF)"])
                     self._global_pars[start:end] << self._logF
                     if self._bg:
-                        start << end + 1
+                        start << start + StringExpression(["size(logF)"])
                         self._global_pars[start] << self._log_N_bg
                     # Likelihood is evaluated in `lp_reduce`
 
@@ -2558,10 +2586,10 @@ class StanFitInterface(StanInterface):
                                     self._stan_prior_nex_mu,
                                     self._stan_prior_nex_sigma,
                                 ],
-                                self._priors.Nex_src.name
-                            )
+                                self._priors.Nex_src.name,
+                            ),
                         ]
-                    )    
+                    )
                 elif self._priors.pressure_ratio.name == "notaprior":
                     pass
                 elif self._shared_luminosity and self._seyfert:
