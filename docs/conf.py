@@ -19,9 +19,11 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '*test*', '*.backend*']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '*test*', '../hierarchical_nu.backend.tests/*']
 
-
+autodoc_default_options = {
+    'special-members': '__init__, __getitem__',
+}
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

@@ -787,6 +787,7 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
             and log(effective area) for atmospheric component.
         If `single_ps==True`, all arrays regarding the PS are instead reals.
         For cascades the last entry is negative_infinity().
+
         """
 
         pass
