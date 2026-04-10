@@ -8,7 +8,8 @@ hierarchical_nu documentation
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
-   api/api.rst
+   notebooks/notebooks
+   api/api

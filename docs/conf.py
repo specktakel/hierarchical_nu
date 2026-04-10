@@ -15,6 +15,7 @@ author = 'Francesca Capel, Julian Kuhlmann'
 
 extensions = [
     'sphinx.ext.autodoc',
+    'nbsphinx'
     # 'myst_parser',
 ]
 
