@@ -1,0 +1,46 @@
+name: Docs
+on:
+  push:
+    branches:
+      - master
+      - docs
+  pull_request:
+    branches:
+      - master
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+
+
+jobs:
+  setup:
+    name: Setup Docs
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.9'
+      
+    - name: Install packages
+      run: |
+        sudo apt-get install pandoc
+        python -m pip install --ugprade pip
+        python -m pip install sphinx nbsphinx
+        python -m pip install .
+      
+    - name: Generate Docs
+      run: |
+        sphinx-apidoc -f -e -o docs/api hierarchical_nu '*test*'
+        sphinx-build -M html docs docs/_build
+
+# TODO: add pages setup and deploy once we have a working organisation for hnu or some other website

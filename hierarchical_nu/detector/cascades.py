@@ -38,9 +38,7 @@ Cache.set_cache_dir(".cache")
 
 
 class CascadesEffectiveArea(EffectiveArea):
-    """
-    Effective area based on the cascade_model simulation.
-    """
+    """Effective area based on the cascade_model simulation."""
 
     local_path = "input/cascades/cascade_detector_model.h5"
     DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
