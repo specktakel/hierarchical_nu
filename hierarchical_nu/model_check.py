@@ -14,7 +14,7 @@ from astropy.coordinates import SkyCoord
 from cmdstanpy import CmdStanModel
 from scipy.stats import uniform
 from omegaconf import OmegaConf
-from typing import List, Union
+from typing import List, Union, Dict
 from pathlib import Path
 from time import time as thyme
 
@@ -47,13 +47,16 @@ class ModelCheck:
     def __init__(
         self,
         config: HierarchicalNuConfig,
-        truths=None,
-        priors=None,
+        truths: Union[None, Dict] = None,
+        priors: Union[None, Priors] = None,
     ):
         """
-        :param config: HhierarchicalNuConfig instance
+        :param config: Configuration of model check
+        :type config: :py:class:`hierarchical_nu.utils.config.HierarchicalNuConfig`
         :param truths: true parameter values
+        :type truths: Union[None, Dict]
         :param priors: priors to overwrite the config's priors
+        :type priors: Union[None, :py:class:`hierarchical_nu.priors.Priors`]
         """
 
         self.config = config
@@ -221,7 +224,7 @@ class ModelCheck:
         self._diagnostic_names = ["lp__", "divergent__", "treedepth__", "energy__"]
 
     @staticmethod
-    def initialise_env(output_dir, config: Union[None, HierarchicalNuConfig] = None):
+    def initialise_env(output_dir: Union[str, Path], config: Union[None, HierarchicalNuConfig] = None):
         """
         Script to set up enviroment for parallel
         model checking runs.
@@ -230,6 +233,13 @@ class ModelCheck:
         * Generates and compiles necessary Stan files
 
         Only need to run once before calling ModelCheck.run()
+
+        :param output_dir: Output directory, is created in case it does not exist
+        :type output_dir: Union[str, Path]
+        :param config: Configuration file used for the model check, loads default config if None is provided
+        :type config: Union[None, :py:class:`hierarchical_nu.utils.config.HierarchicalNuConfig`]
+
+        :returns: None
         """
 
         # Config
@@ -284,10 +294,13 @@ class ModelCheck:
     def parallel_run(self, n_jobs=1, n_subjobs=1, seed: int = 42, **kwargs):
         """
         Run model checks in parallel
-        :param n_jobs: Number of parallel jobs
+
+        :param n_jobs: Number of parallel jobs distributed by :py:class:`joblib.Parallel`
         :param n_subjobs: Number of sequential simulations/fits per parallel job
         :param seed: random seed for simulation and fit
         :param kwargs: kwargs to be passed to hierarchical_nu.fit.StanFit
+
+        :returns: None
         """
 
         job_seeds = [(seed + job) * n_subjobs for job in range(n_jobs)]
@@ -306,6 +319,10 @@ class ModelCheck:
         Save model check
         :param filename: output filename
         :param save_events: If True save simulated events as well
+        :param overwrite: Set to True if existing file of same name shall be overwritten
+
+        :returns: Filename of saved file
+        :rtype: :py:class:`pathlib.Path`
         """
 
         if os.path.exists(filename) and not overwrite:
@@ -372,11 +389,16 @@ class ModelCheck:
 
         self.priors.addto(filename, "priors")
 
+        return filename
+
     @classmethod
     def load(cls, filename_list):
         """
         Load previously saved model checks
         :param filename_list: list of model check filenames
+
+        :returns: Loaded model check
+        :rtype: :py:class:`hierarchical_nu.model_check.ModelCheck`
         """
 
         if not isinstance(filename_list, list):
@@ -489,7 +511,12 @@ class ModelCheck:
         :param alpha: alpha of histograms
         :param show_N: overplot true number of events per source component
         :param band_quantiles: if provided, plot bands containing the provided quantile of all fits
+        :param band_color: Color of plotted quantile bands
+        :param mean_color: Color of mean value
+
+        :returns: fig, axs of created figure
         """
+
         if not var_names:
             var_names = self._default_var_names
 
@@ -747,7 +774,8 @@ class ModelCheck:
     def diagnose(self):
         """
         Quickly check output of CmdStanMCMC.diagnose().
-        Return index of fits with issues.
+
+        :returns: Indices of fits with issues
         """
 
         diagnostics_array = np.array(self.results["diagnostics_ok"])
@@ -1011,6 +1039,7 @@ class ModelCheck:
 
         return outputs
 
+'''
     def _get_prior_func(self, var_name):
         """
         Return function of param "var_name" that
@@ -1032,3 +1061,4 @@ class ModelCheck:
                 raise ValueError("var_name not recognised")
 
         return prior_func
+'''

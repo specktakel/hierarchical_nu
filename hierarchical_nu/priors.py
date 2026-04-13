@@ -1,4 +1,7 @@
+"""Module defining priors used in fits"""
+
 from abc import ABCMeta, abstractmethod
+from pathlib import Path
 from typing import Union, Iterable
 import astropy.units as u
 from astropy.units.core import UnitConversionError
@@ -22,17 +25,26 @@ class PriorDistribution(metaclass=ABCMeta):
 
     @abstractmethod
     def pdf(self, x):
+        """Evaluate pdf at `x`."""
         pass
 
     def pdf_logspace(self, x):
+        """Evaluate pdf transformed to log10 at x"""
         return self.pdf(x) * x * np.log(10)
 
     @abstractmethod
     def sample(self, N):
+        """Draw samples from pdf
+
+        :param N: Number of samples
+
+        :returns: Samples
+        """
         pass
 
     @abstractmethod
     def to_dict(self):
+        """Create dictionary encoding all prior information"""
         pass
 
 
@@ -61,17 +73,17 @@ class NormalPrior(PriorDistribution):
     def sigma(self, val: float):
         self._sigma = val
 
-    def pdf(self, x):
-        return stats.norm(loc=self._mu, scale=self._sigma).pdf(x)
+    def pdf(self, x: float):
+        return stats.norm(loc=self_mu, scale=self.sigma).pdf(x)
 
-    def sample(self, N):
-        return stats.norm(loc=self._mu, scale=self._sigma).rvs(N)
+    def sample(self, N: int):
+        return stats.norm(loc=self.mu, scale=self.sigma).rvs(N)
 
     def to_dict(self, units):
         prior_dict = {}
-        prior_dict["name"] = self._name
-        prior_dict["mu"] = self._mu
-        prior_dict["sigma"] = self._sigma
+        prior_dict["name"] = self.name
+        prior_dict["mu"] = self.mu
+        prior_dict["sigma"] = self.sigma
         prior_dict["units"] = units
         return prior_dict
 
@@ -85,11 +97,11 @@ class LogNormalPrior(PriorDistribution):
         self._mu = mu
         self._sigma = sigma
 
-    def pdf(self, x):
-        return stats.lognorm(scale=np.exp(self._mu), s=self._sigma).pdf(x)
+    def pdf(self, x: float):
+        return stats.lognorm(scale=np.exp(self.mu), s=self.sigma).pdf(x)
 
-    def sample(self, N):
-        return stats.lognorm(scale=np.exp(self._mu), s=self._sigma).rvs(N)
+    def sample(self, N: int):
+        return stats.lognorm(scale=np.exp(self.mu), s=self.sigma).rvs(N)
 
     @property
     def mu(self):
@@ -109,9 +121,9 @@ class LogNormalPrior(PriorDistribution):
 
     def to_dict(self, units):
         prior_dict = {}
-        prior_dict["name"] = self._name
-        prior_dict["mu"] = self._mu
-        prior_dict["sigma"] = self._sigma
+        prior_dict["name"] = self.name
+        prior_dict["mu"] = self.mu
+        prior_dict["sigma"] = self.sigma
         prior_dict["units"] = units
         return prior_dict
 
@@ -119,12 +131,48 @@ class LogNormalPrior(PriorDistribution):
 class UniformPrior(PriorDistribution):
     """
     Uniform prior
-
-    dummy class?
     """
 
     def __init__(self, name="uniform", xmin=0.0, xmax=np.infty):
-        super().__init__(name, xmin=xmin, xmax=xmax)
+        super().__init__(name)
+
+        self._xmin = xmin
+        self._xmax = xmax
+
+    def pdf(self, x):
+        return 1 / (self.xmax - self.xmin)
+
+    @property
+    def xmin(self):
+        return self._xmin
+
+    @xmin.setter
+    def xmin(self, val: float):
+        self._xmin = val
+
+    @property
+    def xmax(self):
+        return self._xmax
+
+    @xmin.setter
+    def xmax(self, val: float):
+        self._xmax = val
+
+    def sample(self, N):
+        stats.uniform.rvs(self.xmin, self.xmax, size=N)
+
+    def to_dict(self, units):
+        prior_dict = {}
+
+        prior_dict["name"] = self._name
+
+        prior_dict["xmin"] = self.xmin
+
+        prior_dict["xmax"] = self.xmax
+
+        prior_dict["units"] = units
+
+        return prior_dict
 
 
 class LogUniformPrior(PriorDistribution):
@@ -206,17 +254,17 @@ class ParetoPrior(PriorDistribution):
         self._alpha = val
 
     def pdf(self, x):
-        return stats.pareto(b=self._alpha).pdf(x)
+        return stats.pareto(b=self.alpha).pdf(x)
 
     def sample(self, N):
-        return stats.pareto(b=self._alpha).rvs(N) * self._xmin
+        return stats.pareto(b=self.alpha).rvs(N) * self._xmin
 
     def to_dict(self, units):
         prior_dict = {}
 
-        prior_dict["name"] = self._name
-        prior_dict["xmin"] = self._xmin
-        prior_dict["alpha"] = self._alpha
+        prior_dict["name"] = self.name
+        prior_dict["xmin"] = self.xmin
+        prior_dict["alpha"] = self.alpha
         prior_dict["units"] = units
         return prior_dict
 
@@ -241,7 +289,7 @@ class Ignorance(PriorDistribution):
         )
 
     def to_dict(self, units):
-        return dict(name=self._name, units=units)
+        return dict(name=self.name, units=units)
 
 
 class ExponentialGaussianPrior(PriorDistribution):
@@ -298,7 +346,14 @@ class PriorDictHandler:
 
     @classmethod
     def from_dict(cls, prior_dict):
-        # Translate "key" into Lumi, Flux or Index
+        """Create prior instance from dictionary
+
+        :param prior_dict: Dictionary
+
+        :returns: Prior of quantity
+        """
+
+        # Translate "key" into Lumi, Flux, Index etc.
         translate = {
             "L": LuminosityPrior,
             "diffuse_norm": DifferentialFluxPrior,
@@ -344,6 +399,11 @@ class UnitPrior:
     """
 
     def __init__(self, name, **kwargs):
+        """
+        :param name: Prior type
+        :type name: Implementation of PriorDistribution
+        :param \*\*kwargs: kwargs holding prior parameters specific to prior distributions
+        """
         if name == ParetoPrior:
             xmin = kwargs.get("xmin")
             alpha = kwargs.get("alpha")
@@ -464,6 +524,10 @@ class UnitPrior:
     def to_dict(self, units):
         return self._prior.to_dict(units)
 
+    @property
+    def prior(self):
+        # TODO
+        return self._prior
 
 class UnitlessPrior:
     """
@@ -488,6 +552,11 @@ class UnitlessPrior:
                 self._prior = name(mu=mu, sigma=sigma)
             elif name == Ignorance:
                 self._prior = name()
+
+    @property
+    def prior(self):
+        #TODO
+        return self._prior
 
     @property
     def mu(self):
@@ -542,6 +611,8 @@ class UnitlessPrior:
 
 
 class AngularPrior(UnitPrior):
+    """Prior on angular systematic uncertainty"""
+
     UNITS = u.deg
     UNITS_STRING = UNITS.to_string()
 
@@ -556,6 +627,7 @@ class AngularPrior(UnitPrior):
         super().__init__(name, mu=mu, sigma=sigma, lam=lam, units=self.UNITS)
 
 class NexPrior(UnitlessPrior):
+    """Prior on number of expected events"""
     @u.quantity_input
     def __init__(
         self,
@@ -563,9 +635,6 @@ class NexPrior(UnitlessPrior):
         mu=10.,
         sigma=5.,
     ):
-        """
-        Prior on number of expected events
-        """
         super().__init__(
             name,
             mu=mu,
@@ -693,6 +762,7 @@ class PressureRatioPrior(UnitlessPrior):
 
 
 class EtaPrior(UnitlessPrior):
+    """Prior on inverse magnetic turbulence strength in the corona of Seyfert galaxies"""
     @u.quantity_input
     def __init__(self, name=Ignorance, mu: float = 40, sigma: float = 10):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
@@ -989,7 +1059,7 @@ class Priors(object):
 
         return priors_dict
 
-    def save(self, file_name: str):
+    def save(self, file_name: Union[str, Path]):
         """
         Save priors to file
         :param file_name: filename
@@ -1016,7 +1086,7 @@ class Priors(object):
             else:
                 create_dataset(g, value)
 
-    def addto(self, file_name: str, group_name: str):
+    def addto(self, file_name: Union[str, Path], group_name: str):
         """
         Save priors to existing file
         :param file_name: existing h5 file
@@ -1028,7 +1098,7 @@ class Priors(object):
             self._writeto(g)
 
     @classmethod
-    def from_file(cls, file_name: str):
+    def from_file(cls, file_name: Union[str, Path]):
         """
         Load prior data from h5 file
         :param file_name: filename
@@ -1038,11 +1108,13 @@ class Priors(object):
             return cls._load_from(f)
 
     @classmethod
-    def from_group(cls, file_name: str, group_name: str):
+    def from_group(cls, file_name: Union[str, Path], group_name: str):
         """
         Load prior data from h5 file combined with other data
         :param file_name: filename
         :param group_name: group name of prior data
+
+        :returns: Priors
         """
 
         with h5py.File(file_name, "r") as f:
@@ -1095,6 +1167,12 @@ class Priors(object):
 
     @classmethod
     def from_dict(cls, priors_dict):
+        """Load priors from a dictionary
+
+        :param priors_dict: Dictionary containing priors
+
+        :returns: Priors
+        """
         priors = cls()
 
         priors.luminosity = priors_dict["L"]
