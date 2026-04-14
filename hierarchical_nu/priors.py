@@ -133,7 +133,7 @@ class UniformPrior(PriorDistribution):
     Uniform prior
     """
 
-    def __init__(self, name="uniform", xmin=0.0, xmax=np.infty):
+    def __init__(self, name="uniform", xmin=0.0, xmax=np.inf):
         super().__init__(name)
 
         self._xmin = xmin
@@ -180,7 +180,7 @@ class LogUniformPrior(PriorDistribution):
     Log-uniform prior, i.e. flat in log(x)
     """
 
-    def __init__(self, name="logflat", xmin=0.0, xmax=np.infty):
+    def __init__(self, name="logflat", xmin=0.0, xmax=np.inf):
         super().__init__(name)
 
         self._xmin = xmin

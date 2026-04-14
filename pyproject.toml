@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hierarchical_nu"
+description = "A Bayesian hierarchical model for source-nu associations"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {name = "Francesca Capel", email = "capel.francesca@gmail.com"},
+    {name = "Julian Kuhlmann", email = "julian.kuhlmann@mpp.mpg.de"},
+]
+maintainers = [
+    {name = "Julian Kuhlmann", email = "julian.kuhlmann@mpp.mpg.de"},
+    {name = "Francesca Capel", email = "capel.francesca@gmail.com"},
+]
+license = "MIT"
+license-files = ["LICENSE.txt"]
+
+dependencies = [
+    "numpy",
+    "astropy",
+    "scipy",
+    "h5py",
+    "crflux",
+    "cmdstanpy",
+    "pandas",
+    "ligo.skymap",
+    "arviz",
+    "corner",
+    "matplotlib",
+    "omegaconf",
+    "MCEq",
+    "joblib",
+    "iminuit",
+    "tqdm_joblib",
+    "healpy",
+    "icecube_tools @ git+https://github.com/cescalara/icecube_tools.git@814174f457eb887816388ab0e70dabbe363ca65c",
+]
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+    "pytest-cov"
+]
+docs = [
+    "sphinx",
+    "nbsphinx"
+]
+
+[project.urls]
+Repository = "https://github.com/cescalara/hierarchical_nu"
+Issues = "https://github.com/cescalara/hierarchical_nu/issues"
+
+[tools.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "hierarchical_nu/_version.py"
+versionfile_build = "hierarchical_nu/_version.py"
+tag_prefix = "v"
+parentdir_prefix = "hierarchical_nu-"
