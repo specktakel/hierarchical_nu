@@ -38,7 +38,9 @@ Cache.set_cache_dir(".cache")
 
 
 class CascadesEffectiveArea(EffectiveArea):
-    """Effective area based on the cascade_model simulation."""
+    """Effective area based on the cascade_model simulation.
+    .. deprecated:
+    """
 
     local_path = "input/cascades/cascade_detector_model.h5"
     DATA_PATH = os.path.join(os.path.dirname(__file__), local_path)
@@ -117,6 +119,7 @@ class CascadesEffectiveArea(EffectiveArea):
 class CascadesEnergyResolution(LogNormEnergyResolution):
     """
     Energy resolution based on the cascade_model simulation.
+    .. deprecated:
     """
 
     local_path = "input/cascades/cascade_detector_model.h5"
@@ -329,6 +332,7 @@ class CascadesEnergyResolution(LogNormEnergyResolution):
 class CascadesAngularResolution(AngularResolution):
     """
     Angular resolution for Cascades
+    .. deprecated:
     Data from https://arxiv.org/pdf/1311.4767.pdf (Fig. 14)
     Extrapolated using a complementary error function
     Fits a polynomial to the median angular resolution converted to
@@ -469,6 +473,7 @@ class CascadesAngularResolution(AngularResolution):
 class CascadesDetectorModel(DetectorModel):
     """
     Implements the detector model for the cascades.
+    .. deprecated:
     Parameters:
         mode: DistributionMode
             Set mode to either RNG or PDF

@@ -16,6 +16,8 @@ from .r2021 import (
 
 
 class EventType:
+    """Event type base class"""
+
     # Only works with @dataclass(eq=False) decorator called in notebooks directly, but not in e.g. LifeTime.mjd_from_dm
     def __eq__(self, other):
         return self.S == other.S
@@ -78,10 +80,14 @@ class IC86_II(EventType):
 
 
 class Refrigerator:
+    """Collect all event types"""
+    
     detectors = [NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II]
 
     @classmethod
     def python2dm(cls, python):
+        """Returns EventType corresponding to python event-type string"""
+
         for dm in cls.detectors:
             if dm.P == python:
                 return dm
@@ -90,6 +96,8 @@ class Refrigerator:
 
     @classmethod
     def stan2dm(cls, stan):
+        """Returns EventType corresponding to stan event-type"""
+
         for dm in cls.detectors:
             if dm.S == stan:
                 return dm
@@ -98,6 +106,8 @@ class Refrigerator:
 
     @classmethod
     def stan2python(cls, stan):
+        """Returns python event-type string corresponding to  stan event-type"""
+
         for dm in cls.detectors:
             if stan == dm.S:
                 return dm.P
@@ -106,6 +116,8 @@ class Refrigerator:
 
     @classmethod
     def python2stan(cls, python):
+        """Returns stan event-type corresponding to python event-type string"""
+
         for dm in cls.detectors:
             if python == dm.P:
                 return dm.S

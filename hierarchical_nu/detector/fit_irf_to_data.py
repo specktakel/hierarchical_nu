@@ -42,11 +42,18 @@ class RateCalculator:
         dec_idx: int,
     ):
         """
+        A RateCalculator will calculate event rates of diffuse sources, i.e. astro diffuse and atmospheric,
+        for a given event type and declination band. This class exists to analyse a mismatch between
+        simulated and detected event rates in IceCube data. It has been applied in a conference proceeding,
+        where we modified parts of the energy resolution to partially resolve this mismatch.
+        The use of this class is debatable and its results are NOT used by default in hierarchical_nu analyses.
+
         :param season: EventType instance for which to calculate the rate. Must be of IC40 to IC86_II
         :param flux: AtmosphericNuMuFlux to use for the rate calculation
         :param aeff: EffectiveArea instance matching the season, needs to have a spline implementation
-        :dec_idx: Declination index of the IRF to use. Is fixed for the instance, not to be changed at run time.
+        :param dec_idx: Declination index of the IRF to use. Is fixed for the instance, not to be changed at run time.
         """
+
         irf = R2021IRF.from_period(season.P)
 
         aeff = R2021EffectiveArea(season=season.P)
@@ -198,6 +205,8 @@ class RateCalculator:
         Create new energy resolution using linear transformations
         on the reconstructed energy bins of the two lowest neutrino energies,
         i.e. new bins = a * old bins + b
+        The index 1/2 indicates the lowest (1) and second lowest (2) true energy
+        bin of the energy resolution.
         """
 
         ereco_pdfs = []
@@ -221,6 +230,14 @@ class RateCalculator:
         distribution given a true neutrino engery.
         Copied from skyllh and slightly adapted to be used
         with shifted reco energy bins.
+
+        :param tE_idx: True energy index of the energy resolution
+        :param dec_idx: Declination index of the energy resolution
+        :param hist: If True use the histogram representation of
+            the energy resolution, else the spline representation
+        :param shift: Callable that transforms the reco energy binning
+
+        :returns: Shifted energy resolution
         """
 
         # manually correct for some zero-bin which does weird stuff to the spline
@@ -249,6 +266,13 @@ class RateCalculator:
         Calculate rates using a linear transformation
         on the binning of the two lowest energy bins of the IRF
         new bins = old bins * a + b
+        The index 1/2 indicates the lowest (1) and second lowest (2) true energy
+        bin of the energy resolution.
+
+        :param detailed: Control the level of output detail. Allowed values: 0, 1, 2
+        :param spectrum: Either `atmo` or `astro`
+
+        :returns: Event rates
         """
 
         sindec_min = self.sindec_min
@@ -367,6 +391,13 @@ class RateCalculator:
         return np.array(rate) * 1e4
 
     def calc_rates_from_2d_splines(self, detailed: int = 0, spectrum="atmo"):
+        """Calculate event rates from spline representation of energy resolution
+
+        :param detailed: Control output detail. Allowed values are 0, 1, 2
+        :param spectrum: `atmo` or `astro`
+
+        :returns: Event rates
+        """
 
         sindec_min = self.sindec_min
         sindec_max = self.sindec_max
@@ -469,6 +500,8 @@ class RateCalculator:
         return np.array(rate) * 1e4
 
     def exp_value(self, rates):
+        """Calculate the expectation value of event rates"""
+
         # Calculates the (log) exp value of reconstructed energies
         # only use detailed==1
         assert rates.shape == (self.Ebins_c.size, self.tE_binc.size)
@@ -480,6 +513,10 @@ class RateCalculator:
         return av
 
     def likelihood(self, a1, a2, b1, b2, detailed: int = 0):
+        """Define likelihood function comparing the expected and measured event rates
+        This uses a binned poisson likelihood over bins of reconstructed energies
+        """
+
         # TODO implement detailed kwarg
 
         r = self.calc_rates(a1, a2, b1, b2, detailed)
@@ -500,8 +537,16 @@ class RateCalculator:
 
     def scan(self, a1, a2, b1, b2, n_jobs: int = 20, detailed: int = 0):
         """
-        Scan over the parameter space
+        Likelihood scan over the parameter space
+        
+        :param a1:
+        :param a2:
+        :param b1:
+        :param b2:
+        :param n_jobs: Number of parallel jobs to run
+        :param detailed: Control level of binning
         """
+
         if detailed > 1:
             raise ValueError("`detailed` must be 0 or 1 for a scan")
         aa1, aa2, bb1, bb2 = np.meshgrid(a1, a2, b1, b2)
@@ -525,6 +570,14 @@ class RateCalculator:
     def plot_detailed_rates(
         self, detailed_rates, figsize=(6.4, 4.8), grid: bool = False
     ):
+        """Plot detailed event rates
+
+        :param detailed_rates: Event rates
+        :param figsize: Figsize of plot
+        :param grid: If True plot grid
+
+        :returns: fig, axs of created plot
+        """
 
         if len(detailed_rates.shape) == 1:
             detailed = 0
@@ -629,6 +682,14 @@ class RateCalculator:
         return fig, axs
 
     def plot_hist_and_spline(self, tE_idx, dec_idx):
+        """Plot histogram and spline representation of energy resolution
+
+        :param tE_idx: true energy index
+        :param dec_idx: Declination index
+
+        :returns: fig, ax of created figure
+        """
+
         spline = self.create_shifted_reco_pdf(tE_idx, dec_idx)
         n, bins = self.create_shifted_reco_pdf(tE_idx, dec_idx, hist=True)
         x = np.linspace(bins[0], bins[-1], 1_000)

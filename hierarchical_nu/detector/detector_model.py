@@ -28,7 +28,7 @@ Cache.set_cache_dir(".cache")
 
 class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
     """
-    Implements baseclass for effective areas.
+    Implements abstract base class for effective areas.
 
     Every implementation of an effective area has to define a setup method,
     that will take care of downloading required files, creating parametrizations etc.
@@ -38,9 +38,11 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
     """
 
     def _make_spline(self):
+        """Create spline representation of log10(effective area)"""
+
         log_tE_lower_bin_edges = np.log10(self._tE_bin_edges[:-1])
         log_tE_upper_bin_edges = np.log10(self._tE_bin_edges[1:])
-        """
+        '''
         log_tE_bin_c = np.concatenate(
             (
                 np.array([log_tE_lower_bin_edges[0]]),
@@ -48,7 +50,7 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
                 np.array([log_tE_upper_bin_edges[-1]]),
             ),
         )
-        """
+        '''
         log_tE_bin_c = (log_tE_lower_bin_edges + log_tE_upper_bin_edges) / 2
         log_tE_bin_c[0] = log_tE_lower_bin_edges[0]
         log_tE_bin_c[-1] = log_tE_upper_bin_edges[-1]
@@ -65,7 +67,7 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         )
 
         # Duplicate slice at lowest and highest energy
-        """
+        '''
         to_be_splined_aeff = np.concatenate(
             (
                 np.atleast_2d(self.eff_area[0, :]),
@@ -74,7 +76,7 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
             ),
             axis=0,
         )
-        """
+        '''
         to_be_splined_aeff = self.eff_area.copy()
         # Duplicate slice at cosz=-1 (vertical upgoing) and cosz=1 (vertical downgoing)
         to_be_splined_aeff = np.concatenate(
@@ -99,6 +101,14 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         )
 
     def spline(self, logE, cosz):
+        """Wrapper to call log10-spline representation
+
+        :param logE: log10 energy / GeV
+        :param cosz: cos(zenith)
+
+        :returns: Evaluated log10-effective area spline
+        """
+
         return self.eff_area_spline((logE, cosz))
 
     @abstractmethod
@@ -151,10 +161,13 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
 
         return self._rs_bbpl_params
 
-    # @property
     def eff_area_spline(self, vals):
         """
         2D spline of effective area.
+
+        :param vals: Tuple of log10 energy / GeV and cos(zenith)
+
+        :returns: Evaluated effective area spline in lin-space
         """
 
         return np.power(10, self._eff_area_spline(vals))
@@ -175,8 +188,6 @@ class EnergyResolution(metaclass=ABCMeta):
     Signature for __call__ of UserDefinedFunction for DistributionMode.PDF is
     log10(Etrue): real, log10(Edet): real, omega_det: unit_vector[3]
     even if some parameter might not be used
-
-    Since there are two implementations of
     """
 
     @abstractmethod
@@ -220,38 +231,47 @@ class GridInterpolationEnergyResolution(
 
     @property
     def log_rE_bin_edges(self):
+        """log10 reconstructed energy bin edges"""
         return self._log_rE_bin_edges
 
     @property
     def log_rE_binc(self):
+        """log10 reconstructed energy bin centers"""
         return self._log_rE_bin_edges
 
     @property
     def log_tE_bin_edges(self):
+        """log10 true energy bin edges"""
         return self._log_tE_bin_edges
 
     @property
     def log_tE_binc(self):
+        """log10 true energy bin centers"""
         return self._log_tE_binc
 
     @property
     def dec_bin_edges(self):
+        """Declination bin edges"""
         return self._dec_bin_edges
 
     @property
     def dec_binc(self):
+        """Declination bin centers"""
         return self._dec_binc
 
     @property
     def sin_dec_edges(self):
+        """sin(dec) bin edges"""
         return self._sin_dec_edges
 
     @property
     def sin_dec_binc(self):
+        """sin(dec) bin centers"""
         return self._sin_dec_binc
 
     @property
     def evaluations(self):
+        """Evaluations of energ resolution grid"""
         return self._evaluations
 
 
@@ -301,9 +321,13 @@ class LogNormEnergyResolution(EnergyResolution, UserDefinedFunction, metaclass=A
         return self._poly_limits
 
     @staticmethod
-    def make_fit_model(n_components):
+    def make_fit_model(n_components: int):
         """
         Lognormal mixture with n_components.
+
+        :param n_component: Number of components
+
+        :returns: Callable model
         """
 
         # s is width of lognormal
@@ -320,9 +344,13 @@ class LogNormEnergyResolution(EnergyResolution, UserDefinedFunction, metaclass=A
         return _model
 
     @staticmethod
-    def make_cumulative_model(n_components):
+    def make_cumulative_model(n_components: int):
         """
         Cumulative Lognormal mixture above xth with n_components.
+
+        :param n_components: Number of components
+
+        :returns: Callable model
         """
 
         def _cumulative_model(xth, pars):
@@ -455,10 +483,15 @@ class LogNormEnergyResolution(EnergyResolution, UserDefinedFunction, metaclass=A
 
         return poly_params_mu, poly_params_sd, poly_limits
 
-    def plot_fit_params(self, fit_params: np.ndarray, tE_binc: np.ndarray) -> None:
+    def plot_fit_params(self, fit_params: np.ndarray, tE_binc: np.ndarray):
         """
         Plot the evolution of the lognormal parameters with true energy,
         for each mixture component.
+
+        :param fit_params: Fit params of mixture model
+        :param tE_binc: true energy bin centers
+
+        :returns: fig, axs of created figure
         """
 
         import matplotlib.pyplot as plt
@@ -492,7 +525,7 @@ class LogNormEnergyResolution(EnergyResolution, UserDefinedFunction, metaclass=A
         axs[0].legend()
         axs[1].legend()
         plt.tight_layout()
-        return fig
+        return fig, axs
 
     def plot_parameterizations(
         self,
@@ -577,7 +610,7 @@ class LogNormEnergyResolution(EnergyResolution, UserDefinedFunction, metaclass=A
         ax.set_xlabel("log10(Reconstructed Energy /GeV)")
         ax.set_ylabel("PDF")
         plt.tight_layout()
-        return fig
+        return fig, ax
 
     @u.quantity_input
     def prob_Edet_above_threshold(
@@ -589,6 +622,13 @@ class LogNormEnergyResolution(EnergyResolution, UserDefinedFunction, metaclass=A
     ):
         """
         P(Edet > Edet_min | E) for use in precomputation.
+
+        :param true_energy: True neutrino energy in GeV
+        :param threshold energy: Minimum reconstructed energy in GeV
+        :param dec: Declination
+        :param use_lognorm: Not implemented
+
+        :returns: Evaluated probability
         """
 
         # Truncate input energies to safe range
@@ -695,6 +735,10 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
         mode: DistributionMode = DistributionMode.PDF,
         event_type=None,
     ):
+        """
+        :param mode: DistributionMode.PDF for fits, DistributionMode.RNG for simulations
+        :param event_type: Event type of the detector, e.g. IC40
+        """
         self.mode = mode
 
         self._event_type = event_type
@@ -735,6 +779,16 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
         rewrite: bool = False,
         **kwargs
     ):
+        """Generate detector model specific stan code
+
+        :param mode: DistributionMode, PDF for fits, RNG for simulations
+        :param path: Path for saving the generated stan file
+        :param rewrite: Set to True if an existing stan file should be overwritten
+        :param \*\* kwargs: kwargs passed to... somewhere, possibly?
+
+        :returns: Path of stan file
+        """
+
         try:
             files = os.listdir(path)
         except FileNotFoundError:

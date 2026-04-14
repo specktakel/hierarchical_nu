@@ -85,6 +85,8 @@ class HistogramSampler:
 
     # These are fitted correction factors to low energy IRFs
     # used to better model the atmospheric background at ~1TeV
+    # Do not use unless you know what you are doing
+    # NB: Not sure I know what I am doing
 
     # CORRECTION_FACTOR = {}
     """

@@ -12,6 +12,14 @@ base_path = Path(data_directory) / Path(available_datasets["20210126"]["dir"])
 class R2021BackgroundLLH:
 
     def __init__(self, season: str = "IC86_II"):
+        """
+        Implements background likelihood as used in SkyLLH
+        and converts it to a rate parameter for use in stan fits.
+        Manual install of SkyLLH is currently necessary for use of this class.
+
+        :param season: str encoding the detector season
+        """
+
         from skyllh.i3.backgroundpdf import DataBackgroundI3SpatialPDF
 
         from skyllh.core.config import Config
@@ -128,6 +136,16 @@ class R2021BackgroundLLH:
     def prob_ereco_and_omega(
         self, ereco: Union[float, np.ndarray], sin_dec: Union[float, np.ndarray]
     ):
+        """
+        Factorise probability density using Bayes' theorem into
+        pdf(Ereco, sindex) = pdf(Ereco|sindec) * pdf(sindec)
+
+        :param ereco: reconstructed energy
+        :param sin_dec: sin(dec)
+
+        :returns: Probability density
+        """
+
         p_sin_dec = self.prob_omega(sin_dec)
         p_ereco_given_sindec = self.prob_ereco_given_sindec(ereco, sin_dec)
         return p_ereco_given_sindec * p_sin_dec

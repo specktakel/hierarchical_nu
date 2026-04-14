@@ -42,6 +42,8 @@ class NorthernTracksEffectiveArea(EffectiveArea):
     """
     Effective area for the two-year Northern Tracks release:
     https://icecube.wisc.edu/science/data/HE_NuMu_diffuse
+
+    .. deprecated:
     """
 
     local_path = "input/tracks/effective_area.h5"
@@ -123,6 +125,8 @@ class NorthernTracksEnergyResolution(LogNormEnergyResolution):
     Energy resolution for Northern Tracks Sample
 
     Data from https://arxiv.org/pdf/1811.07979.pdf
+
+    .. deprecated:
     """
 
     local_path = "input/tracks/effective_area.h5"
@@ -364,6 +368,7 @@ class NorthernTracksAngularResolution(AngularResolution):
         e_min: Lower energy bound of the polynomial
         e_max: Upper energy bound of the polynomial
 
+    .. deprecated:
     """
 
     local_path = "input/tracks/NorthernTracksAngularRes.csv"
@@ -511,6 +516,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
         mode: DistributionMode
             Set mode to either RNG or PDF
 
+    .. deprecated:
     """
 
     event_types = ["tracks"]
