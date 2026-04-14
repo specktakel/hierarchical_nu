@@ -29,14 +29,7 @@ from cmdstanpy import CmdStanModel
 
 from hierarchical_nu.source.source import Sources, PointSource, icrs_to_uv, uv_to_icrs
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.source.flux_model import (
-    IsotropicDiffuseBG,
-    LogParabolaSpectrum,
-    PGammaSpectrum,
-    TwiceBrokenPowerLaw,
-    PowerLawSpectrum,
-)
-from hierarchical_nu.source.seyfert_model import SeyfertNuMuSpectrum
+from hierarchical_nu.source.flux_model import IsotropicDiffuseBG
 from hierarchical_nu.source.cosmology import luminosity_distance
 from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
 from hierarchical_nu.detector.r2021 import (
@@ -44,16 +37,13 @@ from hierarchical_nu.detector.r2021 import (
 )
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
-from hierarchical_nu.priors import Priors, UnitPrior, MultiSourcePrior, NoPriorSetError, AngularPrior
-from hierarchical_nu.source.source import uv_to_icrs
-
+from hierarchical_nu.priors import Priors, UnitPrior, MultiSourcePrior, NoPriorSetError
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.git import git_hash
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.utils.config_parser import ConfigParser
 from hierarchical_nu.utils.lifetime import LifeTime
-from hierarchical_nu.utils.roi import ROIList
 from .source.source_info import SourceInfo
 
 from omegaconf import OmegaConf
@@ -64,9 +54,7 @@ logger.setLevel(logging.WARNING)
 
 
 class StanFit(SourceInfo):
-    """
-    To set up and run fits in Stan.
-    """
+    """To set up and run fits in Stan."""
 
     @u.quantity_input
     def __init__(
@@ -74,7 +62,7 @@ class StanFit(SourceInfo):
         sources: Sources,
         event_types: Union[EventType, List[EventType]],
         events: Events,
-        observation_time: Dict[str, u.quantity.Quantity[u.year]],
+        observation_time: Union[u.quantity.Quantity[u.year], Dict[str, u.quantity.Quantity[u.year]]],
         priors: Priors = Priors(),
         atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
@@ -86,11 +74,15 @@ class StanFit(SourceInfo):
     ):
         """
         To set up and run fits in Stan.
-        :param sources: instance of Sources
-        :param event_types: EventType or List thereof, to be included in the fit
-        :param events: instance of Events
+
+        :param sources: Source container
+        :type sources: :class:`hierarchical_nu.source.source.Sources`
+        :param event_types: Event types to be included in the fit
+        :type event_types: :class:`List`, :class:`hierarchical_nu.detector.icecube.EventType`
+        :param events: Event container
+        :type events: :class:`hierarchical_nu.events.Events`
         :param observation_time: astropy.units time for single event type or dictionary thereof with event type as key
-        :param priors: instance of Priors of parameters
+        :param priors: Parameter priors, :class:`hierarchical_nu.priors.Priors`
         :param atmo_flux_energy_points: number of points for atmo spectrum energy interpolation
         :param atmo_flux_theta_points: number of points for atmo spectrum cos(theta) interpolation
         :param n_grid_points: number of grid points used per parameter in precomputation of exposure
@@ -233,9 +225,11 @@ class StanFit(SourceInfo):
         show_progress: bool = False,
     ):
         """
-        Run the necessary precomputation
+        Run the necessary precomputation.
+
         :param exposure_integral: instance of ExposureIntegral if already available.
         :param show_progress: set to True if progress bars should be displayed.
+        :returns: None
         """
 
         if not exposure_integral:
@@ -256,16 +250,16 @@ class StanFit(SourceInfo):
             self._exposure_integral = exposure_integral
 
     def generate_stan_code(self):
-        """
-        Generate stan code from scratch
-        """
+        """Generate stan code from scratch."""
 
         self._fit_filename = self._stan_interface.generate()
 
     def set_stan_filename(self, fit_filename):
         """
-        Set filename of existing stan code
+        Set filename of existing stan code.
+
         :param fit_filename: filename of stan code
+        :returns: None
         """
 
         self._fit_filename = fit_filename
@@ -273,7 +267,9 @@ class StanFit(SourceInfo):
     def compile_stan_code(self, include_paths=None):
         """
         Compile stan code
-        :param include_paths: list of paths to include stan files from
+
+        :param include_paths: List of paths to include stan files from.
+        :returns: None
         """
 
         if not include_paths:
@@ -287,8 +283,10 @@ class StanFit(SourceInfo):
 
     def setup_stan_fit(self, filename: Union[str, Path] = ".stan_files/model_code"):
         """
-        Create stan model from already compiled file
+        Create stan model from already compiled file.
+
         :param filename: Path to compiled model file
+        :returns: None
         """
 
         self._fit = CmdStanModel(exe_file=filename)
@@ -303,14 +301,16 @@ class StanFit(SourceInfo):
         **kwargs,
     ):
         """
-        Run fit
+        Run fit.
+
         :param iterations: int, number of MCMC iterations
         :param chains: Number of chains to run in parallel
         :param seed: random seed
         :param show_progress: Set to True if progress par should be displayed
         :param threads_per_chain: When set up using nshards > 1, number of threads to run in parallel per chain
-        :param **kwargs: Other kwargs to be passed to cmdstanpy's sampling method
+        :param \*\*kwargs: Other kwargs to be passed to cmdstanpy sampling method
         """
+
         # Use threads_per_chain = nshards as default
         if not threads_per_chain and self._nshards > 0:
             threads_per_chain = self._nshards
@@ -335,7 +335,8 @@ class StanFit(SourceInfo):
 
     def __getitem__(self, key):
         """
-        Return samples from chains
+        Return samples from chains.
+
         :param key: Variable name
         """
 
@@ -365,13 +366,15 @@ class StanFit(SourceInfo):
         **kwargs,
     ):
         """
-        Run setup and perform fit
+        Run setup and perform fit.
+
         :param iterations: int, number of MCMC iterations
         :param chains: Number of chains to run in parallel
         :param seed: random seed
         :param show_progress: Set to True if progress par should be displayed
         :param threads_per_chain: When set up using nshards > 1, number of threads to run in parallel per chain
-        :param **kwargs: Other kwargs to be passed to cmdstanpy's sampling method
+        :param \*\*kwargs: Other kwargs to be passed to cmdstanpy's sampling method
+        :returns: None
         """
 
         self.precomputation()
@@ -387,7 +390,8 @@ class StanFit(SourceInfo):
 
     def get_src_position(self, source_idx: int = 0):
         """
-        Return source position
+        Return source position.
+
         :param source_idx: Point source index
         """
 
@@ -409,17 +413,19 @@ class StanFit(SourceInfo):
         return source_coords
 
     def plot_trace(self, var_names=None, transform: bool = False, **kwargs):
-        """
+        r"""
         Trace plot using list of stan parameter keys.
+
         :param var_names: single parameter name or list of parameters
         :param transform: set to True if log10(x) transformation should be applied
-        :param **kwargs: other kwargs passed to arviz.plot_trace
+        :param \*\*kwargs: other kwargs passed to arviz.plot_trace
         """
 
         if not var_names:
             var_names = self._def_var_names
         if transform:
-            transform = lambda x: np.log10(x)
+            def transform(x):
+                return np.log10(x)
             axs = av.plot_trace(
                 {key: self[key] for key in var_names}, transform=transform, **kwargs
             )
@@ -434,9 +440,11 @@ class StanFit(SourceInfo):
     def plot_trace_and_priors(self, var_names=None, transform: bool = False, **kwargs):
         """
         Trace plot and overplot the used priors.
+
         :param var_names: single parameter name or list of parameters
         :param transform: set to True if log10(x) transformation should be applied
-        :param **kwargs: other kwargs passed to arviz.plot_trace
+        :param \*\*kwargs: other kwargs passed to arviz.plot_trace
+        :returns: fig, axs
         """
 
         fig, axs = self.plot_trace(
@@ -517,7 +525,8 @@ class StanFit(SourceInfo):
         transform: Callable = lambda x: x,
     ):
         """
-        Retrieve kde approximation of samples for given parameter
+        Retrieve kde approximation of samples for given parameter.
+
         :param var_name: parameter name
         :param index: for vector/array parameters, only use this index
         :param transform: Lambda function for transformation of variable
@@ -534,8 +543,10 @@ class StanFit(SourceInfo):
         """
         Corner plot using list of Stan parameter keys and optional
         true values if working with simulated data.
+
         :param var_names: Variable names for corner plot
         :param truths: If provided, overplot True parameters
+        :returns: corner plot
         """
 
         if not var_names:
@@ -755,6 +766,7 @@ class StanFit(SourceInfo):
         """
         Plot energy posteriors in log10-space.
         Color corresponds to association probability.
+
         :param center: SkyCoord, int identifying PS or None to center selection on
         :param assoc_idx: integer identifying the source component to calculate assoc prob
         :param radius: if center is not None, select only events within radius around center
@@ -762,6 +774,7 @@ class StanFit(SourceInfo):
         :param highlight: List of event indices to highlight in plot, defaults to
             all events with association probability larger than `assoc_threshold` to selected source component.
         :param assoc_threshold: If highlight==None, highlight above this association probability.
+        :returns: fig, axs
         """
 
         fig, ax = plt.subplots(dpi=150)
@@ -893,11 +906,13 @@ class StanFit(SourceInfo):
         to the association probability to the point source proposed.
         Assumes there is a point source in self._sources[0].
         Size of events are meaningless.
+
         :param center: either SkyCoord or PS index to center the plot on
         :param radius: Radius of sky plot
         :param assoc_idx: source idx to calculate the association probability
         :param color_scale: display association probability on "lin" or "log" scale
         :param highlight: Iterable of event indices to highlight in plot.
+        :returns: fig, axs
         """
 
         if isinstance(center, int):
@@ -950,6 +965,7 @@ class StanFit(SourceInfo):
         to the association probability to the point source proposed.
         Assumes there is a point source in self._sources[0].
         Size of events are meaningless.
+
         :param center: either SkyCoord or PS index to center the plot on
         :param radius: Radius of sky plot
         :param assoc_idx: source idx to calculate the association probability
@@ -957,6 +973,7 @@ class StanFit(SourceInfo):
         :param highlight: Iterable of event indices to highlight in plot.
         :param assoc_threshold: If highlight==None, highlight above this association probability.
         :param figsize: Tuple passed to pyplot.
+        :returns: fig, axs of plot
         """
 
         fig = plt.figure(dpi=150, figsize=figsize)
@@ -1022,6 +1039,7 @@ class StanFit(SourceInfo):
         return fig, axs
 
     def _calculate_flux_grid(self):
+        """Calculate source flux on an enery grid."""
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
@@ -1141,6 +1159,7 @@ class StanFit(SourceInfo):
             self._flux_grid[c_ps] = flux_grid
 
     def _calculate_quantiles(self, E_power, energy_unit, area_unit, source_idx, LL, UL):
+        """Calculate quantiles of flux."""
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
@@ -1178,6 +1197,7 @@ class StanFit(SourceInfo):
     ):
         """
         Plot flux uncertainties.
+
         :param E_power: float, plots flux * E**E_power.
         :param credible_interval: set (equal-tailed) credible intervals to be plotted.
         :param source_idx: Choose which point source's flux to plot. -1 for sum over all PS.
@@ -1188,6 +1208,7 @@ class StanFit(SourceInfo):
         :param figsize: Figsize for new figure (requiring `ax=None`)
         :param ax: Reuse existing axis, defaults to creating a new figure with single axis
         :param kwargs: Remaining kwargs will be passed to `pyplot.axis.fill_between` or `pyplot.axis.plot`
+        :returns: fig, axs
         """
 
         # Have some defaults for plotting
@@ -1278,6 +1299,8 @@ class StanFit(SourceInfo):
     ):
         """
         Plot flux uncertainties.
+        TODO: add source_idx and limits
+
         :param E_power: float, plots flux * E**E_power.
         :param credible_interval: set (equal-tailed) credible intervals to be plotted.
         :param source_idx: Choose which point source's flux to plot. -1 for sum over all PS.
@@ -1288,6 +1311,7 @@ class StanFit(SourceInfo):
         :param figsize: Figsize for new figure (requiring `ax=None`)
         :param ax: Reuse existing axis, defaults to creating a new figure with single axis
         :param kwargs: Remaining kwargs will be passed to `pyplot.axis.fill_between` or `pyplot.axis.plot`
+        :returns: fig, axs
         """
 
         # Have some defaults for plotting
@@ -1374,11 +1398,13 @@ class StanFit(SourceInfo):
     ):
         """
         Plot 2d kde contours of peak energy flux and energy at which peak lies
+
         :param ax: Axis in which to plot
         :param levels: HDI levels to plot
         :param energy_unit: flux energy unit, i.e. energy_unit / area_unit / s
         :param area_unit: flux area unit, i.e. energy_unit / area_unit / s
         :param x_energy_unit: energy unit of x-axis
+        :returns: None
         """
 
         from matplotlib.lines import Line2D
@@ -1433,11 +1459,12 @@ class StanFit(SourceInfo):
     ):
         """
         Save fit to h5 file.
+
         :param path: Path to which fit is saved.
         :param overwrite: Set to `True` to overwrite existing file,
             else timestamp is appended to `path` to avoid overwriting.
-        param save_json: Set to `True` if arviz json output should be saved.
-            uses provided path with .json extension.
+        :param save_json: Set to `True` if arviz json output should be saved.
+            Uses provided path with .json extension.
         """
 
         # Check if filename consists of a path to some directory as well as the filename
@@ -1593,9 +1620,7 @@ class StanFit(SourceInfo):
         return path  # noqa: F821
 
     def diagnose(self):
-        """
-        Print fit diagnosis
-        """
+        """Print fit diagnosis."""
 
         try:
             print(self._fit_output.diagnose())
@@ -1604,8 +1629,10 @@ class StanFit(SourceInfo):
 
     def save_csvfiles(self, directory):
         """
-        Save cmdstanpy csv files
+        Save cmdstanpy csv files.
+
         :param directory: Directory to save csv files to.
+        :returns: None
         """
 
         self._fit_output.save_csvfiles(directory)
@@ -1615,7 +1642,9 @@ class StanFit(SourceInfo):
         """
         Load fit output from file. Allows to
         make plots and run classification check.
+
         :param filename: single or multiple filenames to be loaded.
+        :return: `StanFit`
         """
 
         if len(filename) == 1:
@@ -1858,7 +1887,9 @@ class StanFit(SourceInfo):
         For the case of simulated data, check if
         events are correctly classified into the
         different source categories.
+
         :param sim_outputs: True associations of events, using `Lambda` of simulation.
+        :returns: wrong, assumed, correct - Lists of event indices
         """
 
         Ns = len([s for s in self._sources.sources if isinstance(s, PointSource)])
@@ -1922,9 +1953,7 @@ class StanFit(SourceInfo):
 
     @property
     def chains(self):
-        """
-        Return number of chains
-        """
+        """Return number of chains."""
 
         if self._reload:
             return self._fit_meta["chains"]
@@ -1933,9 +1962,7 @@ class StanFit(SourceInfo):
 
     @property
     def iterations(self):
-        """
-        Return number of iterations per chain
-        """
+        """Return number of iterations per chain."""
 
         if self._reload:
             return self._fit_meta["iter_sampling"]
@@ -1966,9 +1993,7 @@ class StanFit(SourceInfo):
         return ratio
 
     def _get_event_classifications(self):
-        """
-        Get list of event classifications
-        """
+        """Get list of event classifications."""
 
         ratio = self._get_event_association_dist()
         # average over samples, hence axis=-1
@@ -1976,9 +2001,7 @@ class StanFit(SourceInfo):
         return assoc_prob
 
     def _get_fit_inputs(self):
-        """
-        Return dictionary of fit inputs, passed to cmdstanpy
-        """
+        """Return dictionary of fit inputs, passed to cmdstanpy."""
 
         self._get_par_ranges()
         fit_inputs = {}

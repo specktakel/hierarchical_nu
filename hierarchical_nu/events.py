@@ -16,10 +16,7 @@ from icecube_tools.utils.vMF import get_kappa
 
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.utils.roi import (
-    ROI,
-    RectangularROI,
     CircularROI,
-    FullSkyROI,
     ROIList,
 )
 from hierarchical_nu.source.source import Sources, PointSource
@@ -39,7 +36,7 @@ import logging
 from pathlib import Path
 import os
 
-from typing import List, Union
+from typing import Union
 import numpy.typing as npt
 
 logger = logging.getLogger(__name__)
@@ -47,6 +44,7 @@ logger.setLevel(logging.INFO)
 
 
 class SingleEvent:
+    """Class holding information on single events."""
 
     @u.quantity_input
     def __init__(
@@ -57,6 +55,13 @@ class SingleEvent:
         ang_err: u.deg,
         mjd: Time,
     ):
+        """
+        :param energy: Reconstructed muon energy
+        :param coord: Coordinate of event
+        :param type: Event type
+        :param ang_err: Angular uncertainty of event coordinate
+        :param mjd: Arrival time of event
+        """
 
         self._energy = energy
         self._mjd = np.atleast_1d(mjd)
@@ -87,7 +92,7 @@ class SingleEvent:
 
 class Events:
     """
-    Events class for the storage of event observables
+    Container for storing event observables
     """
 
     @u.quantity_input
@@ -101,6 +106,7 @@ class Events:
     ):
         """
         Events class for the storage of event observables
+
         :param energies: Energies of events
         :param coords: Coords of events, instance of SkyCoord
         :param types: event types, e.g IC40
@@ -133,6 +139,7 @@ class Events:
     def remove(self, i):
         """
         Remove the event at index i
+
         :param i: Event index
         """
         self._energies = np.delete(self._energies, i)
@@ -146,9 +153,7 @@ class Events:
 
     @property
     def N(self):
-        """
-        Returns number of events
-        """
+        """Returns number of events"""
 
         try:
             return self.types.size
@@ -158,6 +163,7 @@ class Events:
     def select(self, mask: npt.NDArray[np.bool_]):
         """
         Select some subset of existing events by providing a mask.
+
         :param mask: Array of bools with same length as event properties.
         """
 
@@ -230,6 +236,7 @@ class Events:
     ):
         """
         Load events from simulated .h5 file.
+
         :param filename: Filename of event file
         :param group_name: Optional group name of event group in event file
         :param scramble_ra: Set to True if right ascension should be scrambled upon loading
@@ -342,6 +349,7 @@ class Events:
     ):
         """
         Save events to h5 file
+
         :param path: Path at which to save events
         :param append: Set to True if path already exists and events should be appended
         :param group_name: If append, group name of events
@@ -401,6 +409,7 @@ class Events:
     def export_to_csv(self, basepath):
         """
         Create new csv files with similar formatting to 10 year point source data
+
         :param basepath: Directory in which to save the .csv files
         """
 
@@ -421,6 +430,7 @@ class Events:
     def get_tags(self, sources: Sources):
         """
         Idea: each event gets one PS (smallest distance), assumes that CircularROIs do not overlap
+
         :param sources: instance of `Sources`
         """
 
@@ -438,7 +448,7 @@ class Events:
 
     def to_icecube_tools(self):
         """
-        Return `icecube_tools.utils.data.SimEvents` object from current events.
+        Return :class:`icecube_tools.utils.data.SimEvents` object from current events.
         """
 
         from icecube_tools.utils.data import SimEvents, dddict
@@ -497,13 +507,14 @@ class Events:
     ):
         """
         Load events from the 2021 data release
+
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
         :param scramble_ra: Set to true if RA should be randomised
         :param seed: int, random seed for RA scrambling
         :param apply_spatial_cuts: if True, apply spatial cuts
         :param apply_temporal_cuts: if True, apply_temporal cuts
         :param apply_Emin_det if True, apply Emin_det cuts
-        :return: :class:`hierarchical_nu.events.Events`
+        :returns: :class:`hierarchical_nu.events.Events`
         """
 
         from icecube_tools.utils.data import RealEvents
@@ -598,6 +609,7 @@ class Events:
         """
         Merge events with a different instance of `Events`.
         Returns newly created instance.
+
         :param events: Instance of Events to merge with
         """
 
@@ -626,6 +638,7 @@ class Events:
         """
         Plot events as coloured circles. Size corresponds to angular uncertainty,
         colour to energy on a logarithmic scale
+
         :param position: SkyCoord or PointSource instance to focus sky projection on
         :param radius: Radius of sky region to plot
         :param lw: line width of circles
@@ -698,6 +711,7 @@ class Events:
         Plot histogram of radial distance to a source located at center.
         Bin edges are equdistant in angle squared such that equal areas in polar coordinates
         (assuming Euclidian space for small angles) are covered by each bin.
+
         :param position: SkyCoord of center or PointSource instance
         :param radius: Max radius of histogram
         """
@@ -734,9 +748,7 @@ class Events:
         skip_time: bool = False,
         skip_direction: bool = False,
     ):
-        """
-        Returns list of mask, one mask for each ROI on stack
-        """
+        """Returns list of mask, one mask for each ROI on stack"""
 
         ra = coords.icrs.ra
         dec = coords.icrs.dec

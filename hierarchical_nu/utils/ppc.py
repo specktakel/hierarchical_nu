@@ -233,8 +233,10 @@ class PPC:
     def setup(self, use_data_as_bg: bool = False):
         """
         Setup all objects to run simulations
+
         :param use_data_as_bg: Bool, defaults to false. If true, use RA-scrambled data as background
             and only simulate the point source
+        :returns: None
         """
 
         try:

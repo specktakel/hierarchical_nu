@@ -228,7 +228,8 @@ class ModelCheck:
 
         * Runs MCEq for atmo flux if needed
         * Generates and compiles necessary Stan files
-        Only need to run once before calling ModelCheck(...).run()
+
+        Only need to run once before calling ModelCheck.run()
         """
 
         # Config

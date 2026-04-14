@@ -1,5 +1,5 @@
 import unittest
-import pystan
+# import pystan
 from ..parameterizations import PolynomialParameterization
 from ..stan_generator import (
     StanGenerator, GeneratedQuantitiesContext, DataContext,
