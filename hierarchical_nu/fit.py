@@ -10,6 +10,7 @@ import corner
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.cm as cm
+from matplotlib.axis import Axis
 
 try:
     from roque_cmap import roque_chill
@@ -655,7 +656,7 @@ class StanFit(SourceInfo):
     @u.quantity_input
     def _plot_energy_posterior(
         self,
-        ax: plt.Axis,
+        ax: Axis,
         center: Union[int, None, SkyCoord],
         assoc_idx: int,
         radius: Union[None, u.Quantity[u.deg]],
@@ -849,7 +850,7 @@ class StanFit(SourceInfo):
     def _plot_roi(
         self,
         center: Union[SkyCoord, int],
-        ax: plt.Axis,
+        ax: Axis,
         radius: u.Quantity[u.deg],
         assoc_idx: int,
         color_scale: str,
@@ -1460,7 +1461,7 @@ class StanFit(SourceInfo):
 
     def plot_peak_energy_flux(
         self,
-        ax: plt.Axis,
+        ax: Axis,
         levels: Iterable = [0.5, 0.683, 0.95],
         energy_unit=u.TeV,
         area_unit=u.cm**2,

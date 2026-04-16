@@ -21,7 +21,7 @@ from ..backend.variable_definitions import (
 )
 from ..backend.expression import StringExpression, ReturnStatement
 
-"""
+__doc__ = """
 Module for simple flux models used in
 neutrino detection calculations
 """
@@ -39,17 +39,22 @@ class SpectralShape(ABC):
     @u.quantity_input
     @abstractmethod
     def __call__(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
+        """Returns differential flux, :math:`dN/dE/dA/dt`"""
+
         pass
 
     @u.quantity_input
     @abstractmethod
     def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / (u.m**2 * u.s):
+        """Returns differential flux integrated over energy, dN/dA/dt"""
+
         pass
 
     @property
     @u.quantity_input
     @abstractmethod
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
+        """Returns energy flux, :math:`\int dE\,E \cdot dN/dE/dA/dt`"""
         pass
 
     @property
@@ -59,19 +64,29 @@ class SpectralShape(ABC):
     @classmethod
     @abstractmethod
     def make_stan_sampling_func(cls):
+        """Generate function for sampling in stan"""
         pass
 
     @classmethod
     @abstractmethod
     def make_stan_lpdf_func(cls):
+        """Generate log-pdf for fits in stan"""
         pass
 
     @classmethod
     @abstractmethod
     def make_stan_flux_conv_func(cls, f_name) -> UserDefinedFunction:
+        """Generate function in stan converting energy to number flux"""
+
         pass
 
     def set_parameter(self, par_name: str, par_value: float):
+        """Change parameter of spectral shape
+
+        :param par_name: Parameter name
+        :param par_value: New parameter value
+        """
+
         if par_name not in self._parameters:
             raise ValueError("Parameter name {} not found".format(par_name))
         par = self._parameters[par_name]
@@ -140,6 +155,7 @@ class PointSourceFluxModel(FluxModel):
     ):
         """
         Define point source flux model at arbitrary position on the sky
+
         :param spectral_shape: energy spectral shape
         :param dec: source declination
         :param ra: source right ascension
@@ -165,6 +181,12 @@ class PointSourceFluxModel(FluxModel):
 
     @u.quantity_input
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
+        """Return flux integrated over the sky
+
+        :param energy: True energy  
+        :returns: Flux dN/dE/dA/dt
+        """
+
         return self._spectral_shape(energy)
 
     @property
@@ -201,6 +223,7 @@ class IsotropicDiffuseBG(FluxModel):
     def __init__(self, spectral_shape: SpectralShape, *args, **kwargs):
         """
         Isotropic flux model, i.e. for astrophysical diffuse flux
+
         :param spectral_shape: energy spectral shape
         """
         super().__init__(self)
@@ -245,6 +268,8 @@ class IsotropicDiffuseBG(FluxModel):
         ra_low: u.rad,
         ra_up: u.rad,
     ) -> 1 / (u.m**2 * u.s):
+        """Integrate flux over specified energy, declination and right ascension intervals"""
+
         ra_int = ra_up - ra_low
         dec_int = (np.sin(dec_up) - np.sin(dec_low)) * u.rad
 
@@ -297,16 +322,11 @@ class PowerLawSpectrum(SpectralShape):
         Power law flux models.
         Lives in the detector frame.
 
-        normalisation: float
-            Flux normalisation [GeV^-1 m^-2 s^-1]
-        normalisation_energy: float
-            Energy at which flux is normalised [GeV].
-        index: float
-            Spectral index of the power law.
-        lower_energy: float
-            Lower energy bound [GeV].
-        upper_energy: float
-            Upper energy bound [GeV], unbounded by default.
+        :param normalisation: Flux normalisation [GeV^-1 m^-2 s^-1]
+        :param normalisation_energy: Energy at which flux is normalised [GeV].
+        :param index: Spectral index of the power law.
+        :param lower_energy: Lower energy bound [GeV].
+        :param upper_energy: Upper energy bound [GeV], unbounded by default.
         """
 
         super().__init__()
@@ -320,6 +340,7 @@ class PowerLawSpectrum(SpectralShape):
         """
         dN/(dEdAdt).
         """
+
         norm = self._parameters["norm"].value
         index = self._parameters["index"].value
 
@@ -352,11 +373,9 @@ class PowerLawSpectrum(SpectralShape):
         r"""
         \int spectrum dE over finite energy bounds.
 
-        Arguments:
-            lower: float
-                [GeV]
-            upper: float
-                [GeV]
+        :param lower: Lower integration bound [GeV]
+        :param upper: Upper integration bound[GeV]
+        :returns: Flux integrated over energy
         """
 
         norm = self._parameters["norm"].value
@@ -412,6 +431,7 @@ class PowerLawSpectrum(SpectralShape):
     @property
     @u.quantity_input
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
+        """Return energy flux density, :math:`\int dE\, E\cdot dN/dE/dA/dt`"""
         # Pull out the units here because astropy screws this up sometimes
         norm = self._parameters["norm"].value.to_value(1 / (u.GeV * u.m**2 * u.s))
         index = self._parameters["index"].value
@@ -443,7 +463,6 @@ class PowerLawSpectrum(SpectralShape):
         Sample energies from the power law.
         Uses inverse transform sampling.
 
-        :param min_energy: Minimum energy to sample from [GeV].
         :param N: Number of samples.
         """
 
@@ -459,7 +478,12 @@ class PowerLawSpectrum(SpectralShape):
     @u.quantity_input
     def pdf(self, E: u.GeV, Emin: u.GeV, Emax: u.GeV, apply_lim: bool = True):
         """
-        Return PDF.
+        Return PDF of energy corresponding to the flux model. Normalises to specified energy range.
+
+        :param E: Energy in GeV
+        :param Emin: Minimum energy used for normalisation
+        :param Emax: Maximum energy used for normalisation
+        :param apply_lim: Bool, if True returns 0 outside of support
         """
 
         E_input = E.to_value(u.GeV)
@@ -477,6 +501,11 @@ class PowerLawSpectrum(SpectralShape):
 
     @classmethod
     def make_stan_sampling_func(cls, f_name, *args, **kwargs) -> UserDefinedFunction:
+        """Create stan sampling function
+
+        :param f_name: Name of created function
+        """
+
         func = UserDefinedFunction(
             f_name, ["alpha", "e_low", "e_up"], ["real", "real", "real"], "real"
         )
@@ -502,6 +531,11 @@ class PowerLawSpectrum(SpectralShape):
 
     @classmethod
     def make_stan_lpdf_func(cls, f_name, *args, **kwargs) -> UserDefinedFunction:
+        """Make stan log-pdf function
+
+        :param f_name: Name of created function
+        """
+
         func = UserDefinedFunction(
             f_name,
             ["E", "alpha", "e_low", "e_up"],
@@ -542,6 +576,8 @@ class PowerLawSpectrum(SpectralShape):
     def make_stan_flux_conv_func(cls, f_name, *args, **kwargs) -> UserDefinedFunction:
         """
         Factor to convert from total_flux_density to total_flux_int.
+
+        :param f_name: Function name
         """
 
         func = UserDefinedFunction(
@@ -577,6 +613,8 @@ class PowerLawSpectrum(SpectralShape):
         """
         Factor to convert from differential norm to integrated norm,
         i.e. integrate dN/dE dE over energy range
+
+        :param f_name: Function name
         """
 
         func = UserDefinedFunction(
@@ -659,16 +697,11 @@ class TwiceBrokenPowerLaw(PowerLawSpectrum, SpectralShape):
         Power law flux models.
         Lives in the detector frame.
 
-        normalisation: float
-            Flux normalisation [GeV^-1 m^-2 s^-1]
-        normalisation_energy: float
-            Energy at which flux is normalised [GeV].
-        index: float
-            Spectral index of the power law, is defined s.t. x^(-index) is used
-        lower_energy: float
-            Lower energy bound [GeV].
-        upper_energy: float
-            Upper energy bound [GeV], unbounded by default.
+        :param normalisation: Flux normalisation [GeV^-1 m^-2 s^-1]
+        :param normalisation_energy: Energy at which flux is normalised [GeV].
+        :param index: Spectral index of the power law, is defined s.t. x^(-index) is used
+        :param lower_energy: Lower energy bound [GeV].
+        :param upper_energy: Upper energy bound [GeV], unbounded by default.
         """
 
         super(SpectralShape, self).__init__()
@@ -755,18 +788,12 @@ class LogParabolaSpectrum(SpectralShape):
         Logparabola flux model.
         Lives in the detector frame.
 
-        normalisation: float
-            Flux normalisation [GeV^-1 m^-2 s^-1]
-        normalisation_energy: float or Parameter
-            Energy at which flux is normalised [GeV] and local index is alpha.
-        alpha: Parameter
-            Slope parameter of spectral shape
-        beta: Parameter
-            Curvature parameter of spectral shape
-        lower_energy: float
-            Lower energy bound [GeV].
-        upper_energy: float
-            Upper energy bound [GeV], unbounded by default.
+        :param normalisation: Flux normalisation [GeV^-1 m^-2 s^-1]
+        :param normalisation_energy: Energy at which flux is normalised [GeV] and local index is alpha.
+        :param alpha: Slope parameter of spectral shape
+        :param beta: Curvature parameter of spectral shape
+        :param lower_energy: Lower energy bound [GeV].
+        :param upper_energy: Upper energy bound [GeV], unbounded by default.
         """
 
         super().__init__()
@@ -1020,6 +1047,7 @@ class LogParabolaSpectrum(SpectralShape):
         If fit_beta==True, signature is theta=[alpha, beta], x_r=[E0, Emin, Emax]
         else theta=[alpha, E0], x_r=[beta, Emin, Emax]
         """
+
         func = UserDefinedFunction(
             f_name,
             ["E", "theta", "x_r", "x_i"],
@@ -1183,7 +1211,7 @@ class LogParabolaSpectrum(SpectralShape):
 class PGammaSpectrum(SpectralShape):
     """
     PGamma spectral shape as derived by https://www.aanda.org/articles/aa/full_html/2024/09/aa50592-24/aa50592-24.html
-    Approximated by a flat power law and a logparabola branch at high energies
+    Approximated by a flat power law and a logparabola branch at high energies.
     """
 
     _src_index = 0.0

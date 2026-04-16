@@ -39,7 +39,9 @@ Cache.set_cache_dir(".cache")
 
 class CascadesEffectiveArea(EffectiveArea):
     """Effective area based on the cascade_model simulation.
-    .. deprecated:
+
+    .. deprecated:: 2024
+
     """
 
     local_path = "input/cascades/cascade_detector_model.h5"
@@ -119,7 +121,9 @@ class CascadesEffectiveArea(EffectiveArea):
 class CascadesEnergyResolution(LogNormEnergyResolution):
     """
     Energy resolution based on the cascade_model simulation.
-    .. deprecated:
+
+    .. deprecated:: 2024
+
     """
 
     local_path = "input/cascades/cascade_detector_model.h5"
@@ -331,16 +335,14 @@ class CascadesEnergyResolution(LogNormEnergyResolution):
 
 class CascadesAngularResolution(AngularResolution):
     """
-    Angular resolution for Cascades
-    .. deprecated:
+    Angular resolution for Cascades.
+
+    .. deprecated:: 2024
+
     Data from https://arxiv.org/pdf/1311.4767.pdf (Fig. 14)
     Extrapolated using a complementary error function
     Fits a polynomial to the median angular resolution converted to
     `kappa` parameter of a VMF distribution
-    Attributes:
-        poly_params: Coefficients of the polynomial
-        e_min: Lower energy bound of the polynomial
-        e_max: Upper energy bound of the polynomial
     """
 
     local_path = "input/cascades/CascadesAngularResolution.csv"
@@ -473,10 +475,9 @@ class CascadesAngularResolution(AngularResolution):
 class CascadesDetectorModel(DetectorModel):
     """
     Implements the detector model for the cascades.
-    .. deprecated:
-    Parameters:
-        mode: DistributionMode
-            Set mode to either RNG or PDF
+
+    .. deprecated:: 2024
+
     """
 
     event_types = ["cascades"]
@@ -527,7 +528,7 @@ class CascadesDetectorModel(DetectorModel):
         1 array[Ns] real : log(energy likelihood) of all point sources
         2 array[Ns] real : log(effective area) of all point sources
         3 array[3] real : array with log(energy likelihood), log(effective area)
-            and log(effective area) for atmospheric component.
+        and log(effective area) for atmospheric component.
         If `single_ps==True`, all arrays regarding the PS are instead reals.
         For cascades the last entry is negative_infinity().
         """

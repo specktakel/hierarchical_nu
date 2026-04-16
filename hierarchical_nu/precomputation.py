@@ -18,6 +18,7 @@ from .source.source import (
     PointSource,
     icrs_to_uv,
     BackgroundSource,
+    Source
 )
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.flux_model import PGammaSpectrum
@@ -36,6 +37,8 @@ from .detector.icecube import (
 from .utils.fitting_tools import TopDownSegmentation
 
 from tqdm.autonotebook import tqdm
+
+from typing import Iterable
 
 
 
@@ -169,11 +172,12 @@ class ExposureIntegral:
     def integral_fixed_vals(self):
         return self._integral_fixed_vals
 
-    def calculate_rate(self, source, Ebins=None):
+    def calculate_rate(self, source: Source, Ebins: Union[None, Iterable]=None):
         """Calculate event rate
+
         :param source: Source
         :param Ebins: True energy binning used to infer the minimum and maximum
-            true neutrino energy. If Ebins==None, the range of the effective area is used.
+        true neutrino energy. If Ebins==None, the range of the effective area is used.
 
         :returns: Event rate
         """

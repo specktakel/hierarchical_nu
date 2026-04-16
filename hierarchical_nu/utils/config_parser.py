@@ -47,9 +47,15 @@ import omegaconf
 
 
 class ConfigParser:
+    """Parses HierarchicalNuConfigs
+    
+    :param hnu_config: Config
+    """
 
     @classmethod
     def check_units(cls, entry, unit):
+        """Checks if all entries have a proper unit"""
+
         if isinstance(entry, omegaconf.listconfig.ListConfig):
             for _ in entry:
                 cls.check_units(_, unit)  # I can do recursion lol
@@ -65,6 +71,7 @@ class ConfigParser:
 
     @property
     def sources(self):
+        """Creates all sources and returns Sources container"""
 
         parameter_config = self._hnu_config["parameter_config"]
         share_L = parameter_config["share_L"]
@@ -493,6 +500,11 @@ class ConfigParser:
 
     @property
     def ROI(self):
+        """Clears the ROI registry and creates all ROIs
+        
+        :returns: List of all ROIs
+        """
+
         ROIList.clear_registry()
         parameter_config = self._hnu_config.parameter_config
         roi_config = self._hnu_config.roi_config
@@ -610,10 +622,13 @@ class ConfigParser:
 
     @property
     def detector_model(self):
+        """Returns list of the config's detector models"""
+
         return list(self.obs_time.keys())
 
     @property
     def obs_time(self):
+        """Returns dictionary with the specified observation times per detector model"""
 
         if self._is_dm_list():
             dm_keys = [
@@ -650,6 +665,8 @@ class ConfigParser:
 
     @property
     def events(self):
+        """Reads events based on provided cuts"""
+
         _events = Events.from_ev_file(
             *self.detector_model,
             scramble_ra=self._hnu_config.parameter_config.scramble_ra,
@@ -660,7 +677,13 @@ class ConfigParser:
     def stan_kwargs(self):
         return self._hnu_config.stan_config
 
-    def create_simulation(self, sources, detector_models, obs_time):
+    def create_simulation(self, sources: Sources, detector_models, obs_time):
+        """Wrapper to create a simulation
+
+        :param sources: Source container
+        :param detector_models: Detector mdoels
+        :param obs_time: Dictionary of observation time
+        """
 
         from hierarchical_nu.simulation import Simulation
 
@@ -669,6 +692,13 @@ class ConfigParser:
         return sim
 
     def create_fit(self, sources, events, detector_models, obs_time):
+        """Wrapper to create a fit
+
+        :param sources: Source container
+        :param events: Events
+        :param detector_models: Detector models
+        :param obs_time: Dictionary of observation time
+        """
 
         use_event_tag = self._hnu_config.parameter_config.use_event_tag
         from hierarchical_nu.fit import StanFit
@@ -693,6 +723,7 @@ class ConfigParser:
         Make priors from config file.
         Assumes default units specified in `hierarchical_nu.priors` for each quantity.
         """
+
         priors = Priors()
         prior_config = self._hnu_config.prior_config
 

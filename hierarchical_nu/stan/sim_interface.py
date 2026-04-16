@@ -36,6 +36,15 @@ from ..utils.roi import CircularROI, ROIList
 class StanSimInterface(StanInterface):
     """
     An interface for generating the Stan simulation code.
+
+    :param output_file: Name of the file to write to
+    :param sources: Sources object containing sources to be simulated
+    :param event_types: Type of the detector model to be used
+    :param atmo_flux_theta_points: Number of points to use for the grid of
+    atmospheric flux
+    :param includes: List of names of stan files to include into the
+    functions block of the generated file
+    :param force_N: True if either asimov option or fixed number of events is used.
     """
 
     def __init__(
@@ -56,14 +65,6 @@ class StanSimInterface(StanInterface):
         """
         An interface for generating the Stan simulation code.
 
-        :param output_file: Name of the file to write to
-        :param sources: Sources object containing sources to be simulated
-        :param detector_model_type: Type of the detector model to be used
-        :param atmo_flux_theta_points: Number of points to use for the grid of
-        atmospheric flux
-        :param includes: List of names of stan files to include into the
-        functions block of the generated file
-        :param force_N: True if either asimov option or fixed number of events is used.
         """
 
         super().__init__(

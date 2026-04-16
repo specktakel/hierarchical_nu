@@ -14,13 +14,14 @@ from .flux_model import (
     TwiceBrokenPowerLaw,
     IsotropicDiffuseBG,
     PGammaSpectrum,
+    SpectralShape,
+    FluxModel
 )
 from .atmospheric_flux import AtmosphericNuMuFlux
 from .seyfert_model import SeyfertNuMuSpectrum
 from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
-from ..detector.r2021_bg_llh import R2021BackgroundLLH
 
 import logging
 
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 class ReferenceFrame(ABC):
     """
-    Abstract base class for source frames.
+    Abstract base class for reference frames.
     """
 
     @staticmethod
@@ -103,6 +104,9 @@ class SourceFrame(ReferenceFrame):
 class Source(ABC):
     """
     Abstract base class for sources.
+
+    :param name: Source name
+    :param frame: ReferenceFrame
     """
 
     def __init__(self, name: str, frame: ReferenceFrame, *args, **kwargs):
@@ -127,6 +131,13 @@ class Source(ABC):
     def flux(
         self, energy: u.GeV, dec: u.rad, ra: u.rad
     ) -> u.Quantity[1 / (u.GeV * u.m**2 * u.s * u.sr)]:
+        """Returns source flux
+
+        :param energy: Energy
+        :param dec: Declination
+        :param ra: Right ascension
+        """
+
         return self._flux_model(energy, dec, ra)
 
     @property
@@ -138,15 +149,12 @@ class PointSource(Source):
     """
     Pointsource
 
-    Parameters:
-        name: str
-        coord: Tuple[float, float]
-            Sky coordinate of the source (dec, ra) [deg]
-
-        redshift: float
-        spectral_shape:
-            Spectral shape of the source. Should return units 1/(GeV cm^2 s)
-        frame: Instance of `ReferenceFrame` in which energies are defined
+    :param name: Source name
+    :param dec: Source declination
+    :param ra: Source right ascension
+    :param redshift: Redshift
+    :param spectral_shape: SpectralShape of the source
+    :param frame: `ReferenceFrame` in which energies are defined, default `SourceFrame`
     """
 
     @u.quantity_input
@@ -156,7 +164,7 @@ class PointSource(Source):
         dec: u.rad,
         ra: u.rad,
         redshift: float,
-        spectral_shape: Callable[[float], float],
+        spectral_shape: SpectralShape,
         frame: ReferenceFrame = SourceFrame,
         *args,
         **kwargs,
@@ -193,24 +201,15 @@ class PointSource(Source):
         Luminosity and all energies given as arguments/parameters live in the source frame
         and are converted to detector frame internally.
 
-        Parameters:
-            name: str
-                Source name
-            dec: u.rad,
-                Declination of the source
-            ra: u.rad,
-                Right Ascension of the source
-            luminosity: Parameter,
-                luminosity
-            index: Parameter
-                Spectral index
-            redshift: float
-            lower: Parameter
-                Lower energy bound
-            upper: Parameter
-                Upper energy bound
-            frame: ReferenceFrame
-                Reference frame in which source energy is defined
+        :param name: Source name
+        :param dec: Declination of the source
+        :param ra: Right Ascension of the source
+        :param luminosity: Source-frame luminosity
+        :param index: Spectral index
+        :param redshift: Source redshift
+        :param lower: Lower energy bound
+        :param upper: Upper energy bound
+        :param frame: Reference frame in which source energies and luminosity are defined
         """
 
         total_flux = luminosity.value / (
@@ -268,24 +267,15 @@ class PointSource(Source):
         Luminosity and all energies given as arguments/parameters live in the source frame
         and are converted to detector frame internally.
 
-        Parameters:
-            name: str
-                Source name
-            dec: u.rad,
-                Declination of the source
-            ra: u.rad,
-                Right Ascension of the source
-            luminosity: Parameter,
-                luminosity
-            index: Parameter
-                Spectral index
-            redshift: float
-            lower: Parameter
-                Lower energy bound
-            upper: Parameter
-            frame: ReferenceFrame
-                Reference frame in which source energy is defined
-        All parameters are taken to be defined in the source frame.
+        :param name: Source name
+        :param dec: Declination of the source
+        :param ra: Right Ascension of the source
+        :param luminosity: Source-frame luminosity
+        :param index: Spectral index
+        :param redshift: Source redshift
+        :param lower: Lower energy bound
+        :param upper: Upper energy bound
+        :param frame: Reference frame in which source energies and luminosity are defined
         """
 
         total_flux = luminosity.value / (
@@ -343,28 +333,17 @@ class PointSource(Source):
         Luminosity and all energies given as arguments/parameters live in the source frame
         and are converted to detector frame internally.
 
-        Parameters:
-            name: str
-                Source name
-            dec: u.rad,
-                Declination of the source
-            ra: u.rad,
-                Right Ascension of the source
-            luminosity: Parameter,
-                luminosity
-            alpha: Parameter
-                Spectral index
-            beta: Parameter
-                Curvature parameter
-            redshift: float
-            lower: Parameter
-                Lower energy bound
-            upper: Parameter
-                Upper energy bound
-            normalisation_energy: Parameter
-                Normalisation energy of spectrum
-            frame: ReferenceFrame
-                Reference frame in which source energy is defined
+        :param name: Source name
+        :param dec: Declination of the source
+        :param ra: Right Ascension of the source
+        :param luminosity: Source-frame luminosity
+        :param alpha: Spectral index
+        :param beta: Curvature parameter
+        :param redshift: Source redshift
+        :param lower: Lower energy bound
+        :param upper: Upper energy bound
+        :param normalisation_energy: Energy at which local index is alpha
+        :param frame: Reference frame in which source energies and luminosity are defined
         """
 
         total_flux = luminosity.value / (
@@ -428,25 +407,15 @@ class PointSource(Source):
         Luminosity and all energies given as arguments/parameters live in the source frame
         and are converted to detector frame internally.
 
-        Parameters:
-            name: str
-                Source name
-            dec: u.rad,
-                Declination of the source
-            ra: u.rad,
-                Right Ascension of the source
-            luminosity: Parameter,
-                luminosity
-            redshift: float
-            E0_src: Parameter
-                Energy at which flat spectrum evolves into logparabola, is defined at detector irregardless of `frame`
-                NB: Choose wide enough s.t. redshifting does not affect the result
-            lower: Parameter
-                Lower energy bound
-            upper: Parameter
-                Upper energy bound
-            frame: ReferenceFrame
-                Reference frame in which source energy is defined
+        :param name: Source name
+        :param dec: Declination of the source
+        :param ra: Right Ascension of the source
+        :param luminosity: Source-frame luminosity
+        :param redshift: Source redshift
+        :param E0_src: Break energy at which flat spectrum ends and logparabola branch starts
+        :param lower: Lower energy bound
+        :param upper: Upper energy bound
+        :param frame: Reference frame in which source energies and luminosity are defined
         """
 
         total_flux = luminosity.value / (
@@ -493,25 +462,16 @@ class PointSource(Source):
         """
         Create source with Seyfert II neutrino flux.
         Assumes default energy range of 1e2GeV to 1e7GeV in the detector frame.
-        Parameters:
-            name: str
-                Source name
-            dec: u.rad,
-                Declination of the source
-            ra: u.rad,
-                Right Ascension of the source
-            logLx: float
-                x-ray luminosity of source in log10(L_x / (erg / s)),
-                rounds to nearest .01
-            P: Parameter,
-                Cosmic ray pressure to thermal pressure ratio, acts as normalisation
-            eta: Parameter
-                Inverse magnetic turbulence strength
-            redshift: float
-            energy_points: int
-                Number of grid points for energy interpolation in stan
-            eta_points: int
-                Number of grid points for eta interpolation in stan
+        
+        :param name: Source name
+        :param dec: Declination of the source
+        :param ra: Right Ascension of the source
+        :param logLx: log10 of source x-ray luminosity in erg / s
+        :param P: Cosmic ray to thermal pressure ratio in source corona
+        :param eta: Inverse magnetic turbulence strength
+        :param redshift: Source redshift
+        :param energy_points: Number of interpolation points for energy (lower=faster)
+        :param eta_points: Number of interpolation points for eta (lower=faster)
         """
 
         spectral_shape = SeyfertNuMuSpectrum(
@@ -530,6 +490,14 @@ class PointSource(Source):
     def make_seyfert_sources_from_file(
         cls, file_name: Union[Path, str], shared_P: bool, shared_eta: bool
     ):
+        """
+        Load source list from a file
+        
+        :param file_name: Name of file
+        :param shared_P: True if the pressure ratio parameter should be a shared parameter
+        :param shared_eta: True if eta parameter should be a shared parameter
+        """
+
         with h5py.File(file_name, "r") as f:
             # Subject to change, what do we need here
             ras = f["phi"][()] * u.rad
@@ -826,20 +794,17 @@ class DiffuseSource(Source):
     """
     DiffuseSource
 
-    Parameters:
-        name: str
-        redshift: float
-        flux_model
-            Flux model of the source. Should return units 1/(GeV cm^2 s sr)
-        frame
-            Reference frame in which the source is defined
+    :param name: Source name
+    :param redshift: Source redshift
+    :param flux_model: Flux model of the source. Should return units 1/(GeV cm^2 s sr)
+    :param frame: Reference frame in which the source is defined
     """
 
     def __init__(
         self,
         name: str,
         redshift: float,
-        flux_model,
+        flux_model: FluxModel,
         frame: ReferenceFrame = SourceFrame,
         *args,
         **kwargs,
@@ -861,6 +826,9 @@ class DiffuseSource(Source):
 class BackgroundSource(Source):
     """
     Class that models background with data
+    
+    :param name: Source name
+    :param detector_model: E.g. IC40
     """
 
     def __init__(self, name, *detector_model):
@@ -951,6 +919,7 @@ class Sources:
         :param lower: Lower energy bound of spectrum, defined at z
         :param upper: Upper energy bound of spectrum, defined at z
         :param z: The redshift of the background shell
+        :param frame: Reference frame
         """
 
         spectral_shape = PowerLawSpectrum(
@@ -1027,6 +996,9 @@ class Sources:
     def add_atmospheric_component(self, index: float = 0.0, cache_dir: str = ".cache"):
         """
         Add an atmospheric flux component based on the IceCube observations.
+
+        :param index: Modify simulated spectrum by multiplication with a power law of specified index
+        :param cache_dir: Cache directory to look for simulated spectrum
         """
 
         Emin = Parameter.get_parameter("Emin").value.to(u.GeV)
@@ -1053,12 +1025,15 @@ class Sources:
         self.add(atmospheric_component)
 
     def add_background(self, *detector_model):
+        """Add data-driven backgrounds for detector models"""
+
         self.add(BackgroundSource("bg", *detector_model))
 
     def select(self, mask: npt.NDArray[np.bool_], only_point_sources: bool = False):
         """
         Select some subset of existing sources by providing a mask.
         NB: Assumes only one diffuse and one atmospheric component
+
         :param mask: Array of bools with same length as the number of sources.
         :param only_point_sources: Set `True` to only make selections on point sources
         """
@@ -1106,6 +1081,8 @@ class Sources:
         """
         Remove sources with redshift above a certain threshold.
         NB: Replaced by `Sources.select()`, but kept for backwards compatibility.
+
+        :param zth: Redshift threshold
         """
 
         self.sources = [s for s in self.sources if s.redshift <= zth]

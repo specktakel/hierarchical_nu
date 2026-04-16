@@ -11,16 +11,12 @@ class Parameter:
 
     Parameters with the same name share an internal state
 
-    Parameters:
-        value: Any
-        name: str
-            Parameter name. Parameters of the same name share an internal state.
-        fixed: bool
-            If set to true, value cannot be changed
-        par_range: Optional[Tuple[float, float]]
-            Parameter range. Will be used as check when setting the parameter value
-        scale: ParScale
-            Parameter scale
+    :param value: Parameter value
+    :param name: Parameter name. Parameters of the same name share an internal state.
+    :param fixed: If set to true, value cannot be changed. For spectral models,
+    parameters that are not to be fitted should have `fixed=True`.
+    :param par_range: Parameter range. Will be used as check when setting the parameter value
+    :param scale: Parameter scale, lin, log or cos
     """
 
     __par_registry = {}
@@ -61,6 +57,7 @@ class Parameter:
     @classmethod
     def clear_registry(cls):
         """Clear the parameter registry"""
+
         cls.__par_registry = {}
 
     @property
@@ -115,6 +112,7 @@ class Parameter:
 
     def reset(self):
         """Reset value to initial val"""
+
         self.value = self._initial_val
 
     def __eq__(self, other):

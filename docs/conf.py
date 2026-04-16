@@ -23,7 +23,7 @@ templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '*test*', '../hierarchical_nu.backend.tests/*']
 
 autodoc_default_options = {
-    'special-members': '__init__, __getitem__',
+    'special-members': '__init__, __getitem__, __call__'
 }
 
 # -- Options for HTML output -------------------------------------------------

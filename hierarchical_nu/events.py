@@ -537,7 +537,7 @@ class Events:
         :param seed: int, random seed for RA scrambling
         :param apply_spatial_cuts: if True, apply spatial cuts
         :param apply_temporal_cuts: if True, apply_temporal cuts
-        :param apply_Emin_det if True, apply Emin_det cuts
+        :param apply_Emin_det: if True, apply Emin_det cuts
 
         :returns: :py:class:`hierarchical_nu.events.Events`
         """

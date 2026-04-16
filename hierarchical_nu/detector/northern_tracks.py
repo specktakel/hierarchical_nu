@@ -43,7 +43,7 @@ class NorthernTracksEffectiveArea(EffectiveArea):
     Effective area for the two-year Northern Tracks release:
     https://icecube.wisc.edu/science/data/HE_NuMu_diffuse
 
-    .. deprecated:
+    .. deprecated:: 2024
     """
 
     local_path = "input/tracks/effective_area.h5"
@@ -126,7 +126,7 @@ class NorthernTracksEnergyResolution(LogNormEnergyResolution):
 
     Data from https://arxiv.org/pdf/1811.07979.pdf
 
-    .. deprecated:
+    .. deprecated:: 2024
     """
 
     local_path = "input/tracks/effective_area.h5"
@@ -363,12 +363,7 @@ class NorthernTracksAngularResolution(AngularResolution):
     Fits a polynomial to the median angular resolution converted to
     `kappa` parameter of a VMF distribution
 
-    Attributes:
-        poly_params: Coefficients of the polynomial
-        e_min: Lower energy bound of the polynomial
-        e_max: Upper energy bound of the polynomial
-
-    .. deprecated:
+    .. deprecated:: 2024
     """
 
     local_path = "input/tracks/NorthernTracksAngularRes.csv"
@@ -512,11 +507,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
     """
     Implements the detector model for the NT sample
 
-    Parameters:
-        mode: DistributionMode
-            Set mode to either RNG or PDF
-
-    .. deprecated:
+    .. deprecated:: 2024
     """
 
     event_types = ["tracks"]
@@ -567,7 +558,7 @@ class NorthernTracksDetectorModel(DetectorModel, UserDefinedFunction):
         1 array[Ns] real : log(energy likelihood) of all point sources
         2 array[Ns] real : log(effective area) of all point sources
         3 array[3] real : array with log(energy likelihood), log(effective area)
-            and log(effective area) for atmospheric component.
+        and log(effective area) for atmospheric component.
         If `single_ps==True`, all arrays regarding the PS are instead reals.
         For cascades the last entry is negative_infinity().
         """

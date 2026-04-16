@@ -536,15 +536,11 @@ class LogNormEnergyResolution(EnergyResolution, UserDefinedFunction, metaclass=A
     ):
         """
         Plot fitted parameterizations
-        Args:
-            tE_binc: np.ndarray
-                True energy bin centers
-            rE_binc: np.ndarray
-                Reconstructed energy bin centers
-            fit_params: np.ndarray
-                Fitted parameters for mu and sigma
-            eres: np.ndarray
-                P(Ereco | Etrue)
+
+        :param tE_binc: True energy bin centers
+        :parm rE_binc: Reconstructed energy bin centers
+        :param fit_params: Fitted parameters for mu and sigma
+        :param rebin_tE_binc: Overwrite bins of true energy
         """
 
         import matplotlib.pyplot as plt
@@ -838,10 +834,9 @@ class DetectorModel(UserDefinedFunction, metaclass=ABCMeta):
         1 array[Ns] real : log(energy likelihood) of all point sources
         2 array[Ns] real : log(effective area) of all point sources
         3 array[3] real : array with log(energy likelihood), log(effective area)
-            and log(effective area) for atmospheric component.
+        and log(effective area) for atmospheric component.
         If `single_ps==True`, all arrays regarding the PS are instead reals.
         For cascades the last entry is negative_infinity().
-
         """
 
         pass

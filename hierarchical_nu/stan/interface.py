@@ -15,6 +15,11 @@ class StanInterface(SourceInfo, metaclass=ABCMeta):
     """
     Abstract base class for fleixble interface to
     Stan code generation.
+
+    :param output_file: Name of output Stan file
+    :param sources: Sources object
+    :param event_types: Types of event to simulate
+    :param includes: Stan includes
     """
 
     def __init__(
@@ -24,12 +29,6 @@ class StanInterface(SourceInfo, metaclass=ABCMeta):
         event_types,
         includes=["interpolation.stan", "utils.stan"],
     ):
-        """
-        :param output_file: Name of output Stan file
-        :param sources: Sources object
-        :param event_types: Types of event to simulate
-        :includes: Stan includes
-        """
 
         self._includes = includes
 

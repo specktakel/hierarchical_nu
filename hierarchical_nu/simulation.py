@@ -75,7 +75,7 @@ class Simulation(SourceInfo):
         :param atmo_flux_theta_points: number of points for atmo spectrum cos(theta) interpolation
         :param n_grid_points: number of grid points used per parameter in precomputation of exposure
         :param N: dict with EventType as key and list as entry, to force simulation of specific event numbers,
-            e.g. {IC86_II: [1, 2, 3]} for a single season and 3 source components.
+        e.g. {IC86_II: [1, 2, 3]} for a single season and 3 source components.
         :param asimov: set to True to simulate closest integer of expected number of events.
         """
 
@@ -1020,7 +1020,7 @@ class Simulation(SourceInfo):
 
         return self._get_expected_Nnu(self._get_sim_inputs())
 
-        @property
+    @property
     def expected_Nnu_per_comp(self):
         """Return number of expected events per source component"""
 
