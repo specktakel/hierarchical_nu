@@ -85,6 +85,8 @@ class HistogramSampler:
 
     # These are fitted correction factors to low energy IRFs
     # used to better model the atmospheric background at ~1TeV
+    # Do not use unless you know what you are doing
+    # NB: Not sure I know what I am doing
 
     # CORRECTION_FACTOR = {}
     """
@@ -1416,10 +1418,14 @@ class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
 
         return poly_params_mu, poly_params_sd, poly_limits
 
-    def plot_fit_params(self, fit_params: np.ndarray, tE_binc: np.ndarray) -> None:
+    def plot_fit_params(self, fit_params: np.ndarray, tE_binc: np.ndarray):
         """
         Plot the evolution of the lognormal parameters with true energy,
         for each mixture component.
+
+        :param fit_params: Array containing the best-fitting parameters
+        :param tE_binc: Array containing true energy bin centers
+        :returns: fig, ax of created plot
         """
 
         import matplotlib.pyplot as plt
@@ -1461,7 +1467,7 @@ class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
         axs[0].legend()
         axs[1].legend()
         plt.tight_layout()
-        return fig
+        return fig, axs
 
     def plot_parameterizations(
         self,
@@ -1471,9 +1477,11 @@ class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
     ):
         """
         Plot fitted parameterizations
-        Args:
-            fit_params: np.ndarray
-                Fitted parameters for mu and sigma
+        
+        :param fit_params: Array containing the best-fitting parameters
+        :param tE_binc: Array containing true energy bin centers
+        :param c_dec: Index of declination band
+        :returns: fig, ax of created plot
         """
 
         import matplotlib.pyplot as plt
@@ -1528,7 +1536,7 @@ class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
         ax.set_xlabel("log10(Reconstructed Energy /GeV)")
         ax.set_ylabel("PDF")
         plt.tight_layout()
-        return fig
+        return fig, ax
 
     @classmethod
     def rewrite_files(cls, season: str = "IC86_II") -> None:
@@ -1541,6 +1549,7 @@ class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
         """
         Used in `sim_interface.py`
         """
+
         dec_idx = (
             np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
         )
@@ -1565,12 +1574,12 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         mode: DistributionMode = DistributionMode.PDF,
         rewrite: bool = False,
         season: str = "IC86_II",
-    ) -> None:
+    ):
         """
         Instanciate class.
         :param mode: DistributionMode.PDF or .RNG (fitting or simulating)
-        :parm rewrite: bool, True if cached files should be overwritten,
-                       if there are no cached files they will be generated either way
+        :param rewrite: bool, True if cached files should be overwritten,
+        if there are no cached files they will be generated either way
         :param season: String identifying the detector season
         """
 
@@ -1884,8 +1893,8 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         """
         Instantiate class.
         :param mode: DistributionMode.PDF or .RNG (fitting or simulating)
-        :parm rewrite: bool, True if cached files should be overwritten,
-                       if there are no cached files they will be generated either way
+        :param rewrite: bool, True if cached files should be overwritten,
+        if there are no cached files they will be generated either way
         :param make_plots: bool, true if plots of parameterisation in case of lognorm should be made
         :param n_components: int, specifies how many components the lognormal mixture should have
         :param ereco_cuts: bool, if True simulated events below Ereco of the data in the sampled Aeff dec bin are discarded
@@ -1942,7 +1951,15 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         self.setup()
 
     @u.quantity_input
-    def generate_ereco_spline(self, log_tE, dec: u.rad):
+    def generate_ereco_spline(self, log_tE, dec: u.rad) -> Spline1D:
+        """Generate spline representation of energy resolution
+
+        :param log_tE: log10 of true energy / GeV
+        :param dec: Declination in rad
+        :return: Spline representation
+        :rtype: Spline1D
+        """
+  
         tE_idx = np.digitize(log_tE, self.log_tE_bin_edges) - 1
         dec_idx = (
             np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
@@ -2310,9 +2327,9 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         :param lower_threshold_energy: Lower reconstructed muon energy in GeV
         :param dec: Declination of event in radian
         :param upper_threshold_energy: Optional upper reconstructe muon energy in GeV,
-            if none provided, use highest possible value,
-            assumes only one value is provided
-        :param use_lognorm: bool, if True use lognormal parameterisation
+        if none provided, use highest possible value,
+        assumes only one value is provided
+        :param interpolation: bool, if True use spline representation in the calculation
         """
 
         # Truncate input energies to safe range, i.e. range covered by IRFs
@@ -2350,13 +2367,13 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
             # Check if all of the values are the same as in the previous call
             # If so, return the stored previous result
             if not np.all(np.isclose(energy_trunc, self._last_e)):
-                raise AssertionError
+                raise AssertionError()
             if not np.all(np.isclose(dec, self._last_dec)):
-                raise AssertionError
+                raise AssertionError()
             if not np.all(np.isclose(lower_threshold_energy, self._last_e_low)):
-                raise AssertionError
+                raise AssertionError()
             if not use_interpolation == self._last_interp:
-                raise AssertionError
+                raise AssertionError()
 
             return self._last_call
         except (AssertionError, ValueError, AttributeError):
@@ -2495,13 +2512,16 @@ class R2021DetectorModel(ABC, DetectorModel):
         make_plots: bool = False,
     ) -> None:
         """
-        Instantiate R2021 detector model
+        Instantiate R2021 detector model. Unused kwargs for the specified type of energy resolution
+        are disregarded.
+
         :param mode: DistributionMode.PDF (for fits) or .RNG (for simulations)
+        :param eres_type: EnergyResolution, grid/spline or lognorm parameterisation
         :param rewrite: bool, if True rewrites all related cache files
-        :param make_plots: bool, if True creates diagnostic plots of the energy parameterisation
-        :param n_components: integer number of the energy resolution's lognormal mixture components
-        :param ereco_cuts: bool, if True applies exp-data Ereco cuts on simulated events
+        :param ereco_cuts: bool, if True applies exp-data Ereco cuts on simulated events, not implemented,
         :param season: String identifying the detector season
+        :param n_components: integer number of the energy resolution's lognormal mixture components
+        :param make_plots: bool, if True creates diagnostic plots of the energy parameterisation
         """
 
         self._season = season
@@ -2628,9 +2648,10 @@ class R2021DetectorModel(ABC, DetectorModel):
         1 array[Ns] real : log(energy likelihood) of all point sources
         2 array[Ns] real : log(effective area) of all point sources
         3 array[3] real : array with log(energy likelihood), log(effective area)
-            and log(effective area) for atmospheric component.
-        If `single_ps==True`, all arrays regarding the PS are instead reals.
-        For cascades the last entry is negative_infinity().
+        and log(effective area) for atmospheric component.
+        
+        :param single_ps: If `single_ps==True`, code is generated for a single ps, else vor multiple.
+        :param diffuse: If True, add entry for diffuse sources to signature
         """
 
         signature = ["true_energy"]

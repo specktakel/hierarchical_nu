@@ -44,7 +44,7 @@ logger.setLevel(logging.INFO)
 
 
 class SingleEvent:
-    """Class holding information on single events."""
+    """Class holding information on a single event."""
 
     @u.quantity_input
     def __init__(
@@ -56,7 +56,7 @@ class SingleEvent:
         mjd: Time,
     ):
         """
-        :param energy: Reconstructed muon energy
+        :param energy: Reconstructed muon energy, takes unit GeV
         :param coord: Coordinate of event
         :param type: Event type
         :param ang_err: Angular uncertainty of event coordinate
@@ -162,7 +162,8 @@ class Events:
 
     def select(self, mask: npt.NDArray[np.bool_]):
         """
-        Select some subset of existing events by providing a mask.
+        Select some subset of existing events by providing a mask
+        and remove information of non-selected events.
 
         :param mask: Array of bools with same length as event properties.
         """
@@ -212,7 +213,16 @@ class Events:
     def mjd(self):
         return self._mjd
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: int):
+        """Return single event information
+
+        :param i: Event index
+        :type i: int
+
+        :returns: Single event
+        :rtype: :py:class:`hierarchical_nu.events.SingleEvent`
+        """
+
         event = SingleEvent(
             self.energies[i],
             self.coords[i],
@@ -225,7 +235,7 @@ class Events:
     @classmethod
     def from_file(
         cls,
-        filename,
+        filename: Union[str, Path],
         group_name=None,
         scramble_ra: bool = False,
         scramble_mjd: bool = False,  # TODO implement
@@ -245,6 +255,9 @@ class Events:
         :param apply_spatial_cuts: Set to True if spatial ROI cuts should be applied
         :param apply_temporal_cuts: Set to True if temporal ROI cuts should be applied
         :param apply_Emin_det: Set to False if Emin_det should not be applied
+
+        :returns: Event container
+        :rtype: :py:class:`hierarchical_nu.events.Events`
         """
 
         with h5py.File(filename, "r") as f:
@@ -354,6 +367,9 @@ class Events:
         :param append: Set to True if path already exists and events should be appended
         :param group_name: If append, group name of events
         :param overwrite: Set to True if existing files at path should be overwritten
+
+        :returns: Path of event file
+        :rtype: :py:class:`Path`
         """
 
         self._file_keys = ["energies", "unit_vectors", "event_types", "ang_errs", "mjd"]
@@ -406,11 +422,14 @@ class Events:
                     event_folder.create_dataset(key, data=value)
         return path
 
-    def export_to_csv(self, basepath):
+    def export_to_csv(self, basepath: Union[str, Path]):
         """
-        Create new csv files with similar formatting to 10 year point source data
+        Create new csv files with similar formatting to 10 year point source data of IceCube
 
         :param basepath: Directory in which to save the .csv files
+
+        :returns: Path of saved csv
+        :rtype: :py:class:`Path`
         """
 
         header = "log10(E/GeV)\tAngErr[deg]\tRA[deg]\tDec[deg]"
@@ -425,13 +444,16 @@ class Events:
             mask = self.types == t
             array = np.vstack((energy, ang_errs, ra, dec)).T[mask]
             np.savetxt(filename, array, fmt=fmt, delimiter="\t\t", header=header)
-        return
+        return filename
 
     def get_tags(self, sources: Sources):
         """
         Idea: each event gets one PS (smallest distance), assumes that CircularROIs do not overlap
 
         :param sources: instance of `Sources`
+
+        :returns: List of integers indicated index of closest point source per event
+        :rtype: :py:class:`List`
         """
 
         logger.warning("Applying tags is experimental.")
@@ -447,8 +469,10 @@ class Events:
         return tags
 
     def to_icecube_tools(self):
-        """
-        Return :class:`icecube_tools.utils.data.SimEvents` object from current events.
+        """Create event object of icecube_tools for cross-checks.
+        
+        :returns: icecube_tools event object of current events
+        :rtype: :py:class:`icecube_tools.utils.data.SimEvents`
         """
 
         from icecube_tools.utils.data import SimEvents, dddict
@@ -506,15 +530,16 @@ class Events:
         apply_Emin_det: bool = True,
     ):
         """
-        Load events from the 2021 data release
+        Load events from the 2021 data release of IceCube.
 
         :param seasons: arbitrary number of `EventType` identifying detector seasons of r2021 release.
         :param scramble_ra: Set to true if RA should be randomised
         :param seed: int, random seed for RA scrambling
         :param apply_spatial_cuts: if True, apply spatial cuts
         :param apply_temporal_cuts: if True, apply_temporal cuts
-        :param apply_Emin_det if True, apply Emin_det cuts
-        :returns: :class:`hierarchical_nu.events.Events`
+        :param apply_Emin_det: if True, apply Emin_det cuts
+
+        :returns: :py:class:`hierarchical_nu.events.Events`
         """
 
         from icecube_tools.utils.data import RealEvents
@@ -610,7 +635,11 @@ class Events:
         Merge events with a different instance of `Events`.
         Returns newly created instance.
 
-        :param events: Instance of Events to merge with
+        :param events: Events to merge with
+        :type events: :py:class:`hierarchical_nu.events.Events`
+
+        :returns: Merged events
+        :rtype: :py:class:`hierarchical_nu.events.Events`
         """
 
         if not isinstance(events, Events):
@@ -642,6 +671,8 @@ class Events:
         :param position: SkyCoord or PointSource instance to focus sky projection on
         :param radius: Radius of sky region to plot
         :param lw: line width of circles
+
+        :returns: fig, ax of created figure
         """
 
         if isinstance(position, PointSource):
@@ -714,6 +745,8 @@ class Events:
 
         :param position: SkyCoord of center or PointSource instance
         :param radius: Max radius of histogram
+
+        :returns: fig, ax, counts, bins of created figure and histogram
         """
 
         if isinstance(position, PointSource):
@@ -748,7 +781,15 @@ class Events:
         skip_time: bool = False,
         skip_direction: bool = False,
     ):
-        """Returns list of mask, one mask for each ROI on stack"""
+        """Returns list of mask, one mask for each ROI on stack
+        
+        :param coords: SkyCoord holding event coordinates
+        :param mjd: Event mjd
+        :param skip_time: If true, disregrad MJD for selecting events
+        :param skip_direction: If true, disregard direction for selecting events
+        
+        :returns: List of mask of selected events, one list entry for each ROI on stack
+        """
 
         ra = coords.icrs.ra
         dec = coords.icrs.dec

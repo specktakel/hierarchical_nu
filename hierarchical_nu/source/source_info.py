@@ -6,14 +6,17 @@ from .flux_model import (
     LogParabolaSpectrum,
 )
 from .seyfert_model import SeyfertNuMuSpectrum
+from .source import Sources
 
 
 class SourceInfo:
     """
-    Class to organise all source- and parameter-related attributes for simulations and fits
+    Class to organise all source- and parameter-related attributes for simulations and fits.
+
+    :param sources: Source container
     """
 
-    def __init__(self, sources):
+    def __init__(self, sources: Sources):
 
         self._sources = sources
         self._sources.organise()

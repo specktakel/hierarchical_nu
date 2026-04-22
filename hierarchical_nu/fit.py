@@ -10,10 +10,10 @@ import corner
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.cm as cm
+from matplotlib.axis import Axis
 
 try:
     from roque_cmap import roque_chill
-
     CMAP = roque_chill().reversed()
 except ModuleNotFoundError:
     CMAP = "viridis_r"
@@ -234,8 +234,9 @@ class StanFit(SourceInfo):
         """
         Run the necessary precomputation.
 
-        :param exposure_integral: instance of ExposureIntegral if already available.
+        :param exposure_integral: Exposure integral if already available from e.g. simulation
         :param show_progress: set to True if progress bars should be displayed.
+
         :returns: None
         """
 
@@ -261,11 +262,12 @@ class StanFit(SourceInfo):
 
         self._fit_filename = self._stan_interface.generate()
 
-    def set_stan_filename(self, fit_filename):
+    def set_stan_filename(self, fit_filename: Union[str, Path]):
         """
         Set filename of existing stan code.
 
         :param fit_filename: filename of stan code
+
         :returns: None
         """
 
@@ -275,7 +277,9 @@ class StanFit(SourceInfo):
         """
         Compile stan code
 
-        :param include_paths: List of paths to include stan files from.
+        :param include_paths: List of paths to include stan files from,
+            defaults to default locations to look for default stan files.
+
         :returns: None
         """
 
@@ -293,6 +297,7 @@ class StanFit(SourceInfo):
         Create stan model from already compiled file.
 
         :param filename: Path to compiled model file
+
         :returns: None
         """
 
@@ -314,8 +319,11 @@ class StanFit(SourceInfo):
         :param chains: Number of chains to run in parallel
         :param seed: random seed
         :param show_progress: Set to True if progress par should be displayed
-        :param threads_per_chain: When set up using nshards > 1, number of threads to run in parallel per chain
+        :param threads_per_chain: When the fit is set up using nshards > 1,
+            number of threads to run in parallel per chain. Defaults to nshards
         :param \*\*kwargs: Other kwargs to be passed to cmdstanpy sampling method
+
+        :returns: None
         """
 
         # Use threads_per_chain = nshards as default
@@ -335,6 +343,8 @@ class StanFit(SourceInfo):
         )
 
     def keys(self):
+        """Returns fit variables."""
+
         if self._reload:
             return self._fit_output.keys()
         else:
@@ -343,6 +353,7 @@ class StanFit(SourceInfo):
     def __getitem__(self, key):
         """
         Return samples from chains.
+        Reshapes to (#chains, #iterations, #dimensions).
 
         :param key: Variable name
         """
@@ -379,8 +390,10 @@ class StanFit(SourceInfo):
         :param chains: Number of chains to run in parallel
         :param seed: random seed
         :param show_progress: Set to True if progress par should be displayed
-        :param threads_per_chain: When set up using nshards > 1, number of threads to run in parallel per chain
+        :param threads_per_chain: When set up using nshards > 1, number of threads to run in parallel per chain,
+            defaults to nshards
         :param \*\*kwargs: Other kwargs to be passed to cmdstanpy's sampling method
+
         :returns: None
         """
 
@@ -400,6 +413,10 @@ class StanFit(SourceInfo):
         Return source position.
 
         :param source_idx: Point source index
+        :type source_idx: `int`
+
+        :returns: Source coordinates
+        :rtype: :py:class:`SkyCoord`
         """
 
         try:
@@ -423,9 +440,12 @@ class StanFit(SourceInfo):
         r"""
         Trace plot using list of stan parameter keys.
 
-        :param var_names: single parameter name or list of parameters
-        :param transform: set to True if log10(x) transformation should be applied
+        :param var_names: single parameter name or list of parameter names
+        :param transform: set to True if log10(x) transformation should be applied,
+            applies to all variables passed in var_names
         :param \*\*kwargs: other kwargs passed to arviz.plot_trace
+
+        :returns: fig, axs of created figure
         """
 
         if not var_names:
@@ -451,9 +471,11 @@ class StanFit(SourceInfo):
         Trace plot and overplot the used priors.
 
         :param var_names: single parameter name or list of parameters
-        :param transform: set to True if log10(x) transformation should be applied
+        :param transform: set to True if log10(x) transformation should be applied to all
+            variables passed in var_names
         :param \*\*kwargs: other kwargs passed to arviz.plot_trace
-        :returns: fig, axs
+
+        :returns: fig, axs of created figure
         """
 
         fig, axs = self.plot_trace(
@@ -546,6 +568,8 @@ class StanFit(SourceInfo):
         :param var_name: parameter name
         :param index: for vector/array parameters, only use this index
         :param transform: Lambda function for transformation of variable
+
+        :returns: kde approximation created by arviz
         """
 
         chain = self[var_name]
@@ -562,6 +586,7 @@ class StanFit(SourceInfo):
 
         :param var_names: Variable names for corner plot
         :param truths: If provided, overplot True parameters
+
         :returns: corner plot
         """
 
@@ -644,20 +669,39 @@ class StanFit(SourceInfo):
 
         return corner.corner(samples, labels=label_list, truths=truths_list)
 
+    @u.quantity_input
     def _plot_energy_posterior(
         self,
-        ax,
-        center,
-        assoc_idx,
-        radius,
-        color_scale,
+        ax: Axis,
+        center: Union[int, None, SkyCoord],
+        assoc_idx: int,
+        radius: Union[None, u.Quantity[u.deg]],
+        color_scale: str,
         highlight: Union[Iterable, None] = None,
         assoc_threshold: Union[float, None] = 0.2,
         source_name: str = "",
         lw: float = 1.0,
         plot_text: bool = True,
-        textsize: float = 8,
+        fontsize: float = 8,
     ):
+        """Create energy posterior plot on existing axis object
+
+        :param ax: Axis to plot on
+        :param center: Plots events around provided center
+        :param assoc_idx: Use this source to color-code association probabilities
+        :param radius: Plot events within this radius to source
+        :param color_scale: Color scale for event associations, lin or log
+        :param highlight: List of bools, if True highlight the corresponding event on the plot
+        :param assoc_threshold: if no highlight is provided, highlight instead all events
+            passing this association probability threshold
+        :param source_name: Source name to put on plot
+        :param lw: linewidth of energy posteriors
+        :param plot_text: True if text should be plotted
+        :param fontsize: Fontsize of text
+
+        :returns: ax, mapper of color scale
+        """
+
         ev_class = np.array(self._get_event_classifications())
         if radius is not None and center is not None:
             events = self.events
@@ -746,7 +790,7 @@ class StanFit(SourceInfo):
                 1.3e2,
                 yhigh * 1.025,
                 "$\hat E$",
-                fontsize=textsize,
+                fontsize=fontsize,
                 verticalalignment="center",
             )
 
@@ -758,7 +802,7 @@ class StanFit(SourceInfo):
                 transform=ax.transAxes,
                 ha="right",
                 va="top",
-                fontsize=textsize,
+                fontsize=fontsize,
             )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -781,7 +825,7 @@ class StanFit(SourceInfo):
         source_name: str = "",
         lw: float = 1.0,
         plot_text: bool = True,
-        textsize: float = 8,
+        fontsize: float = 8,
     ):
         """
         Plot energy posteriors in log10-space.
@@ -794,7 +838,12 @@ class StanFit(SourceInfo):
         :param highlight: List of event indices to highlight in plot, defaults to
             all events with association probability larger than `assoc_threshold` to selected source component.
         :param assoc_threshold: If highlight==None, highlight above this association probability.
-        :returns: fig, axs
+        :param source_name: Source name to put on plot
+        :param lw: Linewidth of posteriors
+        :param plot_text: If true, plot text
+        :param fontsize: Fontsize
+
+        :returns: fig, axs of created figure
         """
 
         fig, ax = plt.subplots(dpi=150)
@@ -811,23 +860,24 @@ class StanFit(SourceInfo):
             source_name=source_name,
             lw=lw,
             plot_text=plot_text,
-            textsize=textsize,
+            fontsize=fontsize,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
         return fig, ax
 
+    @u.quantity_input
     def _plot_roi(
         self,
-        center,
-        ax,
-        radius,
-        assoc_idx,
-        color_scale,
+        center: Union[SkyCoord, int],
+        ax: Axis,
+        radius: u.Quantity[u.deg],
+        assoc_idx: int,
+        color_scale: str,
         highlight: Union[Iterable, None] = None,
         source_name: str = "",
         s: float = 30.0,
-        textsize: float = 8,
+        fontsize: float = 8,
     ):
         ev_class = np.array(self._get_event_classifications())
         assoc_prob = ev_class[:, assoc_idx]
@@ -899,7 +949,7 @@ class StanFit(SourceInfo):
                 transform=ax.transAxes,
                 ha="left",
                 va="top",
-                fontsize=textsize,
+                fontsize=fontsize,
             )
 
         ax.set_xlabel("RA")
@@ -918,21 +968,25 @@ class StanFit(SourceInfo):
         highlight: Union[Iterable, None] = None,
         source_name: str = "",
         s: float = 30.0,
-        textsize: float = 8,
+        fontsize: float = 8,
     ):
         """
         Create plot of the ROI.
         Events are colour-coded dots, color corresponding
         to the association probability to the point source proposed.
         Assumes there is a point source in self._sources[0].
-        Size of events are meaningless.
+        Size of events are arbitrary but fixed.
 
         :param center: either SkyCoord or PS index to center the plot on
         :param radius: Radius of sky plot
         :param assoc_idx: source idx to calculate the association probability
         :param color_scale: display association probability on "lin" or "log" scale
         :param highlight: Iterable of event indices to highlight in plot.
-        :returns: fig, axs
+        :param source_name: Source name to put on plot
+        :param s: Dot size for events
+        :param fontsize: Fontsize
+
+        :returns: fig, axs of created plot
         """
 
         if isinstance(center, int):
@@ -957,7 +1011,7 @@ class StanFit(SourceInfo):
             highlight=highlight,
             source_name=source_name,
             s=s,
-            textsize=textsize,
+            fontsize=fontsize,
         )
         fig.colorbar(mapper, ax=ax, label=f"association probability to {assoc_idx:n}")
 
@@ -977,22 +1031,27 @@ class StanFit(SourceInfo):
         lw: float = 1,
         s: float = 20.0,
         plot_text: bool = True,
-        textsize: float = 8,
+        fontsize: float = 8,
     ):
         """
-        Create plot of the ROI.
+        Create plot of the ROI and energy posteriors.
         Events are colour-coded dots, color corresponding
         to the association probability to the point source proposed.
         Assumes there is a point source in self._sources[0].
-        Size of events are meaningless.
+        Size of events in ROI plot are arbitrary but fixed.
 
         :param center: either SkyCoord or PS index to center the plot on
-        :param radius: Radius of sky plot
         :param assoc_idx: source idx to calculate the association probability
+        :param radius: Radius of sky plot
         :param color_scale: display association probability on "lin" or "log" scale
         :param highlight: Iterable of event indices to highlight in plot.
         :param assoc_threshold: If highlight==None, highlight above this association probability.
         :param figsize: Tuple passed to pyplot.
+        :param source_name: Name of source to put on plot
+        :param lw: Linewidth for energy posteriors
+        :param s: Marker size for events
+        :param plot_text: If true, plot text on plot
+        :param fontsize: Fontsize of text
         :returns: fig, axs of plot
         """
 
@@ -1026,7 +1085,7 @@ class StanFit(SourceInfo):
             assoc_threshold=assoc_threshold,
             lw=lw,
             plot_text=plot_text,
-            textsize=textsize,
+            fontsize=fontsize,
         )
 
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
@@ -1052,7 +1111,7 @@ class StanFit(SourceInfo):
             highlight=highlight,
             source_name=source_name,
             s=s,
-            textsize=textsize,
+            fontsize=fontsize,
         )
         axs.insert(0, ax)
 
@@ -1179,7 +1238,17 @@ class StanFit(SourceInfo):
             self._flux_grid[c_ps] = flux_grid
 
     def _calculate_quantiles(self, E_power, energy_unit, area_unit, source_idx, LL, UL):
-        """Calculate quantiles of flux."""
+        """Calculate quantiles of flux.
+        
+        :param E_power: Use E**E_power * flux
+        :param energy_unit: Unit of energy of flux
+        :param area_unit: Area unit of flux
+        :param source_idx: Indicates point source to calculate flux of,
+            set to -1 if the sum of all point source fluxes should be used
+        :param LL: lower limit of flux quantile
+        :param UL: upper limit of flux quantile
+        
+        :returns: lower, upper limit of flux given the quantiles"""
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
@@ -1227,8 +1296,9 @@ class StanFit(SourceInfo):
         :param upper_limit: Set to True if only upper limit should be displayed
         :param figsize: Figsize for new figure (requiring `ax=None`)
         :param ax: Reuse existing axis, defaults to creating a new figure with single axis
-        :param kwargs: Remaining kwargs will be passed to `pyplot.axis.fill_between` or `pyplot.axis.plot`
-        :returns: fig, axs
+        :param kwargs: Remaining kwargs will be passed to :py:meth:`pyplot.axis.fill_between` or :py:meth:`pyplot.axis.plot`
+
+        :returns: fig, axs of created/re-used figure
         """
 
         # Have some defaults for plotting
@@ -1330,8 +1400,10 @@ class StanFit(SourceInfo):
         :param upper_limit: Set to True if only upper limit should be displayed
         :param figsize: Figsize for new figure (requiring `ax=None`)
         :param ax: Reuse existing axis, defaults to creating a new figure with single axis
-        :param kwargs: Remaining kwargs will be passed to `pyplot.axis.fill_between` or `pyplot.axis.plot`
-        :returns: fig, axs
+        :param kwargs: Remaining kwargs will be passed to 
+            :py:meth:`pyplot.axis.fill_between` or :py:meth:`pyplot.axis.plot`
+
+        :returns: fig, axs of created/re-used figure
         """
 
         # Have some defaults for plotting
@@ -1409,8 +1481,8 @@ class StanFit(SourceInfo):
 
     def plot_peak_energy_flux(
         self,
-        ax,
-        levels=[0.5, 0.683, 0.95],
+        ax: Axis,
+        levels: Iterable = [0.5, 0.683, 0.95],
         energy_unit=u.TeV,
         area_unit=u.cm**2,
         x_energy_unit=u.GeV,
@@ -1424,6 +1496,8 @@ class StanFit(SourceInfo):
         :param energy_unit: flux energy unit, i.e. energy_unit / area_unit / s
         :param area_unit: flux area unit, i.e. energy_unit / area_unit / s
         :param x_energy_unit: energy unit of x-axis
+        :param \*\*kwargs: remaining kwargs are passed to :py:meth:`seaborn.kdeplot`
+
         :returns: None
         """
 
@@ -1485,6 +1559,11 @@ class StanFit(SourceInfo):
             else timestamp is appended to `path` to avoid overwriting.
         :param save_json: Set to `True` if arviz json output should be saved.
             Uses provided path with .json extension.
+        :param used_timestamp: Add timestamp to filename, defaults to False
+        :param save_warmup: Save warmup samples, defaults to False
+
+        :returns: Path of saved file
+        :rtype: :py:class:`Path`
         """
 
         # Check if filename consists of a path to some directory as well as the filename
@@ -1652,6 +1731,7 @@ class StanFit(SourceInfo):
         Save cmdstanpy csv files.
 
         :param directory: Directory to save csv files to.
+
         :returns: None
         """
 
@@ -1664,7 +1744,10 @@ class StanFit(SourceInfo):
         make plots and run classification check.
 
         :param filename: single or multiple filenames to be loaded.
-        :return: `StanFit`
+        :param load_warmup: Set to True if warmup in case it was saved should be loaded
+
+        :returns: Fit
+        :rtype: :py:class:`hierarchical_nu.fit.StanFit`
         """
 
         if len(filename) == 1:
@@ -1783,6 +1866,15 @@ class StanFit(SourceInfo):
 
     @staticmethod
     def _from_file(filename, load_warmup: bool = False):
+        """Load a single saved fit.
+
+        :param filename: Filename
+        :param load_warmup: Set to true if warmup should be loaded in case it was saved
+
+        :returns: 
+            event_types, events, obs_time_dict, priors, 
+            fit_inputs, fit_outputs, fit_meta, config,
+        """
 
         fit_inputs = {}
         fit_outputs = {}
@@ -1909,6 +2001,7 @@ class StanFit(SourceInfo):
         different source categories.
 
         :param sim_outputs: True associations of events, using `Lambda` of simulation.
+
         :returns: wrong, assumed, correct - Lists of event indices
         """
 
@@ -1990,6 +2083,8 @@ class StanFit(SourceInfo):
             return self._fit_output.num_draws_sampling
 
     def _get_event_association_dist(self):
+        """Get the distribution of event associations"""
+
         # logprob (lp) is a misnomer, this is actually the rate parameter of each source component
         if not self._reload:
             logprob = self._fit_output.stan_variable("lp").transpose(1, 2, 0)
@@ -2444,6 +2539,8 @@ class StanFit(SourceInfo):
         fit_inputs["ereco_grid"] = self._ereco_spline_evals
 
         """
+        # This block is used when evaluating energy resolution on the grid points
+        # instead of on the 2d spline at the proper energies
         idxs = np.digitize(
             np.log10(self.events.energies.to_value(u.GeV)),
             R2021EnergyResolution._logEreco_grid_edges,

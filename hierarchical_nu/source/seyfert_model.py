@@ -1,10 +1,8 @@
 import logging
 from typing import Union, Iterable
-from functools import lru_cache
 import astropy.units as u
 import numpy as np
-import scipy
-from scipy.integrate import dblquad, quad, trapezoid
+from scipy.integrate import quad
 from scipy.interpolate import RectBivariateSpline, make_smoothing_spline
 import h5py
 import logging
@@ -20,7 +18,6 @@ from ..backend import (
     StringExpression,
     FunctionCall,
     ReturnStatement,
-    ForwardVariableDef,
 )
 
 
@@ -46,21 +43,14 @@ class SeyfertNuMuSpectrum(SpectralShape):
     ):
         """
         Implements source model of Seyfert II galaxies.
-        Parameters:
-            P: Parameter
-                Pressure ratio of source, realistically capped at 0.5
-            eta: Parameter
-                Inverse magnetic turbulence strength, limited by simulation inputs to (2, 150)
-            logLx: float
-                log10(x-ray luminosity / (erg / s))
-            z: float
-                Source redshift
-            energy_points: int
-                Number of energy grid points used for interpolation in stan (less=faster)
-            eta_points:
-                Number of eta grid points used for interpolation in stan (less=faster)
-            source_name: str
-                Name to use as prefix in stan function names, needed for mutli ps fits
+
+        :param logLx: log10 of x-ray luminosity in erg / s
+        :param P: cosmic ray to thermal pressure ratio of source, realistically capped at 0.5
+        :param eta: Inverse magnetic turbulence strength, limited by simulation inputs to (2, 150)
+        :param z: Source redshift
+        :param energy_points: Number of energy grid points used for interpolation in stan (less=faster)
+        :param eta_points: Number of eta grid points used for interpolation in stan (less=faster)
+        :param source_name: Name to use as prefix in stan function names, needed for mutli ps fits
         """
 
         super().__init__(self)
@@ -75,7 +65,6 @@ class SeyfertNuMuSpectrum(SpectralShape):
         sys.path.append(os.path.expanduser("~/icecube/seyfert_spectra"))
         from nu_pop_model.diffuse_flux import mu_nu_flux
 
-        # This part of the code is sponsored by Intenso. Just kidding, I am not paid by them. But I wouldn't say no to some sponsorship...
         path_to_simulations = Path(
             os.path.expanduser("~/icecube/seyfert_spectra/combined_files")
         )
@@ -269,8 +258,9 @@ class SeyfertNuMuSpectrum(SpectralShape):
     def _spline_log_interpolation(self, logE: Union[Iterable, float], eta: float):
         """
         Evaluate spline representation of flux model
+
         :param logE: log10(E/GeV), Iterable or float
-        :param eta: eta
+        :param eta: inverse magnetic turbulence strength
         """
 
         logE = np.atleast_1d(logE)
@@ -280,7 +270,10 @@ class SeyfertNuMuSpectrum(SpectralShape):
     def __call__(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         """
         Returns differential flux. Uses eta and P from self._parameters
+
         :param energy: Energy at which to evaluate flux
+
+        :returns: Differential flux, dN/dE/dA/dt
         """
 
         eta = self._parameters["eta"].value
@@ -297,6 +290,15 @@ class SeyfertNuMuSpectrum(SpectralShape):
 
     @u.quantity_input
     def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / u.m**2 / u.s:
+        """Integrate differential flux over provided energy interval
+        Uses eta and P from self._parameters.
+
+        :param lower: Lower energy integration bound
+        :param upper: Upper energy integration bound
+
+        :returns: Integrated flux, dN/dA/dt
+        """
+ 
         logElow = np.log10(lower.to_value(u.GeV))
         logEhigh = np.log10(upper.to_value(u.GeV))
         eta = self._parameters["eta"].value
@@ -315,7 +317,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
     @property
     def total_flux_int(self) -> 1 / (u.m**2 * u.s):
         """
-        Return number flux integrated over energy. Uses eta and P from self._parameters
+        Return number flux over the entire energy range. Uses eta and P from self._parameters.
         """
 
         integral = self.integral(self._lower_energy, self._upper_energy)
@@ -324,7 +326,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
     @property
     def total_flux_density(self) -> u.erg / u.s / u.m**2:
         """
-        Returns energy flux over the entire energy range. Uses eta and P from self._parameters
+        Returns energy flux over the entire energy range. Uses eta and P from self._parameters.
         """
 
         eta = self._parameters["eta"].value

@@ -1,3 +1,8 @@
+__doc__ = """
+This module implements the cosmology needed for converting source-frame luminosities
+to detector-frame number and energy fluxes.
+"""
+
 import astropy.units as u
 import numpy as np
 from scipy import integrate

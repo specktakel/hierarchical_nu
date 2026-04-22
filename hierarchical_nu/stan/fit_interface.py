@@ -40,7 +40,6 @@ from ..backend.variable_definitions import (
 from ..backend.expression import StringExpression
 from ..backend.parameterizations import DistributionMode
 
-from ..source.flux_model import LogParabolaSpectrum
 from ..source.source import Sources
 from ..source.parameter import Parameter
 from ..detector.icecube import EventType, NT, CAS
@@ -53,6 +52,19 @@ from ..detector.r2021 import R2021EnergyResolution
 class StanFitInterface(StanInterface):
     """
     An interface for generating the Stan fit code.
+
+    :param output_file: Name of the file to write to
+        :param sources: Sources object containing sources to be fit
+        :param event_types: Type of the detector model to be used
+        :param atmo_flux_theta_points: Number of points to use for the grid of
+        atmospheric flux
+        :param includes: List of names of stan files to include into the
+        functions block of the generated file
+        :param priors: Priors object detailing the priors to use
+        :param nshards: Number of shards for multithreading, defaults to zero
+        :param use_event_tag: if True, only consider the closest PS for each event
+        :param debug: if True, add function calls for debugging and tests
+        :param bg: if True, use data to construct background likelihood
     """
 
     def __init__(
@@ -74,22 +86,6 @@ class StanFitInterface(StanInterface):
         debug: bool = False,
         bg: bool = False,
     ):
-        """
-        An interface for generating Stan fit code.
-
-        :param output_file: Name of the file to write to
-        :param sources: Sources object containing sources to be fit
-        :param event_types: Type of the detector model to be used
-        :param atmo_flux_theta_points: Number of points to use for the grid of
-        atmospheric flux
-        :param includes: List of names of stan files to include into the
-        functions block of the generated file
-        :param priors: Priors object detailing the priors to use
-        :param nshards: Number of shards for multithreading, defaults to zero
-        :param use_event_tag: if True, only consider the closest PS for each event
-        :param debug: if True, add function calls for debugging and tests
-        :param bg: if True, use data to construct background likelihood
-        """
 
         super().__init__(
             output_file=output_file,

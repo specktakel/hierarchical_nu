@@ -91,6 +91,7 @@ class BoundedPowerLaw(object):
         """
         Evaluate the inverse cumulative distribution function at x.
         """
+
         if self.gamma == 1:
             return self.xmin * np.exp(x / self.norm)
         else:
@@ -102,5 +103,6 @@ class BoundedPowerLaw(object):
         """
         Inverse CDF sample from the bounded power law distribution.
         """
+
         u = np.random.uniform(0, 1, nsamples)
         return self.inv_cdf(u)

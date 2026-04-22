@@ -17,7 +17,6 @@ from time import time as thyme
 
 from icecube_tools.utils.vMF import get_theta_p
 
-
 from hierarchical_nu.utils.plotting import SphericalCircle
 
 from hierarchical_nu.detector.icecube import EventType, NT, CAS
@@ -70,13 +69,13 @@ class Simulation(SourceInfo):
         """
         To set up and run simulations.
         :param sources: Sources instance
-        :param event_types: EventType or List thereof, to be included in the fit
+        :param event_types: EventType or List thereof, to be included in the simulation
         :param observation_time: astropy.units time for single event type or dictionary thereof with event type as key
         :param atmo_flux_energy_points: number of points for atmo spectrum energy interpolation
         :param atmo_flux_theta_points: number of points for atmo spectrum cos(theta) interpolation
         :param n_grid_points: number of grid points used per parameter in precomputation of exposure
         :param N: dict with EventType as key and list as entry, to force simulation of specific event numbers,
-            e.g. {IC86_II: [1, 2, 3]} for a single season and 3 source components.
+        e.g. {IC86_II: [1, 2, 3]} for a single season and 3 source components.
         :param asimov: set to True to simulate closest integer of expected number of events.
         """
 
@@ -153,22 +152,6 @@ class Simulation(SourceInfo):
         self.events = None
 
     @property
-    def expected_Nnu_per_comp(self):
-
-        sim_inputs = self._get_sim_inputs()
-        self._get_expected_Nnu(sim_inputs)
-
-        return self._expected_Nnu_per_comp
-
-    @property
-    def Nex_et(self):
-
-        sim_inputs = self._get_sim_inputs()
-        self._get_expected_Nnu(sim_inputs)
-
-        return self._Nex_et
-
-    @property
     def sources(self):
         return self._sources
 
@@ -204,6 +187,9 @@ class Simulation(SourceInfo):
         """
         Method to re-compute all envelopes for rejection sampling,
         necessary for PPCs when spectral parameters are changed.
+
+        :param inplace: set to True if only source components with variable spectral shape
+            shall be re-calculated
         """
 
         for eps in self._exposure_integral.values():
@@ -216,9 +202,10 @@ class Simulation(SourceInfo):
 
         self._main_sim_filename = self._stan_interface.generate()
 
-    def set_stan_filename(self, sim_filename):
+    def set_stan_filename(self, sim_filename: Union[str, Path]):
         """
         Set stan file name for existing simulation code
+
         :param sim_filename: filename of stan code
         """
 
@@ -227,7 +214,9 @@ class Simulation(SourceInfo):
     def compile_stan_code(self, include_paths=None):
         """
         Compile stan simulation code
-        :param include_paths: list of directories to include stan files from
+
+        :param include_paths: List of directories to include stan files from.
+            If None are provided, look in default places for default stan files.
         """
 
         if not include_paths:
@@ -243,17 +232,19 @@ class Simulation(SourceInfo):
     def setup_stan_sim(self, exe_file: Union[str, Path] = ".stan_files/sim_code"):
         """
         Reuse previously compiled model
+
         :param exe_file: Path to compiled stan file
         """
 
         self._main_sim = CmdStanModel(exe_file=exe_file)
 
-    def run(self, seed=None, verbose=False, **kwargs):
+    def run(self, seed: Union[int, None]=None, verbose=False, **kwargs):
         """
         Run the simulation.
+
         :param seed: random seed
         :param verbose: if True, print debug messages
-        :param kwargs: kwargs passed to `cmdstanpy.CmdStanModel.sample()`
+        :param \*\*kwargs: kwargs passed to :py:meth:`cmdstanpy.CmdStanModel.sample()`
         """
 
         self._sim_inputs = self._get_sim_inputs(seed)
@@ -339,8 +330,11 @@ class Simulation(SourceInfo):
     def save(self, path, overwrite: bool = False):
         """
         Save simulation
+
         :param path: filename of simulation, should have extension `.h5`
         :param overwrite: if True, overwrite files with identical name
+
+        :returns: Filename of saved file
         """
 
         # Check if filename consists of a path to some directory as well as the filename
@@ -403,9 +397,12 @@ class Simulation(SourceInfo):
     ):
         """
         Show binned spectrum of simulated data
+
         :param components: not used? what is this? # TODO fix
         :param scale: either `linear` or `log` to change y-axis scale of histograms
         :param population: if True, display all point sources as one entry
+
+        :returns: fig, ax of created figure
         """
 
         hatch_cycle = ["/", "\\", "|", "-", "+", "x", "o", "O", ".", "*"]
@@ -528,9 +525,13 @@ class Simulation(SourceInfo):
         population: bool = False,
     ):
         """
+        Show skymap of simulated events.
+
         :param track_zoom: Increase radius of track events by this factor for visibility
         :param subplot_kw: Customise projection style and boundaries with ligo.skymap
         :param population: if True, display all point sources as one entry
+
+        :returns: fig, ax of created figure
         """
 
         try:
@@ -603,6 +604,9 @@ class Simulation(SourceInfo):
     def setup_and_run(self, include_paths=None):
         """
         Wrapper around setup functions for convenience.
+
+        :param include_paths: Path for stan to look for files to include.
+            Defaults to sensible paths.
         """
 
         self.precomputation()
@@ -1014,11 +1018,26 @@ class Simulation(SourceInfo):
 
     @property
     def expected_Nnu(self):
+        """Return exected number of events"""
+
         return self._get_expected_Nnu(self._get_sim_inputs())
 
     @property
+    def expected_Nnu_per_comp(self):
+        """Return number of expected events per source component"""
+
+        sim_inputs = self._get_sim_inputs()
+        self._get_expected_Nnu(sim_inputs)
+
+        return self._expected_Nnu_per_comp
+
+    @property
     def Nex_et(self):
-        self._get_expected_Nnu(self._get_sim_inputs())
+        """Return number of expected events per event type"""
+
+        sim_inputs = self._get_sim_inputs()
+        self._get_expected_Nnu(sim_inputs)
+
         return self._Nex_et
 
     def _get_expected_Nnu(self, sim_inputs):
@@ -1117,7 +1136,7 @@ class SimInfo:
         """
         To store and reference simulation inputs/info.
 
-        TODO: instead work on Simualtion.from_file() method
+        TODO: instead work on Simulation.from_file() method
         to fully load simulation from output file.
         """
 
@@ -1129,6 +1148,13 @@ class SimInfo:
 
     @classmethod
     def from_file(cls, filename):
+        """Load sim info from file.
+
+        :param filename: Filename of simulation
+
+        :returns: SimInfo
+        """
+
         inputs = {}
         outputs = {}
         with h5py.File(filename, "r") as f:
@@ -1211,6 +1237,7 @@ class SimInfo:
         Check if two simulations are compatible to merge and do so
         Intended to merge pure background and pure point source simulations
         Does not recalculate all derived quantities, e.g. fractional fluxes
+
         :param background: path to background simulation
         :param point_source: path to point source simulation
         :param output: path at which merged simulation will be saved

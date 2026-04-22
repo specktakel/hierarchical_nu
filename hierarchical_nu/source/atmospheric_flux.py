@@ -61,6 +61,12 @@ class _AtmosphericNuMuFluxStan(UserDefinedFunction):
         log_energy_grid,
         theta_points: int = 50,
     ):
+        """
+        :param splined_flux: Flux spline representation
+        :param log_energy_grid: Grid of log10 true energy / GeV
+        :param theta_points: Number of points for cos(theta) interpolation in stan, defaults to 50
+        """        
+
         UserDefinedFunction.__init__(
             self,
             "AtmosphericNumuFlux",
@@ -318,6 +324,11 @@ class AtmosphericNuMuFlux(FluxModel):
     ) -> 1 / (u.GeV * u.s * u.cm**2 * u.sr):
         """
         Returns differential flux
+
+        :param energy: True energy
+        :param dec: Declination
+        :param ra: Right ascension. Due to symmetry, this is disregarded
+        :returns: Flux dN/dE/dA/dt/dOmega
         """
 
         energy = np.atleast_1d(energy)
@@ -367,6 +378,9 @@ class AtmosphericNuMuFlux(FluxModel):
     def total_flux(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         """
         Returns differential flux integrated over the sky
+
+        :param energy: True energy
+        :returns: Flux dN/dE/dA/dt
         """
 
         energy = energy.to_value(u.GeV)
@@ -390,6 +404,11 @@ class AtmosphericNuMuFlux(FluxModel):
     ) -> 1 / (u.m**2 * u.s * u.GeV):
         """
         Returns differential flux integrated over specificed declination range
+        
+        :param energy: True energy
+        :param dec_min: Minimum declination
+        :param dec_max: Maximum declination
+        :returns: Flux dN/dE/dA/dt integrated over provided declination limits
         """
 
         energy = energy.to_value(u.GeV)
@@ -415,7 +434,7 @@ class AtmosphericNuMuFlux(FluxModel):
     @u.quantity_input
     def total_flux_int(self) -> 1 / (u.m**2 * u.s):
         """
-        Returns number flux integrated over energy and the entire sky
+        Returns number flux integrated over energy and the entire sky, dN/dA/dt
         """
 
         return self.integral(
@@ -450,6 +469,14 @@ class AtmosphericNuMuFlux(FluxModel):
     ) -> 1 / (u.m**2 * u.s):
         """
         Returns flux integrated over arbitrary energy and rectangular RA x DEC range
+
+        :param e_low: Lower energy
+        :param e_up: Upper energy
+        :param dec_low: Lower declination
+        :param dec_up: Upper declination
+        :param ra_low: Lower right ascension
+        :param ra_up: Upper right ascension
+        :returns: Integrated flux dN/dA/dt
         """
 
         def _integral(e_low, e_up, dec_low, dec_up, ra_low, ra_up):

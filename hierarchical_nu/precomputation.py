@@ -18,6 +18,7 @@ from .source.source import (
     PointSource,
     icrs_to_uv,
     BackgroundSource,
+    Source
 )
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.flux_model import PGammaSpectrum
@@ -37,7 +38,8 @@ from .utils.fitting_tools import TopDownSegmentation
 
 from tqdm.autonotebook import tqdm
 
-m_to_cm = 100  # cm
+from typing import Iterable
+
 
 
 class ExposureIntegral:
@@ -61,8 +63,10 @@ class ExposureIntegral:
         This is the convolution of the source spectrum and the
         effective area, multiplied by the observation time.
 
-        :param sources: An instance of Sources.
+        :param sources: Sources to calculate the exposure of
+        :type sources: :py:class:`hierarchical_nu.sources.sources.Sources`
         :param detector_model: An instance of EventType from the Refrigerator.
+        :type detector_model: :py:class:`hierarchical_nu.detector.icecube.EventType`
         :param n_grid_points: number of grid points for each parameter at which exposure is calculated.
         :param show_progress: set to True if progress bars should be displayed.
         :param bg_llh: If data-driven background likelihood is to be used, pass according instance of `R2021BackgroundLLH`, else `None`
@@ -168,7 +172,16 @@ class ExposureIntegral:
     def integral_fixed_vals(self):
         return self._integral_fixed_vals
 
-    def calculate_rate(self, source, Ebins=None):
+    def calculate_rate(self, source: Source, Ebins: Union[None, Iterable]=None):
+        """Calculate event rate
+
+        :param source: Source
+        :param Ebins: True energy binning used to infer the minimum and maximum
+        true neutrino energy. If Ebins==None, the range of the effective area is used.
+
+        :returns: Event rate
+        """
+
         # Emin determined as `Parameter` instance is accounted for
         # in the spectral shapes of the individual sources
         if Ebins is None:
