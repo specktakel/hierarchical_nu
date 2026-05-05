@@ -44,7 +44,13 @@ from hierarchical_nu.detector.r2021 import (
 )
 from hierarchical_nu.precomputation import ExposureIntegral
 from hierarchical_nu.events import Events
-from hierarchical_nu.priors import Priors, UnitPrior, MultiSourcePrior, NoPriorSetError, AngularPrior
+from hierarchical_nu.priors import (
+    Priors,
+    UnitPrior,
+    MultiSourcePrior,
+    NoPriorSetError,
+    AngularPrior,
+)
 from hierarchical_nu.source.source import uv_to_icrs
 
 from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
@@ -57,7 +63,6 @@ from hierarchical_nu.utils.roi import ROIList
 from .source.source_info import SourceInfo
 
 from omegaconf import OmegaConf
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -72,9 +77,8 @@ class StanFit(SourceInfo):
     def __init__(
         self,
         sources: Sources,
-        event_types: Union[EventType, List[EventType]],
         events: Events,
-        observation_time: Dict[str, u.quantity.Quantity[u.year]],
+        observation_time: Dict[EventType, u.quantity.Quantity[u.year]],
         priors: Priors = Priors(),
         atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
@@ -87,7 +91,6 @@ class StanFit(SourceInfo):
         """
         To set up and run fits in Stan.
         :param sources: instance of Sources
-        :param event_types: EventType or List thereof, to be included in the fit
         :param events: instance of Events
         :param observation_time: astropy.units time for single event type or dictionary thereof with event type as key
         :param priors: instance of Priors of parameters
@@ -102,14 +105,19 @@ class StanFit(SourceInfo):
 
         super().__init__(sources)
         # self._detector_model_type = detector_model
-        if not isinstance(event_types, list):
-            event_types = [event_types]
-        if isinstance(observation_time, u.quantity.Quantity):
-            observation_time = {event_types[0]: observation_time}
-        if not len(event_types) == len(observation_time):
-            raise ValueError(
-                "number of observation times must match number of event types"
-            )
+        # if not isinstance(event_types, list):
+        #    event_types = [event_types]
+
+        # if isinstance(observation_time, u.quantity.Quantity):
+        #    observation_time = {event_types[0]: observation_time}
+        # if not len(event_types) == len(observation_time):
+        ###    raise ValueError(
+        #        "number of observation times must match number of event types"
+        #    )
+        if not isinstance(observation_time, dict):
+            raise ValueError("observation_time must be a dict")
+        event_types = list(observation_time.keys())
+
         self._event_types = event_types
         self._events = events
         self._observation_time = observation_time
@@ -1814,7 +1822,7 @@ class StanFit(SourceInfo):
 
         # try:
         priors = Priors.from_group(filename, "priors")
-        #except KeyError:
+        # except KeyError:
         #    # lazy fix for backwards compatibility
         #    priors = Priors()
 
@@ -2316,10 +2324,10 @@ class StanFit(SourceInfo):
                 fit_inputs["bg_llh"][dm.S == self.events.types] = np.log(
                     prob_ereco_and_omega
                     * E_true_norm  # accounts for E_nu integral, with a flat log(E) distribution
-                    * N_dm    # multiply pdf by N_dm / time_norm to get rate of event per time
+                    * N_dm  # multiply pdf by N_dm / time_norm to get rate of event per time
                     / time_norm
-                    / self.events.N   # divide by total number of selected events
-                                      # because we multiply in stan by parameter Nex_bg
+                    / self.events.N  # divide by total number of selected events
+                    # because we multiply in stan by parameter Nex_bg
                 )
 
         # use the Eres slices for each event as data input

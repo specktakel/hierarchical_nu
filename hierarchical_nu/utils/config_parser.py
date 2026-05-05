@@ -660,15 +660,15 @@ class ConfigParser:
     def stan_kwargs(self):
         return self._hnu_config.stan_config
 
-    def create_simulation(self, sources, detector_models, obs_time):
+    def create_simulation(self, sources, obs_time):
 
         from hierarchical_nu.simulation import Simulation
 
         asimov = self._hnu_config.parameter_config.asimov
-        sim = Simulation(sources, detector_models, obs_time, asimov=asimov)
+        sim = Simulation(sources, obs_time, asimov=asimov)
         return sim
 
-    def create_fit(self, sources, events, detector_models, obs_time):
+    def create_fit(self, sources, events, obs_time):
 
         use_event_tag = self._hnu_config.parameter_config.use_event_tag
         from hierarchical_nu.fit import StanFit
@@ -678,7 +678,6 @@ class ConfigParser:
         nshards = self._hnu_config.stan_config.threads_per_chain
         fit = StanFit(
             sources,
-            detector_models,
             events,
             obs_time,
             priors=priors,
@@ -870,9 +869,7 @@ class ConfigParser:
             elif p == "Nex_src":
                 self.check_units(mu, 1)
                 self.check_units(sigma, 1)
-                priors.Nex_src = NexPrior(
-                    prior, mu=mu, sigma=sigma
-                )
+                priors.Nex_src = NexPrior(prior, mu=mu, sigma=sigma)
 
         return priors
 

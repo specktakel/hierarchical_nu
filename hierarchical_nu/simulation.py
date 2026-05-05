@@ -45,7 +45,6 @@ from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.utils.git import git_hash
 from .source.source_info import SourceInfo
 
-
 sim_logger = logging.getLogger(__name__)
 sim_logger.setLevel(logging.WARNING)
 
@@ -59,7 +58,6 @@ class Simulation(SourceInfo):
     def __init__(
         self,
         sources: Sources,
-        event_types: Union[EventType, List[EventType]],
         observation_time: Dict[EventType, u.quantity.Quantity[u.year]],
         atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
@@ -70,7 +68,6 @@ class Simulation(SourceInfo):
         """
         To set up and run simulations.
         :param sources: Sources instance
-        :param event_types: EventType or List thereof, to be included in the fit
         :param observation_time: astropy.units time for single event type or dictionary thereof with event type as key
         :param atmo_flux_energy_points: number of points for atmo spectrum energy interpolation
         :param atmo_flux_theta_points: number of points for atmo spectrum cos(theta) interpolation
@@ -81,14 +78,10 @@ class Simulation(SourceInfo):
         """
 
         super().__init__(sources)
-        if not isinstance(event_types, list):
-            event_types = [event_types]
+
         if not isinstance(observation_time, dict):
-            observation_time = {event_types[0]: observation_time}
-        if not len(event_types) == len(observation_time):
-            raise ValueError(
-                "number of observation times must match number of event types"
-            )
+            raise ValueError("observation_time must be a dict")
+        event_types = list(observation_time.keys())
         self._event_types = event_types
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
@@ -665,7 +658,9 @@ class Simulation(SourceInfo):
         if asimov:
             # Round expected number of events to nearest integer per source
             # distribute this number weighted with the Nex per event type over the event types
-            N = np.rint(self._Nex_et.sum(axis=0)).astype(int)   # total number of events to be observed
+            N = np.rint(self._Nex_et.sum(axis=0)).astype(
+                int
+            )  # total number of events to be observed
             if not self.sources.background:
                 self._N = np.zeros_like(self._Nex_et)
             else:
