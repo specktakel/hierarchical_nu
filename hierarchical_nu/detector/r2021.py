@@ -51,12 +51,13 @@ from .detector_model import (
 )
 
 from ..utils.fitting_tools import Spline1D
+from ..utils.settings import DataSet
 
 from icecube_tools.detector.r2021 import R2021IRF
 from icecube_tools.point_source_likelihood.energy_likelihood import (
     MarginalisedIntegratedEnergyLikelihood,
 )
-
+from icecube_tools.utils.data import I3_10, I3_14
 
 from icecube_tools.detector.r2021 import R2021IRF
 
@@ -431,7 +432,7 @@ class R2021EffectiveArea(EffectiveArea):
         self._season = season
         self._func_name = f"{season}EffectiveArea"
 
-        self.CACHE_FNAME = f"aeff_{season}.npz"
+        self.CACHE_FNAME = f"aeff_{season}_{DataSet.duration}.npz"
 
         self.mode = mode
 
@@ -509,9 +510,9 @@ class R2021EffectiveArea(EffectiveArea):
                         [
                             10,
                             FunctionCall(
-                                    [log10tE, cosz, log10_E_c, cos_z_c, logArea],
-                                    "interp2d",
-                                )
+                                [log10tE, cosz, log10_E_c, cos_z_c, logArea],
+                                "interp2d",
+                            ),
                         ],
                         "pow",
                     )
@@ -583,9 +584,13 @@ class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
         """
 
         self._season = season
-        self.CACHE_FNAME_LOGNORM = f"energy_reso_lognorm_{season}.npz"
-        self.CACHE_FNAME_HISTOGRAM = f"energy_reso_histogram_{season}.npz"
-        self.irf = R2021IRF.from_period(season)
+        self.CACHE_FNAME_LOGNORM = (
+            f"energy_reso_lognorm_{season}_{DataSet.duration}.npz"
+        )
+        self.CACHE_FNAME_HISTOGRAM = (
+            f"energy_reso_histogram_{season}_{DataSet.duration}.npz"
+        )
+        self.irf = R2021IRF.from_period(season, release=DataSet.release())
         self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(
             season, np.linspace(1, 9, 25)
         )
@@ -1575,9 +1580,9 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         """
 
         self._season = season
-        self.CACHE_FNAME = f"angular_reso_{season}.npz"
+        self.CACHE_FNAME = f"angular_reso_{season}_{DataSet.duration}.npz"
 
-        self.irf = R2021IRF.from_period(season)
+        self.irf = R2021IRF.from_period(season, release=DataSet.release())
         self.mode = mode
         self._rewrite = rewrite
         logger.info("Forced angular rewriting: {}".format(rewrite))
@@ -1893,15 +1898,17 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         """
 
         self._season = season
-        # self.CACHE_FNAME_LOGNORM = f"energy_reso_grid_interp_{season}.npz"
-        self.CACHE_FNAME_HISTOGRAM = f"energy_reso_histogram_{season}.npz"
+        # self.CACHE_FNAME_LOGNORM = f"energy_reso_grid_interp_{season}_{DataSet.duration}.npz"
+        self.CACHE_FNAME_HISTOGRAM = (
+            f"energy_reso_histogram_{season}_{DataSet.duration}.npz"
+        )
         # Instantiate the icecube_tools IRFs with the appropriate re-binning
         # of reconstructed energies according to the correction factors
         # try:
         #     corr = self.CORRECTION_FACTOR[self._season]
         #     self.irf = R2021IRF.from_period(self._season, correction_factor=corr)
         # except KeyError:
-        self.irf = R2021IRF.from_period(self._season)
+        self.irf = R2021IRF.from_period(self._season, release=DataSet.release())
         self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(
             season, np.linspace(1, 9, 25)
         )
@@ -2538,11 +2545,11 @@ class R2021DetectorModel(ABC, DetectorModel):
 
     @staticmethod
     def _RNG_FILENAME(season: str):
-        return f"{season}_rng.stan"
+        return f"{season}_{DataSet.duration}_rng.stan"
 
     @staticmethod
     def _PDF_FILENAME(season: str):
-        return f"{season}_pdf.stan"
+        return f"{season}_{DataSet.duration}_pdf.stan"
 
     @classmethod
     def __generate_code(
@@ -2739,7 +2746,6 @@ class R2021DetectorModel(ABC, DetectorModel):
                     "log",
                 )
 
-
                 _return_statement += ", diff_eres, diff_aeff)"
             else:
                 _return_statement += ")"
@@ -2778,8 +2784,8 @@ class R2021DetectorModel(ABC, DetectorModel):
 
 
 class IC40DetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC40_rng.stan"
-    PDF_FILENAME = "IC40_pdf.stan"
+    RNG_FILENAME = lambda: f"IC40_{DataSet.duration}_rng.stan"
+    PDF_FILENAME = lambda: f"IC40_{DataSet.duration}_pdf.stan"
 
     def __init__(
         self,
@@ -2812,8 +2818,8 @@ class IC40DetectorModel(R2021DetectorModel):
 
 
 class IC59DetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC59_rng.stan"
-    PDF_FILENAME = "IC59_pdf.stan"
+    RNG_FILENAME = lambda: f"IC59_{DataSet.duration}_rng.stan"
+    PDF_FILENAME = lambda: f"IC59_{DataSet.duration}_pdf.stan"
 
     def __init__(
         self,
@@ -2846,8 +2852,8 @@ class IC59DetectorModel(R2021DetectorModel):
 
 
 class IC79DetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC79_rng.stan"
-    PDF_FILENAME = "IC79_pdf.stan"
+    RNG_FILENAME = lambda: f"IC79_{DataSet.duration}_rng.stan"
+    PDF_FILENAME = lambda: f"IC79_{DataSet.duration}_pdf.stan"
 
     def __init__(
         self,
@@ -2880,8 +2886,8 @@ class IC79DetectorModel(R2021DetectorModel):
 
 
 class IC86_IDetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC86_I_rng.stan"
-    PDF_FILENAME = "IC86_I_pdf.stan"
+    RNG_FILENAME = lambda: f"IC86_I_{DataSet.duration}_rng.stan"
+    PDF_FILENAME = lambda: f"IC86_I_{DataSet.duration}_pdf.stan"
 
     def __init__(
         self,
@@ -2914,8 +2920,8 @@ class IC86_IDetectorModel(R2021DetectorModel):
 
 
 class IC86_IIDetectorModel(R2021DetectorModel):
-    RNG_FILENAME = "IC86_II_rng.stan"
-    PDF_FILENAME = "IC86_II_pdf.stan"
+    RNG_FILENAME = lambda: f"IC86_II_{DataSet.duration}_rng.stan"
+    PDF_FILENAME = lambda: f"IC86_II_{DataSet.duration}_pdf.stan"
 
     def __init__(
         self,

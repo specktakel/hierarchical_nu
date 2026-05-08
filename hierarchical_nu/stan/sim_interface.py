@@ -89,8 +89,8 @@ class StanSimInterface(StanInterface):
             # Include the PDF mode of the detector model
             dm = et.model(DistributionMode.RNG)
 
-            if dm.RNG_FILENAME not in self._includes:
-                self._includes.append(dm.RNG_FILENAME)
+            if dm.RNG_FILENAME() not in self._includes:
+                self._includes.append(dm.RNG_FILENAME())
             dm.generate_code(
                 DistributionMode.RNG,
                 rewrite=False,

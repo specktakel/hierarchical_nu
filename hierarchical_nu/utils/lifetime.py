@@ -24,6 +24,7 @@ logger.setLevel(logging.WARNING)
 
 class LifeTime:
     def __init__(self):
+        # TODO insert translation 10/14 years, possible kwarg in Uptime signature
         self._uptime = Uptime(*available_data_periods)
 
     def lifetime_from_mjd(

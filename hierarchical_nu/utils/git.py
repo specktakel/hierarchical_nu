@@ -24,7 +24,7 @@ try:
     git_hash = process.communicate()[0].strip().decode("ascii")
     if "fatal" in git_hash:
         # we are not using git but a pip installation
-        raise ValueError
+        raise ValueError()
 except ValueError:
     process = subprocess.Popen(
         ["pip", "show", "hierarchical_nu"],

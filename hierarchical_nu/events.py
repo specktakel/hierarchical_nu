@@ -14,17 +14,17 @@ import ligo.skymap.plot
 
 from icecube_tools.utils.vMF import get_kappa
 
-from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.utils.roi import (
+from .source.parameter import Parameter
+from .utils.roi import (
     ROI,
     RectangularROI,
     CircularROI,
     FullSkyROI,
     ROIList,
 )
-from hierarchical_nu.source.source import Sources, PointSource
-from hierarchical_nu.utils.plotting import SphericalCircle
-from hierarchical_nu.detector.icecube import (
+from .source.source import Sources, PointSource
+from .utils.plotting import SphericalCircle
+from .detector.icecube import (
     Refrigerator,
     IC40,
     IC59,
@@ -32,7 +32,8 @@ from hierarchical_nu.detector.icecube import (
     IC86_I,
     IC86_II,
 )
-from hierarchical_nu.detector.icecube import EventType
+from .detector.icecube import EventType
+from .utils.settings import DataSet
 
 from time import time as thyme
 import logging
@@ -517,10 +518,12 @@ class Events:
         # Already exclude low energy events here, would be quite difficult later on
         try:
             _Emin_det = Parameter.get_parameter("Emin_det").value.to_value(u.GeV)
+            # TODO Insert translation of 10/14 year duration to icecube_tools, use kwarg for this
             events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=True)
             if apply_Emin_det:
                 events.restrict(ereco_low=_Emin_det)
         except ValueError:
+            # TODO same here
             events = RealEvents.from_event_files(*(s.P for s in seasons), use_all=True)
             # Create a dict of masks for each season
             if apply_Emin_det:
@@ -545,6 +548,7 @@ class Events:
             from icecube_tools.utils.data import Uptime
 
             lt = Uptime()
+            # TODO
             ic86 = ["IC86_II", "IC86_III", "IC86_IV", "IC86_V", "IC86_VI", "IC86_VII"]
 
             # I have no one but myself to blame for this

@@ -14,6 +14,8 @@ from .r2021 import (
     IC86_IIDetectorModel,
 )
 
+from ..utils.settings import DataSet
+
 
 class EventType:
     # Only works with @dataclass(eq=False) decorator called in notebooks directly, but not in e.g. LifeTime.mjd_from_dm

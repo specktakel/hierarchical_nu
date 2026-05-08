@@ -140,8 +140,8 @@ class StanFitInterface(StanInterface):
         for et in self._event_types:
             detector_model_type = et.model
 
-            if detector_model_type.PDF_FILENAME not in self._includes:
-                self._includes.append(detector_model_type.PDF_FILENAME)
+            if detector_model_type.PDF_FILENAME() not in self._includes:
+                self._includes.append(detector_model_type.PDF_FILENAME())
             detector_model_type.generate_code(
                 DistributionMode.PDF,
                 rewrite=False,
