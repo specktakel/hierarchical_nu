@@ -167,7 +167,10 @@ class StanFit(SourceInfo):
         self._def_var_names = []
 
         if self._sources.point_source:
-            self._def_var_names.append("L")
+            if not self._fit_nex:
+                self._def_var_names.append("L")
+            else:
+                self._def_var_names.append("L_ind")
             if self._fit_index:
                 self._def_var_names.append("src_index")
             if self._fit_beta:

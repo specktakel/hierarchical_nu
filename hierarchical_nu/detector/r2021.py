@@ -592,7 +592,7 @@ class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
         )
         self.irf = R2021IRF.from_period(season, release=DataSet.release())
         self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(
-            season, np.linspace(1, 9, 25)
+            DataSet.release(), season, np.linspace(1, 9, 25)
         )
         self._make_ereco_cuts = ereco_cuts
         self._ereco_cuts = self._icecube_tools_eres._ereco_limits
@@ -1910,7 +1910,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         # except KeyError:
         self.irf = R2021IRF.from_period(self._season, release=DataSet.release())
         self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(
-            season, np.linspace(1, 9, 25)
+            season, DataSet.release(), np.linspace(1, 9, 25)
         )
         # Copy true energy bins from IRF
         self._log_tE_bin_edges = self.irf.true_energy_bins
@@ -2784,6 +2784,8 @@ class R2021DetectorModel(ABC, DetectorModel):
 
 
 class IC40DetectorModel(R2021DetectorModel):
+
+    
     RNG_FILENAME = lambda: f"IC40_{DataSet.duration}_rng.stan"
     PDF_FILENAME = lambda: f"IC40_{DataSet.duration}_pdf.stan"
 
@@ -2920,8 +2922,14 @@ class IC86_IDetectorModel(R2021DetectorModel):
 
 
 class IC86_IIDetectorModel(R2021DetectorModel):
-    RNG_FILENAME = lambda: f"IC86_II_{DataSet.duration}_rng.stan"
-    PDF_FILENAME = lambda: f"IC86_II_{DataSet.duration}_pdf.stan"
+
+    @classmethod
+    def RNG_FILENAME(cls):
+        return f"IC86_II_{DataSet.duration}_rng.stan"
+    
+    @classmethod
+    def PDF_FILENAME(cls):
+        return f"IC86_II_{DataSet.duration}_pdf.stan"
 
     def __init__(
         self,
