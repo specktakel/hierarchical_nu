@@ -1056,9 +1056,12 @@ class Sources:
             _sources = list(_point_sources)
 
             # Add back diffuse and atmospheric components
-            _sources.append(self.diffuse)
-            _sources.append(self.atmospheric)
-            _sources.append(self.background)
+            if self.diffuse is not None:
+                _sources.append(self.diffuse)
+            if self.atmospheric is not None:
+                _sources.append(self.atmospheric)
+            if self.background is not None:
+                _sources.append(self.background)
 
         else:
             assert len(mask) == self.N

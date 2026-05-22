@@ -83,14 +83,6 @@ my_sources.add_diffuse_component(diffuse_norm, Enorm.value, diff_index, Emin_dif
 my_sources.add_atmospheric_component(cache_dir=mceq) # auto atmo component, from MCEq
 ```
 
-```python
-my_sources.f_arr() # Fraction of arrival flux from point source(s)
-```
-
-```python
-my_sources.f_arr_astro() # As above, excluding atmo
-```
-
 ## Simulation
 
 ```python

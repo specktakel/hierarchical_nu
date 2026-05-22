@@ -669,7 +669,9 @@ class Simulation(SourceInfo):
         if asimov:
             # Round expected number of events to nearest integer per source
             # distribute this number weighted with the Nex per event type over the event types
-            N = np.rint(self._Nex_et.sum(axis=0)).astype(int)   # total number of events to be observed
+            N = np.rint(self._Nex_et.sum(axis=0)).astype(
+                int
+            )  # total number of events to be observed
             if not self.sources.background:
                 self._N = np.zeros_like(self._Nex_et)
             else:
@@ -1102,6 +1104,9 @@ class Simulation(SourceInfo):
     @classmethod
     def from_file(cls, filename):
         raise NotImplementedError()
+
+    def __getitem__(self, index):
+        return self._sim_output.stan_variable(index).squeeze()
 
     def _get_min_det_energy(self):
         """

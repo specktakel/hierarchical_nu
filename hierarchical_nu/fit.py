@@ -56,13 +56,14 @@ logger.setLevel(logging.WARNING)
 class StanFit(SourceInfo):
     """To set up and run fits in Stan."""
 
-    @u.quantity_input
     def __init__(
         self,
         sources: Sources,
         event_types: Union[EventType, List[EventType]],
         events: Events,
-        observation_time: Union[u.quantity.Quantity[u.year], Dict[str, u.quantity.Quantity[u.year]]],
+        observation_time: Union[
+            u.quantity.Quantity[u.year], Dict[str, u.quantity.Quantity[u.year]]
+        ],
         priors: Priors = Priors(),
         atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
@@ -97,7 +98,13 @@ class StanFit(SourceInfo):
         if not isinstance(event_types, list):
             event_types = [event_types]
         if isinstance(observation_time, u.quantity.Quantity):
-            observation_time = {event_types[0]: observation_time}
+            # Cast obs time to a dict and check for unit
+            observation_time = {event_types[0]: observation_time.to(u.yr)}
+        else:
+            # Only check for units
+            for k, v in observation_time.items():
+                v.to(u.yr)
+
         if not len(event_types) == len(observation_time):
             raise ValueError(
                 "number of observation times must match number of event types"
@@ -444,8 +451,10 @@ class StanFit(SourceInfo):
         if not var_names:
             var_names = self._def_var_names
         if transform:
+
             def transform(x):
                 return np.log10(x)
+
             axs = av.plot_trace(
                 {key: self[key] for key in var_names}, transform=transform, **kwargs
             )
@@ -494,6 +503,7 @@ class StanFit(SourceInfo):
             ax.plot(x, plot, color="black", alpha=0.4, zorder=0)
 
         for ax_double in axs:
+            plot_prior = True
             name = ax_double[0].get_title()
             # check if there is a prior available for the variable
             try:
@@ -502,11 +512,17 @@ class StanFit(SourceInfo):
                     prior = priors_dict["ang_sys"]
                 else:
                     prior = priors_dict[name]
+
+                if name == "Nex_src" and not self._fit_nex:
+                    # If we do not fit Nex_src, do not plot its prior
+                    plot_prior = False
+                if name == "L" and self._fit_nex:
+                    plot_prior = False
                 ax = ax_double[0]
                 supp = ax.get_xlim()
                 x = np.linspace(*supp, 1000)
 
-                if transform:
+                if transform and plot_prior:
                     # Assumes that the only sensible transformation is log10
                     if isinstance(prior, MultiSourcePrior):
                         for p in prior:
@@ -514,7 +530,7 @@ class StanFit(SourceInfo):
                     else:
                         draw_prior_transform(prior, ax, x)
 
-                else:
+                elif plot_prior:
                     if isinstance(prior, MultiSourcePrior):
                         for p in prior:
                             draw_prior(p, ax, x)
@@ -792,6 +808,10 @@ class StanFit(SourceInfo):
         ax.set_xlabel(r"$E~[\mathrm{GeV}]$")
         ax.set_ylabel("pdf")
         ax.set_xlim(8e1, 1.4e9)
+        ax.set_ylim(
+            0,
+        )
+
         return ax, mapper
 
     def plot_energy_posterior(
@@ -1935,7 +1955,7 @@ class StanFit(SourceInfo):
 
         # try:
         priors = Priors.from_group(filename, "priors")
-        #except KeyError:
+        # except KeyError:
         #    # lazy fix for backwards compatibility
         #    priors = Priors()
 
@@ -2434,10 +2454,10 @@ class StanFit(SourceInfo):
                 fit_inputs["bg_llh"][dm.S == self.events.types] = np.log(
                     prob_ereco_and_omega
                     * E_true_norm  # accounts for E_nu integral, with a flat log(E) distribution
-                    * N_dm    # multiply pdf by N_dm / time_norm to get rate of event per time
+                    * N_dm  # multiply pdf by N_dm / time_norm to get rate of event per time
                     / time_norm
-                    / self.events.N   # divide by total number of selected events
-                                      # because we multiply in stan by parameter Nex_bg
+                    / self.events.N  # divide by total number of selected events
+                    # because we multiply in stan by parameter Nex_bg
                 )
 
         # use the Eres slices for each event as data input
