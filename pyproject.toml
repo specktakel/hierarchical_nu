@@ -51,8 +51,8 @@ docs = [
 ]
 
 [project.urls]
-Repository = "https://github.com/cescalara/hierarchical_nu"
-Issues = "https://github.com/cescalara/hierarchical_nu/issues"
+Repository = "https://github.com/nu-isance/hierarchical_nu"
+Issues = "https://github.com/nu-isance/hierarchical_nu/issues"
 
 [tools.versioneer]
 VCS = "git"

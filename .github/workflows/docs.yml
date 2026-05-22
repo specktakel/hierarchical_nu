@@ -35,12 +35,31 @@ jobs:
       run: |
         sudo apt-get install pandoc
         python -m pip install --upgrade pip
-        python -m pip install sphinx nbsphinx
-        python -m pip install .
+        python -m pip install ".[docs]"
       
     - name: Generate Docs
       run: |
         sphinx-apidoc -f -e -o docs/api hierarchical_nu '*test*'
         sphinx-build -M html docs docs/_build
 
-# TODO: add pages setup and deploy once we have a working organisation for hnu or some other website
+    - name: Setup Pages
+      uses: actions/configure-pages@v6
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v4
+      with:
+        # Upload docs subdirectory
+        path: './docs/_build/html'
+
+  deploy:
+    name: Deploy docs
+    if: ${{ github.event_name == 'push' && github.ref_name == 'master' }}
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
