@@ -74,7 +74,7 @@ class NormalPrior(PriorDistribution):
         self._sigma = val
 
     def pdf(self, x: float):
-        return stats.norm(loc=self_mu, scale=self.sigma).pdf(x)
+        return stats.norm(loc=self.mu, scale=self.sigma).pdf(x)
 
     def sample(self, N: int):
         return stats.norm(loc=self.mu, scale=self.sigma).rvs(N)
