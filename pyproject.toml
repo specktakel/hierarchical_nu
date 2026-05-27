@@ -7,7 +7,7 @@ name = "hierarchical_nu"
 description = "A Bayesian hierarchical model for source-nu associations"
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 authors = [
     {name = "Francesca Capel", email = "capel.francesca@gmail.com"},
     {name = "Julian Kuhlmann", email = "julian.kuhlmann@mpp.mpg.de"},
@@ -41,7 +41,6 @@ dependencies = [
     "iminuit",
     "tqdm_joblib",
     "healpy",
-    "icecube_tools @ git+https://github.com/cescalara/icecube_tools.git@814174f457eb887816388ab0e70dabbe363ca65c",
 ]
 
 [project.optional-dependencies]
