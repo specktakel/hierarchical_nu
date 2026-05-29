@@ -10,17 +10,14 @@ from .r2021 import (
     IC40DetectorModel,
     IC59DetectorModel,
     IC79DetectorModel,
-    IC86_IDetectorModel,
-    IC86_IIDetectorModel,
+    # IC86_IDetectorModel,
+    # IC86_IIDetectorModel,
+    IC86_DetectorModel,
 )
 
+from icecube_data_reader import event_types
 
-class EventType:
-    # Only works with @dataclass(eq=False) decorator called in notebooks directly, but not in e.g. LifeTime.mjd_from_dm
-    def __eq__(self, other):
-        return self.S == other.S
-
-
+"""
 @dataclass(eq=False)
 class NT(EventType):
     P = "northern_tracks"
@@ -35,32 +32,26 @@ class CAS(EventType):
     F = "Cascades"
     S = 1
     model = CascadesDetectorModel
+"""
 
 
-@dataclass(eq=False)
-class IC40(EventType):
-    P = "IC40"
-    F = P
-    S = 2
+class IC40(event_types.IC40):
     model = IC40DetectorModel
 
 
-@dataclass(eq=False)
-class IC59(EventType):
-    P = "IC59"
-    F = P
-    S = 3
+class IC59(event_types.IC59):
     model = IC59DetectorModel
 
 
-@dataclass(eq=False)
-class IC79(EventType):
-    P = "IC79"
-    F = P
-    S = 4
+class IC79(event_types.IC79):
     model = IC79DetectorModel
 
 
+class IC86(event_types.IC86):
+    model = IC86DetectorModel
+
+
+"""
 @dataclass(eq=False)
 class IC86_I(EventType):
     P = "IC86_I"
@@ -75,8 +66,9 @@ class IC86_II(EventType):
     F = P
     S = 6
     model = IC86_IIDetectorModel
+"""
 
-
+"""
 class Refrigerator:
     detectors = [NT, CAS, IC40, IC59, IC79, IC86_I, IC86_II]
 
@@ -111,3 +103,4 @@ class Refrigerator:
                 return dm.S
         else:
             raise ValueError(f"No detector {python} available.")
+"""

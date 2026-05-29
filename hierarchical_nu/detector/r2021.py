@@ -53,9 +53,9 @@ from .detector_model import (
 from ..utils.fitting_tools import Spline1D
 
 from icecube_tools.detector.r2021 import R2021IRF
-from icecube_tools.point_source_likelihood.energy_likelihood import (
-    MarginalisedIntegratedEnergyLikelihood,
-)
+#from icecube_tools.point_source_likelihood.energy_likelihood import (
+#    MarginalisedIntegratedEnergyLikelihood,
+#)
 
 
 from icecube_tools.detector.r2021 import R2021IRF
@@ -67,8 +67,8 @@ logger.setLevel(logging.CRITICAL)
 Cache.set_cache_dir(".cache")
 
 # Silence output
-ict_logger = logging.getLogger("icecube_tools.detector.r2021")
-ict_logger.setLevel(logging.CRITICAL)
+#ict_logger = logging.getLogger("icecube_tools.detector.r2021")
+#ict_logger.setLevel(logging.CRITICAL)
 
 
 """
@@ -509,9 +509,9 @@ class R2021EffectiveArea(EffectiveArea):
                         [
                             10,
                             FunctionCall(
-                                    [log10tE, cosz, log10_E_c, cos_z_c, logArea],
-                                    "interp2d",
-                                )
+                                [log10tE, cosz, log10_E_c, cos_z_c, logArea],
+                                "interp2d",
+                            ),
                         ],
                         "pow",
                     )
@@ -556,6 +556,7 @@ class R2021EffectiveArea(EffectiveArea):
         self._rs_bbpl_params["gamma2_scale"] = 0.6
 
 
+'''
 class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
     """
     Energy resolution for the ten-year All Sky Point Source release:
@@ -1552,6 +1553,7 @@ class R2021LogNormEnergyResolution(LogNormEnergyResolution, HistogramSampler):
         self._poly_limits = self._poly_limits__[dec_idx]
         self._fit_params = self._fit_params__[dec_idx]
         self._tE_binc = self._tE_binc__[dec_idx]
+'''
 
 
 class R2021AngularResolution(AngularResolution, HistogramSampler):
@@ -2738,7 +2740,6 @@ class R2021DetectorModel(ABC, DetectorModel):
                     ],
                     "log",
                 )
-
 
                 _return_statement += ", diff_eres, diff_aeff)"
             else:

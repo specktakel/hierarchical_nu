@@ -20,10 +20,10 @@ from .seyfert_model import SeyfertNuMuSpectrum
 from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
-from ..detector.r2021_bg_llh import R2021BackgroundLLH
+
+# from ..detector.r2021_bg_llh import R2021BackgroundLLH
 
 import logging
-
 
 logger = logging.getLogger(__name__)
 
@@ -858,6 +858,7 @@ class DiffuseSource(Source):
         self._redshift = value
 
 
+'''
 class BackgroundSource(Source):
     """
     Class that models background with data
@@ -876,6 +877,7 @@ class BackgroundSource(Source):
 
     def flux(self):
         raise NotImplementedError("Data-driven background model has no flux.")
+'''
 
 
 class Sources:
