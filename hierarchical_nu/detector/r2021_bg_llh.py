@@ -3,21 +3,22 @@ import numpy as np
 from pathlib import Path
 from typing import Union
 
-from icecube_tools.utils.data import data_directory, available_datasets
+from icecube_data_reader.downloader import data_directory, available_datasets, I3_14
+from icecube_data_reader.event_types import EventType, Refrigerator
 
 
-base_path = Path(data_directory) / Path(available_datasets["20210126"]["dir"])
+base_path = Path(data_directory) / Path(available_datasets[I3_14]["dir"])
 
 
 class R2021BackgroundLLH:
 
-    def __init__(self, season: str = "IC86_II"):
+    def __init__(self, season: EventType | str):
         from skyllh.i3.backgroundpdf import DataBackgroundI3SpatialPDF
 
         from skyllh.core.config import Config
         from skyllh.i3.config import add_icecube_specific_analysis_required_data_fields
 
-        from skyllh.datasets.i3.PublicData_10y_ps import create_dataset_collection
+        from skyllh.datasets.i3.PublicData_14y_ps import create_dataset_collection
         from skyllh.core.timing import TimeLord
         from skyllh.analyses.i3.publicdata_ps.backgroundpdf import (
             PDDataBackgroundI3EnergyPDF,
@@ -36,8 +37,9 @@ class R2021BackgroundLLH:
             base_path=base_path,
         )
 
-        if season == "IC86_II":
-            season = "IC86_II-VII"
+        season = str(season)
+        if season == "IC86":
+            season = "IC86_I-XI"
 
         ds = dsc[season]
         data = ds.load_and_prepare_data(
