@@ -1054,8 +1054,8 @@ class Sources:
 
         self.add(atmospheric_component)
 
-    def add_background(self, *detector_model):
-        self.add(BackgroundSource("bg", *detector_model))
+    #def add_background(self, *detector_model):
+    #    self.add(BackgroundSource("bg", *detector_model))
 
     def select(self, mask: npt.NDArray[np.bool_], only_point_sources: bool = False):
         """
@@ -1195,8 +1195,8 @@ class Sources:
 
                 elif isinstance(source.flux_model, AtmosphericNuMuFlux):
                     self._atmospheric = source
-            elif isinstance(source, BackgroundSource):
-                self._background = source
+            #elif isinstance(source, BackgroundSource):
+            #    self._background = source
 
         if self._point_source:
             self._get_point_source_spectrum()

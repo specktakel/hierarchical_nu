@@ -15,7 +15,7 @@ from pathlib import Path
 
 from time import time as thyme
 
-from icecube_tools.utils.vMF import get_theta_p
+# from icecube_tools.utils.vMF import get_theta_p
 
 
 from hierarchical_nu.utils.plotting import SphericalCircle
@@ -323,9 +323,9 @@ class Simulation(SourceInfo):
             event_types = [int(_) for _ in event_types]
 
             # Kappa parameter of VMF distribution
-            kappa = self._sim_output.stan_variable("kappa")[0]
+            #kappa = self._sim_output.stan_variable("kappa")[0]
             # Equivalent 1 sigma errors in deg
-            ang_errs = get_theta_p(kappa, p=0.683) * u.deg
+            #ang_errs = get_theta_p(kappa, p=0.683) * u.deg
 
         except ValueError:
             # No detected events

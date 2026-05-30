@@ -252,7 +252,7 @@ class StanFitInterface(StanInterface):
                                     + self._ang_sys_add_squared,
                                     # self._kappa[i],
                                 ],
-                                event_type.F + "AngularResolution",
+                                str(event_type) + "AngularResolution",
                             )
 
             self._eres_src << StringExpression(["irf_return.1"])
@@ -1004,7 +1004,8 @@ class StanFitInterface(StanInterface):
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
 
             # Uncertainty on the event's angular reconstruction
-            self._kappa = ForwardVariableDef("kappa", "vector[N]")
+            if NT in self._event_types or CAS in self._event_types:
+                self._kappa = ForwardVariableDef("kappa", "vector[N]")
 
             if self._bg:
                 self._bg_llh = ForwardVariableDef("bg_llh", "vector[N]")
@@ -1353,7 +1354,7 @@ class StanFitInterface(StanInterface):
                                                 self._omega_det[i],
                                                 self._kappa[i],
                                             ],
-                                            event_type.F + "AngularResolution",
+                                            str(event_type) + "AngularResolution",
                                         )
                                     else:
                                         self._spatial_loglike[k, i] << FunctionCall(
@@ -1361,7 +1362,7 @@ class StanFitInterface(StanInterface):
                                                 self._angular_separation[k, i],
                                                 self._ang_errs_squared[i],
                                             ],
-                                            event_type.F + "AngularResolution",
+                                            str(event_type) + "AngularResolution",
                                         )
 
             # Find largest permitted range of energies at the detector

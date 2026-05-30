@@ -10,14 +10,17 @@ from .r2021 import (
     IC40DetectorModel,
     IC59DetectorModel,
     IC79DetectorModel,
-    # IC86_IDetectorModel,
-    # IC86_IIDetectorModel,
-    IC86_DetectorModel,
+    IC86DetectorModel,
+    #IC86_IDetectorModel,
+    #IC86_IIDetectorModel,
 )
 
+from icecube_data_reader.event_types import IC40, IC59, IC79, IC86
 from icecube_data_reader import event_types
+EventType = event_types.EventType
+Refrigerator = event_types.Refrigerator
 
-"""
+
 @dataclass(eq=False)
 class NT(EventType):
     P = "northern_tracks"
@@ -32,24 +35,12 @@ class CAS(EventType):
     F = "Cascades"
     S = 1
     model = CascadesDetectorModel
-"""
 
 
-class IC40(event_types.IC40):
-    model = IC40DetectorModel
-
-
-class IC59(event_types.IC59):
-    model = IC59DetectorModel
-
-
-class IC79(event_types.IC79):
-    model = IC79DetectorModel
-
-
-class IC86(event_types.IC86):
-    model = IC86DetectorModel
-
+IC40.model = IC40DetectorModel
+IC59.model = IC59DetectorModel
+IC79.model = IC79DetectorModel
+IC86.model = IC86DetectorModel
 
 """
 @dataclass(eq=False)

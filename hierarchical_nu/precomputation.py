@@ -17,7 +17,7 @@ from .source.source import (
     Sources,
     PointSource,
     icrs_to_uv,
-    BackgroundSource,
+    #BackgroundSource,
 )
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.flux_model import PGammaSpectrum
@@ -27,7 +27,7 @@ from .detector.detector_model import (
     LogNormEnergyResolution,
     GridInterpolationEnergyResolution,
 )
-from .detector.r2021_bg_llh import R2021BackgroundLLH
+# from .detector.r2021_bg_llh import R2021BackgroundLLH
 from .utils.roi import CircularROI, ROIList
 from .detector.icecube import (
     EventType,
@@ -36,6 +36,7 @@ from .detector.icecube import (
 from .utils.fitting_tools import TopDownSegmentation
 
 from tqdm.autonotebook import tqdm
+from line_profiler import profile
 
 m_to_cm = 100  # cm
 
@@ -54,7 +55,7 @@ class ExposureIntegral:
         detector_model: EventType,
         n_grid_points: int = 50,
         show_progress: bool = False,
-        bg_llh: Union[None, R2021BackgroundLLH] = None,
+        #bg_llh: Union[None, R2021BackgroundLLH] = None,
     ):
         """
         Handles calculation of the exposure integral.
@@ -72,7 +73,7 @@ class ExposureIntegral:
         self._detector_model = detector_model
         self._sources = sources
         self._n_grid_points = n_grid_points
-        self._bg_llh = bg_llh
+        #self._bg_llh = bg_llh
 
         # Use Emin_det if available, otherwise use per event_type
         try:
@@ -168,6 +169,7 @@ class ExposureIntegral:
     def integral_fixed_vals(self):
         return self._integral_fixed_vals
 
+    @profile
     def calculate_rate(self, source, Ebins=None):
         # Emin determined as `Parameter` instance is accounted for
         # in the spectral shapes of the individual sources
@@ -179,8 +181,11 @@ class ExposureIntegral:
             lower_e_edges = Ebins[:-1] << u.GeV
             upper_e_edges = Ebins[1:] << u.GeV
 
-        E_min = lower_e_edges[0]
-        E_max = upper_e_edges[-1]
+        if False:
+            # insert here for bg_llh
+            pass
+        else:
+            E_min, E_max = source.flux_model.energy_bounds
 
         log_E_space = np.linspace(np.log10(E_min.value), np.log10(E_max.value), 200)
         log_E_c = log_E_space[:-1] + np.diff(log_E_space) / 2
@@ -293,7 +298,8 @@ class ExposureIntegral:
             log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
             E_grid, dec_grid = np.meshgrid(E_c, dec_c)
 
-            if self._bg_llh is not None:
+            #if self._bg_llh is not None:
+            if False:
                 # for each slice in sin(dec) calculate integral over energy
                 output = 0
                 llh = self._bg_llh
@@ -363,6 +369,7 @@ class ExposureIntegral:
 
         return output
 
+    @profile
     def _compute_exposure_integral(self):
         """
         Loop over sources and calculate the exposure integral.
@@ -382,7 +389,8 @@ class ExposureIntegral:
                         and self._detector_model == CAS
                     ):
                         self._integral_fixed_vals.append(0.0 * u.m**2)
-                    elif self._bg_llh is not None:
+                    #elif self._bg_llh is not None:
+                    elif False:
                         self._integral_fixed_vals.append(self.calculate_rate(source))
                     else:
                         self._integral_fixed_vals.append(
@@ -475,8 +483,8 @@ class ExposureIntegral:
         envelope_container = []
 
         for c, source in enumerate(self._sources.sources):
-            if isinstance(source, BackgroundSource):
-                continue
+            #if isinstance(source, BackgroundSource):
+            #    continue
             # Energy bounds in flux model are already redshift-corrected
             # and live in the detector frame
 
@@ -572,7 +580,7 @@ class ExposureIntegral:
 
         self._slice_aeff_for_point_sources()
 
-        self._compute_c_values()
+        #self._compute_c_values()
 
 
 '''

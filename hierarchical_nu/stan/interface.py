@@ -1,7 +1,7 @@
 import os
 from abc import ABCMeta, abstractmethod
 
-from hierarchical_nu.backend.stan_generator import StanFileGenerator
+from ..backend.stan_generator import StanFileGenerator
 from ..source.source_info import SourceInfo
 
 # To includes

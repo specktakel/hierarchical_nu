@@ -323,7 +323,7 @@ class AtmosphericNuMuFlux(FluxModel):
         energy = np.atleast_1d(energy)
         if np.any((energy > self.EMAX) | (energy < self.EMIN)):
             raise ValueError(
-                "Energy needs to be in {} < E {}".format(self.EMIN, self.EMAX)
+                f"Energy needs to be in {self.EMIN} < E < {self.EMAX}, but is {energy}."
             )
 
         cosz = np.atleast_1d(-np.sin(dec))

@@ -38,7 +38,7 @@ from hierarchical_nu.source.flux_model import (
 )
 from hierarchical_nu.source.seyfert_model import SeyfertNuMuSpectrum
 from hierarchical_nu.source.cosmology import luminosity_distance
-from hierarchical_nu.detector.icecube import EventType, CAS, Refrigerator
+from hierarchical_nu.detector.icecube import EventType, NT, CAS, Refrigerator
 from hierarchical_nu.detector.r2021 import (
     R2021EnergyResolution,
 )
@@ -119,6 +119,9 @@ class StanFit(SourceInfo):
         self._use_event_tag = use_event_tag
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
+
+        # convert icecube_data_reader.event_types.EventType to 
+        # the inherited children in hierarchical_nu.detector.icecube
 
         self._reload = reload
         if not self._reload:
@@ -240,16 +243,16 @@ class StanFit(SourceInfo):
 
         if not exposure_integral:
             for event_type in self._event_types:
-                if self._bg:
-                    llh = self._sources.background._likelihoods[event_type]
-                else:
-                    llh = None
+                #if self._bg:
+                #    llh = self._sources.background._likelihoods[event_type]
+                #else:
+                #    llh = None
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
                     event_type,
                     self._n_grid_points,
                     show_progress=show_progress,
-                    bg_llh=llh,
+                    #bg_llh=llh,
                 )
 
         else:
@@ -1834,8 +1837,8 @@ class StanFit(SourceInfo):
             for dm in event_types:
                 try:
                     Emin_det = fit_inputs[f"Emin_det_{dm.P}"]
-                    mask[events.types == dm.S] = (
-                        events.energies[events.types == dm.S] >= Emin_det * u.GeV
+                    mask[events.types == dm] = (
+                        events.energies[events.types == dm] >= Emin_det * u.GeV
                     )
                 except KeyError:
                     # backwards compatibility
@@ -1997,8 +2000,9 @@ class StanFit(SourceInfo):
         fit_inputs["omega_det"] = [
             (_ / np.linalg.norm(_)).tolist() for _ in fit_inputs["omega_det"]
         ]
-        fit_inputs["event_type"] = self._events.types
-        fit_inputs["kappa"] = self._events.kappas
+        fit_inputs["event_type"] = self._events.int_types
+        if NT in self._event_types or CAS in self._event_types:
+            fit_inputs["kappa"] = self._events.kappas
         if self._ang_sys and not self._fit_ang_sys:
             fit_inputs["ang_err"] = np.sqrt(
                 Parameter.get_parameter("ang_sys_add").value.to_value(u.rad) ** 2
@@ -2299,10 +2303,10 @@ class StanFit(SourceInfo):
 
                 time_norm = time.lifetime_from_dm(dm)[dm].to_value(u.s)
 
-                decs = self.events.coords[dm.S == self.events.types].dec.to_value(u.rad)
+                decs = self.events.coords[dm == self.events.types].dec.to_value(u.rad)
                 sindecs = np.sin(decs)
                 ereco = np.log10(
-                    self.events.energies[dm.S == self.events.types].to_value(u.GeV)
+                    self.events.energies[dm == self.events.types].to_value(u.GeV)
                 )
                 prob_ereco_and_omega = self.sources.background._likelihoods[
                     dm
@@ -2313,7 +2317,7 @@ class StanFit(SourceInfo):
                 # is accounted for at this stage
                 E_true_norm = 1 / (np.log(fit_inputs["Emax"] / fit_inputs["Emin"]))
 
-                fit_inputs["bg_llh"][dm.S == self.events.types] = np.log(
+                fit_inputs["bg_llh"][dm == self.events.types] = np.log(
                     prob_ereco_and_omega
                     * E_true_norm  # accounts for E_nu integral, with a flat log(E) distribution
                     * N_dm    # multiply pdf by N_dm / time_norm to get rate of event per time
@@ -2335,9 +2339,9 @@ class StanFit(SourceInfo):
         _, dec = uv_to_icrs(self.events.unit_vectors)
         dec_idx = np.zeros(self.events.N, dtype=int)
         for et in self._event_types:
-            dec_idx[et.S == self.events.types] = (
+            dec_idx[et == self.events.types] = (
                 np.digitize(
-                    dec[et.S == self.events.types].to_value(u.rad),
+                    dec[et == self.events.types].to_value(u.rad),
                     self._exposure_integral[
                         et
                     ].energy_resolution.dec_bin_edges.to_value(u.rad),
@@ -2368,7 +2372,7 @@ class StanFit(SourceInfo):
             ):
                 try:
                     self._ereco_spline_evals[
-                        (et.S == self.events.types) & (dec_idx == c_d)
+                        (et == self.events.types) & (dec_idx == c_d)
                     ] = np.array(
                         [
                             self._exposure_integral[et].energy_resolution._2dsplines[
@@ -2381,10 +2385,10 @@ class StanFit(SourceInfo):
                                 grid=False,
                             )
                             # for logE in ereco_indexed[
-                            #    (et.S == self.events.types) & (dec_idx == c_d)
+                            #    (et == self.events.types) & (dec_idx == c_d)
                             # ]
                             for logE in log_energies[
-                                (et.S == self.events.types) & (dec_idx == c_d)
+                                (et == self.events.types) & (dec_idx == c_d)
                             ]
                         ]
                     )

@@ -52,7 +52,7 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         log_tE_bin_c = (log_tE_lower_bin_edges + log_tE_upper_bin_edges) / 2
         log_tE_bin_c[0] = log_tE_lower_bin_edges[0]
         log_tE_bin_c[-1] = log_tE_upper_bin_edges[-1]
-        tE_bin_c = np.power(10, log_tE_bin_c)
+        # tE_bin_c = np.power(10, log_tE_bin_c)
 
         cosz_lower = self._cosz_bin_edges[:-1]
         cosz_upper = self._cosz_bin_edges[1:]
