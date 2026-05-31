@@ -10,23 +10,23 @@ c = 3e5 * u.km / u.s
 DH = c / H0  # Mpc
 
 
-def E(z):
+def E(z: float):
     Omp = Om * (1 + z) ** 3
     return np.sqrt(Omp + Ol)
 
 
-def hubble_factor(z):
+def hubble_factor(z: float):
     return H0 * E(z)
 
 
-def comoving_distance(z):
+def comoving_distance(z: float):
     scale = lambda z: 1 / E(z)
     result, err = integrate.quad(scale, 0, z)
 
     return DH * result
 
 
-def luminosity_distance(z):
+def luminosity_distance(z: float):
     return (1 + z) * comoving_distance(z)
 
 

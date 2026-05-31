@@ -33,7 +33,7 @@ class SourceInfo:
             # Hijack shared_luminosity for Seyferts, where the pressure ratio acts as luminosity
             Parameter.get_parameter("pressure_ratio")
             self._shared_luminosity = True
-        except:
+        except ValueError:
             pass
         if self._sources.point_source:
 
@@ -86,7 +86,7 @@ class SourceInfo:
             else:
                 self._fit_eta = False
             try:
-                Nex_src = Parameter.get_parameter("Nex_src")
+                Parameter.get_parameter("Nex_src")
                 self._fit_nex = True
             except ValueError:
                 self._fit_nex = False

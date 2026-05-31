@@ -29,8 +29,6 @@ from .detector_model import (
     DetectorModel,
 )
 
-from ..source.source import Sources
-
 
 import logging
 

@@ -1,3 +1,10 @@
+"""
+https://github.com/icecube/skyllh
+This code imports parts of skyllh (https://github.com/icecube/skyllh),
+written and maintained by The IceCube Collaboration,
+and is used for generating the background distribution from data.
+"""
+
 from matplotlib import pyplot as plt
 import numpy as np
 from pathlib import Path

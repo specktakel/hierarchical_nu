@@ -17,7 +17,7 @@ from .source.source import (
     Sources,
     PointSource,
     icrs_to_uv,
-    #BackgroundSource,
+    BackgroundSource,
 )
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.flux_model import PGammaSpectrum
@@ -27,7 +27,7 @@ from .detector.detector_model import (
     LogNormEnergyResolution,
     GridInterpolationEnergyResolution,
 )
-# from .detector.r2021_bg_llh import R2021BackgroundLLH
+from .detector.r2021_bg_llh import R2021BackgroundLLH
 from .utils.roi import CircularROI, ROIList
 from .detector.icecube import (
     EventType,
@@ -55,7 +55,7 @@ class ExposureIntegral:
         detector_model: EventType,
         n_grid_points: int = 50,
         show_progress: bool = False,
-        #bg_llh: Union[None, R2021BackgroundLLH] = None,
+        bg_llh: Union[None, R2021BackgroundLLH] = None,
     ):
         """
         Handles calculation of the exposure integral.
@@ -73,7 +73,7 @@ class ExposureIntegral:
         self._detector_model = detector_model
         self._sources = sources
         self._n_grid_points = n_grid_points
-        #self._bg_llh = bg_llh
+        self._bg_llh = bg_llh
 
         # Use Emin_det if available, otherwise use per event_type
         try:
@@ -181,9 +181,9 @@ class ExposureIntegral:
             lower_e_edges = Ebins[:-1] << u.GeV
             upper_e_edges = Ebins[1:] << u.GeV
 
-        if False:
-            # insert here for bg_llh
-            pass
+        if isinstance(source, BackgroundSource):
+            E_min = 1e2 * u.GeV
+            E_max = 1e9 * u.GeV
         else:
             E_min, E_max = source.flux_model.energy_bounds
 
@@ -298,8 +298,7 @@ class ExposureIntegral:
             log_E_grid, cosz_grid = np.meshgrid(log_E_c, cosz_c)
             E_grid, dec_grid = np.meshgrid(E_c, dec_c)
 
-            #if self._bg_llh is not None:
-            if False:
+            if self._bg_llh is not None:
                 # for each slice in sin(dec) calculate integral over energy
                 output = 0
                 llh = self._bg_llh
@@ -389,8 +388,7 @@ class ExposureIntegral:
                         and self._detector_model == CAS
                     ):
                         self._integral_fixed_vals.append(0.0 * u.m**2)
-                    #elif self._bg_llh is not None:
-                    elif False:
+                    elif self._bg_llh is not None:
                         self._integral_fixed_vals.append(self.calculate_rate(source))
                     else:
                         self._integral_fixed_vals.append(

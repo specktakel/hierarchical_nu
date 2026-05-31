@@ -432,8 +432,6 @@ class R2021EffectiveArea(EffectiveArea):
 
         self._make_spline()
 
-        print(self.eff_area)
-
     def generate_code(self):
 
         if self.mode == DistributionMode.PDF:
@@ -446,33 +444,26 @@ class R2021EffectiveArea(EffectiveArea):
             ["real", "vector"],
             "real",
         )
-        print("call to generate_code", self.eff_area)
         # Check if ROI should be applied to the effective area
         # This will speed up the fit but requires recompilation for different ROIs
         if ROIList.STACK:
             apply_roi = np.all(list(_.apply_roi for _ in ROIList.STACK))
         else:
             apply_roi = False
-        print("appl_roi", apply_roi)
         if apply_roi:
             cosz_min = -np.sin(ROIList.DEC_max().to_value(u.rad))
             cosz_max = -np.sin(ROIList.DEC_min().to_value(u.rad))
-            print("cosz bounds", cosz_min, cosz_max)
             cosz_binc = self._cosz_bin_edges[:-1] + np.diff(self._cosz_bin_edges) / 2
-            print(cosz_binc)
             idx_min = np.digitize(cosz_min, cosz_binc) - 1
             if idx_min < 0:
                 idx_min = 0
             idx_max = np.digitize(cosz_max, cosz_binc, right=True)
-            print("cosz idxs", idx_min, idx_max)
             eff_area = self.eff_area[:, idx_min : idx_max + 1]
             cosz_binc = cosz_binc[idx_min : idx_max + 1]
-            print(eff_area)
         else:
             cosz_bin_edges = self._cosz_bin_edges
             cosz_binc = cosz_bin_edges[:-1] + np.diff(cosz_bin_edges)
             eff_area = self.eff_area
-        print(eff_area)
         eff_area = np.concatenate(
             (
                 np.atleast_2d(eff_area[0, :]),
@@ -490,7 +481,6 @@ class R2021EffectiveArea(EffectiveArea):
             )
         )
 
-        #print("area min:", eff_area.min())
         eff_area[eff_area == 0.0] = eff_area[eff_area > 0.0].min()
         with self:
             logArea = StanArray(

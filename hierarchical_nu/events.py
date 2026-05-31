@@ -1,9 +1,6 @@
 import numpy as np
-import h5py
 
 import matplotlib.pyplot as plt
-from matplotlib import colors
-import matplotlib.cm as cm
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -11,27 +8,18 @@ from astropy.time import Time
 
 import ligo.skymap.plot
 
-from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.utils.roi import (
-    ROI,
-    RectangularROI,
     CircularROI,
-    FullSkyROI,
     ROIList,
 )
-from hierarchical_nu.source.source import Sources, PointSource
+from hierarchical_nu.source.source import Sources
 from hierarchical_nu.utils.plotting import SphericalCircle
 
-from icecube_data_reader.event_types import EventType
 from icecube_data_reader.events import IceTrackDR2Events
 
-from time import time as thyme
 import logging
 from pathlib import Path
-import os
 
-from typing import List, Union
-import numpy.typing as npt
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -193,7 +181,7 @@ class Events(IceTrackDR2Events):
 
     @u.quantity_input
     def plot_radial_excess(
-        self, position: Union[SkyCoord, PointSource], radius: u.deg = 5 * u.deg
+        self, position: SkyCoord, radius: u.deg = 5 * u.deg
     ):
         """
         Plot histogram of radial distance to a source located at center.
@@ -203,12 +191,7 @@ class Events(IceTrackDR2Events):
         :param radius: Max radius of histogram
         """
 
-        if isinstance(position, PointSource):
-            center_coords = SkyCoord(ra=position.ra, dec=position.dec, frame="icrs")
-        elif isinstance(position, SkyCoord):
-            center_coords = position
-        else:
-            raise ValueError
+        center_coords = position
 
         r2_bins = np.arange(
             0.0, np.power(radius.to_value(u.deg), 2) + 1.0 / 3.0, 1.0 / 3.0

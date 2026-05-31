@@ -20,8 +20,8 @@ from .seyfert_model import SeyfertNuMuSpectrum
 from .cosmology import luminosity_distance
 from .parameter import Parameter, ParScale
 from ..utils.config import HierarchicalNuConfig
-
-# from ..detector.r2021_bg_llh import R2021BackgroundLLH
+from ..detector.icecube import EventType
+from ..detector.r2021_bg_llh import R2021BackgroundLLH
 
 import logging
 
@@ -858,26 +858,27 @@ class DiffuseSource(Source):
         self._redshift = value
 
 
-'''
+
 class BackgroundSource(Source):
     """
     Class that models background with data
+    Uses optional dependency of `skyllh`.
     """
 
-    def __init__(self, name, *detector_model):
+    def __init__(self, name, *seasons: EventType | str):
         from ..detector.r2021_bg_llh import R2021BackgroundLLH
 
         super().__init__(name, DetectorFrame)
         self._name = name
         self._flux_model = None
-        self._detector_model = detector_model
+        self._detector_model = seasons
 
-        self._likelihoods = {_: R2021BackgroundLLH(_.P) for _ in detector_model}
+        self._likelihoods = {_: R2021BackgroundLLH(_) for _ in seasons}
         self._frame = DetectorFrame
 
     def flux(self):
         raise NotImplementedError("Data-driven background model has no flux.")
-'''
+
 
 
 class Sources:
@@ -1054,8 +1055,8 @@ class Sources:
 
         self.add(atmospheric_component)
 
-    #def add_background(self, *detector_model):
-    #    self.add(BackgroundSource("bg", *detector_model))
+    def add_background(self, *detector_model):
+        self.add(BackgroundSource("bg", *detector_model))
 
     def select(self, mask: npt.NDArray[np.bool_], only_point_sources: bool = False):
         """

@@ -243,16 +243,16 @@ class StanFit(SourceInfo):
 
         if not exposure_integral:
             for event_type in self._event_types:
-                #if self._bg:
-                #    llh = self._sources.background._likelihoods[event_type]
-                #else:
-                #    llh = None
+                if self._bg:
+                    llh = self._sources.background._likelihoods[event_type]
+                else:
+                    llh = None
                 self._exposure_integral[event_type] = ExposureIntegral(
                     self._sources,
                     event_type,
                     self._n_grid_points,
                     show_progress=show_progress,
-                    #bg_llh=llh,
+                    bg_llh=llh,
                 )
 
         else:
