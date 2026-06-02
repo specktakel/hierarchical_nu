@@ -539,9 +539,8 @@ class StanFit(SourceInfo):
     def _get_kde(
         self,
         var_name,
-        index: Union[int, slice, None] = None,
+        index: int,
         transform: Callable = lambda x: x,
-        combined: bool = False,
     ):
         """
         Retrieve kde approximation of samples for given parameter
@@ -551,18 +550,14 @@ class StanFit(SourceInfo):
         """
 
         chain = self[var_name]
-        if combined:
-            chain = chain.reshape(chain.shape[0] * chain.chaps[1], chain.shape[-1])
+        # Combine all chains
+        chain = chain.reshape(chain.shape[0] * chain.shape[1], chain.shape[-1])
         if index is not None:
             data = chain.T[index]
         else:
             data = chain
-        if self.chains > 1 and not combined:
-            for i in range(self.chains):
-                yield av.kde(transform(data[i]))
-        else:
-            for i in range(1):
-                yield av.kde(transform(data))
+
+        return av.kde(transform(data))
 
     def corner_plot(self, var_names=None, truths=None):
         """
