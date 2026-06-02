@@ -1823,9 +1823,6 @@ class StanFit(SourceInfo):
 
         events = Events.from_file(
             filename,
-            apply_Emin_det=False,
-            apply_spatial_cuts=False,
-            apply_temporal_cuts=False,
         )
 
         try:
@@ -2294,14 +2291,9 @@ class StanFit(SourceInfo):
             time = LifeTime()
 
             for dm in self._event_types:
-                N_dm = Events.from_ev_file(
-                    dm,
-                    apply_Emin_det=False,
-                    apply_spatial_cuts=False,
-                    apply_temporal_cuts=False,
-                ).N
+                N_dm = Events.from_event_files(dm).N
 
-                time_norm = time.lifetime_from_dm(dm)[dm].to_value(u.s)
+                time_norm = time.lifetime_from_season(dm)[dm].to_value(u.s)
 
                 decs = self.events.coords[dm == self.events.types].dec.to_value(u.rad)
                 sindecs = np.sin(decs)
