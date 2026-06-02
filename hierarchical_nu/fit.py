@@ -411,7 +411,13 @@ class StanFit(SourceInfo):
 
         return source_coords
 
-    def plot_trace(self, var_names=None, transform: bool = False, **kwargs):
+    def plot_trace(
+            self,
+            var_names=None,
+            vector_indices: Iterable | None = None,
+            transform: Callable = lambda x: x,
+            combined: bool = False,
+    ) -> tuple:
         """
         Trace plot using list of stan parameter keys.
         :param var_names: single parameter name or list of parameters
@@ -421,20 +427,35 @@ class StanFit(SourceInfo):
 
         if not var_names:
             var_names = self._def_var_names
-        if transform:
-            transform = lambda x: np.log10(x)
-            axs = av.plot_trace(
-                {key: self[key] for key in var_names}, transform=transform, **kwargs
-            )
-        else:
-            axs = av.plot_trace(
-                {key: self[key] for key in var_names}, var_names=var_names, **kwargs
-            )
-        fig = axs.flatten()[0].get_figure()
-
+        fig, axs = plt.subplots(nrows=len(var_names), ncols=2)
+        axs = np.atleast_2d(axs)
+        # Replacing arviz' plot methods because I can't be bothered to understand their new API
+        for c, v in enumerate(var_names):
+            data = self[v]
+            if vector_indices is None:
+                iterator = range(data.shape[-1])
+            else:
+                iterator = vector_indices
+            if combined:
+                data = data.reshape(data.shape[0] * data.shape[1], data.shape[2])
+                for j in iterator:
+                    x, y, _ = av.kde(transform(data[:, j]))
+                    axs[c, 0].plot(x, y, color=f"C{j}")
+                    axs[c, 1].plot(np.arange(data.shape[0]), transform(data[:, j]), color=f"C{j}")
+            else:
+                for i in range(self.chains):
+                    for j in iterator:
+                        x, y, _ = av.kde(transform(data[i, :, j]))
+                        axs[c, 0].plot(x, y, color=f"C{j}")
+                        axs[c, 1].plot(np.arange(data.shape[1]), transform(data[i, :, j]), color=f"C{j}")
+            axs[c, 0].set_title(v)
         return fig, axs
 
-    def plot_trace_and_priors(self, var_names=None, transform: bool = False, **kwargs):
+    def plot_trace_and_priors(
+            self,
+            var_names=None, 
+            transform: bool = False
+        ):
         """
         Trace plot and overplot the used priors.
         :param var_names: single parameter name or list of parameters
@@ -442,8 +463,12 @@ class StanFit(SourceInfo):
         :param **kwargs: other kwargs passed to arviz.plot_trace
         """
 
+        if transform:
+            _transform = lambda x: np.log10(x)
+        else:
+            _transform = lambda x: x
         fig, axs = self.plot_trace(
-            var_names=var_names, show=False, transform=transform, **kwargs
+            var_names=var_names, transform=_transform,
         )
 
         if not var_names:
@@ -487,12 +512,12 @@ class StanFit(SourceInfo):
                     else:
                         draw_prior_transform(prior, ax, x)
 
+                #else:
+                if isinstance(prior, MultiSourcePrior):
+                    for p in prior:
+                        draw_prior(p, ax, x)
                 else:
-                    if isinstance(prior, MultiSourcePrior):
-                        for p in prior:
-                            draw_prior(p, ax, x)
-                    else:
-                        draw_prior(prior, ax, x)
+                    draw_prior(prior, ax, x)
 
                 if isinstance(prior, UnitPrior):
                     try:
@@ -509,8 +534,6 @@ class StanFit(SourceInfo):
             except (KeyError, NoPriorSetError):
                 pass
 
-        fig = axs.flatten()[0].get_figure()
-
         return fig, axs
 
     def _get_kde(
@@ -518,6 +541,7 @@ class StanFit(SourceInfo):
         var_name,
         index: Union[int, slice, None] = None,
         transform: Callable = lambda x: x,
+        combined: bool = False,
     ):
         """
         Retrieve kde approximation of samples for given parameter
@@ -527,11 +551,18 @@ class StanFit(SourceInfo):
         """
 
         chain = self[var_name]
+        if combined:
+            chain = chain.reshape(chain.shape[0] * chain.chaps[1], chain.shape[-1])
         if index is not None:
             data = chain.T[index]
         else:
             data = chain
-        return av.kde(transform(data))
+        if self.chains > 1 and not combined:
+            for i in range(self.chains):
+                yield av.kde(transform(data[i]))
+        else:
+            for i in range(1):
+                yield av.kde(transform(data))
 
     def corner_plot(self, var_names=None, truths=None):
         """
@@ -667,7 +698,7 @@ class StanFit(SourceInfo):
 
         for c, i in enumerate(indices):
             # get the support (is then log10(E/GeV)) and the pdf values
-            supp, pdf = self._get_kde("E", i, lambda x: np.log10(x))
+            supp, pdf, _ = self._get_kde("E", i, lambda x: np.log10(x))
             # exponentiate the support, because we rescale the axis in the end
             ax.plot(
                 np.power(10, supp),
@@ -689,7 +720,7 @@ class StanFit(SourceInfo):
                 zorder=assoc_prob[c] + 1,
             )
             if highlight is not None and highlight[i]:
-                x, y = self._get_kde("E", i, lambda x: np.log10(x))
+                x, y, _ = self._get_kde("E", i, lambda x: np.log10(x))
                 idx_posterior = np.argmax(y)
                 ax.plot(
                     [
@@ -705,7 +736,7 @@ class StanFit(SourceInfo):
             elif highlight is None and assoc_threshold is not None:
                 if assoc_prob[c] >= assoc_threshold:
                     # if we have more than threshold prob, link both lines up
-                    x, y = self._get_kde("E", i, lambda x: np.log10(x))
+                    x, y, _ = self._get_kde("E", i, lambda x: np.log10(x))
                     idx_posterior = np.argmax(y)
                     ax.plot(
                         [
@@ -1808,7 +1839,7 @@ class StanFit(SourceInfo):
             config = f["sources/config"][()].decode("ascii")
 
         event_types = [
-            Refrigerator.stan2dm(_) for _ in fit_inputs["event_types"].tolist()
+            Refrigerator.int2dm(_) for _ in fit_inputs["event_types"].tolist()
         ]
 
         obs_time = fit_inputs["T"] * u.s
