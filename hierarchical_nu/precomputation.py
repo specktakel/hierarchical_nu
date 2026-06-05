@@ -481,7 +481,7 @@ class ExposureIntegral:
         envelope_container = []
 
         for c, source in enumerate(self._sources.sources):
-            #if isinstance(source, BackgroundSource):
+            # if isinstance(source, BackgroundSource):
             #    continue
             # Energy bounds in flux model are already redshift-corrected
             # and live in the detector frame
@@ -578,7 +578,7 @@ class ExposureIntegral:
 
         self._slice_aeff_for_point_sources()
 
-        #self._compute_c_values()
+        self._compute_c_values()
 
 
 '''

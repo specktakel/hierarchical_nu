@@ -47,7 +47,14 @@ from .detector_model import (
 from ..utils.fitting_tools import Spline1D
 
 from icecube_data_reader.irf.irf import IceTracksDR2InstrumentResponseFunction as I3IRF
-from icecube_data_reader.event_types import EventType, IC40, IC59, IC79, IC86, Refrigerator
+from icecube_data_reader.event_types import (
+    EventType,
+    IC40,
+    IC59,
+    IC79,
+    IC86,
+    Refrigerator,
+)
 from icecube_data_reader.irf.effective_area import IceTrackDR2EffectiveArea
 
 from line_profiler import profile
@@ -58,8 +65,8 @@ logger.setLevel(logging.CRITICAL)
 Cache.set_cache_dir(".cache")
 
 # Silence output
-#ict_logger = logging.getLogger("icecube_tools.detector.r2021")
-#ict_logger.setLevel(logging.CRITICAL)
+# ict_logger = logging.getLogger("icecube_tools.detector.r2021")
+# ict_logger.setLevel(logging.CRITICAL)
 
 
 """
@@ -175,14 +182,14 @@ class HistogramSampler:
                     logger.warning(f"Empty true energy bin: {etrue, dec}")
                     n_reco = np.zeros(20)
                 else:
-                    bins_reco = irf.recoE_bins[etrue, dec]
-                    n_reco = irf.recoE_hists[etrue, dec]
+                    bins_reco = irf.recoE_bin_edges[etrue][dec]
+                    n_reco = irf.recoE_hists[etrue][dec]
                 for c, v in enumerate(n_reco):
                     # If counts in bin is nonzero, do further stuff
                     if v != 0.0:
                         # get psf distribution
-                        n_psf = irf.psf_hists[etrue, dec][c]
-                        bins_psf = irf.psf_bin_edges[etrue, dec][c]
+                        n_psf = irf.psf_hists[etrue][dec][c]
+                        bins_psf = irf.psf_bin_edges[etrue][dec][c]
                         n = n_psf.copy()
                         bins = bins_psf.copy()
                         # Append bins, values, etc. to lists
@@ -204,9 +211,8 @@ class HistogramSampler:
                         # do it again for ang_err
                         for c_psf, v_psf in enumerate(n_psf):
                             if v_psf != 0.0:
-                                bins_ang = irf.ang_err_hists[
-                                    etrue, dec][c][c_psf]
-                                n_ang = irf.ang_err_hists[etrue, dec][c][c_psf]
+                                bins_ang = irf.ang_err_hists[etrue][dec][c][c_psf]
+                                n_ang = irf.ang_err_hists[etrue][dec][c][c_psf]
                                 n = n_ang.copy()
                                 bins = bins_ang.copy()
                                 ang_vals.append(n)
@@ -331,7 +337,7 @@ class HistogramSampler:
         )
         # Takes indices of etrue and dec (to be determined elsewhere!)
         with get_ragged_index:
-            ReturnStatement(["dec + (etrue - 1) * 3"])
+            ReturnStatement([f"dec + (etrue - 1) * {self._dec_bin_edges.size - 1}"])
 
     def _make_psf_hist_index(self, season: str) -> None:
         """
@@ -348,7 +354,10 @@ class HistogramSampler:
             "int",
         )
         with get_ragged_index:
-            ReturnStatement(["ereco + (dec - 1) * 20 + (etrue - 1) * 3  * 20"])
+            n_dec_bins = self._dec_bin_edges.size - 1
+            ReturnStatement(
+                [f"ereco + (dec - 1) * 20 + (etrue - 1) * {n_dec_bins}  * 20"]
+            )
 
     def _make_ang_hist_index(self, season: str) -> None:
         """
@@ -365,9 +374,10 @@ class HistogramSampler:
             "int",
         )
         with get_ragged_index:
+            n_dec_bins = self._dec_bin_edges.size - 1
             ReturnStatement(
                 [
-                    "psf + (ereco - 1) * 20 + (dec - 1) * 20 * 20 + (etrue - 1) * 3 * 20 * 20"
+                    f"psf + (ereco - 1) * 20 + (dec - 1) * 20 * 20 + (etrue - 1) * {n_dec_bins} * 20 * 20"
                 ]
             )
 
@@ -1572,6 +1582,8 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         self.CACHE_FNAME = f"angular_reso_{season}.npz"
 
         self.irf = I3IRF.load(Refrigerator.str2dm(season))
+        self._dec_bin_edges = np.deg2rad(self.irf.dec_bin_edges) << u.rad
+
         self.mode = mode
         self._rewrite = rewrite
         logger.info("Forced angular rewriting: {}".format(rewrite))
@@ -1783,7 +1795,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         Setup all data fields, load data from cached file or create from scratch.
         """
 
-        self._pdet_limits = (1e2, 1e8)
+        self._pdet_limits = (1e2, 1e9)
         self._Emin, self._Emax = self._pdet_limits
 
         if self.mode == DistributionMode.PDF:
@@ -1812,6 +1824,8 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
 
             else:
                 logger.info("Re-doing angular data and saving to file.")
+                self.irf.create_IRF()
+
                 self._generate_ragged_psf_data(self.irf)
                 with Cache.open(self.CACHE_FNAME, "wb") as fr:
                     np.savez(
@@ -1897,9 +1911,9 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         # except KeyError:
         self.irf = I3IRF.load(self._season)
         self.irf.create_eres()
-        #self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(
+        # self._icecube_tools_eres = MarginalisedIntegratedEnergyLikelihood(
         #    season, np.linspace(1, 9, 25)
-        #)
+        # )
         # Copy true energy bins from IRF
         self._log_tE_bin_edges = self.irf.log_tE_bin_edges
         self._log_tE_binc = self.irf.log_tE_bin_centers
@@ -1921,7 +1935,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         self._sin_dec_binc = self._sin_dec_edges[:-1] + np.diff(self._sin_dec_edges) / 2
 
         self._make_ereco_cuts = ereco_cuts
-        #self._ereco_cuts = self._icecube_tools_eres._ereco_limits
+        # self._ereco_cuts = self._icecube_tools_eres._ereco_limits
         icd_aeff = IceTrackDR2EffectiveArea.load(self._season)
         self.aeff_dec_bins = np.arcsin(-icd_aeff.cosz_bin_edges)
 
@@ -2376,28 +2390,28 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         else:
             assert upper_threshold_energy.shape == energy_trunc.shape
         # Limits of Ereco in dec binning of effective area
-        #idx_dec_aeff = np.digitize(dec.to_value(u.rad), self._aeff_dec_bins) - 1
+        # idx_dec_aeff = np.digitize(dec.to_value(u.rad), self._aeff_dec_bins) - 1
         # Get the according IRF dec bins (there are only 3)
         idx_dec_eres = (
             np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
         )
-        #idx_dec_aeff[
+        # idx_dec_aeff[
         #    np.nonzero(
         #        (idx_dec_aeff == self._aeff_dec_bins.size - 1)
         #        & (np.isclose(dec.to_value(u.rad), self._aeff_dec_bins[-1]))
         #    )
-        #] -= 1
+        # ] -= 1
 
         # Create output array
         prob = np.zeros(energy_trunc.shape)
 
         ## Make strongest limits on ereco_low
         # limits from exp data selection
-        #e_low = self._icecube_tools_eres._ereco_limits[idx_dec_aeff, 0]
+        # e_low = self._icecube_tools_eres._ereco_limits[idx_dec_aeff, 0]
         # make log of input value
         ethr_low = np.log10(lower_threshold_energy.to_value(u.GeV))
         # apply stronger limit
-        #e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
+        # e_low[ethr_low > e_low] = ethr_low[ethr_low > e_low]
         e_low = ethr_low
         e_high = np.log10(upper_threshold_energy.to_value(u.GeV))
         e_trunc = np.log10(energy_trunc.to_value(u.GeV))
@@ -2413,7 +2427,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
 
                 # find the slices of evaluations with Etrue including the queried
                 for c, (Et, logErl, logErh) in enumerate(zip(e_trunc, e_low, e_high)):
-                    #if cD != idx_dec_eres[c]:
+                    # if cD != idx_dec_eres[c]:
                     #    continue
 
                     bins_per_dec = 40
@@ -2435,21 +2449,19 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                 - 1
             )
 
-            dec_idx = np.digitize(np.sin(dec.to_value(u.rad)), self.irf.sin_dec_bin_edges) - 1
+            dec_idx = (
+                np.digitize(np.sin(dec.to_value(u.rad)), self.irf.sin_dec_bin_edges) - 1
+            )
             for cE, cD in product(
                 range(self.irf.log_tE_bin_centers.size),
                 range(self.irf.sin_dec_bin_centers.size),
             ):
-                #if cE not in idx_tE and cD not in idx_dec_eres:
+                # if cE not in idx_tE and cD not in idx_dec_eres:
                 #    continue
 
-
                 if upper_threshold_energy is None:
-                    prob[(cE == idx_tE)] = (
-                        1.0
-                        - self.irf.recoE_sampling[cE][cD].cdf(
-                            e_low[(cE == idx_tE) & (cD == dec_idx)]
-                        )
+                    prob[(cE == idx_tE)] = 1.0 - self.irf.recoE_sampling[cE][cD].cdf(
+                        e_low[(cE == idx_tE) & (cD == dec_idx)]
                     )
                 else:
                     pdf = self.irf.recoE_sampling[cE][cD]
@@ -2599,7 +2611,7 @@ class R2021DetectorModel(ABC, DetectorModel):
         code = code.removesuffix("\n}\n")
         if not os.path.isdir(path):
             os.makedirs(path)
-        #if eres_type == R2021LogNormEnergyResolution:
+        # if eres_type == R2021LogNormEnergyResolution:
         #    season += "_ln"
         if mode == DistributionMode.PDF:
 
@@ -2876,6 +2888,7 @@ class IC79DetectorModel(R2021DetectorModel):
             path=path,
         )
 
+
 class IC86DetectorModel(R2021DetectorModel):
     RNG_FILENAME = "IC86_rng.stan"
     PDF_FILENAME = "IC86_pdf.stan"
@@ -2977,7 +2990,8 @@ class IC86_IIDetectorModel(R2021DetectorModel):
             path=path,
         )
 
-'''
+
+"""
 class IC40LogNormDetectorModel(R2021DetectorModel):
     RNG_FILENAME = "IC40_ln_rng.stan"
     PDF_FILENAME = "IC40_ln_pdf.stan"
@@ -3196,4 +3210,4 @@ class IC86_IILogNormDetectorModel(R2021DetectorModel):
             season="IC86_II",
             path=path,
         )
-'''
+"""
