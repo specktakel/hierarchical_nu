@@ -14,6 +14,8 @@ from hierarchical_nu.utils.roi import (
 )
 from hierarchical_nu.source.source import Sources
 from hierarchical_nu.utils.plotting import SphericalCircle
+from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.detector.icecube import IC40, IC59, IC79, IC86
 
 from icecube_data_reader.events import IceTrackDR2Events
 
@@ -209,6 +211,14 @@ class Events(IceTrackDR2Events):
             n,
             bins,
         )
+    
+    def apply_Emin_det(self):
+        try:
+            # One Emin_det to rule them all
+            Emin_det = Parameter.get_parameter("Emin_det").value
+            self.apply_energy_cut(Emin=Emin_det)
+        except ValueError:
+            pass
 
     
     def apply_ROIS(

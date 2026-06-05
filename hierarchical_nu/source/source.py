@@ -1196,8 +1196,8 @@ class Sources:
 
                 elif isinstance(source.flux_model, AtmosphericNuMuFlux):
                     self._atmospheric = source
-            #elif isinstance(source, BackgroundSource):
-            #    self._background = source
+            elif isinstance(source, BackgroundSource):
+                self._background = source
 
         if self._point_source:
             self._get_point_source_spectrum()
@@ -1221,26 +1221,6 @@ class Sources:
         self.organise()
 
         return self._point_source
-
-    @property
-    def point_source_spectrum(self):
-        self.organise()
-
-        if self._point_source:
-            return self._point_source_spectrum
-        else:
-            logger.warning("No point sources in source list")
-            return None
-
-    @property
-    def point_source_frame(self):
-        self.organise()
-
-        if self._point_source:
-            return self._point_source_frame
-        else:
-            logger.warning("No point sources in source list")
-            return None
 
     @property
     def diffuse(self):

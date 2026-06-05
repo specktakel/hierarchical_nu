@@ -182,8 +182,8 @@ class HistogramSampler:
                     logger.warning(f"Empty true energy bin: {etrue, dec}")
                     n_reco = np.zeros(20)
                 else:
-                    bins_reco = irf.recoE_bin_edges[etrue][dec]
-                    n_reco = irf.recoE_hists[etrue][dec]
+                    bins_reco = irf.recoE_bin_edges[etrue, dec]
+                    n_reco = irf.recoE_hists[etrue, dec]
                 for c, v in enumerate(n_reco):
                     # If counts in bin is nonzero, do further stuff
                     if v != 0.0:
@@ -1825,7 +1825,6 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
             else:
                 logger.info("Re-doing angular data and saving to file.")
                 self.irf.create_IRF()
-
                 self._generate_ragged_psf_data(self.irf)
                 with Cache.open(self.CACHE_FNAME, "wb") as fr:
                     np.savez(
@@ -1854,7 +1853,7 @@ class R2021AngularResolution(AngularResolution, HistogramSampler):
         pass
 
     @classmethod
-    def rewrite_files(cls, season: str = "IC86_II"):
+    def rewrite_files(cls, season: str = "IC86"):
         """
         Rewrite cached file
         """
@@ -1957,7 +1956,8 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         dec_idx = (
             np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
         )
-
+        if not self.irf._eres:
+            self.irf.create_eres()
         bin_edges = self.irf.recoE_bin_edges[tE_idx][dec_idx]
         binc = bin_edges[:-1] + np.diff(bin_edges) / 2
         pdf_vals = self.irf.recoE_sampling[tE_idx][dec_idx].pdf(binc)
@@ -2186,6 +2186,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
                 self._tE_bin_edges = np.power(10, self.irf.log_tE_bin_edges)
 
         else:
+            self.irf.create_eres()
             self._generate_ragged_ereco_data(self.irf)
             with Cache.open(self.CACHE_FNAME_HISTOGRAM, "wb") as fr:
                 np.savez(
@@ -2476,7 +2477,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         return prob
 
     @classmethod
-    def rewrite_files(cls, season: str = "IC86_II") -> None:
+    def rewrite_files(cls, season: str = "IC86") -> None:
         # call this to rewrite npz files
         cls(DistributionMode.PDF, rewrite=True, season=season)
         cls(DistributionMode.RNG, rewrite=True, season=season)
@@ -2528,7 +2529,7 @@ class R2021DetectorModel(ABC, DetectorModel):
         # Unused kwargs are absorbed and discarded in LogNormEnergyResolution
         self._energy_resolution = eres_type(
             mode,
-            rewrite=True,
+            rewrite=rewrite,
             season=season,
             n_components=n_components,
             make_plots=make_plots,
@@ -2581,7 +2582,7 @@ class R2021DetectorModel(ABC, DetectorModel):
         except FileNotFoundError:
             files = []
             os.makedirs(path)
-        """
+
         finally:
             if not rewrite:
                 if mode == DistributionMode.PDF and cls.PDF_FILENAME in files:
@@ -2591,7 +2592,7 @@ class R2021DetectorModel(ABC, DetectorModel):
 
             else:
                 cls.logger.info("Generating r2021 stan code.")
-        """
+
         cls.logger.info("Generating r2021 stan code.")
         with StanGenerator() as cg:
             instance = R2021DetectorModel(
