@@ -102,6 +102,8 @@ class ROIList:
     @staticmethod
     def RA_max():
         ra_max = 0.0 * u.rad
+        if not ROIList.STACK:
+            return 2 * np.pi * u.rad
         for roi in ROIList.STACK:
             temp = roi.RA_max
             if temp > ra_max:
@@ -112,6 +114,8 @@ class ROIList:
     @staticmethod
     def RA_min():
         ra_min = 2 * np.pi * u.rad
+        if not ROIList.STACK:
+            return 0.0 * u.rad
         for roi in ROIList.STACK:
             temp = roi.RA_min
             if temp < ra_min:
@@ -122,6 +126,8 @@ class ROIList:
     @staticmethod
     def DEC_min():
         dec_min = np.pi / 2 * u.rad
+        if not ROIList.STACK:
+            return -np.pi / 2 * u.rad
         for roi in ROIList.STACK:
             temp = roi.DEC_min
             if temp < dec_min:
@@ -132,6 +138,8 @@ class ROIList:
     @staticmethod
     def DEC_max():
         dec_max = -np.pi / 2 * u.rad
+        if not ROIList.STACK:
+            return np.pi / 2 * u.rad
         for roi in ROIList.STACK:
             temp = roi.DEC_max
             if temp > dec_max:
@@ -142,10 +150,14 @@ class ROIList:
     @staticmethod
     def MJD_min():
         return min([_.MJD_min for _ in ROIList.STACK])
-    
+
     @staticmethod
     def MJD_max():
         return max([_.MJD_max for _ in ROIList.STACK])
+
+    @staticmethod
+    def apply_roi():
+        return all([_.apply_roi for _ in ROIList.STACK])
 
     def __repr__(self):
         return "\n".join([roi.__repr__() for roi in ROIList.STACK])
