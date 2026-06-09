@@ -45,6 +45,7 @@ from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.utils.git import git_hash
 from .source.source_info import SourceInfo
 
+from hierarchical_nu.detector.icecube import EventType, Refrigerator
 
 sim_logger = logging.getLogger(__name__)
 sim_logger.setLevel(logging.WARNING)
@@ -295,11 +296,13 @@ class Simulation(SourceInfo):
 
             self._sim_output = sim_output
 
-            energies, coords, event_types, ang_errs = self._extract_sim_output()
-
+            # energies, coords, event_types, ang_errs = self._extract_sim_output()
+            energies, coords, event_types = self._extract_sim_output()
+            ang_errs = np.full(len(energies), 0.2) * u.deg
             # Create filler MJD values, we are only doing time-averaged simulations
             mjd = Time([99.0] * len(energies), format="mjd")
 
+            event_types = np.array([Refrigerator.int2dm(_) for _ in event_types])
             # Check for detected events
             if len(energies) != 0:
                 self.events = Events(energies, coords, event_types, ang_errs, mjd)
@@ -311,7 +314,9 @@ class Simulation(SourceInfo):
     def _extract_sim_output(self):
         try:
             energies = self._sim_output.stan_variable("Edet")[0] * u.GeV
+            true_energies = self._sim_output.stan_variable("E")[0] * u.GeV
             dirs = self._sim_output.stan_variable("event")[0]
+            true_dirs = self._sim_output.stan_variable("omega")[0]
             coords = SkyCoord(
                 dirs.T[0],
                 dirs.T[1],
@@ -319,13 +324,35 @@ class Simulation(SourceInfo):
                 representation_type="cartesian",
                 frame="icrs",
             )
+            true_coords = SkyCoord(
+                true_dirs.T[0],
+                true_dirs.T[1],
+                true_dirs.T[2],
+                representation_type="cartesian",
+                frame="icrs",
+            )
             event_types = self._sim_output.stan_variable("event_type")[0]
             event_types = [int(_) for _ in event_types]
 
+            """
+            et_set = np.unique(event_types)
+            true_coords.representation_type = "spherical"
+            for et in et_set:
+                _idx = event_types == et
+                irf = self._exposure_integral[et].angular_resolution.irf
+                etrue_idx = np.digitize(energies[_idx], irf.tE_bin_edges) - 1
+                dec_idx = np.digitize(true_coords[_idx].dec.deg, irf.dec_bin_edges) - 1
+                log_recoE = np.log10(energies.to_value(u.GeV))
+                ereco_idx = np.digitize(log_recoE, irf.recoE_bin_edges[etrue_idx])
+                psf = np.log10(true_coords[_idx].separation(coords[_idx]).deg)
+                for et, dec, ereco, _psf in zip(etrue_idx, dec_idx, psf):
+                    psf_idx = np.digitize(psf, irf.psf_bin_edges[et, dec]) - 1
+            """
+
             # Kappa parameter of VMF distribution
-            #kappa = self._sim_output.stan_variable("kappa")[0]
+            # kappa = self._sim_output.stan_variable("kappa")[0]
             # Equivalent 1 sigma errors in deg
-            #ang_errs = get_theta_p(kappa, p=0.683) * u.deg
+            # ang_errs = get_theta_p(kappa, p=0.683) * u.deg
 
         except ValueError:
             # No detected events
@@ -334,7 +361,7 @@ class Simulation(SourceInfo):
             event_types = []
             ang_errs = [] * u.deg
 
-        return energies, coords, event_types, ang_errs
+        return energies, coords, event_types  # , ang_errs
 
     def save(self, path, overwrite: bool = False):
         """
@@ -665,7 +692,9 @@ class Simulation(SourceInfo):
         if asimov:
             # Round expected number of events to nearest integer per source
             # distribute this number weighted with the Nex per event type over the event types
-            N = np.rint(self._Nex_et.sum(axis=0)).astype(int)   # total number of events to be observed
+            N = np.rint(self._Nex_et.sum(axis=0)).astype(
+                int
+            )  # total number of events to be observed
             if not self.sources.background:
                 self._N = np.zeros_like(self._Nex_et)
             else:
@@ -904,6 +933,15 @@ class Simulation(SourceInfo):
                     .value
                 )
 
+        for et in self._event_types:
+            # irf = self._stan_interface._dm[et].angular_resolution.irf
+            angres = self._stan_interface._dm[et].angular_resolution
+            sim_inputs[f"{et}_ang_err_hists"] = angres._ang_err_hists[
+                :, angres._dec_idx_min : angres._dec_idx_max
+            ]
+            sim_inputs[f"{et}_ang_err_bins"] = angres._ang_err_bin_edges[
+                :, angres._dec_idx_min : angres._dec_idx_max
+            ]
         # Fill the various rs arrays with zero entries in the end
         # because stan doesn't support ragged structures
         # that might pop up if we use different bin sizes,

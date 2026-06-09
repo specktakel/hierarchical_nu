@@ -1626,8 +1626,14 @@ class R2021AngularResolution(AngularResolution):
         else:
             super().__init__(
                 f"{self._season}AngularResolution_rng",
-                ["log_true_energy", "log_reco_energy", "true_dir"],
-                ["real", "real", "vector"],
+                [
+                    "log_true_energy",
+                    "log_reco_energy",
+                    "true_dir",
+                    "ang_err_hists",
+                    "ang_err_bins",
+                ],
+                ["real", "real", "vector", "array[,,,,] real", "array[,,] real"],
                 "vector",
             )
 
@@ -1640,6 +1646,8 @@ class R2021AngularResolution(AngularResolution):
                 ReturnStatement([angular_parameterisation])
 
             elif self.mode == DistributionMode.RNG:
+                ang_err_hists = StringExpression(["ang_err_hists"])
+                ang_err_bins = StringExpression(["ang_err_bins"])
                 self._ereco_bins = StanArray(
                     f"{self._season}_ereco_bins",
                     "real",
@@ -1654,6 +1662,7 @@ class R2021AngularResolution(AngularResolution):
                 # to cdf value per bin for weight sampling in categorical_rng
                 # Here, we need the np.expand_dims because the ang_err_bin_edges
                 # are shared across the axis of recoE (which is omitted to make the array smaller)
+                """
                 self._ang_err_n = StanArray(
                     f"{self._season}_ang_err_hist",
                     "real",
@@ -1673,9 +1682,10 @@ class R2021AngularResolution(AngularResolution):
                     "real",
                     self._ang_err_bin_edges[:, self._dec_idx_min : self._dec_idx_max],
                 )
+                """
                 # Directly convert to fractional counts, this one is only used in categorical_rng
                 self._psf_frac_counts = StanArray(
-                    f"{self._season}",
+                    f"{self._season}_psf_frac_counts",
                     "real",
                     self._psf_hists[:, self._dec_idx_min : self._dec_idx_max]
                     * np.expand_dims(
@@ -1734,31 +1744,30 @@ class R2021AngularResolution(AngularResolution):
                     ],
                     "categorical_rng",
                 )
-                psf_val = ForwardVariableDef("psf_val", "real")
-                psf_val << FunctionCall(
+                psf_ang = ForwardVariableDef("psf_ang", "real")
+                psf_ang << FunctionCall(
                     [
                         10,
                         FunctionCall(
                             [
-                                self._psf_bins[etrue_idx, dec_idx, ereco_idx, psf_idx],
-                                self._psf_bins[
-                                    etrue_idx, dec_idx, ereco_idx, psf_idx + 1
-                                ],
+                                self._psf_bins[etrue_idx, dec_idx, psf_idx],
+                                self._psf_bins[etrue_idx, dec_idx, psf_idx + 1],
                             ],
                             "uniform_rng",
                         ),
                     ],
                     "pow",
                 )
-                psf_val << StringExpression(["pi() * psf_val / 180.0"])
+                psf_ang << StringExpression(["pi() * psf_ang / 180.0"])
+
                 ang_err = ForwardVariableDef("ang_err", "real")
                 ang_err << FunctionCall(
                     [
                         10,
                         FunctionCall(
                             [
-                                self._ang_err_n[etrue_idx, dec_idx, ereco_idx],
-                                self._ang_err_bin_edges[etrue_idx, dec_idx],
+                                ang_err_hists[etrue_idx, dec_idx, ereco_idx, psf_idx],
+                                ang_err_bins[etrue_idx, dec_idx],
                             ],
                             "histogram_rng",
                         ),
@@ -1768,19 +1777,20 @@ class R2021AngularResolution(AngularResolution):
 
                 # Convert to radian
                 ang_err << StringExpression(["pi() * ang_err / 180.0"])
-                kappa = ForwardVariableDef("kappa", "real")
+                # kappa = ForwardVariableDef("kappa", "real")
                 # Convert angular error to kappa
-                kappa << StringExpression(["- (2 / ang_err^2) * log(1 - 0.683)"])
+                # kappa << StringExpression(["- (2 / ang_err^2) * log(1 - 0.683)"])
 
                 # Stan code needs both deflected direction and kappa
                 # Make a vector of length 4, last component is kappa
-                return_vec = ForwardVectorDef("return_this", [4])
+                return_vec = ForwardVectorDef("return_this", [3])
                 # Deflect true direction
                 # StringExpression(["return_this[1:3] = ", angular_parameterisation])
                 return_vec[1:3] << FunctionCall(
                     ["true_dir", "psf_ang"], "deflected_rng"
                 )
-                return_vec[4] << kappa
+                # return_vec[4] << kappa
+                return_vec[4] << ang_err
                 # StringExpression(["return_this[4] = kappa"])
                 ReturnStatement([return_vec])
 
@@ -2105,15 +2115,15 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution):
         if self.mode == DistributionMode.RNG:
             logger.info("Generating simulation code using histograms")
 
-        self._etrue_lookup = UserDefinedFunction(
-            f"{self._season}_etrue_lookup", ["true_energy"], ["real"], "int"
-        )
-        with self._etrue_lookup:
-            # Etrue lookup table
-            etrue_bins = StanArray(
-                "log_etrue_bins", "real", np.log10(self._tE_bin_edges)
+            self._etrue_lookup = UserDefinedFunction(
+                f"{self._season}_etrue_lookup", ["true_energy"], ["real"], "int"
             )
-            ReturnStatement(["binary_search(true_energy, ", etrue_bins, ")"])
+            with self._etrue_lookup:
+                # Etrue lookup table
+                etrue_bins = StanArray(
+                    "log_etrue_bins", "real", np.log10(self._tE_bin_edges)
+                )
+                ReturnStatement(["binary_search(true_energy, ", etrue_bins, ")"])
 
             # Create lookup for dec bin, is reused by angular resolution
             dec_lookup = UserDefinedFunction(
@@ -2836,13 +2846,14 @@ class R2021DetectorModel(ABC, DetectorModel):
         Returns a vector with entries
         1 reconstructed energy [GeV]
         2:4 reconstructed direction [unit_vector]
+        5 angular uncertainty [degree]
         """
 
         UserDefinedFunction.__init__(
             self,
             self._func_name,
-            ["true_energy", "omega"],
-            ["real", "vector"],
+            ["true_energy", "omega", "ang_err_hists", "ang_err_bin_edges"],
+            ["real", "vector", "array[,,,,] real", "array[,,] real"],
             "vector",
         )
 
@@ -2854,7 +2865,9 @@ class R2021DetectorModel(ABC, DetectorModel):
             )
             log10Ereco << self.energy_resolution(log10Etrue, "omega")
             return_this[1] << FunctionCall([10.0, log10Ereco], "pow")
-            return_this[2:4] << self.angular_resolution(log10Etrue, log10Ereco, "omega")
+            return_this[2:5] << self.angular_resolution(
+                log10Etrue, log10Ereco, "omega", "ang_err_hists", "ang_err_bin_edges"
+            )
             ReturnStatement([return_this])
 
 

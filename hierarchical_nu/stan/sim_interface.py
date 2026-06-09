@@ -210,6 +210,36 @@ class StanSimInterface(StanInterface):
             self._Emin = ForwardVariableDef("Emin", "real")
             self._Emax = ForwardVariableDef("Emax", "real")
 
+            # Insert the ang err histograms and bin edges as data
+            self._ang_err_bin_edges = {}
+            self._ang_err_hists = {}
+            for et in self._event_types:
+                angres = self._dm[et].angular_resolution
+                shape_str = (
+                    str(
+                        angres._ang_err_bin_edges[
+                            :, angres._dec_idx_min : angres._dec_idx_max
+                        ].shape
+                    )
+                    .lstrip("(")
+                    .rstrip(",)")
+                )
+                self._ang_err_bin_edges[et] = ForwardArrayDef(
+                    f"{et}_ang_err_bins", "real", [f"[{shape_str}]"]
+                )
+                shape_str = (
+                    str(
+                        angres._ang_err_hists[
+                            :, angres._dec_idx_min : angres._dec_idx_max
+                        ].shape
+                    )
+                    .lstrip("(")
+                    .rstrip(",)")
+                )
+                self._ang_err_hists[et] = ForwardArrayDef(
+                    f"{et}_ang_err_hists", "real", [f"[{shape_str}]"]
+                )
+
             # For tracks, we specify Emin_det, and several parameters for the
             # rejection sampling, denoted by rs_...
             # Separate interpolation grids are also provided for all event types
@@ -636,12 +666,13 @@ class StanSimInterface(StanInterface):
             self._lam = ForwardArrayDef("Lambda", "int", self._N_str)
 
             # omega is the true direction
-            self._omega = ForwardVariableDef("omega", "unit_vector[3]")
+            self._omega = ForwardArrayDef("omega", "unit_vector[3]", self._N_str)
 
             # Energies at the source, Earth and reconstructed in the detector
             self._Esrc = ForwardVariableDef("Esrc", "vector[N]")
             self._E = ForwardVariableDef("E", "vector[N]")
             self._Edet = ForwardVariableDef("Edet", "vector[N]")
+            self._ang_err = ForwardVariableDef("ang_err", "vector[N]")
 
             # The cos(zenith) corresponding to each omega and assuming South Pole detector
             self._cosz = ForwardArrayDef("cosz", "real", self._N_str)
@@ -676,7 +707,7 @@ class StanSimInterface(StanInterface):
             self._event_type = ForwardVariableDef("event_type", "vector[N]")
 
             # Kappa is the shape param of the vMF used in sampling the detected direction
-            self._kappa = ForwardVariableDef("kappa", "vector[N]")
+            # self._kappa = ForwardVariableDef("kappa", "vector[N]")
 
             # Here we start the sampling, first of tracks and then cascades, all other detector mdoels...
             with ForLoopContext(1, self._Net_stan, "j") as j:
@@ -744,7 +775,7 @@ class StanSimInterface(StanInterface):
                             with IfBlockContext(
                                 [StringExpression([self._lam[i], " <= ", self._Ns])]
                             ):
-                                self._omega << self._varpi[self._lam[i]]
+                                self._omega[i] << self._varpi[self._lam[i]]
                                 # Always accept point source events, even if scattered outside the ROI
                                 StringExpression(["break"])
 
@@ -757,7 +788,7 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-                                    self._omega << FunctionCall(
+                                    self._omega[i] << FunctionCall(
                                         [
                                             1,
                                             self._v_low,
@@ -776,7 +807,7 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-                                    self._omega << FunctionCall(
+                                    self._omega[i] << FunctionCall(
                                         [
                                             1,
                                             self._v_low,
@@ -795,7 +826,7 @@ class StanSimInterface(StanInterface):
                                         )
                                     ]
                                 ):
-                                    self._omega << FunctionCall(
+                                    self._omega[i] << FunctionCall(
                                         [
                                             1,
                                             self._v_low,
@@ -817,7 +848,7 @@ class StanSimInterface(StanInterface):
                                     with ForLoopContext(1, self._n_roi, "n") as n:
                                         with IfBlockContext(
                                             [
-                                                "ang_sep(omega, roi_center[",
+                                                "ang_sep(omega[i], roi_center[",
                                                 n,
                                                 "]) <= roi_radius[n]",
                                             ]
@@ -829,7 +860,7 @@ class StanSimInterface(StanInterface):
                                 StringExpression(["break"])
 
                         self._cosz[i] << FunctionCall(
-                            [FunctionCall([self._omega], "omega_to_zenith")], "cos"
+                            [FunctionCall([self._omega[i]], "omega_to_zenith")], "cos"
                         )
 
                         # Rejection sampling procedure:
@@ -976,7 +1007,7 @@ class StanSimInterface(StanInterface):
                             ):
                                 (
                                     self._src_factor
-                                    << self._atmo_flux(self._E[i], self._omega)
+                                    << self._atmo_flux(self._E[i], self._omega[i])
                                     / self._F_atmo
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
@@ -1011,7 +1042,7 @@ class StanSimInterface(StanInterface):
                             ):
                                 (
                                     self._src_factor
-                                    << self._atmo_flux(self._E[i], self._omega)
+                                    << self._atmo_flux(self._E[i], self._omega[i])
                                     / self._F_atmo
                                 )  # Normalise
                                 self._Esrc[i] << self._E[i]
@@ -1037,7 +1068,7 @@ class StanSimInterface(StanInterface):
                             ):
                                 self._aeff_factor << self._dm[
                                     event_type
-                                ].effective_area(self._E[i], self._omega)
+                                ].effective_area(self._E[i], self._omega[i])
 
                         # Calculate quantities for rejection sampling
                         # Value of the distribution that we want to sample from
@@ -1073,7 +1104,9 @@ class StanSimInterface(StanInterface):
                                         # Step 4) before rejecting or accepting because Edet is part of the detection procedure
                                         self._pre_event << self._dm[event_type](
                                             self._E[i],
-                                            self._omega,
+                                            self._omega[i],
+                                            f"{event_type}_ang_err_hists",
+                                            f"{event_type}_ang_err_bins",
                                         )
 
                                 self._Edet[i] << self._pre_event[1]
@@ -1087,10 +1120,10 @@ class StanSimInterface(StanInterface):
                                     ):
                                         self._event[i] << self._pre_event[2:4]
                                     with ElseBlockContext():
-                                        self._event[i] << self._omega
+                                        self._event[i] << self._omega[i]
                                 else:
-                                    self._event[i] << self._omega
-                                self._kappa[i] << self._pre_event[5]
+                                    self._event[i] << self._omega[i]
+                                self._ang_err[i] << self._pre_event[5]
                                 self._detected << 1
 
                             with ElseBlockContext():
