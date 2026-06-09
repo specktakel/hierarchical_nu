@@ -1943,8 +1943,6 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         dec_idx = (
             np.digitize(dec.to_value(u.rad), self._dec_bin_edges.to_value(u.rad)) - 1
         )
-        if not self.irf._eres:
-            self.irf.create_eres()
         bin_edges = self.irf.recoE_bin_edges[tE_idx][dec_idx]
         binc = bin_edges[:-1] + np.diff(bin_edges) / 2
         pdf_vals = self.irf.recoE_sampling[tE_idx][dec_idx].pdf(binc)
@@ -2158,6 +2156,8 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution, HistogramSampler)
         """
         Setup all data fields, load data from cached file or create from scratch.
         """
+
+        self.irf.create_eres()
 
         if self.CACHE_FNAME_HISTOGRAM in Cache and not self._rewrite:
             logger.info("Loading energy pdf data from file.")
