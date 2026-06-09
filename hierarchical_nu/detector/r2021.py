@@ -1783,7 +1783,7 @@ class R2021AngularResolution(AngularResolution):
 
                 # Stan code needs both deflected direction and kappa
                 # Make a vector of length 4, last component is kappa
-                return_vec = ForwardVectorDef("return_this", [3])
+                return_vec = ForwardVectorDef("return_this", [4])
                 # Deflect true direction
                 # StringExpression(["return_this[1:3] = ", angular_parameterisation])
                 return_vec[1:3] << FunctionCall(
