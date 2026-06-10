@@ -1630,10 +1630,22 @@ class R2021AngularResolution(AngularResolution):
                     "log_true_energy",
                     "log_reco_energy",
                     "true_dir",
+                    "ereco_bins",
+                    "psf_hists",
+                    "psf_bins",
                     "ang_err_hists",
                     "ang_err_bins",
                 ],
-                ["real", "real", "vector", "array[,,,,] real", "array[,,] real"],
+                [
+                    "real",
+                    "real",
+                    "vector",
+                    "array[,,] real",
+                    "array[,,,] real",
+                    "array[,,] real",
+                    "array[,,,,] real",
+                    "array[,,] real",
+                ],
                 "vector",
             )
 
@@ -1646,18 +1658,11 @@ class R2021AngularResolution(AngularResolution):
                 ReturnStatement([angular_parameterisation])
 
             elif self.mode == DistributionMode.RNG:
+                ereco_bins = StringExpression(["ereco_bins"])
+                psf_hists = StringExpression(["psf_hists"])
+                psf_bins = StringExpression(["psf_bins"])
                 ang_err_hists = StringExpression(["ang_err_hists"])
                 ang_err_bins = StringExpression(["ang_err_bins"])
-                self._ereco_bins = StanArray(
-                    f"{self._season}_ereco_bins",
-                    "real",
-                    self._recoE_bin_edges[:, self._dec_idx_min : self._dec_idx_max],
-                )
-                self._psf_bins = StanArray(
-                    f"{self._season}_psf_bins",
-                    "real",
-                    self._psf_bin_edges[:, self._dec_idx_min : self._dec_idx_max],
-                )
                 # Multiply with the np.diff(bin_edges) to convert normalised hist
                 # to cdf value per bin for weight sampling in categorical_rng
                 # Here, we need the np.expand_dims because the ang_err_bin_edges
@@ -1683,21 +1688,7 @@ class R2021AngularResolution(AngularResolution):
                     self._ang_err_bin_edges[:, self._dec_idx_min : self._dec_idx_max],
                 )
                 """
-                # Directly convert to fractional counts, this one is only used in categorical_rng
-                self._psf_frac_counts = StanArray(
-                    f"{self._season}_psf_frac_counts",
-                    "real",
-                    self._psf_hists[:, self._dec_idx_min : self._dec_idx_max]
-                    * np.expand_dims(
-                        np.diff(
-                            self._psf_bin_edges[
-                                :, self._dec_idx_min : self._dec_idx_max
-                            ],
-                            axis=-1,
-                        ),
-                        axis=2,
-                    ),
-                )
+
                 # Create array of required dec range of ang_hists
                 # 1) check ROIStack for apply_ROI to reduce dec indexing
                 # 2) adapt dec_idx with dec_range for this (check in lookup generation)
@@ -1708,41 +1699,24 @@ class R2021AngularResolution(AngularResolution):
                 etrue_idx << FunctionCall(
                     ["log_true_energy"], f"{self._season}_etrue_lookup"
                 )
-
                 declination = ForwardVariableDef("declination", "real")
                 declination << FunctionCall(["true_dir"], "omega_to_dec")
                 dec_idx = ForwardVariableDef("dec_idx ", "int")
                 dec_idx << FunctionCall(["declination"], f"{self._season}_dec_lookup")
-
-                # ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
-                # ereco_hist_idx << FunctionCall(
-                #    [etrue_idx, dec_idx], f"{self._season}_ereco_get_ragged_index"
-                # )
                 ereco_idx = ForwardVariableDef("ereco_idx", "int")
                 ereco_idx << FunctionCall(
-                    ["log_reco_energy", self._ereco_bins[etrue_idx, dec_idx]],
+                    ["log_reco_energy", ereco_bins[etrue_idx, dec_idx]],
                     "binary_search",
                 )
-                # ereco_idx << FunctionCall(
-                #    [
-                #        "log_reco_energy",
-                #        FunctionCall(
-                #            [ereco_hist_idx], f"{self._season}_ereco_get_ragged_edges"
-                #        ),
-                #    ],
-                #    "binary_search",
-                # )
 
                 # Samples angular uncertainty in degrees
                 psf_idx = ForwardVariableDef("psf_idx", "int")
                 psf_idx << FunctionCall(
                     [
-                        FunctionCall(
-                            [self._psf_frac_counts[etrue_idx, dec_idx, ereco_idx]],
-                            "to_vector",
-                        )
+                        psf_hists[etrue_idx, dec_idx, ereco_idx],
+                        psf_bins[etrue_idx, dec_idx],
                     ],
-                    "categorical_rng",
+                    "hist_cat_rng",
                 )
                 psf_ang = ForwardVariableDef("psf_ang", "real")
                 psf_ang << FunctionCall(
@@ -1750,8 +1724,8 @@ class R2021AngularResolution(AngularResolution):
                         10,
                         FunctionCall(
                             [
-                                self._psf_bins[etrue_idx, dec_idx, psf_idx],
-                                self._psf_bins[etrue_idx, dec_idx, psf_idx + 1],
+                                psf_bins[etrue_idx, dec_idx, psf_idx],
+                                psf_bins[etrue_idx, dec_idx, psf_idx + 1],
                             ],
                             "uniform_rng",
                         ),
@@ -1777,21 +1751,13 @@ class R2021AngularResolution(AngularResolution):
 
                 # Convert to radian
                 ang_err << StringExpression(["pi() * ang_err / 180.0"])
-                # kappa = ForwardVariableDef("kappa", "real")
-                # Convert angular error to kappa
-                # kappa << StringExpression(["- (2 / ang_err^2) * log(1 - 0.683)"])
-
-                # Stan code needs both deflected direction and kappa
-                # Make a vector of length 4, last component is kappa
                 return_vec = ForwardVectorDef("return_this", [4])
                 # Deflect true direction
                 # StringExpression(["return_this[1:3] = ", angular_parameterisation])
                 return_vec[1:3] << FunctionCall(
                     ["true_dir", "psf_ang"], "deflected_rng"
                 )
-                # return_vec[4] << kappa
                 return_vec[4] << ang_err
-                # StringExpression(["return_this[4] = kappa"])
                 ReturnStatement([return_vec])
 
     def setup(self) -> None:
@@ -1949,8 +1915,6 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution):
         self._DEC_min = ROIList.DEC_min()
         self._DEC_max = ROIList.DEC_max()
         self._apply_roi = ROIList.apply_roi()
-        print(self._DEC_min)
-        print(self._DEC_max)
 
         if self._apply_roi:
             self._dec_idx_min = max(
@@ -1964,11 +1928,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution):
             self._dec_idx_min = 0
             self._dec_idx_max = -1
 
-        # TODO modify based on apply_ROIS to reduce to required dec range
-        self._dec_bin_edges = (
-            np.deg2rad(self.irf.dec_bin_edges)[self._dec_idx_min : self._dec_idx_max]
-            << u.rad
-        )
+        self._dec_bin_edges = np.deg2rad(self.irf.dec_bin_edges) << u.rad
         self._dec_binc = self._dec_bin_edges[:-1] + np.diff(self._dec_bin_edges) / 2
         self._sin_dec_edges = np.sin(self._dec_bin_edges.to_value(u.rad))
         self._sin_dec_binc = self._sin_dec_edges[:-1] + np.diff(self._sin_dec_edges) / 2
@@ -2080,8 +2040,8 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution):
         elif self.mode == DistributionMode.RNG:
             super().__init__(
                 self._func_name,
-                ["log_true_energy", "omega"],
-                ["real", "vector"],
+                ["log_true_energy", "omega", "ereco_hists", "ereco_bins"],
+                ["real", "vector", "array[,,] real", "array[,,] real"],
                 "real",
             )
 
@@ -2140,26 +2100,8 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution):
                 ReturnStatement(["binary_search(dec, ", bins, ")"])
 
             with self:
-                self._ereco_hists = StanArray(
-                    f"{self._season}_ereco_hists",
-                    "real",
-                    self._recoE_hists[:, self._dec_idx_min : self._dec_idx_max],
-                    # * np.diff(
-                    #    self._recoE_bin_edges[:, self._dec_idx_min : self._dec_idx_max],
-                    #    axis=-1,
-                    # ),
-                )
-                self._ereco_bins = StanArray(
-                    f"{self._season}_ereco_bins",
-                    "real",
-                    self._recoE_bin_edges[:, self._dec_idx_min : self._dec_idx_max],
-                )
-                # Create necessary lists/attributes, inherited from HistogramSampler
-                # self._make_hist_lookup_functions(self._season)
-                # self._make_histogram(
-                #    "ereco", self._ereco_hist, self._ereco_edges, self._season
-                # )
-                # self._make_ereco_hist_index(self._season)
+                ereco_bins = StringExpression(["ereco_bins"])
+                ereco_hists = StringExpression(["ereco_hists"])
 
                 # call histogramm with appropriate values/edges
                 declination = ForwardVariableDef("declination", "real")
@@ -2171,12 +2113,6 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution):
                 etrue_idx << FunctionCall(
                     ["log_true_energy"], f"{self._season}_etrue_lookup"
                 )
-                # ereco_hist_idx = ForwardVariableDef("ereco_hist_idx", "int")
-
-                # ereco_hist_idx << FunctionCall(
-                #    [etrue_idx, dec_idx], f"{self._season}_ereco_get_ragged_index"
-                # )
-
                 # Discard all events below lowest Ereco of data in the respective Aeff declination bin,
                 # Sample until an event passes the cut, return this Ereco
                 if self._make_ereco_cuts:
@@ -2193,23 +2129,10 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution):
 
                 if self._make_ereco_cuts:
                     with WhileLoopContext([1]):
-                        # ereco << FunctionCall(
-                        #    [
-                        #        FunctionCall(
-                        #            [ereco_hist_idx],
-                        #            f"{self._season}_ereco_get_ragged_hist",
-                        #        ),
-                        #        FunctionCall(
-                        #            [ereco_hist_idx],
-                        #            f"{self._season}_ereco_get_ragged_edges",
-                        #        ),
-                        #    ],
-                        #    "histogram_rng",
-                        # )
                         ereco << FunctionCall(
                             [
-                                self._ereco_hists[etrue_idx, dec_idx],
-                                self._ereco_bins[etrue_idx, dec_idx],
+                                ereco_hists[etrue_idx, dec_idx],
+                                ereco_bins[etrue_idx, dec_idx],
                             ],
                             "histogram_rng",
                         )
@@ -2220,23 +2143,10 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution):
                         ):
                             StringExpression(["break"])
                 else:
-                    # ereco << FunctionCall(
-                    #    [
-                    #        FunctionCall(
-                    #            [ereco_hist_idx],
-                    #            f"{self._season}_ereco_get_ragged_hist",
-                    #        ),
-                    #        FunctionCall(
-                    #            [ereco_hist_idx],
-                    #            f"{self._season}_ereco_get_ragged_edges",
-                    #        ),
-                    #    ],
-                    #    "histogram_rng",
-                    # )
                     ereco << FunctionCall(
                         [
-                            self._ereco_hists[etrue_idx, dec_idx],
-                            self._ereco_bins[etrue_idx, dec_idx],
+                            ereco_hists[etrue_idx, dec_idx],
+                            ereco_bins[etrue_idx, dec_idx],
                         ],
                         "histogram_rng",
                     )
@@ -2852,8 +2762,26 @@ class R2021DetectorModel(ABC, DetectorModel):
         UserDefinedFunction.__init__(
             self,
             self._func_name,
-            ["true_energy", "omega", "ang_err_hists", "ang_err_bin_edges"],
-            ["real", "vector", "array[,,,,] real", "array[,,] real"],
+            [
+                "true_energy",
+                "omega",
+                "ereco_hists",
+                "ereco_bins",
+                "psf_hists",
+                "psf_bins",
+                "ang_err_hists",
+                "ang_err_bins",
+            ],
+            [
+                "real",
+                "vector",
+                "array[,,] real",  # ereco hists
+                "array[,,] real",  # ereco bins
+                "array[,,,] real",  # psf hists
+                "array[,,] real",  # ang err bins
+                "array[,,,,] real",  # ang err hists
+                "array[,,] real",  # ang err bins
+            ],
             "vector",
         )
 
@@ -2863,10 +2791,19 @@ class R2021DetectorModel(ABC, DetectorModel):
             log10Etrue = InstantVariableDef(
                 "log10Etrue", "real", ["log10(true_energy)"]
             )
-            log10Ereco << self.energy_resolution(log10Etrue, "omega")
+            log10Ereco << self.energy_resolution(
+                log10Etrue, "omega", "ereco_hists", "ereco_bins"
+            )
             return_this[1] << FunctionCall([10.0, log10Ereco], "pow")
             return_this[2:5] << self.angular_resolution(
-                log10Etrue, log10Ereco, "omega", "ang_err_hists", "ang_err_bin_edges"
+                log10Etrue,
+                log10Ereco,
+                "omega",
+                "ereco_bins",
+                "psf_hists",
+                "psf_bins",
+                "ang_err_hists",
+                "ang_err_bins",
             )
             ReturnStatement([return_this])
 

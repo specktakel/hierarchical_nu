@@ -933,9 +933,23 @@ class Simulation(SourceInfo):
                     .value
                 )
 
+        # For each detector model, hand over the histogram...ised smearing matrices
+        # i.e. bin entries and bin edges, lest we clutter the simulation stan files
         for et in self._event_types:
-            # irf = self._stan_interface._dm[et].angular_resolution.irf
             angres = self._stan_interface._dm[et].angular_resolution
+            eres = self._stan_interface._dm[et].energy_resolution
+            sim_inputs[f"{et}_ereco_hists"] = eres._recoE_hists[
+                :, angres._dec_idx_min : angres._dec_idx_max
+            ]
+            sim_inputs[f"{et}_ereco_bins"] = eres._recoE_bin_edges[
+                :, angres._dec_idx_min : angres._dec_idx_max
+            ]
+            sim_inputs[f"{et}_psf_hists"] = angres._psf_hists[
+                :, angres._dec_idx_min : angres._dec_idx_max
+            ]
+            sim_inputs[f"{et}_psf_bins"] = angres._psf_bin_edges[
+                :, angres._dec_idx_min : angres._dec_idx_max
+            ]
             sim_inputs[f"{et}_ang_err_hists"] = angres._ang_err_hists[
                 :, angres._dec_idx_min : angres._dec_idx_max
             ]

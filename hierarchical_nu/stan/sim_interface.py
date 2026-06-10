@@ -210,11 +210,68 @@ class StanSimInterface(StanInterface):
             self._Emin = ForwardVariableDef("Emin", "real")
             self._Emax = ForwardVariableDef("Emax", "real")
 
-            # Insert the ang err histograms and bin edges as data
+            # Insert the smearing matrices, morphed into histograms
             self._ang_err_bin_edges = {}
             self._ang_err_hists = {}
+            self._psf_bin_edges = {}
+            self._psf_hists = {}
+            self._ereco_bin_edges = {}
+            self._ereco_hists = {}
             for et in self._event_types:
                 angres = self._dm[et].angular_resolution
+                eres = self._dm[et].energy_resolution
+                if angres._dec_idx_min != eres._dec_idx_min:
+                    raise ValueError("Min dec values are inconsistent")
+                if angres._dec_idx_max != eres._dec_idx_max:
+                    raise ValueError("Max dec values are inconsistent")
+                shape_str = (
+                    str(
+                        eres._recoE_bin_edges[
+                            :, eres._dec_idx_min : eres._dec_idx_max
+                        ].shape
+                    )
+                    .lstrip("(")
+                    .rstrip(",)")
+                )
+                self._ereco_bin_edges[et] = ForwardArrayDef(
+                    f"{et}_ereco_bins", "real", [f"[{shape_str}]"]
+                )
+                shape_str = (
+                    str(
+                        eres._recoE_hists[
+                            :, eres._dec_idx_min : eres._dec_idx_max
+                        ].shape
+                    )
+                    .lstrip("(")
+                    .rstrip(",)")
+                )
+                self._ereco_hists[et] = ForwardArrayDef(
+                    f"{et}_ereco_hists", "real", [f"[{shape_str}]"]
+                )
+                shape_str = (
+                    str(
+                        angres._psf_bin_edges[
+                            :, angres._dec_idx_min : angres._dec_idx_max
+                        ].shape
+                    )
+                    .lstrip("(")
+                    .rstrip(",)")
+                )
+                self._psf_bin_edges[et] = ForwardArrayDef(
+                    f"{et}_psf_bins", "real", [f"[{shape_str}]"]
+                )
+                shape_str = (
+                    str(
+                        angres._psf_hists[
+                            :, angres._dec_idx_min : angres._dec_idx_max
+                        ].shape
+                    )
+                    .rstrip(",)")
+                    .lstrip("(")
+                )
+                self._psf_hists[et] = ForwardArrayDef(
+                    f"{et}_psf_hists", "real", [f"[{shape_str}]"]
+                )
                 shape_str = (
                     str(
                         angres._ang_err_bin_edges[
@@ -1105,6 +1162,10 @@ class StanSimInterface(StanInterface):
                                         self._pre_event << self._dm[event_type](
                                             self._E[i],
                                             self._omega[i],
+                                            f"{event_type}_ereco_hists",
+                                            f"{event_type}_ereco_bins",
+                                            f"{event_type}_psf_hists",
+                                            f"{event_type}_psf_bins",
                                             f"{event_type}_ang_err_hists",
                                             f"{event_type}_ang_err_bins",
                                         )
