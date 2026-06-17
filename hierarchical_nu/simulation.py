@@ -296,9 +296,7 @@ class Simulation(SourceInfo):
 
             self._sim_output = sim_output
 
-            # energies, coords, event_types, ang_errs = self._extract_sim_output()
-            energies, coords, event_types = self._extract_sim_output()
-            ang_errs = np.full(len(energies), 0.2) * u.deg
+            energies, coords, event_types, ang_errs = self._extract_sim_output()
             # Create filler MJD values, we are only doing time-averaged simulations
             mjd = Time([99.0] * len(energies), format="mjd")
 
@@ -314,9 +312,8 @@ class Simulation(SourceInfo):
     def _extract_sim_output(self):
         try:
             energies = self._sim_output.stan_variable("Edet")[0] * u.GeV
-            true_energies = self._sim_output.stan_variable("E")[0] * u.GeV
             dirs = self._sim_output.stan_variable("event")[0]
-            true_dirs = self._sim_output.stan_variable("omega")[0]
+            ang_errs = (self._sim_output.stan_variable("ang_err")[0] * u.rad).to(u.deg)
             coords = SkyCoord(
                 dirs.T[0],
                 dirs.T[1],
@@ -324,35 +321,8 @@ class Simulation(SourceInfo):
                 representation_type="cartesian",
                 frame="icrs",
             )
-            true_coords = SkyCoord(
-                true_dirs.T[0],
-                true_dirs.T[1],
-                true_dirs.T[2],
-                representation_type="cartesian",
-                frame="icrs",
-            )
             event_types = self._sim_output.stan_variable("event_type")[0]
             event_types = [int(_) for _ in event_types]
-
-            """
-            et_set = np.unique(event_types)
-            true_coords.representation_type = "spherical"
-            for et in et_set:
-                _idx = event_types == et
-                irf = self._exposure_integral[et].angular_resolution.irf
-                etrue_idx = np.digitize(energies[_idx], irf.tE_bin_edges) - 1
-                dec_idx = np.digitize(true_coords[_idx].dec.deg, irf.dec_bin_edges) - 1
-                log_recoE = np.log10(energies.to_value(u.GeV))
-                ereco_idx = np.digitize(log_recoE, irf.recoE_bin_edges[etrue_idx])
-                psf = np.log10(true_coords[_idx].separation(coords[_idx]).deg)
-                for et, dec, ereco, _psf in zip(etrue_idx, dec_idx, psf):
-                    psf_idx = np.digitize(psf, irf.psf_bin_edges[et, dec]) - 1
-            """
-
-            # Kappa parameter of VMF distribution
-            # kappa = self._sim_output.stan_variable("kappa")[0]
-            # Equivalent 1 sigma errors in deg
-            # ang_errs = get_theta_p(kappa, p=0.683) * u.deg
 
         except ValueError:
             # No detected events
@@ -361,7 +331,7 @@ class Simulation(SourceInfo):
             event_types = []
             ang_errs = [] * u.deg
 
-        return energies, coords, event_types  # , ang_errs
+        return energies, coords, event_types, ang_errs
 
     def save(self, path, overwrite: bool = False):
         """
