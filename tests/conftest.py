@@ -1,7 +1,10 @@
+import os
 from pathlib import Path
 import pytest
 
 from hierarchical_nu.utils.cache import Cache
+from hierarchical_nu.utils.roi import ROIList
+from hierarchical_nu.source.parameter import Parameter
 
 # from hierarchical_nu.utils.cache import Cache
 # from hierarchical_nu.backend.stan_generator import StanGenerator
@@ -27,3 +30,22 @@ def random_seed():
     seed = 100
 
     return seed
+
+@pytest.fixture(autouse=True)
+def reset_ROI():
+    ROIList.clear_registry()
+
+@pytest.fixture(autouse=True)
+def reset_params():
+    Parameter.clear_registry()
+
+
+@pytest.fixture(autouse=True)
+def reset_stan_files():
+    try:
+        files = os.listdir(".stan_files")
+    except FileNotFoundError:
+        files = []
+
+    for f in files:
+        os.remove(Path(".stan_files") / f)

@@ -217,8 +217,8 @@ class Events(IceTrackDR2Events):
             # One Emin_det to rule them all
             Emin_det = Parameter.get_parameter("Emin_det").value
             self.apply_energy_cut(Emin=Emin_det)
-        except ValueError:
-            pass
+        except ValueError as e:
+            raise ValueError()
 
     
     def apply_ROIS(

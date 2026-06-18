@@ -187,7 +187,9 @@ class ExposureIntegral:
         else:
             E_min, E_max = source.flux_model.energy_bounds
 
-        log_E_space = np.linspace(np.log10(E_min.value), np.log10(E_max.value), 200)
+        delta_logE = np.log10(E_max.value / E_min.value)
+        num = np.ceil(delta_logE * 8).astype(int)   # 8 bins per order of magnitude in energy
+        log_E_space = np.linspace(np.log10(E_min.value), np.log10(E_max.value), num)
         log_E_c = log_E_space[:-1] + np.diff(log_E_space) / 2
         E_c = np.power(10, log_E_c) * u.GeV
         d_E = np.diff(np.power(10, log_E_space)) * u.GeV
@@ -245,7 +247,7 @@ class ExposureIntegral:
                 raise ValueError("An ROI is needed at this point.")
 
             # Setup coordinate grids at which to evaulate effective area and flux
-            NSIDE = 256
+            NSIDE = 64
             NPIX = hp.nside2npix(NSIDE)
             # Surface element
             d_omega = 4 * np.pi / NPIX * u.sr

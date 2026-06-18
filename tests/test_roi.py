@@ -3,7 +3,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from hierarchical_nu.utils.roi import CircularROI, RectangularROI, FullSkyROI, ROIList
 from hierarchical_nu.events import Events
-from hierarchical_nu.detector.icecube import IC86_II
+from hierarchical_nu.detector.icecube import IC86
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import PointSource, Sources
 from hierarchical_nu.simulation import Simulation
@@ -25,7 +25,7 @@ def test_circular_event_selection():
         radius=10.0 * u.deg,
     )
     logger.warning(roi)
-    events = Events.from_ev_file(IC86_II)
+    events = Events.from_event_files(IC86)
     events.coords.representation_type = "cartesian"
     assert events.coords.z.min() >= 0.0
 
@@ -36,7 +36,7 @@ def test_rectangular_event_selection():
     Emin_det = Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
     roi = RectangularROI(DEC_min=0.0 * u.rad)
     logger.warning(roi)
-    events = Events.from_ev_file(IC86_II)
+    events = Events.from_event_files(IC86)
     events.coords.representation_type = "cartesian"
     assert events.coords.z.min() >= 0.0
 
@@ -66,7 +66,7 @@ def test_event_selection_wrap(caplog):
     Parameter.clear_registry()
     Emin_det = Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
     roi = RectangularROI(RA_min=np.deg2rad(350) * u.rad, RA_max=np.deg2rad(10) * u.rad)
-    events = Events.from_ev_file(IC86_II)
+    events = Events.from_event_files(IC86)
     events.coords.representation_type = "spherical"
     ra = events.coords.ra.rad
     mask = np.nonzero((ra >= np.pi))
@@ -129,7 +129,7 @@ def test_rectangular_precomputation():
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
 
-    sim = Simulation(my_sources, IC86_II, 5 * u.year)
+    sim = Simulation(my_sources, IC86, 5 * u.year)
 
     sim.precomputation()
 
@@ -176,7 +176,7 @@ def test_multiple_rois():
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
     my_sources.add_atmospheric_component(cache_dir=mceq)
-    sim = Simulation(my_sources, IC86_II, 5 * u.year)
+    sim = Simulation(my_sources, IC86, 5 * u.year)
 
     roi = CircularROI(
         SkyCoord(ra=np.pi / 2 * u.rad, dec=0 * u.rad, frame="icrs"), radius=5 * u.deg
@@ -196,7 +196,7 @@ def test_multiple_rois():
         SkyCoord(ra=np.pi / 2 * u.rad, dec=0 * u.rad, frame="icrs"), radius=5 * u.deg
     )
     roi = CircularROI(SkyCoord(ra=np.pi * u.rad, dec=5 * u.deg), radius=5 * u.deg)
-    sim = Simulation(my_sources, IC86_II, 5 * u.year)
+    sim = Simulation(my_sources, IC86, 5 * u.year)
     sim.precomputation()
     _ = sim._get_expected_Nnu(sim._get_sim_inputs())
     Nex_12 = sim._expected_Nnu_per_comp
@@ -232,7 +232,7 @@ def test_compare_precomputation():
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
     my_sources.add_atmospheric_component(cache_dir=mceq)
-    sim = Simulation(my_sources, IC86_II, 5 * u.year)
+    sim = Simulation(my_sources, IC86, 5 * u.year)
 
     roi = RectangularROI(DEC_min=np.deg2rad(-5) * u.rad)
     sim.precomputation()

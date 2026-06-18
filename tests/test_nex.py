@@ -83,6 +83,7 @@ class TestNex:
         nu_calc = NeutrinoCalculator(sources, aeff)
         return nu_calc
 
+    @pytest.mark.skip("icecube_tools is deprecated")
     def test_rate(self, setup_it_nu_calc, setup_hnu_ps):
         self._nu_calc = setup_it_nu_calc
         self._hnu_sources, self._hnu_sim = setup_hnu_ps
@@ -195,6 +196,7 @@ class TestNex:
         self._Nex_ps_hnu = np.array(Nex_ps_hnu)
         self._Nex_diff_hnu = np.array(Nex_diff_hnu)
 
+
     @pytest.fixture
     def calc_it_nex(self, calc_hnu_nex):
         from icecube_tools.detector.effective_area import EffectiveArea
@@ -242,6 +244,7 @@ class TestNex:
         self._Nex_ps_it = np.array(Nex_ps_it)
         self._Nex_diff_it = np.array(Nex_diff_it)
 
+    @pytest.mark.skip("icecube_tools is deprecated")
     def test_nex(self, calc_it_nex):
         assert self._Nex_ps_it == pytest.approx(self._Nex_ps_hnu, rel=1e-1)
         assert self._Nex_diff_it == pytest.approx(self._Nex_diff_hnu, rel=1e-1)

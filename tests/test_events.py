@@ -1,8 +1,8 @@
 from hierarchical_nu.events import Events
 from hierarchical_nu.source.parameter import Parameter
+from hierarchical_nu.source.source import Sources, PointSource, DetectorFrame
 from hierarchical_nu.utils.roi import CircularROI, RectangularROI, ROIList, FullSkyROI
-from hierarchical_nu.detector.icecube import Refrigerator
-
+from hierarchical_nu.detector.icecube import Refrigerator, IC86, IC40
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
@@ -14,11 +14,8 @@ events_file_name = "test_event_read_write.h5"
 
 
 def test_event_class(output_directory):
-    ROIList.clear_registry()
-    roi = FullSkyROI()
-
-    Parameter.clear_registry()
-    Emin_det = Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
+    FullSkyROI()
+    Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
 
     N_in = 50
     energies_in = np.linspace(1, 10, N_in) * u.TeV
@@ -28,7 +25,7 @@ def test_event_class(output_directory):
         dec=np.linspace(-np.pi / 2, np.pi / 2, N_in) * u.rad,
     )
 
-    types_in = np.zeros(N_in)
+    types_in = np.full(N_in, IC86)
     ang_errs_in = np.ones(N_in) * u.deg
     mjd_in = Time(np.tile(99, N_in), format="mjd")
 
@@ -63,47 +60,48 @@ def test_event_class(output_directory):
     assert np.all(events_out.energies > 5 * u.TeV)
     assert events_out.N < N
 
-@pytest.mark.skip()
-def test_circular_read():
-    periods = ["IC86_II"]
-    Parameter.clear_registry()
-    ROIList.clear_registry()
+def test_event_cuts():
+    coord = SkyCoord(ra=77.6 * u.deg, dec=5.7*u.deg)
     Emin_det = Parameter(5e4 * u.GeV, "Emin_det", fixed=True)
+    roi = CircularROI(coord, radius=5 * u.deg)
 
-    roi = CircularROI(
-        SkyCoord(ra=0 * u.deg, dec=0 * u.deg, frame="icrs"), radius=180 * u.deg
-    )
-    for p in periods:
-        it_ev = RealEvents.from_event_files(p, use_all=True)
-        it_ev.restrict(ereco_low=5e4)
-        hnu_ev = Events.from_ev_file(Refrigerator.python2dm(p))
+    events = Events.from_event_files()
+    events.apply_ROIS()
 
-        assert hnu_ev.N == it_ev.N_restricted[p]
+    assert np.all(coord.separation(events.coords)<=roi.radius)
 
-        # assert energy and some angles to check if rad/deg is correct
-        assert np.isclose(it_ev.reco_energy[p][0], hnu_ev.energies[0].to(u.GeV).value)
+    events.apply_Emin_det()
 
-        assert np.isclose(it_ev.ang_err[p][0], hnu_ev.ang_errs[0].to(u.deg).value)
+    assert np.all(events.energies >= Emin_det.value)
 
-        assert hnu_ev.energies.to(u.GeV).min() >= 5e4 * u.GeV
+def test_event_tag():
+    c1 = SkyCoord(ra=77.6 * u.deg, dec=5.7*u.deg)
+    c2 = SkyCoord(ra=40.6696 * u.deg, dec = -0.01329*u.deg)
+    src_index = Parameter(2.2, "src_index")
+    L = Parameter(1e42*u.erg / u.s, "L")
+    Emin_src = Parameter(1e2 * u.GeV, "Emin_src")
+    Emax_src = Parameter(1e8 * u.GeV, "Emax_src")
+    z1 = 0.03365
+    z2 = 0.00458
 
-@pytest.mark.skip()
-def test_rectangular_read():
-    periods = ["IC86_II"]
-    Parameter.clear_registry()
-    Emin_det = Parameter(5e4 * u.GeV, "Emin_det", fixed=True)
-    ROIList.clear_registry()
-    roi = RectangularROI()
-    for p in periods:
-        it_ev = RealEvents.from_event_files(p, use_all=True)
-        it_ev.restrict(ereco_low=5e4)
-        hnu_ev = Events.from_ev_file(Refrigerator.python2dm(p))
+    events = Events.from_event_files(IC40)
 
-        assert hnu_ev.N == it_ev.N_restricted[p]
 
-        # assert energy and some angles to check if rad/deg is correct
-        assert np.isclose(it_ev.reco_energy[p][0], hnu_ev.energies[0].to(u.GeV).value)
+    sources = Sources()
 
-        assert np.isclose(it_ev.ang_err[p][0], hnu_ev.ang_errs[0].to(u.deg).value)
+    for c, (coord, z) in enumerate(zip([c1, c2], [z1, z2])):
+        dec = coord.dec
+        ra = coord.ra
+        sources.add(
+            PointSource.make_powerlaw_source(
+            f"ps_{c}", dec, ra, L, src_index, z, Emin_src, Emax_src, DetectorFrame,
+            )
+        )
 
-        assert hnu_ev.energies.to(u.GeV).min() >= 5e4 * u.GeV
+    tags = events.get_tags(sources)
+    seps1 = c1.separation(events.coords).deg
+    seps2 = c2.separation(events.coords).deg
+    assert np.all(seps1[tags==0] <= seps2[tags==0])
+    assert np.all(seps1[tags==1] >= seps2[tags==1])
+    
+    

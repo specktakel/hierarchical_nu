@@ -26,7 +26,6 @@ import pytest
 
 
 def test_pythonic():
-    Parameter.clear_registry()
     index = Parameter(0.0, "src_index")
     alpha = Parameter(0.0, "alpha")
     beta = Parameter(0.7, "beta")
@@ -86,7 +85,6 @@ def test_pythonic():
 
 
 def test_satanic():
-    Parameter.clear_registry()
     index = Parameter(-2.0, "src_index")
     alpha = Parameter(0.0, "alpha")
     beta = Parameter(0.8, "beta")

@@ -9,10 +9,8 @@ from hierarchical_nu.source.source import (
     DetectorFrame,
 )
 from hierarchical_nu.events import Events
-from hierarchical_nu.fit import StanFit
-from hierarchical_nu.detector.input import mceq
 from hierarchical_nu.utils.roi import CircularROI, ROIList
-from hierarchical_nu.detector.icecube import IC86_II
+from hierarchical_nu.detector.icecube import IC86
 import numpy as np
 from pathlib import Path
 
@@ -65,12 +63,11 @@ def simulation_E0(output_directory):
     sources = Sources()
     sources.add(point_source)
 
-    ROIList.clear_registry()
-    roi = CircularROI(txs, 5 * u.deg, apply_roi=True)
+    CircularROI(txs, 5 * u.deg, apply_roi=True)
 
-    lifetime = {IC86_II: 0.5 * u.yr}
+    lifetime = {IC86: 0.5 * u.yr}
 
-    sim = Simulation(sources, IC86_II, lifetime, n_grid_points=20)
+    sim = Simulation(sources, IC86, lifetime, n_grid_points=20)
     sim.precomputation()
     sim.generate_stan_code()
     sim.compile_stan_code()
@@ -132,9 +129,9 @@ def simulation_beta_E0(output_directory):
     ROIList.clear_registry()
     roi = CircularROI(txs, 5 * u.deg, apply_roi=True)
 
-    lifetime = {IC86_II: 0.5 * u.yr}
+    lifetime = {IC86: 0.5 * u.yr}
 
-    sim = Simulation(sources, IC86_II, lifetime, n_grid_points=20)
+    sim = Simulation(sources, IC86, lifetime, n_grid_points=20)
     sim.precomputation()
     sim.generate_stan_code()
     sim.compile_stan_code()
@@ -196,9 +193,9 @@ def simulation_index(output_directory):
     ROIList.clear_registry()
     roi = CircularROI(txs, 5 * u.deg, apply_roi=True)
 
-    lifetime = {IC86_II: 0.5 * u.yr}
+    lifetime = {IC86: 0.5 * u.yr}
 
-    sim = Simulation(sources, IC86_II, lifetime, n_grid_points=20)
+    sim = Simulation(sources, IC86, lifetime, n_grid_points=20)
     sim.precomputation()
     sim.generate_stan_code()
     sim.compile_stan_code()
@@ -213,7 +210,6 @@ def simulation_index(output_directory):
 
 # Run through all combinations of one of alpha, beta, E0 being fixed, named in function
 def test_logparabola_E0(simulation_E0):
-    Parameter.clear_registry()
     src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1.0, 4.0))
     beta_index = Parameter(0.5, "beta_index", fixed=False, par_range=(-0.5, 1.0))
     E0 = Parameter(
@@ -261,10 +257,10 @@ def test_logparabola_E0(simulation_E0):
     ROIList.clear_registry()
     roi = CircularROI(txs, 5 * u.deg, apply_roi=True)
 
-    lifetime = {IC86_II: 0.5 * u.yr}
+    lifetime = {IC86: 0.5 * u.yr}
 
     # Less grid points to speed up testing
-    fit = StanFit(sources, IC86_II, simulation_E0, lifetime, n_grid_points=20)
+    fit = StanFit(sources, IC86, simulation_E0, lifetime, n_grid_points=20)
     fit.precomputation()
     fit.generate_stan_code()
     fit.compile_stan_code()
@@ -280,7 +276,6 @@ def test_logparabola_E0(simulation_E0):
 
 
 def test_logparabola_beta_E0(simulation_beta_E0):
-    Parameter.clear_registry()
     src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1.0, 4.0))
     beta_index = Parameter(0.0, "beta_index", fixed=True, par_range=(-0.5, 1.0))
     E0 = Parameter(
@@ -325,20 +320,15 @@ def test_logparabola_beta_E0(simulation_beta_E0):
     sources = Sources()
     sources.add(point_source)
 
-    ROIList.clear_registry()
     roi = CircularROI(txs, 5 * u.deg, apply_roi=True)
 
-    lifetime = {IC86_II: 0.5 * u.yr}
+    lifetime = {IC86: 0.5 * u.yr}
 
     # Less grid points to speed up testing
     # use mulithreading for one of the tests
     fit = StanFit(
-        sources, IC86_II, simulation_beta_E0, lifetime, n_grid_points=20, nshards=2
+        sources, IC86, simulation_beta_E0, lifetime, n_grid_points=20, nshards=2
     )
-    print(fit._logparabola)
-    print(fit._fit_index)
-    print(fit._fit_beta)
-    print(fit._fit_Enorm)
     fit.precomputation()
     fit.generate_stan_code()
     fit.compile_stan_code()
@@ -393,20 +383,15 @@ def test_logparabola_index(simulation_index):
     sources = Sources()
     sources.add(point_source)
 
-    ROIList.clear_registry()
     roi = CircularROI(txs, 5 * u.deg, apply_roi=True)
 
-    lifetime = {IC86_II: 0.5 * u.yr}
+    lifetime = {IC86: 0.5 * u.yr}
 
     # Less grid points to speed up testing
-    fit = StanFit(sources, IC86_II, simulation_index, lifetime, n_grid_points=20)
+    fit = StanFit(sources, IC86, simulation_index, lifetime, n_grid_points=20)
     fit.precomputation()
     fit.generate_stan_code()
     fit.compile_stan_code()
-    print(fit._logparabola)
-    print(fit._fit_index)
-    print(fit._fit_beta)
-    print(fit._fit_Enorm)
     fit.run(
         inits={"E": fit.events.N * [1e5], "L": 1e48, "beta_index": 0.05, "E0_src": 1e7}
     )

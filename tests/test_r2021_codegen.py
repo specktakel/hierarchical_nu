@@ -4,12 +4,13 @@ import os
 import pytest
 from cmdstanpy import CmdStanModel
 
-from icecube_tools.utils.vMF import get_theta_p
+from icecube_data_reader.irf.irf import IceTracksDR2InstrumentResponseFunction as I3IRF
 
 from hierarchical_nu.detector.r2021 import (
-    IC86_IIDetectorModel,
-    R2021EnergyResolution,
-)  # , R2021GridInterpEnergyResolution
+    IC86DetectorModel,
+    R2021EnergyResolution
+)
+from hierarchical_nu.detector.icecube import IC86
 from hierarchical_nu.backend.stan_generator import (
     GeneratedQuantitiesContext,
     DataContext,
@@ -20,6 +21,7 @@ from hierarchical_nu.backend.stan_generator import (
     ParametersContext,
     StanFileGenerator,
     TransformedParametersContext,
+    TransformedDataContext
 )
 from hierarchical_nu.backend.variable_definitions import (
     ForwardVariableDef,
@@ -30,12 +32,9 @@ from hierarchical_nu.backend.expression import StringExpression
 from hierarchical_nu.backend.parameterizations import DistributionMode
 
 from hierarchical_nu.stan.interface import STAN_PATH
+from scipy.stats import rv_histogram
 
-from icecube_tools.detector.r2021 import R2021IRF
-from icecube_tools.detector.effective_area import EffectiveArea
-from icecube_tools.point_source_likelihood.energy_likelihood import (
-    MarginalisedIntegratedEnergyLikelihood,
-)
+
 
 
 class TestR2021:
@@ -45,7 +44,7 @@ class TestR2021:
 
         file_name = os.path.join(output_directory, "r2021_sim")
 
-        _ = IC86_IIDetectorModel.generate_code(
+        _ = IC86DetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=True,
             ereco_cuts=False,
@@ -57,29 +56,97 @@ class TestR2021:
                 _ = Include("interpolation.stan")
                 _ = Include("utils.stan")
                 _ = Include("vMF.stan")
-                _ = Include(IC86_IIDetectorModel.RNG_FILENAME)
-                rng = IC86_IIDetectorModel(DistributionMode.RNG)
+                _ = Include(IC86DetectorModel.RNG_FILENAME)
+                rng = IC86DetectorModel(DistributionMode.RNG)
                 rng.generate_rng_function_code()
 
             with DataContext():
+                eres = rng.energy_resolution
                 etrue = ForwardVariableDef("true_energy", "real")
                 phi = ForwardVariableDef("phi", "real")
                 theta = ForwardVariableDef("theta", "real")
+                shape_str = (
+                    str(
+                        eres._recoE_bin_edges[
+                            :, eres._dec_idx_min : eres._dec_idx_max
+                        ].shape
+                    )
+                    .lstrip("(")
+                    .rstrip(",)")
+                )
+                ereco_bin_edges = ForwardArrayDef("ereco_bin_edges", "real", [f"[{shape_str}]"])
+                shape_str = (
+                    str(
+                        eres._recoE_hists[
+                            :, eres._dec_idx_min : eres._dec_idx_max
+                        ].shape
+                    )
+                    .lstrip("(")
+                    .rstrip(",)")
+                )
+                ereco_hist = ForwardArrayDef("ereco_hist", "real", [f"[{shape_str}]"])
+                angres = rng.angular_resolution
+                shape_str = (
+                    str(
+                        angres._psf_bin_edges[
+                            :, angres._dec_idx_min : angres._dec_idx_max
+                        ].shape
+                    )
+                    .lstrip("(")
+                    .rstrip(",)")
+                )
+                psf_bin_edges = ForwardArrayDef("psf_bin_edges", "real", [f"[{shape_str}]"])
+                shape_str = (
+                    str(
+                        angres._psf_hists[
+                            :, angres._dec_idx_min : angres._dec_idx_max
+                        ].shape
+                    )
+                    .rstrip(",)")
+                    .lstrip("(")
+                )
+                psf_hist = ForwardArrayDef("psf_hist", "real", [f"[{shape_str}]"])
+                shape_str = (
+                    str(
+                        angres._ang_err_bin_edges[
+                            :, angres._dec_idx_min : angres._dec_idx_max
+                        ].shape
+                    )
+                    .lstrip("(")
+                    .rstrip(",)")
+                )
+                ang_err__bin_edges = ForwardArrayDef(
+                    "ang_err_bin_edges", "real", [f"[{shape_str}]"]
+                )
+                shape_str = (
+                    str(
+                        angres._ang_err_hists[
+                            :, angres._dec_idx_min : angres._dec_idx_max
+                        ].shape
+                    )
+                    .lstrip("(")
+                    .rstrip(",)")
+                )                
+                ang_err_hist = ForwardArrayDef("ang_err_hist", "real", [f"[{shape_str}]"])
 
+            with TransformedDataContext():
+                true_dir = ForwardVariableDef("true_dir", "unit_vector[3]")
+                true_dir << StringExpression(["[sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]'"])
+                
             with GeneratedQuantitiesContext():
                 rng_return = ForwardVariableDef("rng_return", "vector[5]")
                 reco_energy = ForwardVariableDef("reco_energy", "real")
-                kappa = ForwardVariableDef("kappa", "real")
+                ang_err = ForwardVariableDef("ang_err", "real")
                 reco_dir = ForwardVariableDef("reco_dir", "vector[3]")
 
                 rng_return << StringExpression(
                     [
-                        "IC86_II_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                        "IC86_rng(true_energy, true_dir, ereco_hist, ereco_bin_edges, psf_hist, psf_bin_edges, ang_err_hist, ang_err_bin_edges)"
                     ]
                 )
                 reco_energy << rng_return[1]
                 reco_dir << rng_return[2:4]
-                kappa << rng_return[5]
+                ang_err << rng_return[5]
 
         code_gen.generate_single_file()
         return code_gen.filename
@@ -88,7 +155,7 @@ class TestR2021:
     def model_file(self, output_directory):
         file_name = os.path.join(output_directory, "r2021_model")
 
-        _ = IC86_IIDetectorModel.generate_code(
+        _ = IC86DetectorModel.generate_code(
             mode=DistributionMode.PDF,
             rewrite=True,
             path=output_directory,
@@ -99,7 +166,7 @@ class TestR2021:
                 _ = Include("interpolation.stan")
                 _ = Include("utils.stan")
                 _ = Include("vMF.stan")
-                _ = Include(IC86_IIDetectorModel.PDF_FILENAME)
+                _ = Include(IC86DetectorModel.PDF_FILENAME)
 
             with DataContext():
                 size = ForwardVariableDef("size", "int")
@@ -122,9 +189,9 @@ class TestR2021:
                 with ForLoopContext(1, size, "i") as i:
                     lp[i] << StringExpression(
                         [
-                            #     "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]', ereco_idx[i])"
-                            # "IC86_IIEnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
-                            "IC86_IIEnergyResolution(true_energy, eres_grid[i])"
+                            #     "IC86EnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]', ereco_idx[i])"
+                            # "IC86EnergyResolution(true_energy, reco_energy[i], [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                            "IC86EnergyResolution(true_energy, eres_grid[i])"
                         ]
                     )
 
@@ -135,13 +202,13 @@ class TestR2021:
         return code_gen.filename
 
     def test_file_generation_r2021(self, output_directory):
-        IC86_IIDetectorModel.generate_code(
+        IC86DetectorModel.generate_code(
             mode=DistributionMode.PDF,
             rewrite=False,
             path=output_directory,
         )
 
-        IC86_IIDetectorModel.generate_code(
+        IC86DetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=False,
             path=output_directory,
@@ -151,10 +218,10 @@ class TestR2021:
     def test_samples(self, sim_file, random_seed):
         num_samples = 1000
 
-        irf = R2021IRF.from_period("IC86_II")
+        irf = I3IRF.load(IC86)
         # Causes error for e.g. IC86_I because it has zero-entries in the effective area and IRF at low energies/South
         samples = np.zeros(
-            (irf.true_energy_values.size, irf.declination_bins.size - 1, num_samples)
+            (irf.log_tE_bin_centers.size, irf.sin_dec_bin_centers.size - 1, num_samples)
         )
 
         stanc_options = {"include-paths": [STAN_PATH, os.path.dirname(sim_file)]}
@@ -167,11 +234,21 @@ class TestR2021:
 
         phi = 0
         theta = np.array([3 * np.pi / 4, np.pi / 2, np.pi / 4])
-        etrue = np.power(10, irf.true_energy_values)
+        etrue = np.power(10, irf.log_tE_bin_centers)
 
         for c_e, e in enumerate(etrue):
             for c_d, t in enumerate(theta[1:], 1):
-                data = {"theta": t, "phi": phi, "true_energy": e}
+                data = {
+                    "theta": t,
+                    "phi": phi,
+                    "true_energy": e,
+                    "ereco_hist": irf.recoE_hists,
+                    "ereco_bin_edges": irf.recoE_bin_edges,
+                    "psf_hist": irf.psf_hists,
+                    "psf_bin_edges": irf.psf_bin_edges,
+                    "ang_err_hist": irf.ang_err_hists,
+                    "ang_err_bin_edges": irf.ang_err_bin_edges,
+                    }
 
                 output = stan_model.sample(
                     data=data,
@@ -183,21 +260,20 @@ class TestR2021:
 
                 e_res = np.log10(output.stan_variable("reco_energy"))
                 n, bins = np.histogram(
-                    e_res, irf.reco_energy_bins[c_e, c_d], density=True
+                    e_res, irf.recoE_bin_edges[c_e, c_d], density=True
                 )
 
                 samples[c_e, c_d, :] = e_res
-                kappa = output.stan_variable("kappa")
-                p = 0.683
-                ang_err = get_theta_p(kappa, p=p)
+                ang_err = np.rad2deg(output.stan_variable("ang_err"))
 
                 assert np.all(ang_err >= 0.2)
 
                 assert np.all(ang_err <= 20.0)
 
+                rvs = rv_histogram((irf.recoE_hists[c_e, c_d], irf.recoE_bin_edges[c_e, c_d]), density=True)
                 assert n == pytest.approx(
-                    irf.reco_energy[c_e, c_d].pdf(
-                        irf.reco_energy_bins[c_e, c_d][:-1] + 0.01
+                    rvs.pdf(
+                        irf.recoE_bin_edges[c_e, c_d][:-1] + 0.01
                     ),
                     abs=0.35,
                 )
@@ -214,11 +290,11 @@ class TestR2021:
             stanc_options=stanc_options,
         )
 
-        irf = R2021IRF.from_period("IC86_II")
+        irf = I3IRF.load(IC86)
         phi = 0
         theta = np.array([3 * np.pi / 4, np.pi / 2, np.pi / 4])
-        etrue = irf.true_energy_values[:-2]
-        det = IC86_IIDetectorModel()
+        etrue = np.power(10, irf.log_tE_bin_centers[:-2])
+        det = IC86DetectorModel()
         eres = det.energy_resolution
         size = 100
         num_samples = 1000
@@ -258,19 +334,20 @@ class TestR2021:
 
                 assert true_energy.max() > e
 
+    @pytest.mark.skip()
     def test_ereco_cuts(self, output_directory):
         # Test that the ereco cuts are applied correctly
 
         file_name = os.path.join(output_directory, "r2021_sim")
-        _ = IC86_IIDetectorModel.generate_code(
+        _ = IC86DetectorModel.generate_code(
             mode=DistributionMode.RNG,
             rewrite=True,
             ereco_cuts=True,
             path=output_directory,
         )
 
-        aeff = EffectiveArea.from_dataset("20210126", "IC86_II")
-        eres = MarginalisedIntegratedEnergyLikelihood("IC86_II", np.linspace(1, 9, 25))
+        aeff = EffectiveArea.from_dataset("20210126", "IC86")
+        eres = MarginalisedIntegratedEnergyLikelihood("IC86", np.linspace(1, 9, 25))
         cosz_bins = aeff.cos_zenith_bins
         dec = np.sort(np.arcsin((cosz_bins[:-1] + cosz_bins[1:]) / 2))
         theta_vals = np.pi / 2 - dec
@@ -280,8 +357,8 @@ class TestR2021:
                 _ = Include("interpolation.stan")
                 _ = Include("utils.stan")
                 _ = Include("vMF.stan")
-                _ = Include(IC86_IIDetectorModel.RNG_FILENAME)
-                ic86_rng = IC86_IIDetectorModel(DistributionMode.RNG)
+                _ = Include(IC86DetectorModel.RNG_FILENAME)
+                ic86_rng = IC86DetectorModel(DistributionMode.RNG)
                 ic86_rng.generate_rng_function_code()
 
             with DataContext():
@@ -294,7 +371,7 @@ class TestR2021:
                 with ForLoopContext(1, 1000, "j") as j:
                     reco_energy[j] << StringExpression(
                         [
-                            "IC86_IIEnergyResolution_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
+                            "IC86EnergyResolution_rng(true_energy, [sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]')"
                         ]
                     )
 

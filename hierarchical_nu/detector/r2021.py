@@ -1594,7 +1594,7 @@ class R2021AngularResolution(AngularResolution):
             )
         else:
             self._dec_idx_min = 0
-            self._dec_idx_max = -1
+            self._dec_idx_max = self.irf.dec_bin_edges.size
 
         self.mode = mode
         self._rewrite = rewrite
@@ -1926,7 +1926,7 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution):
             )
         else:
             self._dec_idx_min = 0
-            self._dec_idx_max = -1
+            self._dec_idx_max = self.irf.dec_bin_edges.size
 
         self._dec_bin_edges = np.deg2rad(self.irf.dec_bin_edges) << u.rad
         self._dec_binc = self._dec_bin_edges[:-1] + np.diff(self._dec_bin_edges) / 2

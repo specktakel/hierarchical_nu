@@ -5,17 +5,13 @@ import pytest
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 
-from hierarchical_nu.detector.icecube import IC86_I, IC86_II
+from hierarchical_nu.detector.icecube import IC79, IC86
 from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
 
 from hierarchical_nu.detector.input import mceq
 
-
 def test_N():
-    Parameter.clear_registry()
-    ROIList.clear_registry()
-
     roi = RectangularROI(DEC_min=-5 * u.deg)
 
     src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
@@ -57,7 +53,7 @@ def test_N():
         Emin_src,
         Emax_src,
     )
-
+    print("adding sources")
     my_sources = Sources()
     my_sources.add(point_source)
 
@@ -65,27 +61,27 @@ def test_N():
         diffuse_norm, Enorm.value, diff_index, Emin_diff, Emax_diff
     )
     my_sources.add_atmospheric_component(cache_dir=mceq)
-
+    print("setting up sim")
     sim = Simulation(
         my_sources,
-        [IC86_I, IC86_II],
-        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
-        N={IC86_II: [2, 3, 2], IC86_I: [1, 2, 3]},
+        [IC79, IC86],
+        {IC79: 5 * u.year,IC86: 5 * u.year},
+        N={IC79: [2, 3, 1], IC86: [1, 2, 3]},
     )
-
+    print("precomputation")
     sim.precomputation()
-
+    print("generating stan code")
     sim.generate_stan_code()
 
     sim.compile_stan_code()
-
-    sim.run()
+    print("running")
+    sim.run(verbose=True)
 
     assert np.all(
         np.isclose(
             sim._sim_output.stan_variable("Lambda"),
             np.array(
-                [[1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0]]
+                [[1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 1.0, 2.0, 2.0, 3.0, 3.0, 3.0,]]
             ),
         )
     )
@@ -93,15 +89,12 @@ def test_N():
     assert np.all(
         np.isclose(
             sim._sim_output.stan_variable("event_type"),
-            np.array([[IC86_I.S] * 6 + [IC86_II.S] * 7]),
+            np.array([[IC79.S] * 6 + [IC86.S] * 6]),
         )
     )
 
-
 def test_multi_ps_n():
-    Parameter.clear_registry()
-    ROIList.clear_registry()
-    roi = RectangularROI(DEC_min=-5 * u.deg)
+    roi = RectangularROI(DEC_min=-5 * u.deg, apply_roi=True)
 
     src_names = ["test_%i" % i for i in range(3)]
     src_index_params = []
@@ -172,9 +165,9 @@ def test_multi_ps_n():
 
     sim = Simulation(
         my_sources,
-        [IC86_I, IC86_II],
-        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
-        N={IC86_I: [1, 2], IC86_II: [2, 1]},
+        [IC79, IC86],
+        {IC79: 5 * u.year, IC86: 5 * u.year},
+        N={IC79: [1, 2], IC86: [2, 1]},
     )
     sim.precomputation()
     sim.generate_stan_code()
@@ -192,7 +185,7 @@ def test_multi_ps_n():
     assert np.all(
         np.isclose(
             sim._sim_output.stan_variable("event_type"),
-            np.array([[IC86_I.S] * 3 + [IC86_II.S] * 3]),
+            np.array([[IC79.S] * 3 + [IC86.S] * 3]),
         )
     )
 
@@ -200,9 +193,9 @@ def test_multi_ps_n():
 
     sim = Simulation(
         my_sources,
-        [IC86_I, IC86_II],
-        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
-        N={IC86_I: [1, 2, 3], IC86_II: [4, 5, 6]},
+        [IC79, IC86],
+        {IC79: 5 * u.year, IC86: 5 * u.year},
+        N={IC79: [1, 2, 3], IC86: [4, 5, 6]},
     )
     sim.precomputation()
     sim.setup_stan_sim()
@@ -220,14 +213,11 @@ def test_multi_ps_n():
     assert np.all(
         np.isclose(
             sim._sim_output.stan_variable("event_type"),
-            np.array([[IC86_I.S] * 6 + [IC86_II.S] * 15]),
+            np.array([[IC79.S] * 6 + [IC86.S] * 15]),
         )
     )
 
-
 def test_asimov():
-    Parameter.clear_registry()
-    ROIList.clear_registry()
     roi = RectangularROI(DEC_min=-5 * u.deg)
 
     src_names = ["test_%i" % i for i in range(3)]
@@ -299,8 +289,8 @@ def test_asimov():
 
     sim = Simulation(
         my_sources,
-        [IC86_I, IC86_II],
-        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
+        [IC79, IC86],
+        {IC79: 5 * u.year, IC86: 5 * u.year},
         asimov=True,
     )
     sim.precomputation()
@@ -315,8 +305,8 @@ def test_asimov():
 
     sim = Simulation(
         my_sources,
-        [IC86_I, IC86_II],
-        {IC86_I: 5 * u.year, IC86_II: 5 * u.year},
+        [IC79, IC86],
+        {IC79: 5 * u.year, IC86: 5 * u.year},
         asimov=True,
     )
 

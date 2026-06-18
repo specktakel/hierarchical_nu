@@ -404,6 +404,7 @@ class PointSource(Source):
         )
 
         total_power = spectral_shape.total_flux_density
+        norm.fixed = False
         norm.value *= total_flux / total_power
         norm.value = norm.value.to(1 / (u.GeV * u.m**2 * u.s))
         norm.fixed = True

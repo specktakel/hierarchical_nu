@@ -7,7 +7,7 @@ from hierarchical_nu.source.source import Sources, PointSource
 from hierarchical_nu.events import Events
 from hierarchical_nu.fit import StanFit
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
-from hierarchical_nu.detector.icecube import IC86_II
+from hierarchical_nu.detector.icecube import IC86
 import numpy as np
 import os
 
@@ -16,20 +16,8 @@ import os
 def sources():
     def make_sources(ps, diff, atmo):
 
-        Parameter.clear_registry()
-        ROIList.clear_registry()
         ra = np.deg2rad(77.35)
         dec = np.deg2rad(5.7)
-        bandwidth = np.deg2rad(5)
-        DEC_min = (dec - bandwidth) * u.rad
-        DEC_max = (dec + bandwidth) * u.rad
-        RA_min = (ra - bandwidth) * u.rad
-        RA_max = (ra + bandwidth) * u.rad
-        roi = RectangularROI(
-            DEC_min=DEC_min, DEC_max=DEC_max, RA_min=RA_min, RA_max=RA_max
-        )
-
-        Emin_det = Parameter(1e3 * u.GeV, "Emin_det", fixed=True)
         source_list = Sources()
         z = 0.3365
         src_index = Parameter(2.2, "src_index", fixed=False, par_range=(1.0, 4.0))
@@ -71,8 +59,20 @@ def sources():
 
 
 def test_ps(output_directory, sources):
+    ra = np.deg2rad(77.35)
+    dec = np.deg2rad(5.7)
+    bandwidth = np.deg2rad(5)
+    DEC_min = (dec - bandwidth) * u.rad
+    DEC_max = (dec + bandwidth) * u.rad
+    RA_min = (ra - bandwidth) * u.rad
+    RA_max = (ra + bandwidth) * u.rad
+    roi = RectangularROI(
+        DEC_min=DEC_min, DEC_max=DEC_max, RA_min=RA_min, RA_max=RA_max
+    )
+
+    Emin_det = Parameter(1e3 * u.GeV, "Emin_det", fixed=True)
     my_sources = sources(True, False, False)
-    sim = Simulation(my_sources, IC86_II, {IC86_II: 180 * u.d})
+    sim = Simulation(my_sources, IC86, {IC86: 180 * u.d})
 
     sim.precomputation()
 
@@ -89,7 +89,7 @@ def test_ps(output_directory, sources):
 
     events.N
 
-    fit = StanFit(my_sources, IC86_II, events, {IC86_II: 180 * u.d})
+    fit = StanFit(my_sources, IC86, events, {IC86: 180 * u.d})
 
     fit.precomputation()
 
@@ -102,7 +102,7 @@ def test_ps(output_directory, sources):
         fit.run(seed=42, show_progress=True, inits={"L": 1e50, "src_index": 2.2})
         fit.save(os.path.join(output_directory, f"ps_only_fit_{i}.h5"))
 
-    mt_fit = StanFit(my_sources, IC86_II, events, {IC86_II: 180 * u.d}, nshards=2)
+    mt_fit = StanFit(my_sources, IC86, events, {IC86: 180 * u.d}, nshards=2)
 
     mt_fit.precomputation()
 
@@ -125,9 +125,21 @@ def test_ps(output_directory, sources):
 
 
 def test_lp(output_directory, sources):
+    ra = np.deg2rad(77.35)
+    dec = np.deg2rad(5.7)
+    bandwidth = np.deg2rad(5)
+    DEC_min = (dec - bandwidth) * u.rad
+    DEC_max = (dec + bandwidth) * u.rad
+    RA_min = (ra - bandwidth) * u.rad
+    RA_max = (ra + bandwidth) * u.rad
+    roi = RectangularROI(
+        DEC_min=DEC_min, DEC_max=DEC_max, RA_min=RA_min, RA_max=RA_max
+    )
+
+    Emin_det = Parameter(1e3 * u.GeV, "Emin_det", fixed=True)
     my_sources = sources(True, False, False)
     events = Events.from_file(os.path.join(output_directory, f"ps_only_0.h5"))
-    fit = StanFit(my_sources, IC86_II, events, 180 * u.d, nshards=2, debug=True)
+    fit = StanFit(my_sources, IC86, events, 180 * u.d, nshards=2, debug=True)
     fit.precomputation()
     fit.generate_stan_code()
     fit.compile_stan_code()
@@ -144,8 +156,20 @@ def test_lp(output_directory, sources):
 
 def test_ps_diff(output_directory, sources):
 
+    ra = np.deg2rad(77.35)
+    dec = np.deg2rad(5.7)
+    bandwidth = np.deg2rad(5)
+    DEC_min = (dec - bandwidth) * u.rad
+    DEC_max = (dec + bandwidth) * u.rad
+    RA_min = (ra - bandwidth) * u.rad
+    RA_max = (ra + bandwidth) * u.rad
+    roi = RectangularROI(
+        DEC_min=DEC_min, DEC_max=DEC_max, RA_min=RA_min, RA_max=RA_max
+    )
+
+    Emin_det = Parameter(1e3 * u.GeV, "Emin_det", fixed=True)
     my_sources = sources(True, True, False)
-    sim = Simulation(my_sources, IC86_II, 180 * u.d)
+    sim = Simulation(my_sources, IC86, 180 * u.d)
 
     sim.precomputation()
 
@@ -162,7 +186,7 @@ def test_ps_diff(output_directory, sources):
 
     events.N
 
-    fit = StanFit(my_sources, IC86_II, events, 180 * u.d)
+    fit = StanFit(my_sources, IC86, events, 180 * u.d)
 
     fit.precomputation()
 
@@ -175,7 +199,7 @@ def test_ps_diff(output_directory, sources):
         fit.run(seed=42, show_progress=True, inits={"L": 1e50, "src_index": 2.2})
         fit.save(os.path.join(output_directory, f"ps_only_fit_{i}.h5"))
 
-    mt_fit = StanFit(my_sources, IC86_II, events, 180 * u.d, nshards=2)
+    mt_fit = StanFit(my_sources, IC86, events, 180 * u.d, nshards=2)
 
     mt_fit.precomputation()
 
