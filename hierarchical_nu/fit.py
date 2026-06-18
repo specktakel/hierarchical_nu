@@ -162,7 +162,10 @@ class StanFit(SourceInfo):
         self._def_var_names = []
 
         if self._sources.point_source:
-            self._def_var_names.append("L")
+            if self._fit_nex:
+                self._def_var_names.append("L_ind")
+            else:
+                self._def_var_names.append("L")
             if self._fit_index:
                 self._def_var_names.append("src_index")
             if self._fit_beta:
@@ -449,6 +452,7 @@ class StanFit(SourceInfo):
                         axs[c, 0].plot(x, y, color=f"C{j}")
                         axs[c, 1].plot(np.arange(data.shape[1]), transform(data[i, :, j]), color=f"C{j}")
             axs[c, 0].set_title(v)
+        fig.tight_layout()
         return fig, axs
 
     def plot_trace_and_priors(
@@ -464,9 +468,9 @@ class StanFit(SourceInfo):
         """
 
         if transform:
-            _transform = lambda x: np.log10(x)
+            _transform = lambda x: np.log10(x) # noqa: E371
         else:
-            _transform = lambda x: x
+            _transform = lambda x: x  # noqa: E371
         fig, axs = self.plot_trace(
             var_names=var_names, transform=_transform,
         )
@@ -512,7 +516,6 @@ class StanFit(SourceInfo):
                     else:
                         draw_prior_transform(prior, ax, x)
 
-                #else:
                 if isinstance(prior, MultiSourcePrior):
                     for p in prior:
                         draw_prior(p, ax, x)
@@ -534,6 +537,7 @@ class StanFit(SourceInfo):
             except (KeyError, NoPriorSetError):
                 pass
 
+        fig.tight_layout()
         return fig, axs
 
     def _get_kde(

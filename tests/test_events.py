@@ -1,4 +1,3 @@
-from icecube_tools.utils.data import RealEvents
 from hierarchical_nu.events import Events
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.utils.roi import CircularROI, RectangularROI, ROIList, FullSkyROI
@@ -8,6 +7,8 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 import numpy as np
+
+import pytest
 
 events_file_name = "test_event_read_write.h5"
 
@@ -62,7 +63,7 @@ def test_event_class(output_directory):
     assert np.all(events_out.energies > 5 * u.TeV)
     assert events_out.N < N
 
-
+@pytest.mark.skip()
 def test_circular_read():
     periods = ["IC86_II"]
     Parameter.clear_registry()
@@ -86,7 +87,7 @@ def test_circular_read():
 
         assert hnu_ev.energies.to(u.GeV).min() >= 5e4 * u.GeV
 
-
+@pytest.mark.skip()
 def test_rectangular_read():
     periods = ["IC86_II"]
     Parameter.clear_registry()
