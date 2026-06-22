@@ -617,13 +617,13 @@ class ConfigParser:
 
         if self._is_dm_list():
             dm_keys = [
-                Refrigerator.python2dm(_)
+                Refrigerator.str2dm(_)
                 for _ in self._hnu_config.parameter_config.detector_model_type
             ]
             obs_time = self._hnu_config.parameter_config.obs_time
             if obs_time == ["season"]:
                 lifetime = LifeTime()
-                obs_time = lifetime.lifetime_from_dm(*dm_keys)
+                obs_time = lifetime.lifetime_from_season(*dm_keys)
                 return obs_time
             else:
                 return self._get_obs_time_from_config(dm_keys, obs_time)
@@ -636,7 +636,7 @@ class ConfigParser:
                 dms = self._hnu_config.parameter_config.detector_model_type
                 time = {}
                 for dm in dms:
-                    dm = Refrigerator.python2dm(dm)
+                    dm = Refrigerator.str2dm(dm)
                     try:
                         time[dm] = _time[dm]
                     except KeyError:
@@ -878,7 +878,7 @@ class ConfigParser:
 
     @classmethod
     def _get_dm_from_config(cls, dm_key):
-        return [Refrigerator.python2dm(dm) for dm in dm_key]
+        return [Refrigerator.str2dm(dm) for dm in dm_key]
 
     @classmethod
     def _get_obs_time_from_config(cls, dms, obs_time):

@@ -87,10 +87,9 @@ class ParameterConfig:
     Emin_det_IC40: str = "6e4 GeV"
     Emin_det_IC59: str = "6e4 GeV"
     Emin_det_IC79: str = "6e4 GeV"
-    Emin_det_IC86_I: str = "6e4 GeV"
-    Emin_det_IC86_II: str = "6e4 GeV"
+    Emin_det_IC86: str = "6e4 GeV"
 
-    # Can be NT, CAS or IC40 through IC86_II or any combination,
+    # Can be NT, CAS or IC40 through IC86 or any combination,
     # see `hierarchical_nu.detector.icecube.Refrigerator`
     # needs to be the Python-string, accessed through e.g. NT.P
     # due to merging of the yaml config and this config here
@@ -100,7 +99,7 @@ class ParameterConfig:
     # the obs times
     # OR
     # provide mjd_min, mjd_max to automatically determine the detectors and their obs times
-    detector_model_type: List[str] = field(default_factory=lambda: ["IC86_II"])
+    detector_model_type: List[str] = field(default_factory=lambda: ["IC86"])
     frame: str = "source"
     obs_time: List[str] = field(default_factory=lambda: ["3.0 yr"])
 

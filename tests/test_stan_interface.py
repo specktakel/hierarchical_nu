@@ -10,7 +10,7 @@ from hierarchical_nu.stan.interface import STAN_PATH, STAN_GEN_PATH
 from hierarchical_nu.stan.sim_interface import StanSimInterface
 from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
-from hierarchical_nu.detector.icecube import IC86_I, IC86_II
+from hierarchical_nu.detector.icecube import IC79, IC86
 from hierarchical_nu.detector.input import mceq
 import logging
 
@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 detector_list = [
-    IC86_II,
-    [IC86_I, IC86_II],
+    IC86,
+    [IC79, IC86],
 ]
 
 
@@ -27,11 +27,8 @@ stanc_options = {"include-paths": [STAN_PATH, STAN_GEN_PATH]}
 
 
 def test_stan_sim_interface(output_directory):
-    ROIList.clear_registry()
     roi = RectangularROI(DEC_min=-5 * u.deg)
-    logger.warning(roi)
     # Set up sources
-    Parameter.clear_registry()
 
     src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 
@@ -96,8 +93,6 @@ def test_stan_sim_interface(output_directory):
 
 def test_stan_fit_interface(output_directory):
     # Set up sources
-    Parameter.clear_registry()
-    ROIList.clear_registry()
     roi = RectangularROI(DEC_min=5 * u.deg)
     logger.warning(roi)
 

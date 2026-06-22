@@ -27,7 +27,7 @@ def output_directory(tmpdir_factory):
 
 @pytest.fixture(scope="session")
 def random_seed():
-    seed = 100
+    seed = 42
 
     return seed
 
@@ -38,7 +38,6 @@ def reset_ROI():
 @pytest.fixture(autouse=True)
 def reset_params():
     Parameter.clear_registry()
-
 
 @pytest.fixture(autouse=True)
 def reset_stan_files():

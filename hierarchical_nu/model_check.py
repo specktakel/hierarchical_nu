@@ -11,7 +11,6 @@ import matplotlib.patches as mpl_patches
 from joblib import Parallel, delayed
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from cmdstanpy import CmdStanModel
 from scipy.stats import uniform
 from omegaconf import OmegaConf
 from typing import List, Union
@@ -19,11 +18,6 @@ from pathlib import Path
 from time import time as thyme
 
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.simulation import Simulation
-from hierarchical_nu.fit import StanFit
-from hierarchical_nu.stan.interface import STAN_GEN_PATH
-from hierarchical_nu.stan.sim_interface import StanSimInterface
-from hierarchical_nu.stan.fit_interface import StanFitInterface
 from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.utils.config_parser import ConfigParser
 from hierarchical_nu.priors import (
@@ -31,6 +25,7 @@ from hierarchical_nu.priors import (
 )
 from hierarchical_nu.utils.git import git_hash
 from hierarchical_nu.events import Events
+from hierarchical_nu.detector.icecube import Refrigerator
 
 import logging
 
@@ -261,7 +256,7 @@ class ModelCheck:
             Events(
                 np.array([1e5]) * u.GeV,
                 SkyCoord(ra=0 * u.deg, dec=0 * u.deg, frame="icrs"),
-                [6],
+                np.array([Refrigerator.str2dm("IC86")]),
                 np.array([0.2]) * u.deg,
                 [99.0],
             ),
@@ -827,8 +822,7 @@ class ModelCheck:
                 # we need to catch these and delete from the event lists used for the fit.
                 # Skip the temporal selection because currently the sampled time stamps
                 # have an arbitrary value (we can only do time-averaged simulations)
-                mask = events.apply_ROIS(events.coords, events.mjd, skip_time=True)
-                idx = np.logical_or.reduce(mask)
+                idx = events._apply_ROIS(skip_time=True)
 
                 lambd = sim._sim_output.stan_variable("Lambda").squeeze()[idx]
 

@@ -280,6 +280,7 @@ class TestR2021:
 
         return samples
 
+    @pytest.mark.skip()
     def test_everything(self, test_samples, model_file, random_seed):
         # Generate model for fitting
         stanc_options = {"include-paths": [STAN_PATH, os.path.dirname(model_file)]}

@@ -1,5 +1,5 @@
 import numpy as np
-
+import numpy.typing as npt
 import matplotlib.pyplot as plt
 
 from astropy import units as u
@@ -225,7 +225,20 @@ class Events(IceTrackDR2Events):
         self,
         skip_time: bool = False,
         skip_direction: bool = False,
-    ):
+    ) -> None:
+        """
+        Applies all ROIs on stack to events
+        """
+
+        mask = self._apply_ROIS(skip_time=skip_time, skip_direction=skip_direction)
+
+        self.select(mask)
+
+    def _apply_ROIS(
+        self,
+        skip_time: bool = False,
+        skip_direction: bool = False,
+    ) -> npt.NDArray[np.bool_]:
         """
         Returns list of mask, one mask for each ROI on stack
         """
@@ -263,5 +276,4 @@ class Events(IceTrackDR2Events):
                 mask.append(time & direction)
 
         mask = np.logical_or.reduce(mask)
-
-        self.select(mask)
+        return mask
