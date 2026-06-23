@@ -10,14 +10,14 @@ readme = "README.md"
 requires-python = ">=3.12"
 authors = [
     {name = "Francesca Capel", email = "capel.francesca@gmail.com"},
-    {name = "Julian Kuhlmann", email = "julian.kuhlmann@mpp.mpg.de"},
+    {name = "Julian Kuhlmann", email = "julian.kuhlmann@tum.de"},
     {name = "Christian Haack"},
     {name = "Martin Ha Minh"},
     {name = "Hans Niederhausen"},
     {name = "Lisa Schumacher"},
 ]
 maintainers = [
-    {name = "Julian Kuhlmann", email = "julian.kuhlmann@mpp.mpg.de"},
+    {name = "Julian Kuhlmann", email = "julian.kuhlmann@tum.de"},
     {name = "Francesca Capel", email = "capel.francesca@gmail.com"},
 ]
 license = "MIT"
@@ -41,6 +41,7 @@ dependencies = [
     "iminuit",
     "tqdm_joblib",
     "healpy",
+    "icecube_data_reader @ git+https://github.com/nu-isance/icecube_data_reader"
 ]
 
 [project.optional-dependencies]
@@ -54,8 +55,8 @@ docs = [
 ]
 
 [project.urls]
-Repository = "https://github.com/cescalara/hierarchical_nu"
-Issues = "https://github.com/cescalara/hierarchical_nu/issues"
+Repository = "https://github.com/nu-isance/hierarchical_nu"
+Issues = "https://github.com/nu-isance/hierarchical_nu/issues"
 
 [tools.versioneer]
 VCS = "git"

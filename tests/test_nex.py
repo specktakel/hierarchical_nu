@@ -3,7 +3,7 @@ import astropy.units as u
 import pytest
 
 from hierarchical_nu.utils.roi import RectangularROI, ROIList
-from hierarchical_nu.detector.icecube import IC86_II
+from hierarchical_nu.detector.icecube import IC86
 
 import logging
 
@@ -57,7 +57,7 @@ class TestNex:
         my_sources.add(ps_hnu)
         roi = RectangularROI()
         logger.warning(roi)
-        sim = Simulation(my_sources, IC86_II, 1 * u.year)
+        sim = Simulation(my_sources, IC86, 1 * u.year)
         sim.precomputation()
 
         return (my_sources, sim)
@@ -72,7 +72,7 @@ class TestNex:
         from icecube_tools.detector.r2021 import R2021IRF
         from icecube_tools.neutrino_calculator import NeutrinoCalculator, PhiSolver
 
-        aeff = EffectiveArea.from_dataset("20210126", "IC86_II")
+        aeff = EffectiveArea.from_dataset("20210126", "IC86")
 
         point_flux_norm = 1e-19
         point_power_law = PowerLawFlux(
@@ -99,7 +99,7 @@ class TestNex:
 
         for idx in indices:
             ps_hnu._parameters["index"].value = idx
-            nex_hnu = sim._exposure_integral[IC86_II].calculate_rate(ps_hnu).value
+            nex_hnu = sim._exposure_integral[IC86].calculate_rate(ps_hnu).value
             nu_calc._sources[0].flux_model._index = idx
             nex_it = nu_calc(
                 time=1,  # years
@@ -162,7 +162,7 @@ class TestNex:
         )
         roi = RectangularROI()
         logger.warning(roi)
-        sim = Simulation(my_sources, IC86_II, 1 * u.year)
+        sim = Simulation(my_sources, IC86, 1 * u.year)
         sim.precomputation()
         Nex_ps_hnu = []
         Nex_diff_hnu = []
@@ -209,7 +209,7 @@ class TestNex:
         from hierarchical_nu.detector.r2021 import R2021DetectorModel
         from hierarchical_nu.simulation import Simulation
 
-        aeff = EffectiveArea.from_dataset("20210126", "IC86_II")
+        aeff = EffectiveArea.from_dataset("20210126", "IC86")
         Nex_ps_it = []
         Nex_diff_it = []
 

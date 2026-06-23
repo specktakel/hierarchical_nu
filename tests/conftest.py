@@ -48,3 +48,7 @@ def reset_stan_files():
 
     for f in files:
         os.remove(Path(".stan_files") / f)
+
+@pytest.fixture(autouse=True)
+def reset_cache():
+    Cache.clear_cache(dry_run=False)

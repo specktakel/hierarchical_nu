@@ -1,8 +1,8 @@
 from hierarchical_nu.events import Events
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource, DetectorFrame
-from hierarchical_nu.utils.roi import CircularROI, RectangularROI, ROIList, FullSkyROI
-from hierarchical_nu.detector.icecube import Refrigerator, IC86, IC40
+from hierarchical_nu.utils.roi import CircularROI, FullSkyROI
+from hierarchical_nu.detector.icecube import IC86, IC40
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
