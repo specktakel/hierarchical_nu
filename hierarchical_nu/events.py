@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.typing as npt
 import matplotlib.pyplot as plt
+from typing import Self
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -15,7 +16,7 @@ from hierarchical_nu.utils.roi import (
 from hierarchical_nu.source.source import Sources
 from hierarchical_nu.utils.plotting import SphericalCircle
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.detector.icecube import IC40, IC59, IC79, IC86
+from hierarchical_nu.detector.icecube import IC40, IC59, IC79, IC86, EventType
 
 from icecube_data_reader.events import IceTrackDR2Events
 
@@ -70,6 +71,18 @@ class SingleEvent:
 
 class Events(IceTrackDR2Events):
 
+    @classmethod
+    def from_event_files(
+        cls,
+        *seasons: EventType | str,
+        apply_roi: bool = True,
+        skip_time: bool = False,
+        skip_direction: bool = False
+    ) -> Self:
+        events = super().from_event_files(*seasons)
+        if apply_roi:
+            events.apply_ROIS(skip_time=skip_time, skip_direction=skip_direction)
+        return events
 
     def export_to_csv(self, basepath):
         """
@@ -243,6 +256,10 @@ class Events(IceTrackDR2Events):
         Returns list of mask, one mask for each ROI on stack
         """
 
+        rep_type = self.coords.representation_type
+
+        self.coords.representation_type = "spherical"
+
         ra = self.coords.icrs.ra
         dec = self.coords.icrs.dec
 
@@ -276,4 +293,6 @@ class Events(IceTrackDR2Events):
                 mask.append(time & direction)
 
         mask = np.logical_or.reduce(mask)
+
+        self.coords.representation_type = rep_type
         return mask

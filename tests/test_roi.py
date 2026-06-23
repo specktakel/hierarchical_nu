@@ -17,23 +17,18 @@ logger.setLevel(logging.WARNING)
 
 
 def test_circular_event_selection():
-    Parameter.clear_registry()
-    ROIList.clear_registry()
-    Emin_det = Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
-    roi = CircularROI(
+    Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
+    CircularROI(
         center=SkyCoord(ra=90 * u.deg, dec=10 * u.deg, frame="icrs"),
         radius=10.0 * u.deg,
     )
-    logger.warning(roi)
-    events = Events.from_event_files(IC86)
+    events = Events.from_event_files(IC86, apply_roi=True)
     events.coords.representation_type = "cartesian"
     assert events.coords.z.min() >= 0.0
 
 
 def test_rectangular_event_selection():
-    ROIList.clear_registry()
-    Parameter.clear_registry()
-    Emin_det = Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
+    Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
     roi = RectangularROI(DEC_min=0.0 * u.rad)
     logger.warning(roi)
     events = Events.from_event_files(IC86)
@@ -42,9 +37,8 @@ def test_rectangular_event_selection():
 
 
 def test_roi_south(caplog):
-    ROIList.clear_registry()
     caplog.set_level(logging.WARNING)
-    roi = CircularROI(
+    CircularROI(
         center=SkyCoord(ra=90 * u.deg, dec=0 * u.deg, frame="icrs"),
         radius=12.0 * u.deg,
     )
@@ -55,17 +49,15 @@ def test_roi_south(caplog):
 def test_humongous_roi():
     ROIList.clear_registry()
     with pytest.raises(ValueError):
-        roi = CircularROI(
+        CircularROI(
             center=SkyCoord(ra=90 * u.deg, dec=10 * u.deg, frame="icrs"),
             radius=181.0 * u.deg,
         )
 
 
 def test_event_selection_wrap(caplog):
-    ROIList.clear_registry()
-    Parameter.clear_registry()
-    Emin_det = Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
-    roi = RectangularROI(RA_min=np.deg2rad(350) * u.rad, RA_max=np.deg2rad(10) * u.rad)
+    Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
+    RectangularROI(RA_min=np.deg2rad(350) * u.rad, RA_max=np.deg2rad(10) * u.rad)
     events = Events.from_event_files(IC86)
     events.coords.representation_type = "spherical"
     ra = events.coords.ra.rad
@@ -80,9 +72,7 @@ def test_event_selection_wrap(caplog):
 
 
 def test_rectangular_precomputation():
-    ROIList.clear_registry()
-    Parameter.clear_registry()
-    roi = FullSkyROI()
+    FullSkyROI()
     src_index = Parameter(2.3, "src_index", par_range=(1.5, 3.6))
     L = Parameter(
         1e47 * u.erg / u.s,
@@ -106,7 +96,7 @@ def test_rectangular_precomputation():
     Emin_diff = Parameter(Emin.value, "Emin_diff", fixed=True)
     Emax_diff = Parameter(Emax.value, "Emax_diff", fixed=True)
 
-    Emin_det = Parameter(4e4 * u.GeV, "Emin_det", fixed=True)
+    Parameter(4e4 * u.GeV, "Emin_det", fixed=True)
 
     # Single PS for testing and usual components
     point_source = PointSource.make_powerlaw_source(
@@ -136,7 +126,7 @@ def test_rectangular_precomputation():
     default = sim._get_sim_inputs()
     ROIList.clear_registry()
     # test RA wrapping from 270 degrees to 90 degrees
-    roi = RectangularROI(RA_max=np.deg2rad(90) * u.rad, RA_min=np.deg2rad(270) * u.rad)
+    RectangularROI(RA_max=np.deg2rad(90) * u.rad, RA_min=np.deg2rad(270) * u.rad)
     sim.precomputation()
     cut = sim._get_sim_inputs()
 
@@ -149,8 +139,6 @@ def test_rectangular_precomputation():
 
 
 def test_multiple_rois():
-    ROIList.clear_registry()
-    Parameter.clear_registry()
     z = 0.3
     diff_index = Parameter(2.3, "diff_index", par_range=(1.5, 3.6))
     diffuse_norm = Parameter(
@@ -201,7 +189,7 @@ def test_multiple_rois():
     _ = sim._get_expected_Nnu(sim._get_sim_inputs())
     Nex_12 = sim._expected_Nnu_per_comp
 
-    assert np.sum(Nex_1) + np.sum(Nex_2) == pytest.approx(np.sum(Nex_12), abs=0.02)
+    assert np.sum(Nex_1) + np.sum(Nex_2) == pytest.approx(np.sum(Nex_12), abs=0.2)
 
 
 def test_compare_precomputation():

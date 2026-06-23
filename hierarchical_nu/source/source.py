@@ -995,6 +995,10 @@ class Sources:
             if isinstance(source, PointSource):
                 frames.append(source.frame)
 
+        if not frames:
+            self._point_source_frame = None
+            return
+
         if not frames[1:] == frames[:-1]:
             raise NotImplementedError(
                 "All point sources must be defined in the same RefrenceFrame"
@@ -1017,10 +1021,13 @@ class Sources:
             if isinstance(source, PointSource):
                 types.append(type(source.flux_model.spectral_shape))
 
+        if not types:
+            self._point_source_spectrum = None
+            return
+
         # Check all the same
         if not types[1:] == types[:-1]:
             raise ValueError("Not all point sources have the same spectral_shape")
-
         self._point_source_spectrum = types[0]
 
     @property

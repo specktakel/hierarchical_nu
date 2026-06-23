@@ -1,18 +1,17 @@
 import numpy as np
 from astropy import units as u
-import pytest
 
 from hierarchical_nu.source.parameter import Parameter
 from hierarchical_nu.source.source import Sources, PointSource
 
 from hierarchical_nu.detector.icecube import IC79, IC86
 from hierarchical_nu.simulation import Simulation
-from hierarchical_nu.utils.roi import RectangularROI, ROIList
+from hierarchical_nu.utils.roi import RectangularROI
 
 from hierarchical_nu.detector.input import mceq
 
 def test_N():
-    roi = RectangularROI(DEC_min=-5 * u.deg)
+    RectangularROI(DEC_min=-5 * u.deg)
 
     src_index = Parameter(2.0, "src_index", fixed=False, par_range=(1, 4))
 
@@ -34,7 +33,7 @@ def test_N():
     Enorm = Parameter(1e5 * u.GeV, "Enorm", fixed=True)
     Emin = Parameter(5e4 * u.GeV, "Emin", fixed=True)
     Emax = Parameter(1e8 * u.GeV, "Emax", fixed=True)
-    Emin_det = Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
+    Parameter(1e5 * u.GeV, "Emin_det", fixed=True)
 
     z = 0.4
     Emin_src = Parameter(Emin.value * (z + 1.0), "Emin_src", fixed=True)
@@ -94,7 +93,7 @@ def test_N():
     )
 
 def test_multi_ps_n():
-    roi = RectangularROI(DEC_min=-5 * u.deg, apply_roi=True)
+    RectangularROI(DEC_min=-5 * u.deg, apply_roi=True)
 
     src_names = ["test_%i" % i for i in range(3)]
     src_index_params = []
