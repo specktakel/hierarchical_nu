@@ -16,7 +16,7 @@ from hierarchical_nu.utils.roi import (
 from hierarchical_nu.source.source import Sources
 from hierarchical_nu.utils.plotting import SphericalCircle
 from hierarchical_nu.source.parameter import Parameter
-from hierarchical_nu.detector.icecube import IC40, IC59, IC79, IC86, EventType
+from hierarchical_nu.detector.icecube import EventType
 
 from icecube_data_reader.events import IceTrackDR2Events
 
@@ -25,10 +25,10 @@ from pathlib import Path
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 
-"""
+
 class SingleEvent:
 
     @u.quantity_input
@@ -66,7 +66,18 @@ class SingleEvent:
     @property
     def mjd(self):
         return self._mjd
-"""
+    
+    @property
+    def type(self):
+        return self._type
+    
+    @property
+    def int_type(self):
+        return self._int_type
+    
+    @property
+    def unit_vector(self):
+        return self._unit_vector
 
 
 class Events(IceTrackDR2Events):
@@ -80,9 +91,21 @@ class Events(IceTrackDR2Events):
         skip_direction: bool = False
     ) -> Self:
         events = super().from_event_files(*seasons)
-        if apply_roi:
+        if apply_roi and ROIList.STACK:
             events.apply_ROIS(skip_time=skip_time, skip_direction=skip_direction)
+        elif not ROIList.STACK:
+            logger.warning("Loading events without ROI on stack.")
         return events
+
+    def __getitem__(self, i):
+        event = SingleEvent(
+            self.energies[i],
+            self.coords[i],
+            self.types[i],
+            self.ang_errs[i],
+            self.mjd[i],
+        )
+        return event
 
     def export_to_csv(self, basepath):
         """
@@ -293,6 +316,5 @@ class Events(IceTrackDR2Events):
                 mask.append(time & direction)
 
         mask = np.logical_or.reduce(mask)
-
         self.coords.representation_type = rep_type
         return mask

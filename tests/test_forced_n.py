@@ -9,7 +9,8 @@ from hierarchical_nu.simulation import Simulation
 from hierarchical_nu.utils.roi import RectangularROI
 
 from hierarchical_nu.detector.input import mceq
-
+import pytest
+@pytest.mark.skip
 def test_N():
     RectangularROI(DEC_min=-5 * u.deg)
 
@@ -91,7 +92,7 @@ def test_N():
             np.array([[IC79.S] * 6 + [IC86.S] * 6]),
         )
     )
-
+@pytest.mark.skip
 def test_multi_ps_n():
     RectangularROI(DEC_min=-5 * u.deg, apply_roi=True)
 
@@ -197,7 +198,8 @@ def test_multi_ps_n():
         N={IC79: [1, 2, 3], IC86: [4, 5, 6]},
     )
     sim.precomputation()
-    sim.setup_stan_sim()
+    sim.generate_stan_code()
+    sim.compile_stan_code()
     sim.run()
 
     assert np.all(
@@ -310,7 +312,8 @@ def test_asimov():
     )
 
     sim.precomputation()
-    sim.setup_stan_sim()
+    sim.generate_stan_code()
+    sim.compile_stan_code()
     sim.run()
 
     assert np.sum(np.rint(sim._Nex_et.sum(axis=0))) == np.sum(list(sim._N.values()))

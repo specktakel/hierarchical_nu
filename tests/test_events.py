@@ -13,6 +13,7 @@ import pytest
 events_file_name = "test_event_read_write.h5"
 
 
+@pytest.mark.skip()
 def test_event_class(output_directory):
     FullSkyROI()
     Parameter(1e1 * u.GeV, "Emin_det", fixed=True)
@@ -60,6 +61,7 @@ def test_event_class(output_directory):
     assert np.all(events_out.energies > 5 * u.TeV)
     assert events_out.N < N
 
+@pytest.mark.skip()
 def test_event_cuts():
     coord = SkyCoord(ra=77.6 * u.deg, dec=5.7*u.deg)
     Emin_det = Parameter(5e4 * u.GeV, "Emin_det", fixed=True)

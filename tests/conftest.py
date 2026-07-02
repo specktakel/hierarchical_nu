@@ -17,6 +17,15 @@ def cache_setup():
     cache_dir = Path(__file__).parent.resolve() / "cache_files"
     Cache.set_cache_dir(cache_dir)
 
+@pytest.fixture(scope="function", autouse=True)
+def clear_cache():
+    try:
+        files = os.listdir("__pycache__")
+    except FileNotFoundError:
+        files = []
+
+    for f in files:
+        os.remove(Path("__pycache__") / f)
 
 @pytest.fixture(scope="session")
 def output_directory(tmpdir_factory):

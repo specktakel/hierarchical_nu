@@ -62,12 +62,7 @@ class StanFitInterface(StanInterface):
         event_types: List[EventType],
         atmo_flux_energy_points: int = 100,
         atmo_flux_theta_points: int = 30,
-        includes: List[str] = [
-            "interpolation.stan",
-            "utils.stan",
-            "vMF.stan",
-            "power_law.stan",
-        ],
+        includes: List[str] = [],
         priors: Priors = Priors(),
         nshards: int = 1,
         use_event_tag: bool = False,
@@ -91,6 +86,12 @@ class StanFitInterface(StanInterface):
         :param bg: if True, use data to construct background likelihood
         """
 
+        includes = [
+            "interpolation.stan",
+            "utils.stan",
+            "vMF.stan",
+            "power_law.stan",
+        ]
         super().__init__(
             output_file=output_file,
             sources=sources,

@@ -91,6 +91,7 @@ class Simulation(SourceInfo):
                 "number of observation times must match number of event types"
             )
         self._event_types = event_types
+        print("simulation:", self._event_types)
         self._observation_time = observation_time
         self._n_grid_points = n_grid_points
         self._asimov = asimov
