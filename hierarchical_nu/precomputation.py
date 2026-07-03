@@ -36,7 +36,6 @@ from .detector.icecube import (
 from .utils.fitting_tools import TopDownSegmentation
 
 from tqdm.autonotebook import tqdm
-from line_profiler import profile
 
 m_to_cm = 100  # cm
 
@@ -169,7 +168,6 @@ class ExposureIntegral:
     def integral_fixed_vals(self):
         return self._integral_fixed_vals
 
-    @profile
     def calculate_rate(self, source, Ebins=None):
         # Emin determined as `Parameter` instance is accounted for
         # in the spectral shapes of the individual sources
@@ -370,7 +368,6 @@ class ExposureIntegral:
 
         return output
 
-    @profile
     def _compute_exposure_integral(self):
         """
         Loop over sources and calculate the exposure integral.
