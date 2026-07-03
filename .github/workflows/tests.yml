@@ -20,6 +20,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install ".[tests]"
         install_cmdstan
+    - name: Test with pytest
       run: |
         pytest -vv --cov=hierarchical_nu/ --cov-report=xml tests
     - name: Upload coverage to Codecov
