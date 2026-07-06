@@ -2321,7 +2321,7 @@ class StanFit(SourceInfo):
             time = LifeTime()
 
             for dm in self._event_types:
-                N_dm = Events.from_event_files(dm).N
+                N_dm = Events.from_event_files(dm, apply_roi=False).N
 
                 time_norm = time.lifetime_from_season(dm)[dm].to_value(u.s)
 
