@@ -31,7 +31,6 @@ class StanInterface(SourceInfo, metaclass=ABCMeta):
         :includes: Stan includes
         """
 
-        print("interface includes", includes)
         self._includes = includes
 
         self._output_file = output_file
@@ -41,7 +40,6 @@ class StanInterface(SourceInfo, metaclass=ABCMeta):
         self._get_source_info()
 
         self._event_types = event_types
-        print("staninterface:", self._event_types)
 
         # Store number of event types in self._Net
         self._Net = len(self._event_types)
