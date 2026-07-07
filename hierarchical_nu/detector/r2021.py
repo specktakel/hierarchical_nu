@@ -2261,6 +2261,11 @@ class R2021EnergyResolution(GridInterpolationEnergyResolution):
                     np.power(E_cont, self._fill_index)
                     * self._evaluations[c, idx, c_E]
                 )
+            isnan = np.isnan(self._evaluations[c])   # get indices of nans
+            nonzero_min = self._evaluations[c][~isnan].min()
+            self._evaluations[c][isnan] = nonzero_min
+
+
             """
             evals = np.log(self._evaluations[c])
             # Copy first and last entry along true energy axis
