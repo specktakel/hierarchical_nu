@@ -869,6 +869,7 @@ class BackgroundSource(Source):
     def __init__(self, name, *seasons: EventType | str):
         from ..detector.r2021_bg_llh import R2021BackgroundLLH
 
+        # TODO add: if no season provided, use all
         super().__init__(name, DetectorFrame)
         self._name = name
         self._flux_model = None
