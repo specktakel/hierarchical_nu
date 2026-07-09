@@ -498,7 +498,7 @@ class ExposureIntegral:
                 # no loop over cosz necessary
                 cosz = source.cosz
                 aeff_values = self.effective_area.eff_area_spline(
-                    np.vstack((E_range, np.full(E_range.shape, cosz))).T
+                    np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T
                 )
                 f_values = (
                     source.flux_model.spectral_shape.pdf(
@@ -527,7 +527,7 @@ class ExposureIntegral:
 
                 for cosz in cosz_bin_cens:
                     aeff_values = self.effective_area.eff_area_spline(
-                        np.vstack((E_range, np.full(E_range.shape, cosz))).T,
+                        np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T,
                     )
 
                     dec = np.arcsin(-cosz)  # Only for IceCube
