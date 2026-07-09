@@ -8,7 +8,7 @@ import logging
 
 from MCEq.core import MCEqRun
 import crflux.models as crf
-import mceq_config
+from MCEq import config as mceq_config
 
 from ..utils.roi import ROIList
 

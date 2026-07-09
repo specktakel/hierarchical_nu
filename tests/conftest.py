@@ -36,7 +36,7 @@ def output_directory(tmpdir_factory):
 
 @pytest.fixture(scope="session")
 def random_seed():
-    seed = 42
+    seed = 1337
 
     return seed
 
