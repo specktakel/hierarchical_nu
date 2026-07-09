@@ -91,9 +91,9 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         # fill_value = np.log10(np.min(to_be_splined_aeff[to_be_splined_aeff > 0.]))
         self._eff_area_spline = RegularGridInterpolator(
             (log_tE_bin_c, cosz_c),
-            to_be_splined_aeff,
+            np.log10(to_be_splined_aeff),
             bounds_error=False,
-            fill_value=non_zero_min,
+            fill_value=np.log10(non_zero_min),
             # fill_value=0.0,
             method="linear",
         )
@@ -157,7 +157,7 @@ class EffectiveArea(UserDefinedFunction, metaclass=ABCMeta):
         2D spline of effective area.
         """
 
-        return self._eff_area_spline(vals)
+        return np.power(10, self._eff_area_spline(vals))
 
     @abstractmethod
     def generate_code(self):

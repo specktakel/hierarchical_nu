@@ -478,6 +478,15 @@ class R2021EffectiveArea(EffectiveArea):
             ),
             axis=0,
         )
+        log_tE = np.log10(self._tE_bin_edges)
+        log_tE_binc = log_tE[:-1] + np.diff(log_tE) / 2
+        log_tE_binc = np.concatenate(
+            (
+                np.atleast_1d(log_tE_binc[0]),
+                log_tE_binc,
+                np.atleast_1d(log_tE_binc[-1]),
+            )
+        )
         tE_binc = self._tE_bin_edges[:-1] + np.diff(self._tE_bin_edges) / 2
         tE_binc = np.concatenate(
             (
@@ -492,7 +501,7 @@ class R2021EffectiveArea(EffectiveArea):
             logArea = StanArray(
                 "Area",
                 "real",
-                eff_area,
+                np.log10(eff_area),
             )
             log10_E_c = StanArray("log10_E_c", "real", np.log10(tE_binc))
             cos_z_c = StanArray("cosz_c", "real", cosz_binc)
@@ -503,16 +512,16 @@ class R2021EffectiveArea(EffectiveArea):
                 log10tE = StringExpression(["log10tE"])
             ReturnStatement(
                 [
-                    #FunctionCall(
-                    #    [
-                    #        10,
+                    FunctionCall(
+                        [
+                            10,
                             FunctionCall(
                                 [log10tE, cosz, log10_E_c, cos_z_c, logArea],
                                 "interp2d",
                             ),
-                    #    ],
-                    #    "pow",
-                    #)
+                        ],
+                        "pow",
+                    )
                 ]
             )
 
