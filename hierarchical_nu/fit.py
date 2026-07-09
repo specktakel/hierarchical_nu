@@ -1457,25 +1457,55 @@ class StanFit(SourceInfo):
         for t, e in zip(legend.get_texts(), extends):
             t.set_position((max_extend - e, 0))
 
-    def _estimate_energy_range(self, N_excess: int, p: float):
+    def _estimate_energy_range(
+            self,
+            N_excess: int,
+            N_boot: int = 10_000,
+            credibility: float = 0.68,
+            seed: int = 42
+        ) -> np.ndarray:
+        """Estimate sensitive energy range of point source spectrum
 
-        assoc_dist = self._get_event_association_dist()
-        p_assoc = np.array(self._get_event_classifications())
-        mask_excess = np.argsort(p_assoc)[::-1][:N_excess]
-        E_reshaped = np.swapaxes(
-            self["E"].reshape(
-                self.chains * self.iterations, self.events.N
-            ),
-            1,
-            0,
-        )
-        E_excess = E_reshaped[mask_excess]
-        E_samples = np.swapaxes(
-            
-        )
-        p = assoc_dist[:, 0]
+        :param N_excess: Number of excess events to consider
+        :type N_excess: int
+        :param N_boot: Number of bootstrap samples for energy distribution, defaults to 10_000
+        :type N_boot: int, optional
+        :param credibility: Credibility of estimated energy interval, defaults to 0.68
+        :type credibility: float, optional
+        :param seed: Random seed, defaults to 42
+        :type seed: int, optional
+        :return: HDI of given credibility
+        :rtype: np.ndarray
+        """        
+
+        rng = np.random.default_rng(seed=seed)
+
+        assoc_dist = self._get_event_association_dist() # dims: #events, #source component, #sample
+        p_assoc = np.array(self._get_event_classifications())[:, 0] # dims: #events, #source component
+        # N_excess = np.ceil(hdi(self["Nex_src"].flatten(), 0.68)[1]).astype(int)
+        # N_excess = 8
+        excess_idxs = np.argsort(p_assoc)[::-1][:N_excess]
+
+        event_idxs = rng.choice(excess_idxs, p=p_excess, size=N_boot)
+
+        p_excess = p_assoc[excess_idxs]
+        p_excess /= p_excess.sum()   # Use as weights to sample N times to bootstrap energy dist
+
+        within_event_prob = assoc_dist[:, 0] / np.expand_dims(
+            assoc_dist[:, 0].sum(axis=1), axis=1
+        ) # sums over components at each sample and each event to 1
+
+        E_selected = np.swapaxes(self["E"].reshape(self.chains * self.iterations, self.events.N), 1, 0)
+
+        E_samples = []
+        unique_counts = np.unique_counts(event_idxs)
+        for v, c in zip(unique_counts[0], unique_counts[1]):
+            E_samples.append(rng.choice(E_selected[v], size=c, p=within_event_prob[v]))
+        E_samples = np.hstack(E_samples)
+
+        E_hdi = hdi(E_samples, credibility)
         
-        return
+        return E_hdi
     
 
     def save(
