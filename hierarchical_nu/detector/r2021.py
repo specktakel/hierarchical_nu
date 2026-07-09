@@ -501,7 +501,7 @@ class R2021EffectiveArea(EffectiveArea):
             logArea = StanArray(
                 "Area",
                 "real",
-                np.log10(eff_area),
+                eff_area,
             )
             log10_E_c = StanArray("log10_E_c", "real", np.log10(tE_binc))
             cos_z_c = StanArray("cosz_c", "real", cosz_binc)
@@ -512,16 +512,16 @@ class R2021EffectiveArea(EffectiveArea):
                 log10tE = StringExpression(["log10tE"])
             ReturnStatement(
                 [
-                    FunctionCall(
-                        [
-                            10,
+                    #FunctionCall(
+                    #    [
+                    #        10,
                             FunctionCall(
                                 [log10tE, cosz, log10_E_c, cos_z_c, logArea],
                                 "interp2d",
                             ),
-                        ],
-                        "pow",
-                    )
+                    #    ],
+                    #    "pow",
+                    #)
                 ]
             )
 
