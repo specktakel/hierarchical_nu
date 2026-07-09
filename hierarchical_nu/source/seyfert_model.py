@@ -84,16 +84,19 @@ class SeyfertNuMuSpectrum(SpectralShape):
         )
 
         with h5py.File(self._filename, "r") as f:
+            # get information about the spectrum
             Enu = f["energy"][()] * u.Unit(f["energy_unit"][()].decode("ascii"))
             energy_density = f["energy_density"][()] * u.Unit(
                 f["energy_density_unit"][()].decode("ascii")
             )
             eta = f["eta"][()]
+        self._eta = eta
+        self._energy = Enu
 
         flux_grid = np.zeros((eta.size, Enu.size))
         for c, e in enumerate(eta):
             flux_grid[c] = (
-                mu_nu_flux(
+                mu_nu_flux(   # query the differential flux
                     Enu.to_value(u.GeV),
                     Enu.to_value(u.GeV),
                     energy_density[c].to_value(1 / u.GeV / u.s),
@@ -101,19 +104,17 @@ class SeyfertNuMuSpectrum(SpectralShape):
                 )
                 * 1e4
             )  # conversion from cm-2 to m-2
-        flux_grid[flux_grid == 0.0] = flux_grid[flux_grid != 0.0].min()
-        self._energy = Enu
+        flux_grid[flux_grid == 0.0] = flux_grid[flux_grid != 0.0].min()   # mask out zeros because we log somewhere
         self._flux_grid = flux_grid << 1 / u.GeV / u.s / u.m**2
-        self._eta = eta
         self._energy_points = energy_points
         self._eta_points = eta_points
 
-        self._spline = RectBivariateSpline(
+        self._log_flux_spline = RectBivariateSpline(
             np.log10(self._energy.to_value(u.GeV)),
             self._eta,
             np.log10(self._flux_grid.to_value(1 / u.GeV / u.s / u.m**2)).T,
             kx=1,
-            ky=1,
+            ky=3,
         )
 
         # properly normalise everything: stan needs pdf in energy on a grid of eta
@@ -164,7 +165,9 @@ class SeyfertNuMuSpectrum(SpectralShape):
             np.log10(self._upper_energy.to_value(u.GeV)),
             self.energy_points,
         )
-        eta_grid = np.linspace(self._eta.min(), self._eta.max(), self.eta_points)
+        # eta_grid = np.linspace(self._eta.min(), self._eta.max(), self.eta_points)
+        eta_grid = np.concatenate((np.arange(2., 30.,), np.arange(30., 151, 2)))
+
         self.eta_grid = eta_grid
         self.log_pdf_grid = self._log_pdf_spline(log_energy_grid, eta_grid)
         self.log_energy_grid = log_energy_grid
@@ -274,7 +277,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         """
 
         logE = np.atleast_1d(logE)
-        return np.power(10, self._spline(logE, eta)).squeeze()
+        return np.power(10, self._log_flux_spline(logE, eta)).squeeze()
 
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):

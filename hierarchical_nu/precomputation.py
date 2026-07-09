@@ -139,6 +139,9 @@ class ExposureIntegral:
                 grid = np.arccos(
                     np.linspace(*np.cos(par_range), num=self._n_grid_points)
                 )
+            elif par.scale == ParScale.eta:
+                grid = np.concatenate((np.arange(2., 30.,), np.arange(30., 151, 2)))
+                self._n_grid_points = grid.size
             else:
                 raise NotImplementedError(
                     "This scale ({}) is not yet supported".format(par.scale)

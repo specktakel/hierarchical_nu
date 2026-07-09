@@ -86,10 +86,8 @@ class StanSimInterface(StanInterface):
         self._dm = OrderedDict()
 
         for et in self.event_types:
-            print("et in StanSimInterface.event_types:", et)
             # Include the PDF mode of the detector model
             dm = et.model(DistributionMode.RNG)
-            print(dm.RNG_FILENAME)
             if dm.RNG_FILENAME not in self._includes:
                 self._includes.append(dm.RNG_FILENAME)
             dm.generate_code(
@@ -106,7 +104,6 @@ class StanSimInterface(StanInterface):
 
         with FunctionsContext():
             # Include all the specified files
-            print("sim_interface, include files:", self._includes)
             for include_file in self._includes:
                 _ = Include(include_file)
 

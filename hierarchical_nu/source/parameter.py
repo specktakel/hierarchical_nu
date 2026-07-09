@@ -2,7 +2,7 @@ from typing import Tuple, Any
 from enum import Enum
 import numpy as np
 
-ParScale = Enum("ParScale", "lin log cos")
+ParScale = Enum("ParScale", "lin log cos eta")
 
 
 class Parameter:
