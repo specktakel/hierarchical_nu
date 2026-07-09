@@ -210,7 +210,7 @@ class ExposureIntegral:
             else:
                 aeff_vals = self.effective_area.eff_area_spline(
                     np.vstack(
-                        (E_c.to_value(u.GeV), np.full(E_c.shape, cosz))
+                        (np.log10(E_c.to_value(u.GeV)), np.full(E_c.shape, cosz))
                     ).T
                 ) << (u.m**2)
 
@@ -322,7 +322,7 @@ class ExposureIntegral:
                 # Evaluate effective area and flux
                 aeff_vals = (
                     self._effective_area.eff_area_spline(
-                        np.vstack((np.power(10, log_E_grid.flatten()), cosz_grid.flatten())).T
+                        np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
                     ).reshape(log_E_grid.shape)
                     * u.m**2
                 )

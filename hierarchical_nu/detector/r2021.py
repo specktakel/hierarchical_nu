@@ -503,11 +503,11 @@ class R2021EffectiveArea(EffectiveArea):
                 "real",
                 np.log10(eff_area),
             )
-            log10_E_c = StanArray("log10_E_c", "real", tE_binc)
+            log10_E_c = StanArray("log10_E_c", "real", log_tE_binc)
             cos_z_c = StanArray("cosz_c", "real", cosz_binc)
             cosz = "cos(pi() - acos(true_dir[3]))"
             if self.mode == DistributionMode.RNG:
-                log10tE = InstantVariableDef("log10tE", "real", ["tE"])
+                log10tE = InstantVariableDef("log10tE", "real", ["log10(tE)"])
             else:
                 log10tE = StringExpression(["log10tE"])
             ReturnStatement(
