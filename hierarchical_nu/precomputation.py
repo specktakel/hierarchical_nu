@@ -210,7 +210,7 @@ class ExposureIntegral:
             else:
                 aeff_vals = self.effective_area.eff_area_spline(
                     np.vstack(
-                        (np.log10(E_c.to_value(u.GeV)), np.full(E_c.shape, cosz))
+                        (E_c.to_value(u.GeV), np.full(E_c.shape, cosz))
                     ).T
                 ) << (u.m**2)
 
@@ -322,7 +322,7 @@ class ExposureIntegral:
                 # Evaluate effective area and flux
                 aeff_vals = (
                     self._effective_area.eff_area_spline(
-                        np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
+                        np.vstack((np.power(10, log_E_grid.flatten()), cosz_grid.flatten())).T
                     ).reshape(log_E_grid.shape)
                     * u.m**2
                 )
@@ -498,7 +498,7 @@ class ExposureIntegral:
                 # no loop over cosz necessary
                 cosz = source.cosz
                 aeff_values = self.effective_area.eff_area_spline(
-                    np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T
+                    np.vstack((E_range, np.full(E_range.shape, cosz))).T
                 )
                 f_values = (
                     source.flux_model.spectral_shape.pdf(
@@ -527,7 +527,7 @@ class ExposureIntegral:
 
                 for cosz in cosz_bin_cens:
                     aeff_values = self.effective_area.eff_area_spline(
-                        np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T,
+                        np.vstack((E_range, np.full(E_range.shape, cosz))).T,
                     )
 
                     dec = np.arcsin(-cosz)  # Only for IceCube
