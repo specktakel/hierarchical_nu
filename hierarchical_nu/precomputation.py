@@ -208,7 +208,7 @@ class ExposureIntegral:
                 aeff_vals = np.zeros(E_c.shape) << (u.m**2)
 
             else:
-                aeff_vals = self.effective_area.eff_area_spline(
+                aeff_vals = self.effective_area.spline(
                     np.vstack(
                         (np.log10(E_c.to_value(u.GeV)), np.full(E_c.shape, cosz))
                     ).T
@@ -321,7 +321,7 @@ class ExposureIntegral:
             else:
                 # Evaluate effective area and flux
                 aeff_vals = (
-                    self._effective_area.eff_area_spline(
+                    self._effective_area.spline(
                         np.vstack((log_E_grid.flatten(), cosz_grid.flatten())).T
                     ).reshape(log_E_grid.shape)
                     * u.m**2
@@ -497,7 +497,7 @@ class ExposureIntegral:
                 # Point source has one declination/cosz,
                 # no loop over cosz necessary
                 cosz = source.cosz
-                aeff_values = self.effective_area.eff_area_spline(
+                aeff_values = self.effective_area.spline(
                     np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T
                 )
                 f_values = (
@@ -526,7 +526,7 @@ class ExposureIntegral:
                 f_values_all = []
 
                 for cosz in cosz_bin_cens:
-                    aeff_values = self.effective_area.eff_area_spline(
+                    aeff_values = self.effective_area.spline(
                         np.vstack((np.log10(E_range), np.full(E_range.shape, cosz))).T,
                     )
 

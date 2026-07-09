@@ -20,6 +20,7 @@ except ModuleNotFoundError:
 
 import ligo.skymap.plot
 import arviz as av
+from arviz_stats import hdi
 from pathlib import Path
 
 from math import ceil
@@ -1456,6 +1457,27 @@ class StanFit(SourceInfo):
         for t, e in zip(legend.get_texts(), extends):
             t.set_position((max_extend - e, 0))
 
+    def _estimate_energy_range(self, N_excess: int, p: float):
+
+        assoc_dist = self._get_event_association_dist()
+        p_assoc = np.array(self._get_event_classifications())
+        mask_excess = np.argsort(p_assoc)[::-1][:N_excess]
+        E_reshaped = np.swapaxes(
+            self["E"].reshape(
+                self.chains * self.iterations, self.events.N
+            ),
+            1,
+            0,
+        )
+        E_excess = E_reshaped[mask_excess]
+        E_samples = np.swapaxes(
+            
+        )
+        p = assoc_dist[:, 0]
+        
+        return
+    
+
     def save(
         self,
         path: Path,
@@ -1623,7 +1645,7 @@ class StanFit(SourceInfo):
             json_path = Path(dirname) / Path(os.path.splitext(filename)[0] + ".json")
             df.to_json(json_path)
 
-        return path  # noqa: F821
+        return path
 
     def diagnose(self):
         """
