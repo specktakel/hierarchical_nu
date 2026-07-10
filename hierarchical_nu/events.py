@@ -97,15 +97,25 @@ class Events(IceTrackDR2Events):
             logger.warning("Loading events without ROI on stack.")
         return events
 
-    def __getitem__(self, i):
-        event = SingleEvent(
-            self.energies[i],
-            self.coords[i],
-            self.types[i],
-            self.ang_errs[i],
-            self.mjd[i],
-        )
-        return event
+    def __getitem__(self, idx):
+        if isinstance(idx, int):
+            event = SingleEvent(
+                self.energies[idx],
+                self.coords[idx],
+                self.types[idx],
+                self.ang_errs[idx],
+                self.mjd[idx],
+            )
+            return event
+        else:
+            events = Events(
+                self.energies[idx],
+                self.coords[idx],
+                self.types[idx],
+                self.ang_errs[idx],
+                self.mjd[idx]
+            )
+            return events
 
     def export_to_csv(self, basepath):
         """

@@ -20,6 +20,7 @@ from pathlib import Path
 from tqdm.autonotebook import tqdm
 from typing import Union
 import logging
+from line_profiler import profile
 
 logger = logging.getLogger(__file__)
 
@@ -92,7 +93,6 @@ class PPC:
         colors = np.atleast_1d(colors)
         if len(colors) != len(quantiles):
             colors = np.vstack([colors] * len(quantiles))
-        print(colors)
         quantiles = np.atleast_1d(quantiles)
         q_low = (50 - quantiles / 2) / 100
         q_high = (50 + quantiles / 2) / 100
@@ -268,6 +268,7 @@ class PPC:
             self._ran_setup = False
             raise (e)
 
+    @profile
     def run(
         self,
         show_progress: bool = True,
@@ -299,6 +300,9 @@ class PPC:
         cmdstanpy_logger.disabled = True
 
         seed = self._config.seed
+
+        if self._use_data_as_bg:
+            bg_events = Events.from_event_files(*self._parser.detector_model, apply_roi=False)
 
         with tqdm(total=self._config.n_samples, disable=not show_progress) as pbar:
             for i in range(self._config.n_samples):
@@ -354,7 +358,7 @@ class PPC:
                             lumi.fixed = False
                             try:
                                 lumi.value = fit["L"].flatten()[rint] * u.GeV / u.s
-                            except KeyError:
+                            except (KeyError, ValueError):
                                 lumi.value = (
                                     fit["L_ind"][..., 0].flatten()[rint] * u.GeV / u.s
                                 )
@@ -417,24 +421,19 @@ class PPC:
                 try:
                     self._Lambda.append(out("Lambda").astype(int).squeeze() - 1)
                 except ValueError:
-                    print(sim.events)
                     self._Lambda.append([[np.nan] * sim._sources.N])
                 self._N_comp.append(out("N_comp_").astype(int))
 
                 if self._use_data_as_bg:
-                    # Read in RA scrambled events here and merge with simulation
-                    # How to proceed when only durations but no MJD is provided?
-                    # Ignore for now, TODO for later...
-                    bg_events = Events.from_ev_file(
-                        *self._parser.detector_model,
-                        scramble_ra=True,
-                        scramble_mjd=True,
-                        seed=self._config.seed + i,
-                    )
+                    # bg_events.scramble_mjd(seed=self._config.seed + i)
+                    bg_events.scramble_ra(seed=self._config.seed + i)
+                    mask = bg_events._apply_ROIS()
+                    _bg_events = bg_events[mask]
                     try:
-                        events = sim.events.merge(bg_events)
-                    except AttributeError:
-                        events = bg_events
+                        events = sim.events.merge(_bg_events)
+                    except AttributeError as e:
+                        print(e)
+                        events = _bg_events
 
                 else:
                     events = sim.events
