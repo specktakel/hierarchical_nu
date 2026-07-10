@@ -332,8 +332,8 @@ class ConfigParser:
                 # Create a parameter for each detector
                 # If the detector is not used, the parameter is disregarded
                 _ = Parameter(
-                    u.Quantity(parameter_config[f"Emin_det_{dm.P}"]),
-                    f"Emin_det_{dm.P}",
+                    u.Quantity(parameter_config[f"Emin_det_{dm}"]),
+                    f"Emin_det_{dm}",
                     fixed=True,
                 )
 
@@ -650,10 +650,10 @@ class ConfigParser:
 
     @property
     def events(self):
-        _events = Events.from_ev_file(
+        _events = Events.from_event_files(
             *self.detector_model,
-            scramble_ra=self._hnu_config.parameter_config.scramble_ra,
         )
+        _events.apply_Emin_det()
         return _events
 
     @property
