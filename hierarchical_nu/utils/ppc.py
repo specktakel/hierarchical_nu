@@ -425,7 +425,7 @@ class PPC:
                 self._N_comp.append(out("N_comp_").astype(int))
 
                 if self._use_data_as_bg:
-                    # bg_events.scramble_mjd(seed=self._config.seed + i)
+                    bg_events.scramble_mjd(seed=self._config.seed + i)
                     bg_events.scramble_ra(seed=self._config.seed + i)
                     mask = bg_events._apply_ROIS()
                     _bg_events = bg_events[mask]

@@ -44,7 +44,7 @@ parameter_config:
   - 0.1 m-2 s-1
   - 0.5 m-2 s-1
   L:
-  - 8e45 erg s-1
+  - 8e46 erg s-1
   share_L: true
   L_range:
   - 0 GeV s-1
@@ -129,7 +129,7 @@ prior_config:
 roi_config:
   roi_type: CircularROI
   size: 5.0 deg
-  apply_roi: false
+  apply_roi: true
   RA_min: -1.0 deg
   RA_max: 361.0 deg
   DEC_min: -91.0 deg
