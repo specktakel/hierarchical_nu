@@ -1310,6 +1310,8 @@ class StanFit(SourceInfo):
         ax=None,
         **kwargs,
     ):
+        
+        raise NotImplementedError()
         """
         Plot flux uncertainties.
         :param E_power: float, plots flux * E**E_power.
