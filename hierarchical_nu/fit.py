@@ -1462,6 +1462,7 @@ class StanFit(SourceInfo):
             N_excess: int,
             N_boot: int = 10_000,
             credibility: float = 0.68,
+            dist_threshold: float = 0.5,
             seed: int = 42
         ) -> np.ndarray:
         """Estimate sensitive energy range of point source spectrum
@@ -1472,36 +1473,38 @@ class StanFit(SourceInfo):
         :type N_boot: int, optional
         :param credibility: Credibility of estimated energy interval, defaults to 0.68
         :type credibility: float, optional
+        :param dist_threshold: Within-event threshold above which neutrino energies are considered for sampling, defaults to 0.5
+        :type dist_threshold: float, optional
         :param seed: Random seed, defaults to 42
         :type seed: int, optional
-        :return: HDI of given credibility
+        :return: Energy HDI of given credibility in log10(E_nu)
         :rtype: np.ndarray
         """        
 
         rng = np.random.default_rng(seed=seed)
 
-        assoc_dist = self._get_event_association_dist() # dims: #events, #source component, #sample
         p_assoc = np.array(self._get_event_classifications())[:, 0] # dims: #events, #source component
-        # N_excess = np.ceil(hdi(self["Nex_src"].flatten(), 0.68)[1]).astype(int)
-        # N_excess = 8
-        excess_idxs = np.argsort(p_assoc)[::-1][:N_excess]
+        mask_excess = np.argsort(p_assoc)[::-1][:N_excess]
+        dist = self._get_event_association_dist()
 
-        event_idxs = rng.choice(excess_idxs, p=p_excess, size=N_boot)
+        # Use as weights to sample N_boot times to bootstrap energy dist
+        event_weight = p_assoc[mask_excess] / p_assoc[mask_excess].sum()
+        event_idx_sampled = rng.choice(np.arange(N_excess), p=event_weight, size=N_boot)
+        unique_counts = np.unique_counts(event_idx_sampled)
+        sampled_energies =[]
+        for vals, counts in zip(unique_counts.values, unique_counts.counts):
+            # Only use energies at which the within-event assoc prob exceeds the specified threshold
+            # e.g. at low energies the assoc prob is lower than at higher energie for hard spectral index
+            mask_events = dist[mask_excess[vals]][0] >= dist_threshold
 
-        p_excess = p_assoc[excess_idxs]
-        p_excess /= p_excess.sum()   # Use as weights to sample N times to bootstrap energy dist
-
-        within_event_prob = assoc_dist[:, 0] / np.expand_dims(
-            assoc_dist[:, 0].sum(axis=1), axis=1
-        ) # sums over components at each sample and each event to 1
-
-        E_selected = np.swapaxes(self["E"].reshape(self.chains * self.iterations, self.events.N), 1, 0)
-
-        E_samples = []
-        unique_counts = np.unique_counts(event_idxs)
-        for v, c in zip(unique_counts[0], unique_counts[1]):
-            E_samples.append(rng.choice(E_selected[v], size=c, p=within_event_prob[v]))
-        E_samples = np.hstack(E_samples)
+            # create mask of the assoc probs to be used and normalise them for use as weight
+            weights = dist[mask_excess[vals]][0][mask_events]
+            weights /= weights.sum()
+            energies = self["E"].reshape(
+                self.chains * self.iterations, self.events.N
+            ).swapaxes(1, 0)[mask_excess[vals]][mask_events]
+            sampled_energies.append(rng.choice(energies, p=weights, size=counts))
+        E_samples = np.log10(np.hstack(sampled_energies))
 
         E_hdi = hdi(E_samples, credibility)
         
@@ -1906,7 +1909,7 @@ class StanFit(SourceInfo):
         events = Events.from_file(
             filename,
         )
-
+        """
         try:
             Emin_det = fit_inputs["Emin_det"]
             mask = events.energies >= Emin_det * u.GeV
@@ -1923,7 +1926,7 @@ class StanFit(SourceInfo):
                     # backwards compatibility
                     pass
             events.select(mask)
-
+        """
         return (
             event_types,
             events,
