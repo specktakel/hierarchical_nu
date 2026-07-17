@@ -44,15 +44,15 @@ parameter_config:
   - 0.1 m-2 s-1
   - 0.5 m-2 s-1
   L:
-  - 8e46 erg s-1
+  - 8e45 erg s-1
   share_L: true
   L_range:
   - 0 GeV s-1
   - 1e60 GeV s-1
   src_dec:
-  - 5.7 deg
+  - -0.0133 deg
   src_ra:
-  - 77.35 deg
+  - 40.6696 deg
   Enorm: 1e5 GeV
   Emin: 1e2 GeV
   Emax: 1e8 GeV
@@ -61,14 +61,20 @@ parameter_config:
   Emin_diff: 1e2 GeV
   Emax_diff: 1e8 GeV
   z:
-  - 0.3365
+  - 0.002586
   Emin_det_eq: true
   Emin_det: 10 GeV
   detector_model_type:
+  - IC40
+  - IC59
+  - IC79
   - IC86
   frame: detector
-  MJD_min: 56917
-  MJD_max: 57113
+  obs_time:
+  - 1.03041837 yr
+  - 0.96804266 yr
+  - 0.85641717 yr
+  - 10.73407715 yr
   restrict_to_list: false
   atmospheric: false
   diffuse: false
@@ -145,6 +151,6 @@ stan_config:
   max_treedepth: 10
   seed: 42
 ppc_config:
-  n_samples: 10
+  n_samples: 100
   seed: 42
   directory: ppc

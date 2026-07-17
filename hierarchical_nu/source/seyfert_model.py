@@ -75,7 +75,6 @@ class SeyfertNuMuSpectrum(SpectralShape):
         sys.path.append(os.path.expanduser("~/icecube/seyfert_spectra"))
         from nu_pop_model.diffuse_flux import mu_nu_flux
 
-        # This part of the code is sponsored by Intenso. Just kidding, I am not paid by them. But I wouldn't say no to some sponsorship...
         path_to_simulations = Path(
             os.path.expanduser("~/icecube/seyfert_spectra/combined_files")
         )
@@ -166,7 +165,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
             self.energy_points,
         )
         # eta_grid = np.linspace(self._eta.min(), self._eta.max(), self.eta_points)
-        eta_grid = np.concatenate((np.arange(2., 30.,), np.arange(30., 151, 2)))
+        eta_grid = np.concatenate((np.arange(1., 30.,), np.arange(30., 151, 2)))
 
         self.eta_grid = eta_grid
         self.log_pdf_grid = self._log_pdf_spline(log_energy_grid, eta_grid)
