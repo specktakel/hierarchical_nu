@@ -41,7 +41,7 @@ class ParameterConfig:
     eta: List[float] = field(
         default_factory=lambda: [40.0]
     )  # inverse turbulence strength
-    eta_range: Tuple = (2.0, 150.0)
+    eta_range: Tuple = (1.0, 150.0)
     P: List[float] = field(
         default_factory=lambda: [0.4]
     )  # cosmic ray to thermal pressure ratio
@@ -328,6 +328,15 @@ class HierarchicalNuConfig:
                     fit_params.append("E0_src")
             except KeyError:
                 pass
+            try:
+                eta = ps.flux_model.parameters["eta"]
+                config.parameter_config.eta_range = [1., 150.] # list(eta.par_range)
+                config.parameter_config.eta = eta.value
+                if not eta.fixed:
+                    fit_params.append("eta")
+            except KeyError:
+                pass
+
             config.parameter_config.fit_params = fit_params
             for ps in sources.point_source:
                 ra.append(ps.ra.to(u.deg).to_string())

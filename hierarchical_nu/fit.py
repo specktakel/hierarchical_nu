@@ -1724,6 +1724,7 @@ class StanFit(SourceInfo):
             temp = OmegaConf.create(config)
             default = HierarchicalNuConfig.load_default()
             merged = OmegaConf.merge(default, temp)
+            merged.parameter_config.eta_range = [1., 150.]
             config_parser = ConfigParser(merged)
             sources = config_parser.sources
             fit = cls(sources, event_types, events, obs_time_dict, priors, reload=True)

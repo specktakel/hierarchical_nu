@@ -67,6 +67,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         self._parameters["eta"] = eta
         self._parameters["P"] = P
         self._source_name = source_name
+        self._logLx = logLx
 
         # Load appropriate file containing the energy density in the source environment
         # and, together with redshift, convert it into a number flux at the detector
@@ -76,7 +77,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         from nu_pop_model.diffuse_flux import mu_nu_flux
 
         path_to_simulations = Path(
-            os.path.expanduser("~/icecube/seyfert_spectra/combined_files")
+            os.path.expanduser("~/icecube/seyfert_spectra/combined_files_eta_1")
         )
         self._filename = (
             path_to_simulations / f"neutrino_density_logLx_{np.round(logLx, 2):.2f}.h5"
@@ -137,7 +138,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         P_init_val = P.value
         P.fixed = False
         P.value = 1.0
-
+        
         for c, e in enumerate(self._eta):
             eta.value = e
             integral = self.total_flux_int.to_value(1 / u.m**2 / u.s)
