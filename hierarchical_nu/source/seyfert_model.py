@@ -76,7 +76,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         from nu_pop_model.diffuse_flux import mu_nu_flux
 
         path_to_simulations = Path(
-            os.path.expanduser("~/icecube/seyfert_spectra/combined_files")
+            os.path.expanduser("~/icecube/seyfert_spectra/combined_files_eta_1")
         )
         self._filename = (
             path_to_simulations / f"neutrino_density_logLx_{np.round(logLx, 2):.2f}.h5"
