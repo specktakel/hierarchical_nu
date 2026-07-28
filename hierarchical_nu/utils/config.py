@@ -330,8 +330,7 @@ class HierarchicalNuConfig:
                 pass
             try:
                 eta = ps.flux_model.parameters["eta"]
-                config.parameter_config.eta_range = [1., 150.] # list(eta.par_range)
-                config.parameter_config.eta = eta.value
+                config.parameter_config.eta_range = list(eta.par_range)
                 if not eta.fixed:
                     fit_params.append("eta")
             except KeyError:

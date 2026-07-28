@@ -163,7 +163,7 @@ class StanFit(SourceInfo):
         self._def_var_names = []
 
         if self._sources.point_source:
-            if self._fit_nex:
+            if self._fit_nex or not self._shared_luminosity:
                 self._def_var_names.append("L_ind")
             else:
                 self._def_var_names.append("L")
