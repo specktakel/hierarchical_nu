@@ -9,6 +9,7 @@ from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.utils.config_parser import ConfigParser
 from hierarchical_nu.utils.roi import ROIList
 from hierarchical_nu.events import Events
+from hierarchical_nu.utils.plotting import lighten_color
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -37,6 +38,7 @@ class PPC:
         self._fit = fit
         self._ran_setup = False
         self._events = []
+        self._N = []
 
     def load(self, path):
         """
@@ -51,15 +53,15 @@ class PPC:
                     Events.from_file(
                         path,
                         group_name=f"events_{i}",
-                        apply_Emin_det=False,
-                        apply_spatial_cuts=False,
-                        apply_temporal_cuts=False,
                     )
                 )
                 i += 1
             except Exception as e:
-                print(e)
                 break
+        with h5py.File("path", "r") as f:
+            self._N = f["N"][()]
+            self._Nex_et = f["Nex"][()]
+            self._N_comp = f["N_comp"][()]
 
     def _plot_radial_ppc(self, bins):
         # TODO
@@ -72,7 +74,7 @@ class PPC:
     def plot(
         self,
         bins_Ereco=np.geomspace(1e2, 1e7, 8 * 5),
-        bins_ang_sep_sq=np.arange(0, 25.1, 1 / 3),
+        bins_ang_sep_sq=np.arange(0, 5.1, 1 / 3),
         quantiles=[90, 68, 50],
         figsize=(6, 3),
         colors=None,
@@ -88,11 +90,6 @@ class PPC:
         :param colors: Provide some colour for plotting the bands
         """
 
-        if colors is None:
-            colors = viridis(0, 0)
-        colors = np.atleast_1d(colors)
-        if len(colors) != len(quantiles):
-            colors = np.vstack([colors] * len(quantiles))
         quantiles = np.atleast_1d(quantiles)
         q_low = (50 - quantiles / 2) / 100
         q_high = (50 + quantiles / 2) / 100
@@ -119,7 +116,7 @@ class PPC:
             frame="icrs",
         )
 
-        hists = np.array(
+        hists_all = np.array(
             [
                 np.histogram(
                     coords.separation(_.coords).deg ** 2,
@@ -129,18 +126,41 @@ class PPC:
             ]
         )
 
-        ql = np.quantile(hists, q_low, axis=0)
-        qh = np.quantile(hists, q_high, axis=0)
+        hists_source = np.array(
+            [
+                np.histogram(
+                    coords.separation(_[:N[0]].coords).deg ** 2,
+                    bins_ang_sep_sq,
+                )[0]
+                for (N, _) in zip(self._N, self._events)
+            ]
+        )
+
+        hists_bg = np.array(
+            [
+                np.histogram(
+                    coords.separation(_[N[0]:].coords).deg ** 2,
+                    bins_ang_sep_sq,
+                )[0]
+                for (N, _) in zip(self._N, self._events)
+            ]
+        )
+
+        ql_all = np.quantile(hists_all, q_low, axis=0)
+        qh_all = np.quantile(hists_all, q_high, axis=0)
+        ql_source = np.quantile(hists_source, q_low, axis=0)
+        qh_source = np.quantile(hists_source, q_high, axis=0)
+        ql_bg = np.quantile(hists_bg, q_low, axis=0)
+        qh_bg = np.quantile(hists_bg, q_high, axis=0)
 
         ang_sep = coords.separation(self._fit.events.coords).deg
         obs = np.histogram(ang_sep**2, bins=bins_ang_sep_sq)[0]
 
         for (
-            col,
             q,
             l,
             h,
-        ) in zip(colors, quantiles, ql, qh):
+        ) in zip(quantiles, ql_all, qh_all):
             for c, (bl, bh) in enumerate(
                 zip(bins_ang_sep_sq[:-1], bins_ang_sep_sq[1:])
             ):
@@ -148,7 +168,41 @@ class PPC:
                     [bl, bh],
                     l[c],
                     h[c],
-                    color=col,
+                    color="C0",
+                    alpha=alpha,
+                    edgecolor="none",
+                )
+
+        for (
+            col,
+            q,
+            l,
+            h,
+        ) in zip(colors, quantiles, ql_source, qh_source):
+            for c, (bl, bh) in enumerate(
+                zip(bins_ang_sep_sq[:-1], bins_ang_sep_sq[1:])
+            ):
+                ax.fill_between(
+                    [bl, bh],
+                    l[c],
+                    h[c],
+                    color="C3",
+                    alpha=alpha,
+                    edgecolor="none",
+                )
+        for (
+            q,
+            l,
+            h,
+        ) in zip(quantiles, ql_bg, qh_bg):
+            for c, (bl, bh) in enumerate(
+                zip(bins_ang_sep_sq[:-1], bins_ang_sep_sq[1:])
+            ):
+                ax.fill_between(
+                    [bl, bh],
+                    l[c],
+                    h[c],
+                    color="C2",
                     alpha=alpha,
                     edgecolor="none",
                 )
@@ -303,6 +357,10 @@ class PPC:
 
         if self._use_data_as_bg:
             bg_events = Events.from_event_files(*self._parser.detector_model, apply_roi=False)
+            # Mask out all events with declinations outside the specified ROIs
+            # for speedup when scrambling RA and MJDs
+            dec_mask = bg_events.coords.dec <= ROIList.DEC_max() & bg_events.coords.dec >= ROIList.DEC_min()
+            bg_events[dec_mask]
 
         with tqdm(total=self._config.n_samples, disable=not show_progress) as pbar:
             for i in range(self._config.n_samples):
@@ -432,7 +490,6 @@ class PPC:
                     try:
                         events = sim.events.merge(_bg_events)
                     except AttributeError as e:
-                        print(e)
                         events = _bg_events
 
                 else:
