@@ -58,10 +58,10 @@ class PPC:
                 i += 1
             except Exception as e:
                 break
-        with h5py.File("path", "r") as f:
-            self._N = f["N"][()]
-            self._Nex_et = f["Nex"][()]
-            self._N_comp = f["N_comp"][()]
+        with h5py.File(path, "r") as f:
+            self._N = f["meta_data/N"][()]
+            self._Nex_et = f["meta_data/Nex"][()]
+            self._N_comp = f["meta_data/N_comp"][()]
 
     def _plot_radial_ppc(self, bins):
         # TODO
@@ -94,6 +94,10 @@ class PPC:
         q_low = (50 - quantiles / 2) / 100
         q_high = (50 + quantiles / 2) / 100
         q_low, q_high
+        
+        col_all = "C1"
+        col_source = "C3"
+        col_bg = "C2"
 
         xlabels = [
             r"distance to source squared [deg$^2$]",
@@ -129,7 +133,7 @@ class PPC:
         hists_source = np.array(
             [
                 np.histogram(
-                    coords.separation(_[:N[0]].coords).deg ** 2,
+                    coords.separation(_[:N].coords).deg ** 2,
                     bins_ang_sep_sq,
                 )[0]
                 for (N, _) in zip(self._N, self._events)
@@ -139,7 +143,7 @@ class PPC:
         hists_bg = np.array(
             [
                 np.histogram(
-                    coords.separation(_[N[0]:].coords).deg ** 2,
+                    coords.separation(_[N:].coords).deg ** 2,
                     bins_ang_sep_sq,
                 )[0]
                 for (N, _) in zip(self._N, self._events)
@@ -168,17 +172,16 @@ class PPC:
                     [bl, bh],
                     l[c],
                     h[c],
-                    color="C0",
+                    color=col_all,
                     alpha=alpha,
                     edgecolor="none",
                 )
 
         for (
-            col,
             q,
             l,
             h,
-        ) in zip(colors, quantiles, ql_source, qh_source):
+        ) in zip(quantiles, ql_source, qh_source):
             for c, (bl, bh) in enumerate(
                 zip(bins_ang_sep_sq[:-1], bins_ang_sep_sq[1:])
             ):
@@ -186,7 +189,7 @@ class PPC:
                     [bl, bh],
                     l[c],
                     h[c],
-                    color="C3",
+                    color=col_source,
                     alpha=alpha,
                     edgecolor="none",
                 )
@@ -202,7 +205,7 @@ class PPC:
                     [bl, bh],
                     l[c],
                     h[c],
-                    color="C2",
+                    color=col_bg,
                     alpha=alpha,
                     edgecolor="none",
                 )
@@ -211,7 +214,6 @@ class PPC:
             obs,
             bins_ang_sep_sq,
             color="black",
-            label="Observed",
             lw=1,
         )
 
@@ -232,9 +234,9 @@ class PPC:
 
             return np.power(x, 2)
 
-        ax.legend()
-        ax.set_xticks(np.arange(0, 25.1, 5))
-        ax.set_xlim(0, 25)
+
+        #ax.set_xticks(np.arange(0, 25.1, 5))
+        ax.set_xlim(0, bins_ang_sep_sq.max())
         ax.set_xlabel(xlabels[0])
         ax.set_ylabel("counts per bin")
 
@@ -245,31 +247,81 @@ class PPC:
         # Detected energy posterior predictive check
         ax = axs[1]
 
-        hists = np.array(
+        hists_all = np.array(
             [
                 np.histogram(_.energies.to_value(u.GeV), bins=bins_Ereco)[0]
                 for _ in self._events
             ]
         )
+        
+        hists_source = np.array(
+            [
+                np.histogram(_[:N].energies.to_value(u.GeV), bins=bins_Ereco)[0]
+                for (N, _) in zip(self._N, self._events)
+            ]
+        )
+        
+        hists_bg = np.array(
+            [
+                np.histogram(_[N:].energies.to_value(u.GeV), bins=bins_Ereco)[0]
+                for (N, _) in zip(self._N, self._events)
+            ]
+        )
+
         obs = np.histogram(self._fit.events.energies.to_value(u.GeV), bins=bins_Ereco)[
             0
         ]
 
-        ql = np.quantile(hists, q_low, axis=0)
-        qh = np.quantile(hists, q_high, axis=0)
+        ql_all = np.quantile(hists_all, q_low, axis=0)
+        qh_all = np.quantile(hists_all, q_high, axis=0)
+        
+        ql_source = np.quantile(hists_source, q_low, axis=0)
+        qh_source = np.quantile(hists_source, q_high, axis=0)
+        
+        ql_bg = np.quantile(hists_bg, q_low, axis=0)
+        qh_bg = np.quantile(hists_bg, q_high, axis=0)
 
         for (
-            col,
             q,
             l,
             h,
-        ) in zip(colors, quantiles, ql, qh):
+        ) in zip(quantiles, ql_all, qh_all):
             for c, (bl, bh) in enumerate(zip(bins_Ereco[:-1], bins_Ereco[1:])):
                 ax.fill_between(
                     [bl, bh],
                     l[c],
                     h[c],
-                    color=col,
+                    color=col_all,
+                    alpha=alpha,
+                    edgecolor="none",
+                )
+                
+        for (
+            q,
+            l,
+            h,
+        ) in zip(quantiles, ql_source, qh_source):
+            for c, (bl, bh) in enumerate(zip(bins_Ereco[:-1], bins_Ereco[1:])):
+                ax.fill_between(
+                    [bl, bh],
+                    l[c],
+                    h[c],
+                    color=col_source,
+                    alpha=alpha,
+                    edgecolor="none",
+                )
+                
+        for (
+            q,
+            l,
+            h,
+        ) in zip(quantiles, ql_bg, qh_bg):
+            for c, (bl, bh) in enumerate(zip(bins_Ereco[:-1], bins_Ereco[1:])):
+                ax.fill_between(
+                    [bl, bh],
+                    l[c],
+                    h[c],
+                    color=col_bg,
                     alpha=alpha,
                     edgecolor="none",
                 )
@@ -280,7 +332,23 @@ class PPC:
         ax.set_yscale("log")
         ax.set_xlabel(xlabels[1])
         ax.set_ylabel("counts per bin")
-        ax.legend()
+        
+        
+        signal_patch = Patch(edgecolor=None, facecolor="C3", alpha=0.3)
+        signal_label = "PS events"
+
+        bg_patch = Patch(edgecolor=None, facecolor="C2", alpha=0.3)
+        bg_label = "bkg events"
+
+        all_patch = Patch(edgecolor=None, facecolor="C0", alpha=0.3)
+        all_label = "all events"
+
+        handles, labels = ax.get_legend_handles_labels()
+        handles += [signal_patch, bg_patch, all_patch]
+        labels += [signal_label, bg_label, all_label]
+        ax.legend(handles, labels)
+        
+        fig.subplots_adjust(wspace=0.3)
 
         return fig, axs, secax
 
@@ -359,8 +427,8 @@ class PPC:
             bg_events = Events.from_event_files(*self._parser.detector_model, apply_roi=False)
             # Mask out all events with declinations outside the specified ROIs
             # for speedup when scrambling RA and MJDs
-            dec_mask = bg_events.coords.dec <= ROIList.DEC_max() & bg_events.coords.dec >= ROIList.DEC_min()
-            bg_events[dec_mask]
+            dec_mask = np.logical_and(bg_events.coords.dec <= ROIList.DEC_max(), bg_events.coords.dec >= ROIList.DEC_min())
+            bg_events = bg_events[dec_mask]
 
         with tqdm(total=self._config.n_samples, disable=not show_progress) as pbar:
             for i in range(self._config.n_samples):
