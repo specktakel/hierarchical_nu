@@ -17,6 +17,7 @@ from ..priors import (
     PressureRatioPrior,
     MultiSourcePressureRatioPrior,
     Ignorance,
+    LogUniformPrior,
 )
 from ..utils.config import HierarchicalNuConfig
 from ..source.source import (
@@ -702,8 +703,13 @@ class ConfigParser:
             prior,
             mu,
             sigma,
+            xmin,
+            xmax,
+            alpha,
             mu_unit: bool,
             sigma_unit: bool,
+            xmin_unit: bool = False,
+            xmax_unit: bool = False,
         ):
             if not isinstance(mu, omegaconf.listconfig.ListConfig) and not isinstance(
                 mu, list
@@ -718,6 +724,11 @@ class ConfigParser:
                 mu = [u.Quantity(_) for _ in mu]
             if sigma_unit:
                 sigma = [u.Quantity(_) for _ in sigma]
+            if xmin_unit:
+                xmin = u.Quantity(xmin)
+            if xmax_unit:
+                xmax = u.Quantity(xmax)
+
             if len(mu) > 1 and len(sigma) > 1:
                 return multiparameterprior(
                     [parameterprior(prior, mu=m, sigma=s) for m, s in zip(mu, sigma)]
@@ -731,7 +742,8 @@ class ConfigParser:
                     [parameterprior(prior, mu=mu[0], sigma=s) for s in sigma]
                 )
             else:
-                return parameterprior(prior, mu=mu[0], sigma=sigma[0])
+                # Assume for now that xmin/xmax/alpha are only used in a common prior case
+                return parameterprior(prior, mu=mu[0], sigma=sigma[0], xmin=xmin, xmax=xmax, alpha=alpha)
 
         for p, vals in prior_config.items():
             if vals.name == "NormalPrior":
@@ -750,6 +762,10 @@ class ConfigParser:
                 alpha = vals.alpha
             elif vals.name == "Ignorance":
                 prior = Ignorance
+            elif vals.name == "LogUniform":
+                prior = LogUniformPrior
+                xmin = vals.xmin
+                xmax = vals.xmax
             else:
                 raise NotImplementedError("Prior type not recognised.")
 
@@ -761,13 +777,13 @@ class ConfigParser:
                     mu = 1.0
                     sigma = 1.0
                 priors.src_index = _make_prior(
-                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma, False, False
+                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma, 0, 0, 1, False, False
                 )
             elif p == "beta_index":
                 self.check_units(mu, 1)
                 self.check_units(sigma, 1)
                 priors.beta_index = _make_prior(
-                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma, False, False
+                    MultiSourceIndexPrior, IndexPrior, prior, mu, sigma, 0, 0, 1, False, False
                 )
             elif p == "E0_src":
                 self.check_units(mu, u.GeV)
@@ -783,18 +799,31 @@ class ConfigParser:
                     prior,
                     mu,
                     sigma,
+                    0,
+                    0,
+                    1, 
                     True,
                     sigma_unit,
                 )
             elif p == "eta":
-                if prior != Ignorance:
+                print(prior)
+                if prior == LogUniformPrior:
+                    self.check_units(xmin, 1)
+                    self.check_units(xmax, 1)
+                    mu = 1.0
+                    sigma = 1.0
+                elif prior != Ignorance:
                     self.check_units(mu, 1)
                     self.check_units(sigma, 1)
+                    xmin = 1.0
+                    xmax = 1.0
                 else:
                     mu = 1.0
                     sigma = 1.0
-                prior.eta = _make_prior(
-                    MultiSourceEtaPrior, EtaPrior, prior, mu, sigma, False, False
+                    xmin = 1.0
+                    xmax = 150.0
+                priors.eta = _make_prior(
+                    MultiSourceEtaPrior, EtaPrior, prior, mu, sigma, xmin, xmax, 1, False, False, False, False
                 )
             elif p == "P":
                 self.check_units(mu, 1)
@@ -805,6 +834,9 @@ class ConfigParser:
                     prior,
                     mu,
                     sigma,
+                    0,
+                    0,
+                    1,
                     False,
                     False,
                 )
@@ -830,6 +862,9 @@ class ConfigParser:
                     prior,
                     mu,
                     sigma,
+                    None,
+                    None,
+                    None,
                     True,
                     sigma_unit,
                 )

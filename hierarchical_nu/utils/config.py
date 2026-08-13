@@ -147,6 +147,9 @@ class SinglePriorConfig:
     name: str = "LogNormalPrior"
     mu: Any = 1.0  # Should be str or float, but alas, OmegaConf does not support Unions
     sigma: Any = 1.0
+    xmin: Any = 1.0
+    xmax: Any = 10.0
+    alpha: Any = 1.0
 
 
 @dataclass

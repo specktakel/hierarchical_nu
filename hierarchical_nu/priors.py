@@ -39,7 +39,7 @@ class PriorDistribution(metaclass=ABCMeta):
 class NormalPrior(PriorDistribution):
     """Normal distribution"""
 
-    def __init__(self, name="normal", mu=0.0, sigma=1.0):
+    def __init__(self, name="normal", mu=0.0, sigma=1.0, **kwargs):
         super().__init__(name=name)
 
         self._mu = mu
@@ -79,7 +79,7 @@ class NormalPrior(PriorDistribution):
 class LogNormalPrior(PriorDistribution):
     """Log-normal distribution"""
 
-    def __init__(self, name="lognormal", mu=1.0, sigma=1.0):
+    def __init__(self, name="lognormal", mu=1.0, sigma=1.0, **kwargs):
         super().__init__(name=name)
 
         self._mu = mu
@@ -123,7 +123,7 @@ class UniformPrior(PriorDistribution):
     dummy class?
     """
 
-    def __init__(self, name="uniform", xmin=0.0, xmax=np.inf):
+    def __init__(self, name="uniform", xmin=0.0, xmax=np.inf, **kwargs):
         super().__init__(name, xmin=xmin, xmax=xmax)
 
 
@@ -132,7 +132,7 @@ class LogUniformPrior(PriorDistribution):
     Log-uniform prior, i.e. flat in log(x)
     """
 
-    def __init__(self, name="logflat", xmin=0.0, xmax=np.inf):
+    def __init__(self, name="logflat", xmin=1.0, xmax=np.inf, **kwargs):
         super().__init__(name)
 
         self._xmin = xmin
@@ -183,7 +183,7 @@ class ParetoPrior(PriorDistribution):
     Pareto distribution, i.e. x^{-alpha}
     """
 
-    def __init__(self, name="pareto", xmin=1.0, alpha=1.0):
+    def __init__(self, name="pareto", xmin=1.0, alpha=1.0, **kwargs):
         super().__init__(name=name)
 
         self._xmin = xmin
@@ -245,7 +245,7 @@ class Ignorance(PriorDistribution):
 
 
 class ExponentialGaussianPrior(PriorDistribution):
-    def __init__(self, name="exponnorm", mu=0.0, sigma=1.0, lam=1.0):
+    def __init__(self, name="exponnorm", mu=0.0, sigma=1.0, lam=1.0, **kwargs):
         super().__init__(name)
         self._mu = mu
         self._sigma = sigma
@@ -478,6 +478,10 @@ class UnitlessPrior:
             alpha = kwargs.get("alpha")
             xmin = kwargs.get("xmin")
             self._prior = name(xmin=xmin, alpha=alpha)
+        elif name == LogUniformPrior:
+            xmin = kwargs.get("xmin")
+            xmax = kwargs.get("xmax")
+            self._prior = name(xmin=xmin, xmax=xmax)
 
         else:
             mu = kwargs.get("mu")
@@ -512,6 +516,14 @@ class UnitlessPrior:
     @xmin.setter
     def xmin(self, val: float):
         self._prior.xmin = val
+
+    @property
+    def xmax(self):
+        return self._prior.xmax
+
+    @xmax.setter
+    def xmax(self, val: float):
+        self._prior.xmax = val
 
     @property
     def alpha(self):
@@ -552,6 +564,7 @@ class AngularPrior(UnitPrior):
         mu: Union[u.Quantity[u.deg], None] = 0.2 * u.deg,
         sigma: Union[u.Quantity[u.deg], None] = 0.2 * u.deg,
         lam: Union[u.Quantity[1 / u.deg], None] = None,
+        **kwargs
     ):
         super().__init__(name, mu=mu, sigma=sigma, lam=lam, units=self.UNITS)
 
@@ -562,6 +575,7 @@ class NexPrior(UnitlessPrior):
         name=NormalPrior,
         mu=10.,
         sigma=5.,
+        **kwargs
     ):
         """
         Prior on number of expected events
@@ -590,6 +604,7 @@ class LuminosityPrior(UnitPrior):
         xmin: Union[u.Quantity[u.GeV / u.s], None] = None,
         xmax: Union[u.Quantity[u.GeV / u.s], None] = None,
         alpha: Union[float, None] = None,
+        **kwargs
     ):
         """
         Converts automatically to log of values, be aware of misuse of notation.
@@ -620,6 +635,7 @@ class EnergyPrior(UnitPrior):
         name=LogNormalPrior,
         mu: Union[u.Quantity[u.GeV], None] = 1e6 * u.GeV,
         sigma: Union[u.Quantity[u.GeV], u.Quantity[1], None] = 3.0,
+        **kwargs
     ):
         """
         Converts automatically to log of values, be aware of misuse of notation.
@@ -642,6 +658,7 @@ class FluxPrior(UnitPrior):
         name=NormalPrior,
         mu: u.Quantity[1 / u.m**2 / u.s] = 0.314 / u.m**2 / u.s,
         sigma: Union[u.Quantity[1 / u.m**2 / u.s], u.Quantity[1]] = 0.08 / u.m**2 / u.s,
+        **kwargs
     ):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
@@ -663,6 +680,7 @@ class DifferentialFluxPrior(UnitPrior):
         / u.GeV
         / u.m**2
         / u.s,
+        **kwargs
     ):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
@@ -678,6 +696,7 @@ class IndexPrior(UnitlessPrior):
         name=NormalPrior,
         mu: float = 2.5,
         sigma: float = 0.5,
+        **kwargs
     ):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
@@ -688,14 +707,14 @@ class PressureRatioPrior(UnitlessPrior):
     """
 
     @u.quantity_input
-    def __init__(self, name=Ignorance, mu: float = 0.2, sigma: float = 0.1):
+    def __init__(self, name=Ignorance, mu: float = 0.2, sigma: float = 0.1, **kwargs):
         super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
 
 
 class EtaPrior(UnitlessPrior):
     @u.quantity_input
-    def __init__(self, name=Ignorance, mu: float = 40, sigma: float = 10):
-        super().__init__(name, mu=mu, sigma=sigma, units=self.UNITS)
+    def __init__(self, name=Ignorance, mu: float = 40, sigma: float = 10, xmin: float = 1.0, xmax: float = 150., **kwargs):
+        super().__init__(name, mu=mu, sigma=sigma, xmin=xmin, xmax=xmax, units=self.UNITS)
 
 
 class MultiSourcePrior:

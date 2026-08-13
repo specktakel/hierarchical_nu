@@ -1199,6 +1199,8 @@ class StanFitInterface(StanInterface):
                 elif isinstance(self._priors.eta, MultiSourcePrior) and self._fit_eta:
                     eta_mu_def = ForwardArrayDef("eta_mu", "real", self._Ns_str)
                     eta_sigma_def = ForwardArrayDef("eta_sigma", "real", self._Ns_str)
+                elif self._priors.eta.name == "logflat" and self._fit_eta:
+                    pass
                 elif self._fit_eta:
                     eta_mu_def = ForwardVariableDef("eta_mu", "real")
                     eta_sigma_def = ForwardVariableDef("eta_sigma", "real")
@@ -1216,7 +1218,7 @@ class StanFitInterface(StanInterface):
                 if self._fit_Enorm:
                     self._stan_prior_E0_src_mu = E0_src_mu_def
                     self._stan_prior_E0_src_sigma = E0_src_sigma_def
-                if self._fit_eta and self._priors.eta.name != "notaprior":
+                if self._fit_eta and self._priors.eta.name == "normal":
                     self._stan_prior_eta_mu = eta_mu_def
                     self._stan_prior_eta_sigma = eta_sigma_def
                 # check for luminosity, if they all have the same prior
@@ -1316,6 +1318,10 @@ class StanFitInterface(StanInterface):
                     "ang_errs_squared", "vector[N]"
                 )
                 self._ang_errs_squared << self._ang_errs**2
+
+                if self._priors.eta.name == "logflat" and self._fit_eta:
+                    self._eta_prior_norm = ForwardVariableDef("eta_prior_norm", "real")
+                    self._eta_prior_norm << FunctionCall([self._eta_max / self._eta_min], "log10")
 
             for c, et in enumerate(self._event_types, 1):
                 self._et_stan[c] << et.S
@@ -2628,6 +2634,7 @@ class StanFitInterface(StanInterface):
                     )
 
                 # TODO add pressure ratio prior here
+                # TODO ????
 
                 if self._priors.src_index.name not in [
                     "normal",
@@ -2781,15 +2788,33 @@ class StanFitInterface(StanInterface):
                             ]
                         )
 
-            if self._priors.eta.name == "notaprior":
-                pass
-            elif self._priors.eta.name not in ["normal", "lognormal"]:
-                raise ValueError("Prior type not recognised for eta")
-            elif self._fit_eta and isinstance(self._priors.eta, MultiSourcePrior):
-                with ForLoopContext(1, self._Ns, "i") as i:
+                if self._priors.eta.name == "notaprior":
+                    pass
+                elif self._priors.eta.name not in ["normal", "lognormal", "logflat"]:
+                    raise ValueError("Prior type not recognised for eta")
+                elif self._fit_eta and isinstance(self._priors.eta, MultiSourcePrior):
+                    with ForLoopContext(1, self._Ns, "i") as i:
+                        StringExpression(
+                            [
+                                self._eta[i],
+                                " ~ ",
+                                FunctionCall(
+                                    [self._stan_prior_eta_mu, self._stan_prior_eta_sigma],
+                                    self._priors.eta.name,
+                                ),
+                            ]
+                        )
+                elif self._priors.eta.name == "logflat" and self._fit_eta:
                     StringExpression(
                         [
-                            self._eta[i],
+                            "target += ",
+                            1 / self._eta_glob / self._eta_prior_norm
+                        ]
+                    )
+                elif self._fit_eta:
+                    StringExpression(
+                        [
+                            self._eta_glob,
                             " ~ ",
                             FunctionCall(
                                 [self._stan_prior_eta_mu, self._stan_prior_eta_sigma],
@@ -2797,17 +2822,6 @@ class StanFitInterface(StanInterface):
                             ),
                         ]
                     )
-            elif self._fit_eta:
-                StringExpression(
-                    [
-                        self._eta_glob,
-                        " ~ ",
-                        FunctionCall(
-                            [self._stan_prior_eta_mu, self._stan_prior_eta_sigma],
-                            self._priors.eta.name,
-                        ),
-                    ]
-                )
 
             if self.sources.diffuse:
                 if self._priors.diffuse_flux.name not in ["normal", "lognormal"]:
