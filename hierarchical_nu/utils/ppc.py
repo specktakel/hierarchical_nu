@@ -14,6 +14,7 @@ from hierarchical_nu.utils.plotting import lighten_color
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.cm import viridis
+from matplotlib.patches import Patch
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 import h5py
@@ -334,13 +335,13 @@ class PPC:
         ax.set_ylabel("counts per bin")
         
         
-        signal_patch = Patch(edgecolor=None, facecolor="C3", alpha=0.3)
+        signal_patch = Patch(edgecolor=None, facecolor=col_source, alpha=0.3)
         signal_label = "PS events"
 
-        bg_patch = Patch(edgecolor=None, facecolor="C2", alpha=0.3)
+        bg_patch = Patch(edgecolor=None, facecolor=col_bg, alpha=0.3)
         bg_label = "bkg events"
 
-        all_patch = Patch(edgecolor=None, facecolor="C0", alpha=0.3)
+        all_patch = Patch(edgecolor=None, facecolor=col_all, alpha=0.3)
         all_label = "all events"
 
         handles, labels = ax.get_legend_handles_labels()
