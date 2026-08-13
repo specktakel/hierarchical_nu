@@ -14,6 +14,7 @@ from hierarchical_nu.utils.plotting import lighten_color
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.cm import viridis
+from matplotlib.patches import Patch
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 import h5py
