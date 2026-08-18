@@ -2788,11 +2788,11 @@ class StanFitInterface(StanInterface):
                             ]
                         )
 
-                if self._priors.eta.name == "notaprior":
+                if False:#self._priors.eta.name == "notaprior":
                     pass
-                elif self._priors.eta.name not in ["normal", "lognormal", "logflat"]:
+                elif False: #self._priors.eta.name not in ["notaprior", "normal", "lognormal", "logflat"]:
                     raise ValueError("Prior type not recognised for eta")
-                elif self._fit_eta and isinstance(self._priors.eta, MultiSourcePrior):
+                elif False: #self._fit_eta and isinstance(self._priors.eta, MultiSourcePrior):
                     with ForLoopContext(1, self._Ns, "i") as i:
                         StringExpression(
                             [
@@ -2804,7 +2804,7 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
-                elif self._priors.eta.name == "logflat" and self._fit_eta:
+                elif False: # self._priors.eta.name == "logflat" and self._fit_eta:
                     StringExpression(
                         [
                             "target += ",
@@ -2812,6 +2812,7 @@ class StanFitInterface(StanInterface):
                         ]
                     )
                 elif self._fit_eta:
+                    """
                     StringExpression(
                         [
                             self._eta_glob,
@@ -2822,7 +2823,13 @@ class StanFitInterface(StanInterface):
                             ),
                         ]
                     )
-
+                    """
+                    StringExpression(
+                        [
+                            self._eta_glob,
+                            " ~ exponential(0.1)"
+                        ]
+                    )
             if self.sources.diffuse:
                 if self._priors.diffuse_flux.name not in ["normal", "lognormal"]:
                     raise NotImplementedError(
