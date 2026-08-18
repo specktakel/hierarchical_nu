@@ -55,6 +55,7 @@ from hierarchical_nu.utils.config import HierarchicalNuConfig
 from hierarchical_nu.utils.config_parser import ConfigParser
 from hierarchical_nu.utils.lifetime import LifeTime
 from hierarchical_nu.utils.roi import ROIList
+from hierarchical_nu.utils.plotting import lighten_color
 from .source.source_info import SourceInfo
 
 from omegaconf import OmegaConf
@@ -1206,7 +1207,7 @@ class StanFit(SourceInfo):
         area_unit=u.cm**2,
         x_energy_unit=u.GeV,
         upper_limit: bool = False,
-        figsize=(8, 3),
+        figsize: tuple = (8, 3),
         ax=None,
         **kwargs,
     ):
@@ -1227,8 +1228,8 @@ class StanFit(SourceInfo):
         # Have some defaults for plotting
         fill_kwargs = dict(
             alpha=0.3,
-            color="C0",
             edgecolor="none",
+            facecolor="C0",
         )
         limit_kwargs = dict(
             alpha=0.3,
@@ -1255,7 +1256,10 @@ class StanFit(SourceInfo):
 
         # Find the interval to be plotted
         credible_interval = np.atleast_1d(credible_interval)
+        facecolor = fill_kwargs.pop("facecolor")
+        edgecolor = fill_kwargs.pop("edgecolor")
         for CI in credible_interval:
+            
             if upper_limit:
                 UL = CI
                 LL = 0.0  # dummy
@@ -1268,6 +1272,7 @@ class StanFit(SourceInfo):
             )
 
             if not upper_limit:
+                _facecolor = lighten_color(facecolor, 1 - CI / 2)
                 ax.fill_between(
                     E.to_value(
                         x_energy_unit,
@@ -1275,6 +1280,7 @@ class StanFit(SourceInfo):
                     ),
                     lower,
                     upper,
+                    facecolor=_facecolor,
                     **fill_kwargs,
                 )
             else:
@@ -1284,6 +1290,18 @@ class StanFit(SourceInfo):
                     **limit_kwargs,
                     # TODO fix alignment of arrow base to the line
                 )
+            """
+            elif not upper_limit:
+                for l in [lower, upper]:
+                    ax.plot(
+                        E.to_value(
+                            x_energy_unit,
+                            equivalencies=u.spectral(),
+                        ),
+                        l,
+                        color
+                    )
+            """
 
         ax.set_xscale("log")
         ax.set_yscale("log")

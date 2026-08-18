@@ -1107,6 +1107,8 @@ class Priors(object):
                     priors_dict[key] = MultiSourceEnergyPrior(container)
                 elif key == "L":
                     priors_dict[key] = MultiSourceLuminosityPrior(container)
+                elif key == "eta":
+                    prior_dict[key] = MultiSourceEtaPrior(container)
                 elif key == "ang_sys":
                     # should not happen
                     raise ValueError("There is only one systematic angular uncertainty")
