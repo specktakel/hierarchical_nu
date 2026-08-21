@@ -1,8 +1,8 @@
 parameter_config:
-  source_type: twice-broken-power-law
+  source_type: SeyfertII
   fit_params:
-  - src_index
   - Nex_src
+  - eta
   src_index:
   - 2.3
   share_src_index: true
@@ -17,7 +17,7 @@ parameter_config:
   eta:
   - 40.0
   eta_range:
-  - 2.0
+  - 1.0
   - 150.0
   P:
   - 0.4
@@ -121,11 +121,7 @@ prior_config:
     mu: 0.314 m-2 s-1
     sigma: 0.08 m-2 s-1
   eta:
-    name: Ignorance
-    mu:
-    - 1.0
-    sigma:
-    - 1.0
+    name: LogUniform
   P:
     name: Ignorance
     mu:

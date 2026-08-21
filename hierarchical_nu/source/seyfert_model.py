@@ -342,7 +342,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
                 * np.log(10)
             )
 
-        integral = quad(integrand, logElow, logEhigh, (eta), limit=100)
+        integral = quad(integrand, logElow, logEhigh, (eta), limit=200)
         val = integral[0]
         err = integral[1]
         ratio = err / val
