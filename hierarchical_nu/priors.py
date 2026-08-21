@@ -221,6 +221,38 @@ class ParetoPrior(PriorDistribution):
         return prior_dict
 
 
+class ExponentialPrior(PriorDistribution):
+    """
+    Exponential prior, pdf = alpha * exp(-alpha * x)
+    """
+
+    def __init__(self, name="exponential", alpha: float=0.1, **kwargs):
+        super().__init__(name)
+        self._alpha = alpha
+
+    @property
+    def alpha(self):
+        return self._alpha
+
+    @alpha.setter
+    def alpha(self, val: float):
+        self._alpha = val
+
+    def pdf(self, x):
+        return stats.expon(scale = 1 / self.alpha).pdf(x)
+
+    def sample(self, N):
+        return stats.expon(scale = 1 / self.alpha).rvs(N)
+
+    def to_dict(self, units):
+        prior_dict = {}
+
+        prior_dict["name"] = self._name
+        prior_dict["alpha"] = self.alpha
+        prior_dict["units"] = units
+        return prior_dict
+
+
 class NoPriorSetError(Exception):
     pass
 
@@ -319,10 +351,13 @@ class PriorDictHandler:
             xmin = prior_dict["xmin"]
             alpha = prior_dict["alpha"]
             return prior(ParetoPrior, xmin=xmin * units, alpha=alpha)
-        if prior_name == "logflat":
+        elif prior_name == "logflat":
             xmin = prior_dict["xmin"]
             xmax = prior_dict["xmax"]
             return prior(LogUniformPrior, xmin=xmin * units, xmax=xmax * units)
+        elif prior_name == "exponential":
+            alpha = prior_dict["alpha"]
+            return prior(ExponentialPrior, alpha=alpha / units)
         elif prior_name == "notaprior":
             return prior(Ignorance)
         mu = np.atleast_1d(prior_dict["mu"])
@@ -482,6 +517,9 @@ class UnitlessPrior:
             xmin = kwargs.get("xmin")
             xmax = kwargs.get("xmax")
             self._prior = name(xmin=xmin, xmax=xmax)
+        elif name == ExponentialPrior:
+            alpha = kwargs.get("alpha")
+            self._prior = name(alpha=alpha)
 
         else:
             mu = kwargs.get("mu")
@@ -713,8 +751,8 @@ class PressureRatioPrior(UnitlessPrior):
 
 class EtaPrior(UnitlessPrior):
     @u.quantity_input
-    def __init__(self, name=Ignorance, mu: float = 40, sigma: float = 10, xmin: float = 1.0, xmax: float = 150., **kwargs):
-        super().__init__(name, mu=mu, sigma=sigma, xmin=xmin, xmax=xmax, units=self.UNITS)
+    def __init__(self, name=Ignorance, mu: float = 40, sigma: float = 10, xmin: float = 1.0, xmax: float = 150., alpha: float = 1.0, **kwargs):
+        super().__init__(name, mu=mu, sigma=sigma, xmin=xmin, xmax=xmax, alpha=alpha, units=self.UNITS)
 
 
 class MultiSourcePrior:

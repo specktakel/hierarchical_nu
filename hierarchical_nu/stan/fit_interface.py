@@ -1199,7 +1199,7 @@ class StanFitInterface(StanInterface):
                 elif isinstance(self._priors.eta, MultiSourcePrior) and self._fit_eta:
                     eta_mu_def = ForwardArrayDef("eta_mu", "real", self._Ns_str)
                     eta_sigma_def = ForwardArrayDef("eta_sigma", "real", self._Ns_str)
-                elif self._priors.eta.name == "logflat" and self._fit_eta:
+                elif self._priors.eta.name in ["logflat", "exponential"] and self._fit_eta:
                     pass
                 elif self._fit_eta:
                     eta_mu_def = ForwardVariableDef("eta_mu", "real")
@@ -1221,6 +1221,8 @@ class StanFitInterface(StanInterface):
                 if self._fit_eta and self._priors.eta.name == "normal":
                     self._stan_prior_eta_mu = eta_mu_def
                     self._stan_prior_eta_sigma = eta_sigma_def
+                elif self._fit_eta and self._priors.eta.name == "exponential":
+                    self._stan_prior_eta_alpha = ForwardVariableDef("eta_alpha", "real")
                 # check for luminosity, if they all have the same prior
                 if self._fit_nex or self._seyfert:
                     if self._priors.Nex_src.name != "notaprior":
@@ -2790,7 +2792,7 @@ class StanFitInterface(StanInterface):
 
                 if self._priors.eta.name == "notaprior":
                     pass
-                elif self._priors.eta.name not in ["normal", "lognormal", "logflat"]:
+                elif self._priors.eta.name not in ["normal", "lognormal", "logflat", "exponential"]:
                     raise ValueError("Prior type not recognised for eta")
                 elif self._fit_eta and isinstance(self._priors.eta, MultiSourcePrior):
                     with ForLoopContext(1, self._Ns, "i") as i:
@@ -2804,6 +2806,17 @@ class StanFitInterface(StanInterface):
                                 ),
                             ]
                         )
+                elif self._priors.eta.name == "exponential" and self._fit_eta:
+                    StringExpression(
+                        [
+                            self._eta_glob,
+                            " ~ ",
+                            FunctionCall(
+                                [self._stan_prior_eta_alpha],
+                                self._priors.eta.name
+                            ),
+                        ]
+                    )
                 elif self._priors.eta.name == "logflat" and self._fit_eta:
                     StringExpression(
                         [

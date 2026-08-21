@@ -18,6 +18,7 @@ from ..priors import (
     MultiSourcePressureRatioPrior,
     Ignorance,
     LogUniformPrior,
+    ExponentialPrior,
 )
 from ..utils.config import HierarchicalNuConfig
 from ..source.source import (
@@ -762,10 +763,13 @@ class ConfigParser:
                 alpha = vals.alpha
             elif vals.name == "Ignorance":
                 prior = Ignorance
-            elif vals.name == "LogUniform":
+            elif vals.name == "LogUniformPrior":
                 prior = LogUniformPrior
                 xmin = vals.xmin
                 xmax = vals.xmax
+            elif vals.name == "ExponentialPrior":
+                prior = ExponentialPrior
+                alpha = vals.alpha
             else:
                 raise NotImplementedError("Prior type not recognised.")
 
@@ -812,6 +816,11 @@ class ConfigParser:
                     self.check_units(xmax, 1)
                     mu = 1.0
                     sigma = 1.0
+                elif prior == ExponentialPrior:
+                    self.check_units(alpha, 1)
+                    mu = 1.0
+                    sigma = 1.0
+                    priors.eta = EtaPrior(ExponentialPrior, alpha=alpha)
                 elif prior != Ignorance:
                     self.check_units(mu, 1)
                     self.check_units(sigma, 1)
@@ -822,9 +831,10 @@ class ConfigParser:
                     sigma = 1.0
                     xmin = 1.0
                     xmax = 150.0
-                priors.eta = _make_prior(
-                    MultiSourceEtaPrior, EtaPrior, prior, mu, sigma, xmin, xmax, 1, False, False, False, False
-                )
+                if prior != ExponentialPrior:
+                    priors.eta = _make_prior(
+                        MultiSourceEtaPrior, EtaPrior, prior, mu, sigma, xmin, xmax, 1, False, False, False, False
+                    )
             elif p == "P":
                 self.check_units(mu, 1)
                 self.check_units(sigma, 1)

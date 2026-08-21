@@ -453,6 +453,7 @@ class StanFit(SourceInfo):
                         axs[c, 0].plot(x, y, color=f"C{j}")
                         axs[c, 1].plot(np.arange(data.shape[1]), transform(data[i, :, j]), color=f"C{j}")
             axs[c, 0].set_title(v)
+            axs[c, 0].set_ylim(bottom=0.)
         fig.tight_layout()
         return fig, axs
 
@@ -2317,6 +2318,8 @@ class StanFit(SourceInfo):
         if self._priors.eta.name in ["normal", "lognormal"]:
             fit_inputs["eta_mu"] = self._priors.eta.mu
             fit_inputs["eta_sigma"] = self._priors.eta.sigma
+        elif self.priors.eta.name == "exponential":
+            fit_inputs["eta_alpha"] = self.priors.eta.alpha
 
         if self._sources.diffuse:
             # Just take any for now, using default parameters it doesn't matter
