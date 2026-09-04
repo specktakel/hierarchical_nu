@@ -21,6 +21,7 @@ from .source.source import (
 )
 from .source.atmospheric_flux import AtmosphericNuMuFlux
 from .source.flux_model import PGammaSpectrum
+from .source.seyfert_model import SeyfertNuMuSpectrum
 from .source.parameter import ParScale, Parameter
 from .backend.stan_generator import StanGenerator
 from .detector.detector_model import (
@@ -140,7 +141,7 @@ class ExposureIntegral:
                     np.linspace(*np.cos(par_range), num=self._n_grid_points)
                 )
             elif par.scale == ParScale.eta:
-                grid = np.concatenate((np.arange(1., 30.,), np.arange(30., 151, 2)))
+                grid = SeyfertNuMuSpectrum.eta_grid
                 self._n_grid_points = grid.size
             else:
                 raise NotImplementedError(

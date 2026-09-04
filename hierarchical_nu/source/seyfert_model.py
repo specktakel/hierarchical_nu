@@ -34,6 +34,8 @@ class SeyfertNuMuSpectrum(SpectralShape):
     _upper_energy = 1e7 * u.GeV
     _name = "SeyfertII"
 
+    eta_grid = np.concatenate((np.arange(1., 30.,), np.arange(30., 101, 2)))
+
     def __init__(
         self,
         logLx: float,
@@ -74,45 +76,76 @@ class SeyfertNuMuSpectrum(SpectralShape):
 
         # TODO properly replace this
         sys.path.append(os.path.expanduser("~/icecube/seyfert_spectra"))
-        from nu_pop_model.diffuse_flux import mu_nu_flux
+        from nu_pop_model.diffuse_flux import mu_nu_flux, photon_flux
 
         path_to_simulations = Path(
-            os.path.expanduser("~/icecube/seyfert_spectra/combined_files_eta_1")
+            #os.path.expanduser("~/icecube/seyfert_spectra/combined_files_eta_1")
+            os.path.expanduser("~/icecube/seyfert_spectra/combined_nu_gamma")
         )
         self._filename = (
-            path_to_simulations / f"neutrino_density_logLx_{np.round(logLx, 2):.2f}.h5"
+            #path_to_simulations / f"neutrino_density_logLx_{np.round(logLx, 2):.2f}.h5"
+            path_to_simulations / f"neutrino_gamma_density_logLx_{np.round(logLx, 2):.2f}.h5"
         )
 
         with h5py.File(self._filename, "r") as f:
             # get information about the spectrum
-            Enu = f["energy"][()] * u.Unit(f["energy_unit"][()].decode("ascii"))
-            energy_density = f["energy_density"][()] * u.Unit(
-                f["energy_density_unit"][()].decode("ascii")
-            )
+            #Enu = f["energy"][()] * u.Unit(f["energy_unit"][()].decode("ascii"))
+            #energy_density = f["energy_density"][()] * u.Unit(
+            #    f["energy_density_unit"][()].decode("ascii")
+            #)
+            #gamma_density = None   # add gammas to combined files
+            Enu = f["Enu"][()] * u.Unit(f["Enu_unit"][()].decode("ascii"))
+            nu_density = f["nu_density"][()] * u.Unit(f["nu_density_unit"][()].decode("ascii"))
+            gamma_density = f["gamma_density"][()] * u.Unit(f["gamma_density_unit"][()].decode("ascii"))
+            Egamma = f["Egamma"][()] * u.Unit(f["Egamma_unit"][()].decode("ascii"))
             eta = f["eta"][()]
+
         self._eta = eta
         self._energy = Enu
+        self._gamma_energy = Egamma
+        self._gamma_density = gamma_density
 
-        flux_grid = np.zeros((eta.size, Enu.size))
+        nu_flux_grid = np.zeros((eta.size, Enu.size))
+        gamma_flux_grid = np.zeros((eta.size, Egamma.size))
         for c, e in enumerate(eta):
-            flux_grid[c] = (
+            nu_flux_grid[c] = (
                 mu_nu_flux(   # query the differential flux
                     Enu.to_value(u.GeV),
                     Enu.to_value(u.GeV),
-                    energy_density[c].to_value(1 / u.GeV / u.s),
+                    nu_density[c].to_value(1 / u.GeV / u.s),
                     z,
                 )
                 * 1e4
             )  # conversion from cm-2 to m-2
-        flux_grid[flux_grid == 0.0] = flux_grid[flux_grid != 0.0].min()   # mask out zeros because we log somewhere
-        self._flux_grid = flux_grid << 1 / u.GeV / u.s / u.m**2
+
+            gamma_flux_grid[c] = (
+                photon_flux(
+                    Egamma.to_value(u.GeV),
+                    Egamma.to_value(u.GeV),
+                    gamma_density[c].to_value(1 / u.GeV / u.s),
+                    z,
+                )
+                * 1e4
+            )  # conversion from cm-2 to m-2
+        nu_flux_grid[nu_flux_grid == 0.0] = nu_flux_grid[nu_flux_grid != 0.0].min()   # mask out zeros because we log somewhere
+        gamma_flux_grid[gamma_flux_grid == 0] = gamma_flux_grid[gamma_flux_grid != 0].min()
+        self._nu_flux_grid = nu_flux_grid << 1 / u.GeV / u.s / u.m**2
+        self._gamma_flux_grid = gamma_flux_grid << 1 / u.GeV / u.s / u.m**2
         self._energy_points = energy_points
         self._eta_points = eta_points
 
         self._log_flux_spline = RectBivariateSpline(
             np.log10(self._energy.to_value(u.GeV)),
             self._eta,
-            np.log10(self._flux_grid.to_value(1 / u.GeV / u.s / u.m**2)).T,
+            np.log10(self._nu_flux_grid.to_value(1 / u.GeV / u.s / u.m**2)).T,
+            kx=1,
+            ky=3,
+        )
+
+        self._log_gamma_flux_spline = RectBivariateSpline(
+            np.log10(self._gamma_energy.to_value(u.GeV)),
+            self._eta,
+            np.log10(self._gamma_flux_grid.to_value(1 / u.GeV / u.s / u.m**2)).T,
             kx=1,
             ky=3,
         )
@@ -120,7 +153,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         # properly normalise everything: stan needs pdf in energy on a grid of eta
         # thus divide all slices by their integral over energy -> pdf(E;eta)
         # pass to stan implementation
-        pdf_grid = np.zeros(flux_grid.shape)
+        pdf_grid = np.zeros(nu_flux_grid.shape)
         integral_grid = np.zeros(self._eta.shape)
         energy_flux_grid = np.zeros(self._eta.shape)
         eta = self._parameters["eta"]
@@ -143,7 +176,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
             eta.value = e
             integral = self.total_flux_int.to_value(1 / u.m**2 / u.s)
             pdf_grid[c] = (
-                self._flux_grid[c].to_value(1 / u.GeV / u.m**2 / u.s) / integral
+                self._nu_flux_grid[c].to_value(1 / u.GeV / u.m**2 / u.s) / integral
             )
             integral_grid[c] = integral
             e_flux_int = self.total_flux_density.to_value(u.GeV / u.m**2 / u.s)
@@ -166,10 +199,8 @@ class SeyfertNuMuSpectrum(SpectralShape):
             self.energy_points,
         )
         # eta_grid = np.linspace(self._eta.min(), self._eta.max(), self.eta_points)
-        eta_grid = np.concatenate((np.arange(1., 30.,), np.arange(30., 151, 2)))
 
-        self.eta_grid = eta_grid
-        self.log_pdf_grid = self._log_pdf_spline(log_energy_grid, eta_grid)
+        self.log_pdf_grid = self._log_pdf_spline(log_energy_grid, self.eta_grid)
         self.log_energy_grid = log_energy_grid
 
         # Smoothen integral_grid
@@ -279,6 +310,16 @@ class SeyfertNuMuSpectrum(SpectralShape):
         logE = np.atleast_1d(logE)
         return np.power(10, self._log_flux_spline(logE, eta)).squeeze()
 
+    def _gamma_spline_log_interpolation(self, logE: Union[Iterable, float], eta: float):
+        """
+        Evaluate spline representation of photon flux model
+        :param logE: log10(E/GeV), Iterable or float
+        :param eta: eta
+        """
+
+        logE = np.atleast_1d(logE)
+        return np.power(10, self._log_gamma_flux_spline(logE, eta)).squeeze()
+
     @u.quantity_input
     def __call__(self, energy: u.GeV) -> 1 / (u.m**2 * u.s * u.GeV):
         """
@@ -297,6 +338,75 @@ class SeyfertNuMuSpectrum(SpectralShape):
         )
         flux = eval * P
         return flux
+
+    @u.quantity_input
+    def gamma_flux(self, energy: u.GeV) -> 1 / (u.GeV * u.m**2 * u.s):
+        eta = self._parameters["eta"].value
+        P = self._parameters["P"].value
+        eval = (
+            self._gamma_spline_log_interpolation(
+                np.log10(energy.to_value(u.GeV)),
+                eta,
+            )
+            << 1 / u.GeV / u.s / u.m**2
+        )
+        flux = eval * P
+        return flux
+
+    @u.quantity_input
+    def precompute_gamma_energy_flux(self, energy_bins: u.GeV):
+        """
+        Precomputes for all eta the expected gamma-ray energy flux over the provided binning.
+        Multiply in the end by the pressure ratio to get properly scaled value to use in a likelihood.
+        """
+
+        eta_par = self._parameters["eta"]
+        eta_init = eta_par.value
+        eta_fixed = eta_par.fixed
+        eta_par.fixed = False
+        P = self._parameters["P"].value
+
+        fluxes = []
+
+        for e in self.eta_grid:
+            eta_par.value = e
+            # normalise to pressure ratio, use default stan units
+            eflux = self.gamma_energy_flux_integral_per_bin(energy_bins).to_value(u.GeV / u.s / u.m**2) / P
+            fluxes.append(eflux)
+
+
+
+        # restore param
+        eta_par.value = eta_init
+        eta_par.fixed = eta_fixed
+
+        return fluxes
+
+    @u.quantity_input
+    def gamma_energy_flux_integral_per_bin(self, energy_bins: u.GeV) -> u.GeV / (u.m**2 * u.s):
+        eta = self._parameters["eta"].value
+        P = self._parameters["P"].value
+
+        Emin = energy_bins[:-1]
+        Emax = energy_bins[1:]
+
+        logElow = np.log10(Emin.to_value(u.GeV))
+        logEhigh = np.log10(Emax.to_value(u.GeV))
+
+        def integrand(logE, eta):
+            return (
+                self._gamma_spline_log_interpolation(logE, eta)
+                * np.power(10, 2 * logE)
+                * np.log(10)
+            )
+        integral = []
+        for (lEl, lEh) in zip(logElow, logEhigh):
+            integral.append(
+                quad(integrand, lEl, lEh, (eta))[0]
+            )
+        integral = P * np.array(integral) << u.GeV / u.m**2 / u.s
+
+        return integral
 
     @u.quantity_input
     def integral(self, lower: u.GeV, upper: u.GeV) -> 1 / u.m**2 / u.s:

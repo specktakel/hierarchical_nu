@@ -41,6 +41,7 @@ from ..backend.expression import StringExpression
 from ..backend.parameterizations import DistributionMode
 
 from ..source.flux_model import LogParabolaSpectrum
+from ..source.seyfert_model import SeyfertNuMuSpectrum
 from ..source.source import Sources
 from ..source.parameter import Parameter
 from ..detector.icecube import EventType, NT, CAS
@@ -127,6 +128,7 @@ class StanFitInterface(StanInterface):
         self._use_event_tag = use_event_tag
         self._debug = debug
         self._bg = bg
+        self._use_gammas = False
 
         n_params = 0
         n_params += 1 if self._fit_index else 0
@@ -1156,6 +1158,17 @@ class StanFitInterface(StanInterface):
                     "atmo_integrated_flux", "real"
                 )
 
+            if self._use_gammas:
+                #add data fields for gamma rays
+                # need array of length N_ps x N_points from precomp x energy bins
+                # self._gamma_e_bins stores np.ndarray of bin edges
+                self._N_gamma_bins = ForwardVariableDef("N_gamma_bins", "int")
+                # dims: N_ps x energy_bins.size
+                self._gamma_flux_obs = ForwardVariableDef("gamma_flux_obs", f"matrix[Ns, N_gamma_bins]")
+                self._gamma_flux_obs_err = ForwardVariableDef("gamma_flux_obs_err", f"matrix[Ns, N_gamma_bins]")
+                self._log_gamma_flux_grid = ForwardArrayDef("log_gamma_flux_grid", f"matrix[N_gamma_bins, Ngrid]", self._Ns_str)
+                self._gamma_loglike_const = ForwardVariableDef("gamma_loglike_const", "matrix[Ns, N_gamma_bins]")
+
             if self._sources.point_source:
                 # Define variables for the prior mu/sigma
                 if self._priors.src_index.name == "notaprior":
@@ -1893,6 +1906,9 @@ class StanFitInterface(StanInterface):
                 self._log_N_bg = ForwardVariableDef("log_N_bg", "real")
                 self._log_N_bg << FunctionCall([self._Nex_bg], "log")
 
+            if self._use_gammas:
+                self._interp_gamma_flux = ForwardVariableDef("interp_gamma_flux", "matrix[Ns, N_gamma_bins]")
+
             # Total flux
             # self._Ftot = ForwardVariableDef("Ftot", "real")
 
@@ -2168,6 +2184,17 @@ class StanFitInterface(StanInterface):
                         )
                     if not self._fit_nex and not self._seyfert:
                         StringExpression([self._F[k], "*=", self._flux_conv_val[k]])
+
+                    if self._use_gammas:
+                        with ForLoopContext(1, self._N_gamma_bins, "j") as j:
+                            self._interp_gamma_flux[k, j] << self._P[k] * FunctionCall(
+                                [
+                                    self._eta_grid,
+                                    "log_gamma_flux_grid[k, j]'",
+                                    self._eta[k],
+                                ],
+                                "interpolate_log_y"
+                            )
 
                     with ForLoopContext(1, self._Net_stan, "i") as i:
                         # For each source, calculate the exposure via interpolation
@@ -2476,6 +2503,32 @@ class StanFitInterface(StanInterface):
                     StringExpression(["target += log_sum_exp(", self._lp[i], ")"])
 
             StringExpression(["target += -", self._Nex])
+
+            # gammas:
+            if self._use_gammas:
+                # loop over point sources
+                with ForLoopContext(1, self._Ns, "k") as k:
+                    # interpolate over eta
+                    # TODO adapt for other spectra?
+                    with ForLoopContext(1, self._N_gamma_bins, "j") as j:
+                        real_flux = InstantVariableDef("real_flux", "real", ["interp_gamma_flux[k, j]"])
+                        StringExpression(
+                            [
+                                "target += ",
+                                real_flux, " < ",
+                                self._gamma_flux_obs[k, j],
+                                " ? ",
+                                self._gamma_loglike_const[k, j],
+                                " : ",
+                                "normal_lpdf(",
+                                real_flux,
+                                " | ",
+                                self._gamma_flux_obs[k, j],
+                                ", ",
+                                self._gamma_flux_obs_err[k, j],
+                                ")",
+                            ]
+                        )
 
             # Priors
             if self.sources.point_source:

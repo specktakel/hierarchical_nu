@@ -212,7 +212,7 @@ class ConfigParser:
                     name,
                     False,
                     parameter_config.eta_range,
-                    ParScale.lin,
+                    ParScale.eta,
                 )
             )
 
@@ -225,7 +225,7 @@ class ConfigParser:
                         name,
                         False,
                         parameter_config.eta_range,
-                        ParScale.lin,
+                        ParScale.eta,
                     )
                 )
         if parameter_config.source_type == "SeyfertII":
