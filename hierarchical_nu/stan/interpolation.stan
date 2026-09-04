@@ -189,7 +189,7 @@ real interp2d(real x, real y, array[] real xp, array[] real yp, array[,] real fp
   Interpolation on a 2d grid.
   xp and yp should be the points at which fp is evaluated.
   If some point (x, y) is outside the domain, the values along the
-  respective boarder are returned.
+  respective border are returned.
   */
   int idx_y = binary_search(y, yp);
   int idx_yp1 = idx_y + 1;
