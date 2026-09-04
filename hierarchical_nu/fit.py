@@ -118,6 +118,7 @@ class StanFit(SourceInfo):
         self._nshards = nshards
         self._priors = priors
         self._use_event_tag = use_event_tag
+        self._prepared_gammas = False
 
         stan_file_name = os.path.join(STAN_GEN_PATH, "model_code")
 
@@ -2064,6 +2065,41 @@ class StanFit(SourceInfo):
         assoc_prob = np.average(ratio, axis=-1).tolist()
         return assoc_prob
 
+    def prepare_gammas(self, energy_bins, flux_points, flux_errs):
+        """
+        :param energy_bins: Energy bin edges, common to all sources
+        :param flux_points: Iterable of per-source flux points
+        :param flux_errs: Iterable of per-source flux errors
+        :returns: None
+        """
+
+        flux_collection = []
+        for c, s in enumerate(self.sources.point_source):
+            if not isinstance(s.flux_model.spectral_shape, SeyfertNuMuSpectrum):
+                msg = f"Source {s} does not have a method to compute gamma ray fluxes"
+                raise ValueError(msg)
+            fluxes = np.swapaxes(
+                np.vstack(s.flux_model.spectral_shape.precompute_gamma_energy_flux(energy_bins)),
+                1, 0
+            )
+            flux_collection.append(fluxes)
+
+            if energy_bins.size - 1 != flux_points[c].size:
+                msg = f"Number of energy bins does not match flux points for source {c}"
+                raise ValueError(msg)
+            if energy_bins.size - 1 != flux_errs[c].size:
+                msg = f"Number of energy bins does not match flux errors for source {c}"
+                raise ValueError(msg)
+
+        self._gamma_flux = flux_collection
+        self._flux_points = flux_points
+        self._flux_errs = flux_errs
+        self._prepared_gammas = True
+        self._gamma_e_bins = energy_bins
+        self._stan_interface._use_gammas = True
+        self._stan_interface._gamma_e_bins = energy_bins
+
+
     def _get_fit_inputs(self):
         """
         Return dictionary of fit inputs, passed to cmdstanpy
@@ -2537,6 +2573,24 @@ class StanFit(SourceInfo):
         fit_inputs["integral_grid_2d"] = integral_grid_2d
         fit_inputs["atmo_integ_val"] = atmo_integ_val
         fit_inputs["T"] = obs_time
+
+        # gammas
+        if self._prepared_gammas:
+            fit_inputs["N_gamma_bins"] = len(self._gamma_e_bins) - 1
+            fit_inputs["gamma_flux_obs"] = [
+                _.to_value(u.GeV / u.s / u.m**2).tolist() for _ in self._flux_points
+            ]
+            fit_inputs["gamma_flux_obs_err"] = [
+                _.to_value(u.GeV / u.s / u.m**2).tolist() for _ in self._flux_errs
+            ]
+            # units are already matched to stan convention in the method of the spectrum
+            fit_inputs["log_gamma_flux_grid"] = [
+                np.log(_).tolist() for _ in self._gamma_flux
+            ]
+            fit_inputs["gamma_loglike_const"] = [
+                (-np.log(_.to_value(u.GeV / u.s / u.m**2)) - np.log(np.sqrt(2 * np.pi))).tolist() for _ in self._flux_errs
+            ]
+
         # To work with cmdstanpy serialization
         fit_inputs = {
             k: v if not isinstance(v, np.ndarray) else v.tolist()
