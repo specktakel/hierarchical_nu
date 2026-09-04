@@ -40,8 +40,8 @@ class ParameterConfig:
     beta_index_range: Tuple = (-1.0, 1.0)
     eta: List[float] = field(
         default_factory=lambda: [40.0]
-    )  # inverse turbulence strength
-    eta_range: Tuple = (1.0, 150.0)
+    )  # inverse magnetic turbulence strength
+    eta_range: Tuple = (1.0, 100.0)
     P: List[float] = field(
         default_factory=lambda: [0.4]
     )  # cosmic ray to thermal pressure ratio
