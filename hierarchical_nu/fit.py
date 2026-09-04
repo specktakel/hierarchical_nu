@@ -1057,7 +1057,7 @@ class StanFit(SourceInfo):
 
         return fig, axs
 
-    def _calculate_flux_grid(self):
+    def _calculate_flux_grid(self, gammas: bool=False):
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
@@ -1110,6 +1110,11 @@ class StanFit(SourceInfo):
             np.zeros((len(self._sources.point_source), E.size, N_samples))
             << 1 / u.GeV / u.m**2 / u.s
         )
+        gamma_E = np.geomspace(1e-4, 1e8, 4_000) << u.GeV
+        self._gamma_grid = (
+            np.zeros((len(self._sources.point_source), gamma_E.size, N_samples))
+            << 1 / u.GeV / u.m**2 / u.s
+        )
 
         for c_ps, ps in enumerate(self._sources.point_source):
             if share_index:
@@ -1149,9 +1154,16 @@ class StanFit(SourceInfo):
                 eta_vals = eta[c_ps]
                 ps.flux_model.spectral_shape.set_parameter("eta", eta_vals)
 
+            if self._seyfert:
+                _P = ps.flux_model.spectral_shape.parameters["P"].value
+                P = self["pressure_ratio_ind"].reshape((iterations * chains, self["pressure_ratio_ind"].size // (iterations * chains)))
+
             flux_int = F[:, c_ps].flatten() << 1 / u.m**2 / u.s
 
             flux_grid = np.zeros((E.size, N_samples)) << 1 / u.GeV / u.m**2 / u.s
+
+            if gammas:
+                gamma_grid = np.zeros((gamma_E.size, N_samples)) << 1 / u.GeV / u.m**2 / u.s
 
             for c in range(N_samples):
                 if self._fit_index:
@@ -1172,21 +1184,36 @@ class StanFit(SourceInfo):
                 # Needs to be in units used by stan
                 int_flux = ps.flux_model.total_flux_int  # 1 / m2 / s
 
+                # This removes the need to re-create luminosities for normalisation
+                # but uses the stan-generated integrated flux norm F
                 flux_grid[:, c] = flux / int_flux * flux_int[c]
 
-            self._flux_grid[c_ps] = flux_grid
+                if gammas:
+                    gamma_grid[:, c] = ps.flux_model.spectral_shape.gamma_flux(gamma_E) / _P * P[c, c_ps]
 
-    def _calculate_quantiles(self, E_power, energy_unit, area_unit, source_idx, LL, UL):
+            self._flux_grid[c_ps] = flux_grid
+            if gammas:
+                self._gamma_grid[c_ps] = gamma_grid
+
+    def _calculate_quantiles(self, E_power, energy_unit, area_unit, source_idx, LL, UL, gammas: bool = False):
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
+
+        if not gammas:
+            flux_grid = (
+                self._flux_grid.copy().to_value(1 / energy_unit / area_unit / u.s)
+                * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
+            )
+        else:
+            E = np.geomspace(1e-4, 1e8, 4_000) << u.GeV
+            flux_grid = (
+                self._gamma_grid.copy().to_value(1 / energy_unit / area_unit / u.s)
+                * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
+            )
+        
         lower = np.zeros(E.size)
         upper = np.zeros(E.size)
-
-        flux_grid = (
-            self._flux_grid.copy().to_value(1 / energy_unit / area_unit / u.s)
-            * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
-        )
 
         if source_idx == -1:
             flux_grid = flux_grid.sum(axis=0)
@@ -1209,6 +1236,7 @@ class StanFit(SourceInfo):
         x_energy_unit=u.GeV,
         upper_limit: bool = False,
         figsize=(8, 3),
+        gammas: bool = False,
         ax=None,
         **kwargs,
     ):
@@ -1244,11 +1272,19 @@ class StanFit(SourceInfo):
         limit_kwargs |= kwargs
 
         # Save some time calculating if the previous calculation has already used the same E_power
-        if not hasattr(self, "_flux_grid"):
+
+        if gammas and not hasattr(self, "_flux_grid"):
+            self._calculate_flux_grid(gammas=True)
+
+        elif not hasattr(self, "_flux_grid"):
             self._calculate_flux_grid()
 
         flux_unit = 1 / energy_unit / area_unit / u.s
-        E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
+
+        if gammas:
+            E = np.geomspace(1e-4, 1e8, 4_000) << u.GeV
+        else:
+            E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
         if ax is None:
             fig, ax = plt.subplots(figsize=figsize)
@@ -1265,8 +1301,9 @@ class StanFit(SourceInfo):
                 UL = 0.5 - CI / 2
                 LL = 0.5 + CI / 2
 
+
             lower, upper = self._calculate_quantiles(
-                E_power, energy_unit, area_unit, source_idx, LL, UL
+                E_power, energy_unit, area_unit, source_idx, LL, UL, gammas
             )
 
             if not upper_limit:
