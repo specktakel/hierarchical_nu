@@ -85,7 +85,7 @@ class PPC:
         """
         Plot diagnostic PPCs
         :param bins_Ereco: bins in GeV for reconstructed muon energy plot
-        :param bins_ang_seq_eq: binning of angular distance to source in units of degrees squared
+        :param bins_ang_sep_eq: binning of angular distance to source in units of degrees squared
         :param quantiles: list of quantiles between 0 and 100 to plot colour bands of
         :param figsize: (width, height) of figure
         :param colors: Provide some colour for plotting the bands
@@ -160,7 +160,7 @@ class PPC:
 
         ang_sep = coords.separation(self._fit.events.coords).deg
         obs = np.histogram(ang_sep**2, bins=bins_ang_sep_sq)[0]
-
+        
         for (
             q,
             l,
@@ -281,6 +281,15 @@ class PPC:
         
         ql_bg = np.quantile(hists_bg, q_low, axis=0)
         qh_bg = np.quantile(hists_bg, q_high, axis=0)
+        
+        self._ql_all = ql_all
+        self._qh_all = qh_all
+        self._ql_source = ql_source
+        self._qh_source = qh_source
+        self._ql_bg = ql_bg
+        self._qh_bg = qh_bg
+        
+        self._obs = obs
 
         for (
             q,

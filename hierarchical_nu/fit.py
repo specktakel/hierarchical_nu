@@ -1386,8 +1386,8 @@ class StanFit(SourceInfo):
         # Have some defaults for plotting
         fill_kwargs = dict(
             alpha=0.3,
-            color="C0",
-            edgecolor="none",
+            #color="C0",
+            #edgecolor="none",
         )
         limit_kwargs = dict(
             alpha=0.3,
