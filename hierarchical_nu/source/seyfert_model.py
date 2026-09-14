@@ -371,7 +371,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         for e in self.eta_grid:
             eta_par.value = e
             # normalise to pressure ratio, use default stan units
-            eflux = self.gamma_energy_flux_integral_per_bin(energy_bins).to_value(u.GeV / u.s / u.m**2) / P
+            eflux = self.gamma_energy_flux_averaged_per_bin(energy_bins).to_value(u.GeV / u.s / u.m**2) / P
             fluxes.append(eflux)
 
 
@@ -383,7 +383,7 @@ class SeyfertNuMuSpectrum(SpectralShape):
         return fluxes
 
     @u.quantity_input
-    def gamma_energy_flux_integral_per_bin(self, energy_bins: u.GeV) -> u.GeV / (u.m**2 * u.s):
+    def gamma_energy_flux_averaged_per_bin(self, energy_bins: u.GeV) -> u.GeV / (u.m**2 * u.s):
         eta = self._parameters["eta"].value
         P = self._parameters["P"].value
 
@@ -396,13 +396,13 @@ class SeyfertNuMuSpectrum(SpectralShape):
         def integrand(logE, eta):
             return (
                 self._gamma_spline_log_interpolation(logE, eta)
-                * np.power(10, 2 * logE)
+                * np.power(10, 3 * logE)
                 * np.log(10)
             )
         integral = []
         for (lEl, lEh) in zip(logElow, logEhigh):
             integral.append(
-                quad(integrand, lEl, lEh, (eta))[0]
+                quad(integrand, lEl, lEh, (eta))[0] / (np.power(10, lEh) - np.power(10, lEl))
             )
         integral = P * np.array(integral) << u.GeV / u.m**2 / u.s
 

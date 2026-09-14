@@ -5,6 +5,7 @@ import logging
 import collections
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from scipy.interpolate import make_smoothing_spline
 from typing import List, Union, Dict, Callable, Iterable
 import corner
 import matplotlib.pyplot as plt
@@ -1196,7 +1197,7 @@ class StanFit(SourceInfo):
             if gammas:
                 self._gamma_grid[c_ps] = gamma_grid
 
-    def _calculate_quantiles(self, E_power, energy_unit, area_unit, source_idx, LL, UL, gammas: bool = False):
+    def _calculate_quantiles(self, E_power, energy_unit, area_unit, source_idx, LL, UL, gammas: bool = False, hdi: bool = True):
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
 
@@ -1221,9 +1222,21 @@ class StanFit(SourceInfo):
         else:
             flux_grid = flux_grid[source_idx]
 
-        for c in range(E.size):
-            lower[c] = np.quantile(flux_grid[c], LL)
-            upper[c] = np.quantile(flux_grid[c], UL)
+        if hdi:
+            # LL is zero
+            # UL is credibility
+            list_of_cr = np.linspace(0, 1 - UL, 100)   # later change resolution?
+            log_flux = np.log10(flux_grid)
+            quantiles = np.quantile(log_flux, np.vstack((list_of_cr, list_of_cr + UL)), axis=1,)
+            diffs = np.diff(quantiles, axis=0).squeeze()
+            idxs = np.argmin(diffs, axis=0)
+            lower = np.quantiles[0, idxs, np.arange(E.size)]
+            upper = np.quantiles[1, idxs, np.arange(E.size)]
+
+        else:
+            for c in range(E.size):
+                lower[c] = np.quantile(flux_grid[c], LL)
+                upper[c] = np.quantile(flux_grid[c], UL)
 
         return lower, upper
 
@@ -1274,11 +1287,8 @@ class StanFit(SourceInfo):
 
         # Save some time calculating if the previous calculation has already used the same E_power
 
-        if gammas and not hasattr(self, "_flux_grid"):
+        if gammas or not hasattr(self, "_flux_grid"):
             self._calculate_flux_grid(gammas=True)
-
-        elif not hasattr(self, "_flux_grid"):
-            self._calculate_flux_grid()
 
         flux_unit = 1 / energy_unit / area_unit / u.s
 
@@ -1301,9 +1311,13 @@ class StanFit(SourceInfo):
             if upper_limit:
                 UL = CI
                 LL = 0.0  # dummy
-            else:
+            elif not hdi:
                 UL = 0.5 - CI / 2
                 LL = 0.5 + CI / 2
+            else:
+                # will be shifted with difference of CI inside `self._calculate_quantiles`
+                LL = 0
+                UL = CI
 
 
             lower, upper = self._calculate_quantiles(
