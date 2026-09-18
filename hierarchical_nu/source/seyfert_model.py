@@ -393,17 +393,19 @@ class SeyfertNuMuSpectrum(SpectralShape):
         logElow = np.log10(Emin.to_value(u.GeV))
         logEhigh = np.log10(Emax.to_value(u.GeV))
 
-        def integrand(logE, eta):
+        def integrand(E, eta):
             return (
-                self._gamma_spline_log_interpolation(logE, eta)
-                * np.power(10, 3 * logE)
-                * np.log(10)
+                self._gamma_spline_log_interpolation(np.log10(E), eta)
+                * E ** 2
+                #* np.log(10)
             )
         integral = []
-        for (lEl, lEh) in zip(logElow, logEhigh):
-            integral.append(
-                quad(integrand, lEl, lEh, (eta))[0] / (np.power(10, lEh) - np.power(10, lEl))
-            )
+        #for (lEl, lEh) in zip(logElow, logEhigh):
+        #    integral.append(
+        #        quad(integrand, lEl, lEh, (eta))[0] / (np.power(10, lEh) - np.power(10, lEl))
+        #    )
+        for (El, Eh) in zip(Emin.to_value(u.GeV), Emax.to_value(u.GeV)):
+            integral.append(quad(integrand, El, Eh, (eta))[0] / (Eh - El))
         integral = P * np.array(integral) << u.GeV / u.m**2 / u.s
 
         return integral
