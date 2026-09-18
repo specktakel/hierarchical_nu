@@ -6,6 +6,7 @@ import collections
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from scipy.interpolate import make_smoothing_spline
+from scipy.ndimage import gaussian_filter1d
 from typing import List, Union, Dict, Callable, Iterable
 import corner
 import matplotlib.pyplot as plt
@@ -1200,6 +1201,7 @@ class StanFit(SourceInfo):
     def _calculate_quantiles(self, E_power, energy_unit, area_unit, source_idx, LL, UL, gammas: bool = False, hdi: bool = True):
 
         E = np.geomspace(1e2, 1e9, 1_000) << u.GeV
+        logE = np.linspace(2, 9, 1_000)
 
 
         if not gammas:
@@ -1209,6 +1211,7 @@ class StanFit(SourceInfo):
             )
         else:
             E = np.geomspace(1e-4, 1e8, 4_000) << u.GeV
+            logE = np.linspace(-4, 8, 4_000)
             flux_grid = (
                 self._gamma_grid.copy().to_value(1 / energy_unit / area_unit / u.s)
                 * np.power(E.to_value(energy_unit), E_power)[:, np.newaxis]
@@ -1225,13 +1228,27 @@ class StanFit(SourceInfo):
         if hdi:
             # LL is zero
             # UL is credibility
-            list_of_cr = np.linspace(0, 1 - UL, 100)   # later change resolution?
+            if not self._reload:
+                inputs = self._get_fit_inputs()
+                iterations = self._fit_output._iter_sampling
+                chains = self._fit_output.chains
+
+            else:
+                # Need try-except blocks for case of pgamma
+                inputs = self._fit_inputs
+                chains = self._fit_meta["chains"]
+                iterations = self._fit_meta["iter_sampling"]
+            N_samples = iterations * chains
+
+            list_of_cr = np.linspace(0, 1 - UL, 1_000)   # later change resolution?
             log_flux = np.log10(flux_grid)
             quantiles = np.quantile(log_flux, np.vstack((list_of_cr, list_of_cr + UL)), axis=1,)
             diffs = np.diff(quantiles, axis=0).squeeze()
             idxs = np.argmin(diffs, axis=0)
-            lower = np.quantiles[0, idxs, np.arange(E.size)]
-            upper = np.quantiles[1, idxs, np.arange(E.size)]
+            #lower = np.power(10, make_smoothing_spline(logE, quantiles[0, idxs, np.arange(E.size)])(logE))
+            #upper = np.power(10, make_smoothing_spline(logE, quantiles[1, idxs, np.arange(E.size)])(logE))
+            lower = np.power(10, gaussian_filter1d(quantiles[0, idxs, np.arange(E.size)], 5))
+            upper = np.power(10, gaussian_filter1d(quantiles[1, idxs, np.arange(E.size)], 5))
 
         else:
             for c in range(E.size):
@@ -1245,12 +1262,14 @@ class StanFit(SourceInfo):
         E_power: float = 0.0,
         credible_interval: Union[float, List[float]] = 0.5,
         source_idx: int = 0,
-        energy_unit=u.TeV,
+        energy_unit=u.GeV,
         area_unit=u.cm**2,
         x_energy_unit=u.GeV,
         upper_limit: bool = False,
         figsize: tuple = (8, 3),
         gammas: bool = False,
+        hdi: bool = False,
+        fill: bool = True,
         ax=None,
         **kwargs,
     ):
@@ -1281,9 +1300,16 @@ class StanFit(SourceInfo):
             markevery=0.06,
             markersize=10,
         )
+        plot_kwargs = dict(
+            alpha=1.0,
+            lw=1.0,
+        )
+        plot_kwargs["color"] = kwargs.get("color", "C1")
+        plot_kwargs["linestyles"] = kwargs.get("linestyles", ["solid", "dashed", "dotted", "dashdot"])
 
         fill_kwargs |= kwargs
         limit_kwargs |= kwargs
+        
 
         # Save some time calculating if the previous calculation has already used the same E_power
 
@@ -1306,7 +1332,7 @@ class StanFit(SourceInfo):
         credible_interval = np.atleast_1d(credible_interval)
         facecolor = fill_kwargs.pop("facecolor")
         edgecolor = fill_kwargs.pop("edgecolor")
-        for CI in credible_interval:
+        for c, CI in enumerate(credible_interval):
             
             if upper_limit:
                 UL = CI
@@ -1321,10 +1347,10 @@ class StanFit(SourceInfo):
 
 
             lower, upper = self._calculate_quantiles(
-                E_power, energy_unit, area_unit, source_idx, LL, UL, gammas
+                E_power, energy_unit, area_unit, source_idx, LL, UL, gammas, hdi
             )
 
-            if not upper_limit:
+            if not upper_limit and fill:
                 _facecolor = lighten_color(facecolor, 1 - CI / 2)
                 ax.fill_between(
                     E.to_value(
@@ -1336,13 +1362,25 @@ class StanFit(SourceInfo):
                     facecolor=_facecolor,
                     **fill_kwargs,
                 )
-            else:
+            elif upper_limit:
                 ax.plot(
                     E.to_value(x_energy_unit, equivalencies=u.spectral()),
                     upper,
                     **limit_kwargs,
                     # TODO fix alignment of arrow base to the line
                 )
+            elif not fill:
+                ax.plot(
+                    E.to_value(x_energy_unit, equivalencies=u.spectral()),
+                    lower, ls=plot_kwargs["linestyles"][c], color=plot_kwargs["color"],
+                    linewidth=plot_kwargs["lw"],
+                )
+                ax.plot(
+                    E.to_value(x_energy_unit, equivalencies=u.spectral()),
+                    upper, ls=plot_kwargs["linestyles"][c], color=plot_kwargs["color"],
+                    linewidth=plot_kwargs["lw"],
+                )
+                    
             """
             elif not upper_limit:
                 for l in [lower, upper]:
