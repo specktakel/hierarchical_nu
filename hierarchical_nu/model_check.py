@@ -25,6 +25,7 @@ from hierarchical_nu.priors import (
 )
 from hierarchical_nu.utils.git import git_hash
 from hierarchical_nu.events import Events
+from hierarchical_nu.utils.roi import ROIList
 from hierarchical_nu.detector.icecube import Refrigerator
 
 import logging
@@ -836,12 +837,16 @@ class ModelCheck:
 
             if data_bg:
                 # If we use data as background, sample scrambled data and add to point source events
-                bg_events = Events.from_ev_file(
-                    *self.parser.detector_model,
-                    scramble_ra=True,
-                    scramble_mjd=True,
-                    seed=s,
+                bg_events = Events.from_event_files(*self.parser.detector_model, apply_roi=False)
+                dec_mask = np.logical_and(
+                    bg_events.coords.dec <= ROIList.DEC_max(),
+                    bg_events.coords.dec >= ROIList.DEC_min()
                 )
+                bg_events = bg_events[dec_mask]
+                bg_events.scramble_mjd(seed=s)
+                bg_events.scramble_ra(seed=s)
+                # apply event selection
+                bg_events.apply_ROIS()
                 N_bg = bg_events.N
                 if events:
                     new_events = new_events.merge(bg_events)
